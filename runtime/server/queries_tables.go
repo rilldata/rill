@@ -16,6 +16,9 @@ const _tableHeadDefaultLimit = 25
 func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardinalityRequest) (*runtimev1.TableCardinalityResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
@@ -27,7 +30,10 @@ func (s *Server) TableCardinality(ctx context.Context, req *runtimev1.TableCardi
 	}
 
 	q := &queries.TableCardinality{
-		TableName: req.TableName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -47,6 +53,9 @@ type ColumnInfo struct {
 func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRequest) (*runtimev1.TableColumnsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.priority", int(req.Priority)),
 	)
@@ -58,7 +67,10 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 	}
 
 	q := &queries.TableColumns{
-		TableName: req.TableName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
 	}
 
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -66,14 +78,15 @@ func (s *Server) TableColumns(ctx context.Context, req *runtimev1.TableColumnsRe
 		return nil, err
 	}
 
-	return &runtimev1.TableColumnsResponse{
-		ProfileColumns: q.Result,
-	}, nil
+	return q.Result, nil
 }
 
 func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest) (*runtimev1.TableRowsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.Int("args.limit", int(req.Limit)),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -91,8 +104,11 @@ func (s *Server) TableRows(ctx context.Context, req *runtimev1.TableRowsRequest)
 	}
 
 	q := &queries.TableHead{
-		TableName: req.TableName,
-		Limit:     limit,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		Limit:          limit,
 	}
 
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))

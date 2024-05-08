@@ -2,29 +2,36 @@ package env
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
 // RmCmd is sub command for env. Removes the variable for a project
-func RmCmd(cfg *config.Config) *cobra.Command {
-	var projectName string
+func RmCmd(ch *cmdutil.Helper) *cobra.Command {
+	var projectPath, projectName string
+
 	rmCmd := &cobra.Command{
 		Use:   "rm <key>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Remove variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
-			client, err := cmdutil.Client(cfg)
+			ctx := cmd.Context()
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
-			ctx := cmd.Context()
+			// Find the cloud project name
+			if projectName == "" {
+				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+				if err != nil {
+					return err
+				}
+			}
+
 			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             projectName,
 			})
 			if err != nil {
@@ -37,7 +44,7 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 
 			delete(resp.Variables, key)
 			_, err = client.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             projectName,
 				Variables:        resp.Variables,
 			})
@@ -45,11 +52,13 @@ func RmCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Updated project")
+			ch.PrintfSuccess("Updated project\n")
 			return nil
 		},
 	}
-	rmCmd.Flags().StringVar(&projectName, "project", "", "")
-	_ = rmCmd.MarkFlagRequired("project")
+
+	rmCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
+	rmCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+
 	return rmCmd
 }

@@ -20,13 +20,15 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	"github.com/rilldata/rill/admin/server/cookies"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rs/cors"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -48,8 +50,8 @@ type Options struct {
 	GRPCPort               int
 	ExternalURL            string
 	FrontendURL            string
-	SessionKeyPairs        [][]byte
 	AllowedOrigins         []string
+	SessionKeyPairs        [][]byte
 	ServePrometheus        bool
 	AuthDomain             string
 	AuthClientID           string
@@ -62,6 +64,8 @@ type Options struct {
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
+	adminv1.UnsafeAIServiceServer
+	adminv1.UnsafeTelemetryServiceServer
 	logger        *zap.Logger
 	admin         *admin.Service
 	opts          *Options
@@ -70,11 +74,16 @@ type Server struct {
 	issuer        *runtimeauth.Issuer
 	urls          *externalURLs
 	limiter       ratelimit.Limiter
+	activity      *activity.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, opts *Options) (*Server, error) {
+var _ adminv1.AIServiceServer = (*Server)(nil)
+
+var _ adminv1.TelemetryServiceServer = (*Server)(nil)
+
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, activityClient *activity.Client, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -85,9 +94,30 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	}
 
 	cookieStore := cookies.New(logger, opts.SessionKeyPairs...)
+
+	// Auth tokens are validated against the DB on each request, so we can set a long MaxAge.
 	cookieStore.MaxAge(60 * 60 * 24 * 365 * 10) // 10 years
+
+	// Set Secure if the admin service is served over HTTPS (will resolve to true in production and false in local dev environments).
 	cookieStore.Options.Secure = externalURL.Scheme == "https"
+
+	// Only the admin server reads its cookies, so we can set HttpOnly (i.e. UI should not access cookie contents).
 	cookieStore.Options.HttpOnly = true
+
+	// Only the admin server reads its cookies, so we can set Domain to be the admin server's sub-domain (e.g. admin.rilldata.com).
+	// That is automatically accomplished when Domain is not set.
+	cookieStore.Options.Domain = ""
+
+	// We need to protect against CSRF and clickjacking attacks, but still support requests from the UI to the admin service.
+	// This is accomplished by setting SameSite=Lax (note that "site" just means the same root domain, not sub-domain).
+	// For example, cookies will be passed on requests from ui.rilldata.com to admin.rilldata.com (or localhost:3000 to localhost:8080),
+	// but not for requests from a different site AND NOT from an iframe of ui.rilldata.com on a different site.
+	//
+	// Note: We use Lax instead of Strict because we need cookies to be passed on redirects to the admin service from external providers, namely Auth0 and Github.
+	//
+	// Note on embedding: When embedding our UI, requests are only made to the runtime using the ephemeral JWT generated for the iframe. So we do not need cookies to be passed.
+	// In the future, if iframes need to communicate with the admin service, we should introduce a scheme involving ephemeral tokens and not rely on cookies.
+	cookieStore.Options.SameSite = http.SameSiteLaxMode
 
 	authenticator, err := auth.NewAuthenticator(logger, adm, cookieStore, &auth.AuthenticatorOptions{
 		AuthDomain:       opts.AuthDomain,
@@ -109,6 +139,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		issuer:        issuer,
 		urls:          newURLRegistry(opts),
 		limiter:       limiter,
+		activity:      activityClient,
 	}, nil
 }
 
@@ -117,7 +148,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.TracingStreamServerInterceptor(),
 			observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
@@ -127,7 +157,6 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.TracingUnaryServerInterceptor(),
 			observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
@@ -135,9 +164,12 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 			s.authenticator.UnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(s.checkRateLimit),
 		),
+		grpc.StatsHandler(otelgrpc.NewServerHandler()),
 	)
 
 	adminv1.RegisterAdminServiceServer(server, s)
+	adminv1.RegisterAIServiceServer(server, s)
+	adminv1.RegisterTelemetryServiceServer(server, s)
 	s.logger.Sugar().Infof("serving admin gRPC on port:%v", s.opts.GRPCPort)
 	return graceful.ServeGRPC(ctx, server, s.opts.GRPCPort)
 }
@@ -151,14 +183,17 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 
 	server := &http.Server{Handler: handler}
 	s.logger.Sugar().Infof("serving admin HTTP on port:%v", s.opts.HTTPPort)
-	return graceful.ServeHTTP(ctx, server, s.opts.HTTPPort)
+
+	return graceful.ServeHTTP(ctx, server, graceful.ServeOptions{
+		Port: s.opts.HTTPPort,
+	})
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	// Create REST gateway
 	gwMux := gateway.NewServeMux(
-		gateway.WithErrorHandler(HTTPErrorHandler),
+		gateway.WithErrorHandler(httpErrorHandler),
 		gateway.WithMetadata(s.authenticator.Annotator),
 	)
 	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
@@ -167,10 +202,35 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = adminv1.RegisterAIServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
+	if err != nil {
+		return nil, err
+	}
+	err = adminv1.RegisterTelemetryServiceHandlerFromEndpoint(ctx, gwMux, grpcAddress, opts)
+	if err != nil {
+		return nil, err
+	}
 
 	// Create regular http mux and mount gwMux on it
 	mux := http.NewServeMux()
 	mux.Handle("/v1/", gwMux)
+
+	// Add runtime proxy
+	observability.MuxHandle(mux, "/v1/orgs/{org}/projects/{project}/runtime/{path...}",
+		observability.Middleware(
+			"runtime-proxy",
+			s.logger,
+			s.authenticator.HTTPMiddlewareLenient(httputil.Handler(s.runtimeProxyForOrgAndProject)),
+		),
+	)
+
+	// Temporary endpoint for testing headers.
+	// TODO: Remove this.
+	mux.HandleFunc("/v1/dump-headers", func(w http.ResponseWriter, r *http.Request) {
+		for k, v := range r.Header {
+			fmt.Fprintf(w, "%s: %v\n", k, v)
+		}
+	})
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {
@@ -185,9 +245,6 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 
 	// Add Github-related endpoints (not gRPC handlers, just regular endpoints on /github/*)
 	s.registerGithubEndpoints(mux)
-
-	// Add temporary internal endpoint for refreshing sources
-	mux.Handle("/internal/projects/trigger-refresh", otelhttp.WithRouteTag("/internal/projects/trigger-refresh", http.HandlerFunc(s.triggerRefreshSourcesInternal)))
 
 	// Build CORS options for admin server
 
@@ -228,19 +285,34 @@ func (s *Server) HTTPHandler(ctx context.Context) (http.Handler, error) {
 	return handler, nil
 }
 
+// Ping implements AdminService
+func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
+	resp := &adminv1.PingResponse{
+		Version: "", // TODO: Return version
+		Time:    timestamppb.New(time.Now()),
+	}
+	return resp, nil
+}
+
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {
-	var limitKey string
 	method, ok := grpc.Method(ctx)
 	if !ok {
 		return ctx, fmt.Errorf("server context does not have a method")
 	}
+
+	var limitKey string
 	if auth.GetClaims(ctx).OwnerType() == auth.OwnerTypeAnon {
 		limitKey = ratelimit.AnonLimitKey(method, observability.GrpcPeer(ctx))
 	} else {
 		limitKey = ratelimit.AuthLimitKey(method, auth.GetClaims(ctx).OwnerID())
 	}
 
-	if err := s.limiter.Limit(ctx, limitKey, ratelimit.Default); err != nil {
+	limit := ratelimit.Default
+	if strings.HasPrefix(method, "/rill.admin.v1.AIService") {
+		limit = ratelimit.Sensitive
+	}
+
+	if err := s.limiter.Limit(ctx, limitKey, limit); err != nil {
 		if errors.As(err, &ratelimit.QuotaExceededError{}) {
 			return ctx, status.Errorf(codes.ResourceExhausted, err.Error())
 		}
@@ -260,7 +332,9 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	groupNames := make([]string, len(groups))
+
+	// Using []any instead of []string since attr must be compatible with structpb.NewStruct
+	groupNames := make([]any, len(groups))
 	for i, group := range groups {
 		groupNames[i] = group.Name
 	}
@@ -276,9 +350,9 @@ func (s *Server) jwtAttributesForUser(ctx context.Context, userID, orgID string,
 	return attr, nil
 }
 
-// HTTPErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
+// httpErrorHandler wraps gateway.DefaultHTTPErrorHandler to map gRPC unknown errors (i.e. errors without an explicit
 // code) to HTTP status code 400 instead of 500.
-func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
+func httpErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gateway.Marshaler, w http.ResponseWriter, r *http.Request, err error) {
 	s := status.Convert(err)
 	if s.Code() == codes.Unknown {
 		err = &gateway.HTTPStatusError{HTTPStatus: http.StatusBadRequest, Err: err}
@@ -286,16 +360,10 @@ func HTTPErrorHandler(ctx context.Context, mux *gateway.ServeMux, marshaler gate
 	gateway.DefaultHTTPErrorHandler(ctx, mux, marshaler, w, r, err)
 }
 
-// Ping implements AdminService
-func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.PingResponse, error) {
-	resp := &adminv1.PingResponse{
-		Version: "", // TODO: Return version
-		Time:    timestamppb.New(time.Now()),
-	}
-	return resp, nil
-}
-
 func timeoutSelector(fullMethodName string) time.Duration {
+	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
+		return time.Minute * 2
+	}
 	return time.Minute
 }
 
@@ -394,10 +462,10 @@ func newURLRegistry(opts *Options) *externalURLs {
 	}
 }
 
-func (u *externalURLs) reportOpen(org, project, projectSubpath string) string {
-	res := urlutil.MustJoinURL(u.frontend, org, project)
-	res += projectSubpath // Need to do an unsafe concat to provide flexibility, e.g. to avoid escaping '?'
-	return res
+func (u *externalURLs) reportOpen(org, project, report string, executionTime time.Time) string {
+	reportURL := urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report, "open")
+	reportURL += fmt.Sprintf("?execution_time=%s", executionTime.UTC().Format(time.RFC3339))
+	return reportURL
 }
 
 func (u *externalURLs) reportExport(org, project, report string) string {
@@ -406,4 +474,12 @@ func (u *externalURLs) reportExport(org, project, report string) string {
 
 func (u *externalURLs) reportEdit(org, project, report string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "reports", report)
+}
+
+func (u *externalURLs) alertOpen(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+}
+
+func (u *externalURLs) alertEdit(org, project, alert string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
 }

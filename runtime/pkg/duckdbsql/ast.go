@@ -1,6 +1,7 @@
 package duckdbsql
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 )
@@ -38,7 +39,13 @@ func Parse(sql string) (*AST, error) {
 	}
 
 	nativeAst := astNode{}
-	err = json.Unmarshal(sqlAst, &nativeAst)
+
+	decoder := json.NewDecoder(bytes.NewReader(sqlAst))
+	// DuckDB uses uint64 for query_location and
+	// inner queries may have query_location equals to max value of uint64 that cannot fit into float64
+	decoder.UseNumber()
+
+	err = decoder.Decode(&nativeAst)
 	if err != nil {
 		return nil, err
 	}
@@ -99,7 +106,7 @@ func (a *AST) RewriteTableRefs(fn func(table *TableRef) (*TableRef, bool)) error
 			switch newRef.Function {
 			case "sqlite_scan":
 				newRef.Params[0] = newRef.Paths[0]
-				err := node.rewriteToSqliteScanFunction(newRef.Function, newRef.Params)
+				err := node.rewriteToSqliteScanFunction(newRef.Params)
 				if err != nil {
 					return err
 				}
@@ -130,7 +137,7 @@ func (a *AST) RewriteLimit(limit, offset int) error {
 	}
 
 	// We only need to add limit to the top level query
-	err := a.rootNodes[0].rewriteLimit(limit, offset)
+	err := a.rootNodes[0].rewriteLimit(limit)
 	if err != nil {
 		return err
 	}

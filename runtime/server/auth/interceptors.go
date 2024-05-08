@@ -10,7 +10,7 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	gateway "github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
-	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -137,6 +137,11 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 	// Parse, validate and set claims from JWT
 	claims, err := aud.ParseAndValidate(bearerToken)
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			// The JWT library appends the expiration duration to the error message, which looks messy/ungrouped in observability.
+			// This is a workaround to remove the expiration duration from the error message.
+			return nil, status.Error(codes.Unauthenticated, "jwt is expired")
+		}
 		return nil, err
 	}
 

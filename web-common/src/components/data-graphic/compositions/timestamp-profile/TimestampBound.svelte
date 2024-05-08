@@ -12,7 +12,10 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    createShiftClickAction,
+    isClipboardApiSupported,
+  } from "@rilldata/web-common/lib/actions/shift-click-action";
   import {
     datePortion,
     timePortion,
@@ -24,34 +27,47 @@
   export let value: Date;
   export let label = "value";
   export let align: "left" | "right" = "left";
-  let valueWithoutOffset = undefined;
+  let valueWithoutOffset: Date | undefined;
   $: if (value instanceof Date)
     valueWithoutOffset = removeLocalTimezoneOffset(value);
 </script>
 
-<Tooltip alignment={align == "left" ? "start" : "end"} distance={8}>
+<Tooltip
+  alignment={align == "left" ? "start" : "end"}
+  distance={8}
+  suppress={!isClipboardApiSupported()}
+>
   <button
     class="text-{align} text-gray-500"
     style:line-height={1.1}
     use:shiftClickAction
     on:shift-click={async () => {
+      if (valueWithoutOffset === undefined) return;
       const exportedValue = `TIMESTAMP '${valueWithoutOffset.toISOString()}'`;
       await navigator.clipboard.writeText(exportedValue);
       notifications.send({ message: `copied ${exportedValue} to clipboard` });
       // update this to set the active animation in the tooltip text
     }}
   >
-    <div>
-      {datePortion(valueWithoutOffset)}
-    </div>
-    <div>
-      {timePortion(valueWithoutOffset)}
-    </div>
+    {#if valueWithoutOffset}
+      <div>
+        {datePortion(valueWithoutOffset)}
+      </div>
+      <div>
+        {timePortion(valueWithoutOffset)}
+      </div>
+    {:else}
+      loading...
+    {/if}
   </button>
   <TooltipContent slot="tooltip-content">
     <TooltipTitle>
       <svelte:fragment slot="name"
-        >{valueWithoutOffset.toISOString()}</svelte:fragment
+        >{#if valueWithoutOffset === undefined}
+          loading...
+        {:else}
+          {valueWithoutOffset.toISOString()}
+        {/if}</svelte:fragment
       >
       <svelte:fragment slot="description">{label}</svelte:fragment>
     </TooltipTitle>

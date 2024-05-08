@@ -1,44 +1,53 @@
 package env
 
 import (
-	"fmt"
-
+	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
-	"github.com/rilldata/rill/cli/pkg/variable"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func ShowEnvCmd(cfg *config.Config) *cobra.Command {
-	var projectName string
+func ShowCmd(ch *cmdutil.Helper) *cobra.Command {
+	var projectPath, projectName string
+
 	showCmd := &cobra.Command{
 		Use:   "show",
 		Short: "Show credentials and other variables",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
+
+			// Find the cloud project name
+			if projectName == "" {
+				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+				if err != nil {
+					return err
+				}
+			}
 
 			resp, err := client.GetProjectVariables(cmd.Context(), &adminv1.GetProjectVariablesRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             projectName,
 			})
 			if err != nil {
 				return err
 			}
 
-			vals := variable.Serialize(resp.Variables)
-			for _, v := range vals {
-				fmt.Println(v)
+			res, err := godotenv.Marshal(resp.Variables)
+			if err != nil {
+				return err
 			}
+
+			ch.Println(res)
 
 			return nil
 		},
 	}
-	showCmd.Flags().StringVar(&projectName, "project", "", "")
-	_ = showCmd.MarkFlagRequired("project")
+
+	showCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
+	showCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+
 	return showCmd
 }

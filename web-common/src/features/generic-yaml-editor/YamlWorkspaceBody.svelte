@@ -1,31 +1,43 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
-  import { useQueryClient } from "@tanstack/svelte-query";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { parse } from "yaml";
   import YAMLEditor from "../../components/editor/YAMLEditor.svelte";
-  import { createRuntimeServiceGetFile } from "../../runtime-client";
+  import {
+    createRuntimeServiceGetFile,
+    runtimeServicePutFile,
+  } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { saveFile } from "./actions";
   import ErrorPane from "./ErrorPane.svelte";
 
-  export let fileName: string;
+  export let filePath: string;
 
   let editor: YAMLEditor;
   let view: EditorView;
   let error: Error | undefined;
 
-  const queryClient = useQueryClient();
-
-  $: file = createRuntimeServiceGetFile($runtime.instanceId, fileName, {
-    query: {
-      // this will ensure that any changes done outside our app is pulled in.
-      refetchOnWindowFocus: true,
+  $: file = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    { path: filePath },
+    {
+      query: {
+        // this will ensure that any changes done outside our app is pulled in.
+        refetchOnWindowFocus: true,
+      },
     },
-  });
+  );
+
+  let content = "";
+  $: content = $file?.data?.blob ?? content;
+
+  const debouncedUpdate = debounce(handleUpdate, 300);
 
   async function handleUpdate(e: CustomEvent<{ content: string }>) {
     const blob = e.detail.content;
-    await saveFile(queryClient, fileName, blob);
+    await runtimeServicePutFile($runtime.instanceId, {
+      path: filePath,
+      blob: blob,
+    });
     error = validateYAMLAndReturnError(blob);
   }
 
@@ -49,15 +61,17 @@
 >
   <div class="grow bg-white overflow-y-auto">
     <div
-      class="border-white w-full overflow-y-auto"
+      class="border-white w-full overflow-y-auto h-full"
       class:border-b-hidden={error}
       class:border-red-500={error}
     >
       <YAMLEditor
         bind:this={editor}
         bind:view
-        content={$file?.data?.blob || ""}
-        on:update={handleUpdate}
+        {content}
+        key={filePath}
+        on:save={debouncedUpdate}
+        whenFocused
       />
     </div>
   </div>

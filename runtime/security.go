@@ -36,10 +36,11 @@ var openAccess = &ResolvedMetricsViewSecurity{
 }
 
 type ResolvedMetricsViewSecurity struct {
-	Access    bool
-	RowFilter string
-	Include   []string
-	Exclude   []string
+	Access     bool
+	RowFilter  string
+	Include    []string
+	Exclude    []string
+	ExcludeAll bool
 }
 
 func computeCacheKey(instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time, attributes map[string]any) (string, error) {
@@ -80,7 +81,7 @@ func computeCacheKey(instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdat
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (p *securityEngine) resolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time, attributes map[string]any) (*ResolvedMetricsViewSecurity, error) {
 	if mv.Security == nil {
 		return nil, nil
 	}
@@ -105,7 +106,10 @@ func (p *securityEngine) resolveMetricsViewSecurity(attributes map[string]any, i
 	}
 
 	resolved := &ResolvedMetricsViewSecurity{}
-	templateData := rillv1.TemplateData{User: attributes}
+	templateData := rillv1.TemplateData{
+		Environment: environment,
+		User:        attributes,
+	}
 
 	if mv.Security.Access != "" {
 		access, err := rillv1.ResolveTemplate(mv.Security.Access, templateData)
@@ -146,6 +150,11 @@ func (p *securityEngine) resolveMetricsViewSecurity(attributes map[string]any, i
 				resolved.Include = append(resolved.Include, name)
 			}
 		}
+	}
+
+	// this is to handle the case where include filter was present but none of them evaluted to true
+	if len(mv.Security.Include) > 0 && len(resolved.Include) == 0 {
+		resolved.ExcludeAll = true
 	}
 
 	for _, exc := range mv.Security.Exclude {

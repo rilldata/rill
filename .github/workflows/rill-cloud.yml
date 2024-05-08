@@ -2,11 +2,13 @@
 # Each merge to main branch is build with github sha tag and published to Rill Cloud.
 name: Deploy to Rill Cloud
 on:
+  create:
   push:
     tags:
       - "**"
     branches:
-      - main
+      - "main"
+      - "release**"
   workflow_dispatch:
 
 env:
@@ -14,24 +16,26 @@ env:
 
 jobs:
   release:
+    # https://github.com/orgs/community/discussions/54860
+    if: github.event_name == 'workflow_dispatch' || github.event_name == 'push' || ( github.event_name == 'create' && startsWith(github.ref_name, 'release') )
     name: Deploy to Rill Cloud
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Set up Go
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v4
         with:
-          go-version: 1.21
+          go-version: 1.22
 
       - name: Authenticate GCloud
-        uses: google-github-actions/auth@v1
+        uses: google-github-actions/auth@v2
         with:
           credentials_json: "${{ secrets.RILL_BINARY_SA }}"
 
       - name: Set up GCloud SDK
-        uses: google-github-actions/setup-gcloud@v1
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Build & Publish Rill docker image
         run: |-
@@ -40,7 +44,11 @@ jobs:
             git fetch --all --tags;
           fi
 
-          go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`)-headless -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+          if [ ${RELEASE} == "true" ]; then
+            go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+          else
+            go build -o rill -mod=readonly -ldflags="-s -w -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
+          fi
 
           gcloud auth configure-docker
 

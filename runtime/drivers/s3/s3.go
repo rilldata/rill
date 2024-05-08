@@ -26,47 +26,59 @@ import (
 )
 
 var spec = drivers.Spec{
-	DisplayName:        "Amazon S3",
-	Description:        "Connect to AWS S3 Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/s3",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Amazon S3",
+	Description: "Connect to AWS S3 Storage.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/s3",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "aws_access_key_id",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "S3 URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "s3://bucket-name/path/to/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "region",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "AWS region",
 			Description: "AWS Region for the bucket.",
 			Placeholder: "us-east-1",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 			Hint:        "Rill will use the default region in your local AWS config, unless set here.",
 		},
 		{
+			Key:         "endpoint",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Endpoint URL",
+			Description: "Override S3 Endpoint URL",
+			Placeholder: "https://my.s3.server.com",
+			Required:    false,
+			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.",
+		},
+		{
 			Key:         "aws.credentials",
+			Type:        drivers.InformationalPropertyType,
 			DisplayName: "AWS credentials",
 			Description: "AWS credentials inferred from your local environment.",
-			Type:        drivers.InformationalPropertyType,
 			Hint:        "Set your local credentials: <code>aws configure</code> Click to learn more.",
-			Href:        "https://docs.rilldata.com/develop/import-data#configure-credentials-for-s3",
+			DocsURL:     "https://docs.rilldata.com/reference/connectors/s3#local-credentials",
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "aws_access_key_id",
-			Secret: true,
-		},
-		{
-			Key:    "aws_secret_access_key",
-			Secret: true,
-		},
-	},
+	ImplementsObjectStore: true,
 }
 
 const defaultPageSize = 20
@@ -85,16 +97,17 @@ type configProperties struct {
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	RetainFiles     bool   `mapstructure:"retain_files"`
 }
 
 // Open implements drivers.Driver
-func (d driver) Open(cfgMap map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("s3 driver can't be shared")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("s3 driver can't be shared")
 	}
 
 	cfg := &configProperties{}
-	err := mapstructure.Decode(cfgMap, cfg)
+	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -104,11 +117,6 @@ func (d driver) Open(cfgMap map[string]any, shared bool, client activity.Client,
 		logger: logger,
 	}
 	return conn, nil
-}
-
-// Drop implements drivers.Driver
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -121,12 +129,11 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
-	if err != nil {
-		return false, err
+	conn := &Connection{
+		config: &configProperties{},
+		logger: logger,
 	}
 
-	conn := c.(*Connection)
 	bucketObj, err := conn.openBucket(ctx, conf, conf.url.Host, credentials.AnonymousCredentials)
 	if err != nil {
 		return false, fmt.Errorf("failed to open bucket %q, %w", conf.url.Host, err)
@@ -185,6 +192,11 @@ func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
+// AsAI implements drivers.Handle.
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+	return nil, false
+}
+
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
@@ -218,6 +230,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 type sourceProperties struct {
@@ -312,6 +329,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		ExtractPolicy:         conf.extractPolicy,
 		BatchSizeBytes:        int64(batchSize.Bytes()),
 		KeepFilesUntilClose:   conf.BatchSize == "-1",
+		RetainFiles:           c.config.RetainFiles,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
@@ -326,7 +344,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, src map[string]any) (dri
 		// r2 returns StatusBadRequest in all cases above
 		// we try again with anonymous credentials in case bucket is public
 		if (failureErr.StatusCode() == http.StatusForbidden || failureErr.StatusCode() == http.StatusBadRequest) && creds != credentials.AnonymousCredentials {
-			c.logger.Info("s3 list objects failed, re-trying with anonymous credential", zap.Error(err), observability.ZapCtx(ctx))
+			c.logger.Debug("s3 list objects failed, re-trying with anonymous credential", zap.Error(err), observability.ZapCtx(ctx))
 			creds = credentials.AnonymousCredentials
 			bucketObj, bucketErr := c.openBucket(ctx, conf, conf.url.Host, creds)
 			if bucketErr != nil {
@@ -356,7 +374,7 @@ func (c *Connection) openBucket(ctx context.Context, conf *sourceProperties, buc
 
 func (c *Connection) getAwsSessionConfig(ctx context.Context, conf *sourceProperties, bucket string, creds *credentials.Credentials) (*session.Session, error) {
 	// If S3Endpoint is set, we assume we're targeting an S3 compatible API (but not AWS)
-	if len(conf.S3Endpoint) > 0 {
+	if conf.S3Endpoint != "" {
 		region := conf.AWSRegion
 		if region == "" {
 			// Set the default region for bwd compatibility reasons

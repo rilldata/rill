@@ -8,9 +8,9 @@ import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
   adminServiceGetProject,
-  getAdminServiceGetProjectQueryKey,
   type V1GetProjectResponse,
 } from "../../client";
+import { getProjectRuntimeQueryKey } from "../projects/selectors";
 import { viewAsUserStore } from "./viewAsUserStore";
 
 /**
@@ -26,7 +26,7 @@ export function clearViewedAsUserAfterNavigate(queryClient: QueryClient) {
       clearViewedAsUserWithinProject(
         queryClient,
         nav.to.params.organization,
-        nav.to.params.project
+        nav.to.params.project,
       );
     }
 
@@ -40,19 +40,22 @@ export function clearViewedAsUserAfterNavigate(queryClient: QueryClient) {
 export async function clearViewedAsUserWithinProject(
   queryClient: QueryClient,
   organization: string,
-  project: string
+  project: string,
 ) {
   viewAsUserStore.set(null);
 
   // Get the admin's original JWT from the `GetProject` call
   const projResp = await queryClient.fetchQuery<V1GetProjectResponse>({
-    queryKey: getAdminServiceGetProjectQueryKey(organization, project),
+    queryKey: getProjectRuntimeQueryKey(organization, project),
     queryFn: () => adminServiceGetProject(organization, project),
   });
   const jwt = projResp.jwt;
 
   runtime.update((runtimeState) => {
-    runtimeState.jwt = jwt;
+    runtimeState.jwt = {
+      token: jwt,
+      receivedAt: Date.now(),
+    };
     return runtimeState;
   });
 

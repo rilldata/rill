@@ -2,7 +2,7 @@
   import type { V1ReportExecution } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender } from "@tanstack/svelte-table";
-  import type { ColumnDef } from "@tanstack/table-core/src/types";
+  import type { ColumnDef } from "@tanstack/svelte-table";
   import Table from "../../../components/table/Table.svelte";
   import { useReport } from "../selectors";
   import NoRunsYet from "./NoRunsYet.svelte";
@@ -26,6 +26,7 @@
           reportTime: info.row.original.reportTime,
           timeZone:
             $reportQuery.data.resource.report.spec.refreshSchedule.timeZone,
+          adhoc: info.row.original.adhoc,
           errorMessage: info.row.original.errorMessage,
         }),
     },
@@ -33,9 +34,7 @@
 </script>
 
 <div class="flex flex-col gap-y-4 w-full">
-  <h1 class="text-gray-800 text-base font-medium leading-none">
-    Recent history
-  </h1>
+  <h1 class="text-gray-600 text-lg font-bold">Recent history</h1>
   {#if $reportQuery.error}
     <div class="text-red-500">
       {$reportQuery.error.message}

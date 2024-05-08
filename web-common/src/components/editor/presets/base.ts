@@ -9,7 +9,6 @@ import {
   history,
   historyKeymap,
   indentWithTab,
-  insertNewline,
 } from "@codemirror/commands";
 import {
   bracketMatching,
@@ -45,7 +44,6 @@ export const base = () => [
   editorTheme(),
   lineStatus(),
   indentGuide(),
-
   highlightActiveLineGutter(),
   highlightSpecialChars(),
   history(),
@@ -68,21 +66,13 @@ export const base = () => [
     ...lintKeymap,
     indentWithTab,
   ]),
-  Prec.high(
-    keymap.of([
-      {
-        key: "Enter",
-        run: insertNewline,
-      },
-    ])
-  ),
   Prec.highest(
     keymap.of([
       {
         key: "Tab",
         run: acceptCompletion,
       },
-    ])
+    ]),
   ),
   keymap.of([indentWithTab]),
 ];

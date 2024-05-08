@@ -1,31 +1,28 @@
 package org
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func SwitchCmd(cfg *config.Config) *cobra.Command {
+func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 	switchCmd := &cobra.Command{
 		Use:   "switch [<org-name>]",
 		Short: "Switch to other organization",
 		Args:  cobra.MaximumNArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			var defaultOrg string
 			if len(args) == 0 {
-				res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+				res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{})
 				if err != nil {
 					return err
 				}
@@ -35,7 +32,7 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 					return err
 				}
 			} else {
-				_, err = client.GetOrganization(context.Background(), &adminv1.GetOrganizationRequest{
+				_, err = client.GetOrganization(cmd.Context(), &adminv1.GetOrganizationRequest{
 					Name: args[0],
 				})
 				if err != nil {
@@ -48,9 +45,9 @@ func SwitchCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cfg.Org = defaultOrg
+			ch.Org = defaultOrg
 
-			fmt.Printf("Set default organization to %q.\n", defaultOrg)
+			ch.Printf("Set default organization to %q.\n", defaultOrg)
 			return nil
 		},
 	}
@@ -74,5 +71,5 @@ func SwitchSelectFlow(orgs []*adminv1.Organization) (string, error) {
 		return "", err
 	}
 
-	return cmdutil.SelectPrompt("Select default org.", orgNames, org), nil
+	return cmdutil.SelectPrompt("Select default org.", orgNames, org)
 }

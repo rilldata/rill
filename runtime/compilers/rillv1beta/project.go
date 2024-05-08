@@ -29,7 +29,7 @@ func (c *Codec) IsInit(ctx context.Context) bool {
 }
 
 func (c *Codec) InitEmpty(ctx context.Context, title string) error {
-	mockUsersInfo := "# These are example mock users to test your security policies.\n# For more information, see the documentation: https://docs.rilldata.com/develop/security"
+	mockUsersInfo := "# These are example mock users to test your security policies.\n# For more information, see the documentation: https://docs.rilldata.com/manage/security"
 	mockUsers := "mock_users:\n- email: john@yourcompany.com\n- email: jane@partnercompany.com"
 	err := c.Repo.Put(ctx, "rill.yaml", strings.NewReader(fmt.Sprintf("compiler: %s\n\ntitle: %q\n\n%s\n\n%s", Version, title, mockUsersInfo, mockUsers)))
 	if err != nil {
@@ -67,7 +67,7 @@ func (c *Codec) InitEmpty(ctx context.Context, title string) error {
 
 func (c *Codec) DeleteSource(ctx context.Context, name string) (string, error) {
 	p := path.Join("sources", name+".yaml")
-	err := c.Repo.Delete(ctx, p)
+	err := c.Repo.Delete(ctx, p, false)
 	if err != nil {
 		return "", err
 	}

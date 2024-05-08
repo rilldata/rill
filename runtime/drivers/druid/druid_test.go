@@ -104,10 +104,11 @@ func TestDruid(t *testing.T) {
 	brokerURL, err := container.PortEndpoint(ctx, "8082/tcp", "http")
 	require.NoError(t, err)
 
-	avaticaURL, err := url.JoinPath(brokerURL, "/druid/v2/sql/avatica-protobuf/")
+	druidAPIURL, err := url.JoinPath(brokerURL, "/druid/v2/sql")
 	require.NoError(t, err)
 
-	conn, err := driver{}.Open(map[string]any{"dsn": avaticaURL}, false, activity.NewNoopClient(), zap.NewNop())
+	dd := &driver{}
+	conn, err := dd.Open("default", map[string]any{"dsn": druidAPIURL}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -121,7 +122,6 @@ func TestDruid(t *testing.T) {
 	t.Run("time floor", func(t *testing.T) { testTimeFloor(t, olap) })
 
 	require.NoError(t, conn.Close())
-	require.Error(t, conn.(*connection).db.Ping())
 }
 
 func testIngest(t *testing.T, coordinatorURL string) {
@@ -211,10 +211,10 @@ func testSchemaAll(t *testing.T, olap drivers.OLAPStore) {
 
 func testSchemaLookup(t *testing.T, olap drivers.OLAPStore) {
 	ctx := context.Background()
-	table, err := olap.InformationSchema().Lookup(ctx, testTable)
+	table, err := olap.InformationSchema().Lookup(ctx, "", "", testTable)
 	require.NoError(t, err)
 	require.Equal(t, testTable, table.Name)
 
-	_, err = olap.InformationSchema().Lookup(ctx, "foo")
+	_, err = olap.InformationSchema().Lookup(ctx, "", "", "foo")
 	require.Equal(t, drivers.ErrNotFound, err)
 }

@@ -297,11 +297,15 @@ func (m *Instance) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Environment
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
 
 	// no validation rules for AdminConnector
+
+	// no validation rules for AiConnector
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
@@ -433,17 +437,13 @@ func (m *Instance) validate(all bool) error {
 
 	// no validation rules for ProjectVariables
 
+	// no validation rules for FeatureFlags
+
 	// no validation rules for Annotations
 
 	// no validation rules for EmbedCatalog
 
 	// no validation rules for WatchRepo
-
-	// no validation rules for StageChanges
-
-	// no validation rules for ModelDefaultMaterialize
-
-	// no validation rules for ModelMaterializeDelaySeconds
 
 	if len(errors) > 0 {
 		return InstanceMultiError(errors)
@@ -906,6 +906,8 @@ func (m *GetInstanceRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Sensitive
+
 	if len(errors) > 0 {
 		return GetInstanceRequestMultiError(errors)
 	}
@@ -1156,11 +1158,15 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 
 	}
 
+	// no validation rules for Environment
+
 	// no validation rules for OlapConnector
 
 	// no validation rules for RepoConnector
 
 	// no validation rules for AdminConnector
+
+	// no validation rules for AiConnector
 
 	for idx, item := range m.GetConnectors() {
 		_, _ = idx, item
@@ -1203,12 +1209,6 @@ func (m *CreateInstanceRequest) validate(all bool) error {
 	// no validation rules for EmbedCatalog
 
 	// no validation rules for WatchRepo
-
-	// no validation rules for StageChanges
-
-	// no validation rules for ModelDefaultMaterialize
-
-	// no validation rules for ModelMaterializeDelaySeconds
 
 	if len(errors) > 0 {
 		return CreateInstanceRequestMultiError(errors)
@@ -1455,8 +1455,6 @@ func (m *DeleteInstanceRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
-
-	// no validation rules for DropDb
 
 	if len(errors) > 0 {
 		return DeleteInstanceRequestMultiError(errors)
@@ -1713,6 +1711,10 @@ func (m *EditInstanceRequest) validate(all bool) error {
 
 	// no validation rules for Annotations
 
+	if m.Environment != nil {
+		// no validation rules for Environment
+	}
+
 	if m.OlapConnector != nil {
 		// no validation rules for OlapConnector
 	}
@@ -1725,24 +1727,16 @@ func (m *EditInstanceRequest) validate(all bool) error {
 		// no validation rules for AdminConnector
 	}
 
+	if m.AiConnector != nil {
+		// no validation rules for AiConnector
+	}
+
 	if m.EmbedCatalog != nil {
 		// no validation rules for EmbedCatalog
 	}
 
 	if m.WatchRepo != nil {
 		// no validation rules for WatchRepo
-	}
-
-	if m.StageChanges != nil {
-		// no validation rules for StageChanges
-	}
-
-	if m.ModelDefaultMaterialize != nil {
-		// no validation rules for ModelDefaultMaterialize
-	}
-
-	if m.ModelMaterializeDelaySeconds != nil {
-		// no validation rules for ModelMaterializeDelaySeconds
 	}
 
 	if len(errors) > 0 {
@@ -2095,6 +2089,40 @@ func (m *ListFilesResponse) validate(all bool) error {
 
 	var errors []error
 
+	for idx, item := range m.GetFiles() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListFilesResponseValidationError{
+						field:  fmt.Sprintf("Files[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListFilesResponseValidationError{
+						field:  fmt.Sprintf("Files[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListFilesResponseValidationError{
+					field:  fmt.Sprintf("Files[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return ListFilesResponseMultiError(errors)
 	}
@@ -2174,6 +2202,109 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ListFilesResponseValidationError{}
+
+// Validate checks the field values on DirEntry with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *DirEntry) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DirEntry with the rules defined in
+// the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DirEntryMultiError, or nil
+// if none found.
+func (m *DirEntry) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DirEntry) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Path
+
+	// no validation rules for IsDir
+
+	if len(errors) > 0 {
+		return DirEntryMultiError(errors)
+	}
+
+	return nil
+}
+
+// DirEntryMultiError is an error wrapping multiple validation errors returned
+// by DirEntry.ValidateAll() if the designated constraints aren't met.
+type DirEntryMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DirEntryMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DirEntryMultiError) AllErrors() []error { return m }
+
+// DirEntryValidationError is the validation error returned by
+// DirEntry.Validate if the designated constraints aren't met.
+type DirEntryValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DirEntryValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DirEntryValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DirEntryValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DirEntryValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DirEntryValidationError) ErrorName() string { return "DirEntryValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DirEntryValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDirEntry.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DirEntryValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DirEntryValidationError{}
 
 // Validate checks the field values on WatchFilesRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -2317,6 +2448,8 @@ func (m *WatchFilesResponse) validate(all bool) error {
 	// no validation rules for Event
 
 	// no validation rules for Path
+
+	// no validation rules for IsDir
 
 	if len(errors) > 0 {
 		return WatchFilesResponseMultiError(errors)
@@ -2885,6 +3018,234 @@ var _ interface {
 	ErrorName() string
 } = PutFileResponseValidationError{}
 
+// Validate checks the field values on CreateDirectoryRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateDirectoryRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateDirectoryRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateDirectoryRequestMultiError, or nil if none found.
+func (m *CreateDirectoryRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateDirectoryRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_CreateDirectoryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := CreateDirectoryRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetPath()) < 1 {
+		err := CreateDirectoryRequestValidationError{
+			field:  "Path",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return CreateDirectoryRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateDirectoryRequestMultiError is an error wrapping multiple validation
+// errors returned by CreateDirectoryRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CreateDirectoryRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateDirectoryRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateDirectoryRequestMultiError) AllErrors() []error { return m }
+
+// CreateDirectoryRequestValidationError is the validation error returned by
+// CreateDirectoryRequest.Validate if the designated constraints aren't met.
+type CreateDirectoryRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateDirectoryRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateDirectoryRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateDirectoryRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateDirectoryRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateDirectoryRequestValidationError) ErrorName() string {
+	return "CreateDirectoryRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateDirectoryRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateDirectoryRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateDirectoryRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateDirectoryRequestValidationError{}
+
+var _CreateDirectoryRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on CreateDirectoryResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CreateDirectoryResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CreateDirectoryResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CreateDirectoryResponseMultiError, or nil if none found.
+func (m *CreateDirectoryResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CreateDirectoryResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return CreateDirectoryResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CreateDirectoryResponseMultiError is an error wrapping multiple validation
+// errors returned by CreateDirectoryResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CreateDirectoryResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CreateDirectoryResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CreateDirectoryResponseMultiError) AllErrors() []error { return m }
+
+// CreateDirectoryResponseValidationError is the validation error returned by
+// CreateDirectoryResponse.Validate if the designated constraints aren't met.
+type CreateDirectoryResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CreateDirectoryResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CreateDirectoryResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CreateDirectoryResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CreateDirectoryResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CreateDirectoryResponseValidationError) ErrorName() string {
+	return "CreateDirectoryResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CreateDirectoryResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCreateDirectoryResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CreateDirectoryResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CreateDirectoryResponseValidationError{}
+
 // Validate checks the field values on DeleteFileRequest with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
@@ -2928,6 +3289,8 @@ func (m *DeleteFileRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for Force
 
 	if len(errors) > 0 {
 		return DeleteFileRequestMultiError(errors)
@@ -4145,6 +4508,776 @@ var _ interface {
 	ErrorName() string
 } = UnpackEmptyResponseValidationError{}
 
+// Validate checks the field values on GenerateMetricsViewFileRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateMetricsViewFileRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateMetricsViewFileRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GenerateMetricsViewFileRequestMultiError, or nil if none found.
+func (m *GenerateMetricsViewFileRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateMetricsViewFileRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateMetricsViewFileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateMetricsViewFileRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Connector
+
+	// no validation rules for Database
+
+	// no validation rules for DatabaseSchema
+
+	// no validation rules for Table
+
+	// no validation rules for Path
+
+	// no validation rules for UseAi
+
+	if len(errors) > 0 {
+		return GenerateMetricsViewFileRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateMetricsViewFileRequestMultiError is an error wrapping multiple
+// validation errors returned by GenerateMetricsViewFileRequest.ValidateAll()
+// if the designated constraints aren't met.
+type GenerateMetricsViewFileRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateMetricsViewFileRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateMetricsViewFileRequestMultiError) AllErrors() []error { return m }
+
+// GenerateMetricsViewFileRequestValidationError is the validation error
+// returned by GenerateMetricsViewFileRequest.Validate if the designated
+// constraints aren't met.
+type GenerateMetricsViewFileRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateMetricsViewFileRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateMetricsViewFileRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateMetricsViewFileRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateMetricsViewFileRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateMetricsViewFileRequestValidationError) ErrorName() string {
+	return "GenerateMetricsViewFileRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateMetricsViewFileRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateMetricsViewFileRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateMetricsViewFileRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateMetricsViewFileRequestValidationError{}
+
+var _GenerateMetricsViewFileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GenerateMetricsViewFileResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateMetricsViewFileResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateMetricsViewFileResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// GenerateMetricsViewFileResponseMultiError, or nil if none found.
+func (m *GenerateMetricsViewFileResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateMetricsViewFileResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for AiSucceeded
+
+	if len(errors) > 0 {
+		return GenerateMetricsViewFileResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateMetricsViewFileResponseMultiError is an error wrapping multiple
+// validation errors returned by GenerateMetricsViewFileResponse.ValidateAll()
+// if the designated constraints aren't met.
+type GenerateMetricsViewFileResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateMetricsViewFileResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateMetricsViewFileResponseMultiError) AllErrors() []error { return m }
+
+// GenerateMetricsViewFileResponseValidationError is the validation error
+// returned by GenerateMetricsViewFileResponse.Validate if the designated
+// constraints aren't met.
+type GenerateMetricsViewFileResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateMetricsViewFileResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateMetricsViewFileResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateMetricsViewFileResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateMetricsViewFileResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateMetricsViewFileResponseValidationError) ErrorName() string {
+	return "GenerateMetricsViewFileResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateMetricsViewFileResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateMetricsViewFileResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateMetricsViewFileResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateMetricsViewFileResponseValidationError{}
+
+// Validate checks the field values on GenerateResolverRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateResolverRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateResolverRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateResolverRequestMultiError, or nil if none found.
+func (m *GenerateResolverRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateResolverRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateResolverRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateResolverRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Prompt
+
+	// no validation rules for Connector
+
+	// no validation rules for Table
+
+	// no validation rules for MetricsView
+
+	if len(errors) > 0 {
+		return GenerateResolverRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateResolverRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateResolverRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateResolverRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateResolverRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateResolverRequestMultiError) AllErrors() []error { return m }
+
+// GenerateResolverRequestValidationError is the validation error returned by
+// GenerateResolverRequest.Validate if the designated constraints aren't met.
+type GenerateResolverRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateResolverRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateResolverRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateResolverRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateResolverRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateResolverRequestValidationError) ErrorName() string {
+	return "GenerateResolverRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateResolverRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateResolverRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateResolverRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateResolverRequestValidationError{}
+
+var _GenerateResolverRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GenerateResolverResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateResolverResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateResolverResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateResolverResponseMultiError, or nil if none found.
+func (m *GenerateResolverResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateResolverResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Resolver
+
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GenerateResolverResponseValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GenerateResolverResponseValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GenerateResolverResponseValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GenerateResolverResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateResolverResponseMultiError is an error wrapping multiple validation
+// errors returned by GenerateResolverResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateResolverResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateResolverResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateResolverResponseMultiError) AllErrors() []error { return m }
+
+// GenerateResolverResponseValidationError is the validation error returned by
+// GenerateResolverResponse.Validate if the designated constraints aren't met.
+type GenerateResolverResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateResolverResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateResolverResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateResolverResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateResolverResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateResolverResponseValidationError) ErrorName() string {
+	return "GenerateResolverResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateResolverResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateResolverResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateResolverResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateResolverResponseValidationError{}
+
+// Validate checks the field values on GenerateRendererRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateRendererRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateRendererRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateRendererRequestMultiError, or nil if none found.
+func (m *GenerateRendererRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateRendererRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if !_GenerateRendererRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
+		err := GenerateRendererRequestValidationError{
+			field:  "InstanceId",
+			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Prompt
+
+	// no validation rules for Resolver
+
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GenerateRendererRequestValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GenerateRendererRequestValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GenerateRendererRequestValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GenerateRendererRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateRendererRequestMultiError is an error wrapping multiple validation
+// errors returned by GenerateRendererRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateRendererRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateRendererRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateRendererRequestMultiError) AllErrors() []error { return m }
+
+// GenerateRendererRequestValidationError is the validation error returned by
+// GenerateRendererRequest.Validate if the designated constraints aren't met.
+type GenerateRendererRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateRendererRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateRendererRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateRendererRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateRendererRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateRendererRequestValidationError) ErrorName() string {
+	return "GenerateRendererRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateRendererRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateRendererRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateRendererRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateRendererRequestValidationError{}
+
+var _GenerateRendererRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
+
+// Validate checks the field values on GenerateRendererResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *GenerateRendererResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on GenerateRendererResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// GenerateRendererResponseMultiError, or nil if none found.
+func (m *GenerateRendererResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GenerateRendererResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Renderer
+
+	if all {
+		switch v := interface{}(m.GetRendererProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, GenerateRendererResponseValidationError{
+					field:  "RendererProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, GenerateRendererResponseValidationError{
+					field:  "RendererProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetRendererProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return GenerateRendererResponseValidationError{
+				field:  "RendererProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return GenerateRendererResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GenerateRendererResponseMultiError is an error wrapping multiple validation
+// errors returned by GenerateRendererResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GenerateRendererResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GenerateRendererResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GenerateRendererResponseMultiError) AllErrors() []error { return m }
+
+// GenerateRendererResponseValidationError is the validation error returned by
+// GenerateRendererResponse.Validate if the designated constraints aren't met.
+type GenerateRendererResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GenerateRendererResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GenerateRendererResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GenerateRendererResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GenerateRendererResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GenerateRendererResponseValidationError) ErrorName() string {
+	return "GenerateRendererResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GenerateRendererResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGenerateRendererResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GenerateRendererResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GenerateRendererResponseValidationError{}
+
 // Validate checks the field values on Log with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
 // encountered is returned, or nil if there are no violations.
@@ -4314,6 +5447,8 @@ func (m *GetLogsRequest) validate(all bool) error {
 		}
 		errors = append(errors, err)
 	}
+
+	// no validation rules for Level
 
 	if len(errors) > 0 {
 		return GetLogsRequestMultiError(errors)
@@ -4564,6 +5699,8 @@ func (m *WatchLogsRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for Level
+
 	if len(errors) > 0 {
 		return WatchLogsRequestMultiError(errors)
 	}
@@ -4798,6 +5935,8 @@ func (m *ListResourcesRequest) validate(all bool) error {
 	// no validation rules for InstanceId
 
 	// no validation rules for Kind
+
+	// no validation rules for Path
 
 	if len(errors) > 0 {
 		return ListResourcesRequestMultiError(errors)
@@ -5042,6 +6181,8 @@ func (m *WatchResourcesRequest) validate(all bool) error {
 	// no validation rules for Kind
 
 	// no validation rules for Replay
+
+	// no validation rules for Level
 
 	if len(errors) > 0 {
 		return WatchResourcesRequestMultiError(errors)
@@ -5842,2805 +6983,22 @@ var _ interface {
 	ErrorName() string
 } = CreateTriggerResponseValidationError{}
 
-// Validate checks the field values on CatalogEntry with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *CatalogEntry) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on CatalogEntry with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in CatalogEntryMultiError, or
-// nil if none found.
-func (m *CatalogEntry) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *CatalogEntry) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Name
-
-	// no validation rules for Path
-
-	// no validation rules for Embedded
-
-	if all {
-		switch v := interface{}(m.GetCreatedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CatalogEntryValidationError{
-					field:  "CreatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CatalogEntryValidationError{
-					field:  "CreatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CatalogEntryValidationError{
-				field:  "CreatedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetUpdatedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CatalogEntryValidationError{
-					field:  "UpdatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CatalogEntryValidationError{
-					field:  "UpdatedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetUpdatedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CatalogEntryValidationError{
-				field:  "UpdatedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetRefreshedOn()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, CatalogEntryValidationError{
-					field:  "RefreshedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, CatalogEntryValidationError{
-					field:  "RefreshedOn",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetRefreshedOn()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return CatalogEntryValidationError{
-				field:  "RefreshedOn",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	switch v := m.Object.(type) {
-	case *CatalogEntry_Table:
-		if v == nil {
-			err := CatalogEntryValidationError{
-				field:  "Object",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetTable()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, CatalogEntryValidationError{
-						field:  "Table",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, CatalogEntryValidationError{
-						field:  "Table",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetTable()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return CatalogEntryValidationError{
-					field:  "Table",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *CatalogEntry_Source:
-		if v == nil {
-			err := CatalogEntryValidationError{
-				field:  "Object",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetSource()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, CatalogEntryValidationError{
-						field:  "Source",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, CatalogEntryValidationError{
-						field:  "Source",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetSource()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return CatalogEntryValidationError{
-					field:  "Source",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *CatalogEntry_Model:
-		if v == nil {
-			err := CatalogEntryValidationError{
-				field:  "Object",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetModel()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, CatalogEntryValidationError{
-						field:  "Model",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, CatalogEntryValidationError{
-						field:  "Model",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetModel()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return CatalogEntryValidationError{
-					field:  "Model",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	case *CatalogEntry_MetricsView:
-		if v == nil {
-			err := CatalogEntryValidationError{
-				field:  "Object",
-				reason: "oneof value cannot be a typed-nil",
-			}
-			if !all {
-				return err
-			}
-			errors = append(errors, err)
-		}
-
-		if all {
-			switch v := interface{}(m.GetMetricsView()).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, CatalogEntryValidationError{
-						field:  "MetricsView",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, CatalogEntryValidationError{
-						field:  "MetricsView",
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(m.GetMetricsView()).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return CatalogEntryValidationError{
-					field:  "MetricsView",
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	default:
-		_ = v // ensures v is used
-	}
-
-	if len(errors) > 0 {
-		return CatalogEntryMultiError(errors)
-	}
-
-	return nil
-}
-
-// CatalogEntryMultiError is an error wrapping multiple validation errors
-// returned by CatalogEntry.ValidateAll() if the designated constraints aren't met.
-type CatalogEntryMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m CatalogEntryMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m CatalogEntryMultiError) AllErrors() []error { return m }
-
-// CatalogEntryValidationError is the validation error returned by
-// CatalogEntry.Validate if the designated constraints aren't met.
-type CatalogEntryValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e CatalogEntryValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e CatalogEntryValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e CatalogEntryValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e CatalogEntryValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e CatalogEntryValidationError) ErrorName() string { return "CatalogEntryValidationError" }
-
-// Error satisfies the builtin error interface
-func (e CatalogEntryValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sCatalogEntry.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = CatalogEntryValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = CatalogEntryValidationError{}
-
-// Validate checks the field values on ListCatalogEntriesRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListCatalogEntriesRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ListCatalogEntriesRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ListCatalogEntriesRequestMultiError, or nil if none found.
-func (m *ListCatalogEntriesRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ListCatalogEntriesRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_ListCatalogEntriesRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := ListCatalogEntriesRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if _, ok := ObjectType_name[int32(m.GetType())]; !ok {
-		err := ListCatalogEntriesRequestValidationError{
-			field:  "Type",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return ListCatalogEntriesRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// ListCatalogEntriesRequestMultiError is an error wrapping multiple validation
-// errors returned by ListCatalogEntriesRequest.ValidateAll() if the
-// designated constraints aren't met.
-type ListCatalogEntriesRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ListCatalogEntriesRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ListCatalogEntriesRequestMultiError) AllErrors() []error { return m }
-
-// ListCatalogEntriesRequestValidationError is the validation error returned by
-// ListCatalogEntriesRequest.Validate if the designated constraints aren't met.
-type ListCatalogEntriesRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ListCatalogEntriesRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ListCatalogEntriesRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ListCatalogEntriesRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ListCatalogEntriesRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ListCatalogEntriesRequestValidationError) ErrorName() string {
-	return "ListCatalogEntriesRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ListCatalogEntriesRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sListCatalogEntriesRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ListCatalogEntriesRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ListCatalogEntriesRequestValidationError{}
-
-var _ListCatalogEntriesRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on ListCatalogEntriesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListCatalogEntriesResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ListCatalogEntriesResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ListCatalogEntriesResponseMultiError, or nil if none found.
-func (m *ListCatalogEntriesResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ListCatalogEntriesResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetEntries() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListCatalogEntriesResponseValidationError{
-						field:  fmt.Sprintf("Entries[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ListCatalogEntriesResponseValidationError{
-						field:  fmt.Sprintf("Entries[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ListCatalogEntriesResponseValidationError{
-					field:  fmt.Sprintf("Entries[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return ListCatalogEntriesResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ListCatalogEntriesResponseMultiError is an error wrapping multiple
-// validation errors returned by ListCatalogEntriesResponse.ValidateAll() if
-// the designated constraints aren't met.
-type ListCatalogEntriesResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ListCatalogEntriesResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ListCatalogEntriesResponseMultiError) AllErrors() []error { return m }
-
-// ListCatalogEntriesResponseValidationError is the validation error returned
-// by ListCatalogEntriesResponse.Validate if the designated constraints aren't met.
-type ListCatalogEntriesResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ListCatalogEntriesResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ListCatalogEntriesResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ListCatalogEntriesResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ListCatalogEntriesResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ListCatalogEntriesResponseValidationError) ErrorName() string {
-	return "ListCatalogEntriesResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ListCatalogEntriesResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sListCatalogEntriesResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ListCatalogEntriesResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ListCatalogEntriesResponseValidationError{}
-
-// Validate checks the field values on GetCatalogEntryRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetCatalogEntryRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetCatalogEntryRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetCatalogEntryRequestMultiError, or nil if none found.
-func (m *GetCatalogEntryRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetCatalogEntryRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_GetCatalogEntryRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := GetCatalogEntryRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Name
-
-	if len(errors) > 0 {
-		return GetCatalogEntryRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// GetCatalogEntryRequestMultiError is an error wrapping multiple validation
-// errors returned by GetCatalogEntryRequest.ValidateAll() if the designated
-// constraints aren't met.
-type GetCatalogEntryRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetCatalogEntryRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetCatalogEntryRequestMultiError) AllErrors() []error { return m }
-
-// GetCatalogEntryRequestValidationError is the validation error returned by
-// GetCatalogEntryRequest.Validate if the designated constraints aren't met.
-type GetCatalogEntryRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GetCatalogEntryRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GetCatalogEntryRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GetCatalogEntryRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GetCatalogEntryRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GetCatalogEntryRequestValidationError) ErrorName() string {
-	return "GetCatalogEntryRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GetCatalogEntryRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGetCatalogEntryRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GetCatalogEntryRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GetCatalogEntryRequestValidationError{}
-
-var _GetCatalogEntryRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on GetCatalogEntryResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *GetCatalogEntryResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on GetCatalogEntryResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// GetCatalogEntryResponseMultiError, or nil if none found.
-func (m *GetCatalogEntryResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *GetCatalogEntryResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if all {
-		switch v := interface{}(m.GetEntry()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, GetCatalogEntryResponseValidationError{
-					field:  "Entry",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, GetCatalogEntryResponseValidationError{
-					field:  "Entry",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetEntry()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return GetCatalogEntryResponseValidationError{
-				field:  "Entry",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return GetCatalogEntryResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// GetCatalogEntryResponseMultiError is an error wrapping multiple validation
-// errors returned by GetCatalogEntryResponse.ValidateAll() if the designated
-// constraints aren't met.
-type GetCatalogEntryResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m GetCatalogEntryResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m GetCatalogEntryResponseMultiError) AllErrors() []error { return m }
-
-// GetCatalogEntryResponseValidationError is the validation error returned by
-// GetCatalogEntryResponse.Validate if the designated constraints aren't met.
-type GetCatalogEntryResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e GetCatalogEntryResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e GetCatalogEntryResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e GetCatalogEntryResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e GetCatalogEntryResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e GetCatalogEntryResponseValidationError) ErrorName() string {
-	return "GetCatalogEntryResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e GetCatalogEntryResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sGetCatalogEntryResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = GetCatalogEntryResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = GetCatalogEntryResponseValidationError{}
-
-// Validate checks the field values on TriggerRefreshRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *TriggerRefreshRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on TriggerRefreshRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// TriggerRefreshRequestMultiError, or nil if none found.
-func (m *TriggerRefreshRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *TriggerRefreshRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_TriggerRefreshRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := TriggerRefreshRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Name
-
-	if len(errors) > 0 {
-		return TriggerRefreshRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// TriggerRefreshRequestMultiError is an error wrapping multiple validation
-// errors returned by TriggerRefreshRequest.ValidateAll() if the designated
-// constraints aren't met.
-type TriggerRefreshRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m TriggerRefreshRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m TriggerRefreshRequestMultiError) AllErrors() []error { return m }
-
-// TriggerRefreshRequestValidationError is the validation error returned by
-// TriggerRefreshRequest.Validate if the designated constraints aren't met.
-type TriggerRefreshRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e TriggerRefreshRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e TriggerRefreshRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e TriggerRefreshRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e TriggerRefreshRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e TriggerRefreshRequestValidationError) ErrorName() string {
-	return "TriggerRefreshRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e TriggerRefreshRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sTriggerRefreshRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = TriggerRefreshRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = TriggerRefreshRequestValidationError{}
-
-var _TriggerRefreshRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on TriggerRefreshResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *TriggerRefreshResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on TriggerRefreshResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// TriggerRefreshResponseMultiError, or nil if none found.
-func (m *TriggerRefreshResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *TriggerRefreshResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if len(errors) > 0 {
-		return TriggerRefreshResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// TriggerRefreshResponseMultiError is an error wrapping multiple validation
-// errors returned by TriggerRefreshResponse.ValidateAll() if the designated
-// constraints aren't met.
-type TriggerRefreshResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m TriggerRefreshResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m TriggerRefreshResponseMultiError) AllErrors() []error { return m }
-
-// TriggerRefreshResponseValidationError is the validation error returned by
-// TriggerRefreshResponse.Validate if the designated constraints aren't met.
-type TriggerRefreshResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e TriggerRefreshResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e TriggerRefreshResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e TriggerRefreshResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e TriggerRefreshResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e TriggerRefreshResponseValidationError) ErrorName() string {
-	return "TriggerRefreshResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e TriggerRefreshResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sTriggerRefreshResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = TriggerRefreshResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = TriggerRefreshResponseValidationError{}
-
-// Validate checks the field values on TriggerSyncRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *TriggerSyncRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on TriggerSyncRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// TriggerSyncRequestMultiError, or nil if none found.
-func (m *TriggerSyncRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *TriggerSyncRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_TriggerSyncRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := TriggerSyncRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	if len(errors) > 0 {
-		return TriggerSyncRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// TriggerSyncRequestMultiError is an error wrapping multiple validation errors
-// returned by TriggerSyncRequest.ValidateAll() if the designated constraints
-// aren't met.
-type TriggerSyncRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m TriggerSyncRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m TriggerSyncRequestMultiError) AllErrors() []error { return m }
-
-// TriggerSyncRequestValidationError is the validation error returned by
-// TriggerSyncRequest.Validate if the designated constraints aren't met.
-type TriggerSyncRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e TriggerSyncRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e TriggerSyncRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e TriggerSyncRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e TriggerSyncRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e TriggerSyncRequestValidationError) ErrorName() string {
-	return "TriggerSyncRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e TriggerSyncRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sTriggerSyncRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = TriggerSyncRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = TriggerSyncRequestValidationError{}
-
-var _TriggerSyncRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on TriggerSyncResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *TriggerSyncResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on TriggerSyncResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// TriggerSyncResponseMultiError, or nil if none found.
-func (m *TriggerSyncResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *TriggerSyncResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for ObjectsCount
-
-	// no validation rules for ObjectsAddedCount
-
-	// no validation rules for ObjectsUpdatedCount
-
-	// no validation rules for ObjectsRemovedCount
-
-	if len(errors) > 0 {
-		return TriggerSyncResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// TriggerSyncResponseMultiError is an error wrapping multiple validation
-// errors returned by TriggerSyncResponse.ValidateAll() if the designated
-// constraints aren't met.
-type TriggerSyncResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m TriggerSyncResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m TriggerSyncResponseMultiError) AllErrors() []error { return m }
-
-// TriggerSyncResponseValidationError is the validation error returned by
-// TriggerSyncResponse.Validate if the designated constraints aren't met.
-type TriggerSyncResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e TriggerSyncResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e TriggerSyncResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e TriggerSyncResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e TriggerSyncResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e TriggerSyncResponseValidationError) ErrorName() string {
-	return "TriggerSyncResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e TriggerSyncResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sTriggerSyncResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = TriggerSyncResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = TriggerSyncResponseValidationError{}
-
-// Validate checks the field values on ReconcileRequest with the rules defined
+// Validate checks the field values on ConnectorDriver with the rules defined
 // in the proto definition for this message. If any rules are violated, the
 // first error encountered is returned, or nil if there are no violations.
-func (m *ReconcileRequest) Validate() error {
+func (m *ConnectorDriver) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ReconcileRequest with the rules
+// ValidateAll checks the field values on ConnectorDriver with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ReconcileRequestMultiError, or nil if none found.
-func (m *ReconcileRequest) ValidateAll() error {
+// ConnectorDriverMultiError, or nil if none found.
+func (m *ConnectorDriver) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ReconcileRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_ReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := ReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Dry
-
-	// no validation rules for Strict
-
-	if len(errors) > 0 {
-		return ReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// ReconcileRequestMultiError is an error wrapping multiple validation errors
-// returned by ReconcileRequest.ValidateAll() if the designated constraints
-// aren't met.
-type ReconcileRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ReconcileRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ReconcileRequestMultiError) AllErrors() []error { return m }
-
-// ReconcileRequestValidationError is the validation error returned by
-// ReconcileRequest.Validate if the designated constraints aren't met.
-type ReconcileRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ReconcileRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ReconcileRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ReconcileRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ReconcileRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ReconcileRequestValidationError) ErrorName() string { return "ReconcileRequestValidationError" }
-
-// Error satisfies the builtin error interface
-func (e ReconcileRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sReconcileRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ReconcileRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ReconcileRequestValidationError{}
-
-var _ReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on ReconcileResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *ReconcileResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ReconcileResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ReconcileResponseMultiError, or nil if none found.
-func (m *ReconcileResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ReconcileResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetErrors() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, ReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return ReconcileResponseValidationError{
-					field:  fmt.Sprintf("Errors[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return ReconcileResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// ReconcileResponseMultiError is an error wrapping multiple validation errors
-// returned by ReconcileResponse.ValidateAll() if the designated constraints
-// aren't met.
-type ReconcileResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ReconcileResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ReconcileResponseMultiError) AllErrors() []error { return m }
-
-// ReconcileResponseValidationError is the validation error returned by
-// ReconcileResponse.Validate if the designated constraints aren't met.
-type ReconcileResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ReconcileResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ReconcileResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ReconcileResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ReconcileResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ReconcileResponseValidationError) ErrorName() string {
-	return "ReconcileResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ReconcileResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sReconcileResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ReconcileResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ReconcileResponseValidationError{}
-
-// Validate checks the field values on ReconcileError with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ReconcileError) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ReconcileError with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ReconcileErrorMultiError,
-// or nil if none found.
-func (m *ReconcileError) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ReconcileError) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if _, ok := ReconcileError_Code_name[int32(m.GetCode())]; !ok {
-		err := ReconcileErrorValidationError{
-			field:  "Code",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Message
-
-	// no validation rules for FilePath
-
-	if all {
-		switch v := interface{}(m.GetStartLocation()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ReconcileErrorValidationError{
-					field:  "StartLocation",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ReconcileErrorValidationError{
-					field:  "StartLocation",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetStartLocation()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ReconcileErrorValidationError{
-				field:  "StartLocation",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if all {
-		switch v := interface{}(m.GetEndLocation()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, ReconcileErrorValidationError{
-					field:  "EndLocation",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, ReconcileErrorValidationError{
-					field:  "EndLocation",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetEndLocation()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return ReconcileErrorValidationError{
-				field:  "EndLocation",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	if len(errors) > 0 {
-		return ReconcileErrorMultiError(errors)
-	}
-
-	return nil
-}
-
-// ReconcileErrorMultiError is an error wrapping multiple validation errors
-// returned by ReconcileError.ValidateAll() if the designated constraints
-// aren't met.
-type ReconcileErrorMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ReconcileErrorMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ReconcileErrorMultiError) AllErrors() []error { return m }
-
-// ReconcileErrorValidationError is the validation error returned by
-// ReconcileError.Validate if the designated constraints aren't met.
-type ReconcileErrorValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ReconcileErrorValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ReconcileErrorValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ReconcileErrorValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ReconcileErrorValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ReconcileErrorValidationError) ErrorName() string { return "ReconcileErrorValidationError" }
-
-// Error satisfies the builtin error interface
-func (e ReconcileErrorValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sReconcileError.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ReconcileErrorValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ReconcileErrorValidationError{}
-
-// Validate checks the field values on PutFileAndReconcileRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *PutFileAndReconcileRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PutFileAndReconcileRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// PutFileAndReconcileRequestMultiError, or nil if none found.
-func (m *PutFileAndReconcileRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PutFileAndReconcileRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_PutFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := PutFileAndReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Path
-
-	// no validation rules for Blob
-
-	// no validation rules for Create
-
-	// no validation rules for CreateOnly
-
-	// no validation rules for Dry
-
-	// no validation rules for Strict
-
-	if len(errors) > 0 {
-		return PutFileAndReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// PutFileAndReconcileRequestMultiError is an error wrapping multiple
-// validation errors returned by PutFileAndReconcileRequest.ValidateAll() if
-// the designated constraints aren't met.
-type PutFileAndReconcileRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m PutFileAndReconcileRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m PutFileAndReconcileRequestMultiError) AllErrors() []error { return m }
-
-// PutFileAndReconcileRequestValidationError is the validation error returned
-// by PutFileAndReconcileRequest.Validate if the designated constraints aren't met.
-type PutFileAndReconcileRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e PutFileAndReconcileRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e PutFileAndReconcileRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e PutFileAndReconcileRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e PutFileAndReconcileRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e PutFileAndReconcileRequestValidationError) ErrorName() string {
-	return "PutFileAndReconcileRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e PutFileAndReconcileRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sPutFileAndReconcileRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = PutFileAndReconcileRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = PutFileAndReconcileRequestValidationError{}
-
-var _PutFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on PutFileAndReconcileResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *PutFileAndReconcileResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PutFileAndReconcileResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// PutFileAndReconcileResponseMultiError, or nil if none found.
-func (m *PutFileAndReconcileResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PutFileAndReconcileResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetErrors() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, PutFileAndReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, PutFileAndReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return PutFileAndReconcileResponseValidationError{
-					field:  fmt.Sprintf("Errors[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return PutFileAndReconcileResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// PutFileAndReconcileResponseMultiError is an error wrapping multiple
-// validation errors returned by PutFileAndReconcileResponse.ValidateAll() if
-// the designated constraints aren't met.
-type PutFileAndReconcileResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m PutFileAndReconcileResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m PutFileAndReconcileResponseMultiError) AllErrors() []error { return m }
-
-// PutFileAndReconcileResponseValidationError is the validation error returned
-// by PutFileAndReconcileResponse.Validate if the designated constraints
-// aren't met.
-type PutFileAndReconcileResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e PutFileAndReconcileResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e PutFileAndReconcileResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e PutFileAndReconcileResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e PutFileAndReconcileResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e PutFileAndReconcileResponseValidationError) ErrorName() string {
-	return "PutFileAndReconcileResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e PutFileAndReconcileResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sPutFileAndReconcileResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = PutFileAndReconcileResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = PutFileAndReconcileResponseValidationError{}
-
-// Validate checks the field values on DeleteFileAndReconcileRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DeleteFileAndReconcileRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeleteFileAndReconcileRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// DeleteFileAndReconcileRequestMultiError, or nil if none found.
-func (m *DeleteFileAndReconcileRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeleteFileAndReconcileRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_DeleteFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := DeleteFileAndReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Path
-
-	// no validation rules for Dry
-
-	// no validation rules for Strict
-
-	if len(errors) > 0 {
-		return DeleteFileAndReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// DeleteFileAndReconcileRequestMultiError is an error wrapping multiple
-// validation errors returned by DeleteFileAndReconcileRequest.ValidateAll()
-// if the designated constraints aren't met.
-type DeleteFileAndReconcileRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeleteFileAndReconcileRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeleteFileAndReconcileRequestMultiError) AllErrors() []error { return m }
-
-// DeleteFileAndReconcileRequestValidationError is the validation error
-// returned by DeleteFileAndReconcileRequest.Validate if the designated
-// constraints aren't met.
-type DeleteFileAndReconcileRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeleteFileAndReconcileRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeleteFileAndReconcileRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeleteFileAndReconcileRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeleteFileAndReconcileRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeleteFileAndReconcileRequestValidationError) ErrorName() string {
-	return "DeleteFileAndReconcileRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeleteFileAndReconcileRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeleteFileAndReconcileRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeleteFileAndReconcileRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeleteFileAndReconcileRequestValidationError{}
-
-var _DeleteFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on DeleteFileAndReconcileResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *DeleteFileAndReconcileResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on DeleteFileAndReconcileResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// DeleteFileAndReconcileResponseMultiError, or nil if none found.
-func (m *DeleteFileAndReconcileResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *DeleteFileAndReconcileResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetErrors() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, DeleteFileAndReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, DeleteFileAndReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return DeleteFileAndReconcileResponseValidationError{
-					field:  fmt.Sprintf("Errors[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return DeleteFileAndReconcileResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// DeleteFileAndReconcileResponseMultiError is an error wrapping multiple
-// validation errors returned by DeleteFileAndReconcileResponse.ValidateAll()
-// if the designated constraints aren't met.
-type DeleteFileAndReconcileResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m DeleteFileAndReconcileResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m DeleteFileAndReconcileResponseMultiError) AllErrors() []error { return m }
-
-// DeleteFileAndReconcileResponseValidationError is the validation error
-// returned by DeleteFileAndReconcileResponse.Validate if the designated
-// constraints aren't met.
-type DeleteFileAndReconcileResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e DeleteFileAndReconcileResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e DeleteFileAndReconcileResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e DeleteFileAndReconcileResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e DeleteFileAndReconcileResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e DeleteFileAndReconcileResponseValidationError) ErrorName() string {
-	return "DeleteFileAndReconcileResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e DeleteFileAndReconcileResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sDeleteFileAndReconcileResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = DeleteFileAndReconcileResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = DeleteFileAndReconcileResponseValidationError{}
-
-// Validate checks the field values on RenameFileAndReconcileRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RenameFileAndReconcileRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RenameFileAndReconcileRequest with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// RenameFileAndReconcileRequestMultiError, or nil if none found.
-func (m *RenameFileAndReconcileRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RenameFileAndReconcileRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_RenameFileAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := RenameFileAndReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for FromPath
-
-	// no validation rules for ToPath
-
-	// no validation rules for Dry
-
-	// no validation rules for Strict
-
-	if len(errors) > 0 {
-		return RenameFileAndReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// RenameFileAndReconcileRequestMultiError is an error wrapping multiple
-// validation errors returned by RenameFileAndReconcileRequest.ValidateAll()
-// if the designated constraints aren't met.
-type RenameFileAndReconcileRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RenameFileAndReconcileRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RenameFileAndReconcileRequestMultiError) AllErrors() []error { return m }
-
-// RenameFileAndReconcileRequestValidationError is the validation error
-// returned by RenameFileAndReconcileRequest.Validate if the designated
-// constraints aren't met.
-type RenameFileAndReconcileRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e RenameFileAndReconcileRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e RenameFileAndReconcileRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e RenameFileAndReconcileRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e RenameFileAndReconcileRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e RenameFileAndReconcileRequestValidationError) ErrorName() string {
-	return "RenameFileAndReconcileRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e RenameFileAndReconcileRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sRenameFileAndReconcileRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = RenameFileAndReconcileRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = RenameFileAndReconcileRequestValidationError{}
-
-var _RenameFileAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on RenameFileAndReconcileResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RenameFileAndReconcileResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RenameFileAndReconcileResponse with
-// the rules defined in the proto definition for this message. If any rules
-// are violated, the result is a list of violation errors wrapped in
-// RenameFileAndReconcileResponseMultiError, or nil if none found.
-func (m *RenameFileAndReconcileResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RenameFileAndReconcileResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetErrors() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, RenameFileAndReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, RenameFileAndReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return RenameFileAndReconcileResponseValidationError{
-					field:  fmt.Sprintf("Errors[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return RenameFileAndReconcileResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// RenameFileAndReconcileResponseMultiError is an error wrapping multiple
-// validation errors returned by RenameFileAndReconcileResponse.ValidateAll()
-// if the designated constraints aren't met.
-type RenameFileAndReconcileResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RenameFileAndReconcileResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RenameFileAndReconcileResponseMultiError) AllErrors() []error { return m }
-
-// RenameFileAndReconcileResponseValidationError is the validation error
-// returned by RenameFileAndReconcileResponse.Validate if the designated
-// constraints aren't met.
-type RenameFileAndReconcileResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e RenameFileAndReconcileResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e RenameFileAndReconcileResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e RenameFileAndReconcileResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e RenameFileAndReconcileResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e RenameFileAndReconcileResponseValidationError) ErrorName() string {
-	return "RenameFileAndReconcileResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e RenameFileAndReconcileResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sRenameFileAndReconcileResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = RenameFileAndReconcileResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = RenameFileAndReconcileResponseValidationError{}
-
-// Validate checks the field values on RefreshAndReconcileRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RefreshAndReconcileRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RefreshAndReconcileRequest with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// RefreshAndReconcileRequestMultiError, or nil if none found.
-func (m *RefreshAndReconcileRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RefreshAndReconcileRequest) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	if !_RefreshAndReconcileRequest_InstanceId_Pattern.MatchString(m.GetInstanceId()) {
-		err := RefreshAndReconcileRequestValidationError{
-			field:  "InstanceId",
-			reason: "value does not match regex pattern \"^[_\\\\-a-zA-Z0-9]+$\"",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Path
-
-	// no validation rules for Dry
-
-	// no validation rules for Strict
-
-	if len(errors) > 0 {
-		return RefreshAndReconcileRequestMultiError(errors)
-	}
-
-	return nil
-}
-
-// RefreshAndReconcileRequestMultiError is an error wrapping multiple
-// validation errors returned by RefreshAndReconcileRequest.ValidateAll() if
-// the designated constraints aren't met.
-type RefreshAndReconcileRequestMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RefreshAndReconcileRequestMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RefreshAndReconcileRequestMultiError) AllErrors() []error { return m }
-
-// RefreshAndReconcileRequestValidationError is the validation error returned
-// by RefreshAndReconcileRequest.Validate if the designated constraints aren't met.
-type RefreshAndReconcileRequestValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e RefreshAndReconcileRequestValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e RefreshAndReconcileRequestValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e RefreshAndReconcileRequestValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e RefreshAndReconcileRequestValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e RefreshAndReconcileRequestValidationError) ErrorName() string {
-	return "RefreshAndReconcileRequestValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e RefreshAndReconcileRequestValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sRefreshAndReconcileRequest.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = RefreshAndReconcileRequestValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = RefreshAndReconcileRequestValidationError{}
-
-var _RefreshAndReconcileRequest_InstanceId_Pattern = regexp.MustCompile("^[_\\-a-zA-Z0-9]+$")
-
-// Validate checks the field values on RefreshAndReconcileResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RefreshAndReconcileResponse) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on RefreshAndReconcileResponse with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// RefreshAndReconcileResponseMultiError, or nil if none found.
-func (m *RefreshAndReconcileResponse) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *RefreshAndReconcileResponse) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	for idx, item := range m.GetErrors() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, RefreshAndReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, RefreshAndReconcileResponseValidationError{
-						field:  fmt.Sprintf("Errors[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return RefreshAndReconcileResponseValidationError{
-					field:  fmt.Sprintf("Errors[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return RefreshAndReconcileResponseMultiError(errors)
-	}
-
-	return nil
-}
-
-// RefreshAndReconcileResponseMultiError is an error wrapping multiple
-// validation errors returned by RefreshAndReconcileResponse.ValidateAll() if
-// the designated constraints aren't met.
-type RefreshAndReconcileResponseMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m RefreshAndReconcileResponseMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m RefreshAndReconcileResponseMultiError) AllErrors() []error { return m }
-
-// RefreshAndReconcileResponseValidationError is the validation error returned
-// by RefreshAndReconcileResponse.Validate if the designated constraints
-// aren't met.
-type RefreshAndReconcileResponseValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e RefreshAndReconcileResponseValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e RefreshAndReconcileResponseValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e RefreshAndReconcileResponseValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e RefreshAndReconcileResponseValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e RefreshAndReconcileResponseValidationError) ErrorName() string {
-	return "RefreshAndReconcileResponseValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e RefreshAndReconcileResponseValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sRefreshAndReconcileResponse.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = RefreshAndReconcileResponseValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = RefreshAndReconcileResponseValidationError{}
-
-// Validate checks the field values on ConnectorSpec with the rules defined in
-// the proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *ConnectorSpec) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ConnectorSpec with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// result is a list of violation errors wrapped in ConnectorSpecMultiError, or
-// nil if none found.
-func (m *ConnectorSpec) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ConnectorSpec) validate(all bool) error {
+func (m *ConnectorDriver) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8648,28 +7006,257 @@ func (m *ConnectorSpec) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for Name
+
+	for idx, item := range m.GetConfigProperties() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ConnectorDriverValidationError{
+						field:  fmt.Sprintf("ConfigProperties[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ConnectorDriverValidationError{
+						field:  fmt.Sprintf("ConfigProperties[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ConnectorDriverValidationError{
+					field:  fmt.Sprintf("ConfigProperties[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetSourceProperties() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ConnectorDriverValidationError{
+						field:  fmt.Sprintf("SourceProperties[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ConnectorDriverValidationError{
+						field:  fmt.Sprintf("SourceProperties[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ConnectorDriverValidationError{
+					field:  fmt.Sprintf("SourceProperties[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
-	for idx, item := range m.GetProperties() {
+	// no validation rules for ImplementsRegistry
+
+	// no validation rules for ImplementsCatalog
+
+	// no validation rules for ImplementsRepo
+
+	// no validation rules for ImplementsAdmin
+
+	// no validation rules for ImplementsAi
+
+	// no validation rules for ImplementsSqlStore
+
+	// no validation rules for ImplementsOlap
+
+	// no validation rules for ImplementsObjectStore
+
+	// no validation rules for ImplementsFileStore
+
+	// no validation rules for ImplementsNotifier
+
+	if len(errors) > 0 {
+		return ConnectorDriverMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectorDriverMultiError is an error wrapping multiple validation errors
+// returned by ConnectorDriver.ValidateAll() if the designated constraints
+// aren't met.
+type ConnectorDriverMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectorDriverMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectorDriverMultiError) AllErrors() []error { return m }
+
+// ConnectorDriverValidationError is the validation error returned by
+// ConnectorDriver.Validate if the designated constraints aren't met.
+type ConnectorDriverValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectorDriverValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectorDriverValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectorDriverValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectorDriverValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectorDriverValidationError) ErrorName() string { return "ConnectorDriverValidationError" }
+
+// Error satisfies the builtin error interface
+func (e ConnectorDriverValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectorDriver.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectorDriverValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectorDriverValidationError{}
+
+// Validate checks the field values on AnalyzedConnector with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzedConnector) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzedConnector with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzedConnectorMultiError, or nil if none found.
+func (m *AnalyzedConnector) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzedConnector) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	if all {
+		switch v := interface{}(m.GetDriver()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AnalyzedConnectorValidationError{
+					field:  "Driver",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AnalyzedConnectorValidationError{
+					field:  "Driver",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetDriver()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AnalyzedConnectorValidationError{
+				field:  "Driver",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for Config
+
+	// no validation rules for PresetConfig
+
+	// no validation rules for ProjectConfig
+
+	// no validation rules for EnvConfig
+
+	// no validation rules for HasAnonymousAccess
+
+	for idx, item := range m.GetUsedBy() {
 		_, _ = idx, item
 
 		if all {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ConnectorSpecValidationError{
-						field:  fmt.Sprintf("Properties[%v]", idx),
+					errors = append(errors, AnalyzedConnectorValidationError{
+						field:  fmt.Sprintf("UsedBy[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ConnectorSpecValidationError{
-						field:  fmt.Sprintf("Properties[%v]", idx),
+					errors = append(errors, AnalyzedConnectorValidationError{
+						field:  fmt.Sprintf("UsedBy[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
 					})
@@ -8677,8 +7264,8 @@ func (m *ConnectorSpec) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ConnectorSpecValidationError{
-					field:  fmt.Sprintf("Properties[%v]", idx),
+				return AnalyzedConnectorValidationError{
+					field:  fmt.Sprintf("UsedBy[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
 				}
@@ -8688,19 +7275,19 @@ func (m *ConnectorSpec) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ConnectorSpecMultiError(errors)
+		return AnalyzedConnectorMultiError(errors)
 	}
 
 	return nil
 }
 
-// ConnectorSpecMultiError is an error wrapping multiple validation errors
-// returned by ConnectorSpec.ValidateAll() if the designated constraints
+// AnalyzedConnectorMultiError is an error wrapping multiple validation errors
+// returned by AnalyzedConnector.ValidateAll() if the designated constraints
 // aren't met.
-type ConnectorSpecMultiError []error
+type AnalyzedConnectorMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ConnectorSpecMultiError) Error() string {
+func (m AnalyzedConnectorMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8709,11 +7296,11 @@ func (m ConnectorSpecMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ConnectorSpecMultiError) AllErrors() []error { return m }
+func (m AnalyzedConnectorMultiError) AllErrors() []error { return m }
 
-// ConnectorSpecValidationError is the validation error returned by
-// ConnectorSpec.Validate if the designated constraints aren't met.
-type ConnectorSpecValidationError struct {
+// AnalyzedConnectorValidationError is the validation error returned by
+// AnalyzedConnector.Validate if the designated constraints aren't met.
+type AnalyzedConnectorValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8721,22 +7308,24 @@ type ConnectorSpecValidationError struct {
 }
 
 // Field function returns field value.
-func (e ConnectorSpecValidationError) Field() string { return e.field }
+func (e AnalyzedConnectorValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ConnectorSpecValidationError) Reason() string { return e.reason }
+func (e AnalyzedConnectorValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ConnectorSpecValidationError) Cause() error { return e.cause }
+func (e AnalyzedConnectorValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ConnectorSpecValidationError) Key() bool { return e.key }
+func (e AnalyzedConnectorValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ConnectorSpecValidationError) ErrorName() string { return "ConnectorSpecValidationError" }
+func (e AnalyzedConnectorValidationError) ErrorName() string {
+	return "AnalyzedConnectorValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e ConnectorSpecValidationError) Error() string {
+func (e AnalyzedConnectorValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8748,14 +7337,14 @@ func (e ConnectorSpecValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sConnectorSpec.%s: %s%s",
+		"invalid %sAnalyzedConnector.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ConnectorSpecValidationError{}
+var _ error = AnalyzedConnectorValidationError{}
 
 var _ interface {
 	Field() string
@@ -8763,24 +7352,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ConnectorSpecValidationError{}
+} = AnalyzedConnectorValidationError{}
 
-// Validate checks the field values on ListConnectorsRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ListConnectorDriversRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListConnectorsRequest) Validate() error {
+func (m *ListConnectorDriversRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListConnectorsRequest with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on ListConnectorDriversRequest with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ListConnectorsRequestMultiError, or nil if none found.
-func (m *ListConnectorsRequest) ValidateAll() error {
+// ListConnectorDriversRequestMultiError, or nil if none found.
+func (m *ListConnectorDriversRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListConnectorsRequest) validate(all bool) error {
+func (m *ListConnectorDriversRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8788,19 +7377,19 @@ func (m *ListConnectorsRequest) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return ListConnectorsRequestMultiError(errors)
+		return ListConnectorDriversRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListConnectorsRequestMultiError is an error wrapping multiple validation
-// errors returned by ListConnectorsRequest.ValidateAll() if the designated
-// constraints aren't met.
-type ListConnectorsRequestMultiError []error
+// ListConnectorDriversRequestMultiError is an error wrapping multiple
+// validation errors returned by ListConnectorDriversRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ListConnectorDriversRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListConnectorsRequestMultiError) Error() string {
+func (m ListConnectorDriversRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8809,11 +7398,12 @@ func (m ListConnectorsRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListConnectorsRequestMultiError) AllErrors() []error { return m }
+func (m ListConnectorDriversRequestMultiError) AllErrors() []error { return m }
 
-// ListConnectorsRequestValidationError is the validation error returned by
-// ListConnectorsRequest.Validate if the designated constraints aren't met.
-type ListConnectorsRequestValidationError struct {
+// ListConnectorDriversRequestValidationError is the validation error returned
+// by ListConnectorDriversRequest.Validate if the designated constraints
+// aren't met.
+type ListConnectorDriversRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8821,24 +7411,24 @@ type ListConnectorsRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListConnectorsRequestValidationError) Field() string { return e.field }
+func (e ListConnectorDriversRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListConnectorsRequestValidationError) Reason() string { return e.reason }
+func (e ListConnectorDriversRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListConnectorsRequestValidationError) Cause() error { return e.cause }
+func (e ListConnectorDriversRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListConnectorsRequestValidationError) Key() bool { return e.key }
+func (e ListConnectorDriversRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListConnectorsRequestValidationError) ErrorName() string {
-	return "ListConnectorsRequestValidationError"
+func (e ListConnectorDriversRequestValidationError) ErrorName() string {
+	return "ListConnectorDriversRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ListConnectorsRequestValidationError) Error() string {
+func (e ListConnectorDriversRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8850,14 +7440,14 @@ func (e ListConnectorsRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListConnectorsRequest.%s: %s%s",
+		"invalid %sListConnectorDriversRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListConnectorsRequestValidationError{}
+var _ error = ListConnectorDriversRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -8865,24 +7455,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListConnectorsRequestValidationError{}
+} = ListConnectorDriversRequestValidationError{}
 
-// Validate checks the field values on ListConnectorsResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ListConnectorDriversResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ListConnectorsResponse) Validate() error {
+func (m *ListConnectorDriversResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ListConnectorsResponse with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on ListConnectorDriversResponse with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ListConnectorsResponseMultiError, or nil if none found.
-func (m *ListConnectorsResponse) ValidateAll() error {
+// ListConnectorDriversResponseMultiError, or nil if none found.
+func (m *ListConnectorDriversResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ListConnectorsResponse) validate(all bool) error {
+func (m *ListConnectorDriversResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -8896,7 +7486,7 @@ func (m *ListConnectorsResponse) validate(all bool) error {
 			switch v := interface{}(item).(type) {
 			case interface{ ValidateAll() error }:
 				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, ListConnectorsResponseValidationError{
+					errors = append(errors, ListConnectorDriversResponseValidationError{
 						field:  fmt.Sprintf("Connectors[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -8904,7 +7494,7 @@ func (m *ListConnectorsResponse) validate(all bool) error {
 				}
 			case interface{ Validate() error }:
 				if err := v.Validate(); err != nil {
-					errors = append(errors, ListConnectorsResponseValidationError{
+					errors = append(errors, ListConnectorDriversResponseValidationError{
 						field:  fmt.Sprintf("Connectors[%v]", idx),
 						reason: "embedded message failed validation",
 						cause:  err,
@@ -8913,7 +7503,7 @@ func (m *ListConnectorsResponse) validate(all bool) error {
 			}
 		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				return ListConnectorsResponseValidationError{
+				return ListConnectorDriversResponseValidationError{
 					field:  fmt.Sprintf("Connectors[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
@@ -8924,19 +7514,19 @@ func (m *ListConnectorsResponse) validate(all bool) error {
 	}
 
 	if len(errors) > 0 {
-		return ListConnectorsResponseMultiError(errors)
+		return ListConnectorDriversResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// ListConnectorsResponseMultiError is an error wrapping multiple validation
-// errors returned by ListConnectorsResponse.ValidateAll() if the designated
-// constraints aren't met.
-type ListConnectorsResponseMultiError []error
+// ListConnectorDriversResponseMultiError is an error wrapping multiple
+// validation errors returned by ListConnectorDriversResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListConnectorDriversResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ListConnectorsResponseMultiError) Error() string {
+func (m ListConnectorDriversResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -8945,11 +7535,12 @@ func (m ListConnectorsResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ListConnectorsResponseMultiError) AllErrors() []error { return m }
+func (m ListConnectorDriversResponseMultiError) AllErrors() []error { return m }
 
-// ListConnectorsResponseValidationError is the validation error returned by
-// ListConnectorsResponse.Validate if the designated constraints aren't met.
-type ListConnectorsResponseValidationError struct {
+// ListConnectorDriversResponseValidationError is the validation error returned
+// by ListConnectorDriversResponse.Validate if the designated constraints
+// aren't met.
+type ListConnectorDriversResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -8957,24 +7548,24 @@ type ListConnectorsResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e ListConnectorsResponseValidationError) Field() string { return e.field }
+func (e ListConnectorDriversResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ListConnectorsResponseValidationError) Reason() string { return e.reason }
+func (e ListConnectorDriversResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ListConnectorsResponseValidationError) Cause() error { return e.cause }
+func (e ListConnectorDriversResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ListConnectorsResponseValidationError) Key() bool { return e.key }
+func (e ListConnectorDriversResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ListConnectorsResponseValidationError) ErrorName() string {
-	return "ListConnectorsResponseValidationError"
+func (e ListConnectorDriversResponseValidationError) ErrorName() string {
+	return "ListConnectorDriversResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ListConnectorsResponseValidationError) Error() string {
+func (e ListConnectorDriversResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -8986,14 +7577,14 @@ func (e ListConnectorsResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sListConnectorsResponse.%s: %s%s",
+		"invalid %sListConnectorDriversResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ListConnectorsResponseValidationError{}
+var _ error = ListConnectorDriversResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -9001,7 +7592,489 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ListConnectorsResponseValidationError{}
+} = ListConnectorDriversResponseValidationError{}
+
+// Validate checks the field values on AnalyzeConnectorsRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzeConnectorsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzeConnectorsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzeConnectorsRequestMultiError, or nil if none found.
+func (m *AnalyzeConnectorsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzeConnectorsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return AnalyzeConnectorsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzeConnectorsRequestMultiError is an error wrapping multiple validation
+// errors returned by AnalyzeConnectorsRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AnalyzeConnectorsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzeConnectorsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzeConnectorsRequestMultiError) AllErrors() []error { return m }
+
+// AnalyzeConnectorsRequestValidationError is the validation error returned by
+// AnalyzeConnectorsRequest.Validate if the designated constraints aren't met.
+type AnalyzeConnectorsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzeConnectorsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzeConnectorsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzeConnectorsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzeConnectorsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzeConnectorsRequestValidationError) ErrorName() string {
+	return "AnalyzeConnectorsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzeConnectorsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzeConnectorsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzeConnectorsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzeConnectorsRequestValidationError{}
+
+// Validate checks the field values on AnalyzeConnectorsResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *AnalyzeConnectorsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AnalyzeConnectorsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// AnalyzeConnectorsResponseMultiError, or nil if none found.
+func (m *AnalyzeConnectorsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AnalyzeConnectorsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, AnalyzeConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, AnalyzeConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return AnalyzeConnectorsResponseValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return AnalyzeConnectorsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AnalyzeConnectorsResponseMultiError is an error wrapping multiple validation
+// errors returned by AnalyzeConnectorsResponse.ValidateAll() if the
+// designated constraints aren't met.
+type AnalyzeConnectorsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AnalyzeConnectorsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AnalyzeConnectorsResponseMultiError) AllErrors() []error { return m }
+
+// AnalyzeConnectorsResponseValidationError is the validation error returned by
+// AnalyzeConnectorsResponse.Validate if the designated constraints aren't met.
+type AnalyzeConnectorsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AnalyzeConnectorsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AnalyzeConnectorsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AnalyzeConnectorsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AnalyzeConnectorsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AnalyzeConnectorsResponseValidationError) ErrorName() string {
+	return "AnalyzeConnectorsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AnalyzeConnectorsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAnalyzeConnectorsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AnalyzeConnectorsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AnalyzeConnectorsResponseValidationError{}
+
+// Validate checks the field values on ListNotifierConnectorsRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListNotifierConnectorsRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListNotifierConnectorsRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListNotifierConnectorsRequestMultiError, or nil if none found.
+func (m *ListNotifierConnectorsRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListNotifierConnectorsRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if len(errors) > 0 {
+		return ListNotifierConnectorsRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListNotifierConnectorsRequestMultiError is an error wrapping multiple
+// validation errors returned by ListNotifierConnectorsRequest.ValidateAll()
+// if the designated constraints aren't met.
+type ListNotifierConnectorsRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListNotifierConnectorsRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListNotifierConnectorsRequestMultiError) AllErrors() []error { return m }
+
+// ListNotifierConnectorsRequestValidationError is the validation error
+// returned by ListNotifierConnectorsRequest.Validate if the designated
+// constraints aren't met.
+type ListNotifierConnectorsRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListNotifierConnectorsRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListNotifierConnectorsRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListNotifierConnectorsRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListNotifierConnectorsRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListNotifierConnectorsRequestValidationError) ErrorName() string {
+	return "ListNotifierConnectorsRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListNotifierConnectorsRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListNotifierConnectorsRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListNotifierConnectorsRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListNotifierConnectorsRequestValidationError{}
+
+// Validate checks the field values on ListNotifierConnectorsResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListNotifierConnectorsResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListNotifierConnectorsResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListNotifierConnectorsResponseMultiError, or nil if none found.
+func (m *ListNotifierConnectorsResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListNotifierConnectorsResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetConnectors() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListNotifierConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListNotifierConnectorsResponseValidationError{
+						field:  fmt.Sprintf("Connectors[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListNotifierConnectorsResponseValidationError{
+					field:  fmt.Sprintf("Connectors[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListNotifierConnectorsResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListNotifierConnectorsResponseMultiError is an error wrapping multiple
+// validation errors returned by ListNotifierConnectorsResponse.ValidateAll()
+// if the designated constraints aren't met.
+type ListNotifierConnectorsResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListNotifierConnectorsResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListNotifierConnectorsResponseMultiError) AllErrors() []error { return m }
+
+// ListNotifierConnectorsResponseValidationError is the validation error
+// returned by ListNotifierConnectorsResponse.Validate if the designated
+// constraints aren't met.
+type ListNotifierConnectorsResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListNotifierConnectorsResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListNotifierConnectorsResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListNotifierConnectorsResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListNotifierConnectorsResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListNotifierConnectorsResponseValidationError) ErrorName() string {
+	return "ListNotifierConnectorsResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListNotifierConnectorsResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListNotifierConnectorsResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListNotifierConnectorsResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListNotifierConnectorsResponseValidationError{}
 
 // Validate checks the field values on IssueDevJWTRequest with the rules
 // defined in the proto definition for this message. If any rules are
@@ -9233,129 +8306,22 @@ var _ interface {
 	ErrorName() string
 } = IssueDevJWTResponseValidationError{}
 
-// Validate checks the field values on ReconcileError_CharLocation with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ConnectorDriver_Property with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ReconcileError_CharLocation) Validate() error {
+func (m *ConnectorDriver_Property) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on ReconcileError_CharLocation with the
+// ValidateAll checks the field values on ConnectorDriver_Property with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// ReconcileError_CharLocationMultiError, or nil if none found.
-func (m *ReconcileError_CharLocation) ValidateAll() error {
+// ConnectorDriver_PropertyMultiError, or nil if none found.
+func (m *ConnectorDriver_Property) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *ReconcileError_CharLocation) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Line
-
-	// no validation rules for Column
-
-	if len(errors) > 0 {
-		return ReconcileError_CharLocationMultiError(errors)
-	}
-
-	return nil
-}
-
-// ReconcileError_CharLocationMultiError is an error wrapping multiple
-// validation errors returned by ReconcileError_CharLocation.ValidateAll() if
-// the designated constraints aren't met.
-type ReconcileError_CharLocationMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m ReconcileError_CharLocationMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m ReconcileError_CharLocationMultiError) AllErrors() []error { return m }
-
-// ReconcileError_CharLocationValidationError is the validation error returned
-// by ReconcileError_CharLocation.Validate if the designated constraints
-// aren't met.
-type ReconcileError_CharLocationValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e ReconcileError_CharLocationValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e ReconcileError_CharLocationValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e ReconcileError_CharLocationValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e ReconcileError_CharLocationValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e ReconcileError_CharLocationValidationError) ErrorName() string {
-	return "ReconcileError_CharLocationValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e ReconcileError_CharLocationValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sReconcileError_CharLocation.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = ReconcileError_CharLocationValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = ReconcileError_CharLocationValidationError{}
-
-// Validate checks the field values on ConnectorSpec_Property with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *ConnectorSpec_Property) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on ConnectorSpec_Property with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// ConnectorSpec_PropertyMultiError, or nil if none found.
-func (m *ConnectorSpec_Property) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *ConnectorSpec_Property) validate(all bool) error {
+func (m *ConnectorDriver_Property) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -9364,43 +8330,38 @@ func (m *ConnectorSpec_Property) validate(all bool) error {
 
 	// no validation rules for Key
 
+	// no validation rules for Type
+
+	// no validation rules for Required
+
 	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
-	// no validation rules for Placeholder
-
-	if _, ok := ConnectorSpec_Property_Type_name[int32(m.GetType())]; !ok {
-		err := ConnectorSpec_PropertyValidationError{
-			field:  "Type",
-			reason: "value must be one of the defined enum values",
-		}
-		if !all {
-			return err
-		}
-		errors = append(errors, err)
-	}
-
-	// no validation rules for Nullable
+	// no validation rules for DocsUrl
 
 	// no validation rules for Hint
 
-	// no validation rules for Href
+	// no validation rules for Default
+
+	// no validation rules for Placeholder
+
+	// no validation rules for Secret
 
 	if len(errors) > 0 {
-		return ConnectorSpec_PropertyMultiError(errors)
+		return ConnectorDriver_PropertyMultiError(errors)
 	}
 
 	return nil
 }
 
-// ConnectorSpec_PropertyMultiError is an error wrapping multiple validation
-// errors returned by ConnectorSpec_Property.ValidateAll() if the designated
+// ConnectorDriver_PropertyMultiError is an error wrapping multiple validation
+// errors returned by ConnectorDriver_Property.ValidateAll() if the designated
 // constraints aren't met.
-type ConnectorSpec_PropertyMultiError []error
+type ConnectorDriver_PropertyMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m ConnectorSpec_PropertyMultiError) Error() string {
+func (m ConnectorDriver_PropertyMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -9409,11 +8370,11 @@ func (m ConnectorSpec_PropertyMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m ConnectorSpec_PropertyMultiError) AllErrors() []error { return m }
+func (m ConnectorDriver_PropertyMultiError) AllErrors() []error { return m }
 
-// ConnectorSpec_PropertyValidationError is the validation error returned by
-// ConnectorSpec_Property.Validate if the designated constraints aren't met.
-type ConnectorSpec_PropertyValidationError struct {
+// ConnectorDriver_PropertyValidationError is the validation error returned by
+// ConnectorDriver_Property.Validate if the designated constraints aren't met.
+type ConnectorDriver_PropertyValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -9421,24 +8382,24 @@ type ConnectorSpec_PropertyValidationError struct {
 }
 
 // Field function returns field value.
-func (e ConnectorSpec_PropertyValidationError) Field() string { return e.field }
+func (e ConnectorDriver_PropertyValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e ConnectorSpec_PropertyValidationError) Reason() string { return e.reason }
+func (e ConnectorDriver_PropertyValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e ConnectorSpec_PropertyValidationError) Cause() error { return e.cause }
+func (e ConnectorDriver_PropertyValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e ConnectorSpec_PropertyValidationError) Key() bool { return e.key }
+func (e ConnectorDriver_PropertyValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e ConnectorSpec_PropertyValidationError) ErrorName() string {
-	return "ConnectorSpec_PropertyValidationError"
+func (e ConnectorDriver_PropertyValidationError) ErrorName() string {
+	return "ConnectorDriver_PropertyValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e ConnectorSpec_PropertyValidationError) Error() string {
+func (e ConnectorDriver_PropertyValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -9450,14 +8411,14 @@ func (e ConnectorSpec_PropertyValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sConnectorSpec_Property.%s: %s%s",
+		"invalid %sConnectorDriver_Property.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = ConnectorSpec_PropertyValidationError{}
+var _ error = ConnectorDriver_PropertyValidationError{}
 
 var _ interface {
 	Field() string
@@ -9465,4 +8426,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = ConnectorSpec_PropertyValidationError{}
+} = ConnectorDriver_PropertyValidationError{}

@@ -9,7 +9,8 @@ export interface UpdateDetails {
  * to the parent component via a Svelte dispatcher.
  */
 export function bindEditorEventsToDispatcher(
-  dispatch: (event: string, data?: unknown) => void
+  dispatch: (event: string, data?: unknown) => void,
+  whenFocused = false,
 ) {
   return EditorView.updateListener.of((viewUpdate: ViewUpdate) => {
     if (viewUpdate.focusChanged && viewUpdate.view.hasFocus) {
@@ -19,7 +20,8 @@ export function bindEditorEventsToDispatcher(
       /** we will pass in the content directly as well as the viewUpdate more broadly.
        * The viewUpdate can be used to look at transactions at the parent component level.
        */
-      dispatch("update", {
+      if (whenFocused && !viewUpdate.view.hasFocus) return;
+      dispatch("save", {
         content: viewUpdate.view.state.doc.toString(),
         viewUpdate,
       } as UpdateDetails);

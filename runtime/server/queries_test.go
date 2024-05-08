@@ -1,15 +1,13 @@
 package server
 
 import (
+	"context"
 	"testing"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"go.uber.org/zap"
-
-	"context"
-
 	"github.com/stretchr/testify/require"
+	"go.uber.org/zap"
 )
 
 func TestServer_InsertLimit_SELECT(t *testing.T) {
@@ -134,7 +132,7 @@ func TestServer_UpdateLimit_UNION(t *testing.T) {
 }
 
 func prepareOLAPStore(t *testing.T) drivers.OLAPStore {
-	conn, err := drivers.Open("duckdb", map[string]any{"dsn": "?access_mode=read_write", "pool_size": 4}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err := drivers.Open("duckdb", "default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	olap, ok := conn.AsOLAP("")
 	require.True(t, ok)

@@ -10,7 +10,7 @@
   export let color: string;
 
   const plotConfig: Writable<PlotConfig> = getContext(
-    "rill:data-graphic:plot-config"
+    "rill:data-graphic:plot-config",
   );
 </script>
 

@@ -1,4 +1,5 @@
-position: 50
-label: Reference
+position: 200
+label: " "
 collapsible: true
-collapsed: false
+collapsed: true
+className: hidden

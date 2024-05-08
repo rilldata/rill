@@ -15,13 +15,11 @@
   export let bgClass = "";
 
   let positionClasses;
-  let offsetTop = false;
   $: {
     if (position === "top") {
       positionClasses = "absolute left-0 top-0";
     } else if (position === "left") {
       positionClasses = "absolute left-0 top-0 text-center font-semibold";
-      offsetTop = true;
     } else if (position === "top-left") {
       positionClasses = "sticky left-0 top-0 z-40 font-bold";
     }
@@ -74,6 +72,8 @@
     <slot />
     {#if enableResize}
       <div
+        role="columnheader"
+        tabindex="0"
         use:dragTableCell
         on:resize
         on:dblclick={() => {

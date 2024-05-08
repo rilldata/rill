@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { SelectMenu } from "@rilldata/web-common/components/menu";
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import SelectMenu from "@rilldata/web-common/components/menu/shadcn/SelectMenu.svelte";
+  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
@@ -11,62 +11,82 @@
   import Spinner from "../../entity-management/Spinner.svelte";
 
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useMetaQuery } from "../selectors";
+  import { useMetricsView } from "../selectors";
+  import { getStateManagers } from "../state-managers/state-managers";
   import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
 
   export let metricViewName;
 
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  const {
+    actions: {
+      contextCol: { setContextColumn },
+      setLeaderboardMeasureName,
+    },
+  } = getStateManagers();
 
-  $: measures = $metaQuery.data?.measures;
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
+
+  $: measures = $metricsView.data?.measures;
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
 
   function handleMeasureUpdate(event: CustomEvent) {
-    metricsExplorerStore.setLeaderboardMeasureName(
-      metricViewName,
-      event.detail.key
-    );
+    setLeaderboardMeasureName(event.detail.key);
   }
 
-  function formatForSelector(measure: MetricsViewSpecMeasureV2) {
-    if (!measure) return undefined;
+  function measureKeyAndMain(measure: MetricsViewSpecMeasureV2) {
+    // CAST SAFETY: measure expression must exist!
+    const main = (
+      measure.label?.length ? measure.label : measure.expression
+    ) as string;
     return {
-      ...measure,
-      key: measure.name,
-      main: measure.label?.length ? measure.label : measure.expression,
+      main,
+      // CAST SAFETY: measure expression must exist!
+      key: measure.name ?? (measure.expression as string),
     };
   }
 
-  let [send, receive] = crossfade({ fallback: fly });
+  function formatForSelector(
+    measure: MetricsViewSpecMeasureV2,
+  ): (MetricsViewSpecMeasureV2 & { key: string; main: string }) | undefined {
+    if (!measure) return undefined;
+    return {
+      ...measure,
+      ...measureKeyAndMain(measure),
+    };
+  }
+
+  let [send, receive] = crossfade({
+    fallback: (node, _params, _intro) => fly(node),
+  });
 
   /** this should be a single element */
   // reset selections based on the active leaderboard measure
   let activeLeaderboardMeasure: ReturnType<typeof formatForSelector>;
+
+  $: unformattedMeasure =
+    measures?.length && metricsExplorer?.leaderboardMeasureName
+      ? measures.find(
+          (measure) => measure.name === metricsExplorer?.leaderboardMeasureName,
+        )
+      : undefined;
+
   $: activeLeaderboardMeasure =
-    measures?.length &&
-    metricsExplorer?.leaderboardMeasureName &&
-    formatForSelector(
-      measures.find(
-        (measure) => measure.name === metricsExplorer?.leaderboardMeasureName
-      ) ?? undefined
-    );
+    unformattedMeasure && formatForSelector(unformattedMeasure);
 
   /** this controls the animation direction */
 
   $: options =
     measures?.map((measure) => {
-      let main = measure.label?.length ? measure.label : measure.expression;
       return {
         ...measure,
-        key: measure.name,
-        main,
+        ...measureKeyAndMain(measure),
       };
     }) || [];
 
   /** set the selection only if measures is not undefined */
-  $: selection = measures ? activeLeaderboardMeasure : [];
+  $: selection = unformattedMeasure && measureKeyAndMain(unformattedMeasure);
 
   $: validPercentOfTotal =
     activeLeaderboardMeasure?.validPercentOfTotal || false;
@@ -78,15 +98,12 @@
     metricsExplorer?.leaderboardContextColumn ===
       LeaderboardContextColumn.PERCENT
   ) {
-    metricsExplorerStore.setContextColumn(
-      metricViewName,
-      LeaderboardContextColumn.HIDDEN
-    );
+    setContextColumn(LeaderboardContextColumn.HIDDEN);
   }
 
   $: showHideDimensions = createShowHideDimensionsStore(
     metricViewName,
-    metaQuery
+    metricsView,
   );
 
   const toggleDimensionVisibility = (e) => {
@@ -103,13 +120,11 @@
 <div>
   {#if measures && options.length && selection}
     <div
-      class="flex flex-row items-center ui-copy-muted"
-      style:padding-left="22px"
-      style:grid-column-gap=".4rem"
-      in:send={{ key: "leaderboard-metric" }}
+      class="flex flex-row items-center ui-copy-muted gap-x-0.5"
+      in:send|global={{ key: "leaderboard-metric" }}
       style:max-width="450px"
     >
-      <SeachableFilterButton
+      <SearchableFilterButton
         selectableItems={$showHideDimensions.selectableItems}
         selectedItems={$showHideDimensions.selectedItems}
         on:item-clicked={toggleDimensionVisibility}
@@ -119,24 +134,21 @@
         tooltipText="Choose dimensions to display"
       />
 
-      <div class="whitespace-nowrap">showing</div>
-
       <SelectMenu
-        paddingTop={2}
-        paddingBottom={2}
+        fixedText="Showing"
         {options}
-        {selection}
-        alignment="end"
+        selections={[selection.key]}
         on:select={handleMeasureUpdate}
+        ariaLabel="Select a measure to filter by"
       />
 
-      <LeaderboardContextColumnMenu {metricViewName} {validPercentOfTotal} />
+      <LeaderboardContextColumnMenu {validPercentOfTotal} />
     </div>
   {:else}
     <div
       class="flex flex-row items-center"
       style:grid-column-gap=".4rem"
-      in:receive={{ key: "loading-leaderboard-metric" }}
+      in:receive|global={{ key: "loading-leaderboard-metric" }}
     >
       pulling leaderboards <Spinner status={EntityStatus.Running} />
     </div>

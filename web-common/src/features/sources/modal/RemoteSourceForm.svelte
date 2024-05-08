@@ -5,9 +5,9 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import SubmissionError from "@rilldata/web-common/components/forms/SubmissionError.svelte";
   import {
-    ConnectorSpecPropertyType,
+    ConnectorDriverPropertyType,
     RpcStatus,
-    V1ConnectorSpec,
+    V1ConnectorDriver,
   } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
@@ -18,12 +18,12 @@
   import { submitRemoteSourceForm } from "./submitRemoteSourceForm";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
 
-  export let connector: V1ConnectorSpec;
+  export let connector: V1ConnectorDriver;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
-  let rpcError: RpcStatus = null;
+  let rpcError: RpcStatus | null = null;
 
   const { form, touched, errors, handleChange, handleSubmit, isSubmitting } =
     createForm({
@@ -34,8 +34,11 @@
       onSubmit: async (values) => {
         overlay.set({ title: `Importing ${values.sourceName}` });
         try {
+          // the following error provides type narrowing for `connector.name`
+          if (connector.name === undefined)
+            throw new Error("connector name is undefined");
           await submitRemoteSourceForm(queryClient, connector.name, values);
-          goto(`/source/${values.sourceName}`);
+          await goto(`/files/sources/${values.sourceName}.yaml`);
           dispatch("close");
         } catch (e) {
           rpcError = e?.response?.data;
@@ -46,16 +49,16 @@
 
   // Place the "Source name" field directly under the "Path" field, which is the first property for each connector (s3, gcs, https).
   const connectorProperties = [
-    ...connector.properties.slice(0, 1),
+    ...(connector.sourceProperties?.slice(0, 1) ?? []),
     {
       key: "sourceName",
       displayName: "Source name",
       description: "The name of the source",
       placeholder: "my_new_source",
-      type: ConnectorSpecPropertyType.TYPE_STRING,
-      nullable: false,
+      type: ConnectorDriverPropertyType.TYPE_STRING,
+      required: true,
     },
-    ...connector.properties.slice(1),
+    ...(connector.sourceProperties?.slice(1) ?? []),
   ];
 
   function onStringInputChange(event: Event) {
@@ -72,15 +75,15 @@
 
 <div class="h-full w-full flex flex-col">
   <form
-    class="pb-2 flex-grow overflow-y-auto"
+    class="pb-5 flex-grow overflow-y-auto"
     id="remote-source-{connector.name}-form"
     on:submit|preventDefault={handleSubmit}
   >
-    <div class="pb-2">
+    <div class="pb-2 text-slate-500">
       Need help? Refer to our
       <a
-        href="https://docs.rilldata.com/develop/import-data"
-        rel="noreferrer"
+        href="https://docs.rilldata.com/build/connect"
+        rel="noreferrer noopener"
         target="_blank">docs</a
       > for more information.
     </div>
@@ -89,16 +92,16 @@
         message={humanReadableErrorMessage(
           connector.name,
           rpcError.code,
-          rpcError.message
+          rpcError.message,
         )}
       />
     {/if}
 
     {#each connectorProperties as property}
       {@const label =
-        property.displayName + (property.nullable ? " (optional)" : "")}
-      <div class="py-2">
-        {#if property.type === ConnectorSpecPropertyType.TYPE_STRING}
+        property.displayName + (property.required ? "" : " (optional)")}
+      <div class="py-1.5">
+        {#if property.type === ConnectorDriverPropertyType.TYPE_STRING && property.key !== undefined}
           <Input
             id={toYupFriendlyKey(property.key)}
             {label}
@@ -109,7 +112,7 @@
             on:input={onStringInputChange}
             on:change={handleChange}
           />
-        {:else if property.type === ConnectorSpecPropertyType.TYPE_BOOLEAN}
+        {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN && property.key !== undefined}
           <label for={property.key} class="flex items-center">
             <input
               id={property.key}
@@ -119,11 +122,11 @@
             />
             <span class="ml-2 text-sm">{label}</span>
           </label>
-        {:else if property.type === ConnectorSpecPropertyType.TYPE_INFORMATIONAL}
+        {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
           <InformationalField
             description={property.description}
             hint={property.hint}
-            href={property.href}
+            href={property.docsUrl}
           />
         {/if}
       </div>
@@ -131,6 +134,7 @@
   </form>
   <div class="flex items-center space-x-2">
     <div class="grow" />
+    <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
     <Button
       disabled={$isSubmitting}
       form="remote-source-{connector.name}-form"

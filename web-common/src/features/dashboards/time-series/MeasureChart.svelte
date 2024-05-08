@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
+  import type { DomainCoordinates } from "@rilldata/web-common/components/data-graphic/constants/types";
   import Body from "@rilldata/web-common/components/data-graphic/elements/Body.svelte";
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import WithBisector from "@rilldata/web-common/components/data-graphic/functional-components/WithBisector.svelte";
@@ -7,56 +9,60 @@
     Axis,
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
+  import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
+  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
+  import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
+  import MeasurePan from "@rilldata/web-common/features/dashboards/time-series/MeasurePan.svelte";
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
+  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type {
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
   import { extent } from "d3-array";
+  import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
   import { fly } from "svelte/transition";
+  import {
+    DashboardTimeControls,
+    TimeComparisonOption,
+    TimeRangePreset,
+    TimeRoundingStrategy,
+  } from "../../../lib/time/types";
+  import ChartBody from "./ChartBody.svelte";
+  import MeasureScrub from "./MeasureScrub.svelte";
   import MeasureValueMouseover from "./MeasureValueMouseover.svelte";
   import {
     getOrderedStartEnd,
     localToTimeZoneOffset,
     niceMeasureExtents,
   } from "./utils";
-  import {
-    TimeRangePreset,
-    TimeRoundingStrategy,
-  } from "../../../lib/time/types";
-  import { getContext } from "svelte";
-  import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
-  import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
-  import MeasureScrub from "./MeasureScrub.svelte";
-  import ChartBody from "./ChartBody.svelte";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
-  import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
-  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
-  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
-  import { numberKindForMeasure } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let metricViewName: string;
-  export let width: number = undefined;
-  export let height: number = undefined;
-  export let xMin: Date = undefined;
-  export let xMax: Date = undefined;
-  export let yMin: number = undefined;
-  export let yMax: number = undefined;
+  export let width: number | undefined = undefined;
+  export let height: number | undefined = undefined;
+  export let xMin: Date | undefined = undefined;
+  export let xMax: Date | undefined = undefined;
+  export let yMin: number | undefined = undefined;
+  export let yMax: number | undefined = undefined;
 
   export let timeGrain: V1TimeGrain;
   export let zone: string;
 
   export let showComparison = false;
+  export let isInTimeDimensionView: boolean;
   export let data;
   export let dimensionData: DimensionDataItem[] = [];
   export let xAccessor = "ts";
   export let labelAccessor = "label";
   export let yAccessor = "value";
-  export let mouseoverValue;
-  export let hovered = false;
+  export let mouseoverValue: DomainCoordinates | undefined = undefined;
+  export let validPercTotal: number | null = null;
 
   // control point for scrub functionality.
   export let isScrubbing = false;
@@ -66,18 +72,20 @@
   export let mouseoverTimeFormat: (d: number | Date | string) => string = (v) =>
     v.toString();
 
-  $: mouseoverFormat = createMeasureValueFormatter(measure);
+  $: mouseoverFormat = createMeasureValueFormatter<null | undefined>(measure);
   $: numberKind = numberKindForMeasure(measure);
 
-  export let tweenProps = { duration: 400, easing: cubicOut };
-
+  const tweenProps = { duration: 400, easing: cubicOut };
   const xScale = getContext(contexts.scale("x")) as ScaleStore;
 
+  let hovered: boolean = false;
   let scrub;
   let cursorClass;
   let preventScrubReset;
 
-  $: hoveredTime = mouseoverValue?.x || $tableInteractionStore.time;
+  $: hoveredTime =
+    (mouseoverValue?.x instanceof Date && mouseoverValue?.x) ||
+    $tableInteractionStore.time;
 
   $: hasSubrangeSelected = Boolean(scrubStart && scrubEnd);
 
@@ -97,7 +105,7 @@
     isOverEnd = Math.abs(mouseOverCords - scrubEndCords) <= 5;
 
     isInsideScrub = Boolean(
-      mouseOverCords > min + 5 && mouseOverCords < max - 5
+      mouseOverCords > min + 5 && mouseOverCords < max - 5,
     );
   }
 
@@ -125,20 +133,20 @@
   // Move to utils
   $: if (isComparingDimension) {
     let dimExtents = dimensionData.map((d) =>
-      extent(d?.data || [], (datum) => datum[yAccessor])
+      extent(d?.data || [], (datum) => datum[yAccessor]),
     );
 
     yExtentMin = dimExtents
       .map((e) => e[0])
       .reduce(
         (min, curr) => Math.min(min, isNaN(curr) ? Infinity : curr),
-        Infinity
+        Infinity,
       );
     yExtentMax = dimExtents
       .map((e) => e[1])
       .reduce(
         (max, curr) => Math.max(max, isNaN(curr) ? -Infinity : curr),
-        -Infinity
+        -Infinity,
       );
 
     isFetchingDimensions = dimensionData.some((d) => d?.isFetching);
@@ -149,7 +157,7 @@
       yMin !== undefined ? yMin : yExtentMin,
       yMax !== undefined ? yMax : yExtentMax,
     ],
-    6 / 5
+    6 / 5,
   );
 
   $: internalXMin = xMin || xExtentMin;
@@ -188,6 +196,27 @@
     });
   }
 
+  function updateRange(start: Date, end: Date) {
+    const timeRange = {
+      name: TimeRangePreset.CUSTOM,
+      start: start,
+      end: end,
+    };
+
+    const comparisonTimeRange = showComparison
+      ? ({
+          name: TimeComparisonOption.CONTIGUOUS,
+        } as DashboardTimeControls) // FIXME wrong typecasting across application
+      : undefined;
+
+    metricsExplorerStore.selectTimeRange(
+      metricViewName,
+      timeRange,
+      timeGrain,
+      comparisonTimeRange,
+    );
+  }
+
   function onMouseClick() {
     // skip if still scrubbing
     if (preventScrubReset) return;
@@ -195,11 +224,17 @@
     if (!hasSubrangeSelected) return;
 
     const { start, end } = getOrderedStartEnd(scrubStart, scrubEnd);
-    if (mouseoverValue?.x < start || mouseoverValue?.x > end) resetScrub();
+
+    if (
+      mouseoverValue?.x &&
+      (mouseoverValue?.x < start || mouseoverValue?.x > end)
+    ) {
+      resetScrub();
+    }
   }
 </script>
 
-<div class={cursorClass}>
+<div class={`${cursorClass} select-none`}>
   <SimpleDataGraphic
     bind:hovered
     bind:mouseoverValue
@@ -212,27 +247,31 @@
     on:scrub-move={(e) => scrub?.moveScrub(e)}
     on:scrub-start={(e) => scrub?.startScrub(e)}
     overflowHidden={false}
-    right={50}
+    right={isInTimeDimensionView ? 20 : 40}
     shareYScale={false}
     top={4}
     {width}
     xMaxTweenProps={tweenProps}
     xMinTweenProps={tweenProps}
-    xType="date"
+    xType={ScaleType.DATE}
+    yType={ScaleType.NUMBER}
     yMax={internalYMax}
     yMaxTweenProps={tweenProps}
     yMin={internalYMin}
     yMinTweenProps={tweenProps}
-    yType="number"
   >
     <Axis {numberKind} side="right" />
     <Grid />
+    <MeasurePan
+      on:pan={(e) => updateRange(e.detail.start, e.detail.end)}
+      hovering={hovered}
+    />
     <Body>
       <ChartBody
         {data}
         {dimensionData}
-        isHovering={hoveredTime}
         dimensionValue={$tableInteractionStore?.dimensionValue}
+        isHovering={Boolean(hoveredTime)}
         {scrubEnd}
         {scrubStart}
         {showComparison}
@@ -243,7 +282,7 @@
         {yExtentMax}
       />
       <line
-        class="stroke-blue-200"
+        class="stroke-primary-200"
         x1={config.plotLeft}
         x2={config.plotLeft + config.plotRight}
         y1={yScale(0)}
@@ -264,7 +303,7 @@
           let:point
         >
           {#if point && inBounds(internalXMin, internalXMax, point[xAccessor])}
-            <g transition:fly|local={{ duration: 100, x: -4 }}>
+            <g transition:fly={{ duration: 100, x: -4 }}>
               <text
                 class="fill-gray-600"
                 style:paint-order="stroke"
@@ -288,7 +327,7 @@
                 </text>
               {/if}
             </g>
-            <g transition:fly|local={{ duration: 100, x: -4 }}>
+            <g transition:fly={{ duration: 100, x: -4 }}>
               {#if isComparingDimension}
                 <DimensionValueMouseover
                   {point}
@@ -296,7 +335,9 @@
                   {yAccessor}
                   {dimensionData}
                   dimensionValue={$tableInteractionStore?.dimensionValue}
+                  {validPercTotal}
                   {mouseoverFormat}
+                  {hovered}
                 />
               {:else}
                 <MeasureValueMouseover

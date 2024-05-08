@@ -1,0 +1,53 @@
+name: Unit tests for web code
+on:
+  pull_request:
+    paths:
+      - ".github/workflows/web-test.yml"
+      - "web-admin/**"
+      - "web-auth/**"
+      - "web-common/**"
+      - "web-local/**"
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Filter modified codepaths
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            admin:
+              - ".github/workflows/web-test.yml"
+              - "web-admin/**"
+            auth:
+              - ".github/workflows/web-test.yml"
+              - "web-auth/**"
+            local:
+              - ".github/workflows/web-test.yml"
+              - "web-local/**"
+            common:
+              - ".github/workflows/web-test.yml"
+              - "web-common/**"
+
+      - name: Set up NodeJS
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: NPM Install
+        run: npm install
+
+      - name: Run web-common unit tests
+        if: steps.filter.outputs.common == 'true'
+        run: npm run test -w web-common
+
+      - name: Run web-auth unit tests
+        if: steps.filter.outputs.auth == 'true'
+        run: npm run test -w web-auth
+
+      - name: Run storybook smoke tests
+        run: |-
+          npm run storybook:smoketest -w web-common

@@ -1,25 +1,17 @@
-import type {
-  V1ConnectorSpec,
-  V1ReconcileError,
-} from "@rilldata/web-common/runtime-client";
-import { extractFileExtension } from "./extract-table-name";
-import type { SourceConnectionType } from "../../metrics/service/SourceEventTypes";
-import { behaviourEvent, errorEvent } from "../../metrics/initMetrics";
-import type { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
-import type {
-  MetricsEventScreenName,
-  MetricsEventSpace,
-} from "../../metrics/service/MetricsTypes";
-import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
-import { EntityType } from "../entity-management/types";
-import { sanitizeEntityName } from "./extract-table-name";
-import { categorizeSourceError } from "./modal/errors";
+import {
+  extractFileExtension,
+  sanitizeEntityName,
+} from "@rilldata/web-common/features/sources/extract-file-name";
+import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
-  connectorName: string
+  connectorName: string,
 ) {
-  const topLineComment = `# Visit https://docs.rilldata.com/reference/project-files/sources to learn more about Rill source files.`;
+  const topOfFile = `# Source YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/sources
+
+type: source`;
 
   switch (connectorName) {
     case "s3":
@@ -39,6 +31,14 @@ export function compileCreateSourceYAML(
       delete values.db;
       delete values.table;
       break;
+    case "duckdb": {
+      const db = values.db as string;
+      if (db.startsWith("md:")) {
+        connectorName = "motherduck";
+        values.db = db.replace("md:", "");
+      }
+      break;
+    }
   }
 
   const compiledKeyValues = Object.entries(values)
@@ -46,11 +46,11 @@ export function compileCreateSourceYAML(
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 
-  return `${topLineComment}\n\ntype: "${connectorName}"\n` + compiledKeyValues;
+  return `${topOfFile}\n\nconnector: "${connectorName}"\n` + compiledKeyValues;
 }
 
 function buildDuckDbQuery(path: string): string {
-  const extension = extractFileExtension(path as string);
+  const extension = extractFileExtension(path);
   if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
     return `select * from read_csv('${path}', auto_detect=true, ignore_errors=1, header=true)`;
   } else if (extensionContainsParts(extension, [".parquet"])) {
@@ -67,7 +67,7 @@ function buildDuckDbQuery(path: string): string {
  */
 function extensionContainsParts(
   fileExtension: string,
-  extensionParts: Array<string>
+  extensionParts: Array<string>,
 ) {
   for (const extension of extensionParts) {
     if (fileExtension.includes(extension)) return true;
@@ -75,7 +75,7 @@ function extensionContainsParts(
   return false;
 }
 
-export function inferSourceName(connector: V1ConnectorSpec, path: string) {
+export function inferSourceName(connector: V1ConnectorDriver, path: string) {
   if (
     !path ||
     path.endsWith("/") ||
@@ -112,51 +112,4 @@ export function getFileTypeFromPath(fileName) {
   }
 
   return fileType;
-}
-
-export function getSourceError(errors: V1ReconcileError[], sourceName) {
-  const path = getFilePathFromNameAndType(sourceName, EntityType.Table);
-
-  return errors?.find((error) => error?.filePath === path);
-}
-
-export function emitSourceErrorTelemetry(
-  space: MetricsEventSpace,
-  screenName: MetricsEventScreenName,
-  errorMessage: string,
-  connectionType: SourceConnectionType,
-  fileName: string
-) {
-  const categorizedError = categorizeSourceError(errorMessage);
-  const fileType = getFileTypeFromPath(fileName);
-  const isGlob = fileName.includes("*");
-
-  errorEvent?.fireSourceErrorEvent(
-    space,
-    screenName,
-    categorizedError,
-    connectionType,
-    fileType,
-    isGlob
-  );
-}
-
-export function emitSourceSuccessTelemetry(
-  space: MetricsEventSpace,
-  screenName: MetricsEventScreenName,
-  medium: BehaviourEventMedium,
-  connectionType: SourceConnectionType,
-  fileName: string
-) {
-  const fileType = getFileTypeFromPath(fileName);
-  const isGlob = fileName.includes("*");
-
-  behaviourEvent?.fireSourceSuccessEvent(
-    medium,
-    screenName,
-    space,
-    connectionType,
-    fileType,
-    isGlob
-  );
 }

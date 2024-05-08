@@ -1,78 +1,54 @@
-import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   openFileUploadDialog,
   uploadFile,
 } from "@rilldata/web-common/features/sources/modal/file-upload";
 import { compileCreateSourceYAML } from "@rilldata/web-common/features/sources/sourceUtils";
 import {
+  runtimeServiceCreateTrigger,
   runtimeServicePutFile,
-  runtimeServiceTriggerRefresh,
 } from "@rilldata/web-common/runtime-client";
 
 export async function refreshSource(
   connector: string,
+  filePath: string,
   sourceName: string,
-  instanceId: string
+  instanceId: string,
 ) {
   if (connector !== "local_file") {
-    return runtimeServiceTriggerRefresh(instanceId, sourceName);
+    return runtimeServiceCreateTrigger(instanceId, {
+      refreshTriggerSpec: {
+        onlyNames: [{ kind: ResourceKind.Source, name: sourceName }],
+      },
+    });
   }
 
   // different logic for the file connector
-
-  const files = await openFileUploadDialog(false);
-  if (!files.length) return Promise.reject();
-
-  const filePath = await uploadFile(instanceId, files[0]);
-  if (filePath === null) {
-    return Promise.reject();
-  }
-  const yaml = compileCreateSourceYAML(
-    {
-      sourceName,
-      path: filePath,
-    },
-    "local_file"
-  );
-  return runtimeServicePutFile(
-    instanceId,
-    getFileAPIPathFromNameAndType(sourceName, EntityType.Table),
-    {
-      blob: yaml,
-    }
-  );
+  return replaceSourceWithUploadedFile(instanceId, filePath);
 }
 
 export async function replaceSourceWithUploadedFile(
   instanceId: string,
-  sourceName: string
+  filePath: string,
 ) {
-  const artifactPath = getFileAPIPathFromNameAndType(
-    sourceName,
-    EntityType.Table
-  );
-
   const files = await openFileUploadDialog(false);
   if (!files.length) return Promise.reject();
 
-  const filePath = await uploadFile(instanceId, files[0]);
-  if (filePath === null) {
+  const dataFilePath = await uploadFile(instanceId, files[0]);
+  if (dataFilePath === null) {
     return Promise.reject();
   }
 
   const yaml = compileCreateSourceYAML(
     {
-      sourceName,
-      path: filePath,
+      path: dataFilePath,
     },
-    "local_file"
+    "local_file",
   );
 
   // Create source
-  const resp = await runtimeServicePutFile(instanceId, artifactPath, {
+  return runtimeServicePutFile(instanceId, {
+    path: filePath,
     blob: yaml,
   });
-
-  return resp;
 }

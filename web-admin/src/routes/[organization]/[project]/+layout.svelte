@@ -1,17 +1,20 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
+  import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
-  import { isProjectPage } from "../../../features/navigation/nav-utils";
+  import { isProjectPage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import ProjectTabs from "../../../features/projects/ProjectTabs.svelte";
   import { useProjectRuntime } from "../../../features/projects/selectors";
   import { viewAsUserStore } from "../../../features/view-as-user/viewAsUserStore";
 
   $: projRuntime = useProjectRuntime(
     $page.params.organization,
-    $page.params.project
+    $page.params.project,
   );
+  const user = createAdminServiceGetCurrentUser();
 
   $: isRuntimeHibernating = $projRuntime.isSuccess && !$projRuntime.data;
 
@@ -21,11 +24,25 @@
   }
 
   $: onProjectPage = isProjectPage($page);
+
+  $: if ($page.params.project && $user.data?.user?.id) {
+    metricsService.loadCloudFields({
+      isDev: window.location.host.startsWith("localhost"),
+      projectId: $page.params.project,
+      organizationId: $page.params.organization,
+      userId: $user.data?.user?.id,
+    });
+  }
 </script>
 
-<!-- Note: we don't provide the runtime here when the user is being spoofed via the "View As" functionality.
+{#if $viewAsUserStore}
+  <!-- When the user is being spoofed via the "View As" functionality, we don't provide the runtime here.
     In these cases, the "View as" actions manually set the runtime.  -->
-{#if !$viewAsUserStore}
+  <slot />
+{:else if isRuntimeHibernating}
+  <!-- When the runtime is hibernating, we omit the RuntimeProvider. -->
+  <slot />
+{:else}
   <RuntimeProvider
     host={$projRuntime.data?.host}
     instanceId={$projRuntime.data?.instanceId}
@@ -40,6 +57,4 @@
       <slot />
     </ProjectDashboardsListener>
   </RuntimeProvider>
-{:else}
-  <slot />
 {/if}

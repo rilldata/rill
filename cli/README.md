@@ -10,20 +10,24 @@ make cli
 # To output usage:
 ./rill
 
-# To run start
-./rill start --project dev-project
+# To run start:
+./rill start dev-project
 ```
 
 ## Running in development
 
 In development, the CLI will serve a dummy frontend and not embed any examples. You can run it like this:
 ```bash
-# Optionally run this to embed the UI and examples in the cli (not needed if using `npm run dev`)
+# Optionally run this to embed the UI and examples in the CLI
 make cli.prepare
 
 # To output usage:
 go run ./cli
 
 # To run start:
-go run ./cli start --project dev-project
+go run ./cli start dev-project
 ```
+
+## Generating CLI reference docs
+
+See `../docs/README.md` for details about the generated CLI reference docs.

@@ -1,16 +1,14 @@
 package project
 
 import (
-	"context"
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func DeleteCmd(cfg *config.Config) *cobra.Command {
+func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, path string
 	var force bool
 
@@ -19,18 +17,17 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 		Args:  cobra.MaximumNArgs(1),
 		Short: "Delete the project",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				name = args[0]
 			}
 
-			if !cmd.Flags().Changed("project") && len(args) == 0 && cfg.Interactive {
-				name, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+			if !cmd.Flags().Changed("project") && len(args) == 0 && ch.Interactive {
+				name, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return err
 				}
@@ -41,7 +38,7 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			if !force {
-				fmt.Printf("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)
+				ch.PrintfWarn("Warn: Deleting the project %q will remove all metadata associated with the project\n", name)
 
 				msg := fmt.Sprintf("Type %q to confirm deletion", name)
 				project, err := cmdutil.InputPrompt(msg, "")
@@ -54,15 +51,15 @@ func DeleteCmd(cfg *config.Config) *cobra.Command {
 				}
 			}
 
-			_, err = client.DeleteProject(context.Background(), &adminv1.DeleteProjectRequest{
-				OrganizationName: cfg.Org,
+			_, err = client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{
+				OrganizationName: ch.Org,
 				Name:             name,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess(fmt.Sprintf("Deleted project: %v", name))
+			ch.PrintfSuccess("Deleted project: %v\n", name)
 			return nil
 		},
 	}

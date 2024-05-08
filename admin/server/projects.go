@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -21,6 +24,15 @@ import (
 )
 
 const prodDeplTTL = 14 * 24 * time.Hour
+
+// runtimeAccessTokenTTL is the validity duration of JWTs issued for runtime access when calling GetProject.
+// This TTL is not used for tokens created for internal communication between the admin and runtime services.
+const runtimeAccessTokenDefaultTTL = 30 * time.Minute
+
+// runtimeAccessTokenEmbedTTL is the validation duration of JWTs issued for embedding.
+// Since low-risk embed users might not implement refresh, it defaults to a high value of 24 hours.
+// It can be overridden to a lower value when issued for high-risk embed users.
+const runtimeAccessTokenEmbedTTL = 24 * time.Hour
 
 func (s *Server) ListProjectsForOrganization(ctx context.Context, req *adminv1.ListProjectsForOrganizationRequest) (*adminv1.ListProjectsForOrganizationResponse, error) {
 	observability.AddRequestAttributes(ctx,
@@ -101,8 +113,16 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		permissions.ReadProject = true
 		permissions.ReadProd = true
 	}
+	if claims.Superuser(ctx) {
+		permissions.ReadProject = true
+		permissions.ReadProd = true
+		permissions.ReadProdStatus = true
+		permissions.ReadDev = true
+		permissions.ReadDevStatus = true
+		permissions.ReadProjectMembers = true
+	}
 
-	if !permissions.ReadProject && !claims.Superuser(ctx) {
+	if !permissions.ReadProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
 	}
 
@@ -130,10 +150,15 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		}
 	}
 
+	ttlDuration := runtimeAccessTokenDefaultTTL
+	if req.AccessTokenTtlSeconds != 0 {
+		ttlDuration = time.Duration(req.AccessTokenTtlSeconds) * time.Second
+	}
+
 	jwt, err := s.issuer.NewToken(runtimeauth.TokenOptions{
 		AudienceURL: depl.RuntimeAudience,
 		Subject:     claims.OwnerID(),
-		TTL:         time.Hour,
+		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			depl.RuntimeInstanceID: {
 				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
@@ -141,6 +166,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				runtimeauth.ReadMetrics,
 				runtimeauth.ReadProfiling,
 				runtimeauth.ReadRepo,
+				runtimeauth.ReadAPI,
 			},
 		},
 		Attributes: attr,
@@ -162,6 +188,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.pattern", req.NamePattern),
+		attribute.Int("args.annotations", len(req.Annotations)),
 	)
 
 	claims := auth.GetClaims(ctx)
@@ -175,7 +202,21 @@ func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProj
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	projectNames, err := s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	var projectNames []string
+	if req.Annotations != nil && len(req.Annotations) > 0 {
+		// If an annotation is set to "*", we just check for key presence (instead of exact key-value match)
+		var annotationKeys []string
+		for k, v := range req.Annotations {
+			if v == "*" {
+				annotationKeys = append(annotationKeys, k)
+				delete(req.Annotations, k)
+			}
+		}
+
+		projectNames, err = s.admin.DB.FindProjectPathsByPatternAndAnnotations(ctx, req.NamePattern, token.Val, annotationKeys, req.Annotations, pageSize)
+	} else {
+		projectNames, err = s.admin.DB.FindProjectPathsByPattern(ctx, req.NamePattern, token.Val, pageSize)
+	}
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -197,7 +238,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.project", req.Name),
 		attribute.String("args.description", req.Description),
 		attribute.Bool("args.public", req.Public),
-		attribute.String("args.region", req.Region),
+		attribute.String("args.provisioner", req.Provisioner),
+		attribute.String("args.prod_version", req.ProdVersion),
 		attribute.String("args.prod_olap_driver", req.ProdOlapDriver),
 		attribute.Int64("args.prod_slots", req.ProdSlots),
 		attribute.String("args.sub_path", req.Subpath),
@@ -208,8 +250,9 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
 	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 	}
+	userID := claims.OwnerID()
 
 	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -249,7 +292,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Check Github app is installed and caller has access on the repo
-	installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, claims.OwnerID())
+	installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -261,13 +304,20 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		prodTTL = &tmp
 	}
 
+	// Backwards compatibility: if prod version is not set, default to "latest"
+	if req.ProdVersion == "" {
+		req.ProdVersion = "latest"
+	}
+
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, claims.OwnerID(), &database.InsertProjectOptions{
+	proj, err := s.admin.CreateProject(ctx, org, &database.InsertProjectOptions{
 		OrganizationID:       org.ID,
 		Name:                 req.Name,
 		Description:          req.Description,
 		Public:               req.Public,
-		Region:               req.Region,
+		CreatedByUserID:      &userID,
+		Provisioner:          req.Provisioner,
+		ProdVersion:          req.ProdVersion,
 		ProdOLAPDriver:       req.ProdOlapDriver,
 		ProdOLAPDSN:          req.ProdOlapDsn,
 		ProdSlots:            int(req.ProdSlots),
@@ -319,8 +369,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.Description != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.description", *req.Description))
 	}
-	if req.Region != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.region", *req.Region))
+	if req.Provisioner != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.provisioner", *req.Provisioner))
+	}
+	if req.ProdVersion != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.prod_version", *req.ProdVersion))
 	}
 	if req.ProdBranch != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.prod_branch", *req.ProdBranch))
@@ -384,12 +437,14 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Public:               valOrDefault(req.Public, proj.Public),
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
 		ProdVariables:        proj.ProdVariables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            int(valOrDefault(req.ProdSlots, int64(proj.ProdSlots))),
 		ProdTTLSeconds:       prodTTLSeconds,
-		Region:               valOrDefault(req.Region, proj.Region),
+		Provisioner:          valOrDefault(req.Provisioner, proj.Provisioner),
+		Annotations:          proj.Annotations,
 	}
 	proj, err = s.admin.UpdateProject(ctx, proj, opts)
 	if err != nil {
@@ -442,12 +497,14 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		Public:               proj.Public,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          proj.ProdVersion,
 		ProdBranch:           proj.ProdBranch,
 		ProdVariables:        req.Variables,
 		ProdDeploymentID:     proj.ProdDeploymentID,
 		ProdSlots:            proj.ProdSlots,
 		ProdTTLSeconds:       proj.ProdTTLSeconds,
-		Region:               proj.Region,
+		Provisioner:          proj.Provisioner,
+		Annotations:          proj.Annotations,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "variables updated failed with error %s", err.Error())
@@ -468,7 +525,7 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
+	if !claims.Superuser(ctx) && !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read project members")
 	}
 
@@ -659,17 +716,20 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
-	}
-
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		// check if there is a pending invite
+
+		// Only admins can remove pending invites.
+		// NOTE: If we change invites to accept/decline (instead of auto-accept on signup), we need to revisit this.
+		claims := auth.GetClaims(ctx)
+		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
+		}
+
+		// Check if there is a pending invite
 		invite, err := s.admin.DB.FindProjectInvite(ctx, proj.ID, req.Email)
 		if err != nil {
 			if errors.Is(err, database.ErrNotFound) {
@@ -677,11 +737,20 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 			}
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
 		err = s.admin.DB.DeleteProjectInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		return &adminv1.RemoveProjectMemberResponse{}, nil
+	}
+
+	// The caller must either have ManageProjectMembers permission or be the user being removed.
+	claims := auth.GetClaims(ctx)
+	isManager := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers
+	isSelf := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
+	if !isManager && !isSelf {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to remove project members")
 	}
 
 	err = s.admin.DB.DeleteProjectMemberUser(ctx, proj.ID, user.ID)
@@ -779,17 +848,230 @@ func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL,
 	return installationID, nil
 }
 
+// SudoUpdateTags updates the tags for a project in organization for superusers
+func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpdateAnnotationsRequest) (*adminv1.SudoUpdateAnnotationsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.Int("args.annotations", len(req.Annotations)),
+	)
+
+	// Check the request is made by a superuser
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not authorized to update annotations")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err = s.admin.UpdateProject(ctx, proj, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          proj.ProdVersion,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdDeploymentID:     proj.ProdDeploymentID,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Provisioner:          proj.Provisioner,
+		Annotations:          req.Annotations,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.SudoUpdateAnnotationsResponse{
+		Project: s.projToDTO(proj, req.Organization),
+	}, nil
+}
+
+func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv1.CreateProjectWhitelistedDomainRequest) (*adminv1.CreateProjectWhitelistedDomainResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.domain", req.Domain),
+		attribute.String("args.role", req.Role),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if !claims.Superuser(ctx) {
+		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+			return nil, status.Error(codes.PermissionDenied, "only proj admins can add whitelisted domain")
+		}
+		// check if the user's domain matches the whitelist domain
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !strings.HasSuffix(user.Email, "@"+req.Domain) {
+			return nil, status.Error(codes.PermissionDenied, "Domain name doesn’t match verified email domain. Please contact Rill support.")
+		}
+
+		if publicemail.IsPublic(req.Domain) {
+			return nil, status.Errorf(codes.InvalidArgument, "Public Domain %s cannot be whitelisted", req.Domain)
+		}
+	}
+
+	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "role not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// find existing users belonging to the whitelisted domain to the project
+	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, "%@"+req.Domain, "", math.MaxInt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// filter out users who are already members of the project
+	newUsers := make([]*database.User, 0)
+	for _, user := range users {
+		// check if user is already a member of the project
+		exists, err := s.admin.DB.CheckUserIsAProjectMember(ctx, user.ID, proj.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !exists {
+			newUsers = append(newUsers, user)
+		}
+	}
+
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	_, err = s.admin.DB.InsertProjectWhitelistedDomain(ctx, &database.InsertProjectWhitelistedDomainOptions{
+		ProjectID:     proj.ID,
+		ProjectRoleID: role.ID,
+		Domain:        req.Domain,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	for _, user := range newUsers {
+		err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.CreateProjectWhitelistedDomainResponse{}, nil
+}
+
+func (s *Server) RemoveProjectWhitelistedDomain(ctx context.Context, req *adminv1.RemoveProjectWhitelistedDomainRequest) (*adminv1.RemoveProjectWhitelistedDomainResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.domain", req.Domain),
+	)
+
+	claims := auth.GetClaims(ctx)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if !(claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject || claims.Superuser(ctx)) {
+		return nil, status.Error(codes.PermissionDenied, "only project admins can remove whitelisted domain")
+	}
+
+	invite, err := s.admin.DB.FindProjectWhitelistedDomain(ctx, proj.ID, req.Domain)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "whitelist not found for project %q and domain %q", proj.Name, req.Domain)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.DB.DeleteProjectWhitelistedDomain(ctx, invite.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.RemoveProjectWhitelistedDomainResponse{}, nil
+}
+
+func (s *Server) ListProjectWhitelistedDomains(ctx context.Context, req *adminv1.ListProjectWhitelistedDomainsRequest) (*adminv1.ListProjectWhitelistedDomainsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !(claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject || claims.Superuser(ctx)) {
+		return nil, status.Error(codes.PermissionDenied, "only project admins can list whitelisted domains")
+	}
+
+	domains, err := s.admin.DB.FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx, proj.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	dtos := make([]*adminv1.WhitelistedDomain, len(domains))
+	for i, domain := range domains {
+		dtos[i] = &adminv1.WhitelistedDomain{
+			Domain: domain.Domain,
+			Role:   domain.RoleName,
+		}
+	}
+
+	return &adminv1.ListProjectWhitelistedDomainsResponse{Domains: dtos}, nil
+}
+
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
 
 	return &adminv1.Project{
 		Id:               p.ID,
 		Name:             p.Name,
-		Description:      p.Description,
-		Public:           p.Public,
 		OrgId:            p.OrganizationID,
 		OrgName:          orgName,
-		Region:           p.Region,
+		Description:      p.Description,
+		Public:           p.Public,
+		CreatedByUserId:  safeStr(p.CreatedByUserID),
+		Provisioner:      p.Provisioner,
+		ProdVersion:      p.ProdVersion,
 		ProdOlapDriver:   p.ProdOLAPDriver,
 		ProdOlapDsn:      p.ProdOLAPDSN,
 		ProdSlots:        int64(p.ProdSlots),
@@ -799,6 +1081,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
+		Annotations:      p.Annotations,
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}

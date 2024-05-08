@@ -1,0 +1,57 @@
+# Dashboard YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
+
+type: metrics_view
+title: Ad Bids
+model: ad_bids
+timeseries: timestamp
+dimensions:
+  - label: Publisher
+    column: publisher
+    description: ""
+  - label: Domain
+    column: domain
+    description: ""
+measures:
+  - name: total_records
+    label: Total records
+    expression: COUNT(*)
+    description: ""
+    format_preset: humanize
+    valid_percent_of_total: true
+  - name: bid_price
+    label: Sum of Bid Price
+    expression: SUM(bid_price)
+    description: ""
+    format_preset: humanize
+    valid_percent_of_total: true
+available_time_zones:
+  - America/Los_Angeles
+  - America/Chicago
+  - America/New_York
+  - Europe/London
+  - Europe/Paris
+  - Asia/Jerusalem
+  - Europe/Moscow
+  - Asia/Kolkata
+  - Asia/Shanghai
+  - Asia/Tokyo
+  - Australia/Sydney
+available_time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P3M
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC

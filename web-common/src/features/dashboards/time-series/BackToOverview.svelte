@@ -13,9 +13,8 @@
 </script>
 
 <button
-  class="flex flex-row"
+  class="flex flex-row items-center gap-x-1"
   on:click={() => goBackToOverview()}
-  style:grid-column-gap=".4rem"
 >
   {#if isFetching}
     <div>
@@ -23,8 +22,8 @@
     </div>
   {:else}
     <span class="ui-copy-icon">
-      <Back size="16px" />
+      <Back color="var(--color-primary-600)" size="16px" />
     </span>
-    <span> Overview </span>
+    <span class="text-primary-600 font-medium"> Overview </span>
   {/if}
 </button>

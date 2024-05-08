@@ -1,19 +1,19 @@
 package superuser
 
 import (
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
-func SuperuserCmd(cfg *config.Config) *cobra.Command {
+func SuperuserCmd(ch *cmdutil.Helper) *cobra.Command {
 	superuserCmd := &cobra.Command{
 		Use:   "superuser",
 		Short: "Manage superusers",
 	}
 
-	superuserCmd.AddCommand(ListCmd(cfg))
-	superuserCmd.AddCommand(AddCmd(cfg))
-	superuserCmd.AddCommand(RemoveCmd(cfg))
+	superuserCmd.AddCommand(ListCmd(ch))
+	superuserCmd.AddCommand(AddCmd(ch))
+	superuserCmd.AddCommand(RemoveCmd(ch))
 
 	return superuserCmd
 }

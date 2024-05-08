@@ -9,6 +9,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/cmd/deploy"
+	"github.com/rilldata/rill/cli/cmd/devtool"
 	"github.com/rilldata/rill/cli/cmd/docs"
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/org"
@@ -17,13 +18,14 @@ import (
 	"github.com/rilldata/rill/cli/cmd/service"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
+	"github.com/rilldata/rill/cli/cmd/uninstall"
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/printer"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/status"
@@ -45,7 +47,7 @@ var rootCmd = &cobra.Command{
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
-func Execute(ctx context.Context, ver config.Version) {
+func Execute(ctx context.Context, ver cmdutil.Version) {
 	err := runCmd(ctx, ver)
 	if err != nil {
 		errMsg := err.Error()
@@ -70,50 +72,53 @@ func Execute(ctx context.Context, ver config.Version) {
 	}
 }
 
-func runCmd(ctx context.Context, ver config.Version) error {
-	// Build CLI config
-	cfg := &config.Config{
-		Version: ver,
-	}
-
-	// Check version
-	err := update.CheckVersion(ctx, cfg.Version.Number)
-	if err != nil {
-		fmt.Printf("Warning: version check failed: %v\n", err)
-	}
-
-	// Print warning if currently acting as an assumed user
-	representingUser, err := dotrill.GetRepresentingUser()
-	if err != nil {
-		fmt.Printf("could not parse representing user email\n")
-	}
-	if representingUser != "" {
-		cmdutil.PrintlnWarn(fmt.Sprintf("Warning: Running action as %q\n", representingUser))
-	}
-
+func runCmd(ctx context.Context, ver cmdutil.Version) error {
 	// Load admin token from .rill (may later be overridden by flag --api-token)
-	token, err := dotrill.GetAccessToken()
+	adminTokenDefault, err := dotrill.GetAccessToken()
 	if err != nil {
 		return fmt.Errorf("could not parse access token from ~/.rill: %w", err)
 	}
-	cfg.AdminTokenDefault = token
+
+	// Load admin URL from .rill (override with --api-url)
+	adminURL, err := dotrill.GetDefaultAdminURL()
+	if err != nil {
+		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
+	}
+	if adminURL == "" {
+		adminURL = defaultAdminURL
+	}
 
 	// Load default org from .rill
 	defaultOrg, err := dotrill.GetDefaultOrg()
 	if err != nil {
 		return fmt.Errorf("could not parse default org from ~/.rill: %w", err)
 	}
-	cfg.Org = defaultOrg
 
-	// Load admin URL from .rill (override with --api-url)
-	url, err := dotrill.GetDefaultAdminURL()
+	// Create cmdutil Helper
+	ch := &cmdutil.Helper{
+		Printer:           printer.NewPrinter(printer.FormatHuman),
+		Version:           ver,
+		AdminURL:          adminURL,
+		AdminTokenDefault: adminTokenDefault,
+		Org:               defaultOrg,
+		Interactive:       true,
+	}
+	defer ch.Close()
+
+	// Check version
+	err = update.CheckVersion(ctx, ver.Number)
 	if err != nil {
-		return fmt.Errorf("could not parse default api URL from ~/.rill: %w", err)
+		ch.PrintfWarn("Warning: version check failed: %v\n\n", err)
 	}
-	if url == "" {
-		url = defaultAdminURL
+
+	// Print warning if currently acting as an assumed user
+	representingUser, err := dotrill.GetRepresentingUser()
+	if err != nil {
+		ch.PrintfWarn("Could not parse representing user email\n\n")
 	}
-	cfg.AdminURL = url
+	if representingUser != "" {
+		ch.PrintfWarn("Warning: Running action as %q\n\n", representingUser)
+	}
 
 	// Cobra config
 	rootCmd.Version = ver.String()
@@ -122,42 +127,40 @@ func runCmd(ctx context.Context, ver config.Version) error {
 	// we want to override some error messages
 	rootCmd.SilenceErrors = true
 	rootCmd.PersistentFlags().BoolP("help", "h", false, "Print usage") // Overrides message for help
-	rootCmd.PersistentFlags().BoolVar(&cfg.Interactive, "interactive", true, "Prompt for missing required parameters")
+	rootCmd.PersistentFlags().BoolVar(&ch.Interactive, "interactive", true, "Prompt for missing required parameters")
+	rootCmd.PersistentFlags().Var(&ch.Printer.Format, "format", `Output format (options: "human", "json", "csv")`)
+	rootCmd.PersistentFlags().StringVar(&ch.AdminURL, "api-url", ch.AdminURL, "Base URL for the cloud API")
+	if !ch.IsDev() {
+		if err := rootCmd.PersistentFlags().MarkHidden("api-url"); err != nil {
+			panic(err)
+		}
+	}
+	rootCmd.PersistentFlags().StringVar(&ch.AdminTokenOverride, "api-token", "", "Token for authenticating with the cloud API")
 	rootCmd.Flags().BoolP("version", "v", false, "Show rill version") // Adds option to get version by passing --version or -v
 
 	// Add sub-commands
-	rootCmd.AddCommand(start.StartCmd(cfg))
-	rootCmd.AddCommand(admin.AdminCmd(cfg))
-	rootCmd.AddCommand(runtime.RuntimeCmd(cfg))
-	rootCmd.AddCommand(docs.DocsCmd(cfg, rootCmd))
-	rootCmd.AddCommand(completionCmd)
-	rootCmd.AddCommand(verifyInstallCmd(cfg))
-	rootCmd.AddCommand(versioncmd.VersionCmd())
-	rootCmd.AddCommand(upgrade.UpgradeCmd(cfg))
-	rootCmd.AddCommand(whoami.WhoamiCmd(cfg))
+	rootCmd.AddCommand(
+		start.StartCmd(ch),
+		deploy.DeployCmd(ch),
+		env.EnvCmd(ch),
+		user.UserCmd(ch),
+		org.OrgCmd(ch),
+		project.ProjectCmd(ch),
+		service.ServiceCmd(ch),
+		auth.LoginCmd(ch),
+		auth.LogoutCmd(ch),
+		whoami.WhoamiCmd(ch),
+		docs.DocsCmd(ch, rootCmd),
+		completionCmd,
+		versioncmd.VersionCmd(),
+		upgrade.UpgradeCmd(ch),
+		uninstall.UninstallCmd(ch),
+		sudo.SudoCmd(ch),
+		devtool.DevtoolCmd(ch),
+		admin.AdminCmd(ch),
+		runtime.RuntimeCmd(ch),
+		verifyInstallCmd(ch),
+	)
 
-	// Add sub-commands for admin
-	// (This allows us to add persistent flags that apply only to the admin-related commands.)
-	adminCmds := []*cobra.Command{
-		org.OrgCmd(cfg),
-		project.ProjectCmd(cfg),
-		deploy.DeployCmd(cfg),
-		user.UserCmd(cfg),
-		env.EnvCmd(cfg),
-		auth.LoginCmd(cfg),
-		auth.LogoutCmd(cfg),
-		sudo.SudoCmd(cfg),
-		service.ServiceCmd(cfg),
-	}
-	for _, cmd := range adminCmds {
-		cmd.PersistentFlags().StringVar(&cfg.AdminURL, "api-url", cfg.AdminURL, "Base URL for the admin API")
-		if !cfg.IsDev() {
-			if err := cmd.PersistentFlags().MarkHidden("api-url"); err != nil {
-				panic(err)
-			}
-		}
-		cmd.PersistentFlags().StringVar(&cfg.AdminTokenOverride, "api-token", "", "Token for authenticating with the admin API")
-		rootCmd.AddCommand(cmd)
-	}
 	return rootCmd.ExecuteContext(ctx)
 }

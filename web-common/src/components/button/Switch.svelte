@@ -1,6 +1,6 @@
 <script lang="ts">
   export let checked = false;
-  export let id: string = undefined;
+  export let id: string | undefined = undefined;
 </script>
 
 <button
@@ -16,9 +16,9 @@
       checked:bg-gray-700 dark:checked:bg-gray-400
       cursor-pointer
     "
+    {id}
     role="switch"
     type="checkbox"
-    {id}
   />
   <slot />
 </button>
@@ -71,7 +71,7 @@
   }
 
   input:checked {
-    @apply bg-blue-500;
+    @apply bg-primary-500;
   }
 
   input:checked::before {

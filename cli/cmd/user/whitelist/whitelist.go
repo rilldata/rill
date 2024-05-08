@@ -2,20 +2,19 @@ package whitelist
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func WhitelistCmd(cfg *config.Config) *cobra.Command {
+func WhitelistCmd(ch *cmdutil.Helper) *cobra.Command {
 	whitelistCmd := &cobra.Command{
 		Use:               "whitelist",
 		Short:             "Whitelist access by email domain",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 
-	whitelistCmd.AddCommand(SetupCmd(cfg))
-	whitelistCmd.AddCommand(RemoveCmd(cfg))
-	whitelistCmd.AddCommand(ListCmd(cfg))
+	whitelistCmd.AddCommand(SetupCmd(ch))
+	whitelistCmd.AddCommand(RemoveCmd(ch))
+	whitelistCmd.AddCommand(ListCmd(ch))
 
 	return whitelistCmd
 }

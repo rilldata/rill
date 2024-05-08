@@ -4,14 +4,13 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
 
-func EditCmd(cfg *config.Config) *cobra.Command {
+func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	var orgName, description string
 
 	editCmd := &cobra.Command{
@@ -21,22 +20,24 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) > 0 {
 				orgName = args[0]
 			}
-			if !cmd.Flags().Changed("org") && len(args) == 0 && cfg.Interactive {
-				orgNames, err := cmdutil.OrgNames(ctx, client)
+			if !cmd.Flags().Changed("org") && len(args) == 0 && ch.Interactive {
+				orgNames, err := orgNames(ctx, ch)
 				if err != nil {
 					return err
 				}
 
-				orgName = cmdutil.SelectPrompt("Select org to edit", orgNames, cfg.Org)
+				orgName, err = cmdutil.SelectPrompt("Select org to edit", orgNames, ch.Org)
+				if err != nil {
+					return err
+				}
 			}
 
 			resp, err := client.GetOrganization(ctx, &adminv1.GetOrganizationRequest{Name: orgName})
@@ -56,7 +57,7 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				Name: org.Name,
 			}
 
-			promptFlagValues := cfg.Interactive
+			promptFlagValues := ch.Interactive
 			if cmd.Flags().Changed("description") {
 				promptFlagValues = false
 				req.Description = &description
@@ -75,13 +76,14 @@ func EditCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Updated organization")
-			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
+			ch.PrintfSuccess("Updated organization\n")
+			ch.PrintOrgs([]*adminv1.Organization{updatedOrg.Organization}, "")
+
 			return nil
 		},
 	}
 	editCmd.Flags().SortFlags = false
-	editCmd.Flags().StringVar(&orgName, "org", cfg.Org, "Organization name")
+	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
 	editCmd.Flags().StringVar(&description, "description", "", "Description")
 
 	return editCmd

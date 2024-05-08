@@ -14,6 +14,21 @@ dimensions:
     name: dom
     property: domain
     description: ""
+  - name: nolabel_pub
+    property: publisher
+  - label: Space Label
+    name: space_label
+    expression: "publisher"
+  - label: Domain Parts
+    name: domain_parts
+    expression: "string_split(domain, '.')"
+    unnest: true
+  - label: TLD
+    name: tld
+    expression: "regexp_extract(domain, '(.*\\.)?(.*\\.com)', 2)"
+  - label: Null Publisher
+    name: null_publisher
+    expression: case when publisher is null then true else false end
 
 measures:
   - label: "Number of bids"
@@ -24,3 +39,13 @@ measures:
     expression: avg(bid_price)
     description: ""
     format_preset: ""
+  - name: m1 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+  - name: bid_price 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+
+

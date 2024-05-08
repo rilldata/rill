@@ -1,13 +1,6 @@
 <script lang="ts">
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Globe from "@rilldata/web-common/components/icons/Globe.svelte";
-  import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import {
-    Divider,
-    Menu,
-    MenuItem,
-  } from "@rilldata/web-common/components/menu";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import SelectorButton from "@rilldata/web-common/features/dashboards/time-controls/SelectorButton.svelte";
@@ -27,38 +20,38 @@
 
   const dispatch = createEventDispatcher();
   const userLocalIANA = getLocalIANA();
-  const UTCIana = "Etc/UTC";
+  const UTCIana = "UTC";
+
+  let open = false;
 
   $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
   // Filter out user time zone and UTC
   $: availableTimeZones = availableTimeZones.filter(
-    (tz) => tz !== userLocalIANA && tz !== UTCIana
+    (tz) => tz !== userLocalIANA && tz !== UTCIana,
   );
 
   // Add local and utc time zone to the top of the list
   $: availableTimeZones = [userLocalIANA, UTCIana, ...availableTimeZones];
+
+  // If localIANA is same as UTC, remove UTC from the list
+  $: if (userLocalIANA === UTCIana) {
+    availableTimeZones = availableTimeZones.slice(1);
+  }
 
   const onTimeZoneSelect = (timeZone: string) => {
     dispatch("select-time-zone", { timeZone });
   };
 </script>
 
-{#if activeTimeZone}
-  <WithTogglableFloatingElement
-    alignment="start"
-    distance={8}
-    let:toggleFloatingElement
-    let:active
-  >
-    <Tooltip distance={8} suppress={active}>
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger asChild let:builder>
+    <Tooltip distance={8} suppress={open}>
       <SelectorButton
-        {active}
+        builders={[builder]}
+        active={open}
         label="Timezone selector"
-        on:click={() => {
-          toggleFloatingElement();
-        }}
       >
         <div class="flex items-center gap-x-2">
           <Globe size="16px" />
@@ -73,43 +66,29 @@
         Currently using {getTimeZoneNameFromIANA(now, activeTimeZone)}.
       </TooltipContent>
     </Tooltip>
-    <Menu
-      slot="floating-element"
-      on:click-outside={toggleFloatingElement}
-      on:escape={toggleFloatingElement}
-      minWidth="320px"
-    >
-      {#each availableTimeZones as option}
-        {@const label = getLabelForIANA(now, option)}
-        <MenuItem
-          icon
-          selected={activeTimeZone === option}
-          on:select={() => {
-            onTimeZoneSelect(option);
-            toggleFloatingElement();
-          }}
-        >
-          <svelte:fragment slot="icon">
-            {#if option === activeTimeZone}
-              <Check size="20px" color="#15141A" />
-            {:else}
-              <Spacer size="20px" />
-            {/if}
-          </svelte:fragment>
-          <span>
-            <span class="inline-block font-bold w-9">
-              {label.abbreviation}
-            </span>
-            <span class="inline-block italic w-20">
-              {label.offset}
-            </span>
-            {label.iana}
-          </span>
-        </MenuItem>
-        {#if option === UTCIana}
-          <Divider />
-        {/if}
-      {/each}
-    </Menu>
-  </WithTogglableFloatingElement>
-{/if}
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start">
+    {#each availableTimeZones as option}
+      {@const label = getLabelForIANA(now, option)}
+      <DropdownMenu.CheckboxItem
+        class="flex items-center gap-x-1 text-xs cursor-pointer"
+        role="menuitem"
+        checked={activeTimeZone === option}
+        on:click={() => {
+          onTimeZoneSelect(option);
+        }}
+      >
+        <b class="w-9">
+          {label.abbreviation}
+        </b>
+        <p class="inline-block italic w-20">
+          {label.offset}
+        </p>
+        <p>{label.iana}</p>
+      </DropdownMenu.CheckboxItem>
+      {#if option === UTCIana}
+        <DropdownMenu.Separator />
+      {/if}
+    {/each}
+  </DropdownMenu.Content>
+</DropdownMenu.Root>

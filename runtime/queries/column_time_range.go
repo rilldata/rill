@@ -15,10 +15,17 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const hourInDay = 24
+
+var microsInDay = hourInDay * time.Hour.Microseconds()
+
 type ColumnTimeRange struct {
-	TableName  string
-	ColumnName string
-	Result     *runtimev1.TimeRangeSummary
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Result         *runtimev1.TimeRangeSummary
 }
 
 var _ runtime.Query = &ColumnTimeRange{}
@@ -51,7 +58,7 @@ func (q *ColumnTimeRange) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
@@ -62,6 +69,8 @@ func (q *ColumnTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime, inst
 		return q.resolveDuckDB(ctx, olap, priority)
 	case drivers.DialectDruid:
 		return q.resolveDruid(ctx, olap, priority)
+	case drivers.DialectClickHouse:
+		return q.resolveClickHouse(ctx, olap, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -71,7 +80,7 @@ func (q *ColumnTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPSt
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s",
 		safeName(q.ColumnName),
-		safeName(q.TableName),
+		drivers.DialectDuckDB.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 	)
 
 	rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -140,7 +149,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s",
 			safeName(q.ColumnName),
-			safeName(q.TableName),
+			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -173,7 +182,7 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s",
 			safeName(q.ColumnName),
-			safeName(q.TableName),
+			drivers.DialectDruid.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		)
 
 		rows, err := olap.Execute(ctx, &drivers.Statement{
@@ -213,6 +222,54 @@ func (q *ColumnTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPSto
 	summary.Interval = &runtimev1.TimeRangeSummary_Interval{
 		Micros: maxTime.Sub(minTime).Microseconds(),
 	}
+	q.Result = summary
+
+	return nil
+}
+
+func (q *ColumnTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OLAPStore, priority int) error {
+	sql := fmt.Sprintf(
+		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\" FROM %[2]s",
+		safeName(q.ColumnName),
+		drivers.DialectClickHouse.EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
+	)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	var minTime, maxTime *time.Time
+	for rows.Next() {
+		err = rows.Scan(&minTime, &maxTime)
+		if err != nil {
+			return err
+		}
+	}
+
+	summary := &runtimev1.TimeRangeSummary{}
+	if minTime != nil {
+		summary.Min = timestamppb.New(*minTime)
+	}
+	if maxTime != nil {
+		summary.Max = timestamppb.New(*maxTime)
+	}
+	if minTime != nil && maxTime != nil {
+		// ignoring months for now since its hard to compute and anyways not being used
+		summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
+		duration := maxTime.Sub(*minTime)
+		hours := duration.Hours()
+		if hours >= hourInDay {
+			summary.Interval.Days = int32(hours / hourInDay)
+		}
+		summary.Interval.Micros = duration.Microseconds() - microsInDay*int64(summary.Interval.Days)
+	}
+
 	q.Result = summary
 
 	return nil

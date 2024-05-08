@@ -17,37 +17,22 @@ export const MEASURE_CONFIG = {
   },
 };
 
-// Colors for Tailwind
-// fill-pink-400 fill-cyan-400 fill-green-500 fill-orange-400 fill-purple-500 fill-red-600 fill-blue-500 fill-gray-600
-// fill-slate-500 fill-yellow-500 fill-lime-500 fill-violet-300 fill-gray-500 fill-gray-300
-// bg-pink-400 bg-cyan-400 bg-green-500 bg-orange-400 bg-purple-500 bg-red-600 bg-blue-500 bg-gray-600
-// bg-slate-500 bg-yellow-500 bg-lime-500 bg-violet-300 bg-gray-500
-// stroke-pink-400 stroke-cyan-400 stroke-green-500 stroke-orange-400 stroke-purple-500 stroke-red-600 stroke-blue-500 stroke-gray-500
-// stroke-slate-500 stroke-yellow-500 stroke-lime-500 stroke-violet-300 stroke-gray-500
-export const CHECKMARK_COLORS = [
-  "blue-500",
-  "orange-400",
-  "green-500",
-  "red-600",
-  "purple-500",
-  "pink-400",
-  "cyan-400",
-  "slate-500",
-  "yellow-500",
-  "lime-500",
-  "violet-300",
+export const COMPARIONS_COLORS = [
+  "#75DAFF",
+  "#5FA9B9",
+  "#306B59",
+  "#3125AE",
+  "#757EFF",
+  "#875FB9",
+  "#F0A76A",
+  "#948476",
+  "#594159",
+  "#5774A1",
+  "#B7DAF0",
+  "#E29FE3",
+  "#FFCBDF",
+  "#BFF7E3",
+  "#FFFACB",
 ];
 
-export const LINE_COLORS = [
-  "blue-500",
-  "orange-400",
-  "green-500",
-  "red-600",
-  "purple-500",
-  "pink-400",
-  "cyan-400",
-  "slate-500",
-  "yellow-500",
-  "lime-500",
-  "violet-300",
-];
+export const SELECTED_NOT_COMPARED_COLOR = "#d1d5db";

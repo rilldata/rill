@@ -25,14 +25,14 @@ func TestPostgres(t *testing.T) {
 	require.NoError(t, db.Migrate(ctx))
 
 	t.Run("TestOrganizations", func(t *testing.T) { testOrganizations(t, db) })
-	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
-	// Add new tests here
-	t.Run("TestProjectsWithVariables", func(t *testing.T) { testProjectsWithVariables(t, db) })
-
 	t.Run("TestOrgsWithPagination", func(t *testing.T) { testOrgsWithPagination(t, db) })
+	t.Run("TestProjects", func(t *testing.T) { testProjects(t, db) })
+	t.Run("TestProjectsWithVariables", func(t *testing.T) { testProjectsWithVariables(t, db) })
+	t.Run("TestProjectsWithAnnotations", func(t *testing.T) { testProjectsWithAnnotations(t, db) })
 	t.Run("TestProjectsWithPagination", func(t *testing.T) { testProjectsWithPagination(t, db) })
 	t.Run("TestProjectsForUsersWithPagination", func(t *testing.T) { testProjectsForUserWithPagination(t, db) })
 	t.Run("TestMembersWithPagination", func(t *testing.T) { testOrgsMembersPagination(t, db) })
+	// Add new tests here
 
 	require.NoError(t, db.Close())
 }
@@ -85,6 +85,51 @@ func testOrganizations(t *testing.T, db database.DB) {
 	org, err = db.FindOrganizationByName(ctx, "foo")
 	require.ErrorIs(t, err, database.ErrNotFound)
 	require.Nil(t, org)
+}
+
+func testOrgsWithPagination(t *testing.T, db database.DB) {
+	ctx := context.Background()
+
+	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test@rilldata.com"})
+	require.NoError(t, err)
+	require.Equal(t, "test@rilldata.com", user.Email)
+
+	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+
+	// add org and give user permission
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
+	require.NoError(t, err)
+	require.Equal(t, "alpha", org.Name)
+	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID))
+
+	// add org and give user permission
+	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "beta"})
+	require.NoError(t, err)
+	require.Equal(t, "beta", org.Name)
+	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID))
+
+	// add org only
+	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "gamma"})
+	require.NoError(t, err)
+	require.Equal(t, "gamma", org.Name)
+
+	// fetch org without name filter
+	orgs, err := db.FindOrganizationsForUser(ctx, user.ID, "", 1)
+	require.NoError(t, err)
+	require.Equal(t, len(orgs), 1)
+	require.Equal(t, "alpha", orgs[0].Name)
+
+	// fetch org with name filter
+	orgs, err = db.FindOrganizationsForUser(ctx, user.ID, orgs[0].Name, 10)
+	require.NoError(t, err)
+	require.Equal(t, len(orgs), 1)
+	require.Equal(t, "beta", orgs[0].Name)
+
+	//cleanup
+	require.NoError(t, db.DeleteOrganization(ctx, "alpha"))
+	require.NoError(t, db.DeleteOrganization(ctx, "beta"))
+	require.NoError(t, db.DeleteOrganization(ctx, "gamma"))
+	require.NoError(t, db.DeleteUser(ctx, user.ID))
 }
 
 func testProjects(t *testing.T, db database.DB) {
@@ -159,56 +204,63 @@ func testProjectsWithVariables(t *testing.T, db database.DB) {
 	}
 	proj, err := db.InsertProject(ctx, opts)
 	require.NoError(t, err)
-	require.Equal(t, database.Variables(opts.ProdVariables), proj.ProdVariables)
+	require.Equal(t, opts.ProdVariables, proj.ProdVariables)
 
 	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
 	require.NoError(t, err)
-	require.Equal(t, database.Variables(opts.ProdVariables), proj.ProdVariables)
+	require.Equal(t, opts.ProdVariables, proj.ProdVariables)
+
+	err = db.DeleteProject(ctx, proj.ID)
+	require.NoError(t, err)
+
+	err = db.DeleteOrganization(ctx, org.Name)
+	require.NoError(t, err)
 }
 
-func testOrgsWithPagination(t *testing.T, db database.DB) {
+func testProjectsWithAnnotations(t *testing.T, db database.DB) {
 	ctx := context.Background()
 
-	user, err := db.InsertUser(ctx, &database.InsertUserOptions{Email: "test@rilldata.com"})
+	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "foo"})
 	require.NoError(t, err)
-	require.Equal(t, "test@rilldata.com", user.Email)
+	require.Equal(t, "foo", org.Name)
 
-	role, err := db.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
-
-	// add org and give user permission
-	org, err := db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "alpha"})
+	opts := &database.InsertProjectOptions{
+		OrganizationID: org.ID,
+		Name:           "bar",
+	}
+	proj, err := db.InsertProject(ctx, opts)
 	require.NoError(t, err)
-	require.Equal(t, "alpha", org.Name)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID))
+	require.Empty(t, proj.Annotations)
 
-	// add org and give user permission
-	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "beta"})
+	annotations := map[string]string{"foo": "bar", "bar": "baz"}
+	_, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:        proj.Name,
+		Annotations: annotations,
+	})
 	require.NoError(t, err)
-	require.Equal(t, "beta", org.Name)
-	require.NoError(t, db.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID))
 
-	// add org only
-	org, err = db.InsertOrganization(ctx, &database.InsertOrganizationOptions{Name: "gamma"})
+	proj, err = db.FindProjectByName(ctx, org.Name, proj.Name)
 	require.NoError(t, err)
-	require.Equal(t, "gamma", org.Name)
+	require.Equal(t, "bar", proj.Name)
+	require.Equal(t, annotations, proj.Annotations)
 
-	// fetch org without name filter
-	orgs, err := db.FindOrganizationsForUser(ctx, user.ID, "", 1)
+	projs, err := db.FindProjectPathsByPatternAndAnnotations(ctx, "%", "", []string{"foo"}, nil, 10)
 	require.NoError(t, err)
-	require.Equal(t, len(orgs), 1)
-	require.Equal(t, "alpha", orgs[0].Name)
+	require.Equal(t, "foo/bar", projs[0])
 
-	// fetch org with name filter
-	orgs, err = db.FindOrganizationsForUser(ctx, user.ID, orgs[0].Name, 10)
+	projs, err = db.FindProjectPathsByPatternAndAnnotations(ctx, "%", "", nil, map[string]string{"foo": "bar"}, 1)
 	require.NoError(t, err)
-	require.Equal(t, len(orgs), 1)
-	require.Equal(t, "beta", orgs[0].Name)
+	require.Equal(t, "foo/bar", projs[0])
 
-	//cleanup
-	require.NoError(t, db.DeleteOrganization(ctx, "alpha"))
-	require.NoError(t, db.DeleteOrganization(ctx, "beta"))
-	require.NoError(t, db.DeleteOrganization(ctx, "gamma"))
-	require.NoError(t, db.DeleteUser(ctx, user.ID))
+	projs, err = db.FindProjectPathsByPatternAndAnnotations(ctx, "%", "", nil, map[string]string{"foo": ""}, 1)
+	require.NoError(t, err)
+	require.Len(t, projs, 0)
+
+	err = db.DeleteProject(ctx, proj.ID)
+	require.NoError(t, err)
+
+	err = db.DeleteOrganization(ctx, org.Name)
+	require.NoError(t, err)
 }
 
 func testProjectsWithPagination(t *testing.T, db database.DB) {

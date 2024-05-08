@@ -1,10 +1,14 @@
+import type { SvelteComponent } from "svelte";
 import { writable } from "svelte/store";
 
 export const importOverlayVisible = writable(false);
 
 interface Overlay {
   title: string;
-  message?: string;
+  detail?: {
+    component: typeof SvelteComponent<any>;
+    props: Record<string, unknown>;
+  };
 }
 
-export const overlay = writable<Overlay>(null);
+export const overlay = writable<Overlay | null>(null);

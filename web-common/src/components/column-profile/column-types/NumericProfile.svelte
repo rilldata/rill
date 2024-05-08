@@ -45,7 +45,7 @@
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: diagnosticHistogram = getNumericHistogram(
@@ -54,7 +54,7 @@
     columnName,
     QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
     enableProfiling,
-    active
+    active,
   );
   let fdHistogram;
   $: if (isFloat(type)) {
@@ -64,7 +64,7 @@
       columnName,
       QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
       enableProfiling,
-      active
+      active,
     );
   }
 
@@ -76,8 +76,8 @@
    */
   $: histogramData = isFloat(type)
     ? chooseBetweenDiagnosticAndStatistical(
-        $diagnosticHistogram?.data,
-        $fdHistogram?.data
+        $diagnosticHistogram?.data ?? [],
+        $fdHistogram?.data,
       )
     : $diagnosticHistogram?.data;
 
@@ -92,13 +92,13 @@
         },
         enabled: enableProfiling,
       },
-    }
+    },
   );
   $: topK = getTopK(
     $runtime?.instanceId,
     objectName,
     columnName,
-    enableProfiling
+    enableProfiling,
   );
 
   $: summary = derived(
@@ -113,11 +113,11 @@
         query: {
           enabled: enableProfiling,
         },
-      }
+      },
     ),
     ($query) => {
       return $query?.data?.numericSummary?.numericStatistics;
-    }
+    },
   );
 
   function toggleColumnProfile() {
@@ -131,10 +131,12 @@
 
   /** if we have a singleton where all summary information is the same, let's construct a single bin. */
   $: if (
+    $summary !== undefined &&
     $summary?.min !== undefined &&
     $summary?.min === $summary?.max &&
     $nulls?.totalRows !== undefined
   ) {
+    const min = $summary.min;
     const boundaries = 10;
     histogramData = [
       // add 4 more empty bins
@@ -142,23 +144,23 @@
         return {
           bucket: -boundaries + i,
           count: 0,
-          high: $summary?.min - (boundaries - i - 1),
-          low: $summary?.min - (boundaries - i),
+          high: min - (boundaries - i - 1),
+          low: min - (boundaries - i),
         };
       }),
       {
         bucket: boundaries,
         count: $nulls?.totalRows,
-        low: $summary?.min,
-        high: $summary?.min + 1,
+        low: min,
+        high: min + 1,
       },
       // add more empty bins
       ...Array.from({ length: boundaries }).map((_, i) => {
         return {
           bucket: boundaries + i + 1,
           count: 0,
-          low: $summary?.min + i,
-          high: $summary?.min + i + 1,
+          low: min + i,
+          high: min + i + 1,
         };
       }),
     ];
@@ -182,7 +184,7 @@
   <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />
 
   <svelte:fragment slot="left">{columnName}</svelte:fragment>
-  <NumericSpark {compact} data={histogramData} slot="summary" {type} />
+  <NumericSpark {compact} data={histogramData ?? []} slot="summary" {type} />
   <NullPercentageSpark
     nullCount={$nulls?.nullCount}
     slot="nullity"
@@ -195,10 +197,10 @@
     slot="details"
   >
     <NumericPlot
-      data={histogramData}
-      rug={$rug?.data}
+      data={histogramData ?? []}
+      rug={$rug?.data ?? []}
       summary={$summary}
-      topK={$topK}
+      topK={$topK ?? []}
       totalRows={$nulls?.totalRows}
       {type}
     />

@@ -1,12 +1,18 @@
 <script lang="ts">
+  import {
+    DropdownMenuGroup,
+    DropdownMenuItem,
+  } from "@rilldata/web-common/components/dropdown-menu";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
-  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { Search } from "@rilldata/web-common/components/search";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { matchSorter } from "match-sorter";
   import { createEventDispatcher } from "svelte";
-  import { createAdminServiceSearchProjectUsers, V1User } from "../../client";
+  import {
+    type V1User,
+    createAdminServiceSearchProjectUsers,
+  } from "../../client";
   import { errorStore } from "../../features/errors/error-store";
   import { setViewedAsUser } from "./setViewedAsUser";
   import { viewAsUserStore } from "./viewAsUserStore";
@@ -18,22 +24,18 @@
   $: projectUsers = createAdminServiceSearchProjectUsers(
     organization,
     project,
-    { emailQuery: "%", pageSize: 1000, pageToken: undefined }
+    { emailQuery: "%", pageSize: 1000, pageToken: undefined },
   );
 
   const dispatch = createEventDispatcher();
 
   const queryClient = useQueryClient();
+
   async function handleViewAsUser(user: V1User) {
     await setViewedAsUser(queryClient, organization, project, user);
     errorStore.reset();
     dispatch("select");
   }
-
-  let minWidth = "150px";
-  let maxWidth = "300px";
-  let minHeight = "150px";
-  let maxHeight = "190px";
 
   let searchText = "";
 
@@ -44,48 +46,27 @@
     : clientSideUsers;
 </script>
 
-<Menu
-  focusOnMount={false}
-  {minWidth}
-  {maxWidth}
-  {minHeight}
-  {maxHeight}
-  paddingBottom={0}
-  paddingTop={1}
-  rounded={false}
-  on:click-outside
-  on:escape
->
-  <div class="px-2 pt-1 pb-2 text-[10px] text-gray-500 text-left">
-    Test your <a
-      target="_blank"
-      href="https://docs.rilldata.com/develop/security">security policies</a
-    > by viewing this project from the perspective of another user.
-  </div>
-  <div class="px-2 pb-2">
-    <Search bind:value={searchText} autofocus={false} />
-  </div>
-  {#if visibleUsers.length > 0}
-    <div class="overflow-auto pb-1">
-      {#each visibleUsers as user}
-        <MenuItem
-          icon
-          animateSelect={false}
-          focusOnMount={false}
-          on:select={() => handleViewAsUser(user)}
-        >
-          <svelte:fragment slot="icon">
-            {#if user === $viewAsUserStore}
-              <Check size="20px" color="#15141A" />
-            {:else}
-              <Spacer size="20px" />
-            {/if}
-          </svelte:fragment>
-          {user.email}
-        </MenuItem>
-      {/each}
-    </div>
-  {:else}
-    <div class="mt-5 ui-copy-disabled text-center">no results</div>
-  {/if}
-</Menu>
+<div class="px-0.5 pt-1 pb-2 text-[10px] text-gray-500 text-left">
+  Test your <a target="_blank" href="https://docs.rilldata.com/manage/security"
+    >security policies</a
+  > by viewing this project from the perspective of another user.
+</div>
+<div class="pb-1">
+  <Search bind:value={searchText} autofocus={false} />
+</div>
+{#if visibleUsers.length > 0}
+  <DropdownMenuGroup class="overflow-auto pb-1">
+    {#each visibleUsers as user}
+      <DropdownMenuItem on:click={() => handleViewAsUser(user)}>
+        {#if user === $viewAsUserStore}
+          <Check size="20px" color="#15141A" />
+        {:else}
+          <Spacer size="20px" />
+        {/if}
+        {user.email}
+      </DropdownMenuItem>
+    {/each}
+  </DropdownMenuGroup>
+{:else}
+  <div class="mt-5 ui-copy-disabled text-center">no results</div>
+{/if}

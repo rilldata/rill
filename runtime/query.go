@@ -62,31 +62,32 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
 
-	// Skip caching for specific named drivers.
-	// TODO: Make this configurable with a default provided by the driver.
-	olap, release, err := r.OLAP(ctx, instanceID)
-	if err != nil {
-		return err
-	}
-	if olap.Dialect() == drivers.DialectDruid {
-		release()
-		return query.Resolve(ctx, r, instanceID, priority)
-	}
-	release()
-
-	// Get dependency cache keys
+	// Get dependency cache keys and optionally the underlying OLAP connector
 	ctrl, err := r.Controller(ctx, instanceID)
 	if err != nil {
 		return err
 	}
 	deps := query.Deps()
 	depKeys := make([]string, 0, len(deps))
+	olapConnector := ""
 	for _, dep := range deps {
+		// Get the dependency resource
 		res, err := ctrl.Get(ctx, dep, false)
 		if err != nil {
 			// Deps are approximate, not exact (see docstring for Deps()), so they may not all exist
 			continue
 		}
+
+		// Infer OLAP connector for common resource types used in a query
+		if mv := res.GetMetricsView(); mv != nil {
+			olapConnector = mv.Spec.Connector
+		} else if mdl := res.GetModel(); mdl != nil {
+			olapConnector = mdl.Spec.Connector
+		} else if src := res.GetSource(); src != nil {
+			olapConnector = src.Spec.SinkConnector
+		}
+
+		// Add to cache key.
 		// Using StateUpdatedOn instead of StateVersion because the state version is reset when the resource is deleted and recreated.
 		key := fmt.Sprintf("%s:%s:%d:%d", res.Meta.Name.Kind, res.Meta.Name.Name, res.Meta.StateUpdatedOn.Seconds, res.Meta.StateUpdatedOn.Nanos/int32(time.Millisecond))
 		depKeys = append(depKeys, key)
@@ -94,6 +95,18 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 
 	// If there were no known dependencies, skip caching
 	if len(depKeys) == 0 {
+		return query.Resolve(ctx, r, instanceID, priority)
+	}
+
+	// Skip caching if the OLAP connector is not DuckDB.
+	// NOTE: This hack is removed in the new resolvers by letting the resolver itself decide whether to cache or not.
+	olap, release, err := r.OLAP(ctx, instanceID, olapConnector)
+	if err != nil {
+		return err
+	}
+	dialect := olap.Dialect()
+	release()
+	if dialect != drivers.DialectDuckDB {
 		return query.Resolve(ctx, r, instanceID, priority)
 	}
 

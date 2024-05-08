@@ -6,19 +6,19 @@ TableCells – the cell contents.
 <script lang="ts">
   import ColumnHeaders from "@rilldata/web-common/components/virtualized-table/sections/ColumnHeaders.svelte";
   import TableCells from "@rilldata/web-common/components/virtualized-table/sections/TableCells.svelte";
-  import type { VirtualizedTableColumns } from "@rilldata/web-local/lib/types";
-  import { createVirtualizer, VirtualItem } from "@tanstack/svelte-virtual";
+  import { createVirtualizer } from "@tanstack/svelte-virtual";
   import { createEventDispatcher, setContext } from "svelte";
-  import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
-  import { DimensionTableConfig as config } from "./DimensionTableConfig";
-  import DimensionValueHeader from "./DimensionValueHeader.svelte";
+  import type { DimensionTableRow } from "./dimension-table-types";
   import {
     estimateColumnCharacterWidths,
     estimateColumnSizes,
   } from "./dimension-table-utils";
-  import type { DimensionTableRow } from "./dimension-table-types";
+  import DimensionFilterGutter from "./DimensionFilterGutter.svelte";
+  import { DIMENSION_TABLE_CONFIG as config } from "./DimensionTableConfig";
+  import DimensionValueHeader from "./DimensionValueHeader.svelte";
 
   import { getStateManagers } from "../state-managers/state-managers";
+  import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
   const dispatch = createEventDispatcher();
 
@@ -33,6 +33,7 @@ TableCells – the cell contents.
     actions: { dimensionTable },
     selectors: {
       sorting: { sortMeasure },
+      dimensions: { dimensionTableColumnName },
       dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
@@ -48,26 +49,22 @@ TableCells – the cell contents.
   export let rowOverscanAmount = 40;
   export let columnOverscanAmount = 5;
 
-  let rowVirtualizer;
-  let container;
-  let virtualRows;
-  let virtualColumns: VirtualItem[];
-  let virtualWidth;
-  let virtualHeight;
-  let containerWidth;
+  let container: HTMLDivElement;
+
+  let containerWidth: number;
 
   /** this is a perceived character width value, in pixels, when our monospace
    * font is 12px high. */
   const CHARACTER_LIMIT_FOR_WRAPPING = 9;
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
-  $: selectedIndex = selectedValues
-    .map((label) => {
-      return rows.findIndex((row) => row[dimensionName] === label);
-    })
-    .filter((i) => i >= 0);
+  $: selectedIndex = selectedValues.map((label) => {
+    return rows.findIndex((row) => row[dimensionColumnName] === label);
+  });
 
+  let rowScrollOffset = 0;
   $: rowScrollOffset = $rowVirtualizer?.scrollOffset || 0;
+  let colScrollOffset = 0;
   $: colScrollOffset = $columnVirtualizer?.scrollOffset || 0;
 
   /** if we're inferring the column widths from static-ish data, let's
@@ -76,7 +73,7 @@ TableCells – the cell contents.
    */
   const { columnWidths, largestColumnLength } = estimateColumnCharacterWidths(
     columns,
-    rows
+    rows,
   );
 
   /* check if column header requires extra space for larger column names  */
@@ -90,46 +87,35 @@ TableCells – the cell contents.
   let estimateColumnSize: number[] = [];
 
   /* Separate out dimension column */
-  // SAFETY: cast should be safe because if dimensionName is undefined,
-  // we should not be in a dimension table sub-component
+  $: dimensionColumnName = $dimensionTableColumnName(dimensionName);
   $: dimensionColumn = columns?.find(
-    (c) => c.name == dimensionName
+    (c) => c.name == dimensionColumnName,
   ) as VirtualizedTableColumns;
-  $: measureColumns = columns?.filter((c) => c.name !== dimensionName) ?? [];
+  $: measureColumns =
+    columns?.filter((c) => c.name !== dimensionColumnName) ?? [];
 
   let horizontalScrolling = false;
 
   let manualDimensionColumnWidth: number | null = null;
 
-  $: if (rows && columns) {
-    rowVirtualizer = createVirtualizer({
-      getScrollElement: () => container,
-      count: rows.length,
-      estimateSize: () => config.rowHeight,
-      overscan: rowOverscanAmount,
-      paddingStart: config.columnHeaderHeight,
-      initialOffset: rowScrollOffset,
-    });
+  $: rowVirtualizer = createVirtualizer({
+    getScrollElement: () => container,
+    count: rows.length,
+    estimateSize: () => config.rowHeight,
+    overscan: rowOverscanAmount,
+    paddingStart: config.columnHeaderHeight,
+    initialOffset: rowScrollOffset,
+  });
 
+  $: if (rows && columns) {
     estimateColumnSize = estimateColumnSizes(
       columns,
       columnWidths,
       containerWidth,
-      config
+      config,
     );
 
-    const measureColumnSizeSum = estimateColumnSize
-      .slice(1)
-      .reduce((a, b) => a + b, 0);
-
-    // Dimension column should expand to cover whole container
-    // if not manually resized
-    if (manualDimensionColumnWidth === null) {
-      estimateColumnSize[0] = Math.max(
-        containerWidth - measureColumnSizeSum - FILTER_COLUMN_WIDTH,
-        estimateColumnSize[0]
-      );
-    } else {
+    if (manualDimensionColumnWidth !== null) {
       estimateColumnSize[0] = manualDimensionColumnWidth;
     }
   }
@@ -147,14 +133,11 @@ TableCells – the cell contents.
     initialOffset: colScrollOffset,
   });
 
-  $: if (rowVirtualizer) {
-    virtualRows = $rowVirtualizer.getVirtualItems();
-    virtualHeight = $rowVirtualizer.getTotalSize();
-  }
-  $: if (columnVirtualizer) {
-    virtualColumns = $columnVirtualizer.getVirtualItems();
-    virtualWidth = $columnVirtualizer.getTotalSize();
-  }
+  $: virtualRows = $rowVirtualizer?.getVirtualItems() ?? [];
+  $: virtualHeight = $rowVirtualizer?.getTotalSize() ?? 0;
+
+  $: virtualColumns = $columnVirtualizer?.getVirtualItems() ?? [];
+  $: virtualWidth = $columnVirtualizer?.getTotalSize() ?? 0;
 
   let activeIndex;
   function setActiveIndex(event) {
@@ -211,7 +194,7 @@ TableCells – the cell contents.
     }}
     style:width="100%"
     style:height="100%"
-    class="overflow-auto grid"
+    class="overflow-auto grid max-w-fit"
     style:grid-template-columns="max-content auto"
     on:scroll={() => {
       /** capture to suppress cell tooltips. Otherwise,
@@ -222,6 +205,8 @@ TableCells – the cell contents.
   >
     {#if rowVirtualizer}
       <div
+        role="grid"
+        tabindex="0"
         class="relative surface"
         on:mouseleave={clearActiveIndex}
         on:blur={clearActiveIndex}

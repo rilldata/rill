@@ -5,13 +5,6 @@ import { defineConfig } from "vite";
 // print dev server as `localhost` not `127.0.0.1`
 dns.setDefaultResultOrder("verbatim");
 
-let runtimeUrl = "";
-try {
-  runtimeUrl = process.env.RILL_DEV ? "http://localhost:9009" : "";
-} catch (e) {
-  console.error(e);
-}
-
 const config = defineConfig(({ mode }) => ({
   build: {
     rollupOptions: {
@@ -38,7 +31,7 @@ const config = defineConfig(({ mode }) => ({
     },
   },
   define: {
-    RILL_RUNTIME_URL: `"${runtimeUrl}"`,
+    "import.meta.env.VITE_PLAYWRIGHT_TEST": process.env.PLAYWRIGHT_TEST,
   },
   plugins: [sveltekit()],
 }));

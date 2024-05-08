@@ -7,19 +7,22 @@ import (
 	"html/template"
 	"net/url"
 	"time"
+
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 //go:embed templates/gen/*
 var templatesFS embed.FS
 
 type Client struct {
-	sender    Sender
+	Sender    Sender
 	templates *template.Template
 }
 
 func New(sender Sender) *Client {
 	return &Client{
-		sender:    sender,
+		Sender:    sender,
 		templates: template.Must(template.New("").ParseFS(templatesFS, "templates/gen/*.html")),
 	}
 }
@@ -37,7 +40,7 @@ type ScheduledReport struct {
 
 type scheduledReportData struct {
 	Title            string
-	ReportTimeString string // Will be inferred from ReportDate
+	ReportTimeString string // Will be inferred from ReportTime
 	DownloadFormat   string
 	OpenLink         template.URL
 	DownloadLink     template.URL
@@ -66,7 +69,88 @@ func (c *Client) SendScheduledReport(opts *ScheduledReport) error {
 	}
 	html := buf.String()
 
-	return c.sender.Send(opts.ToEmail, opts.ToName, subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+}
+
+func (c *Client) SendAlertStatus(opts *drivers.AlertStatus) error {
+	switch opts.Status {
+	case runtimev1.AssertionStatus_ASSERTION_STATUS_PASS:
+		return c.sendAlertStatus(opts, &alertStatusData{
+			Title:               opts.Title,
+			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
+			IsPass:              true,
+			IsRecover:           opts.IsRecover,
+			OpenLink:            template.URL(opts.OpenLink),
+			EditLink:            template.URL(opts.EditLink),
+		})
+	case runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL:
+		return c.sendAlertFail(opts, &alertFailData{
+			Title:               opts.Title,
+			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
+			FailRow:             opts.FailRow,
+			OpenLink:            template.URL(opts.OpenLink),
+			EditLink:            template.URL(opts.EditLink),
+		})
+	case runtimev1.AssertionStatus_ASSERTION_STATUS_ERROR:
+		return c.sendAlertStatus(opts, &alertStatusData{
+			Title:               opts.Title,
+			ExecutionTimeString: opts.ExecutionTime.Format(time.RFC1123),
+			IsError:             true,
+			ErrorMessage:        opts.ExecutionError,
+			OpenLink:            template.URL(opts.EditLink), // NOTE: Using edit link here since for errors, we don't want to open a dashboard, but rather the alert itself
+			EditLink:            template.URL(opts.EditLink),
+		})
+	default:
+		return fmt.Errorf("unknown assertion status: %v", opts.Status)
+	}
+}
+
+type alertFailData struct {
+	Title               string
+	ExecutionTimeString string // Will be inferred from ExecutionTime
+	FailRow             map[string]any
+	OpenLink            template.URL
+	EditLink            template.URL
+}
+
+func (c *Client) sendAlertFail(opts *drivers.AlertStatus, data *alertFailData) error {
+	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("alert_fail.html").Execute(buf, data)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
+}
+
+type alertStatusData struct {
+	Title               string
+	ExecutionTimeString string // Will be inferred from ExecutionTime
+	IsPass              bool
+	IsRecover           bool
+	IsError             bool
+	ErrorMessage        string
+	OpenLink            template.URL
+	EditLink            template.URL
+}
+
+func (c *Client) sendAlertStatus(opts *drivers.AlertStatus, data *alertStatusData) error {
+	subject := fmt.Sprintf("%s (%s)", data.Title, data.ExecutionTimeString)
+	if data.IsRecover {
+		subject = fmt.Sprintf("Recovered: %s", subject)
+	}
+
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("alert_status.html").Execute(buf, data)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
 type CallToAction struct {
@@ -86,7 +170,7 @@ func (c *Client) SendCallToAction(opts *CallToAction) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
 }
 
 type OrganizationInvite struct {

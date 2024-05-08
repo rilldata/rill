@@ -3,9 +3,11 @@
 
   import Button from "@rilldata/web-common/components/button/Button.svelte";
 
+  type ButtonTypes = "primary" | "secondary" | "text";
+  type ButtonStatuses = "info" | "error";
   type ButtonProps = {
-    type: "primary" | "secondary" | "text";
-    status: "info" | "error";
+    type: ButtonTypes;
+    status: ButtonStatuses;
     disabled: boolean;
     compact: boolean;
     label: string;
@@ -13,16 +15,16 @@
 
   const buttonProps: ButtonProps[] = [];
 
-  for (const type of ["primary", "secondary", "text"]) {
+  for (const buttonType of ["primary", "secondary", "text"]) {
     for (const status of ["info", "error"]) {
       for (const disabled of [true, false]) {
         for (const compact of [true, false]) {
           buttonProps.push({
-            type,
-            status,
+            type: buttonType as ButtonTypes,
+            status: status as ButtonStatuses,
             disabled,
             compact,
-            label: `${type} ${status} ${disabled} ${compact}`,
+            label: `${buttonType} ${status} ${disabled} ${compact}`,
           });
         }
       }
@@ -32,7 +34,7 @@
 
 <Meta title="Button stories" />
 
-<Template let:args>
+<Template>
   <table>
     <tr>
       <td />

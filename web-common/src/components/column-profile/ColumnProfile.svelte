@@ -4,7 +4,6 @@
     createQueryServiceTableColumns,
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";
-  import { NATIVE_SELECT } from "@rilldata/web-local/lib/util/component-classes";
   import { onMount } from "svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { getColumnType } from "./column-types";
@@ -12,7 +11,6 @@
   import { defaultSort, sortByName, sortByNullity } from "./utils";
 
   export let containerWidth = 0;
-  // const queryClient = useQueryClient();
   export let objectName: string;
   export let indentLevel = 0;
 
@@ -28,33 +26,27 @@
     return () => observer.unobserve(container);
   });
 
-  // get all column profiles.
-  let profileColumns;
   $: profileColumns = createQueryServiceTableColumns(
     $runtime?.instanceId,
     objectName,
     {},
-    { query: { keepPreviousData: true } }
+    { query: { keepPreviousData: true } },
   );
 
   /** get single example */
-  let exampleValue;
   $: exampleValue = createQueryServiceTableRows(
     $runtime?.instanceId,
     objectName,
     {
       limit: 1,
-    }
+    },
   );
 
-  let nestedColumnProfileQuery;
-  $: if ($profileColumns?.data?.profileColumns) {
-    nestedColumnProfileQuery = getSummaries(
-      objectName,
-      $runtime?.instanceId,
-      $profileColumns
-    );
-  }
+  $: nestedColumnProfileQuery = getSummaries(
+    objectName,
+    $runtime?.instanceId,
+    $profileColumns,
+  );
 
   $: profile = $nestedColumnProfileQuery;
   let sortedProfile;
@@ -66,6 +58,10 @@
   } else {
     sortedProfile = profile;
   }
+
+  /** classes for the native select element */
+  export const native_select =
+    "rounded border border-6 border-transparent hover:bg-gray-200";
 </script>
 
 <!-- pl-16 -->
@@ -76,7 +72,7 @@
     : '4'} pr-5 pb-2 flex justify-between text-gray-500 pt-1"
   class:flex-col={containerWidth < 325}
 >
-  <select bind:value={sortMethod} class={NATIVE_SELECT} style:font-size="11px">
+  <select bind:value={sortMethod} class={native_select} style:font-size="11px">
     <option value={sortByOriginalOrder}>show original order</option>
     <option value={defaultSort}>sort by type</option>
     <option value={sortByNullity}>sort by null %</option>
@@ -84,7 +80,7 @@
   </select>
   <select
     bind:value={mode}
-    class={NATIVE_SELECT}
+    class={native_select}
     class:hidden={containerWidth < 325}
     style:font-size="11px"
     style:transform="translateX(4px)"

@@ -1,50 +1,42 @@
 <script lang="ts">
   import { beforeNavigate } from "$app/navigation";
+  import { page } from "$app/stores";
+  import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import {
     featureFlags,
     retainFeaturesFlags,
   } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
-  import {
-    QueryCache,
-    QueryClient,
-    QueryClientProvider,
-  } from "@tanstack/svelte-query";
-  import { globalErrorCallback } from "../features/errors/error-utils";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
+  import { QueryClientProvider } from "@tanstack/svelte-query";
+  import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
+  import { createGlobalErrorCallback } from "../features/errors/error-utils";
   import { initPylonWidget } from "../features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
-  const queryClient = new QueryClient({
-    queryCache: new QueryCache({
-      // Motivation:
-      // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
-      // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
-      onError: globalErrorCallback,
-    }),
-    defaultOptions: {
-      queries: {
-        refetchOnMount: false,
-        refetchOnReconnect: false,
-        refetchOnWindowFocus: false,
-        retry: false,
-      },
-    },
-  });
+  // Motivation:
+  // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
+  // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
+  queryClient.getQueryCache().config.onError =
+    createGlobalErrorCallback(queryClient);
 
-  featureFlags.set({
-    // The admin server enables some dashboard features like scheduled reports and alerts
-    adminServer: true,
-    // Set read-only mode so that the user can't edit the dashboard
-    readOnly: true,
-  });
+  // The admin server enables some dashboard features like scheduled reports and alerts
+  // Set read-only mode so that the user can't edit the dashboard
+  featureFlags.set(true, "adminServer", "readOnly");
 
   beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
 
+  initCloudMetrics();
   initPylonWidget();
+
+  onMount(() => errorEventHandler?.addJavascriptErrorListeners());
+
+  $: isEmbed = $page.url.pathname === "/-/embed";
 </script>
 
 <svelte:head>
@@ -53,13 +45,13 @@
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <main class="flex flex-col h-screen">
-      <TopNavigationBar />
-      <div class="flex-grow overflow-hidden">
-        <ErrorBoundary>
-          <slot />
-        </ErrorBoundary>
-      </div>
+    <main class="flex flex-col min-h-screen h-screen">
+      {#if !isEmbed}
+        <TopNavigationBar />
+      {/if}
+      <ErrorBoundary>
+        <slot />
+      </ErrorBoundary>
     </main>
   </QueryClientProvider>
 

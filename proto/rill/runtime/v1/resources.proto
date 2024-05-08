@@ -5,6 +5,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/export_format.proto";
 import "rill/runtime/v1/time_grain.proto";
+import "rill/runtime/v1/colors.proto";
 
 enum ReconcileStatus {
   RECONCILE_STATUS_UNSPECIFIED = 0;
@@ -23,9 +24,14 @@ message Resource {
     MetricsViewV2 metrics_view = 5;
     Migration migration = 9;
     Report report = 10;
+    Alert alert = 12;
     PullTrigger pull_trigger = 6;
     RefreshTrigger refresh_trigger = 7;
     BucketPlanner bucket_planner = 8;
+    Theme theme = 11;
+    Component component = 13;
+    Dashboard dashboard = 14;
+    API api = 15;
   }
 }
 
@@ -125,6 +131,7 @@ message MetricsViewSpec {
   message DimensionV2 {
     string name = 1;
     string column = 2;
+    string expression = 6;
     string label = 3;
     string description = 4;
     bool unnest = 5;
@@ -160,8 +167,22 @@ message MetricsViewSpec {
     COMPARISON_MODE_TIME = 2;
     COMPARISON_MODE_DIMENSION = 3;
   }
+  message AvailableComparisonOffset {
+    string offset = 1;
+    // Used to override the range for the comparison with something other than the selected range.
+    string range = 2;
+  }
+  message AvailableTimeRange {
+    string range = 1;
+    // Available comparison offsets for this time range.
+    repeated AvailableComparisonOffset comparison_offsets = 2;
+  }
   // Connector containing the table
   string connector = 1;
+  // Name of the database where table is located (optional)
+  string database = 21;
+  // Name of the database schema where table is located (optional)
+  string database_schema = 22;
   // Name of the table the metrics view is based on
   string table = 2;
   // User friendly label for the dashboard
@@ -170,10 +191,16 @@ message MetricsViewSpec {
   string description = 4;
   // Name of the primary time dimension, used for rendering time series
   string time_dimension = 5;
+  // Expression to evaluate a watermark for the metrics view. If not set, the watermark defaults to max(time_dimension).
+  string watermark_expression = 20;
   // Dimensions in the metrics view
   repeated DimensionV2 dimensions = 6;
+  // List of selected dimensions by defaults
+  repeated string default_dimensions = 18;
   // Measures in the metrics view
   repeated MeasureV2 measures = 7;
+  // List of selected measures by defaults
+  repeated string default_measures = 19;
   // Smallest time grain to show in the dashboard
   TimeGrain smallest_time_grain = 8;
   // Default time range for the dashboard. It should be a valid ISO 8601 duration string.
@@ -190,10 +217,18 @@ message MetricsViewSpec {
   ComparisonMode default_comparison_mode = 14;
   // If comparison mode is dimension then this determines which is the default dimension
   string default_comparison_dimension = 15;
+  // List of available time ranges with comparison ranges that would replace the default list.
+  repeated AvailableTimeRange available_time_ranges = 16;
+  // Default theme to apply
+  string default_theme = 17;
 }
 
 message MetricsViewState {
+  // Valid spec is a (potentially previous) version of the spec that is known to currently be valid.
   MetricsViewSpec valid_spec = 1;
+  // Streaming is true if the underlying data may change without the metrics view's spec/state version changing.
+  // It's set to true if the metrics view is based on an externally managed table.
+  bool streaming = 2;
 }
 
 message Migration {
@@ -225,7 +260,7 @@ message ReportSpec {
   string query_args_json = 6;
   uint64 export_limit = 7;
   ExportFormat export_format = 8;
-  repeated string email_recipients = 9;
+  repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
 }
 
@@ -242,6 +277,72 @@ message ReportExecution {
   google.protobuf.Timestamp report_time = 3;
   google.protobuf.Timestamp started_on = 4;
   google.protobuf.Timestamp finished_on = 5;
+}
+
+message Alert {
+  AlertSpec spec = 1;
+  AlertState state = 2;
+}
+
+message AlertSpec {
+  bool trigger = 1;
+  string title = 2;
+  Schedule refresh_schedule = 3;
+  bool watermark_inherit = 4; // If true, will use the lowest watermark of its refs instead of the trigger time.
+  string intervals_iso_duration = 5;
+  int32 intervals_limit = 6;
+  bool intervals_check_unclosed = 7;
+  uint32 timeout_seconds = 8;
+  string query_name = 9;
+  string query_args_json = 10;
+  oneof query_for {
+    string query_for_user_id = 11;
+    string query_for_user_email = 12;
+    google.protobuf.Struct query_for_attributes = 13;
+  }
+  bool notify_on_recover = 15;
+  bool notify_on_fail = 16;
+  bool notify_on_error = 17;
+  bool renotify = 18;
+  uint32 renotify_after_seconds = 19;
+  repeated Notifier notifiers = 21;
+  map<string, string> annotations = 20;
+}
+
+message Notifier {
+  string connector = 1;
+  google.protobuf.Struct properties = 2;
+}
+
+message AlertState {
+  string spec_hash = 1;
+  string refs_hash = 2;
+  google.protobuf.Timestamp next_run_on = 3;
+  AlertExecution current_execution = 4;
+  repeated AlertExecution execution_history = 5;
+  uint32 execution_count = 6;
+}
+
+message AlertExecution {
+  bool adhoc = 1;
+  AssertionResult result = 2;
+  bool sent_notifications = 3;
+  google.protobuf.Timestamp execution_time = 4;
+  google.protobuf.Timestamp started_on = 5;
+  google.protobuf.Timestamp finished_on = 6;
+}
+
+message AssertionResult {
+  AssertionStatus status = 1;
+  google.protobuf.Struct fail_row = 2;
+  string error_message = 3;
+}
+
+enum AssertionStatus {
+  ASSERTION_STATUS_UNSPECIFIED = 0;
+  ASSERTION_STATUS_PASS = 1;
+  ASSERTION_STATUS_FAIL = 2;
+  ASSERTION_STATUS_ERROR = 3;
 }
 
 message PullTrigger {
@@ -289,7 +390,73 @@ message BucketExtractPolicy {
   uint64 files_limit = 4;
 }
 
+message Theme {
+  ThemeSpec spec = 1;
+  ThemeState state = 2;
+}
+
+message ThemeSpec {
+  optional Color primary_color = 1;
+  optional Color secondary_color = 2;
+}
+
+message ThemeState {}
+
+message Component {
+  ComponentSpec spec = 1;
+  ComponentState state = 2;
+}
+
+message ComponentSpec {
+  string title = 1;
+  string resolver = 2;
+  google.protobuf.Struct resolver_properties = 3;
+  string renderer = 4;
+  google.protobuf.Struct renderer_properties = 5;
+  bool defined_in_dashboard = 6;
+}
+
+message ComponentState {}
+
+message Dashboard {
+  DashboardSpec spec = 1;
+  DashboardState state = 2;
+}
+
+message DashboardSpec {
+  string title = 1;
+  uint32 columns = 2;
+  uint32 gap = 3;
+  repeated DashboardItem items = 4;
+}
+
+message DashboardState {}
+
+message DashboardItem {
+  string component = 1;
+  optional uint32 x = 2;
+  optional uint32 y = 3;
+  optional uint32 width = 4;
+  optional uint32 height = 5;
+  uint32 font_size = 7;
+}
+
+// API defines a custom operation for querying data stored in Rill.
+message API {
+  APISpec spec = 1;
+  APIState state = 2;
+}
+
+message APISpec {
+  string resolver = 1;
+  google.protobuf.Struct resolver_properties = 2;
+}
+
+message APIState {}
+
 message Schedule {
+  bool ref_update = 4;
+  bool disable = 5;
   string cron = 1;
   uint32 ticker_seconds = 2;
   string time_zone = 3;

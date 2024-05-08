@@ -3,10 +3,13 @@ package worker
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"time"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/robfig/cron/v3"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
@@ -35,7 +38,9 @@ func New(logger *zap.Logger, adm *admin.Service) *Worker {
 
 func (w *Worker) Run(ctx context.Context) error {
 	group, ctx := errgroup.WithContext(ctx)
-	group.Go(func() error { return w.schedule(ctx, "check_slots", w.checkSlots, 15*time.Minute) })
+	group.Go(func() error {
+		return w.schedule(ctx, "check_provisioner_capacity", w.checkProvisionerCapacity, 15*time.Minute)
+	})
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_tokens", w.deleteExpiredAuthTokens, 6*time.Hour)
 	})
@@ -48,6 +53,12 @@ func (w *Worker) Run(ctx context.Context) error {
 	group.Go(func() error {
 		return w.schedule(ctx, "hibernate_expired_deployments", w.hibernateExpiredDeployments, 15*time.Minute)
 	})
+	group.Go(func() error {
+		return w.schedule(ctx, "upgrade_latest_version_projects", w.upgradeLatestVersionProjects, 6*time.Hour)
+	})
+	group.Go(func() error {
+		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
+	})
 
 	// NOTE: Add new scheduled jobs here
 
@@ -58,10 +69,12 @@ func (w *Worker) Run(ctx context.Context) error {
 
 func (w *Worker) RunJob(ctx context.Context, name string) error {
 	switch name {
-	case "check_slots":
-		return w.runJob(ctx, name, w.checkSlots)
+	case "check_provisioner_capacity":
+		return w.runJob(ctx, name, w.checkProvisionerCapacity)
 	case "reset_all_deployments":
 		return w.runJob(ctx, name, w.resetAllDeployments)
+	case "upgrade_latest_version_projects":
+		return w.runJob(ctx, name, w.upgradeLatestVersionProjects)
 	// NOTE: Add new ad-hoc jobs here
 	default:
 		return fmt.Errorf("unknown job: %s", name)
@@ -72,12 +85,34 @@ func (w *Worker) schedule(ctx context.Context, name string, fn func(context.Cont
 	for {
 		err := w.runJob(ctx, name, fn)
 		if err != nil {
-			return err
+			w.logger.Error("Failed to run the job", zap.String("job_name", name), zap.Error(err))
 		}
 		select {
 		case <-ctx.Done():
 			return nil
 		case <-time.After(every):
+		}
+	}
+}
+
+func (w *Worker) scheduleCron(ctx context.Context, name string, fn func(context.Context) error, cronExpr string) error {
+	schedule, err := cron.ParseStandard(cronExpr)
+	if err != nil {
+		return err
+	}
+
+	for {
+		nextRun := schedule.Next(time.Now())
+		waitDuration := time.Until(nextRun)
+
+		select {
+		case <-ctx.Done():
+			return nil
+		case <-time.After(waitDuration):
+			err := w.runJob(ctx, name, fn)
+			if err != nil {
+				w.logger.Error("Failed to run the cronjob", zap.String("cronjob_name", name), zap.Error(err))
+			}
 		}
 	}
 }
@@ -96,4 +131,28 @@ func (w *Worker) runJob(ctx context.Context, name string, fn func(context.Contex
 	}
 	w.logger.Info("job completed", zap.String("name", name), zap.Duration("duration", time.Since(start)), observability.ZapCtx(ctx))
 	return nil
+}
+
+type pingHandler struct{}
+
+func (h *pingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusOK)
+	_, err := w.Write([]byte("pong"))
+	if err != nil {
+		panic(err)
+	}
+}
+
+// StartPingServer starts a http server that returns 200 OK on /ping
+func StartPingServer(ctx context.Context, port int) error {
+	httpMux := http.NewServeMux()
+	httpMux.Handle("/ping", &pingHandler{})
+	srv := &http.Server{
+		Addr:    fmt.Sprintf(":%d", port),
+		Handler: httpMux,
+	}
+
+	return graceful.ServeHTTP(ctx, srv, graceful.ServeOptions{
+		Port: port,
+	})
 }

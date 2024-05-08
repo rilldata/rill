@@ -1,14 +1,14 @@
 import {
   extractFileExtension,
-  extractTableName,
+  extractFileName,
   sanitizeEntityName,
-} from "@rilldata/web-common/features/sources/extract-table-name";
+} from "@rilldata/web-common/features/sources/extract-file-name";
 import { describe, it, expect } from "vitest";
 
 function generateTestCases(
   fileName: string,
   expectedFileName: string,
-  expectedExtension: string
+  expectedExtension: string,
 ) {
   return [
     `path/to/file/${fileName}`,
@@ -34,7 +34,7 @@ const TestCases = [
   ...generateTestCases(
     "table.v1.parquet.gz",
     "table_v1_parquet",
-    ".v1.parquet.gz"
+    ".v1.parquet.gz",
   ),
 ];
 
@@ -42,8 +42,8 @@ describe("extract-table-name", () => {
   describe("should extract and sanitise table name", () => {
     for (const variation of TestCases) {
       it(variation.title, () => {
-        expect(sanitizeEntityName(extractTableName(variation.path))).toBe(
-          variation.expectedFileName
+        expect(sanitizeEntityName(extractFileName(variation.path))).toBe(
+          variation.expectedFileName,
         );
       });
     }
@@ -53,7 +53,7 @@ describe("extract-table-name", () => {
     for (const variation of TestCases) {
       it(variation.title, () => {
         expect(extractFileExtension(variation.path)).toBe(
-          variation.expectedExtension
+          variation.expectedExtension,
         );
       });
     }

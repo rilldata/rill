@@ -8,6 +8,7 @@ to the props.
   import { mousePositionToDomainActionFactory } from "../actions/mouse-position-to-domain-action-factory";
   import { createScrubAction } from "../actions/scrub-action-factory";
   import { contexts } from "../constants";
+  import type { DomainCoordinates } from "../constants/types";
   import type { ScaleStore, SimpleConfigurationStore } from "../state/types";
 
   const config = getContext(contexts.config) as SimpleConfigurationStore;
@@ -38,8 +39,8 @@ to the props.
     plotBottom: $config?.plotBottom,
   });
 
-  export let mouseoverValue = undefined;
-  export let hovered = undefined;
+  export let mouseoverValue: DomainCoordinates | undefined = undefined;
+  export let hovered: boolean = false;
   export let overflowHidden = true;
 
   $: mouseoverValue = $coordinates;
@@ -48,8 +49,12 @@ to the props.
 </script>
 
 <!-- svelte-ignore a11y-click-events-have-key-events -->
+<!-- svelte-ignore a11y-no-noninteractive-element-interactions -->
 <svg
+  role="application"
+  tabindex="-1"
   style="overflow: {overflowHidden ? 'hidden' : 'visible'}"
+  style:outline="none"
   use:scrub
   on:scrub-start
   on:scrub-end

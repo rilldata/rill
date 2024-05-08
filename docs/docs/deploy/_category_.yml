@@ -1,4 +1,4 @@
 position: 30
-label: Deploy to Cloud
-collapsible: true
-collapsed: true
+label: Deploy
+collapsible: false
+collapsed: false

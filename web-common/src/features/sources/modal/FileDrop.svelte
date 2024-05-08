@@ -3,8 +3,6 @@
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
-  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -20,8 +18,6 @@
   const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: sourceNames = useSourceFileNames(runtimeInstanceId);
-  $: modelNames = useModelFileNames(runtimeInstanceId);
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -29,10 +25,14 @@
   const handleSourceDrop = async (e: DragEvent) => {
     showDropOverlay = false;
 
+    const files = e?.dataTransfer?.files;
+
+    // no-op if no files are dropped
+    if (files === undefined) return;
+
     const uploadedFiles = uploadTableFiles(
-      Array.from(e?.dataTransfer?.files),
-      [$sourceNames?.data, $modelNames?.data],
-      $runtime.instanceId
+      Array.from(files),
+      $runtime.instanceId,
     );
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
@@ -51,15 +51,15 @@
             sourceName: tableName,
             path: filePath,
           },
-          "local_file"
+          "local_file",
         );
         await createSource(runtimeInstanceId, tableName, yaml);
-        checkSourceImported(
-          queryClient,
+        const newFilePath = getFilePathFromNameAndType(
           tableName,
-          getFilePathFromNameAndType(tableName, EntityType.Table)
+          EntityType.Table,
         );
-        goto(`/source/${tableName}`);
+        await checkSourceImported(queryClient, newFilePath);
+        await goto(`/files${newFilePath}`);
       } catch (err) {
         console.error(err);
       }
@@ -78,6 +78,7 @@
     on:mouseup|preventDefault|stopPropagation={() => {
       showDropOverlay = false;
     }}
+    role="presentation"
   >
     <div
       class="grid place-content-center grid-gap-2 text-white m-auto p-6 break-all text-3xl"

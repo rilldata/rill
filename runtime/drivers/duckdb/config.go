@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/mitchellh/mapstructure"
 )
@@ -17,8 +18,14 @@ const (
 
 // config represents the DuckDB driver config
 type config struct {
-	// DSN is the connection string
+	// DSN is the connection string. Also allows a special `:memory:` path to initialize an in-memory database.
 	DSN string `mapstructure:"dsn"`
+	// Path is a path to the database file. If set, it will take precedence over the path contained in DSN.
+	// This is a convenience option for setting the path in a more human-readable way.
+	Path string `mapstructure:"path"`
+	// DataDir is the path to directory where duckdb file named `main.db` will be created. In case of external table storage all the files will also be present in DataDir's subdirectories.
+	// If path is set then DataDir is ignored.
+	DataDir string `mapstructure:"data_dir"`
 	// PoolSize is the number of concurrent connections and queries allowed
 	PoolSize int `mapstructure:"pool_size"`
 	// AllowHostAccess denotes whether to limit access to the local environment and file system
@@ -41,8 +48,10 @@ type config struct {
 	BootQueries string `mapstructure:"boot_queries"`
 	// DBFilePath is the path where the database is stored. It is inferred from the DSN (can't be provided by user).
 	DBFilePath string `mapstructure:"-"`
-	// ExtStoragePath is the path where the database files are stored in case external_table_storage is true. It is inferred from the DSN (can't be provided by user).
-	ExtStoragePath string `mapstructure:"-"`
+	// DBStoragePath is the path where the database files are stored. It is inferred from the DSN (can't be provided by user).
+	DBStoragePath string `mapstructure:"-"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute. (Internal queries will not be logged.)
+	LogQueries bool `mapstructure:"log_queries"`
 }
 
 func newConfig(cfgMap map[string]any) (*config, error) {
@@ -50,6 +59,12 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	err := mapstructure.WeakDecode(cfgMap, cfg)
 	if err != nil {
 		return nil, fmt.Errorf("could not decode config: %w", err)
+	}
+
+	inMemory := false
+	if strings.HasPrefix(cfg.DSN, ":memory:") {
+		inMemory = true
+		cfg.DSN = strings.Replace(cfg.DSN, ":memory:", "", 1)
 	}
 
 	// Parse DSN as URL
@@ -62,10 +77,17 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		return nil, fmt.Errorf("could not parse dsn: %w", err)
 	}
 
-	// Infer DBFilePath
-	cfg.DBFilePath = uri.Path
-	if cfg.ExtTableStorage {
-		cfg.ExtStoragePath = filepath.Dir(cfg.DBFilePath)
+	if !inMemory {
+		// Override DSN.Path with config.Path
+		if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
+			uri.Path = cfg.Path
+		} else if cfg.DataDir != "" {
+			uri.Path = filepath.Join(cfg.DataDir, "main.db")
+		}
+
+		// Infer DBFilePath
+		cfg.DBFilePath = uri.Path
+		cfg.DBStoragePath = filepath.Dir(cfg.DBFilePath)
 	}
 
 	// Set memory limit
@@ -116,6 +138,10 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	poolSize = max(poolSizeMin, poolSize) // Always enforce min pool size
 	cfg.PoolSize = poolSize
 
+	// useful for motherduck but safe to pass at initial connect
+	if !qry.Has("custom_user_agent") {
+		qry.Add("custom_user_agent", "rill")
+	}
 	// Rebuild DuckDB DSN (which should be "path?key=val&...")
 	// this is required since spaces and other special characters are valid in db file path but invalid and hence encoded in URL
 	cfg.DSN = generateDSN(uri.Path, qry.Encode())

@@ -12,7 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -101,6 +101,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		// Note: Not exiting early. It might need to be created/materialized., and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
+	// Exit early if disabled
+	if model.Spec.RefreshSchedule != nil && model.Spec.RefreshSchedule.Disable {
+		return runtime.ReconcileResult{}
+	}
+
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
@@ -115,7 +120,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			model.State.RefreshedOn = nil
 			subErr := r.C.UpdateState(ctx, self.Meta.Name, self)
 			if subErr != nil {
-				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", subErr))
+				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", subErr))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}
@@ -127,8 +132,14 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		materialize = true
 	}
 
+	// Resolve variables before computing the execution hash to ensure we re-trigger when a variable is updated
+	sql, err := r.resolveTemplateSQL(ctx, self)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	// Use a hash of execution-related fields from the spec to determine if something has changed
-	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec, materialize)
+	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec, materialize, sql)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -205,10 +216,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Log delayed materialization info
 	if delayingMaterialize {
 		delay := time.Duration(model.Spec.MaterializeDelaySeconds) * time.Second
-		r.C.Logger.Info("Delaying model materialization", slog.String("name", n.Name), slog.String("delay", delay.String()))
+		r.C.Logger.Info("Delaying model materialization", zap.String("name", n.Name), zap.String("delay", delay.String()))
 	}
 	if delayedMaterialize {
-		r.C.Logger.Info("Materializing model", slog.String("name", n.Name))
+		r.C.Logger.Info("Materializing model", zap.String("name", n.Name))
 	}
 
 	// Drop the staging table if it exists
@@ -218,10 +229,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Create the model
-	createErr := r.createModel(ctx, self, stagingTableName, !materialize)
+	createErr := r.createModel(ctx, self, sql, stagingTableName, !materialize)
 	if createErr != nil {
 		createErr = fmt.Errorf("failed to create model: %w", createErr)
 	}
+
 	if createErr == nil && stage {
 		// Rename the staging table to main view/table
 		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, !materialize, tableName)
@@ -319,7 +331,7 @@ func (r *ModelReconciler) delayedMaterializeTime(spec *runtimev1.ModelSpec, sinc
 }
 
 // executionSpecHash computes a hash of only those model properties that impact execution.
-func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec, materialize bool) (string, error) {
+func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec, materialize bool, sql string) (string, error) {
 	hash := md5.New()
 
 	for _, ref := range refs { // Refs are always sorted
@@ -333,17 +345,26 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		// Write state version (doesn't matter how the spec or meta has changed, only if/when state changes)
-		r, err := r.C.Get(ctx, ref, false)
-		var stateVersion int64
-		if err == nil {
-			stateVersion = r.Meta.StateVersion
-		} else {
-			stateVersion = -1
-		}
-		err = binary.Write(hash, binary.BigEndian, stateVersion)
-		if err != nil {
-			return "", err
+		// Incorporate the ref's state info in the hash if and only if we are supposed to trigger when a ref has refreshed (denoted by RefreshSchedule.RefUpdate).
+		if spec.RefreshSchedule != nil && spec.RefreshSchedule.RefUpdate {
+			// Note: Only writing the state info to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
+			// Note: Also using StateUpdatedOn because the state version is reset when the resource is deleted and recreated.
+			r, err := r.C.Get(ctx, ref, false)
+			var stateVersion, stateUpdatedOn int64
+			if err == nil {
+				stateVersion = r.Meta.StateVersion
+				stateUpdatedOn = r.Meta.StateUpdatedOn.Seconds
+			} else {
+				stateVersion = -1
+			}
+			err = binary.Write(hash, binary.BigEndian, stateVersion)
+			if err != nil {
+				return "", err
+			}
+			err = binary.Write(hash, binary.BigEndian, stateUpdatedOn)
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 
@@ -352,7 +373,7 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		return "", err
 	}
 
-	_, err = hash.Write([]byte(spec.Sql))
+	_, err = hash.Write([]byte(sql))
 	if err != nil {
 		return "", err
 	}
@@ -395,34 +416,40 @@ func (r *ModelReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Reso
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
-// createModel creates or updates the model in the OLAP connector.
-func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resource, tableName string, view bool) error {
+func (r *ModelReconciler) resolveTemplateSQL(ctx context.Context, self *runtimev1.Resource) (string, error) {
 	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	spec := self.Resource.(*runtimev1.Resource_Model).Model.Spec
 	state := self.Resource.(*runtimev1.Resource_Model).Model.State
 
+	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
+	if err != nil {
+		return "", err
+	}
+	defer release()
+
 	var sql string
 	if spec.UsesTemplating {
 		sql, err = compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
-			User:      map[string]interface{}{},
-			Variables: inst.ResolveVariables(),
+			Environment: inst.Environment,
+			User:        map[string]interface{}{},
+			Variables:   inst.ResolveVariables(),
 			Self: compilerv1.TemplateResource{
 				Meta:  self.Meta,
 				Spec:  spec,
 				State: state,
 			},
 			Resolve: func(ref compilerv1.ResourceName) (string, error) {
-				return safeSQLName(ref.Name), nil
+				return olap.Dialect().EscapeIdentifier(ref.Name), nil
 			},
 			Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 				if name.Kind == compilerv1.ResourceKindUnspecified {
-					return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
+					return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without type specified", name.Name)
 				}
-				res, err := r.C.Get(ctx, resourceNameFromCompiler(name), false)
+				res, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(name), false)
 				if err != nil {
 					return compilerv1.TemplateResource{}, err
 				}
@@ -434,11 +461,18 @@ func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resou
 			},
 		})
 		if err != nil {
-			return fmt.Errorf("failed to resolve template: %w", err)
+			return "", fmt.Errorf("failed to resolve template: %w", err)
 		}
 	} else {
 		sql = spec.Sql
 	}
+
+	return sql, nil
+}
+
+// createModel creates or updates the model in the OLAP connector.
+func (r *ModelReconciler) createModel(ctx context.Context, self *runtimev1.Resource, sql, tableName string, view bool) error {
+	spec := self.Resource.(*runtimev1.Resource_Model).Model.Spec
 
 	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
 	if err != nil {

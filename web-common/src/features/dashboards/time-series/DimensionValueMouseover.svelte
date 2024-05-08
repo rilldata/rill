@@ -1,16 +1,37 @@
 <script lang="ts">
   import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import MultiMetricMouseoverLabel from "@rilldata/web-common/components/data-graphic/marks/MultiMetricMouseoverLabel.svelte";
+  import type { Point } from "@rilldata/web-common/components/data-graphic/marks/types";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-  import { mean } from "d3-array";
-  export let point;
-  export let xAccessor;
-  export let yAccessor;
-  export let mouseoverFormat;
-  export let dimensionData;
-  export let dimensionValue;
+  import type { DimensionDataItem } from "@rilldata/web-common/features/dashboards/time-series/multiple-dimension-queries";
+  import type { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import type { TimeSeriesDatum } from "./timeseries-data-store";
 
-  $: x = point[xAccessor];
+  export let point: TimeSeriesDatum;
+  export let xAccessor: string;
+  export let yAccessor: string;
+  export let mouseoverFormat: ReturnType<typeof createMeasureValueFormatter>;
+  export let dimensionData: DimensionDataItem[];
+  export let dimensionValue: string | null | undefined;
+  export let validPercTotal: number | null;
+  export let hovered = false;
+
+  $: x = point?.[xAccessor];
+
+  function truncate(str: string) {
+    if (!str?.length) return str;
+
+    const truncateLength = 34;
+
+    if (str.length > truncateLength) {
+      // Check if last character is space
+      if (str[truncateLength - 1] === " ") {
+        return str.slice(0, truncateLength - 1) + "...";
+      }
+      return str.slice(0, truncateLength) + "...";
+    }
+    return str;
+  }
 
   let pointsData = dimensionData;
   $: if (dimensionValue !== undefined) {
@@ -21,36 +42,55 @@
     }
   }
   $: yValues = pointsData.map((dimension) => {
-    const y = bisectData(x, "center", xAccessor, dimension?.data)[yAccessor];
+    if (!x) return { y: null, color: undefined, name: "" };
+
+    const { entry: bisected } = bisectData(
+      new Date(x),
+      "center",
+      xAccessor,
+      dimension?.data,
+    );
+    if (bisected === undefined) return { y: null, color: undefined, name: "" };
+    const y = bisected[yAccessor];
     return {
       y,
-      fillClass: dimension?.fillClass,
+      color: dimension?.color,
       name: dimension?.value,
     };
   });
 
-  let lastAvailableCurrentY = 0;
-  $: if (yValues.length) {
-    lastAvailableCurrentY = mean(yValues, (d) => d.y);
-  }
-
   $: points = yValues
     .map((dimension) => {
-      const y = dimension.y;
-      const currentPointIsNull = y === null;
-      return {
-        x,
-        y: currentPointIsNull ? lastAvailableCurrentY : y,
+      const currentPointIsNull = dimension.y === null;
+      const y = Number(dimension.y);
+      let value = mouseoverFormat(
+        dimension.y === null || typeof dimension.y === "string"
+          ? dimension.y
+          : y,
+      );
+
+      if (validPercTotal) {
+        const percOfTotal = y / validPercTotal;
+        value =
+          mouseoverFormat(y) + ",  " + (percOfTotal * 100).toFixed(2) + "%";
+      }
+      const point: Point = {
+        x: Number(x),
+        y,
+        value: value ?? undefined,
         yOverride: currentPointIsNull,
         yOverrideLabel: "no current data",
         yOverrideStyleClass: `fill-gray-600 italic`,
-        key: dimension.name,
-        label: "",
-        pointColorClass: dimension.fillClass,
-        valueStyleClass: "font-semibold",
+        key: dimension.name === null ? "null" : dimension.name,
+        label: hovered ? truncate(dimension.name || "null") : "",
+        pointColor: dimension.color,
+        valueStyleClass: "font-bold",
         valueColorClass: "fill-gray-600",
-        labelColorClass: dimension.fillClass,
+        labelColorClass: "fill-gray-600",
+        labelStyleClass: "font-semibold",
       };
+
+      return point;
     })
     .filter((d) => !d.yOverride);
 
@@ -59,14 +99,14 @@
 </script>
 
 {#if pointSet.length}
-  <WithGraphicContexts let:xScale let:yScale>
+  <WithGraphicContexts>
     <MultiMetricMouseoverLabel
       isDimension={true}
       attachPointToLabel
-      direction="right"
+      direction="left"
       flipAtEdge="body"
       formatValue={mouseoverFormat}
-      point={pointSet || []}
+      point={pointSet}
     />
   </WithGraphicContexts>
 {/if}

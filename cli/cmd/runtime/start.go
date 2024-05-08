@@ -10,10 +10,11 @@ import (
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -29,29 +30,38 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/athena"
 	_ "github.com/rilldata/rill/runtime/drivers/azure"
 	_ "github.com/rilldata/rill/runtime/drivers/bigquery"
+	_ "github.com/rilldata/rill/runtime/drivers/clickhouse"
 	_ "github.com/rilldata/rill/runtime/drivers/druid"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
-	_ "github.com/rilldata/rill/runtime/drivers/github"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
+	_ "github.com/rilldata/rill/runtime/drivers/mysql"
+	_ "github.com/rilldata/rill/runtime/drivers/pinot"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
+	_ "github.com/rilldata/rill/runtime/drivers/redshift"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
+	_ "github.com/rilldata/rill/runtime/drivers/salesforce"
+	_ "github.com/rilldata/rill/runtime/drivers/slack"
+	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
+	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
 // Config describes runtime server config derived from environment variables.
 // Env var keys must be prefixed with RILL_RUNTIME_ and are converted from snake_case to CamelCase.
 // For example RILL_RUNTIME_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	HTTPPort                int                    `default:"8080" split_words:"true"`
-	GRPCPort                int                    `default:"9090" split_words:"true"`
-	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
-	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
-	TracesExporter          observability.Exporter `default:"" split_words:"true"`
 	MetastoreDriver         string                 `default:"sqlite" split_words:"true"`
 	MetastoreURL            string                 `default:"file:rill?mode=memory&cache=shared" split_words:"true"`
+	RedisURL                string                 `default:"" split_words:"true"`
+	MetricsExporter         observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter          observability.Exporter `default:"" split_words:"true"`
+	LogLevel                zapcore.Level          `default:"info" split_words:"true"`
+	HTTPPort                int                    `default:"8080" split_words:"true"`
+	GRPCPort                int                    `default:"9090" split_words:"true"`
+	DebugPort               int                    `default:"6060" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
@@ -64,8 +74,6 @@ type Config struct {
 	EmailSenderEmail        string                 `split_words:"true"`
 	EmailSenderName         string                 `split_words:"true"`
 	EmailBCC                string                 `split_words:"true"`
-	DownloadRowLimit        int64                  `default:"10000" split_words:"true"`
-	SafeSourceRefresh       bool                   `default:"false" split_words:"true"`
 	ConnectionCacheSize     int                    `default:"100" split_words:"true"`
 	QueryCacheSizeBytes     int64                  `default:"104857600" split_words:"true"` // 100MB by default
 	SecurityEngineCacheSize int                    `default:"1000" split_words:"true"`
@@ -74,14 +82,11 @@ type Config struct {
 	// AllowHostAccess controls whether instance can use host credentials and
 	// local_file sources can access directory outside repo
 	AllowHostAccess bool `default:"false" split_words:"true"`
-	// Redis server address host:port
-	RedisURL string `default:"" split_words:"true"`
+	// DataDir stores data for all instances like duckdb file, temporary downloaded file etc.
+	// The data for each instance is stored in a child directory named instance_id
+	DataDir string `split_words:"true"`
 	// Sink type of activity client: noop (or empty string), kafka
 	ActivitySinkType string `default:"" split_words:"true"`
-	// Sink period of a buffered activity client in millis
-	ActivitySinkPeriodMs int `default:"1000" split_words:"true"`
-	// Max queue size of a buffered activity client
-	ActivityMaxBufferSize int `default:"1000" split_words:"true"`
 	// Kafka brokers of an activity client's sink
 	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
 	// Kafka topic of an activity client's sink
@@ -89,7 +94,7 @@ type Config struct {
 }
 
 // StartCmd starts a stand-alone runtime server. It only allows configuration using environment variables.
-func StartCmd(cliCfg *config.Config) *cobra.Command {
+func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd := &cobra.Command{
 		Use:   "start",
 		Short: "Start stand-alone runtime server",
@@ -145,46 +150,50 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				keyPairs[idx] = key
 			}
 
-			// Init telemetry
+			// Init observability
 			shutdown, err := observability.Start(cmd.Context(), logger, &observability.Options{
 				MetricsExporter: conf.MetricsExporter,
 				TracesExporter:  conf.TracesExporter,
 				ServiceName:     "runtime-server",
-				ServiceVersion:  cliCfg.Version.String(),
+				ServiceVersion:  ch.Version.String(),
 			})
 			if err != nil {
-				logger.Fatal("error starting telemetry", zap.Error(err))
+				logger.Fatal("error starting observability", zap.Error(err))
 			}
 			defer func() {
-				// Allow 10 seconds to gracefully shutdown telemetry
+				// Allow 10 seconds to gracefully shutdown observability
 				ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 				defer cancel()
 				err := shutdown(ctx)
 				if err != nil {
-					logger.Error("telemetry shutdown failed", zap.Error(err))
+					logger.Error("observability shutdown failed", zap.Error(err))
 				}
 			}()
 
-			// Init activity client and sink to collect and emit activity events
-			var sink activity.Sink
+			// Init activity client
+			var activityClient *activity.Client
 			switch conf.ActivitySinkType {
 			case "", "noop":
-				sink = activity.NewNoopSink()
+				activityClient = activity.NewNoopClient()
 			case "kafka":
-				sink, err = activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic, logger)
+				sink, err := activity.NewKafkaSink(conf.ActivitySinkKafkaBrokers, conf.ActivitySinkKafkaTopic, logger)
 				if err != nil {
-					logger.Fatal("failed to create a kafka sink", zap.Error(err))
+					logger.Fatal("error creating kafka sink", zap.Error(err))
 				}
+				activityClient = activity.NewClient(sink, logger)
 			default:
-				logger.Fatal(fmt.Sprintf("unknown activity sink type: %s", conf.ActivitySinkType))
+				logger.Fatal("unknown activity sink type", zap.String("type", conf.ActivitySinkType))
 			}
-			activityOpts := activity.BufferedClientOptions{
-				Sink:       sink,
-				SinkPeriod: time.Duration(conf.ActivitySinkPeriodMs) * time.Millisecond,
-				BufferSize: conf.ActivityMaxBufferSize,
-				Logger:     logger,
+			defer activityClient.Close(context.Background())
+
+			// Add service info to the activity client
+			activityClient = activityClient.WithServiceName("runtime-server")
+			if ch.Version.Number != "" || ch.Version.Commit != "" {
+				activityClient = activityClient.WithServiceVersion(ch.Version.Number, ch.Version.Commit)
 			}
-			activityClient := activity.NewBufferedClient(activityOpts)
+			if ch.Version.IsDev() {
+				activityClient = activityClient.WithIsDev()
+			}
 
 			// Create ctx that cancels on termination signals
 			ctx := graceful.WithCancelOnTerminate(context.Background())
@@ -198,7 +207,7 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 				ControllerLogBufferCapacity:  conf.LogBufferCapacity,
 				ControllerLogBufferSizeBytes: conf.LogBufferSizeBytes,
 				AllowHostAccess:              conf.AllowHostAccess,
-				SafeSourceRefresh:            conf.SafeSourceRefresh,
+				DataDir:                      conf.DataDir,
 				SystemConnectors: []*runtimev1.Connector{
 					{
 						Type:   conf.MetastoreDriver,
@@ -226,15 +235,14 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 
 			// Init server
 			srvOpts := &server.Options{
-				HTTPPort:         conf.HTTPPort,
-				GRPCPort:         conf.GRPCPort,
-				AllowedOrigins:   conf.AllowedOrigins,
-				ServePrometheus:  conf.MetricsExporter == observability.PrometheusExporter,
-				SessionKeyPairs:  keyPairs,
-				AuthEnable:       conf.AuthEnable,
-				AuthIssuerURL:    conf.AuthIssuerURL,
-				AuthAudienceURL:  conf.AuthAudienceURL,
-				DownloadRowLimit: &conf.DownloadRowLimit,
+				HTTPPort:        conf.HTTPPort,
+				GRPCPort:        conf.GRPCPort,
+				AllowedOrigins:  conf.AllowedOrigins,
+				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
+				SessionKeyPairs: keyPairs,
+				AuthEnable:      conf.AuthEnable,
+				AuthIssuerURL:   conf.AuthIssuerURL,
+				AuthAudienceURL: conf.AuthAudienceURL,
 			}
 			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
 			if err != nil {
@@ -245,6 +253,9 @@ func StartCmd(cliCfg *config.Config) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
+			if conf.DebugPort != 0 {
+				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
+			}
 			err = group.Wait()
 			if err != nil {
 				logger.Error("server crashed", zap.Error(err))

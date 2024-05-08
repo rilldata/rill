@@ -9,7 +9,7 @@
   export let href = "";
 </script>
 
-<div class="flex flex-row items-center pl-1 gap-x-1">
+<div class="pt-3.5 flex flex-row items-center pl-1 gap-x-1">
   <div class="text-gray-500">
     {description}
   </div>
@@ -20,7 +20,7 @@
         style="transform:translateY(-.5px)"
         {href}
         target="_blank"
-        rel="noreferrer"
+        rel="noreferrer noopener"
       >
         <InfoCircle size="13px" />
       </a>

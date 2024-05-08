@@ -210,6 +210,12 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
+  // GetGithubUserStatus returns info about a Github user account based on the caller's installations.
+  // If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
+  rpc GetGithubUserStatus(GetGithubUserStatusRequest) returns (GetGithubUserStatusResponse) {
+    option (google.api.http) = {get: "/v1/github/user"};
+  }
+
   // GetGitCredentials returns credentials and other details for a project's Git repository.
   rpc GetGitCredentials(GetGitCredentialsRequest) returns (GetGitCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/git-credentials"};
@@ -253,10 +259,18 @@ service AdminService {
     option (google.api.http) = {get: "/v1/superuser/members"};
   }
 
-  // GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+  // GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
   rpc GetDeploymentCredentials(GetDeploymentCredentialsRequest) returns (GetDeploymentCredentialsResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/credentials",
+      body: "*"
+    };
+  }
+
+  // GetIFrame returns the iframe URL for the given project
+  rpc GetIFrame(GetIFrameRequest) returns (GetIFrameResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/iframe",
       body: "*"
     };
   }
@@ -288,6 +302,32 @@ service AdminService {
       patch: "/v1/superuser/quotas/organization",
       body: "*"
     };
+  }
+
+  // SudoUpdateAnnotations endpoint for superusers to update project annotations
+  rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/projects/annotations",
+      body: "*"
+    };
+  }
+
+  // CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
+  rpc CreateProjectWhitelistedDomain(CreateProjectWhitelistedDomainRequest) returns (CreateProjectWhitelistedDomainResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/whitelisted",
+      body: "*"
+    };
+  }
+
+  // RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
+  rpc RemoveProjectWhitelistedDomain(RemoveProjectWhitelistedDomainRequest) returns (RemoveProjectWhitelistedDomainResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/whitelisted/{domain}"};
+  }
+
+  // ListWhitelistedDomains lists all the whitelisted domains of the project
+  rpc ListProjectWhitelistedDomains(ListProjectWhitelistedDomainsRequest) returns (ListProjectWhitelistedDomainsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/whitelisted"};
   }
 
   // ListService returns all the services per organization
@@ -341,7 +381,7 @@ service AdminService {
     };
   }
 
-  // ListBookmarks lists all the bookmarks for the user
+  // ListBookmarks lists all the bookmarks for the user and global ones for dashboard
   rpc ListBookmarks(ListBookmarksRequest) returns (ListBookmarksResponse) {
     option (google.api.http) = {get: "/v1/users/bookmarks"};
   }
@@ -351,15 +391,23 @@ service AdminService {
     option (google.api.http) = {get: "/v1/users/bookmarks/{bookmark_id}"};
   }
 
-  // CreateBookmark creates a bookmark for the given user for the given project
+  // CreateBookmark creates a bookmark for the given user or for all users for the dashboard
   rpc CreateBookmark(CreateBookmarkRequest) returns (CreateBookmarkResponse) {
     option (google.api.http) = {
       post: "/v1/users/bookmarks",
       body: "*"
     };
   }
-  
-  // RemoveBookmark removes the bookmark for the given user for the given project
+
+  // UpdateBookmark updates a bookmark for the given user for the given project
+  rpc UpdateBookmark(UpdateBookmarkRequest) returns (UpdateBookmarkResponse) {
+    option (google.api.http) = {
+      put: "/v1/users/bookmarks",
+      body: "*"
+    };
+  }
+
+  // RemoveBookmark removes the bookmark for the given user or all users
   rpc RemoveBookmark(RemoveBookmarkRequest) returns (RemoveBookmarkResponse) {
     option (google.api.http) = {delete: "/v1/users/bookmarks/{bookmark_id}"};
   }
@@ -376,7 +424,18 @@ service AdminService {
 
   // GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
   rpc GetReportMeta(GetReportMetaRequest) returns (GetReportMetaResponse) {
-    option (google.api.http) = {get: "/v1/projects/{project_id}/reports/meta"};
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/reports/meta",
+      body: "*"
+    };
+  }
+
+  // GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+  rpc GetAlertMeta(GetAlertMetaRequest) returns (GetAlertMetaResponse) {
+    option (google.api.http) = {
+      post: "/v1/projects/{project_id}/alerts/meta",
+      body: "*"
+    };
   }
 
   // CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
@@ -421,6 +480,50 @@ service AdminService {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/reports/-/yaml",
       body: "*"
+    };
+  }
+
+  // CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+  rpc CreateAlert(CreateAlertRequest) returns (CreateAlertResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/alerts",
+      body: "*"
+    };
+  }
+
+  // EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+  rpc EditAlert(EditAlertRequest) returns (EditAlertResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/projects/{project}/alerts/{name}",
+      body: "*"
+    };
+  }
+
+  // UnsubscribeAlert removes the calling user from a alert's recipients list
+  rpc UnsubscribeAlert(UnsubscribeAlertRequest) returns (UnsubscribeAlertResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/unsubscribe",
+      body: "*"
+    };
+  }
+
+  // DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+  rpc DeleteAlert(DeleteAlertRequest) returns (DeleteAlertResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/alerts/{name}"};
+  }
+
+  // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+  rpc GenerateAlertYAML(GenerateAlertYAMLRequest) returns (GenerateAlertYAMLResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/alerts/-/yaml",
+      body: "*"
+    };
+  }
+
+  // GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+  rpc GetAlertYAML(GetAlertYAMLRequest) returns (GetAlertYAMLResponse) {
+    option (google.api.http) = {
+      get: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml",
     };
   }
 }
@@ -490,6 +593,7 @@ message ListProjectsForOrganizationResponse {
 message GetProjectRequest {
   string organization_name = 1;
   string name = 2;
+  uint32 access_token_ttl_seconds = 3;
 }
 
 message GetProjectResponse {
@@ -501,6 +605,7 @@ message GetProjectResponse {
 
 message SearchProjectNamesRequest {
   string name_pattern = 1;
+  map<string, string> annotations = 5;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
   string page_token = 3;
 }
@@ -536,16 +641,60 @@ message GetDeploymentCredentialsRequest {
   string organization = 1;
   string project = 2;
   string branch = 3;
+  uint32 ttl_seconds = 7;
   oneof for {
     string user_id = 4;
-    google.protobuf.Struct attrs = 5;
+    string user_email = 6 [(validate.rules).string.email = true];
+    google.protobuf.Struct attributes = 5;
   }
 }
 
 message GetDeploymentCredentialsResponse {
   string runtime_host = 1;
-  string runtime_instance_id = 2;
-  string jwt = 3;
+  string instance_id = 2;
+  string access_token = 3;
+  uint32 ttl_seconds = 4;
+}
+
+// GetIFrameRequest is the request payload for AdminService.GetIFrame.
+message GetIFrameRequest {
+  // Organization that owns the project to embed.
+  string organization = 1;
+  // Project that has the resource(s) to embed.
+  string project = 2;
+  // Branch to embed. If not set, the production branch is used.
+  string branch = 3;
+  // TTL for the iframe's access token. If not set, defaults to 24 hours.
+  uint32 ttl_seconds = 6;
+  // User attributes to use for security policy evaluation.
+  oneof for {
+    // If set, will use the attributes of the user with this ID.
+    string user_id = 9;
+    // If set, will generate attributes corresponding to a user with this email.
+    string user_email = 10 [(validate.rules).string.email = true];
+    // If set, will use the provided attributes outright.
+    google.protobuf.Struct attributes = 11;
+  }
+  // Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
+  string kind = 4;
+  // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
+  string resource = 5;
+  // Theme to use for the embedded resource.
+  string theme = 12;
+  // Navigation denotes whether navigation between different resources should be enabled in the embed.
+  bool navigation = 13;
+  // Blob containing UI state for rendering the initial embed. Not currently supported.
+  string state = 7;
+  // DEPRECATED: Additional parameters to set outright in the generated URL query.
+  map<string, string> query = 8;
+}
+
+message GetIFrameResponse {
+  string iframe_src = 1;
+  string runtime_host = 2;
+  string instance_id = 3;
+  string access_token = 4;
+  uint32 ttl_seconds = 5;
 }
 
 message ListServicesRequest {
@@ -589,7 +738,7 @@ message CreateProjectRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
   bool public = 4;
-  string region = 5;
+  string provisioner = 5;
   string prod_olap_driver = 6;
   string prod_olap_dsn = 7;
   int64 prod_slots = 8;
@@ -597,6 +746,7 @@ message CreateProjectRequest {
   string prod_branch = 9;
   string github_url = 10;
   map<string, string> variables = 11;
+  string prod_version = 13;
 }
 
 message CreateProjectResponse {
@@ -618,9 +768,10 @@ message UpdateProjectRequest {
   optional string prod_branch = 5;
   optional string github_url = 6;
   optional int64 prod_slots = 7;
-  optional string region = 8;
+  optional string provisioner = 8;
   optional string new_name = 9;
   optional int64 prod_ttl_seconds = 10;
+  optional string prod_version = 11;
 }
 
 message UpdateProjectResponse {
@@ -769,6 +920,16 @@ message SudoUpdateUserQuotasResponse {
   User user = 1;
 }
 
+message SudoUpdateAnnotationsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  map<string, string> annotations = 3;
+}
+
+message SudoUpdateAnnotationsResponse {
+  Project project = 1;
+}
+
 message ListProjectMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
@@ -841,42 +1002,59 @@ message UserPreferences {
 }
 
 message UpdateUserPreferencesRequest {
-    UserPreferences preferences = 1;
+  UserPreferences preferences = 1;
 }
 
 message UpdateUserPreferencesResponse {
-    UserPreferences preferences = 1;
+  UserPreferences preferences = 1;
 }
 
 message ListBookmarksRequest {
-    string project_id = 1;
+  string project_id = 1;
+  string resource_kind = 2;
+  string resource_name = 3;
 }
 
 message ListBookmarksResponse {
-    repeated Bookmark bookmarks = 1;
+  repeated Bookmark bookmarks = 1;
 }
 
 message GetBookmarkRequest {
-    string bookmark_id = 1;
+  string bookmark_id = 1;
 }
 
 message GetBookmarkResponse {
-    Bookmark bookmark = 1;
+  Bookmark bookmark = 1;
 }
 
 message CreateBookmarkRequest {
   string display_name = 1;
-  bytes data = 2;
-  string dashboard_name = 3;
-  string project_id = 4;
+  string description = 2;
+  bytes data = 3;
+  string resource_kind = 4;
+  string resource_name = 5;
+  string project_id = 6;
+  bool default = 7;
+  bool shared = 8;
 }
 
 message CreateBookmarkResponse {
   Bookmark bookmark = 1;
 }
 
+message UpdateBookmarkRequest {
+  string bookmark_id = 1;
+  string display_name = 2;
+  string description = 4;
+  bytes data = 3;
+  bool default = 5;
+  bool shared = 6;
+}
+
+message UpdateBookmarkResponse {}
+
 message RemoveBookmarkRequest {
-    string bookmark_id = 1;
+  string bookmark_id = 1;
 }
 
 message RemoveBookmarkResponse {}
@@ -941,6 +1119,16 @@ message GetGithubRepoStatusResponse {
   string default_branch = 3;
 }
 
+message GetGithubUserStatusRequest {}
+
+message GetGithubUserStatusResponse {
+  bool has_access = 1;
+  string grant_access_url = 2;
+  string access_token = 3;
+  string account = 4;
+  repeated string organizations = 5;
+}
+
 message GetGitCredentialsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
@@ -977,6 +1165,32 @@ message ListWhitelistedDomainsResponse {
   repeated WhitelistedDomain domains = 1;
 }
 
+message CreateProjectWhitelistedDomainRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string domain = 3 [(validate.rules).string.min_len = 1];
+  string role = 4 [(validate.rules).string.min_len = 1];
+}
+
+message CreateProjectWhitelistedDomainResponse {}
+
+message RemoveProjectWhitelistedDomainRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string domain = 3 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveProjectWhitelistedDomainResponse {}
+
+message ListProjectWhitelistedDomainsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+}
+
+message ListProjectWhitelistedDomainsResponse {
+  repeated WhitelistedDomain domains = 1;
+}
+
 message GetRepoMetaRequest {
   string project_id = 1;
   string branch = 2;
@@ -1005,12 +1219,30 @@ message GetReportMetaRequest {
   string branch = 2;
   string report = 3;
   map<string, string> annotations = 4;
+  google.protobuf.Timestamp execution_time = 5;
 }
 
 message GetReportMetaResponse {
   string open_url = 1;
   string export_url = 2;
   string edit_url = 3;
+}
+
+message GetAlertMetaRequest {
+  string project_id = 1;
+  string branch = 2;
+  string alert = 3;
+  map<string, string> annotations = 4;
+  oneof query_for {
+    string query_for_user_id = 5;
+    string query_for_user_email = 6;
+  }
+}
+
+message GetAlertMetaResponse {
+  string open_url = 1;
+  string edit_url = 2;
+  google.protobuf.Struct query_for_attributes = 3;
 }
 
 message CreateReportRequest {
@@ -1050,7 +1282,7 @@ message DeleteReportRequest {
 message DeleteReportResponse {
 }
 
-message TriggerReportRequest { 
+message TriggerReportRequest {
   string organization = 1;
   string project = 2;
   string name = 3;
@@ -1067,6 +1299,74 @@ message GenerateReportYAMLRequest {
 message GenerateReportYAMLResponse {
   string yaml = 1;
 }
+
+message CreateAlertRequest {
+  string organization = 1;
+  string project = 2;
+  AlertOptions options = 3 [(validate.rules).message.required = true];
+}
+
+message CreateAlertResponse {
+  string name = 1;
+}
+
+message EditAlertRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+  AlertOptions options = 4 [(validate.rules).message.required = true];
+}
+
+message EditAlertResponse {
+}
+
+message UnsubscribeAlertRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message UnsubscribeAlertResponse {}
+
+message DeleteAlertRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message DeleteAlertResponse {
+}
+
+message GenerateAlertYAMLRequest {
+  string organization = 1;
+  string project = 2;
+  AlertOptions options = 3 [(validate.rules).message.required = true];
+}
+
+message GenerateAlertYAMLResponse {
+  string yaml = 1;
+}
+
+message GetAlertYAMLRequest {
+  string organization = 1;
+  string project = 2;
+  string name = 3;
+}
+
+message GetAlertYAMLResponse {
+  string yaml = 1;
+}
+
+message TelemetryRequest {
+  // Name passed to activity module's name arg
+  string name = 1;
+  // Value passed to activity module's value arg
+  float value = 2;
+  // Free form struct of the actual event
+  google.protobuf.Struct event = 3;
+}
+
+message TelemetryResponse {}
 
 message User {
   string id = 1;
@@ -1115,7 +1415,8 @@ message Project {
   string org_name = 4;
   string description = 5;
   bool public = 6;
-  string region = 7;
+  string created_by_user_id = 22;
+  string provisioner = 7;
   string github_url = 8;
   string subpath = 17;
   string prod_branch = 9;
@@ -1125,6 +1426,8 @@ message Project {
   string prod_deployment_id = 13;
   string frontend_url = 16;
   int64 prod_ttl_seconds = 18;
+  map<string, string> annotations = 20;
+  string prod_version = 21;
   google.protobuf.Timestamp created_on = 14;
   google.protobuf.Timestamp updated_on = 15;
 }
@@ -1172,6 +1475,8 @@ message ProjectPermissions {
   bool manage_project_members = 10;
   bool create_reports = 11;
   bool manage_reports = 12;
+  bool create_alerts = 13;
+  bool manage_alerts = 14;
 }
 
 message Member {
@@ -1197,10 +1502,14 @@ message WhitelistedDomain {
 message Bookmark {
   string id = 1;
   string display_name = 2;
+  string description = 9;
   bytes data = 3;
-  string dashboard_name = 4;
+  string resource_kind = 10;
+  string resource_name = 4;
   string project_id = 5;
   string user_id = 6;
+  bool default = 11;
+  bool shared = 12;
   google.protobuf.Timestamp created_on = 7;
   google.protobuf.Timestamp updated_on = 8;
 }
@@ -1227,5 +1536,22 @@ message ReportOptions {
   uint64 export_limit = 5;
   rill.runtime.v1.ExportFormat export_format = 6;
   string open_project_subpath = 7;
-  repeated string recipients = 8;
+  repeated string email_recipients = 8;
+  repeated string slack_users = 10;
+  repeated string slack_channels = 11;
+  repeated string slack_webhooks = 12;
+}
+
+message AlertOptions {
+  string title = 1;
+  string interval_duration = 2;
+  string query_name = 3;
+  string query_args_json = 4;
+  string metrics_view_name = 5;
+  bool renotify = 6;
+  uint32 renotify_after_seconds = 7;
+  repeated string email_recipients = 8;
+  repeated string slack_users = 9;
+  repeated string slack_channels = 10;
+  repeated string slack_webhooks = 11;
 }

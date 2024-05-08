@@ -1,116 +1,114 @@
+<script lang="ts" context="module">
+  export const navigationOpen = (() => {
+    const store = writable(true);
+    return {
+      subscribe: store.subscribe,
+      toggle: () => store.update((open) => !open),
+    };
+  })();
+</script>
+
 <script lang="ts">
-  import HideLeftSidebar from "@rilldata/web-common/components/icons/HideLeftSidebar.svelte";
-  import SurfaceViewIcon from "@rilldata/web-common/components/icons/SurfaceView.svelte";
-  import Portal from "@rilldata/web-common/components/Portal.svelte";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import { ModelAssets } from "@rilldata/web-common/features/models";
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
-  import TableAssets from "@rilldata/web-common/features/sources/navigation/TableAssets.svelte";
-  import { getContext } from "svelte";
-  import { tweened } from "svelte/motion";
-  import { Readable, Writable, writable } from "svelte/store";
-  import DashboardAssets from "../../features/dashboards/DashboardAssets.svelte";
-  import OtherFiles from "../../features/project/OtherFiles.svelte";
+  import { writable } from "svelte/store";
+  import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
+  import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
+  import TableExplorer from "../../features/tables/TableExplorer.svelte";
+  import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH } from "../config";
-  import { drag } from "../drag";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
 
-  /** FIXME: come up with strong defaults here when needed */
-  const navigationLayout =
-    (getContext("rill:app:navigation-layout") as Writable<{
-      value: number;
-      visible: boolean;
-    }>) || writable({ value: DEFAULT_NAV_WIDTH, visible: true });
+  let width = DEFAULT_NAV_WIDTH;
+  let previousWidth: number;
+  let container: HTMLElement;
+  let resizing = false;
+  let navWrapperHeight: number;
 
-  const navigationWidth =
-    (getContext("rill:app:navigation-width-tween") as Readable<number>) ||
-    writable(DEFAULT_NAV_WIDTH);
+  function handleResize(
+    e: UIEvent & {
+      currentTarget: EventTarget & Window;
+    },
+  ) {
+    const currentWidth = e.currentTarget.innerWidth;
 
-  const navVisibilityTween =
-    (getContext("rill:app:navigation-visibility-tween") as Readable<number>) ||
-    tweened(0, { duration: 50 });
+    if (currentWidth < previousWidth && currentWidth < 768) {
+      $navigationOpen = false;
+    }
 
-  $: isModelerEnabled = $featureFlags.readOnly === false;
+    previousWidth = currentWidth;
+  }
 </script>
 
-<div
-  aria-hidden={!$navigationLayout?.visible}
-  class="box-border assets fixed"
-  style:left="{-$navVisibilityTween * $navigationWidth}px"
->
-  <div
-    class="
-  border-r
-  fixed
-  overflow-auto
-  border-gray-200
-  transition-colors
-  h-screen
-  bg-white
-"
-    class:hidden={$navVisibilityTween === 1}
-    class:pointer-events-none={!$navigationLayout?.visible}
-    style:top="0px"
-    style:width="{$navigationWidth}px"
-  >
-    <!-- draw handler -->
-    {#if $navigationLayout?.visible}
-      <Portal>
-        <div
-          on:dblclick={() => {
-            navigationLayout.update((state) => {
-              state.value = DEFAULT_NAV_WIDTH;
-              return state;
-            });
-          }}
-          class="fixed drawer-handler w-4 hover:cursor-col-resize -translate-x-2 h-screen"
-          style:left="{(1 - $navVisibilityTween) * $navigationWidth}px"
-          use:drag={{
-            minSize: DEFAULT_NAV_WIDTH,
-            maxSize: 440,
-            side: "assetsWidth",
-            store: navigationLayout,
-          }}
-        />
-      </Portal>
-    {/if}
+<svelte:window on:resize={handleResize} />
 
-    <div class="w-full flex flex-col h-full">
-      <div class="grow">
-        <ProjectTitle />
-        {#if isModelerEnabled}
-          <TableAssets />
-          <ModelAssets />
-        {/if}
-        <DashboardAssets />
-        {#if isModelerEnabled}
-          <OtherFiles />
+<nav
+  class="sidebar"
+  class:hide={!$navigationOpen}
+  class:resizing
+  style:width="{width}px"
+  bind:this={container}
+>
+  <Resizer
+    min={DEFAULT_NAV_WIDTH}
+    basis={DEFAULT_NAV_WIDTH}
+    max={440}
+    bind:dimension={width}
+    bind:resizing
+    side="right"
+  />
+  <div class="inner" style:width="{width}px">
+    <ProjectTitle />
+
+    <AddAssetButton />
+    <div class="scroll-container">
+      <div class="nav-wrapper" bind:clientHeight={navWrapperHeight}>
+        <FileExplorer />
+        <div class="grow" />
+        {#if navWrapperHeight}
+          <TableExplorer startingHeight={navWrapperHeight / 2} />
         {/if}
       </div>
-      <Footer />
     </div>
+    <Footer />
   </div>
-</div>
+</nav>
 
 <SurfaceControlButton
-  left="{($navigationWidth - 12 - 20) * (1 - $navVisibilityTween) +
-    12 * $navVisibilityTween}px"
-  on:click={() => {
-    //assetsVisible.set(!$assetsVisible);
-    navigationLayout.update((state) => {
-      state.visible = !state.visible;
-      return state;
-    });
-  }}
-  show={true}
->
-  {#if $navigationLayout?.visible}
-    <HideLeftSidebar size="18px" />
-  {:else}
-    <SurfaceViewIcon size="16px" mode={"hamburger"} />
-  {/if}
-  <svelte:fragment slot="tooltip-content">
-    {#if $navVisibilityTween === 0} Close {:else} Show {/if} sidebar
-  </svelte:fragment>
-</SurfaceControlButton>
+  {resizing}
+  navWidth={width}
+  navOpen={$navigationOpen}
+  on:click={navigationOpen.toggle}
+/>
+
+<style lang="postcss">
+  .sidebar {
+    @apply flex flex-col flex-none relative overflow-hidden;
+    @apply h-screen border-r z-0;
+    transition-property: width;
+    will-change: width;
+  }
+
+  .inner {
+    @apply h-full overflow-hidden flex flex-col;
+    will-change: width;
+  }
+
+  .nav-wrapper {
+    @apply flex flex-col h-full w-full gap-y-2;
+  }
+
+  .scroll-container {
+    @apply overflow-y-auto overflow-x-hidden;
+    @apply transition-colors h-full bg-white;
+  }
+
+  .sidebar:not(.resizing) {
+    transition-duration: 400ms;
+    transition-timing-function: ease-in-out;
+  }
+
+  .hide {
+    width: 0px !important;
+  }
+</style>

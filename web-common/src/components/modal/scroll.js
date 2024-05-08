@@ -1,3 +1,12 @@
+/**
+ * Note that this file has been vendored from Shoelace
+ * in order to fix a bug with storybook.
+ *
+ * Linting is disabled for this file. If you make changes to this file,
+ * you should merge it with the corresponding d.ts file, and change this
+ * to a .ts file.
+ */
+
 import { getOffset } from "./offset.js";
 const locks = new Set();
 function getScrollbarWidth() {
@@ -11,7 +20,7 @@ export function lockBodyScrolling(lockingEl) {
     document.body.classList.add("sl-scroll-lock");
     document.body.style.setProperty(
       "--sl-scroll-lock-size",
-      `${scrollbarWidth}px`
+      `${scrollbarWidth}px`,
     );
   }
 }
@@ -26,7 +35,7 @@ export function scrollIntoView(
   element,
   container,
   direction = "vertical",
-  behavior = "smooth"
+  behavior = "smooth",
 ) {
   const offset = getOffset(element, container);
   const offsetTop = offset.top + container.scrollTop;

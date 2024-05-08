@@ -3,42 +3,39 @@
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getDimensionTableExportArgs } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import {
-    createQueryServiceExport,
     V1ExportFormat,
+    createQueryServiceExport,
   } from "@rilldata/web-common/runtime-client";
-  import { onMount, SvelteComponent } from "svelte";
+  import { onMount } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import exportToplist from "./export-toplist";
 
   export let includeScheduledReport: boolean;
-  export let metricViewName: string;
 
   let exportMenuOpen = false;
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const dashboardStore = ctx.dashboardStore;
-  const timeControlStore = useTimeControlStore(ctx);
 
   const exportDash = createQueryServiceExport();
   const handleExportTopList = async (format: V1ExportFormat) => {
     exportToplist({
-      metricViewName,
+      ctx,
       query: exportDash,
       format,
-      timeControlStore,
     });
   };
 
-  // Only import the Scheduled Report modal if in the Cloud context
-  // This ensures Rill Developer doesn't try and fail to import the admin-client
-  let CreateScheduledReportModal: typeof SvelteComponent | undefined;
+  // Only import the Scheduled Report dialog if in the Cloud context.
+  // This ensures Rill Developer doesn't try and fail to import the admin-client.
+  let CreateScheduledReportDialog;
   onMount(async () => {
     if (includeScheduledReport) {
-      CreateScheduledReportModal = (
-        await import("../scheduled-reports/CreateScheduledReportModal.svelte")
+      CreateScheduledReportDialog = (
+        await import(
+          "../../scheduled-reports/CreateScheduledReportDialog.svelte"
+        )
       ).default;
     }
   });
@@ -68,6 +65,7 @@
     />
   </button>
   <Menu
+    let:toggleFloatingElement
     minWidth=""
     on:click-outside={toggleFloatingElement}
     on:escape={toggleFloatingElement}
@@ -97,7 +95,7 @@
     >
       Export as XLSX
     </MenuItem>
-    {#if includeScheduledReport}
+    {#if includeScheduledReport && $scheduledReportsQueryArgs}
       <MenuItem
         on:select={() => {
           toggleFloatingElement();
@@ -112,12 +110,11 @@
 
 <!-- Including `showScheduledReportDialog` in the conditional ensures we tear 
   down the form state when the dialog closes -->
-{#if includeScheduledReport && CreateScheduledReportModal && showScheduledReportDialog}
+{#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog && $scheduledReportsQueryArgs}
   <svelte:component
-    this={CreateScheduledReportModal}
+    this={CreateScheduledReportDialog}
     queryName="MetricsViewComparison"
     queryArgs={$scheduledReportsQueryArgs}
-    dashboardTimeZone={$dashboardStore?.selectedTimezone}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
   />

@@ -5,7 +5,7 @@ import YAMLEditor from "./YAMLEditor.svelte";
 
 function getLines(container: HTMLElement) {
   return Array.from(container.querySelectorAll(".cm-line")).map(
-    (l) => l.textContent
+    (l) => l.textContent,
   );
 }
 
@@ -38,7 +38,7 @@ describe("YAMLEditor.svelte", () => {
     expect(getLines(container)).toHaveLength(1);
 
     const onUpdate = vi.fn();
-    component?.$on("update", onUpdate);
+    component?.$on("save", onUpdate);
 
     const content = "foo: 10\nbar: 20\nfoo: 10\nbar: 20";
 

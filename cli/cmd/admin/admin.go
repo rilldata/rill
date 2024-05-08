@@ -1,19 +1,19 @@
 package admin
 
 import (
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
 // AdminCmd represents the admin command
-func AdminCmd(cfg *config.Config) *cobra.Command {
+func AdminCmd(ch *cmdutil.Helper) *cobra.Command {
 	adminCmd := &cobra.Command{
 		Use:    "admin",
-		Hidden: !cfg.IsDev(),
+		Hidden: !ch.IsDev(),
 		Short:  "Manage an admin server",
 	}
-	adminCmd.AddCommand(PingCmd(cfg))
-	adminCmd.AddCommand(StartCmd(cfg))
-	adminCmd.AddCommand(SwitchCmd(cfg))
+	adminCmd.AddCommand(PingCmd(ch))
+	adminCmd.AddCommand(StartCmd(ch))
+	adminCmd.AddCommand(SwitchCmd(ch))
 	return adminCmd
 }

@@ -16,7 +16,10 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"golang.org/x/exp/slices"
 	"google.golang.org/grpc/codes"
@@ -53,10 +56,8 @@ func (s *Server) GetReportMeta(ctx context.Context, req *adminv1.GetReportMetaRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	annotations := parseReportAnnotations(req.Annotations)
-
 	return &adminv1.GetReportMetaResponse{
-		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, annotations.WebOpenProjectSubpath),
+		OpenUrl:   s.urls.reportOpen(org.Name, proj.Name, req.Report, req.ExecutionTime.AsTime()),
 		ExportUrl: s.urls.reportExport(org.Name, proj.Name, req.Report),
 		EditUrl:   s.urls.reportEdit(org.Name, proj.Name, req.Report),
 	}, nil
@@ -100,7 +101,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, name, claims.OwnerID())
+	data, err := s.yamlForManagedReport(req.Options, claims.OwnerID())
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -115,7 +116,7 @@ func (s *Server) CreateReport(ctx context.Context, req *adminv1.CreateReportRequ
 		return nil, status.Errorf(codes.Internal, "failed to insert virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitReport(ctx, depl, name)
+	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be created")
@@ -173,7 +174,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to edit report")
 	}
 
-	data, err := s.yamlForManagedReport(req.Options, req.Name, annotations.AdminOwnerUserID)
+	data, err := s.yamlForManagedReport(req.Options, annotations.AdminOwnerUserID)
 	if err != nil {
 		return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 	}
@@ -188,7 +189,7 @@ func (s *Server) EditReport(ctx context.Context, req *adminv1.EditReportRequest)
 		return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitReport(ctx, depl, req.Name)
+	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
@@ -253,9 +254,16 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 	}
 
 	found := false
-	for idx, email := range opts.Recipients {
+	for idx, email := range opts.EmailRecipients {
 		if strings.EqualFold(user.Email, email) {
-			opts.Recipients = slices.Delete(opts.Recipients, idx, idx+1)
+			opts.EmailRecipients = slices.Delete(opts.EmailRecipients, idx, idx+1)
+			found = true
+			break
+		}
+	}
+	for idx, email := range opts.SlackUsers {
+		if strings.EqualFold(user.Email, email) {
+			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
 			found = true
 			break
 		}
@@ -265,13 +273,13 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to report")
 	}
 
-	if len(opts.Recipients) == 0 {
+	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedReport(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
 	} else {
-		data, err := s.yamlForManagedReport(opts, req.Name, annotations.AdminOwnerUserID)
+		data, err := s.yamlForManagedReport(opts, annotations.AdminOwnerUserID)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to generate report YAML: %s", err.Error())
 		}
@@ -287,7 +295,7 @@ func (s *Server) UnsubscribeReport(ctx context.Context, req *adminv1.Unsubscribe
 		}
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitReport(ctx, depl, req.Name)
+	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be updated")
@@ -348,7 +356,7 @@ func (s *Server) DeleteReport(ctx context.Context, req *adminv1.DeleteReportRequ
 		return nil, status.Errorf(codes.Internal, "failed to delete virtual file: %s", err.Error())
 	}
 
-	err = s.admin.TriggerReconcileAndAwaitReport(ctx, depl, req.Name)
+	err = s.admin.TriggerReconcileAndAwaitResource(ctx, depl, req.Name, runtime.ResourceKindReport)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return nil, status.Error(codes.DeadlineExceeded, "timed out waiting for report to be deleted")
@@ -424,9 +432,9 @@ func (s *Server) GenerateReportYAML(ctx context.Context, req *adminv1.GenerateRe
 	}, nil
 }
 
-func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, reportName, ownerUserID string) ([]byte, error) {
+func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID string) ([]byte, error) {
 	res := reportYAML{}
-	res.Kind = "report"
+	res.Type = "report"
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
 	res.Refresh.TimeZone = opts.RefreshTimeZone
@@ -434,7 +442,10 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, reportName, o
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
 	res.Export.Limit = uint(opts.ExportLimit)
-	res.Email.Recipients = opts.Recipients
+	res.Notify.Email.Recipients = opts.EmailRecipients
+	res.Notify.Slack.Channels = opts.SlackChannels
+	res.Notify.Slack.Users = opts.SlackUsers
+	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.AdminOwnerUserID = ownerUserID
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
@@ -466,7 +477,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	}
 
 	res := reportYAML{}
-	res.Kind = "report"
+	res.Type = "report"
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
 	res.Refresh.TimeZone = opts.RefreshTimeZone
@@ -474,7 +485,10 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Query.Args = args
 	res.Export.Format = exportFormat
 	res.Export.Limit = uint(opts.ExportLimit)
-	res.Email.Recipients = opts.Recipients
+	res.Notify.Email.Recipients = opts.EmailRecipients
+	res.Notify.Slack.Channels = opts.SlackChannels
+	res.Notify.Slack.Users = opts.SlackUsers
+	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
 	return yaml.Marshal(res)
 }
@@ -531,13 +545,28 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 	opts.ExportLimit = spec.ExportLimit
 	opts.ExportFormat = spec.ExportFormat
 	opts.OpenProjectSubpath = annotations.WebOpenProjectSubpath
-	opts.Recipients = spec.EmailRecipients
+	for _, notifier := range spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, err
+			}
+			opts.SlackUsers = props.Users
+			opts.SlackChannels = props.Channels
+			opts.SlackWebhooks = props.Webhooks
+		default:
+			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
+		}
+	}
 	return opts, nil
 }
 
 // reportYAML is derived from rillv1.ReportYAML, but adapted for generating (as opposed to parsing) the report YAML.
 type reportYAML struct {
-	Kind    string `yaml:"kind"`
+	Type    string `yaml:"type"`
 	Title   string `yaml:"title"`
 	Refresh struct {
 		Cron     string `yaml:"cron"`
@@ -552,9 +581,16 @@ type reportYAML struct {
 		Format string `yaml:"format"`
 		Limit  uint   `yaml:"limit"`
 	} `yaml:"export"`
-	Email struct {
-		Recipients []string `yaml:"recipients"`
-	} `yaml:"email"`
+	Notify struct {
+		Email struct {
+			Recipients []string `yaml:"recipients"`
+		} `yaml:"email"`
+		Slack struct {
+			Users    []string `yaml:"users"`
+			Channels []string `yaml:"channels"`
+			Webhooks []string `yaml:"webhooks"`
+		} `yaml:"slack"`
+	} `yaml:"notify"`
 	Annotations reportAnnotations `yaml:"annotations,omitempty"`
 }
 

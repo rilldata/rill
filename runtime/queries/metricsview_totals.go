@@ -19,9 +19,13 @@ type MetricsViewTotals struct {
 	InlineMeasures     []*runtimev1.InlineMeasure           `json:"inline_measures,omitempty"`
 	TimeStart          *timestamppb.Timestamp               `json:"time_start,omitempty"`
 	TimeEnd            *timestamppb.Timestamp               `json:"time_end,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter         `json:"filter,omitempty"`
+	Where              *runtimev1.Expression                `json:"where,omitempty"`
+	Having             *runtimev1.Expression                `json:"having,omitempty"`
 	MetricsView        *runtimev1.MetricsViewSpec           `json:"-"`
 	ResolvedMVSecurity *runtime.ResolvedMetricsViewSecurity `json:"security"`
+
+	// backwards compatibility
+	Filter *runtimev1.MetricsViewFilter `json:"filter,omitempty"`
 
 	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
 }
@@ -59,18 +63,26 @@ func (q *MetricsViewTotals) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.MetricsView.Connector)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectPinot {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
 	if q.MetricsView.TimeDimension == "" && (q.TimeStart != nil || q.TimeEnd != nil) {
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
+	}
+
+	// backwards compatibility
+	if q.Filter != nil {
+		if q.Where != nil {
+			return fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
 	}
 
 	ql, args, err := q.buildMetricsTotalsSQL(q.MetricsView, olap.Dialect(), q.ResolvedMVSecurity)
@@ -114,29 +126,43 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec,
 	whereClause := "1=1"
 	args := []any{}
 	if mv.TimeDimension != "" {
+		td := safeName(mv.TimeDimension)
+		if dialect == drivers.DialectDuckDB {
+			td = fmt.Sprintf("%s::TIMESTAMP", td)
+		}
 		if q.TimeStart != nil {
-			whereClause += fmt.Sprintf(" AND %s >= ?", safeName(mv.TimeDimension))
+			whereClause += fmt.Sprintf(" AND %s >= ?", td)
 			args = append(args, q.TimeStart.AsTime())
 		}
 		if q.TimeEnd != nil {
-			whereClause += fmt.Sprintf(" AND %s < ?", safeName(mv.TimeDimension))
+			whereClause += fmt.Sprintf(" AND %s < ?", td)
 			args = append(args, q.TimeEnd.AsTime())
 		}
 	}
 
-	if q.Filter != nil {
-		clause, clauseArgs, err := buildFilterClauseForMetricsViewFilter(mv, q.Filter, dialect, policy)
+	if q.Where != nil {
+		builder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+		}
+		clause, clauseArgs, err := builder.buildExpression(q.Where)
 		if err != nil {
 			return "", nil, err
 		}
-		whereClause += " " + clause
+		if strings.TrimSpace(clause) != "" {
+			whereClause += fmt.Sprintf(" AND (%s)", clause)
+		}
 		args = append(args, clauseArgs...)
 	}
 
+	if policy != nil && policy.RowFilter != "" {
+		whereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	}
+
 	sql := fmt.Sprintf(
-		"SELECT %s FROM %q WHERE %s",
+		"SELECT %s FROM %s WHERE %s",
 		strings.Join(selectCols, ", "),
-		mv.Table,
+		escapeMetricsViewTable(dialect, mv),
 		whereClause,
 	)
 	return sql, args, nil

@@ -248,6 +248,43 @@ func TestResolveMetricsView(t *testing.T) {
 			errMsgContains: "cannot evaluate empty expression",
 		},
 		{
+			name: "test_no_include_matched",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@gmail.com",
+					"domain": "gmail.com",
+					"groups": []interface{}{"test"},
+					"admin":  true,
+				},
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
+						Access:    "('{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com') AND {{.user.admin}}",
+						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
+						Include: []*runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
+							{
+								Names:     []string{"col1"},
+								Condition: "'{{.user.domain}}' = 'test.com'",
+							},
+							{
+								Names:     []string{"col2"},
+								Condition: "'{{.user.domain}}' = 'rilldata.com'",
+							},
+						},
+						Exclude: nil,
+					},
+				},
+			},
+			want: &ResolvedMetricsViewSecurity{
+				Access:     true,
+				RowFilter:  "WHERE groups IN ('test')",
+				Include:    nil,
+				Exclude:    nil,
+				ExcludeAll: true,
+			},
+			wantErr: false,
+		},
+		{
 			name: "test_exclude",
 			args: args{
 				attr: map[string]any{
@@ -316,6 +353,43 @@ func TestResolveMetricsView(t *testing.T) {
 				RowFilter: "WHERE groups IN ('all')",
 				Include:   nil,
 				Exclude:   []string{"col2"},
+			},
+			wantErr: false,
+		},
+		{
+			name: "test_no_exclude_matched",
+			args: args{
+				attr: map[string]any{
+					"name":   "test",
+					"email":  "test@gmail.com",
+					"domain": "gmail.com",
+					"groups": []interface{}{"test"},
+					"admin":  true,
+				},
+				mv: &runtimev1.MetricsViewSpec{
+					Security: &runtimev1.MetricsViewSpec_SecurityV2{
+						Access:    "('{{.user.domain}}' = 'rilldata.com' OR '{{.user.domain}}' = 'gmail.com') AND {{.user.admin}}",
+						RowFilter: "WHERE groups IN ('{{ .user.groups | join \"', '\" }}')",
+						Include:   nil,
+						Exclude: []*runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
+							{
+								Names:     []string{"col1", "col2"},
+								Condition: "'{{.user.domain}}' = 'test.com'",
+							},
+							{
+								Names:     []string{"col2"},
+								Condition: "'{{.user.domain}}' = 'rilldata.com'",
+							},
+						},
+					},
+				},
+			},
+			want: &ResolvedMetricsViewSecurity{
+				Access:     true,
+				RowFilter:  "WHERE groups IN ('test')",
+				Include:    nil,
+				Exclude:    nil,
+				ExcludeAll: false,
 			},
 			wantErr: false,
 		},
@@ -464,7 +538,7 @@ func TestResolveMetricsView(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := newSecurityEngine(1, zap.NewNop())
-			got, err := p.resolveMetricsViewSecurity(tt.args.attr, "", tt.args.mv, time.Now())
+			got, err := p.resolveMetricsViewSecurity("", "test", tt.args.mv, time.Now(), tt.args.attr)
 			if tt.wantErr {
 				if err == nil || !strings.Contains(err.Error(), tt.errMsgContains) {
 					t.Errorf("ResolveMetricsViewSecurity() error = %v, wantErr %v", err, tt.wantErr)

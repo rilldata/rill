@@ -10,7 +10,7 @@
       .join(" L");
 </script>
 
-<div style="position: relative" transition:fly|local={{ duration: 200, x: 20 }}>
+<div style="position: relative" transition:fly={{ duration: 200, x: 20 }}>
   <svg
     style="
     position:absolute;

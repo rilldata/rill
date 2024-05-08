@@ -18,6 +18,7 @@
   export let dark = false;
   export let value = undefined;
   export let customStyle = "";
+  export let truncate = false;
 
   let dataType;
   $: {
@@ -43,7 +44,7 @@ about unknown props.
 {#if type === "RILL_PERCENTAGE_CHANGE"}
   <PercentageChange {value} {isNull} {inTable} {customStyle} {dark} />
 {:else if type === "RILL_CHANGE"}
-  <MeasureChange {value} {isNull} {inTable} {customStyle} {dark} />
+  <MeasureChange {value} {inTable} {customStyle} {dark} />
 {:else}
   <svelte:component
     this={dataType}
@@ -53,5 +54,6 @@ about unknown props.
     {dark}
     {type}
     {value}
+    {truncate}
   />
 {/if}

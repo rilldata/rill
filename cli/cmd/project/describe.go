@@ -5,7 +5,6 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -14,26 +13,25 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func DescribeCmd(cfg *config.Config) *cobra.Command {
+func DescribeCmd(ch *cmdutil.Helper) *cobra.Command {
 	var project, path string
 
 	statusCmd := &cobra.Command{
-		Use:   "describe [<project-name>] <kind> <name>",
+		Use:   "describe [<project-name>] <type> <name>",
 		Args:  cobra.MatchAll(cobra.MinimumNArgs(2), cobra.MaximumNArgs(3)),
 		Short: "Retrieve detailed state for a resource",
 		Long:  "Retrieve detailed state for a specific resource (source, model, dashboard, ...)",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			if len(args) == 3 {
 				project = args[0]
 			}
-			if !cmd.Flags().Changed("project") && len(args) == 2 && cfg.Interactive {
-				project, err = inferProjectName(cmd.Context(), client, cfg.Org, path)
+			if !cmd.Flags().Changed("project") && len(args) == 2 && ch.Interactive {
+				project, err = ch.InferProjectName(cmd.Context(), ch.Org, path)
 				if err != nil {
 					return err
 				}
@@ -43,7 +41,7 @@ func DescribeCmd(cfg *config.Config) *cobra.Command {
 			name := args[len(args)-1]
 
 			proj, err := client.GetProject(cmd.Context(), &adminv1.GetProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             project,
 			})
 			if err != nil {
@@ -99,12 +97,22 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindSource
 	case "model":
 		return runtime.ResourceKindModel
-	case "metricsview", "metrics_view", "dashboard":
+	case "metricsview", "metrics_view":
 		return runtime.ResourceKindMetricsView
 	case "migration":
 		return runtime.ResourceKindMigration
 	case "report":
 		return runtime.ResourceKindReport
+	case "alert":
+		return runtime.ResourceKindAlert
+	case "theme":
+		return runtime.ResourceKindTheme
+	case "component":
+		return runtime.ResourceKindComponent
+	case "dashboard":
+		return runtime.ResourceKindDashboard
+	case "api":
+		return runtime.ResourceKindAPI
 	default:
 		return k
 	}

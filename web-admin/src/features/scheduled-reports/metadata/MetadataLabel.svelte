@@ -1,3 +1,3 @@
-<div class="w-[84px] text-gray-700 text-sm">
+<div class="text-gray-400 text-sm font-bold">
   <slot />
 </div>

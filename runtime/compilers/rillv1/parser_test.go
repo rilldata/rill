@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"maps"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
@@ -31,7 +32,7 @@ connectors:
   defaults:
     region: us-east-1
 
-env:
+vars:
   foo: bar
 `,
 	})
@@ -51,6 +52,65 @@ env:
 	require.Len(t, res.Variables, 1)
 	require.Equal(t, "foo", res.Variables[0].Name)
 	require.Equal(t, "bar", res.Variables[0].Default)
+}
+
+func TestRillYAMLFeatures(t *testing.T) {
+	tt := []struct {
+		yaml    string
+		want    map[string]bool
+		wantErr bool
+	}{
+		{
+			yaml: ` `,
+			want: nil,
+		},
+		{
+			yaml:    `features: 10`,
+			wantErr: true,
+		},
+		{
+			yaml: `features: []`,
+			want: map[string]bool{},
+		},
+		{
+			yaml: `features: {}`,
+			want: map[string]bool{},
+		},
+		{
+			yaml: `
+features:
+  foo: true
+  bar: false
+`,
+			want: map[string]bool{"foo": true, "bar": false},
+		},
+		{
+			yaml: `
+features:
+- foo
+- bar
+`,
+			want: map[string]bool{"foo": true, "bar": true},
+		},
+	}
+
+	for i, tc := range tt {
+		t.Run(fmt.Sprintf("case=%d", i), func(t *testing.T) {
+			ctx := context.Background()
+			repo := makeRepo(t, map[string]string{
+				`rill.yaml`: tc.yaml,
+			})
+
+			res, err := ParseRillYAML(ctx, repo, "")
+			if tc.wantErr {
+				require.Error(t, err)
+				return
+			}
+
+			require.NoError(t, err)
+			require.Equal(t, tc.want, res.FeatureFlags)
+		})
+	}
 }
 
 func TestComplete(t *testing.T) {
@@ -89,22 +149,31 @@ materialize: true
 model: m2
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
 first_day_of_week: 7
 first_month_of_year: 3
+available_time_ranges:
+  - P2W
+  - range: P4W
+  - range: P2M
+    comparison_offsets:
+      - P1M
+      - offset: P4M
+        range: P2M
 `,
 		// migration c1
 		`custom/c1.yml`: `
-kind: migration
+type: migration
 version: 3
 sql: |
   CREATE TABLE a(a integer);
 `,
 		// model c2
 		`custom/c2.sql`: `
-{{ configure "kind" "model" }}
+{{ configure "type" "model" }}
 {{ configure "materialize" true }}
 SELECT * FROM {{ ref "m2" }}
 `,
@@ -117,8 +186,9 @@ SELECT * FROM {{ ref "m2" }}
 			Name:  ResourceName{Kind: ResourceKindMigration, Name: "init"},
 			Paths: []string{"/init.sql"},
 			MigrationSpec: &runtimev1.MigrationSpec{
-				Version: 2,
-				Sql:     strings.TrimSpace(files["init.sql"]),
+				Connector: "duckdb",
+				Version:   2,
+				Sql:       strings.TrimSpace(files["init.sql"]),
 			},
 		},
 		// source s1
@@ -127,7 +197,9 @@ SELECT * FROM {{ ref "m2" }}
 			Paths: []string{"/sources/s1.yaml"},
 			SourceSpec: &runtimev1.SourceSpec{
 				SourceConnector: "s3",
+				SinkConnector:   "duckdb",
 				Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// source s2
@@ -136,8 +208,9 @@ SELECT * FROM {{ ref "m2" }}
 			Paths: []string{"/sources/s2.sql"},
 			SourceSpec: &runtimev1.SourceSpec{
 				SourceConnector: "postgres",
+				SinkConnector:   "duckdb",
 				Properties:      must(structpb.NewStruct(map[string]any{"sql": strings.TrimSpace(files["sources/s2.sql"])})),
-				RefreshSchedule: &runtimev1.Schedule{Cron: "0 0 * * *"},
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 			},
 		},
 		// model m1
@@ -145,7 +218,9 @@ SELECT * FROM {{ ref "m2" }}
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql: strings.TrimSpace(files["models/m1.sql"]),
+				Connector:       "duckdb",
+				Sql:             strings.TrimSpace(files["models/m1.sql"]),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// model m2
@@ -154,8 +229,10 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.yaml", "/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:         strings.TrimSpace(files["models/m2.sql"]),
-				Materialize: &truth,
+				Connector:       "duckdb",
+				Sql:             strings.TrimSpace(files["models/m2.sql"]),
+				Materialize:     &truth,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// dashboard d1
@@ -164,15 +241,27 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Table: "m2",
+				Connector: "duckdb",
+				Table:     "m2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
+				AvailableTimeRanges: []*runtimev1.MetricsViewSpec_AvailableTimeRange{
+					{Range: "P2W"},
+					{Range: "P4W"},
+					{
+						Range: "P2M",
+						ComparisonOffsets: []*runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+							{Offset: "P1M"},
+							{Offset: "P4M", Range: "P2M"},
+						},
+					},
+				},
 			},
 		},
 		// migration c1
@@ -180,8 +269,9 @@ SELECT * FROM {{ ref "m2" }}
 			Name:  ResourceName{Kind: ResourceKindMigration, Name: "c1"},
 			Paths: []string{"/custom/c1.yml"},
 			MigrationSpec: &runtimev1.MigrationSpec{
-				Version: 3,
-				Sql:     "CREATE TABLE a(a integer);",
+				Connector: "duckdb",
+				Version:   3,
+				Sql:       "CREATE TABLE a(a integer);",
 			},
 		},
 		// model c2
@@ -190,16 +280,18 @@ SELECT * FROM {{ ref "m2" }}
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m2"}},
 			Paths: []string{"/custom/c2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:            strings.TrimSpace(files["custom/c2.sql"]),
-				Materialize:    &truth,
-				UsesTemplating: true,
+				Connector:       "duckdb",
+				Sql:             strings.TrimSpace(files["custom/c2.sql"]),
+				Materialize:     &truth,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+				UsesTemplating:  true,
 			},
 		},
 	}
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -230,7 +322,7 @@ FRO m1
 			StartLocation: &runtimev1.CharLocation{Line: 4},
 		},
 		{
-			Message:       "syntax error at or near",
+			Message:       "syntax error at or near \"m1\"",
 			FilePath:      "/models/m1.sql",
 			StartLocation: &runtimev1.CharLocation{Line: 5},
 		},
@@ -238,7 +330,7 @@ FRO m1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, errors)
 }
@@ -263,7 +355,9 @@ SELECT 1
 			Paths: []string{"/sources/s1.yaml"},
 			SourceSpec: &runtimev1.SourceSpec{
 				SourceConnector: "s3",
+				SinkConnector:   "duckdb",
 				Properties:      must(structpb.NewStruct(map[string]any{})),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 	}
@@ -277,7 +371,7 @@ SELECT 1
 
 	ctx := context.Background()
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, errors)
 }
@@ -289,7 +383,7 @@ func TestReparse(t *testing.T) {
 
 	// Create empty project
 	repo := makeRepo(t, map[string]string{`rill.yaml`: ``})
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, nil, nil)
 
@@ -305,7 +399,9 @@ path: hello
 		Paths: []string{"/sources/s1.yaml"},
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
+			SinkConnector:   "duckdb",
 			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
@@ -325,7 +421,9 @@ SELECT * FROM foo
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM foo",
+			Connector:       "duckdb",
+			Sql:             "SELECT * FROM foo",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	diff, err = p.Reparse(ctx, m1.Paths)
@@ -431,10 +529,12 @@ SELECT 10
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 10",
+			Connector:       "duckdb",
+			Sql:             "SELECT 10",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1}, nil)
 
@@ -450,7 +550,9 @@ path: hello
 		Paths: []string{"/sources/m1.yaml"},
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
+			SinkConnector:   "duckdb",
 			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	diff, err := p.Reparse(ctx, s1.Paths)
@@ -496,14 +598,18 @@ SELECT * FROM m1
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 10",
+			Connector:       "duckdb",
+			Sql:             "SELECT 10",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	m1Nested := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/nested/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 20",
+			Connector:       "duckdb",
+			Sql:             "SELECT 20",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	m2 := &Resource{
@@ -511,10 +617,12 @@ SELECT * FROM m1
 		Paths: []string{"/models/m2.sql"},
 		Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM m1",
+			Connector:       "duckdb",
+			Sql:             "SELECT * FROM m1",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{m1, m2}, []*runtimev1.ParseError{
 		{
@@ -541,7 +649,7 @@ func TestReparseMultiKindNameCollision(t *testing.T) {
 		`models/m1.sql`:        `SELECT 10`,
 		`models/nested/m1.sql`: `SELECT 20`,
 		`sources/m1.yaml`: `
-type: s3
+connector: s3
 path: hello
 `,
 	})
@@ -550,18 +658,22 @@ path: hello
 		Paths: []string{"/sources/m1.yaml"},
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
+			SinkConnector:   "duckdb",
 			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	mdl := &Resource{
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 10",
+			Connector:       "duckdb",
+			Sql:             "SELECT 10",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{src}, []*runtimev1.ParseError{
 		{
@@ -601,7 +713,9 @@ func TestReparseRillYAML(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 		Paths: []string{"/models/m1.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT 10",
+			Connector:       "duckdb",
+			Sql:             "SELECT 10",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	perr := &runtimev1.ParseError{
@@ -610,7 +724,7 @@ func TestReparseRillYAML(t *testing.T) {
 	}
 
 	// Parse empty project. Expect rill.yaml error.
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	require.Nil(t, p.RillYAML)
 	requireResourcesAndErrors(t, p, nil, []*runtimev1.ParseError{perr})
@@ -658,7 +772,9 @@ func TestRefInferrence(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "foo"},
 		Paths: []string{"/models/foo.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM bar",
+			Connector:       "duckdb",
+			Sql:             "SELECT * FROM bar",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	ctx := context.Background()
@@ -668,7 +784,7 @@ func TestRefInferrence(t *testing.T) {
 		// model foo
 		`models/foo.sql`: `SELECT * FROM bar`,
 	})
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{foo}, nil)
 
@@ -678,7 +794,9 @@ func TestRefInferrence(t *testing.T) {
 		Name:  ResourceName{Kind: ResourceKindModel, Name: "bar"},
 		Paths: []string{"/models/bar.sql"},
 		ModelSpec: &runtimev1.ModelSpec{
-			Sql: "SELECT * FROM baz",
+			Connector:       "duckdb",
+			Sql:             "SELECT * FROM baz",
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
 	putRepo(t, repo, map[string]string{
@@ -728,7 +846,9 @@ materialize: true
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql: strings.TrimSpace(files["models/m1.sql"]),
+				Connector:       "duckdb",
+				Sql:             strings.TrimSpace(files["models/m1.sql"]),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// m2
@@ -737,13 +857,15 @@ materialize: true
 			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
 			Paths: []string{"/models/m2.sql", "/models/m2.yaml"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:         strings.TrimSpace(files["models/m2.sql"]),
-				Materialize: &truth,
+				Connector:       "duckdb",
+				Sql:             strings.TrimSpace(files["models/m2.sql"]),
+				Materialize:     &truth,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 	}
 	repo := makeRepo(b, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(b, err)
 	requireResourcesAndErrors(b, p, resources, nil)
 
@@ -784,8 +906,10 @@ SELECT * FROM t2
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
 			Paths: []string{"/models/m1.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:         strings.TrimSpace(files["models/m1.sql"]),
-				Materialize: &truth,
+				Connector:       "duckdb",
+				Sql:             strings.TrimSpace(files["models/m1.sql"]),
+				Materialize:     &truth,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 		// m2
@@ -793,14 +917,16 @@ SELECT * FROM t2
 			Name:  ResourceName{Kind: ResourceKindModel, Name: "m2"},
 			Paths: []string{"/models/m2.sql"},
 			ModelSpec: &runtimev1.ModelSpec{
-				Sql:         strings.TrimSpace(files["models/m2.sql"]),
-				Materialize: &falsity,
+				Connector:       "duckdb",
+				Sql:             strings.TrimSpace(files["models/m2.sql"]),
+				Materialize:     &falsity,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 			},
 		},
 	}
 
 	repo := makeRepo(t, files)
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -822,6 +948,7 @@ dashboards:
 table: t1
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -831,6 +958,7 @@ measures:
 table: t2
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -847,9 +975,10 @@ security:
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Table: "t1",
+				Connector: "duckdb",
+				Table:     "t1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -866,9 +995,10 @@ security:
 			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d2"},
 			Paths: []string{"/dashboards/d2.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Table: "t2",
+				Connector: "duckdb",
+				Table:     "t2",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -883,9 +1013,64 @@ security:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestEnvironmentOverrides(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		// Provide dashboard defaults in rill.yaml
+		`rill.yaml`: `
+env:
+  test:
+    sources:
+      limit: 10000
+`,
+		// source s1
+		`sources/s1.yaml`: `
+connector: s3
+path: hello
+env:
+  test:
+    path: world
+    refresh:
+      cron: "0 0 * * *"
+`,
+	})
+
+	s1Base := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Paths: []string{"/sources/s1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			SinkConnector:   "duckdb",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+		},
+	}
+
+	s1Test := &Resource{
+		Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+		Paths: []string{"/sources/s1.yaml"},
+		SourceSpec: &runtimev1.SourceSpec{
+			SourceConnector: "s3",
+			SinkConnector:   "duckdb",
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
+		},
+	}
+
+	// Parse without environment
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1Base}, nil)
+
+	// Parse in environment "test"
+	p, err = Parse(ctx, repo, "", "test", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
 }
 
 func TestReport(t *testing.T) {
@@ -893,7 +1078,7 @@ func TestReport(t *testing.T) {
 	repo := makeRepo(t, map[string]string{
 		`rill.yaml`: ``,
 		`reports/r1.yaml`: `
-kind: report
+type: report
 title: My Report
 
 refresh:
@@ -916,6 +1101,37 @@ email:
 annotations:
   foo: bar
 `,
+		`reports/r2.yaml`: `
+type: report
+title: My Report
+
+refresh:
+  cron: 0 * * * *
+  time_zone: America/Los_Angeles
+
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+
+export:
+  format: csv
+  limit: 10000
+
+
+notify:
+  email:
+    recipients:
+      - user_1@example.com
+  slack:
+    channels:
+      - reports
+    users:
+      - user_2@example.com
+
+annotations:
+  foo: bar
+`,
 	})
 
 	resources := []*Resource{
@@ -925,20 +1141,130 @@ annotations:
 			ReportSpec: &runtimev1.ReportSpec{
 				Title: "My Report",
 				RefreshSchedule: &runtimev1.Schedule{
-					Cron:     "0 * * * *",
-					TimeZone: "America/Los_Angeles",
+					RefUpdate: true,
+					Cron:      "0 * * * *",
+					TimeZone:  "America/Los_Angeles",
 				},
-				QueryName:       "MetricsViewToplist",
-				QueryArgsJson:   `{"metrics_view":"mv1"}`,
-				ExportFormat:    runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
-				ExportLimit:     10000,
-				EmailRecipients: []string{"jane@example.com"},
-				Annotations:     map[string]string{"foo": "bar"},
+				QueryName:     "MetricsViewToplist",
+				QueryArgsJson: `{"metrics_view":"mv1"}`,
+				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:   10000,
+				Notifiers: []*runtimev1.Notifier{{
+					Connector:  "email",
+					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}})),
+				}},
+				Annotations: map[string]string{"foo": "bar"},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindReport, Name: "r2"},
+			Paths: []string{"/reports/r2.yaml"},
+			ReportSpec: &runtimev1.ReportSpec{
+				Title: "My Report",
+				RefreshSchedule: &runtimev1.Schedule{
+					RefUpdate: true,
+					Cron:      "0 * * * *",
+					TimeZone:  "America/Los_Angeles",
+				},
+				QueryName:     "MetricsViewToplist",
+				QueryArgsJson: `{"metrics_view":"mv1"}`,
+				ExportFormat:  runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+				ExportLimit:   10000,
+				Notifiers: []*runtimev1.Notifier{
+					{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))},
+					{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{"user_2@example.com"}, "channels": []any{"reports"}, "webhooks": []any{}}))},
+				},
+				Annotations: map[string]string{"foo": "bar"},
 			},
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestAlert(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `SELECT 1`,
+		`alerts/a1.yaml`: `
+type: alert
+title: My Alert
+
+refs:
+  - model/m1
+
+refresh:
+  ref_update: false
+  cron: '0 * * * *'
+
+watermark: inherit
+
+intervals:
+  duration: PT1H
+  limit: 10
+
+query:
+  name: MetricsViewToplist
+  args:
+    metrics_view: mv1
+  for:
+    user_email: benjamin@example.com
+
+on_recover: true
+renotify: true
+renotify_after: 24h
+
+notify:
+  email:
+    recipients:
+      - benjamin@example.com
+
+annotations:
+  foo: bar
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Connector:       "duckdb",
+				Sql:             `SELECT 1`,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAlert, Name: "a1"},
+			Paths: []string{"/alerts/a1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindModel, Name: "m1"}},
+			AlertSpec: &runtimev1.AlertSpec{
+				Title: "My Alert",
+				RefreshSchedule: &runtimev1.Schedule{
+					Cron:      "0 * * * *",
+					RefUpdate: false,
+				},
+				WatermarkInherit:     true,
+				IntervalsIsoDuration: "PT1H",
+				IntervalsLimit:       10,
+				QueryName:            "MetricsViewToplist",
+				QueryArgsJson:        `{"metrics_view":"mv1"}`,
+				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
+				NotifyOnRecover:      true,
+				NotifyOnFail:         true,
+				Renotify:             true,
+				RenotifyAfterSeconds: 24 * 60 * 60,
+				Notifiers:            []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}}))}},
+				Annotations:          map[string]string{"foo": "bar"},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -952,6 +1278,7 @@ func TestMetricsViewAvoidSelfCyclicRef(t *testing.T) {
 model: d1
 dimensions:
   - name: a
+    column: a
 measures:
   - name: b
     expression: count(*)
@@ -964,9 +1291,10 @@ measures:
 			Refs:  nil, // NOTE: This is what we're testing – that it avoids inferring the missing "d1" as a self-reference
 			Paths: []string{"/dashboards/d1.yaml"},
 			MetricsViewSpec: &runtimev1.MetricsViewSpec{
-				Table: "d1",
+				Connector: "duckdb",
+				Table:     "d1",
 				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
-					{Name: "a"},
+					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
 					{Name: "b", Expression: "count(*)"},
@@ -975,7 +1303,280 @@ measures:
 		},
 	}
 
-	p, err := Parse(ctx, repo, "", "", []string{""})
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestTheme(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`themes/t1.yaml`: `
+type: theme
+
+colors:
+  primary: red
+  secondary: grey
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindTheme, Name: "t1"},
+			Paths: []string{"/themes/t1.yaml"},
+			ThemeSpec: &runtimev1.ThemeSpec{
+				PrimaryColor: &runtimev1.Color{
+					Red:   1,
+					Green: 0,
+					Blue:  0,
+					Alpha: 1,
+				},
+				SecondaryColor: &runtimev1.Color{
+					Red:   0.5019608,
+					Green: 0.5019608,
+					Blue:  0.5019608,
+					Alpha: 1,
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestComponentsAndDashboard(t *testing.T) {
+	vegaLiteSpec := `
+  {
+    "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+    "description": "A simple bar chart with embedded data.",
+    "mark": "bar",
+    "data": {
+      "name": "table"
+    },
+    "encoding": {
+      "x": {"field": "time", "type": "nominal", "axis": {"labelAngle": 0}},
+      "y": {"field": "total_sales", "type": "quantitative"}
+    }
+  }`
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`components/c1.yaml`: fmt.Sprintf(`
+type: component
+data:
+  api: MetricsViewAggregation
+  args:
+    metrics_view: foo
+vega_lite: |%s
+`, vegaLiteSpec),
+		`components/c2.yaml`: fmt.Sprintf(`
+type: component
+data:
+  api: MetricsViewAggregation
+  args:
+    metrics_view: bar
+vega_lite: |%s
+`, vegaLiteSpec),
+		`dashboards/d1.yaml`: `
+type: dashboard
+columns: 4
+gap: 3
+items:
+- component: c1
+- component: c2
+  width: 1
+  height: 2
+- component:
+    markdown: Hello world!
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c1"},
+			Paths: []string{"/components/c1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Resolver:           "api",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "foo"}})),
+				Renderer:           "vega_lite",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c2"},
+			Paths: []string{"/components/c2.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindAPI, Name: "MetricsViewAggregation"}},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Resolver:           "api",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
+				Renderer:           "vega_lite",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-2"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Renderer:           "markdown",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"contents": "Hello world!"})),
+				DefinedInDashboard: true,
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindDashboard, Name: "d1"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			Refs: []ResourceName{
+				{Kind: ResourceKindComponent, Name: "c1"},
+				{Kind: ResourceKindComponent, Name: "c2"},
+				{Kind: ResourceKindComponent, Name: "d1--component-2"},
+			},
+			DashboardSpec: &runtimev1.DashboardSpec{
+				Columns: 4,
+				Gap:     3,
+				Items: []*runtimev1.DashboardItem{
+					{Component: "c1"},
+					{Component: "c2", Width: asPtr(uint32(1)), Height: asPtr(uint32(2))},
+					{Component: "d1--component-2"},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestAPI(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		// model m1
+		`models/m1.sql`: `SELECT 1`,
+		// api a1
+		`apis/a1.yaml`: `
+type: api
+sql: select * from m1
+`,
+		// api a2
+		`apis/a2.yaml`: `
+type: api
+metrics_sql: select * from m1
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindModel, Name: "m1"},
+			Paths: []string{"/models/m1.sql"},
+			ModelSpec: &runtimev1.ModelSpec{
+				Connector:       "duckdb",
+				Sql:             `SELECT 1`,
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
+			Paths: []string{"/apis/a1.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a2"},
+			Paths: []string{"/apis/a2.yaml"},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select * from m1"})),
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
+func TestKindBackwardsCompatibility(t *testing.T) {
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// source s1
+		`sources/s1.yaml`: `
+type: s3
+`,
+		// api a1
+		`/apis/a1.yaml`: `
+kind: api
+refs:
+- kind: source
+  name: s1
+- type: source
+  name: s2
+sql: select 1
+`,
+		// migration m1
+		`/migrations/m1.sql`: `
+-- @kind: migration
+select 2
+`,
+		// migration m2
+		`/migrations/m2.sql`: `
+-- @type: migration
+select 3
+`,
+	}
+
+	resources := []*Resource{
+		// s1
+		{
+			Name:  ResourceName{Kind: ResourceKindSource, Name: "s1"},
+			Paths: []string{"/sources/s1.yaml"},
+			SourceSpec: &runtimev1.SourceSpec{
+				SourceConnector: "s3",
+				SinkConnector:   "duckdb",
+				Properties:      must(structpb.NewStruct(map[string]any{})),
+				RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			},
+		},
+		// a1
+		{
+			Name:  ResourceName{Kind: ResourceKindAPI, Name: "a1"},
+			Paths: []string{"/apis/a1.yaml"},
+			Refs:  []ResourceName{{Kind: ResourceKindSource, Name: "s1"}, {Kind: ResourceKindSource, Name: "s2"}},
+			APISpec: &runtimev1.APISpec{
+				Resolver:           "sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "select 1"})),
+			},
+		},
+		// m1
+		{
+			Name:  ResourceName{Kind: ResourceKindMigration, Name: "m1"},
+			Paths: []string{"/migrations/m1.sql"},
+			MigrationSpec: &runtimev1.MigrationSpec{
+				Connector: "duckdb",
+				Sql:       strings.TrimSpace(files["/migrations/m1.sql"]),
+			},
+		},
+		// m2
+		{
+			Name:  ResourceName{Kind: ResourceKindMigration, Name: "m2"},
+			Paths: []string{"/migrations/m2.sql"},
+			MigrationSpec: &runtimev1.MigrationSpec{
+				Connector: "duckdb",
+				Sql:       strings.TrimSpace(files["/migrations/m2.sql"]),
+			},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, resources, nil)
 }
@@ -994,6 +1595,9 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.ModelSpec, got.ModelSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MetricsViewSpec, got.MetricsViewSpec, "for resource %q", want.Name)
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
+				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
+				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
 				found = true
@@ -1026,7 +1630,7 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
 	root := t.TempDir()
-	handle, err := drivers.Open("file", map[string]any{"dsn": root}, false, activity.NewNoopClient(), zap.NewNop())
+	handle, err := drivers.Open("file", "default", map[string]any{"dsn": root}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	repo, ok := handle.AsRepoStore("")
@@ -1046,14 +1650,11 @@ func putRepo(t testing.TB, repo drivers.RepoStore, files map[string]string) {
 
 func deleteRepo(t testing.TB, repo drivers.RepoStore, files ...string) {
 	for _, path := range files {
-		err := repo.Delete(context.Background(), path)
+		err := repo.Delete(context.Background(), path, false)
 		require.NoError(t, err)
 	}
 }
 
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
-	}
-	return v
+func asPtr[T any](val T) *T {
+	return &val
 }

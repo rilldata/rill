@@ -1,48 +1,33 @@
 import { getQuerySortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeControlState } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   TimeComparisonOption,
   TimeRangePreset,
-  TimeRangeType,
 } from "@rilldata/web-common/lib/time/types";
-import type {
-  V1MetricsViewComparisonRequest,
-  V1MetricsViewSpec,
-  V1TimeRange,
+import {
+  type V1MetricsViewComparisonRequest,
+  type V1MetricsViewSpec,
+  V1TimeGrain,
+  type V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { derived, get, Readable } from "svelte/store";
-
-// Temporary. A future PR will add iso to the selection itself.
-const TIME_RANGES_TO_ISO: Record<TimeRangeType, string> = {
-  [TimeRangePreset.ALL_TIME]: "inf",
-  [TimeRangePreset.LAST_SIX_HOURS]: "PT6H",
-  [TimeRangePreset.LAST_24_HOURS]: "PT24H",
-  [TimeRangePreset.LAST_7_DAYS]: "P7D",
-  [TimeRangePreset.LAST_14_DAYS]: "P14D",
-  [TimeRangePreset.LAST_4_WEEKS]: "P4W",
-  [TimeRangePreset.LAST_12_MONTHS]: "P12M",
-  [TimeRangePreset.TODAY]: "rill-TD",
-  [TimeRangePreset.WEEK_TO_DATE]: "rill-WTD",
-  [TimeRangePreset.MONTH_TO_DATE]: "rill-MTD",
-  [TimeRangePreset.QUARTER_TO_DATE]: "rill-QTD",
-  [TimeRangePreset.YEAR_TO_DATE]: "rill-YTD",
-};
+import { Readable, derived, get } from "svelte/store";
 
 export function getDimensionTableExportArgs(
-  ctx: StateManagers
+  ctx: StateManagers,
 ): Readable<V1MetricsViewComparisonRequest | undefined> {
   return derived(
     [
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      useMetaQuery(ctx),
+      useMetricsView(ctx),
     ],
     ([metricViewName, dashboardState, timeControlState, metricsView]) => {
       if (!metricsView.data || !timeControlState.ready) return undefined;
@@ -53,8 +38,14 @@ export function getDimensionTableExportArgs(
       const comparisonTimeRange = getComparisonTimeRange(
         dashboardState,
         timeControlState,
-        timeRange
+        timeRange,
       );
+
+      // api now expects measure names for which comparison are calculated
+      let comparisonMeasures: string[] = [];
+      if (comparisonTimeRange) {
+        comparisonMeasures = [dashboardState.leaderboardMeasureName];
+      }
 
       return {
         instanceId: get(runtime).instanceId,
@@ -62,24 +53,52 @@ export function getDimensionTableExportArgs(
         dimension: {
           name: dashboardState.selectedDimensionName,
         },
-        measures: dashboardState.selectedMeasureNames.map((name) => ({
+        measures: [...dashboardState.visibleMeasureKeys].map((name) => ({
           name: name,
         })),
+        comparisonMeasures: comparisonMeasures,
         timeRange,
         ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
         sort: [
           {
             name: dashboardState.leaderboardMeasureName,
             desc: dashboardState.sortDirection === SortDirection.DESCENDING,
-            type: getQuerySortType(dashboardState.dashboardSortType),
+            sortType: getQuerySortType(dashboardState.dashboardSortType),
           },
         ],
-        filter: dashboardState.filters,
+        where: sanitiseExpression(dashboardState.whereFilter, undefined),
         offset: "0",
       };
-    }
+    },
   );
 }
+
+// Temporary fix to split previous complete ranges to duration and round to grain to get it working on backend
+// TODO: Eventually we should support this in the backend.
+export const PreviousCompleteRangeMap: Partial<
+  Record<TimeRangePreset, V1TimeRange>
+> = {
+  [TimeRangePreset.YESTERDAY_COMPLETE]: {
+    isoDuration: "P1D",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_DAY,
+  },
+  [TimeRangePreset.PREVIOUS_WEEK_COMPLETE]: {
+    isoDuration: "P1W",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_WEEK,
+  },
+  [TimeRangePreset.PREVIOUS_MONTH_COMPLETE]: {
+    isoDuration: "P1M",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_MONTH,
+  },
+  [TimeRangePreset.PREVIOUS_QUARTER_COMPLETE]: {
+    isoDuration: "P3M",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_QUARTER,
+  },
+  [TimeRangePreset.PREVIOUS_YEAR_COMPLETE]: {
+    isoDuration: "P1Y",
+    roundToGrain: V1TimeGrain.TIME_GRAIN_YEAR,
+  },
+};
 
 /**
  * Fills in isoDuration based on selection.
@@ -87,7 +106,7 @@ export function getDimensionTableExportArgs(
  */
 function getTimeRange(
   timeControlState: TimeControlState,
-  metricsView: V1MetricsViewSpec
+  metricsView: V1MetricsViewSpec,
 ) {
   if (!timeControlState.selectedTimeRange?.name) return undefined;
 
@@ -103,8 +122,24 @@ function getTimeRange(
       break;
 
     default:
-      timeRange.isoDuration =
-        TIME_RANGES_TO_ISO[timeControlState.selectedTimeRange.name];
+      if (timeControlState.selectedTimeRange.name in PreviousCompleteRangeMap) {
+        // Backend doesn't support previous complete ranges since it has offset built in.
+        // We add the offset manually as a workaround for now
+        timeRange.isoDuration =
+          PreviousCompleteRangeMap[
+            timeControlState.selectedTimeRange.name
+          ]?.isoDuration;
+        timeRange.isoOffset =
+          PreviousCompleteRangeMap[
+            timeControlState.selectedTimeRange.name
+          ]?.isoOffset;
+        timeRange.roundToGrain =
+          PreviousCompleteRangeMap[
+            timeControlState.selectedTimeRange.name
+          ]?.roundToGrain;
+      } else {
+        timeRange.isoDuration = timeControlState.selectedTimeRange.name;
+      }
       break;
   }
 
@@ -118,7 +153,7 @@ function getTimeRange(
 function getComparisonTimeRange(
   dashboardState: MetricsExplorerEntity,
   timeControlState: TimeControlState,
-  timeRange: V1TimeRange | undefined
+  timeRange: V1TimeRange | undefined,
 ) {
   if (
     !timeRange ||

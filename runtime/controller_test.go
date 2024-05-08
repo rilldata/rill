@@ -24,7 +24,7 @@ func TestComplete(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `
@@ -56,6 +56,7 @@ measures:
 					SourceConnector: "local_file",
 					SinkConnector:   "duckdb",
 					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.SourceState{
 					Connector: "duckdb",
@@ -79,9 +80,10 @@ measures:
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					Connector:   "duckdb",
-					Sql:         "SELECT * FROM foo",
-					Materialize: &falsy,
+					Connector:       "duckdb",
+					Sql:             "SELECT * FROM foo",
+					Materialize:     &falsy,
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.ModelState{
 					Connector: "duckdb",
@@ -120,7 +122,7 @@ measures:
 	// Add syntax error in source, check downstream resources error
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path
 `,
 	})
@@ -138,9 +140,10 @@ path
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					Connector:   "duckdb",
-					Sql:         "SELECT * FROM foo",
-					Materialize: &falsy,
+					Connector:       "duckdb",
+					Sql:             "SELECT * FROM foo",
+					Materialize:     &falsy,
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.ModelState{},
 			},
@@ -168,7 +171,7 @@ path
 	// Fix source, check downstream resources succeed
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -186,7 +189,7 @@ func TestSource(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -204,6 +207,7 @@ path: data/foo.csv
 					SourceConnector: "local_file",
 					SinkConnector:   "duckdb",
 					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.SourceState{
 					Connector: "duckdb",
@@ -227,7 +231,7 @@ path: data/foo.csv
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 1)
 
 	// Delete the underlying table
-	olap, release, err := rt.OLAP(context.Background(), id)
+	olap, release, err := rt.OLAP(context.Background(), id, "")
 	require.NoError(t, err)
 	err = olap.Exec(context.Background(), &drivers.Statement{Query: "DROP TABLE foo;"})
 	require.NoError(t, err)
@@ -243,7 +247,7 @@ path: data/foo.csv
 	// Change the source so it errors
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -254,7 +258,7 @@ path: data/bar.csv
 	// Restore the source, verify it works again
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -272,6 +276,7 @@ path: data/foo.csv
 					SourceConnector: "local_file",
 					SinkConnector:   "duckdb",
 					Properties:      must(structpb.NewStruct(map[string]any{"path": "data/foo.csv"})),
+					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 				},
 				State: &runtimev1.SourceState{
 					Connector: "duckdb",
@@ -321,7 +326,7 @@ func TestCacheInvalidation(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -353,7 +358,7 @@ func TestSourceRefreshSchedule(t *testing.T) {
 1,2,3,4,5
 1,2,3,4,5`,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 refresh:
   every: 1
@@ -390,7 +395,7 @@ func TestSourceAndModelNameCollission(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -401,8 +406,8 @@ path: data/foo.csv
 	// Create a source with same name within a different folder
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/other_folder/foo.yaml": `
-kind: source
-type: local_file
+type: source
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -420,7 +425,7 @@ path: data/foo.csv
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo_1.yaml": `
 name: foo
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -457,7 +462,7 @@ select 1
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
 
-	olap, done, err := rt.OLAP(context.Background(), id)
+	olap, done, err := rt.OLAP(context.Background(), id, "")
 	require.NoError(t, err)
 	defer done()
 
@@ -499,7 +504,7 @@ func TestModelCTE(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -547,7 +552,7 @@ func TestRename(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -607,7 +612,7 @@ func TestRenameToOther(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM foo limit 1`,
@@ -640,7 +645,7 @@ func TestInterdependence(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM foo`,
@@ -668,7 +673,7 @@ measures:
 	// Update the source to invalid file
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -739,7 +744,7 @@ func TestCyclesWithThreeModels(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM bar2`,
@@ -791,7 +796,7 @@ func TestMetricsView(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -972,7 +977,7 @@ func TestStageChanges(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -998,7 +1003,7 @@ measures:
 	// Invalid source
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -1047,7 +1052,7 @@ func TestWatch(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -1084,11 +1089,129 @@ measures:
 	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
-func must[T any](v T, err error) T {
-	if err != nil {
-		panic(err)
+func TestDashboardTheme(t *testing.T) {
+	// Create source and model
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `a,b,c,d,e
+1,2,3,4,5
+1,2,3,4,5
+1,2,3,4,5
+`,
+		"/sources/foo.yaml": `
+connector: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+default_theme: t1
+dimensions:
+- column: b
+measures:
+- expression: count(*)
+`,
+		`themes/t1.yaml`: `
+type: theme
+colors:
+  primary: red
+  secondary: grey
+`,
+	})
+
+	theme := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/themes/t1.yaml"},
+		},
+		Resource: &runtimev1.Resource_Theme{
+			Theme: &runtimev1.Theme{
+				Spec: &runtimev1.ThemeSpec{
+					PrimaryColor: &runtimev1.Color{
+						Red:   1,
+						Green: 0,
+						Blue:  0,
+						Alpha: 1,
+					},
+					SecondaryColor: &runtimev1.Color{
+						Red:   0.5019608,
+						Green: 0.5019608,
+						Blue:  0.5019608,
+						Alpha: 1,
+					},
+				},
+			},
+		},
 	}
-	return v
+	mv, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
+	metricsRes.Meta.Refs = append(metricsRes.Meta.Refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"})
+	mv.GetSpec().DefaultTheme = "t1"
+	mv.GetState().ValidSpec.DefaultTheme = "t1"
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireResource(t, rt, id, theme)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// make the theme invalid
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		`themes/t1.yaml`: `
+type: theme
+colors:
+  primary: xxx
+  secondary: xxx
+`,
+	})
+	mv.State = &runtimev1.MetricsViewState{}
+	metricsRes.Meta.ReconcileError = `could not find theme "t1"`
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 2, 1)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	// make the theme valid
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		`themes/t1.yaml`: `
+type: theme
+colors:
+  primary: red
+  secondary: grey
+`,
+	})
+	mv, metricsRes = newMetricsView("dash", "bar", []string{"count(*)"}, []string{"b"})
+	metricsRes.Meta.Refs = append(metricsRes.Meta.Refs, &runtimev1.ResourceName{Kind: runtime.ResourceKindTheme, Name: "t1"})
+	mv.GetSpec().DefaultTheme = "t1"
+	mv.GetState().ValidSpec.DefaultTheme = "t1"
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 5, 0, 0)
+	testruntime.RequireResource(t, rt, id, metricsRes)
+}
+
+func TestAlert(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/data/foo.csv": `__time,country
+2024-01-01T00:00:00Z,Denmark
+`,
+		"/sources/foo.yaml": `
+connector: local_file
+path: data/foo.csv
+`,
+		"/models/bar.sql": `SELECT * FROM foo`,
+		"/dashboards/dash.yaml": `
+title: dash
+model: bar
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)"}, []string{"country"})
+	testruntime.RequireResource(t, rt, id, metricsRes)
 }
 
 func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
@@ -1097,6 +1220,7 @@ func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
 			SourceConnector: "local_file",
 			SinkConnector:   "duckdb",
 			Properties:      must(structpb.NewStruct(map[string]any{"path": path})),
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 		State: &runtimev1.SourceState{
 			Connector: "duckdb",
@@ -1120,9 +1244,10 @@ func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resour
 	falsy := false
 	model := &runtimev1.ModelV2{
 		Spec: &runtimev1.ModelSpec{
-			Connector:   "duckdb",
-			Sql:         query,
-			Materialize: &falsy,
+			Connector:       "duckdb",
+			Sql:             query,
+			Materialize:     &falsy,
+			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 		State: &runtimev1.ModelState{
 			Connector: "duckdb",
@@ -1194,4 +1319,11 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		},
 	}
 	return metrics, metricsRes
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }

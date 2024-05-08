@@ -65,7 +65,7 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.MetricsView.Connector)
 	if err != nil {
 		return err
 	}
@@ -73,15 +73,19 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
-		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
+		return q.resolveDuckDB(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectDuckDB, q.MetricsView), policyFilter, priority)
 	case drivers.DialectDruid:
-		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, q.MetricsView.Table, policyFilter, priority)
+		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectDruid, q.MetricsView), policyFilter, priority)
+	case drivers.DialectClickHouse:
+		return q.resolveClickHouseAndPinot(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectClickHouse, q.MetricsView), policyFilter, priority)
+	case drivers.DialectPinot:
+		return q.resolveClickHouseAndPinot(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectPinot, q.MetricsView), policyFilter, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 }
 
-func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
+func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
@@ -89,7 +93,7 @@ func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.O
 	rangeSQL := fmt.Sprintf(
 		"SELECT min(%[1]s) as \"min\", max(%[1]s) as \"max\", max(%[1]s) - min(%[1]s) as \"interval\" FROM %[2]s %[3]s",
 		safeName(timeDim),
-		safeName(tableName),
+		escapedTableName,
 		filter,
 	)
 
@@ -136,7 +140,7 @@ func (q *MetricsViewTimeRange) resolveDuckDB(ctx context.Context, olap drivers.O
 	return errors.New("no rows returned")
 }
 
-func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, timeDim, tableName, filter string, priority int) error {
+func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}
@@ -148,7 +152,7 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 		minSQL := fmt.Sprintf(
 			"SELECT min(%[1]s) as \"min\" FROM %[2]s %[3]s",
 			safeName(timeDim),
-			safeName(tableName),
+			escapedTableName,
 			filter,
 		)
 
@@ -182,7 +186,7 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 		maxSQL := fmt.Sprintf(
 			"SELECT max(%[1]s) as \"max\" FROM %[2]s %[3]s",
 			safeName(timeDim),
-			safeName(tableName),
+			escapedTableName,
 			filter,
 		)
 
@@ -228,6 +232,67 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 	}
 
 	return nil
+}
+
+func (q *MetricsViewTimeRange) resolveClickHouseAndPinot(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
+	if filter != "" {
+		filter = fmt.Sprintf(" WHERE %s", filter)
+	}
+
+	rangeSQL := fmt.Sprintf(
+		"SELECT min(%[1]s) AS \"min\", max(%[1]s) AS \"max\" FROM %[2]s %[3]s",
+		safeName(timeDim),
+		escapedTableName,
+		filter,
+	)
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            rangeSQL,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		summary := &runtimev1.TimeRangeSummary{}
+		var min, max *time.Time
+		err = rows.Scan(&min, &max)
+		if err != nil {
+			return err
+		}
+
+		if min != nil {
+			summary.Min = timestamppb.New(*min)
+		}
+		if max != nil {
+			summary.Max = timestamppb.New(*max)
+		}
+		if min != nil && max != nil {
+			// ignoring months for now since its hard to compute and anyways not being used
+			summary.Interval = &runtimev1.TimeRangeSummary_Interval{}
+			duration := max.Sub(*min)
+			hours := duration.Hours()
+			if hours >= hourInDay {
+				summary.Interval.Days = int32(hours / hourInDay)
+			}
+			summary.Interval.Micros = duration.Microseconds() - microsInDay*int64(summary.Interval.Days)
+		}
+
+		q.Result = &runtimev1.MetricsViewTimeRangeResponse{
+			TimeRangeSummary: summary,
+		}
+		return nil
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return err
+	}
+
+	return errors.New("no rows returned")
 }
 
 func (q *MetricsViewTimeRange) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {

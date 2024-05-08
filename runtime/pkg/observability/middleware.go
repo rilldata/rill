@@ -10,7 +10,6 @@ import (
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -26,16 +25,6 @@ import (
 // Middleware is HTTP middleware that combines all observability-related middlewares.
 func Middleware(serviceName string, logger *zap.Logger, next http.Handler) http.Handler {
 	return TracingMiddleware(LoggingMiddleware(logger, next), serviceName)
-}
-
-// TracingUnaryServerInterceptor is a gRPC unary interceptor that adds tracing to the request.
-func TracingUnaryServerInterceptor() grpc.UnaryServerInterceptor {
-	return otelgrpc.UnaryServerInterceptor()
-}
-
-// TracingStreamServerInterceptor is the streaming equivalent of TracingUnaryServerInterceptor
-func TracingStreamServerInterceptor() grpc.StreamServerInterceptor {
-	return otelgrpc.StreamServerInterceptor()
 }
 
 // TracingMiddleware is HTTP middleware that adds tracing to the request.
@@ -324,6 +313,6 @@ func AddRequestAttributes(ctx context.Context, attrs ...attribute.KeyValue) {
 		}
 	}
 
-	// Add attributes as activity dimensions
-	activity.WithDims(ctx, attrs...)
+	// Add attributes for emitted events
+	activity.SetAttributes(ctx, attrs...)
 }

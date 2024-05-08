@@ -1,22 +1,23 @@
 <script lang="ts">
+  import { getDimensionType } from "@rilldata/web-common/features/dashboards/filters/dimension-filters/getDimensionType";
+
   /**
    * DimensionDisplay.svelte
    * -------------------------
    * Create a table with the selected dimension and measures
    * to be displayed in explore
    */
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
-
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
+  import { notifications } from "@rilldata/web-common/components/notifications";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
 
   const stateManagers = getStateManagers();
@@ -28,13 +29,22 @@
         dimensionTableTotalQueryBody,
       },
       comparison: { isBeingCompared },
-      dimensions: { dimensionTableDimName },
+      dimensions: { dimensionTableDimName, dimensionTableColumnName },
+      dimensionFilters: { unselectedDimensionValues },
       dimensionTable: {
         virtualizedTableColumns,
         selectedDimensionValueNames,
         prepareDimTableRows,
       },
       activeMeasure: { activeMeasureName },
+      measureFilters: { getResolvedFilterForMeasureFilters },
+    },
+    actions: {
+      dimensionsFilter: {
+        toggleDimensionValueSelection,
+        selectItemsInFilter,
+        deselectItemsInFilter,
+      },
     },
     metricsViewName,
     runtime,
@@ -43,30 +53,37 @@
   // cast is safe because dimensionTableDimName must be defined
   // for the dimension table to be open
   $: dimensionName = $dimensionTableDimName as string;
+  $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
 
   let searchText = "";
 
-  const queryClient = useQueryClient();
-
   $: instanceId = $runtime.instanceId;
+  $: dimensionType = getDimensionType(
+    instanceId,
+    $metricsViewName,
+    dimensionName,
+  );
+  $: stringLikeDimension = STRING_LIKES.has($dimensionType.data ?? "");
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
+  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
+
   $: filterSet = getDimensionFilterWithSearch(
-    $dashboardStore?.filters,
+    $dashboardStore?.whereFilter,
     searchText,
-    dimensionName
+    dimensionName,
   );
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     $metricsViewName,
-    $dimensionTableTotalQueryBody,
+    $dimensionTableTotalQueryBody($resolvedFilter),
     {
       query: {
-        enabled: $timeControlsStore.ready,
+        enabled: $timeControlsStore.ready && $resolvedFilter.ready,
       },
-    }
+    },
   );
 
   $: unfilteredTotal = $totalsQuery?.data?.data?.[$activeMeasureName] ?? 0;
@@ -76,56 +93,73 @@
   $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     $metricsViewName,
-    $dimensionTableSortedQueryBody,
+    $dimensionTableSortedQueryBody($resolvedFilter),
     {
       query: {
-        enabled: $timeControlsStore.ready && !!filterSet,
+        enabled:
+          $timeControlsStore.ready && !!filterSet && $resolvedFilter.ready,
       },
-    }
+    },
   );
 
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionName] as string)
+    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string),
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail][dimensionName] as string;
-    cancelDashboardQueries(queryClient, $metricsViewName);
-    metricsExplorerStore.toggleFilter($metricsViewName, dimensionName, label);
+    const label = tableRows[event.detail.index][dimensionColumnName] as string;
+    toggleDimensionValueSelection(
+      dimensionName,
+      label,
+      false,
+      event.detail.meta,
+    );
   }
 
   function toggleComparisonDimension(dimensionName, isBeingCompared) {
     metricsExplorerStore.setComparisonDimension(
       $metricsViewName,
-      isBeingCompared ? undefined : dimensionName
+      isBeingCompared ? undefined : dimensionName,
     );
   }
 
   function toggleAllSearchItems() {
-    const labels = tableRows.map((row) => row[dimensionName] as string);
-    cancelDashboardQueries(queryClient, $metricsViewName);
+    const labels = tableRows.map((row) => row[dimensionColumnName] as string);
 
     if (areAllTableRowsSelected) {
-      metricsExplorerStore.deselectItemsInFilter(
-        $metricsViewName,
-        dimensionName,
-        labels
-      );
+      deselectItemsInFilter(dimensionName, labels);
+
+      notifications.send({
+        message: `Removed ${labels.length} items from filter`,
+      });
       return;
     } else {
-      metricsExplorerStore.selectItemsInFilter(
-        $metricsViewName,
+      const newValuesSelected = $unselectedDimensionValues(
         dimensionName,
-        labels
+        labels,
       );
+      selectItemsInFilter(dimensionName, labels);
+      notifications.send({
+        message: `Added ${newValuesSelected.length} items to filter`,
+      });
+    }
+  }
+
+  function handleKeyDown(e) {
+    // Select all items on Meta+A
+    if ((e.ctrlKey || e.metaKey) && e.key === "a") {
+      if (e.target.tagName === "INPUT") return;
+      e.preventDefault();
+      if (areAllTableRowsSelected) return;
+      toggleAllSearchItems();
     }
   }
 </script>
 
 {#if sortedQuery}
-  <div class="h-full flex flex-col" style:min-width="365px">
+  <div class="h-full flex flex-col w-full" style:min-width="365px">
     <div class="flex-none" style:height="50px">
       <DimensionHeader
         {dimensionName}
@@ -133,9 +167,10 @@
         isRowsEmpty={!tableRows.length}
         isFetching={$sortedQuery?.isFetching}
         on:search={(event) => {
-          searchText = event.detail;
+          if (stringLikeDimension) searchText = event.detail;
         }}
         on:toggle-all-search-items={() => toggleAllSearchItems()}
+        enableSearch={stringLikeDimension}
       />
     </div>
 
@@ -155,3 +190,5 @@
     {/if}
   </div>
 {/if}
+
+<svelte:window on:keydown={handleKeyDown} />

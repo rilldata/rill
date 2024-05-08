@@ -9,7 +9,7 @@ export interface ExtremumResolutionTweenProps {
 }
 
 export interface ExtremumResolutionStore extends Readable<number | Date> {
-  setWithKey: (arg0: string, arg1: number | Date, arg2: boolean) => void;
+  setWithKey: (arg0: string, arg1: number | Date, arg2?: boolean) => void;
   removeKey: (arg0: string) => void;
   setTweenProps: (arg0: ExtremumResolutionTweenProps) => void;
 }
@@ -31,15 +31,15 @@ export interface SimpleDataGraphicConfigurationArguments {
   bottom: number;
   fontSize: number;
   textGap: number;
-  xType: string; // FIXME: we should have an enum here
-  yType: string; // FIXME: we should have an enum here
+  xType: ScaleType;
+  yType: ScaleType;
   xMin: number | Date;
   xMax: number | Date;
   yMin: number | Date;
   yMax: number | Date;
   bodyBuffer: number;
   marginBuffer: number;
-  pixelDeviceRation: number;
+  devicePixelRatio: number;
 }
 
 export interface SimpleGraphicConfigurationDerivations {

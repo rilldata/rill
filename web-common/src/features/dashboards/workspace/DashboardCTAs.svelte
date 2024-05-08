@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
-  import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
@@ -15,48 +13,56 @@
   } from "../../../metrics/service/MetricsTypes";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
-  import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
   import ViewAsButton from "../granular-access-policies/ViewAsButton.svelte";
+  import { useDashboardPolicyCheck } from "../granular-access-policies/useDashboardPolicyCheck";
   import DeployDashboardCta from "./DeployDashboardCTA.svelte";
 
   export let metricViewName: string;
 
+  $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
+  $: filePath = $dashboardQuery.data?.meta?.filePaths?.[0] ?? "";
+
   $: dashboardPolicyCheck = useDashboardPolicyCheck(
     $runtime.instanceId,
-    metricViewName
+    filePath,
   );
 
-  $: isEditableDashboard = $featureFlags.readOnly === false;
+  const { readOnly } = featureFlags;
 
-  $: dashboardQuery = useDashboard($runtime.instanceId, metricViewName);
   $: dashboardIsIdle =
     $dashboardQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
 
-  function viewMetrics(metricViewName: string) {
-    goto(`/dashboard/${metricViewName}/edit`);
-
-    behaviourEvent.fireNavigationEvent(
-      metricViewName,
-      BehaviourEventMedium.Button,
-      MetricsEventSpace.Workspace,
-      MetricsEventScreenName.Dashboard,
-      MetricsEventScreenName.MetricsDefinition
-    );
+  function fireTelemetry() {
+    behaviourEvent
+      .fireNavigationEvent(
+        metricViewName,
+        BehaviourEventMedium.Button,
+        MetricsEventSpace.Workspace,
+        MetricsEventScreenName.Dashboard,
+        MetricsEventScreenName.MetricsDefinition,
+      )
+      .catch(console.error);
   }
 
   let showDeployDashboardModal = false;
+
+  async function showDeployModal() {
+    showDeployDashboardModal = true;
+    await behaviourEvent?.fireDeployIntentEvent();
+  }
 </script>
 
-<PanelCTA side="right">
+<div class="flex gap-2 flex-shrink-0 ml-auto">
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
-  {#if isEditableDashboard}
+  {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
+        href={`/files${filePath}`}
         disabled={!dashboardIsIdle}
-        on:click={() => viewMetrics(metricViewName)}
+        on:click={fireTelemetry}
         type="secondary"
       >
         Edit Metrics <MetricsIcon size="16px" />
@@ -70,15 +76,13 @@
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
-      <Button on:click={() => (showDeployDashboardModal = true)} type="primary">
-        Deploy
-      </Button>
+      <Button on:click={() => showDeployModal()} type="brand">Deploy</Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>
     </Tooltip>
   {/if}
-</PanelCTA>
+</div>
 
 <DeployDashboardCta
   on:close={() => (showDeployDashboardModal = false)}

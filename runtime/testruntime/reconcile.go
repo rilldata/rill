@@ -41,7 +41,7 @@ func DeleteFiles(t testing.TB, rt *runtime.Runtime, id string, files ...string) 
 	defer release()
 
 	for _, path := range files {
-		err := repo.Delete(ctx, path)
+		err := repo.Delete(ctx, path, false)
 		require.NoError(t, err)
 	}
 }
@@ -95,7 +95,7 @@ func RequireReconcileState(t testing.TB, rt *runtime.Runtime, id string, lenReso
 	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
-	rs, err := ctrl.List(context.Background(), "", false)
+	rs, err := ctrl.List(context.Background(), "", "", false)
 	require.NoError(t, err)
 
 	var reconcileErrs, parseErrs []string
@@ -162,6 +162,14 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state := b.GetModel().State
 		state.RefreshedOn = nil
 		state.SpecHash = ""
+	case runtime.ResourceKindAlert:
+		state := b.GetAlert().State
+		state.SpecHash = ""
+		state.RefsHash = ""
+		for _, e := range state.ExecutionHistory {
+			e.StartedOn = nil
+			e.FinishedOn = nil
+		}
 	}
 
 	// Hack to only compare the Resource field (not Meta)
@@ -177,7 +185,7 @@ func DumpResources(t testing.TB, rt *runtime.Runtime, id string) {
 	ctrl, err := rt.Controller(context.Background(), id)
 	require.NoError(t, err)
 
-	rs, err := ctrl.List(context.Background(), "", false)
+	rs, err := ctrl.List(context.Background(), "", "", false)
 	require.NoError(t, err)
 
 	for _, r := range rs {

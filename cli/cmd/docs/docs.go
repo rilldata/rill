@@ -4,13 +4,13 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/browser"
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/spf13/cobra"
 )
 
 var docsURL = "https://docs.rilldata.com"
 
-func DocsCmd(cfg *config.Config, rootCmd *cobra.Command) *cobra.Command {
+func DocsCmd(ch *cmdutil.Helper, rootCmd *cobra.Command) *cobra.Command {
 	docsCmd := &cobra.Command{
 		Use:   "docs",
 		Short: "Open docs.rilldata.com",
@@ -21,7 +21,7 @@ func DocsCmd(cfg *config.Config, rootCmd *cobra.Command) *cobra.Command {
 			}
 		},
 	}
-	docsCmd.AddCommand(GenerateCmd(rootCmd, cfg))
+	docsCmd.AddCommand(GenerateCmd(rootCmd, ch))
 
 	return docsCmd
 }

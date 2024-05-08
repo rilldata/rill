@@ -1,22 +1,55 @@
+export enum TDDChart {
+  DEFAULT = "default",
+  STACKED_BAR = "stacked_bar",
+  GROUPED_BAR = "grouped_bar",
+  STACKED_AREA = "stacked_area",
+}
+
+export type TDDAlternateCharts = Exclude<TDDChart, TDDChart.DEFAULT>;
+export type TDDBarCharts = Exclude<TDDAlternateCharts, TDDChart.STACKED_AREA>;
+
+export interface TDDState {
+  /***
+   * The name of the measure that is currently being expanded
+   * in the Time Detailed Dimension view
+   */
+  expandedMeasureName?: string;
+  /**
+   * The index at which selected dimension values are pinned in the
+   * time detailed dimension view. Values above this index preserve
+   * their original order
+   */
+  pinIndex: number;
+  chartType: TDDChart;
+}
+
+export interface HeaderData<T> {
+  value: T | null | undefined;
+  spark?: string;
+}
+
+export type TDDCellData = string | number | null | undefined;
+
 export interface TableData {
   rowCount: number;
   fixedColCount: number;
-  rowHeaderData: Array<Array<{ value: string }>>;
+  rowHeaderData: HeaderData<string>[][];
   columnCount: number;
-  columnHeaderData: Array<Array<{ value: string }>>;
-  body: Array<Array<string | number | null>>;
-  selectedValues: string[];
+  columnHeaderData: HeaderData<Date>[][];
+  body: TDDCellData[][];
+  selectedValues: (string | null)[];
 }
 
 export interface HighlightedCell {
-  dimensionValue: string | undefined;
+  dimensionValue: string | undefined | null;
   time: Date | undefined;
 }
 
 export interface ChartInteractionColumns {
-  hover: number;
-  scrubStart: number;
-  scrubEnd: number;
+  xHover: number | undefined;
+  yHover: string | undefined | null;
+  scrubStart: number | undefined;
+  scrubEnd: number | undefined;
 }
 
 export type TDDComparison = "time" | "none" | "dimension";

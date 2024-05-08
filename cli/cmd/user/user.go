@@ -3,22 +3,21 @@ package user
 import (
 	"github.com/rilldata/rill/cli/cmd/user/whitelist"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/spf13/cobra"
 )
 
-func UserCmd(cfg *config.Config) *cobra.Command {
+func UserCmd(ch *cmdutil.Helper) *cobra.Command {
 	userCmd := &cobra.Command{
 		Use:               "user",
 		Short:             "Manage users",
-		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(cfg), cmdutil.CheckOrganization(cfg)),
+		PersistentPreRunE: cmdutil.CheckChain(cmdutil.CheckAuth(ch), cmdutil.CheckOrganization(ch)),
 	}
 
-	userCmd.AddCommand(ListCmd(cfg))
-	userCmd.AddCommand(AddCmd(cfg))
-	userCmd.AddCommand(RemoveCmd(cfg))
-	userCmd.AddCommand(SetRoleCmd(cfg))
-	userCmd.AddCommand(whitelist.WhitelistCmd(cfg))
+	userCmd.AddCommand(ListCmd(ch))
+	userCmd.AddCommand(AddCmd(ch))
+	userCmd.AddCommand(RemoveCmd(ch))
+	userCmd.AddCommand(SetRoleCmd(ch))
+	userCmd.AddCommand(whitelist.WhitelistCmd(ch))
 
 	return userCmd
 }

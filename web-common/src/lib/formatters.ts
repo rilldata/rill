@@ -104,7 +104,7 @@ export function microsToTimestring(microseconds: number) {
     return `${sign == 1 ? "" : "-"}${ms}ms`;
   }
   return `${sign == 1 ? "" : "-"}${zeroPad(hours)}:${zeroPad(
-    minutes
+    minutes,
   )}:${zeroPad(seconds)}.${msPad(ms)}`;
 }
 
@@ -199,9 +199,10 @@ export function formatDataType(value: unknown, type: string) {
  */
 export function formatDataTypeAsDuckDbQueryString(
   value: unknown,
-  type: string
+  type: string,
 ): string {
-  if (value === undefined) return "";
+  if (value === undefined) return "undefined";
+  if (value === null) return "null";
   if (
     INTEGERS.has(type) ||
     type.startsWith("DECIMAL") ||

@@ -1,26 +1,29 @@
 # Welcome to Rill
 
-[Rill](https://docs.rilldata.com/) is the fastest path from data lake to dashboard. Download Rill to start modeling data and create fast, exploratory dashboards.
+[Rill](https://docs.rilldata.com/) is the fastest path from data lake to dashboard. 
 
+Unlike most BI tools, Rill comes with its own embedded in-memory database. Data and compute are co-located, and queries return in milliseconds.   
+So you can pivot, slice, and drill-down into your data instantly.
 
+Download Rill to start modeling data and create fast, exploratory dashboards.
 
 ```
-curl -s https://cdn.rilldata.com/install.sh | bash
+curl https://rill.sh | sh
 rill start my-rill-project
 ```
 
 
 <h3 align="center">
-  <a href="https://docs.rilldata.com/get-started">Quickstart</a>
+  <a href="https://docs.rilldata.com/home/get-started">Quickstart</a>
   <span> · </span>
-  <a href="https://docs.rilldata.com/install">Install</a>
+  <a href="https://docs.rilldata.com/home/install">Install</a>
   <span> · </span>
-  <a href="https://docs.rilldata.com/example-projects">Example Projects</a>
+  <a href="https://docs.rilldata.com/home/get-started#example-projects-repository">Example Projects</a>
   <span> · </span>
-  <a href="https://bit.ly/3unvA05">Community</a>
+  <a href="https://discord.gg/DJ5qcsxE2m">Community</a>
 </h3>
 
-![home-demo](https://github.com/rilldata/rill/assets/5587788/49d17e80-5f27-408c-bbc9-fdbff7b6b627 "829237828")
+![home-demo](https://github.com/rilldata/rill/assets/1181922/1430f272-3fa4-495a-8e45-1bd6fa56f5d2)
 
 Rill's design principles:
 - _**Feels good to use**_ – powered by Sveltekit & DuckDB = conversation-fast, not wait-ten-seconds-for-result-set fast
@@ -30,7 +33,7 @@ Rill's design principles:
 - _**Radically simple interactive dashboards**_ – thoughtful, opinionated, interactive dashboard defaults to help you quickly derive insights from your data
 - _**Dashboards as code**_ – each step from data to dashboard has versioning, Git sharing, and easy project rehydration
 
-## We want to hear from you
+## Don't be a stranger!
 
 We always appreciate hearing from our users and welcome any questions, comments, or concerns you may have. To get in touch with us, there are two options available:
 

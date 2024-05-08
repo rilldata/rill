@@ -2,89 +2,82 @@ package activity
 
 import (
 	"context"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/otel/attribute"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 )
 
-func TestBufferedClientEmit(t *testing.T) {
-	sink := NewTestSink()
-	client := NewBufferedClient(BufferedClientOptions{
-		Sink:       sink,
-		SinkPeriod: time.Millisecond * 10,
-		BufferSize: 1,
-	})
+func TestClientEmitMetric(t *testing.T) {
+	sink := newMockSink()
+	client := NewClient(sink, zap.NewNop())
 
-	client.Emit(context.Background(), "test_event", 1.0, attribute.String("test_dim", "test_val"))
+	client.RecordMetric(context.Background(), "test_event", 1.0, attribute.String("test_dim", "test_val"))
 
-	require.Eventually(t, func() bool { return len(sink.GetEvents()) == 1 }, time.Second*2, time.Millisecond*10)
+	require.Equal(t, 1, len(sink.Events()))
 
-	event := sink.GetEvents()[0]
-	if event.Name != "test_event" {
-		t.Errorf("Expected 'test_event', but got '%s'", event.Name)
-	}
-}
-
-func TestNoopClientEmit(t *testing.T) {
-	client := NewNoopClient()
-
-	// This should not cause any errors
-	client.Emit(context.Background(), "test_event", 1.0, attribute.String("test_dim", "test_val"))
+	e := sink.Events()[0]
+	require.Len(t, e.EventID, 36) // Length of a UUIDv4 string
+	require.False(t, e.EventTime.IsZero())
+	require.Equal(t, "metric", e.EventType)
+	require.Equal(t, "test_event", e.EventName)
 }
 
 func TestEventMarshal(t *testing.T) {
-	event := &Event{
-		Time:  time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC),
-		Name:  "test_event",
-		Value: 1.0,
-		Dims: []attribute.KeyValue{
-			attribute.Bool("bool", true),
-			attribute.String("string", "value"),
-			attribute.Int("int", 0),
-			attribute.Int64("int64", 0),
-			attribute.Float64("float64", 0.0),
-			attribute.BoolSlice("bool_slice", []bool{false, true}),
-			attribute.StringSlice("string_slice", []string{"value1", "value2"}),
-			attribute.IntSlice("int_slice", []int{-1, 0, 1}),
-			attribute.Int64Slice("int64_slice", []int64{-1, 0, 1}),
-			attribute.Float64Slice("float64_slice", []float64{-1.0, 0.0, 1.0}),
-		},
-	}
-	data, err := event.Marshal()
-	if err != nil {
-		t.Fatalf("Expected no error, but got '%s'", err)
-	}
+	sink := newMockSink()
+	client := NewClient(sink, zap.NewNop())
 
-	expected := `{"bool":true,"bool_slice":[false,true],"float64":0,"float64_slice":[-1,0,1],"int":0,"int64":0,"int64_slice":[-1,0,1],"int_slice":[-1,0,1],"name":"test_event","string":"value","string_slice":["value1","value2"],"time":"2023-01-01T00:00:00Z","value":1}`
-	if string(data) != expected {
-		t.Errorf("Expected '%s', but got '%s'", expected, string(data))
-	}
+	client.RecordMetric(context.Background(), "test_event", 1.0,
+		attribute.Bool("bool", true),
+		attribute.String("string", "value"),
+		attribute.Int("int", 0),
+		attribute.Int64("int64", 0),
+		attribute.Float64("float64", 0.0),
+		attribute.BoolSlice("bool_slice", []bool{false, true}),
+		attribute.StringSlice("string_slice", []string{"value1", "value2"}),
+		attribute.IntSlice("int_slice", []int{-1, 0, 1}),
+		attribute.Int64Slice("int64_slice", []int64{-1, 0, 1}),
+		attribute.Float64Slice("float64_slice", []float64{-1.0, 0.0, 1.0}),
+	)
+
+	require.Equal(t, 1, len(sink.Events()))
+
+	e := sink.Events()[0]
+	e.EventID = "8cb858a4-2d5a-4a80-ae9b-fb5b905f18a2"
+	e.EventTime = time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	e.Data["time"] = e.EventTime
+	data, err := e.MarshalJSON()
+	require.NoError(t, err)
+
+	expected := `{"bool":true,"bool_slice":[false,true],"event_id":"8cb858a4-2d5a-4a80-ae9b-fb5b905f18a2","event_name":"test_event","event_time":"2023-01-01T00:00:00Z","event_type":"metric","float64":0,"float64_slice":[-1,0,1],"int":0,"int64":0,"int64_slice":[-1,0,1],"int_slice":[-1,0,1],"name":"test_event","string":"value","string_slice":["value1","value2"],"time":"2023-01-01T00:00:00Z","value":1}`
+	require.Equal(t, expected, string(data))
 }
 
-type TestSink struct {
+type mockSink struct {
 	events   []Event
 	eventsMu sync.Mutex
 }
 
-func NewTestSink() *TestSink {
-	return &TestSink{}
+var _ Sink = (*mockSink)(nil)
+
+func newMockSink() *mockSink {
+	return &mockSink{}
 }
 
-func (n *TestSink) Sink(_ context.Context, events []Event) error {
+func (n *mockSink) Emit(e Event) error {
 	n.eventsMu.Lock()
 	defer n.eventsMu.Unlock()
-	n.events = append(n.events, events...)
+	n.events = append(n.events, e)
 	return nil
 }
 
-func (n *TestSink) GetEvents() []Event {
+func (n *mockSink) Events() []Event {
 	n.eventsMu.Lock()
 	defer n.eventsMu.Unlock()
 	return n.events
 }
 
-func (n *TestSink) Close() error {
-	return nil
-}
+func (n *mockSink) Close() {}

@@ -18,6 +18,7 @@ func TestAnalyze(t *testing.T) {
 			name:     "no template",
 			template: `SELECT * FROM foo`,
 			want: &TemplateMetadata{
+				Variables:                []string{},
 				UsesTemplating:           false,
 				ResolvedWithPlaceholders: `SELECT * FROM foo`,
 			},
@@ -27,6 +28,7 @@ func TestAnalyze(t *testing.T) {
 			template: `SELECT * FROM {{ ref "foo" }}`,
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "foo"}},
+				Variables:                []string{},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value>`,
 			},
@@ -36,18 +38,31 @@ func TestAnalyze(t *testing.T) {
 			template: `{{ configure "a" "b" }}SELECT * FROM foo`,
 			want: &TemplateMetadata{
 				Config:                   map[string]any{"a": "b"},
+				Variables:                []string{},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM foo`,
 			},
 		},
 		{
 			name:     "complex",
-			template: `{{ configure "a: b\nc: d" }}{{ configure "e" "f" }}{{ dependency "bar" }} SELECT * FROM {{ ref "model" "foo" }} WHERE hello='{{ .env.world }}' AND world='{{ (lookup "baz").spec.baz.spaz }}'`,
+			template: `{{ configure "a: b\nc: d" }}{{ configure "e" "f" }}{{ dependency "bar" }} SELECT * FROM {{ ref "model" "foo" }} WHERE hello='{{ .vars.world }}' AND world='{{ (lookup "baz").spec.baz.spaz }}'`,
 			want: &TemplateMetadata{
 				Refs:                     []ResourceName{{Name: "bar"}, {Kind: ResourceKindModel, Name: "foo"}, {Name: "baz"}},
 				Config:                   map[string]any{"a": "b", "c": "d", "e": "f"},
+				Variables:                []string{"vars.world"},
 				UsesTemplating:           true,
 				ResolvedWithPlaceholders: `SELECT * FROM <no value> WHERE hello='<no value>' AND world='<no value>'`,
+			},
+		},
+		{
+			name:     "variables",
+			template: `SELECT * FROM {{.vars.partner_table_name}} WITH SAMPLING {{.vars.partner_table_name}} .... {{.user.domain}}`,
+			want: &TemplateMetadata{
+				Refs:                     []ResourceName{},
+				Config:                   map[string]any{},
+				Variables:                []string{"vars.partner_table_name", "user.domain"},
+				UsesTemplating:           true,
+				ResolvedWithPlaceholders: `SELECT * FROM <no value> WITH SAMPLING <no value> .... <no value>`,
 			},
 		},
 	}
@@ -63,6 +78,7 @@ func TestAnalyze(t *testing.T) {
 					tc.want.Config = map[string]any{}
 				}
 				require.ElementsMatch(t, tc.want.Refs, got.Refs)
+				require.ElementsMatch(t, tc.want.Variables, got.Variables)
 				require.Equal(t, tc.want.Config, got.Config)
 				require.Equal(t, tc.want.UsesTemplating, got.UsesTemplating)
 				require.Equal(t, tc.want.ResolvedWithPlaceholders, strings.TrimSpace(got.ResolvedWithPlaceholders))
@@ -72,13 +88,14 @@ func TestAnalyze(t *testing.T) {
 }
 
 func TestResolve(t *testing.T) {
-	template := "SELECT partner_id FROM domain_partner_mapping WHERE domain = '{{ .user.domain }}' and groups IN ('{{ .user.groups | join \"', '\" }}')"
+	template := "SELECT partner_id FROM domain_partner_mapping WHERE domain = '{{ .user.domain }}' AND groups IN ('{{ .user.groups | join \"', '\" }}') {{ if dev }}OR true{{ end }}"
 	resolved, err := ResolveTemplate(template, TemplateData{
+		Environment: "dev",
 		User: map[string]any{
 			"domain": "rilldata.com",
 			"groups": []string{"admin", "user"},
 		},
 	})
 	require.NoError(t, err)
-	require.Equal(t, "SELECT partner_id FROM domain_partner_mapping WHERE domain = 'rilldata.com' and groups IN ('admin', 'user')", resolved)
+	require.Equal(t, "SELECT partner_id FROM domain_partner_mapping WHERE domain = 'rilldata.com' AND groups IN ('admin', 'user') OR true", resolved)
 }

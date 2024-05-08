@@ -1,33 +1,37 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
-  import { CHECKMARK_COLORS } from "@rilldata/web-common/features/dashboards/config";
-  import Pivot from "@rilldata/web-common/features/dashboards/pivot/Pivot.svelte";
+  import {
+    COMPARIONS_COLORS,
+    SELECTED_NOT_COMPARED_COLOR,
+  } from "@rilldata/web-common/features/dashboards/config";
+  import Pivot from "@rilldata/web-common/features/dashboards/pivot/RegularTable.svelte";
   import type {
     PivotPos,
     PivotRenderCallback,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
+  import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import {
-    SelectedCheckmark,
     ExcludeIcon,
     MeasureArrow,
     PieChart,
-    PinSetIcon,
-    PinSetHoverIcon,
     PinHoverUnsetIcon,
+    PinSetHoverIcon,
+    PinSetIcon,
     PinUnsetIcon,
+    SelectedCheckmark,
   } from "@rilldata/web-common/features/dashboards/time-dimension-details/TDDIcons";
-  import type { TableData, TablePosition, TDDComparison } from "./types";
-  import { SortType } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import { getClassForCell } from "@rilldata/web-common/features/dashboards/time-dimension-details/util";
+  import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
+  import type { TDDComparison, TableData, TablePosition } from "./types";
 
   export let dimensionLabel: string;
   export let measureLabel: string;
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let sortType: SortType;
-  export let highlightedCol: number;
-  export let scrubPos: { start: number; end: number };
+  export let highlightedRow: number | undefined;
+  export let highlightedCol: number | undefined;
+  export let scrubPos: { start?: number; end?: number };
   export let pinIndex: number;
   export let comparing: TDDComparison;
   export let tableData: TableData;
@@ -65,9 +69,9 @@
       "bg-white",
       "bg-gray-100",
       "bg-gray-200",
-      "bg-blue-50",
-      "bg-blue-100",
-      "bg-blue-200",
+      "bg-primary-50",
+      "bg-primary-100",
+      "bg-primary-200",
       "bg-slate-50",
       "bg-slate-100",
       "bg-slate-200",
@@ -83,23 +87,24 @@
 
     const isScrubbed =
       scrubPos?.start !== undefined &&
+      scrubPos?.end !== undefined &&
       data.x >= scrubPos.start &&
       data.x <= scrubPos.end - 1;
 
     const palette = isScrubbed
       ? "scrubbed"
       : data.y === 0
-      ? "fixed"
-      : "default";
+        ? "fixed"
+        : "default";
 
     classesToAdd.push(
       getClassForCell(
         palette,
-        rowIdxHover,
+        rowIdxHover ?? highlightedRow,
         colIdxHover ?? highlightedCol,
         data.y,
-        data.x
-      )
+        data.x,
+      ),
     );
     // Update DOM with consolidated class operations
     data.element.classList.toggle("font-semibold", Boolean(data.y == 0));
@@ -116,6 +121,7 @@
   $: {
     scrubPos;
     highlightedCol;
+    highlightedRow;
     tableData?.selectedValues;
     pivot?.draw();
   }
@@ -131,18 +137,16 @@
     }
   };
 
-  let noSelectionMarkerCount = 0;
   const getMarker = (value, y) => {
     if (y === 0) {
-      noSelectionMarkerCount = 0;
       return { icon: "", muted: false };
     }
     const visibleIdx = tableData?.selectedValues.indexOf(value.value);
 
     if (comparing === "time") {
       let icon = "";
-      if (y == 1) icon = SelectedCheckmark("fill-blue-500");
-      else if (y == 2) icon = SelectedCheckmark("fill-gray-300");
+      if (y == 1) icon = SelectedCheckmark("var(--color-primary-500)");
+      else if (y == 2) icon = SelectedCheckmark(SELECTED_NOT_COMPARED_COLOR);
       return { icon, muted: false };
     }
 
@@ -152,8 +156,9 @@
       else
         return {
           icon: SelectedCheckmark(
-            "fill-" +
-              (visibleIdx < 11 ? CHECKMARK_COLORS[visibleIdx] : "gray-300")
+            visibleIdx < 11
+              ? COMPARIONS_COLORS[visibleIdx]
+              : SELECTED_NOT_COMPARED_COLOR,
           ),
           muted: false,
         };
@@ -174,13 +179,13 @@
     } else {
       element.classList.remove("border-b", "border-gray-200");
     }
-
+    const total = value.value !== undefined ? value.value : "...";
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
       colIdxHover ?? highlightedCol,
       y,
-      x - tableData?.fixedColCount
+      x - tableData?.fixedColCount,
     );
     if (x > 0) {
       element.classList.remove("bg-slate-50", "bg-slate-100", "bg-slate-200");
@@ -200,14 +205,13 @@
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
       return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
-        <div class="truncate text-xs ${fontWeight}">${value.value}</div></div>`;
+        <div class="truncate text-xs ${fontWeight}">${total}</div></div>`;
     } else if (x === 1)
       return `<div class="text-xs font-semibold text-right flex items-center justify-end gap-2" >
-        ${value.value}
+        ${total}
         ${value.spark}
         </div>`;
-    else
-      return `<div class="text-xs font-normal text-right" >${value.value}</div>`;
+    else return `<div class="text-xs font-normal text-right" >${total}</div>`;
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
@@ -249,34 +253,11 @@
       </div>`;
   };
 
-  let containerWidth;
-
-  /**
-   * Compute available width for table columns by subtracting fixed widths
-   * from container width along with extra 50px for padding
-   */
-  $: colWidth = Math.floor(
-    (containerWidth - 250 - 130 - 50 - 50) / tableData?.columnCount
-  );
-
   const getColumnWidth = () => {
-    if (colWidth) {
-      if (colWidth < 75) return 75;
-      if (colWidth > 150) return 150;
-      else return colWidth;
-    }
     return 75;
   };
 
   const getRowHeaderWidth = (x: number) => {
-    if (colWidth > 160) {
-      if (x === 0) {
-        const dimWidth = 220 + tableData?.columnCount * (colWidth - 150);
-        return Math.min(dimWidth, 500);
-      } else if (x === 1) {
-        return 160;
-      }
-    }
     return [250, 130, 50][x];
   };
 
@@ -315,7 +296,7 @@
   const handleMouseHover = (evt, table) => {
     let newRowIdxHover;
     let newColIdxHover;
-    let newHoveringPin;
+    let newHoveringPin = hoveringPin;
     if (evt.type === "mouseout") {
       newRowIdxHover = undefined;
       newColIdxHover = undefined;
@@ -380,11 +361,12 @@
 </script>
 
 <div
-  bind:clientWidth={containerWidth}
+  role="grid"
+  tabindex="0"
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
-  class="w-full relative"
+  class="w-full relative h-full"
 >
   <Pivot
     bind:this={pivot}

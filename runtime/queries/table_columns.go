@@ -3,8 +3,10 @@ package queries
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"io"
+	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -12,8 +14,11 @@ import (
 )
 
 type TableColumns struct {
-	TableName string
-	Result    []*runtimev1.ProfileColumn
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	Result         *runtimev1.TableColumnsResponse
 }
 
 var _ runtime.Query = &TableColumns{}
@@ -31,9 +36,15 @@ func (q *TableColumns) Deps() []*runtimev1.ResourceName {
 
 func (q *TableColumns) MarshalResult() *runtime.QueryResult {
 	var size int64
-	if len(q.Result) > 0 {
+	if len(q.Result.ProfileColumns) > 0 {
 		// approx
-		size = sizeProtoMessage(q.Result[0]) * int64(len(q.Result))
+		size = sizeProtoMessage(q.Result.ProfileColumns[0]) * int64(len(q.Result.ProfileColumns))
+	}
+	if len(q.Result.UnsupportedColumns) > 0 {
+		r, err := json.Marshal(q.Result.UnsupportedColumns)
+		if err == nil { // ignore error
+			size += int64(len(r))
+		}
 	}
 	return &runtime.QueryResult{
 		Value: q.Result,
@@ -42,7 +53,7 @@ func (q *TableColumns) MarshalResult() *runtime.QueryResult {
 }
 
 func (q *TableColumns) UnmarshalResult(v any) error {
-	res, ok := v.([]*runtimev1.ProfileColumn)
+	res, ok := v.(*runtimev1.TableColumnsResponse)
 	if !ok {
 		return fmt.Errorf("TableColumns: mismatched unmarshal input")
 	}
@@ -51,63 +62,87 @@ func (q *TableColumns) UnmarshalResult(v any) error {
 }
 
 func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
-	}
-
-	return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
-		// views return duplicate column names, so we need to create a temporary table
-		temporaryTableName := tempName("profile_columns_")
-		err = olap.Exec(ctx, &drivers.Statement{
-			Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM "%s" LIMIT 1)`, temporaryTableName, q.TableName),
-			Priority:         priority,
-			ExecutionTimeout: defaultExecutionTimeout,
-		})
-		if err != nil {
-			return err
-		}
-		defer func() {
-			// NOTE: Using ensuredCtx
-			_ = olap.Exec(ensuredCtx, &drivers.Statement{
-				Query:            `DROP TABLE "` + temporaryTableName + `"`,
+	switch olap.Dialect() {
+	case drivers.DialectDuckDB:
+		return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, _ *sql.Conn) error {
+			// views return duplicate column names, so we need to create a temporary table
+			temporaryTableName := tempName("profile_columns_")
+			err = olap.Exec(ctx, &drivers.Statement{
+				Query:            fmt.Sprintf(`CREATE TEMPORARY TABLE "%s" AS (SELECT * FROM %s LIMIT 1)`, temporaryTableName, olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName)),
 				Priority:         priority,
 				ExecutionTimeout: defaultExecutionTimeout,
 			})
-		}()
+			if err != nil {
+				return err
+			}
+			defer func() {
+				// NOTE: Using ensuredCtx
+				_ = olap.Exec(ensuredCtx, &drivers.Statement{
+					Query:            `DROP TABLE "` + temporaryTableName + `"`,
+					Priority:         priority,
+					ExecutionTimeout: defaultExecutionTimeout,
+				})
+			}()
 
-		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query: fmt.Sprintf(`
-				SELECT column_name AS name, data_type AS type
-				FROM information_schema.columns
-				WHERE table_catalog = 'temp' AND table_name = '%s'`, temporaryTableName),
-			Priority:         priority,
-			ExecutionTimeout: defaultExecutionTimeout,
+			rows, err := olap.Execute(ctx, &drivers.Statement{
+				Query: fmt.Sprintf(`
+					SELECT column_name AS name, data_type AS type
+					FROM information_schema.columns
+					WHERE table_catalog = 'temp' AND table_name = '%s'`, temporaryTableName),
+				Priority:         priority,
+				ExecutionTimeout: defaultExecutionTimeout,
+			})
+			if err != nil {
+				return err
+			}
+			defer rows.Close()
+
+			var pcs []*runtimev1.ProfileColumn
+			i := 0
+			for rows.Next() {
+				pc := runtimev1.ProfileColumn{}
+				if err := rows.StructScan(&pc); err != nil {
+					return err
+				}
+				// TODO: Find a better way to handle this, this is ugly
+				if strings.Contains(pc.Type, "ENUM") {
+					pc.Type = "VARCHAR"
+				}
+				pcs = append(pcs, &pc)
+				i++
+			}
+
+			q.Result = &runtimev1.TableColumnsResponse{
+				ProfileColumns: pcs[0:i],
+			}
+			return nil
 		})
+	case drivers.DialectClickHouse, drivers.DialectDruid, drivers.DialectPinot:
+		tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
 		if err != nil {
 			return err
 		}
-		defer rows.Close()
 
-		var pcs []*runtimev1.ProfileColumn
-		i := 0
-		for rows.Next() {
-			pc := runtimev1.ProfileColumn{}
-			if err := rows.StructScan(&pc); err != nil {
-				return err
-			}
-			pcs = append(pcs, &pc)
-			i++
+		q.Result = &runtimev1.TableColumnsResponse{
+			ProfileColumns:     make([]*runtimev1.ProfileColumn, len(tbl.Schema.Fields)),
+			UnsupportedColumns: tbl.UnsupportedCols,
 		}
-
-		q.Result = pcs[0:i]
+		for i := 0; i < len(tbl.Schema.Fields); i++ {
+			q.Result.ProfileColumns[i] = &runtimev1.ProfileColumn{
+				Name: tbl.Schema.Fields[i].Name,
+				Type: tbl.Schema.Fields[i].Type.Code.String(),
+			}
+		}
 		return nil
-	})
+	default:
+		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+	}
 }
 
 func (q *TableColumns) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {

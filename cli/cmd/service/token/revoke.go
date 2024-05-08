@@ -2,22 +2,20 @@ package token
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RevokeCmd(cfg *config.Config) *cobra.Command {
+func RevokeCmd(ch *cmdutil.Helper) *cobra.Command {
 	revokeCmd := &cobra.Command{
 		Use:   "revoke <token-id>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Revoke token",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			_, err = client.RevokeServiceAuthToken(cmd.Context(), &adminv1.RevokeServiceAuthTokenRequest{
 				TokenId: args[0],
@@ -26,7 +24,7 @@ func RevokeCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Revoked token")
+			ch.PrintfSuccess("Revoked token\n")
 
 			return nil
 		},

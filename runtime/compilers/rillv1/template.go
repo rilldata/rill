@@ -16,7 +16,7 @@ import (
 // Template parsing serves a dual purpose of:
 //
 // a) extracting metadata at parse time (such as {{ config ...}} and {{ ref ... }})
-// b) populating values at resolve time (such as {{ .env ... }} and {{ ref ... }})
+// b) populating values at resolve time (such as {{ .vars ... }} and {{ ref ... }})
 //
 // The resolve time of a template varies. For models, the resolve time is when they are created in the database.
 // But for dashboard expressions, the resolve time is when the dashboard is rendered.
@@ -32,7 +32,7 @@ import (
 //     dependency [`kind`] `name`: register a dependency (parse time)
 //     ref [`kind`] `name`: register a dependency at parse-time, resolve it to a name at resolve time (parse time and resolve time)
 //     lookup [`kind`] `name`: lookup another resource (resolve time)
-//     .env.name: access a variable (resolve time)
+//     .vars.name: access a variable (resolve time)
 //     .user.attribute: access an attribute from auth claims (resolve time)
 //     .meta: access the current resource's metadata (resolve time)
 //     .spec: access the current resource's spec (resolve time)
@@ -42,12 +42,13 @@ import (
 
 // TemplateData contains data for resolving a template.
 type TemplateData struct {
-	User       map[string]any
-	Variables  map[string]string
-	ExtraProps map[string]any
-	Self       TemplateResource
-	Resolve    func(ref ResourceName) (string, error)
-	Lookup     func(name ResourceName) (TemplateResource, error)
+	Environment string
+	User        map[string]any
+	Variables   map[string]string
+	ExtraProps  map[string]any
+	Self        TemplateResource
+	Resolve     func(ref ResourceName) (string, error)
+	Lookup      func(name ResourceName) (TemplateResource, error)
 }
 
 // TemplateResource contains data for a resource for injection into a template.
@@ -61,6 +62,7 @@ type TemplateResource struct {
 type TemplateMetadata struct {
 	Refs                     []ResourceName
 	Config                   map[string]any
+	Variables                []string
 	UsesTemplating           bool
 	ResolvedWithPlaceholders string
 }
@@ -72,7 +74,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 	refs := map[ResourceName]bool{}
 
 	// Build func map
-	funcMap := newFuncMap()
+	funcMap := newFuncMap("")
 	funcMap["configure"] = func(parts ...any) (string, error) {
 		if len(parts) == 1 {
 			// Configure from YAML
@@ -130,8 +132,9 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
+		"env":   "",
+		"vars":  map[string]any{},
 		"user":  map[string]any{},
-		"env":   map[string]any{},
 		"meta":  map[string]any{},
 		"spec":  map[string]any{},
 		"state": map[string]any{},
@@ -147,9 +150,11 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 	noTemplating := len(t.Root.Nodes) == 0 || len(t.Root.Nodes) == 1 && t.Root.Nodes[0].Type() == parse.NodeText
 
 	// Done
+	variables := extractVariablesFromTemplate(t.Tree)
 	return &TemplateMetadata{
 		Refs:                     maps.Keys(refs),
 		Config:                   config,
+		Variables:                variables,
 		UsesTemplating:           !noTemplating,
 		ResolvedWithPlaceholders: res.String(),
 	}, nil
@@ -158,7 +163,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 // ResolveTemplate resolves a template to a string using the given data.
 func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 	// Base func map
-	funcMap := newFuncMap()
+	funcMap := newFuncMap(data.Environment)
 
 	// Add no-ops
 	funcMap["configure"] = func(parts ...string) error { return nil }
@@ -184,6 +189,11 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Add func to lookup another resource
 	funcMap["lookup"] = func(parts ...string) (map[string]any, error) {
+		// Support is optional
+		if data.Lookup == nil {
+			return nil, fmt.Errorf(`function "lookup" is not supported in this context`)
+		}
+
 		// Parse the resource name
 		name, err := resourceNameFromArgs(parts...)
 		if err != nil {
@@ -213,8 +223,9 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Build template data
 	dataMap := map[string]interface{}{
+		"env":   data.Environment,
+		"vars":  data.Variables,
 		"user":  data.User,
-		"env":   data.Variables,
 		"meta":  data.Self.Meta,
 		"spec":  data.Self.Spec,
 		"state": data.Self.State,
@@ -235,12 +246,17 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 }
 
 // newFuncMap creates a base func map for templates.
-func newFuncMap() template.FuncMap {
+func newFuncMap(environment string) template.FuncMap {
 	// Add Sprig template functions (removing functions that leak host info)
 	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
 	funcMap := sprig.TxtFuncMap()
 	delete(funcMap, "env")
 	delete(funcMap, "expandenv")
+
+	// Add helpers for checking for common environments
+	funcMap["dev"] = func() bool { return environment == "dev" }
+	funcMap["prod"] = func() bool { return environment == "prod" }
+
 	return funcMap
 }
 
@@ -276,4 +292,49 @@ func EvaluateBoolExpression(expr string) (bool, error) {
 		return false, fmt.Errorf("failed to evaluate expression: %w", err)
 	}
 	return result, nil
+}
+
+func extractVariablesFromTemplate(tree *parse.Tree) []string {
+	variablesMap := make(map[string]bool)
+	walkNodes(tree.Root, func(n parse.Node) {
+		if vn, ok := n.(*parse.FieldNode); ok {
+			v := joinIdentifiers(vn.Ident)
+			variablesMap[v] = true
+		}
+	})
+
+	return maps.Keys(variablesMap)
+}
+
+func walkNodes(node parse.Node, fn func(n parse.Node)) {
+	fn(node)
+	switch n := node.(type) {
+	case *parse.ListNode:
+		for _, ln := range n.Nodes {
+			walkNodes(ln, fn)
+		}
+	case *parse.ActionNode:
+		walkNodes(n.Pipe, fn)
+	case *parse.PipeNode:
+		for _, cmd := range n.Cmds {
+			walkNodes(cmd, fn)
+		}
+	case *parse.CommandNode:
+		for _, arg := range n.Args {
+			walkNodes(arg, fn)
+		}
+	default:
+		return
+	}
+}
+
+func joinIdentifiers(ident []string) string {
+	var result string
+	for _, id := range ident {
+		if result != "" {
+			result += "."
+		}
+		result += id
+	}
+	return result
 }

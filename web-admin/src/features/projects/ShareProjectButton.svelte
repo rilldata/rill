@@ -2,7 +2,7 @@
   import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import CLICommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
-  import Dialog from "@rilldata/web-common/components/dialog-v2/Dialog.svelte";
+  import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
 
   export let organization: string;
   export let project: string;

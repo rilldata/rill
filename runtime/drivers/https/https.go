@@ -2,6 +2,7 @@ package https
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/url"
@@ -22,33 +23,30 @@ func init() {
 var spec = drivers.Spec{
 	DisplayName: "https",
 	Description: "Connect to a remote file.",
-	SourceProperties: []drivers.PropertySchema{
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Path",
 			Description: "Path to the remote file.",
 			Placeholder: "https://example.com/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 		},
 	},
+	ImplementsFileStore: true,
 }
 
 type driver struct{}
 
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("https driver can't be shared")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("https driver can't be shared")
 	}
 	conn := &connection{
 		config: config,
 		logger: logger,
 	}
 	return conn, nil
-}
-
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -131,6 +129,11 @@ func (c *connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
 }
 
+// AsAI implements drivers.Handle.
+func (c *connection) AsAI(instanceID string) (drivers.AIService, bool) {
+	return nil, false
+}
+
 // Migrate implements drivers.Connection.
 func (c *connection) Migrate(ctx context.Context) (err error) {
 	return nil
@@ -158,6 +161,11 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsNotifier implements drivers.Connection.
+func (c *connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
 }
 
 // FilePaths implements drivers.FileStore

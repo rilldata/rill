@@ -1,7 +1,7 @@
+import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
 import type { QueryClient } from "@tanstack/query-core";
 import { get } from "svelte/store";
-import { appScreen } from "../../../layout/app-store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import {
   BehaviourEventAction,
@@ -19,7 +19,7 @@ import {
 } from "../../entity-management/entity-mappers";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-import { isProjectInitializedV2 } from "../../welcome/is-project-initialized";
+import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileCreateSourceYAML } from "../sourceUtils";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
@@ -31,24 +31,24 @@ export interface RemoteSourceFormValues {
 export async function submitRemoteSourceForm(
   queryClient: QueryClient,
   connectorName: string,
-  values: RemoteSourceFormValues
+  values: RemoteSourceFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
 
   // Emit telemetry
-  behaviourEvent?.fireSourceTriggerEvent(
+  await behaviourEvent?.fireSourceTriggerEvent(
     BehaviourEventAction.SourceAdd,
     BehaviourEventMedium.Button,
-    get(appScreen),
-    MetricsEventSpace.Modal
+    getScreenNameFromPage(),
+    MetricsEventSpace.Modal,
   );
 
   // If project is uninitialized, initialize an empty project
-  const isProjectInitialized = await isProjectInitializedV2(
+  const projectInitialized = await isProjectInitialized(
     queryClient,
-    instanceId
+    instanceId,
   );
-  if (!isProjectInitialized) {
+  if (!projectInitialized) {
     await runtimeServiceUnpackEmpty(instanceId, {
       title: EMPTY_PROJECT_TITLE,
     });
@@ -68,47 +68,19 @@ export async function submitRemoteSourceForm(
         default:
           return [fromYupFriendlyKey(key), value];
       }
-    })
+    }),
   );
   const yaml = compileCreateSourceYAML(formValues, connectorName);
 
   // Attempt to create & import the source
-  await runtimeServicePutFile(
-    instanceId,
-    getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
-    {
-      blob: yaml,
-      create: true,
-      createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-    }
-  );
-  checkSourceImported(
+  await runtimeServicePutFile(instanceId, {
+    path: getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+    blob: yaml,
+    create: true,
+    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
+  });
+  await checkSourceImported(
     queryClient,
-    values.sourceName,
-    getFilePathFromNameAndType(values.sourceName, EntityType.Table)
+    getFilePathFromNameAndType(values.sourceName, EntityType.Table),
   );
-
-  // TODO: telemetry
-  // Emit telemetry
-  // const hasSourceYAMLErrors = resp.errors.length > 0;
-  // if (hasSourceYAMLErrors) {
-  //   // Error
-  //   const sourceError = getSourceError(resp.errors, values.sourceName);
-  //   emitSourceErrorTelemetry(
-  //     MetricsEventSpace.Modal,
-  //     get(appScreen),
-  //     sourceError?.message,
-  //     connectorToSourceConnectionType[connectorName],
-  //     formValues?.uri || ""
-  //   );
-  // } else {
-  //   // Success
-  //   emitSourceSuccessTelemetry(
-  //     MetricsEventSpace.Modal,
-  //     get(appScreen),
-  //     BehaviourEventMedium.Button,
-  //     connectorToSourceConnectionType[connectorName],
-  //     formValues?.uri || ""
-  //   );
-  // }
 }

@@ -15,22 +15,23 @@
     "dev-web": "npm run dev -w web-local",
     "dev-runtime": "go run cli/main.go start dev-project --no-ui",
     "clean": "rm -rf dev-project",
-    "test": "npm run test -w web-common && npm run test -w web-local && npm run test -w web-auth"
+    "test": "npm run test -w web-common & npm run test -w web-auth & PLAYWRIGHT_TEST=true make cli && npm run test -w web-local"
   },
-  "pkg": {
-    "scripts": "web-local/dist/**/*.js",
-    "assets": [
-      "node_modules/**/*",
-      "web-local/build/**/*",
-      "web-local/dist/runtime/*",
-      "package.json",
-      "web-local/package.json"
-    ]
+  "overrides": {
+    "@rgossiaux/svelte-headlessui": {
+      "svelte": "^4.0.0"
+    }
   },
-  "dependencies": {
-    "@bufbuild/protobuf": "^1.0.0",
-    "d3-interpolate-path": "^2.3.0",
-    "d3-line-chunked": "^1.5.1",
-    "d3-selection": "^3.0.0"
+  "devDependencies": {
+    "@types/eslint": "^8.56.9",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-playwright": "^1.6.0",
+    "eslint-plugin-svelte": "^2.37.0",
+    "eslint-plugin-vitest": "^0.5.3",
+    "prettier": "^3.1.1",
+    "prettier-plugin-svelte": "^3.1.2",
+    "typescript": "^5.3.3",
+    "typescript-eslint": "^7.7.0"
   }
 }

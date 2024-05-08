@@ -11,9 +11,10 @@
   export let tooltipAlignment = "start";
   export let tooltipDistance = 12;
   export let textClass = defaultChipColors.textClass;
+  export let supressTooltip = false;
 
   const tooltipSuppression = getContext(
-    "rill:app:childRequestedTooltipSuppression"
+    "rill:app:childRequestedTooltipSuppression",
   ) as Writable<boolean>;
   const dispatch = createEventDispatcher();
 
@@ -29,9 +30,10 @@
   location={tooltipLocation}
   alignment={tooltipAlignment}
   distance={tooltipDistance}
+  suppress={supressTooltip}
 >
   <button
-    class={textClass}
+    class="{textClass} pl-2"
     on:mouseover={focusOnRemove}
     on:focus={focusOnRemove}
     on:mouseleave={blurOnRemove}
@@ -44,7 +46,7 @@
   </button>
   <div slot="tooltip-content">
     {#if $$slots["remove-tooltip"]}
-      <TooltipContent slot="tooltip-content" maxWidth="300px">
+      <TooltipContent maxWidth="300px">
         <slot name="remove-tooltip" />
       </TooltipContent>
     {/if}

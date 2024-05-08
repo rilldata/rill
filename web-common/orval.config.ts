@@ -21,61 +21,73 @@ export default defineConfig({
           QueryService_MetricsViewMeta: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_ColumnRollupInterval: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_ColumnTopK: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_ColumnTimeSeries: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_TableColumns: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_MetricsViewAggregation: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_MetricsViewTotals: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_MetricsViewTimeSeries: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_MetricsViewToplist: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_MetricsViewComparison: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_MetricsViewRows: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
           QueryService_MetricsViewTimeRange: {
             query: {
               useQuery: true,
+              signal: true,
             },
           },
         },

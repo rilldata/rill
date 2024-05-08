@@ -3,12 +3,10 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
   import {
     openFileUploadDialog,
     uploadTableFiles,
   } from "@rilldata/web-common/features/sources/modal/file-upload";
-  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { overlay } from "@rilldata/web-common/layout/overlay-store";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
@@ -25,8 +23,6 @@
 
   $: runtimeInstanceId = $runtime.instanceId;
 
-  $: sourceNames = useSourceFileNames(runtimeInstanceId);
-  $: modelNames = useModelFileNames(runtimeInstanceId);
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -36,12 +32,7 @@
   }
 
   async function handleUpload(files: Array<File>) {
-    const uploadedFiles = uploadTableFiles(
-      files,
-      [$sourceNames?.data, $modelNames?.data],
-      $runtime.instanceId,
-      false
-    );
+    const uploadedFiles = uploadTableFiles(files, $runtime.instanceId, false);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
@@ -59,16 +50,16 @@
             sourceName: tableName,
             path: filePath,
           },
-          "local_file"
+          "local_file",
         );
 
         await createSource(runtimeInstanceId, tableName, yaml);
-        checkSourceImported(
-          queryClient,
+        const newFilePath = getFilePathFromNameAndType(
           tableName,
-          getFilePathFromNameAndType(tableName, EntityType.Table)
+          EntityType.Table,
         );
-        goto(`/source/${tableName}`);
+        await checkSourceImported(queryClient, newFilePath);
+        await goto(`/files${newFilePath}`);
       } catch (err) {
         console.error(err);
       }
@@ -83,4 +74,8 @@
   <Button on:click={handleOpenFileDialog} type="primary"
     >Upload a CSV, JSON or Parquet file
   </Button>
+</div>
+<div class="flex">
+  <div class="grow" />
+  <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
 </div>

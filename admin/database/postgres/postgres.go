@@ -9,9 +9,10 @@ import (
 
 	"github.com/XSAM/otelsql"
 	"github.com/jackc/pgconn"
+	"github.com/jackc/pgtype"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
-	semconv "go.opentelemetry.io/otel/semconv/v1.17.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	// Load postgres driver
 	_ "github.com/jackc/pgx/v4/stdlib"
@@ -67,7 +68,7 @@ func (c *connection) FindOrganizationsForUser(ctx context.Context, userID, after
 		UNION
 		SELECT o.* FROM orgs o JOIN projects p ON o.id = p.org_id
 		JOIN users_projects_roles upr ON p.id = upr.project_id
-		WHERE upr.user_id = $1) u 
+		WHERE upr.user_id = $1) u
 		WHERE lower(u.name) > lower($2) ORDER BY lower(u.name) LIMIT $3
 	`, userID, afterName, limit)
 	if err != nil {
@@ -120,7 +121,7 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites) 
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites)
 		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
 		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites).StructScan(res)
 	if err != nil {
@@ -202,19 +203,28 @@ func (c *connection) DeleteOrganizationWhitelistedDomain(ctx context.Context, id
 }
 
 func (c *connection) FindProjects(ctx context.Context, afterName string, limit int) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(name) > lower($1) ORDER BY lower(p.name) LIMIT $2", afterName, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
+}
+
+func (c *connection) FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*database.Project, error) {
+	var res []*projectDTO
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.prod_version = $1 AND lower(name) > lower($2) ORDER BY lower(p.name) LIMIT $3", version, afterName, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error) {
 	var res []string
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id 
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id
 	WHERE concat(o.name,'/',p.name) ilike $1 AND concat(o.name,'/',p.name) > $2
-	ORDER BY project_name 
+	ORDER BY project_name
 	LIMIT $3`, namePattern, afterName, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
@@ -222,8 +232,27 @@ func (c *connection) FindProjectPathsByPattern(ctx context.Context, namePattern,
 	return res, nil
 }
 
+func (c *connection) FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error) {
+	if annotationKeys == nil {
+		annotationKeys = []string{}
+	}
+	if annotationPairs == nil {
+		annotationPairs = map[string]string{}
+	}
+
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT concat(o.name,'/',p.name) as project_name FROM projects p JOIN orgs o ON p.org_id = o.id
+	WHERE concat(o.name,'/',p.name) ilike $1 AND concat(o.name,'/',p.name) > $2 AND p.annotations ?& $3 AND p.annotations @> $4
+	ORDER BY project_name
+	LIMIT $5`, namePattern, afterName, annotationKeys, annotationPairs, limit)
+	if err != nil {
+		return nil, parseErr("projects", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p JOIN users_projects_roles upr ON p.id = upr.project_id
 		WHERE upr.user_id = $1
@@ -235,11 +264,11 @@ func (c *connection) FindProjectsForUser(ctx context.Context, userID string) ([]
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p
 		WHERE p.org_id=$1 AND lower(p.name) > lower($2)
@@ -248,11 +277,11 @@ func (c *connection) FindProjectsForOrganization(ctx context.Context, orgID, aft
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userID, afterProjectName string, limit int) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT p.* FROM projects p
 		WHERE p.org_id = $1 AND lower(p.name) > lower($2) AND (p.public = true OR p.id IN (
@@ -264,56 +293,56 @@ func (c *connection) FindProjectsForOrgAndUser(ctx context.Context, orgID, userI
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindPublicProjectsInOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT p.* FROM projects p 
+		SELECT p.* FROM projects p
 		WHERE p.org_id = $1 AND p.public = true AND lower(p.name) > lower($2)
 		ORDER BY lower(p.name) LIMIT $3
 	`, orgID, afterProjectName, limit)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByGithubURL(ctx context.Context, githubURL string) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE lower(p.github_url)=lower($1) ", githubURL)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProjectsByGithubInstallationID(ctx context.Context, id int64) ([]*database.Project, error) {
-	var res []*database.Project
+	var res []*projectDTO
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT p.* FROM projects p WHERE p.github_installation_id=$1", id)
 	if err != nil {
 		return nil, parseErr("projects", err)
 	}
-	return res, nil
+	return projectsFromDTOs(res)
 }
 
 func (c *connection) FindProject(ctx context.Context, id string) (*database.Project, error) {
-	res := &database.Project{}
+	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects WHERE id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res, nil
+	return res.AsProject()
 }
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
-	res := &database.Project{}
+	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT p.* FROM projects p JOIN orgs o ON p.org_id = o.id WHERE lower(p.name)=lower($1) AND lower(o.name)=lower($2)", name, orgName).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res, nil
+	return res.AsProject()
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -321,16 +350,16 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 		return nil, err
 	}
 
-	res := &database.Project{}
+	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, region, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id, prod_ttl_seconds)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.Region, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds,
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id, prod_ttl_seconds, prod_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res, nil
+	return res.AsProject()
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
@@ -342,17 +371,20 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	if err := database.Validate(opts); err != nil {
 		return nil, err
 	}
+	if opts.Annotations == nil {
+		opts.Annotations = make(map[string]string, 0)
+	}
 
-	res := &database.Project{}
+	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, region=$9, prod_slots=$10, prod_ttl_seconds=$11, updated_on=now()
-		WHERE id=$12 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, database.Variables(opts.ProdVariables), opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Region, opts.ProdSlots, opts.ProdTTLSeconds, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, prod_ttl_seconds=$11, annotations=$12, prod_version=$13, updated_on=now()
+		WHERE id=$14 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res, nil
+	return res.AsProject()
 }
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -364,11 +396,56 @@ func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID str
 	return count, nil
 }
 
+func (c *connection) FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*database.ProjectWhitelistedDomainWithJoinedRoleNames, error) {
+	var res []*database.ProjectWhitelistedDomainWithJoinedRoleNames
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT pad.domain, r.name FROM projects_autoinvite_domains pad JOIN project_roles r ON r.id = pad.project_role_id WHERE pad.project_id=$1", projectID)
+	if err != nil {
+		return nil, parseErr("project whitelist domains", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*database.ProjectWhitelistedDomain, error) {
+	var res []*database.ProjectWhitelistedDomain
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM projects_autoinvite_domains WHERE lower(domain)=lower($1)", domain)
+	if err != nil {
+		return nil, parseErr("project whitelist domains", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*database.ProjectWhitelistedDomain, error) {
+	res := &database.ProjectWhitelistedDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects_autoinvite_domains WHERE project_id=$1 AND lower(domain)=lower($2)", projectID, domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project whitelist domain", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertProjectWhitelistedDomain(ctx context.Context, opts *database.InsertProjectWhitelistedDomainOptions) (*database.ProjectWhitelistedDomain, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ProjectWhitelistedDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO projects_autoinvite_domains(project_id, project_role_id, domain) VALUES ($1, $2, $3) RETURNING *`, opts.ProjectID, opts.ProjectRoleID, opts.Domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project whitelist domain", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteProjectWhitelistedDomain(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM projects_autoinvite_domains WHERE id=$1", id)
+	return checkDeleteRow("project whitelist domain", res, err)
+}
+
 // FindExpiredDeployments returns all the deployments which are expired as per prod ttl
 func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT d.* FROM deployments d 
+		SELECT d.* FROM deployments d
 		JOIN projects p ON d.project_id = p.id
 		WHERE p.prod_ttl_seconds IS NOT NULL AND d.used_on + p.prod_ttl_seconds * interval '1 second' < now()
 	`)
@@ -412,9 +489,9 @@ func (c *connection) InsertDeployment(ctx context.Context, opts *database.Insert
 
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO deployments (project_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, status, status_message)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-		opts.ProjectID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.Status, opts.StatusMessage,
+		INSERT INTO deployments (project_id, provisioner, provision_id, slots, branch, runtime_host, runtime_instance_id, runtime_audience, runtime_version, status, status_message)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+		opts.ProjectID, opts.Provisioner, opts.ProvisionID, opts.Slots, opts.Branch, opts.RuntimeHost, opts.RuntimeInstanceID, opts.RuntimeAudience, opts.RuntimeVersion, opts.Status, opts.StatusMessage,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
@@ -430,6 +507,15 @@ func (c *connection) DeleteDeployment(ctx context.Context, id string) error {
 func (c *connection) UpdateDeploymentStatus(ctx context.Context, id string, status database.DeploymentStatus, message string) (*database.Deployment, error) {
 	res := &database.Deployment{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET status=$1, status_message=$2, updated_on=now() WHERE id=$3 RETURNING *", status, message, id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("deployment", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*database.Deployment, error) {
+	res := &database.Deployment{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE deployments SET runtime_version=$1, updated_on=now() WHERE id=$2 RETURNING *", version, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("deployment", err)
 	}
@@ -501,8 +587,8 @@ func (c *connection) FindUserByEmail(ctx context.Context, email string) (*databa
 
 func (c *connection) FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*database.User, error) {
 	var res []*database.User
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u 
-	WHERE lower(u.email) LIKE lower($1) AND lower(u.email) > lower($2) 
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT u.* FROM users u
+	WHERE lower(u.email) LIKE lower($1) AND lower(u.email) > lower($2)
 	ORDER BY lower(u.email) LIMIT $3`, emailPattern, afterEmail, limit)
 	if err != nil {
 		return nil, parseErr("users", err)
@@ -562,11 +648,12 @@ func (c *connection) UpdateUser(ctx context.Context, id string, opts *database.U
 	}
 
 	res := &database.User{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, quota_singleuser_orgs=$5, preference_time_zone=$6, updated_on=now() WHERE id=$1 RETURNING *",
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE users SET display_name=$2, photo_url=$3, github_username=$4, github_refresh_token=$5, quota_singleuser_orgs=$6, preference_time_zone=$7, updated_on=now() WHERE id=$1 RETURNING *",
 		id,
 		opts.DisplayName,
 		opts.PhotoURL,
 		opts.GithubUsername,
+		opts.GithubRefreshToken,
 		opts.QuotaSingleuserOrgs,
 		opts.PreferenceTimeZone).StructScan(res)
 	if err != nil {
@@ -586,6 +673,15 @@ func (c *connection) UpdateUserActiveOn(ctx context.Context, ids []string) error
 func (c *connection) CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM users_orgs_roles WHERE user_id=$1 AND org_id=$2)", userID, orgID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM users_projects_roles WHERE user_id=$1 AND project_id=$2)", userID, projectID).Scan(&res)
 	if err != nil {
 		return false, parseErr("check", err)
 	}
@@ -936,7 +1032,7 @@ func (c *connection) ResolveOrganizationRolesForUser(ctx context.Context, userID
 		WHERE uor.user_id = $1 AND uor.org_id = $2
 		UNION
 		SELECT * FROM org_roles WHERE id IN (
-			SELECT org_role_id FROM usergroups_orgs_roles uor JOIN usergroups_users uug 
+			SELECT org_role_id FROM usergroups_orgs_roles uor JOIN usergroups_users uug
 			ON uor.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND uor.org_id = $2
 		)`, userID, orgID)
 	if err != nil {
@@ -953,7 +1049,7 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 		WHERE upr.user_id = $1 AND upr.project_id = $2
 		UNION
 		SELECT * FROM project_roles WHERE id IN (
-			SELECT project_role_id FROM usergroups_projects_roles upr JOIN usergroups_users uug 
+			SELECT project_role_id FROM usergroups_projects_roles upr JOIN usergroups_users uug
 			ON upr.usergroup_id = uug.usergroup_id WHERE uug.user_id = $1 AND upr.project_id = $2
 		)`, userID, projectID)
 	if err != nil {
@@ -965,10 +1061,10 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.Member, error) {
 	var res []*database.Member
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
     	JOIN users_orgs_roles uor ON u.id = uor.user_id
-		JOIN org_roles r ON r.id = uor.org_role_id 
-		WHERE uor.org_id=$1 AND lower(u.email) > lower($2) 
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id=$1 AND lower(u.email) > lower($2)
 		ORDER BY lower(u.email) LIMIT $3
 	`, orgID, afterEmail, limit)
 	if err != nil {
@@ -1030,10 +1126,10 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.Member, error) {
 	var res []*database.Member
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u 
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
     	JOIN users_projects_roles upr ON u.id = upr.user_id
-		JOIN project_roles r ON r.id = upr.project_role_id 
-		WHERE upr.project_id=$1 AND lower(u.email) > lower($2) 
+		JOIN project_roles r ON r.id = upr.project_role_id
+		WHERE upr.project_id=$1 AND lower(u.email) > lower($2)
 		ORDER BY lower(u.email) LIMIT $3
 	`, projectID, afterEmail, limit)
 	if err != nil {
@@ -1100,9 +1196,9 @@ func (c *connection) UpdateProjectMemberUserRole(ctx context.Context, projectID,
 func (c *connection) FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.Invite, error) {
 	var res []*database.Invite
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT uoi.email, ur.name as role, u.email as invited_by 
-		FROM org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id 
-		WHERE uoi.org_id = $1 AND lower(uoi.email) > lower($2) 
+		SELECT uoi.email, ur.name as role, u.email as invited_by
+		FROM org_invites uoi JOIN org_roles ur ON uoi.org_role_id = ur.id JOIN users u ON uoi.invited_by_user_id = u.id
+		WHERE uoi.org_id = $1 AND lower(uoi.email) > lower($2)
 		ORDER BY lower(uoi.email) LIMIT $3
 	`, orgID, afterEmail, limit)
 	if err != nil {
@@ -1170,8 +1266,8 @@ func (c *connection) UpdateOrganizationInviteRole(ctx context.Context, id, roleI
 func (c *connection) FindProjectInvites(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.Invite, error) {
 	var res []*database.Invite
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-			SELECT upi.email, ur.name as role, u.email as invited_by 
-			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id 
+			SELECT upi.email, ur.name as role, u.email as invited_by
+			FROM project_invites upi JOIN project_roles ur ON upi.project_role_id = ur.id JOIN users u ON upi.invited_by_user_id = u.id
 			WHERE upi.project_id = $1 AND lower(upi.email) > lower($2)
 			ORDER BY lower(upi.email) LIMIT $3
 	`, projectID, afterEmail, limit)
@@ -1222,9 +1318,10 @@ func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID str
 }
 
 // FindBookmarks returns a list of bookmarks for a user per project
-func (c *connection) FindBookmarks(ctx context.Context, projectID, userID string) ([]*database.Bookmark, error) {
+func (c *connection) FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*database.Bookmark, error) {
 	var res []*database.Bookmark
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM bookmarks WHERE project_id = $1 and user_id = $2", projectID, userID)
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and resource_name = $3 and (user_id = $4 or shared = true or "default" = true)`,
+		projectID, resourceKind, resourceName, userID)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
@@ -1241,6 +1338,16 @@ func (c *connection) FindBookmark(ctx context.Context, bookmarkID string) (*data
 	return res, nil
 }
 
+func (c *connection) FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*database.Bookmark, error) {
+	res := &database.Bookmark{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT * FROM bookmarks WHERE project_id = $1 and resource_kind = $2 and resource_name = $3 and "default" = true`,
+		projectID, resourceKind, resourceName).StructScan(res)
+	if err != nil {
+		return nil, parseErr("bookmarks", err)
+	}
+	return res, nil
+}
+
 // InsertBookmark inserts a bookmark for a user per project
 func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBookmarkOptions) (*database.Bookmark, error) {
 	if err := database.Validate(opts); err != nil {
@@ -1248,13 +1355,22 @@ func (c *connection) InsertBookmark(ctx context.Context, opts *database.InsertBo
 	}
 
 	res := &database.Bookmark{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, data, dashboard_name, project_id, user_id) 
-		VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-		opts.DisplayName, opts.Data, opts.DashboardName, opts.ProjectID, opts.UserID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO bookmarks (display_name, description, data, resource_kind, resource_name, project_id, user_id, "default", shared)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+		opts.DisplayName, opts.Description, opts.Data, opts.ResourceKind, opts.ResourceName, opts.ProjectID, opts.UserID, opts.Default, opts.Shared).StructScan(res)
 	if err != nil {
 		return nil, parseErr("bookmarks", err)
 	}
 	return res, nil
+}
+
+func (c *connection) UpdateBookmark(ctx context.Context, opts *database.UpdateBookmarkOptions) error {
+	if err := database.Validate(opts); err != nil {
+		return err
+	}
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE bookmarks SET display_name=$1, description=$2, data=$3, shared=$4 WHERE id=$5`,
+		opts.DisplayName, opts.Description, opts.Data, opts.Shared, opts.BookmarkID)
+	return checkUpdateRow("bookmark", res, err)
 }
 
 // DeleteBookmark deletes a bookmark for a given bookmark id
@@ -1271,6 +1387,19 @@ func (c *connection) FindVirtualFiles(ctx context.Context, projectID, branch str
 		WHERE project_id=$1 AND branch=$2 AND (updated_on>$3 OR updated_on=$3 AND path>$4)
 		ORDER BY updated_on, path LIMIT $5
 	`, projectID, branch, afterUpdatedOn, afterPath, limit)
+	if err != nil {
+		return nil, parseErr("virtual files", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindVirtualFile(ctx context.Context, projectID, branch, path string) (*database.VirtualFile, error) {
+	res := &database.VirtualFile{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT path, data, deleted, updated_on
+		FROM virtual_files
+		WHERE project_id=$1 AND branch=$2 AND path=$3
+	`, projectID, branch, path).StructScan(res)
 	if err != nil {
 		return nil, parseErr("virtual files", err)
 	}
@@ -1309,6 +1438,39 @@ func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, br
 func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM virtual_files WHERE deleted AND updated_on + $1 < now()`, retention)
 	return parseErr("virtual files", err)
+}
+
+// projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
+type projectDTO struct {
+	*database.Project
+	ProdVariables pgtype.JSON `db:"prod_variables"`
+	Annotations   pgtype.JSON `db:"annotations"`
+}
+
+func (p *projectDTO) AsProject() (*database.Project, error) {
+	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
+	if err != nil {
+		return nil, err
+	}
+
+	err = p.Annotations.AssignTo(&p.Project.Annotations)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.Project, nil
+}
+
+func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
+	res := make([]*database.Project, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsProject()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

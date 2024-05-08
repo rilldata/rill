@@ -11,10 +11,11 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
-	"golang.org/x/exp/slog"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -87,8 +88,9 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	// Handle renames
 	if self.Meta.RenamedFrom != nil {
 		// Check if the table exists (it should, but might somehow have been corrupted)
-		t, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
-		if ok && !t.View { // Checking View only out of caution (would indicate very corrupted DB)
+		_, ok := olapTableInfo(ctx, r.C, src.State.Connector, src.State.Table)
+		// NOTE: Not checking if it's a view because some backends will represent sources as views (like DuckDB with external table storage enabled).
+		if ok {
 			// Rename and update state
 			err = olapForceRenameTable(ctx, r.C, src.State.Connector, src.State.Table, false, tableName)
 			if err != nil {
@@ -103,6 +105,11 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		// Note: Not exiting early. It might need to be (re-)ingested, and we need to set the correct retrigger time based on the refresh schedule.
 	}
 
+	// Exit early if disabled
+	if src.Spec.RefreshSchedule != nil && src.Spec.RefreshSchedule.Disable {
+		return runtime.ReconcileResult{}
+	}
+
 	// Check refs - stop if any of them are invalid
 	err = checkRefs(ctx, r.C, self.Meta.Refs)
 	if err != nil {
@@ -115,14 +122,19 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 			src.State.RefreshedOn = nil
 			err = r.C.UpdateState(ctx, self.Meta.Name, self)
 			if err != nil {
-				r.C.Logger.Error("refs check: failed to update state", slog.Any("err", err))
+				r.C.Logger.Error("refs check: failed to update state", zap.Any("error", err))
 			}
 		}
 		return runtime.ReconcileResult{Err: err}
 	}
 
+	srcConfig, err := r.driversSource(ctx, self, src.Spec.Properties)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	// Use a hash of ingestion-related fields from the spec to determine if we need to re-ingest
-	hash, err := r.ingestionSpecHash(src.Spec)
+	hash, err := r.ingestionSpecHash(src.Spec, srcConfig)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -175,11 +187,12 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 	}
 
 	// Execute ingestion
-	r.C.Logger.Info("Ingesting source data", slog.String("name", n.Name), slog.String("connector", connector))
-	ingestErr := r.ingestSource(ctx, src.Spec, stagingTableName)
+	r.C.Logger.Info("Ingesting source data", zap.String("name", n.Name), zap.String("connector", connector))
+	ingestErr := r.ingestSource(ctx, self, srcConfig, driversSink(stagingTableName))
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
 	}
+
 	if ingestErr == nil && src.Spec.StageChanges {
 		// Rename staging table to main table
 		err = olapForceRenameTable(ctx, r.C, connector, stagingTableName, false, tableName)
@@ -253,7 +266,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 }
 
 // ingestionSpecHash computes a hash of only those source spec properties that impact ingestion.
-func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec) (string, error) {
+func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec, srcConfig map[string]any) (string, error) {
 	hash := md5.New()
 
 	_, err := hash.Write([]byte(spec.SourceConnector))
@@ -266,7 +279,11 @@ func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec) (string
 		return "", err
 	}
 
-	err = pbutil.WriteHash(structpb.NewStructValue(spec.Properties), hash)
+	st, err := structpb.NewStruct(srcConfig)
+	if err != nil {
+		return "", err
+	}
+	err = pbutil.WriteHash(structpb.NewStructValue(st), hash)
 	if err != nil {
 		return "", err
 	}
@@ -308,7 +325,9 @@ func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 // ingestSource ingests the source into a table with tableName.
 // It does NOT drop the table if ingestion fails after the table has been created.
 // It will return an error if the sink connector is not an OLAP.
-func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.SourceSpec, tableName string) (outErr error) {
+func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Resource, srcConfig, sinkConfig map[string]any) (outErr error) {
+	src := self.GetSource().Spec
+
 	// Get connections and transporter
 	srcConn, release1, err := r.C.AcquireConn(ctx, src.SourceConnector)
 	if err != nil {
@@ -326,16 +345,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 		if !ok {
 			return fmt.Errorf("cannot transfer data between connectors %q and %q", src.SourceConnector, src.SinkConnector)
 		}
-	}
-
-	// Get source and sink configs
-	srcConfig, err := driversSource(srcConn, src.Properties)
-	if err != nil {
-		return err
-	}
-	sinkConfig, err := driversSink(sinkConn, tableName)
-	if err != nil {
-		return err
 	}
 
 	// Set timeout on ctx
@@ -373,7 +382,7 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 			attribute.Bool("cancelled", errors.Is(outErr, context.Canceled)),
 			attribute.Bool("failed", outErr != nil),
 		}
-		r.C.Activity.Emit(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
+		r.C.Activity.RecordMetric(ctx, "ingestion_ms", float64(transferLatency), commonDims...)
 
 		// TODO: emit the number of bytes ingested (this might be extracted from a progress)
 	}()
@@ -382,11 +391,16 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, src *runtimev1.Sour
 	return err
 }
 
-func driversSource(conn drivers.Handle, propsPB *structpb.Struct) (map[string]any, error) {
-	props := propsPB.AsMap()
-	return props, nil
+func (r *SourceReconciler) driversSource(ctx context.Context, self *runtimev1.Resource, propsPB *structpb.Struct) (map[string]any, error) {
+	tself := rillv1.TemplateResource{
+		Meta:  self.Meta,
+		Spec:  self.GetSource().Spec,
+		State: self.GetSource().State,
+	}
+
+	return resolveTemplatedProps(ctx, r.C, tself, propsPB.AsMap())
 }
 
-func driversSink(conn drivers.Handle, tableName string) (map[string]any, error) {
-	return map[string]any{"table": tableName}, nil
+func driversSink(tableName string) map[string]any {
+	return map[string]any{"table": tableName}
 }

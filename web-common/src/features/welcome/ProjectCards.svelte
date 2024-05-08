@@ -21,14 +21,14 @@
       description: "Monitoring cloud infrastructure",
       image:
         "bg-[url('$img/welcome-bg-cost-monitoring.png')] bg-no-repeat bg-cover",
-      firstPage: "/dashboard/customer_margin_dash",
+      firstPage: "/files/dashboards/customer_margin_dash.yaml",
     },
     {
       name: "rill-openrtb-prog-ads",
       title: "OpenRTB Programmatic Ads",
       description: "Real-time Bidding (RTB) advertising",
       image: "bg-[url('$img/welcome-bg-openrtb.png')] bg-no-repeat bg-cover",
-      firstPage: "dashboard/auction",
+      firstPage: "/files/dashboards/auction.yaml",
     },
     {
       name: "rill-github-analytics",
@@ -36,18 +36,18 @@
       description: "A Git project's commit activity",
       image:
         "bg-[url('$img/welcome-bg-github-analytics.png')] bg-no-repeat bg-cover",
-      firstPage: "dashboard/duckdb_commits",
+      firstPage: "/files/dashboards/duckdb_commits.yaml",
     },
   ];
 
   const unpackExampleProject = createRuntimeServiceUnpackExample();
 
   async function startWithExampleProject(example: (typeof EXAMPLES)[number]) {
-    behaviourEvent?.fireSplashEvent(
+    await behaviourEvent?.fireSplashEvent(
       BehaviourEventAction.ExampleAdd,
       BehaviourEventMedium.Card,
       MetricsEventSpace.Workspace,
-      example.name
+      example.name,
     );
 
     const firstPage = example.firstPage;
@@ -58,19 +58,19 @@
         force: true,
       },
     });
-    goto(firstPage);
+    await goto(firstPage);
   }
 </script>
 
 <section class="flex flex-col items-center gap-y-5">
   <Subheading>Or jump right into a project.</Subheading>
-  <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+  <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
     <EmptyProject />
     {#each EXAMPLES as example}
       <Card
         bgClasses={example.image}
-        on:click={() => {
-          startWithExampleProject(example);
+        on:click={async () => {
+          await startWithExampleProject(example);
         }}
       >
         <CardTitle>{example.title}</CardTitle>

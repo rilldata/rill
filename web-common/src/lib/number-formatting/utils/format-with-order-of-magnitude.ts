@@ -36,7 +36,7 @@ export const formatNumWithOrderOfMag = (
   trailingDot = false,
 
   // strip commas from output?
-  stripCommas = false
+  stripCommas = false,
 ): NumberParts => {
   if (typeof x !== "number") {
     // FIXME add these warnings back in when the upstream code is robust enough
@@ -100,7 +100,7 @@ export const formatNumWithOrderOfMag = (
   }
 
   // handle negatives
-  let neg = undefined;
+  let neg: "-" | undefined = undefined;
   if (int[0] === "-") {
     int = int.slice(1);
     neg = "-";

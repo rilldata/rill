@@ -1,46 +1,57 @@
 package whitelist
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RemoveCmd(cfg *config.Config) *cobra.Command {
+func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
+	var project string
+
 	removeCmd := &cobra.Command{
 		Use:   "remove <email-domain>",
 		Args:  cobra.ExactArgs(1),
-		Short: "Remove whitelisted email domain for the org",
+		Short: "Remove whitelisted email domain for the org or project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			domain := args[0]
 
+			if project != "" {
+				_, err = client.RemoveProjectWhitelistedDomain(ctx, &adminv1.RemoveProjectWhitelistedDomainRequest{
+					Organization: ch.Org,
+					Project:      project,
+					Domain:       domain,
+				})
+				if err != nil {
+					return err
+				}
+
+				ch.PrintfWarn("New users with email addresses ending in %q will no longer automatically be added to project %q of %q. Existing users previously added through this policy will keep their access. (To remove users, use `rill user remove`.)\n", domain, project, ch.Org)
+				return nil
+			}
+
 			_, err = client.RemoveWhitelistedDomain(ctx, &adminv1.RemoveWhitelistedDomainRequest{
-				Organization: cfg.Org,
+				Organization: ch.Org,
 				Domain:       domain,
 			})
 			if err != nil {
 				return err
 			}
 
-			cmdutil.PrintlnWarn(fmt.Sprintf("New users with email addresses ending in %q will no longer automatically be added to %q. "+
-				"Existing users previously added through this policy will keep their access. (To remove users, use `rill user remove`.)", domain, cfg.Org))
-
+			ch.PrintfWarn("New users with email addresses ending in %q will no longer automatically be added to organization %q. Existing users previously added through this policy will keep their access. (To remove users, use `rill user remove`.)\n", domain, ch.Org)
 			return nil
 		},
 	}
 
-	removeCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
+	removeCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
+	removeCmd.Flags().StringVar(&project, "project", "", "Project")
 
 	return removeCmd
 }

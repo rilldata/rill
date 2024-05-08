@@ -108,9 +108,16 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 	spec := self.Resource.(*runtimev1.Resource_Migration).Migration.Spec
 	state := self.Resource.(*runtimev1.Resource_Migration).Migration.State
 
+	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
+	if err != nil {
+		return err
+	}
+	defer release()
+
 	sql, err := compilerv1.ResolveTemplate(spec.Sql, compilerv1.TemplateData{
-		User:      map[string]interface{}{},
-		Variables: inst.ResolveVariables(),
+		Environment: inst.Environment,
+		User:        map[string]interface{}{},
+		Variables:   inst.ResolveVariables(),
 		ExtraProps: map[string]interface{}{
 			"version": version,
 		},
@@ -120,13 +127,13 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 			State: state,
 		},
 		Resolve: func(ref compilerv1.ResourceName) (string, error) {
-			return safeSQLName(ref.Name), nil
+			return olap.Dialect().EscapeIdentifier(ref.Name), nil
 		},
 		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 			if name.Kind == compilerv1.ResourceKindUnspecified {
-				return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
+				return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without type specified", name.Name)
 			}
-			res, err := r.C.Get(ctx, resourceNameFromCompiler(name), false)
+			res, err := r.C.Get(ctx, runtime.ResourceNameFromCompiler(name), false)
 			if err != nil {
 				return compilerv1.TemplateResource{}, err
 			}
@@ -140,12 +147,6 @@ func (r *MigrationReconciler) executeMigration(ctx context.Context, self *runtim
 	if err != nil {
 		return fmt.Errorf("failed to resolve template: %w", err)
 	}
-
-	olap, release, err := r.C.AcquireOLAP(ctx, spec.Connector)
-	if err != nil {
-		return err
-	}
-	defer release()
 
 	return olap.Exec(ctx, &drivers.Statement{
 		Query:       sql,

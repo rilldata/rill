@@ -5,12 +5,11 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RenameCmd(cfg *config.Config) *cobra.Command {
+func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, newName string
 
 	renameCmd := &cobra.Command{
@@ -20,24 +19,26 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
-			fmt.Println("Warn: Renaming an project would invalidate dashboard URLs")
+			ch.PrintfWarn("Warn: Renaming a project will invalidate dashboard URLs\n")
 
-			if !cmd.Flags().Changed("project") && cfg.Interactive {
-				projectNames, err := cmdutil.ProjectNamesByOrg(ctx, client, cfg.Org)
+			if !cmd.Flags().Changed("project") && ch.Interactive {
+				projectNames, err := projectNames(ctx, ch)
 				if err != nil {
 					return err
 				}
 
-				name = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
+				name, err = cmdutil.SelectPrompt("Select project to rename", projectNames, "")
+				if err != nil {
+					return err
+				}
 			}
 
-			if cfg.Interactive {
+			if ch.Interactive {
 				err = cmdutil.SetFlagsByInputPrompts(*cmd, "new-name")
 				if err != nil {
 					return err
@@ -45,12 +46,16 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			msg := fmt.Sprintf("Do you want to rename the project \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
-			if !cmdutil.ConfirmPrompt(msg, "", false) {
+			ok, err := cmdutil.ConfirmPrompt(msg, "", false)
+			if err != nil {
+				return err
+			}
+			if !ok {
 				return nil
 			}
 
 			updatedProj, err := client.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
-				OrganizationName: cfg.Org,
+				OrganizationName: ch.Org,
 				Name:             name,
 				NewName:          &newName,
 			})
@@ -58,9 +63,9 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Renamed project")
-			cmdutil.PrintlnSuccess(fmt.Sprintf("New web url is: %s\n", updatedProj.Project.FrontendUrl))
-			cmdutil.TablePrinter(toRow(updatedProj.Project))
+			ch.PrintfSuccess("Renamed project\n")
+			ch.PrintfSuccess("New web url is: %s\n", updatedProj.Project.FrontendUrl)
+			ch.PrintProjects([]*adminv1.Project{updatedProj.Project})
 
 			return nil
 		},

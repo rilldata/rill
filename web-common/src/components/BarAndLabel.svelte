@@ -1,21 +1,19 @@
 <script lang="ts">
   import { cubicOut as easing } from "svelte/easing";
   import { tweened } from "svelte/motion";
-  import type { BarAndLabelTweenParameterOptions } from "./types";
 
   export let value = 0;
   export let color;
   export let showBackground = true;
   export let compact = false;
   export let showHover = false;
-  export let customBackgroundColor = undefined;
+  export let customBackgroundColor = "";
   export let justify: string | boolean = "end"; // or left
-  export let tweenParameters: BarAndLabelTweenParameterOptions<number> = {
+  export let tweenParameters = {
     duration: 500,
-    easing,
   };
 
-  let finalParameters: BarAndLabelTweenParameterOptions<number> = {
+  let finalParameters = {
     ...{ duration: 500, easing },
     ...tweenParameters,
   };
@@ -33,11 +31,11 @@
     {justify ? `justify-${justify}` : ''} 
     {justify ? `justify-items-${justify}` : ''} relative w-full
     {showHover ? 'hover:bg-gray-100 hover:dark:bg-gray-600' : undefined}
-    {customBackgroundColor
+    {customBackgroundColor !== ''
     ? customBackgroundColor
     : showBackground
-    ? 'bg-gray-100 dark:bg-gray-700'
-    : 'bg-transparent'}
+      ? 'bg-gray-100 dark:bg-gray-700'
+      : 'bg-transparent'}
     "
   style:flex="1"
 >
@@ -46,7 +44,7 @@
     class:pr-2={!compact}
     class:pr-1={compact}
     class:pl-1={compact}
-    class="text-right overflow-x-hidden"
+    class="text-right overflow-hidden"
     style="position: relative;"
   >
     <slot />

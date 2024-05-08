@@ -15,6 +15,9 @@ import (
 func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKRequest) (*runtimev1.ColumnTopKResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.k", int(req.K)),
@@ -38,10 +41,13 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 	}
 
 	q := &queries.ColumnTopK{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
-		Agg:        agg,
-		K:          k,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
+		Agg:            agg,
+		K:              k,
 	}
 
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -61,6 +67,9 @@ func (s *Server) ColumnTopK(ctx context.Context, req *runtimev1.ColumnTopKReques
 func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullCountRequest) (*runtimev1.ColumnNullCountResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -73,8 +82,11 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 	}
 
 	q := &queries.ColumnNullCount{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
@@ -90,6 +102,9 @@ func (s *Server) ColumnNullCount(ctx context.Context, req *runtimev1.ColumnNullC
 func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1.ColumnDescriptiveStatisticsRequest) (*runtimev1.ColumnDescriptiveStatisticsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -102,8 +117,11 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 	}
 
 	q := &queries.ColumnDescriptiveStatistics{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -153,6 +171,9 @@ func (s *Server) ColumnDescriptiveStatistics(ctx context.Context, req *runtimev1
 func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeGrainRequest) (*runtimev1.ColumnTimeGrainResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -165,8 +186,11 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 	}
 
 	q := &queries.ColumnTimeGrain{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -180,7 +204,10 @@ func (s *Server) ColumnTimeGrain(ctx context.Context, req *runtimev1.ColumnTimeG
 func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.ColumnNumericHistogramRequest) (*runtimev1.ColumnNumericHistogramResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
 		attribute.String("args.table", req.TableName),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.column", req.ColumnName),
 		attribute.String("args.histogram", req.HistogramMethod.String()),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -193,9 +220,12 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 	}
 
 	q := &queries.ColumnNumericHistogram{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
-		Method:     req.HistogramMethod,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
+		Method:         req.HistogramMethod,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -218,6 +248,9 @@ func (s *Server) ColumnNumericHistogram(ctx context.Context, req *runtimev1.Colu
 func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRugHistogramRequest) (*runtimev1.ColumnRugHistogramResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -230,8 +263,11 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 	}
 
 	q := &queries.ColumnRugHistogram{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -251,6 +287,9 @@ func (s *Server) ColumnRugHistogram(ctx context.Context, req *runtimev1.ColumnRu
 func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeRangeRequest) (*runtimev1.ColumnTimeRangeResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -263,8 +302,11 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 	}
 
 	q := &queries.ColumnTimeRange{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -278,6 +320,9 @@ func (s *Server) ColumnTimeRange(ctx context.Context, req *runtimev1.ColumnTimeR
 func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCardinalityRequest) (*runtimev1.ColumnCardinalityResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.connector", req.Connector),
+		attribute.String("args.database", req.Database),
+		attribute.String("args.database_schema", req.DatabaseSchema),
 		attribute.String("args.table", req.TableName),
 		attribute.String("args.column", req.ColumnName),
 		attribute.Int("args.priority", int(req.Priority)),
@@ -290,8 +335,11 @@ func (s *Server) ColumnCardinality(ctx context.Context, req *runtimev1.ColumnCar
 	}
 
 	q := &queries.ColumnCardinality{
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {

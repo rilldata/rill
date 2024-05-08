@@ -8,7 +8,10 @@
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    createShiftClickAction,
+    isClipboardApiSupported,
+  } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
@@ -18,7 +21,7 @@
   export let row;
   export let column;
   export let value;
-  export let formattedValue;
+  export let formattedValue: string | null = null;
   export let type;
   export let barValue = 0;
   export let rowActive = false;
@@ -34,6 +37,7 @@
   const isDimensionTable = config.table === "DimensionTable";
 
   let cellActive = false;
+  $: isTextColumn = type === "VARCHAR" || type === "CODE_STRING";
 
   const dispatch = createEventDispatcher();
 
@@ -44,8 +48,8 @@
     cellActive = true;
   }
 
-  function onSelectItem() {
-    dispatch("select-item", row.index);
+  function onSelectItem(e: MouseEvent) {
+    dispatch("select-item", { index: row.index, meta: e.ctrlKey || e.metaKey });
   }
 
   function onBlur() {
@@ -82,8 +86,8 @@
   $: barColor = excluded
     ? "ui-measure-bar-excluded"
     : rowSelected
-    ? "ui-measure-bar-included-selected"
-    : "ui-measure-bar-included";
+      ? "ui-measure-bar-included-selected"
+      : "ui-measure-bar-included";
 
   $: tooltipValue =
     value && STRING_LIKES.has(type) && value.length >= TOOLTIP_STRING_LIMIT
@@ -93,8 +97,8 @@
   $: formattedDataTypeStyle = excluded
     ? "font-normal ui-copy-disabled-faint"
     : rowSelected
-    ? "font-normal ui-copy-strong"
-    : "font-normal ui-copy";
+      ? "font-normal ui-copy-strong"
+      : "font-normal ui-copy";
 
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
@@ -106,57 +110,64 @@
   };
 </script>
 
-<Tooltip location="top" distance={16} suppress={suppressTooltip}>
+<Tooltip
+  distance={16}
+  location="top"
+  suppress={suppressTooltip || !isClipboardApiSupported()}
+>
   <div
-    on:mouseover={onFocus}
-    on:mouseout={onBlur}
-    on:focus={onFocus}
-    on:blur={onBlur}
-    on:click={onSelectItem}
-    on:keydown
     class="
       {positionStatic ? 'static' : 'absolute'}
       z-9
       text-ellipsis
       whitespace-nowrap
-      {isDimensionTable ? 'pr-5' : 'border-r border-b'}
+      {isDimensionTable ? '' : 'border-r border-b'}
       {activityStatus}
       "
+    on:blur={onBlur}
+    on:click={onSelectItem}
+    on:focus={onFocus}
+    on:keydown
+    on:mouseout={onBlur}
+    on:mouseover={onFocus}
+    role="gridcell"
+    style:height="{row.size}px"
     style:left="{column.start}px"
     style:top="{row.start}px"
     style:width="{column.size}px"
-    style:height="{row.size}px"
+    tabindex="0"
   >
     <BarAndLabel
-      customBackgroundColor="rgba(0,0,0,0)"
-      showBackground={false}
-      justify="left"
-      value={barValue}
       color={barColor}
+      customBackgroundColor="rgba(0,0,0,0)"
+      justify="left"
+      showBackground={false}
+      value={barValue}
     >
       <button
-        class="
-          {isDimensionTable ? '' : 'px-4'}
-          text-left w-full text-ellipsis overflow-x-hidden whitespace-nowrap
-          "
-        use:shiftClickAction
-        on:shift-click={shiftClick}
         aria-label={label}
+        class="
+          {isTextColumn ? 'text-left' : 'text-right'}
+          {isDimensionTable ? '' : 'px-4'}
+          w-full text-ellipsis overflow-x-hidden whitespace-nowrap
+          "
+        on:shift-click={shiftClick}
         style:height="{row.size}px"
+        use:shiftClickAction
       >
         <FormattedDataType
-          value={formattedValue || value}
-          isNull={value === null || value === undefined}
-          {type}
           customStyle={formattedDataTypeStyle}
           inTable
+          isNull={value === null || value === undefined}
+          {type}
+          value={formattedValue || value}
         />
       </button>
     </BarAndLabel>
   </div>
-  <TooltipContent slot="tooltip-content" maxWidth="360px">
+  <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType slot="name" value={tooltipValue} {type} dark />
+      <FormattedDataType dark slot="name" {type} value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>

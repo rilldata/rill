@@ -1,32 +1,40 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
-  getMapFromArray,
-  removeIfExists,
-} from "@rilldata/web-common/lib/arrayUtils";
-import { getTimeComparisonParametersForComponent } from "@rilldata/web-common/lib/time/comparisons";
-import { DEFAULT_TIME_RANGES } from "@rilldata/web-common/lib/time/config";
+  getDefaultMetricsExplorerEntity,
+  restorePersistedDashboardState,
+} from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import {
+  createAndExpression,
+  filterExpressions,
+  forEachIdentifier,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
   DashboardTimeControls,
   ScrubRange,
-  TimeComparisonOption,
   TimeRange,
 } from "@rilldata/web-common/lib/time/types";
+import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  V1ColumnTimeRangeResponse,
-  V1MetricsView,
-  V1MetricsViewFilter,
+  V1Expression,
   V1MetricsViewSpec,
+  V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { derived, Readable, writable } from "svelte/store";
 import {
-  SortDirection,
-  SortType,
-} from "web-common/src/features/dashboards/proto-state/derived-types";
+  V1Operation,
+  type V1StructType,
+} from "@rilldata/web-common/runtime-client";
+import type { ExpandedState, SortingState } from "@tanstack/svelte-table";
+import { Readable, derived, writable } from "svelte/store";
+import { SortType } from "web-common/src/features/dashboards/proto-state/derived-types";
+import type { PivotColumns, PivotRows } from "../pivot/types";
+import { PivotChipType, type PivotChipData } from "../pivot/types";
 
 export interface MetricsExplorerStoreType {
   entities: Record<string, MetricsExplorerEntity>;
@@ -41,7 +49,7 @@ function updateMetricsExplorerProto(metricsExplorer: MetricsExplorerEntity) {
 
 export const updateMetricsExplorerByName = (
   name: string,
-  callback: (metricsExplorer: MetricsExplorerEntity) => void
+  callback: (metricsExplorer: MetricsExplorerEntity) => void,
 ) => {
   update((state) => {
     if (!state.entities[name]) {
@@ -55,19 +63,24 @@ export const updateMetricsExplorerByName = (
   });
 };
 
-function includeExcludeModeFromFilters(filters: V1MetricsViewFilter) {
+function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
   const map = new Map<string, boolean>();
-  filters?.exclude.forEach((cond) => map.set(cond.name, true));
+  if (!filters) return map;
+  forEachIdentifier(filters, (e, ident) => {
+    if (e.cond?.op === V1Operation.OPERATION_NIN) {
+      map.set(ident, true);
+    }
+  });
   return map;
 }
 
 function syncMeasures(
-  metricsView: V1MetricsView,
-  metricsExplorer: MetricsExplorerEntity
+  metricsView: V1MetricsViewSpec,
+  metricsExplorer: MetricsExplorerEntity,
 ) {
   const measuresMap = getMapFromArray(
     metricsView.measures,
-    (measure) => measure.name
+    (measure) => measure.name,
   );
 
   // sync measures with selected leaderboard measure.
@@ -80,15 +93,11 @@ function syncMeasures(
   } else if (!metricsView.measures.length) {
     metricsExplorer.leaderboardMeasureName = undefined;
   }
-  // TODO: how does this differ from visibleMeasureKeys?
-  metricsExplorer.selectedMeasureNames = metricsView.measures.map(
-    (measure) => measure.name
-  );
 
   if (metricsExplorer.allMeasuresVisible) {
     // this makes sure that the visible keys is in sync with list of measures
     metricsExplorer.visibleMeasureKeys = new Set(
-      metricsView.measures.map((measure) => measure.name)
+      metricsView.measures.map((measure) => measure.name),
     );
   } else {
     // remove any keys from visible measure if it doesn't exist anymore
@@ -112,7 +121,7 @@ function syncMeasures(
     if (
       metricsExplorer.visibleMeasureKeys.size &&
       !metricsExplorer.visibleMeasureKeys.has(
-        metricsExplorer.leaderboardMeasureName
+        metricsExplorer.leaderboardMeasureName,
       )
     ) {
       const firstVisibleMeasure = metricsView.measures
@@ -124,32 +133,32 @@ function syncMeasures(
 }
 
 function syncDimensions(
-  metricsView: V1MetricsView,
-  metricsExplorer: MetricsExplorerEntity
+  metricsView: V1MetricsViewSpec,
+  metricsExplorer: MetricsExplorerEntity,
 ) {
   // Having a map here improves the lookup for existing dimension name
   const dimensionsMap = getMapFromArray(
     metricsView.dimensions,
-    (dimension) => dimension.name
+    (dimension) => dimension.name,
   );
-  metricsExplorer.filters.include = metricsExplorer.filters.include.filter(
-    (filter) => dimensionsMap.has(filter.name)
-  );
-  metricsExplorer.filters.exclude = metricsExplorer.filters.exclude.filter(
-    (filter) => dimensionsMap.has(filter.name)
-  );
+  metricsExplorer.whereFilter =
+    filterExpressions(metricsExplorer.whereFilter, (e) => {
+      if (!e.cond?.exprs?.length) return true;
+      return dimensionsMap.has(e.cond.exprs[0].ident);
+    }) ?? createAndExpression([]);
 
   if (
     metricsExplorer.selectedDimensionName &&
     !dimensionsMap.has(metricsExplorer.selectedDimensionName)
   ) {
     metricsExplorer.selectedDimensionName = undefined;
+    metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
   }
 
   if (metricsExplorer.allDimensionsVisible) {
     // this makes sure that the visible keys is in sync with list of dimensions
     metricsExplorer.visibleDimensionKeys = new Set(
-      metricsView.dimensions.map((dimension) => dimension.name)
+      metricsView.dimensions.map((dimension) => dimension.name),
     );
   } else {
     // remove any keys from visible dimension if it doesn't exist anymore
@@ -165,7 +174,7 @@ const metricViewReducers = {
   init(
     name: string,
     metricsView: V1MetricsViewSpec,
-    fullTimeRange: V1ColumnTimeRangeResponse | undefined
+    fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
   ) {
     update((state) => {
       if (state.entities[name]) return state;
@@ -173,19 +182,28 @@ const metricViewReducers = {
       state.entities[name] = getDefaultMetricsExplorerEntity(
         name,
         metricsView,
-        fullTimeRange
+        fullTimeRange,
+      );
+      state.entities[name] = restorePersistedDashboardState(
+        state.entities[name],
       );
 
       updateMetricsExplorerProto(state.entities[name]);
+
       return state;
     });
   },
 
-  syncFromUrl(name: string, urlState: string, metricsView: V1MetricsView) {
+  syncFromUrl(
+    name: string,
+    urlState: string,
+    metricsView: V1MetricsViewSpec,
+    schema: V1StructType,
+  ) {
     if (!urlState || !metricsView) return;
     // not all data for MetricsExplorerEntity will be filled out here.
     // Hence, it is a Partial<MetricsExplorerEntity>
-    const partial = getDashboardStateFromUrl(urlState, metricsView);
+    const partial = getDashboardStateFromUrl(urlState, metricsView, schema);
     if (!partial) return;
 
     updateMetricsExplorerByName(name, (metricsExplorer) => {
@@ -198,11 +216,11 @@ const metricViewReducers = {
         metricsExplorer.showTimeComparison = false;
       }
       metricsExplorer.dimensionFilterExcludeMode =
-        includeExcludeModeFromFilters(partial.filters);
+        includeExcludeModeFromFilters(partial.whereFilter);
     });
   },
 
-  sync(name: string, metricsView: V1MetricsView) {
+  sync(name: string, metricsView: V1MetricsViewSpec) {
     if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       // remove references to non existent measures
@@ -213,22 +231,154 @@ const metricViewReducers = {
     });
   },
 
-  setLeaderboardMeasureName(name: string, measureName: string) {
+  setPivotMode(name: string, mode: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.leaderboardMeasureName = measureName;
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, active: mode };
+      if (mode) {
+        metricsExplorer.activePage = DashboardState_ActivePage.PIVOT;
+      } else if (metricsExplorer.selectedDimensionName) {
+        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else if (metricsExplorer.tdd.expandedMeasureName) {
+        metricsExplorer.activePage =
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
     });
   },
 
-  setExpandedMeasureName(name: string, measureName: string) {
+  setPivotRows(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.expandedMeasureName = measureName;
+      metricsExplorer.pivot.rowPage = 1;
+
+      const dimensions: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (val.type !== PivotChipType.Measure) {
+          dimensions.push(val);
+        }
+      });
+
+      if (metricsExplorer.pivot.sorting.length) {
+        const accessor = metricsExplorer.pivot.sorting[0].id;
+        const anchorDimension = dimensions?.[0]?.id;
+        if (accessor !== anchorDimension) {
+          metricsExplorer.pivot.sorting = [];
+        }
+      }
+
+      metricsExplorer.pivot.rows = {
+        dimension: dimensions,
+      };
+    });
+  },
+
+  setPivotColumns(name: string, value: PivotChipData[]) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
+
+      const dimensions: PivotChipData[] = [];
+      const measures: PivotChipData[] = [];
+
+      value.forEach((val) => {
+        if (val.type === PivotChipType.Measure) {
+          measures.push(val);
+        } else {
+          dimensions.push(val);
+        }
+      });
+
+      // Reset sorting if the sorting field is not in the pivot columns
+      if (metricsExplorer.pivot.sorting.length) {
+        const accessor = metricsExplorer.pivot.sorting[0].id;
+        const anchorDimension = metricsExplorer.pivot.rows.dimension?.[0].id;
+        if (accessor !== anchorDimension) {
+          metricsExplorer.pivot.sorting = [];
+        }
+      }
+      metricsExplorer.pivot.columns = {
+        dimension: dimensions,
+        measure: measures,
+      };
+    });
+  },
+
+  addPivotField(name: string, value: PivotChipData, rows: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot.rowPage = 1;
+      if (value.type === PivotChipType.Measure) {
+        metricsExplorer.pivot.columns.measure.push(value);
+      } else {
+        if (rows) {
+          metricsExplorer.pivot.rows.dimension.push(value);
+        } else {
+          metricsExplorer.pivot.columns.dimension.push(value);
+        }
+      }
+    });
+  },
+
+  setPivotExpanded(name: string, expanded: ExpandedState) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, expanded };
+    });
+  },
+
+  setPivotSort(name: string, sorting: SortingState) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting, rowPage: 1 };
+    });
+  },
+
+  setPivotColumnPage(name: string, pageNumber: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        columnPage: pageNumber,
+      };
+    });
+  },
+
+  setPivotRowPage(name: string, pageNumber: number) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        rowPage: pageNumber,
+      };
+    });
+  },
+
+  createPivot(name: string, rows: PivotRows, columns: PivotColumns) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        active: true,
+        rows,
+        columns,
+        expanded: {},
+        sorting: [],
+        columnPage: 1,
+        rowPage: 1,
+      };
+    });
+  },
+
+  setExpandedMeasureName(name: string, measureName: string | undefined) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.tdd.expandedMeasureName = measureName;
+      if (measureName) {
+        metricsExplorer.activePage =
+          DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
 
       // If going into TDD view and already having a comparison dimension,
       // then set the pinIndex
       if (metricsExplorer.selectedComparisonDimension) {
-        metricsExplorer.pinIndex = getPinIndexForDimension(
+        metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
           metricsExplorer,
-          metricsExplorer.selectedComparisonDimension
+          metricsExplorer.selectedComparisonDimension,
         );
       }
     });
@@ -236,48 +386,13 @@ const metricViewReducers = {
 
   setPinIndex(name: string, index: number) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pinIndex = index;
+      metricsExplorer.tdd.pinIndex = index;
     });
   },
 
-  setSortDescending(name: string) {
+  setTDDChartType(name: string, type: TDDChart) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = SortDirection.DESCENDING;
-    });
-  },
-
-  setSortAscending(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = SortDirection.ASCENDING;
-    });
-  },
-
-  toggleSort(name: string, sortType?: SortType) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      // if sortType is not provided,  or if it is provided
-      // and is the same as the current sort type,
-      // then just toggle the current sort direction
-      if (
-        sortType === undefined ||
-        metricsExplorer.dashboardSortType === sortType
-      ) {
-        metricsExplorer.sortDirection =
-          metricsExplorer.sortDirection === SortDirection.ASCENDING
-            ? SortDirection.DESCENDING
-            : SortDirection.ASCENDING;
-      } else {
-        // if the sortType is different from the current sort type,
-        //  then update the sort type and set the sort direction
-        // to descending
-        metricsExplorer.dashboardSortType = sortType;
-        metricsExplorer.sortDirection = SortDirection.DESCENDING;
-      }
-    });
-  },
-
-  setSortDirection(name: string, direction: SortDirection) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.sortDirection = direction;
+      metricsExplorer.tdd.chartType = type;
     });
   },
 
@@ -288,7 +403,7 @@ const metricViewReducers = {
     });
   },
 
-  setSelectedScrubRange(name: string, scrubRange: ScrubRange) {
+  setSelectedScrubRange(name: string, scrubRange: ScrubRange | undefined) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setSelectedScrubRange(metricsExplorer, scrubRange);
     });
@@ -297,6 +412,11 @@ const metricViewReducers = {
   setMetricDimensionName(name: string, dimensionName: string | null) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedDimensionName = dimensionName;
+      if (dimensionName) {
+        metricsExplorer.activePage = DashboardState_ActivePage.DIMENSION_TABLE;
+      } else {
+        metricsExplorer.activePage = DashboardState_ActivePage.DEFAULT;
+      }
     });
   },
 
@@ -308,9 +428,9 @@ const metricViewReducers = {
         setDisplayComparison(metricsExplorer, false);
       }
       metricsExplorer.selectedComparisonDimension = dimensionName;
-      metricsExplorer.pinIndex = getPinIndexForDimension(
+      metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
         metricsExplorer,
-        dimensionName
+        dimensionName,
       );
     });
   },
@@ -324,7 +444,7 @@ const metricViewReducers = {
 
   setSelectedComparisonRange(
     name: string,
-    comparisonTimeRange: DashboardTimeControls
+    comparisonTimeRange: DashboardTimeControls,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setDisplayComparison(metricsExplorer, true);
@@ -358,9 +478,10 @@ const metricViewReducers = {
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
     comparisonTimeRange: DashboardTimeControls | undefined,
-    allTimeRange: TimeRange
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
+      if (!timeRange.name) return;
+
       // Reset scrub when range changes
       setSelectedScrubRange(metricsExplorer, undefined);
 
@@ -369,230 +490,12 @@ const metricViewReducers = {
         interval: timeGrain,
       };
 
-      if (!comparisonTimeRange) {
-        // when switching time range we reset comparison time range
-        // get the default for the new time range and set it only if is valid
-        const comparisonOption = DEFAULT_TIME_RANGES[timeRange.name]
-          ?.defaultComparison as TimeComparisonOption;
-        const range = getTimeComparisonParametersForComponent(
-          comparisonOption,
-          allTimeRange.start,
-          allTimeRange.end,
-          timeRange.start,
-          timeRange.end
-        );
-
-        if (range.isComparisonRangeAvailable) {
-          metricsExplorer.selectedComparisonTimeRange = {
-            start: range.start,
-            end: range.end,
-            name: comparisonOption,
-          };
-        } else {
-          metricsExplorer.selectedComparisonTimeRange = undefined;
-        }
-      } else {
-        metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
-      }
+      metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
 
       setDisplayComparison(
         metricsExplorer,
         metricsExplorer.selectedComparisonTimeRange !== undefined &&
-          metricsExplorer.selectedComparisonDimension === undefined
-      );
-    });
-  },
-
-  setContextColumn(name: string, contextColumn: LeaderboardContextColumn) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const initialSort = sortTypeForContextColumnType(
-        metricsExplorer.leaderboardContextColumn
-      );
-      switch (contextColumn) {
-        case LeaderboardContextColumn.DELTA_ABSOLUTE:
-        case LeaderboardContextColumn.DELTA_PERCENT: {
-          // if there is no time comparison, then we can't show
-          // these context columns, so return with no change
-          if (metricsExplorer.showTimeComparison === false) return;
-
-          metricsExplorer.leaderboardContextColumn = contextColumn;
-          break;
-        }
-        default:
-          metricsExplorer.leaderboardContextColumn = contextColumn;
-      }
-
-      // if we have changed the context column, and the leaderboard is
-      // sorted by the context column from before we made the change,
-      // then we also need to change
-      // the sort type to match the new context column
-      if (metricsExplorer.dashboardSortType === initialSort) {
-        metricsExplorer.dashboardSortType =
-          sortTypeForContextColumnType(contextColumn);
-      }
-    });
-  },
-
-  selectItemsInFilter(name: string, dimensionName: string, values: string[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName
-      )
-        ? "exclude"
-        : "include";
-
-      const dimensionEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
-
-      if (dimensionEntryIndex >= 0) {
-        // preserve old selections and add only new ones
-        const oldValues = metricsExplorer.filters[relevantFilterKey][
-          dimensionEntryIndex
-        ].in as string[];
-        const newValues = values.filter((v) => !oldValues.includes(v));
-        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in.push(
-          ...newValues
-        );
-      } else {
-        metricsExplorer.filters[relevantFilterKey].push({
-          name: dimensionName,
-          in: values,
-        });
-      }
-    });
-  },
-
-  deselectItemsInFilter(name: string, dimensionName: string, values: string[]) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName
-      )
-        ? "exclude"
-        : "include";
-
-      const dimensionEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
-
-      if (dimensionEntryIndex >= 0) {
-        // remove only deselected values
-        const oldValues = metricsExplorer.filters[relevantFilterKey][
-          dimensionEntryIndex
-        ].in as string[];
-        const newValues = oldValues.filter((v) => !values.includes(v));
-        metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex].in =
-          newValues;
-      }
-    });
-  },
-
-  toggleFilter(
-    name: string,
-    dimensionName: string | undefined,
-    dimensionValue: string
-  ) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-        dimensionName ?? ""
-      )
-        ? "exclude"
-        : "include";
-
-      const filters = metricsExplorer?.filters[relevantFilterKey];
-      // if there are no filters, or if the dimension name is not defined,
-      // there we cannot update anything.
-      if (filters === undefined || dimensionName === undefined) {
-        return;
-      }
-
-      const dimensionEntryIndex =
-        filters.findIndex((filter) => filter.name === dimensionName) ?? -1;
-
-      if (dimensionEntryIndex >= 0) {
-        const filtersIn = filters[dimensionEntryIndex].in;
-        if (filtersIn === undefined) return;
-
-        const index = filtersIn?.findIndex(
-          (value) => value === dimensionValue
-        ) as number;
-        if (index >= 0) {
-          filtersIn?.splice(index, 1);
-          if (filtersIn.length === 0) {
-            filters.splice(dimensionEntryIndex, 1);
-          }
-
-          // Only decrement pinIndex if the removed value was before the pinned value
-          if (metricsExplorer.pinIndex >= index) {
-            metricsExplorer.pinIndex--;
-          }
-          return;
-        }
-        filtersIn.push(dimensionValue);
-      } else {
-        filters.push({
-          name: dimensionName,
-          in: [dimensionValue],
-        });
-      }
-    });
-  },
-
-  clearFilters(name: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.filters.include = [];
-      metricsExplorer.filters.exclude = [];
-      metricsExplorer.dimensionFilterExcludeMode.clear();
-      metricsExplorer.pinIndex = -1;
-    });
-  },
-
-  clearFilterForDimension(
-    name: string,
-    dimensionName: string,
-    include: boolean
-  ) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (include) {
-        removeIfExists(
-          metricsExplorer.filters.include,
-          (dimensionValues) => dimensionValues.name === dimensionName
-        );
-      } else {
-        removeIfExists(
-          metricsExplorer.filters.exclude,
-          (dimensionValues) => dimensionValues.name === dimensionName
-        );
-      }
-    });
-  },
-
-  /**
-   * Toggle a dimension filter between include/exclude modes
-   */
-  toggleFilterMode(name: string, dimensionName: string) {
-    updateMetricsExplorerByName(name, (metricsExplorer) => {
-      const exclude =
-        metricsExplorer.dimensionFilterExcludeMode.get(dimensionName);
-      metricsExplorer.dimensionFilterExcludeMode.set(dimensionName, !exclude);
-
-      const relevantFilterKey = exclude ? "exclude" : "include";
-      const otherFilterKey = exclude ? "include" : "exclude";
-
-      const otherFilterEntryIndex = metricsExplorer.filters[
-        relevantFilterKey
-      ].findIndex((filter) => filter.name === dimensionName);
-      // if relevant filter is not present then return
-      if (otherFilterEntryIndex === -1) return;
-
-      // push relevant filters to other filter
-      metricsExplorer.filters[otherFilterKey].push(
-        metricsExplorer.filters[relevantFilterKey][otherFilterEntryIndex]
-      );
-      // remove entry from relevant filter
-      metricsExplorer.filters[relevantFilterKey].splice(
-        otherFilterEntryIndex,
-        1
+          metricsExplorer.selectedComparisonDimension === undefined,
       );
     });
   },
@@ -612,7 +515,7 @@ export const metricsExplorerStore: Readable<MetricsExplorerStoreType> &
 };
 
 export function useDashboardStore(
-  name: string
+  name: string,
 ): Readable<MetricsExplorerEntity> {
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
@@ -621,9 +524,12 @@ export function useDashboardStore(
 
 export function setDisplayComparison(
   metricsExplorer: MetricsExplorerEntity,
-  showTimeComparison: boolean
+  showTimeComparison: boolean,
 ) {
   metricsExplorer.showTimeComparison = showTimeComparison;
+  if (showTimeComparison && !metricsExplorer.selectedComparisonTimeRange) {
+    metricsExplorer.selectedComparisonTimeRange = {} as any;
+  }
 
   if (showTimeComparison) {
     metricsExplorer.selectedComparisonDimension = undefined;
@@ -651,7 +557,7 @@ export function setDisplayComparison(
 }
 
 export function sortTypeForContextColumnType(
-  contextCol: LeaderboardContextColumn
+  contextCol: LeaderboardContextColumn,
 ): SortType {
   const sortType = {
     [LeaderboardContextColumn.DELTA_PERCENT]: SortType.DELTA_PERCENT,
@@ -672,7 +578,7 @@ export function sortTypeForContextColumnType(
 
 function setSelectedScrubRange(
   metricsExplorer: MetricsExplorerEntity,
-  scrubRange: ScrubRange
+  scrubRange: ScrubRange | undefined,
 ) {
   if (scrubRange === undefined) {
     metricsExplorer.lastDefinedScrubRange = undefined;
@@ -685,24 +591,18 @@ function setSelectedScrubRange(
 
 function getPinIndexForDimension(
   metricsExplorer: MetricsExplorerEntity,
-  dimensionName: string
+  dimensionName: string,
 ) {
-  const relevantFilterKey = metricsExplorer.dimensionFilterExcludeMode.get(
-    dimensionName
-  )
-    ? "exclude"
-    : "include";
+  const dimensionEntryIndex = getWhereFilterExpressionIndex({
+    dashboard: metricsExplorer,
+  })(dimensionName);
+  if (dimensionEntryIndex === undefined || dimensionEntryIndex === -1)
+    return -1;
 
-  const dimensionEntryIndex = metricsExplorer.filters[
-    relevantFilterKey
-  ].findIndex((filter) => filter.name === dimensionName);
+  const dimExpr =
+    metricsExplorer.whereFilter.cond?.exprs?.[dimensionEntryIndex];
+  if (!dimExpr?.cond?.exprs?.length) return -1;
 
-  if (dimensionEntryIndex >= 0) {
-    return (
-      metricsExplorer.filters[relevantFilterKey][dimensionEntryIndex]?.in
-        ?.length - 1
-    );
-  }
-
-  return -1;
+  // 1st entry in the expression is the identifier. hence the -2 here.
+  return dimExpr.cond.exprs.length - 2;
 }

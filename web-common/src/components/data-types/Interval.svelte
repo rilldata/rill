@@ -5,11 +5,13 @@
   export let inTable = false;
   export let dark = false;
   export let value;
+  export let truncate = false;
 </script>
 
 <Base
+  {truncate}
   {isNull}
-  classes="font-semibold truncate {inTable && 'block text-right'}"
+  classes="font-semibold truncate w-full {inTable && 'block text-right'}"
   {dark}
 >
   <slot name="value">

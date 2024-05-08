@@ -1,26 +1,33 @@
+import {
+  createInExpression,
+  createLikeExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   ResourceKind,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
 import {
-  createQueryServiceColumnTimeRange,
-  createQueryServiceMetricsViewToplist,
   RpcStatus,
-  V1ColumnTimeRangeResponse,
   V1MetricsViewSpec,
-  V1MetricsViewToplistResponse,
+  V1MetricsViewTimeRangeResponse,
+  createQueryServiceMetricsViewTimeRange,
+  createQueryServiceMetricsViewSchema,
+  type V1MetricsViewSchemaResponse,
+  createQueryServiceMetricsViewComparison,
+  V1MetricsViewComparisonResponse,
 } from "@rilldata/web-common/runtime-client";
 import type {
   CreateQueryResult,
   QueryObserverResult,
 } from "@tanstack/svelte-query";
-import { derived, Readable } from "svelte/store";
+import { Readable, derived } from "svelte/store";
 import type { StateManagers } from "../state-managers/state-managers";
 
-export const useMetaQuery = <T = V1MetricsViewSpec>(
+export const useMetricsView = <T = V1MetricsViewSpec>(
   ctx: StateManagers,
-  selector?: (meta: V1MetricsViewSpec) => T
+  selector?: (meta: V1MetricsViewSpec) => T,
 ): Readable<QueryObserverResult<T | V1MetricsViewSpec, RpcStatus>> => {
   return derived(
     [ctx.runtime, ctx.metricsViewName],
@@ -33,16 +40,16 @@ export const useMetaQuery = <T = V1MetricsViewSpec>(
           selector
             ? selector(data.metricsView?.state?.validSpec)
             : data.metricsView?.state?.validSpec,
-        ctx.queryClient
+        ctx.queryClient,
       ).subscribe(set);
-    }
+    },
   );
 };
 
 export const useModelHasTimeSeries = (ctx: StateManagers) =>
-  useMetaQuery(
+  useMetricsView(
     ctx,
-    (meta) => !!meta?.timeDimension
+    (meta) => !!meta?.timeDimension,
   ) as CreateQueryResult<boolean>;
 
 export const getFilterSearchList = (
@@ -51,12 +58,16 @@ export const getFilterSearchList = (
     dimension,
     addNull,
     searchText,
+    type,
   }: {
     dimension: string;
     addNull: boolean;
     searchText: string;
-  }
-): Readable<QueryObserverResult<V1MetricsViewToplistResponse, RpcStatus>> => {
+    type: string | undefined;
+  },
+): Readable<
+  QueryObserverResult<V1MetricsViewComparisonResponse, RpcStatus>
+> => {
   return derived(
     [
       ctx.dashboardStore,
@@ -65,58 +76,71 @@ export const getFilterSearchList = (
       ctx.runtime,
     ],
     ([metricsExplorer, timeControls, metricViewName, runtime], set) => {
-      return createQueryServiceMetricsViewToplist(
+      return createQueryServiceMetricsViewComparison(
         runtime.instanceId,
         metricViewName,
         {
-          dimensionName: dimension,
-          measureNames: [metricsExplorer.leaderboardMeasureName],
-          timeStart: timeControls.timeStart,
-          timeEnd: timeControls.timeEnd,
-          limit: "15",
-          offset: "0",
-          sort: [],
-          filter: {
-            include: [
-              {
-                name: dimension,
-                in: addNull ? [null] : [],
-                like: [`%${searchText}%`],
-              },
-            ],
-            exclude: [],
+          dimension: { name: dimension },
+          measures: [{ name: metricsExplorer.leaderboardMeasureName }],
+          timeRange: {
+            start: timeControls.timeStart,
+            end: timeControls.timeEnd,
           },
+          limit: "100",
+          offset: "0",
+          sort: [{ name: dimension }],
+          where: addNull
+            ? createInExpression(dimension, [null])
+            : STRING_LIKES.has(type ?? "")
+              ? createLikeExpression(dimension, `%${searchText}%`)
+              : undefined,
         },
         {
           query: {
             queryClient: ctx.queryClient,
             enabled: timeControls.ready,
           },
-        }
+        },
       ).subscribe(set);
-    }
+    },
   );
 };
 
 export function createTimeRangeSummary(
-  ctx: StateManagers
-): CreateQueryResult<V1ColumnTimeRangeResponse> {
+  ctx: StateManagers,
+): CreateQueryResult<V1MetricsViewTimeRangeResponse> {
   return derived(
-    [ctx.runtime, useMetaQuery(ctx)],
-    ([runtime, metricsView], set) => {
-      return createQueryServiceColumnTimeRange(
+    [ctx.runtime, ctx.metricsViewName, useMetricsView(ctx)],
+    ([runtime, metricsViewName, metricsView], set) =>
+      createQueryServiceMetricsViewTimeRange(
         runtime.instanceId,
-        metricsView.data?.table,
-        {
-          columnName: metricsView.data?.timeDimension,
-        },
+        metricsViewName,
+        {},
         {
           query: {
-            enabled: !!metricsView.data?.timeDimension,
+            queryClient: ctx.queryClient,
+            enabled: !metricsView.error && !!metricsView.data?.timeDimension,
+          },
+        },
+      ).subscribe(set),
+  );
+}
+
+export function createMetricsViewSchema(
+  ctx: StateManagers,
+): CreateQueryResult<V1MetricsViewSchemaResponse> {
+  return derived(
+    [ctx.runtime, ctx.metricsViewName],
+    ([runtime, metricsViewName], set) =>
+      createQueryServiceMetricsViewSchema(
+        runtime.instanceId,
+        metricsViewName,
+        {},
+        {
+          query: {
             queryClient: ctx.queryClient,
           },
-        }
-      ).subscribe(set);
-    }
+        },
+      ).subscribe(set),
   );
 }

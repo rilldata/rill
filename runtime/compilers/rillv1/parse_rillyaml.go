@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"gopkg.in/yaml.v3"
@@ -9,21 +10,17 @@ import (
 
 var _reservedConnectorNames = map[string]bool{"admin": true, "repo": true, "metastore": true}
 
+var ErrRillYAMLNotFound = errors.New("rill.yaml not found")
+
 // RillYAML is the parsed contents of rill.yaml
 type RillYAML struct {
-	Title       string
-	Description string
-	Connectors  []*ConnectorDef
-	Variables   []*VariableDef
-	Defaults    RillYAMLDefaults
-}
-
-// RillYAMLDefaults contains project-wide default YAML properties for different resources
-type RillYAMLDefaults struct {
-	Sources      yaml.Node
-	Models       yaml.Node
-	MetricsViews yaml.Node
-	Migrations   yaml.Node
+	Title         string
+	Description   string
+	OLAPConnector string
+	Connectors    []*ConnectorDef
+	Variables     []*VariableDef
+	Defaults      map[ResourceKind]yaml.Node
+	FeatureFlags  map[string]bool
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -41,18 +38,36 @@ type VariableDef struct {
 
 // rillYAML is the raw YAML structure of rill.yaml
 type rillYAML struct {
-	Title       string            `yaml:"title"`
-	Description string            `yaml:"description"`
-	Env         map[string]string `yaml:"env"`
-	Connectors  []struct {
+	// Title of the project
+	Title string `yaml:"title"`
+	// Description of the project
+	Description string `yaml:"description"`
+	// The project's default OLAP connector to use (can be overridden in the individual resources)
+	OLAPConnector string `yaml:"olap_connector"`
+	// Connectors required by the project
+	Connectors []struct {
 		Type     string            `yaml:"type"`
 		Name     string            `yaml:"name"`
 		Defaults map[string]string `yaml:"defaults"`
 	} `yaml:"connectors"`
-	Sources    yaml.Node `yaml:"sources"`
-	Models     yaml.Node `yaml:"models"`
+	// Variables required by the project and their default values
+	Vars map[string]string `yaml:"vars"`
+	// Environment-specific overrides for rill.yaml
+	Env map[string]yaml.Node `yaml:"env"`
+	// Shorthand for setting "env:dev:"
+	Dev yaml.Node `yaml:"dev"`
+	// Shorthand for setting "env:prod:"
+	Prod yaml.Node `yaml:"prod"`
+	// Default YAML values for sources
+	Sources yaml.Node `yaml:"sources"`
+	// Default YAML values for models
+	Models yaml.Node `yaml:"models"`
+	// Default YAML values for metric views
 	Dashboards yaml.Node `yaml:"dashboards"`
+	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
+	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
+	Features yaml.Node `yaml:"features"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -65,6 +80,40 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	tmp := &rillYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
 		return newYAMLError(err)
+	}
+
+	// Ugly backwards compatibility hack: we have renamed "env" to "vars", and now use "env" for environment-specific overrides.
+	// For backwards compatibility, we still consider "env" entries with scalar values as variables.
+	for k := range tmp.Env {
+		v := tmp.Env[k]
+		if v.Kind == yaml.ScalarNode {
+			if tmp.Vars == nil {
+				tmp.Vars = make(map[string]string)
+			}
+			tmp.Vars[k] = v.Value
+			delete(tmp.Env, k)
+		}
+	}
+
+	// Handle "dev:" and "prod:" shorthands (copy to to tmp.Env)
+	if !tmp.Dev.IsZero() {
+		if tmp.Env == nil {
+			tmp.Env = make(map[string]yaml.Node)
+		}
+		tmp.Env["dev"] = tmp.Dev
+	}
+	if !tmp.Prod.IsZero() {
+		if tmp.Env == nil {
+			tmp.Env = make(map[string]yaml.Node)
+		}
+		tmp.Env["prod"] = tmp.Prod
+	}
+
+	// Apply environment-specific overrides
+	if envOverride := tmp.Env[p.Environment]; !envOverride.IsZero() {
+		if err := envOverride.Decode(tmp); err != nil {
+			return newYAMLError(err)
+		}
 	}
 
 	// Validate resource defaults
@@ -89,17 +138,42 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		}
 	}
 
+	// For backwards compatibility, we allow "features" to be either a map of bools (preferred) or a sequence of strings.
+	var featureFlags map[string]bool
+	if !tmp.Features.IsZero() {
+		switch tmp.Features.Kind {
+		case yaml.MappingNode:
+			if err := tmp.Features.Decode(&featureFlags); err != nil {
+				return newYAMLError(err)
+			}
+		case yaml.SequenceNode:
+			var fs []string
+			if err := tmp.Features.Decode(&fs); err != nil {
+				return newYAMLError(err)
+			}
+
+			featureFlags = map[string]bool{}
+			for _, f := range fs {
+				featureFlags[f] = true
+			}
+		default:
+			return fmt.Errorf(`invalid property "features": must be a map or a sequence`)
+		}
+	}
+
 	res := &RillYAML{
-		Title:       tmp.Title,
-		Description: tmp.Description,
-		Connectors:  make([]*ConnectorDef, len(tmp.Connectors)),
-		Variables:   make([]*VariableDef, len(tmp.Env)),
-		Defaults: RillYAMLDefaults{
-			Sources:      tmp.Sources,
-			Models:       tmp.Models,
-			MetricsViews: tmp.Dashboards,
-			Migrations:   tmp.Migrations,
+		Title:         tmp.Title,
+		Description:   tmp.Description,
+		OLAPConnector: tmp.OLAPConnector,
+		Connectors:    make([]*ConnectorDef, len(tmp.Connectors)),
+		Variables:     make([]*VariableDef, len(tmp.Vars)),
+		Defaults: map[ResourceKind]yaml.Node{
+			ResourceKindSource:      tmp.Sources,
+			ResourceKindModel:       tmp.Models,
+			ResourceKindMetricsView: tmp.Dashboards,
+			ResourceKindMigration:   tmp.Migrations,
 		},
+		FeatureFlags: featureFlags,
 	}
 
 	for i, c := range tmp.Connectors {
@@ -114,7 +188,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	}
 
 	i := 0
-	for k, v := range tmp.Env {
+	for k, v := range tmp.Vars {
 		res.Variables[i] = &VariableDef{
 			Name:    k,
 			Default: v,

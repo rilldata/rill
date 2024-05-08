@@ -2,13 +2,10 @@ package auth
 
 import (
 	"context"
-	"fmt"
 	"strings"
 
-	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -16,7 +13,7 @@ import (
 )
 
 // LoginCmd is the command for logging into a Rill account.
-func LoginCmd(cfg *config.Config) *cobra.Command {
+func LoginCmd(ch *cmdutil.Helper) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "login",
 		Short: "Authenticate with the Rill API",
@@ -24,21 +21,21 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 			ctx := cmd.Context()
 
 			// updating this as its not required to logout first and login again
-			if cfg.AdminTokenDefault != "" {
-				err := Logout(ctx, cfg)
+			if ch.AdminTokenDefault != "" {
+				err := Logout(ctx, ch)
 				if err != nil {
 					return err
 				}
 			}
 
 			// Login user
-			err := Login(ctx, cfg, "")
+			err := Login(ctx, ch, "")
 			if err != nil {
 				return err
 			}
 
 			// Set default org after login
-			err = SelectOrgFlow(ctx, cfg)
+			err = SelectOrgFlow(ctx, ch, true)
 			if err != nil {
 				return err
 			}
@@ -50,11 +47,11 @@ func LoginCmd(cfg *config.Config) *cobra.Command {
 	return cmd
 }
 
-func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
+func Login(ctx context.Context, ch *cmdutil.Helper, redirectURL string) error {
 	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
 	// We plan to move to connect.build for gRPC, which will allow us to serve both on the same port in development as well.
 	// Until we make that change, this is a convenient hack for local development (assumes gRPC on port 9090 and REST on port 8080).
-	authURL := cfg.AdminURL
+	authURL := ch.AdminURL
 	if strings.Contains(authURL, "http://localhost:9090") {
 		authURL = "http://localhost:8080"
 	}
@@ -69,12 +66,10 @@ func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
 		return err
 	}
 
-	bold := color.New(color.Bold)
-	bold.Printf("\nConfirmation Code: ")
-	boldGreen := color.New(color.FgGreen).Add(color.Bold)
-	boldGreen.Fprintln(color.Output, deviceVerification.UserCode)
+	ch.PrintfBold("\nConfirmation Code: ")
+	ch.PrintfSuccess(deviceVerification.UserCode + "\n")
 
-	bold.Printf("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
+	ch.PrintfBold("\nOpen this URL in your browser to confirm the login: %s\n\n", deviceVerification.VerificationCompleteURL)
 
 	_ = browser.Open(deviceVerification.VerificationCompleteURL)
 
@@ -88,25 +83,26 @@ func Login(ctx context.Context, cfg *config.Config, redirectURL string) error {
 		return err
 	}
 	// set the default token to the one we just got
-	cfg.AdminTokenDefault = res1.AccessToken
-	bold.Print("Successfully logged in. Welcome to Rill!\n")
+	ch.AdminTokenDefault = res1.AccessToken
+	ch.PrintfBold("Successfully logged in. Welcome to Rill!\n")
 	return nil
 }
 
-func SelectOrgFlow(ctx context.Context, cfg *config.Config) error {
-	client, err := cmdutil.Client(cfg)
+func SelectOrgFlow(ctx context.Context, ch *cmdutil.Helper, interactive bool) error {
+	client, err := ch.Client()
 	if err != nil {
 		return err
 	}
-	defer client.Close()
 
-	res, err := client.ListOrganizations(context.Background(), &adminv1.ListOrganizationsRequest{})
+	res, err := client.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
 	if err != nil {
 		return err
 	}
 
 	if len(res.Organizations) == 0 {
-		cmdutil.PrintlnWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.")
+		if interactive {
+			ch.PrintfWarn("You are not part of an org. Run `rill org create` or `rill deploy` to create one.\n")
+		}
 		return nil
 	}
 
@@ -116,17 +112,21 @@ func SelectOrgFlow(ctx context.Context, cfg *config.Config) error {
 	}
 
 	defaultOrg := orgNames[0]
-	if len(orgNames) > 1 {
-		defaultOrg = cmdutil.SelectPrompt("Select default org (to change later, run `rill org switch`).", orgNames, defaultOrg)
+	if interactive && len(orgNames) > 1 {
+		defaultOrg, err = cmdutil.SelectPrompt("Select default org (to change later, run `rill org switch`).", orgNames, defaultOrg)
+		if err != nil {
+			return err
+		}
 	}
 
 	err = dotrill.SetDefaultOrg(defaultOrg)
 	if err != nil {
 		return err
 	}
+	ch.Org = defaultOrg
 
-	cfg.Org = defaultOrg
-
-	fmt.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
+	if interactive {
+		ch.Printf("Set default organization to %q. Change using `rill org switch`.\n", defaultOrg)
+	}
 	return nil
 }

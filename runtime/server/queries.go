@@ -36,7 +36,7 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 		args[i] = arg.AsInterface()
 	}
 
-	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId)
+	olap, release, err := s.runtime.OLAP(ctx, req.InstanceId, req.Connector)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +72,7 @@ func (s *Server) Query(ctx context.Context, req *runtimev1.QueryRequest) (*runti
 
 	data, err := rowsToData(res)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
 	resp := &runtimev1.QueryResponse{

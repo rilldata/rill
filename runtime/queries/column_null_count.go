@@ -12,9 +12,12 @@ import (
 )
 
 type ColumnNullCount struct {
-	TableName  string
-	ColumnName string
-	Result     float64
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Result         float64
 }
 
 var _ runtime.Query = &ColumnNullCount{}
@@ -47,18 +50,18 @@ func (q *ColumnNullCount) UnmarshalResult(v any) error {
 }
 
 func (q *ColumnNullCount) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
-	nullCountSQL := fmt.Sprintf("SELECT count(*) as count from %s WHERE %s IS NULL",
-		safeName(q.TableName),
+	nullCountSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s WHERE %s IS NULL",
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		safeName(q.ColumnName),
 	)
 

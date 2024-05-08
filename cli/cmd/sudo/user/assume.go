@@ -3,14 +3,14 @@ package user
 import (
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func AssumeCmd(cfg *config.Config) *cobra.Command {
+func AssumeCmd(ch *cmdutil.Helper) *cobra.Command {
 	var ttlMinutes int
+
 	assumeCmd := &cobra.Command{
 		Use:   "assume <email>",
 		Args:  cobra.ExactArgs(1),
@@ -18,11 +18,10 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			res, err := client.IssueRepresentativeAuthToken(ctx, &adminv1.IssueRepresentativeAuthTokenRequest{
 				Email:      args[0],
@@ -55,10 +54,10 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// set the default token to the one we just got
-			cfg.AdminTokenDefault = res.Token
+			ch.AdminTokenDefault = res.Token
 
 			// Select org for new user
-			err = auth.SelectOrgFlow(ctx, cfg)
+			err = auth.SelectOrgFlow(ctx, ch, true)
 			if err != nil {
 				return err
 			}
@@ -68,5 +67,6 @@ func AssumeCmd(cfg *config.Config) *cobra.Command {
 	}
 
 	assumeCmd.Flags().IntVar(&ttlMinutes, "ttl-minutes", 60, "Minutes until the token should expire")
+
 	return assumeCmd
 }

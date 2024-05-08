@@ -14,6 +14,10 @@
 
   // Check whether project is public or private
   $: proj = createAdminServiceGetProject(organization, project);
+
+  function doesProjectNameIncludeUnderscores(project: string) {
+    return project.includes("_");
+  }
 </script>
 
 {#if $proj.data}
@@ -22,7 +26,13 @@
     bgClasses="bg-gradient-to-b from-white to-slate-50"
   >
     <!-- Project name -->
-    <h2 class="text-gray-700 font-medium text-lg break-words text-center px-4">
+    <h2
+      class="text-gray-700 font-medium text-lg text-center px-4 {doesProjectNameIncludeUnderscores(
+        project,
+      )
+        ? 'break-all'
+        : 'break-words'}"
+    >
       {project}
     </h2>
     <!-- Permissions tag -->

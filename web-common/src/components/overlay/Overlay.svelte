@@ -1,6 +1,6 @@
 <script>
   import { fade } from "svelte/transition";
-  import Portal from "../Portal.svelte";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
 
   export let bg = "rgba(0,0,0,.8)";
 
@@ -9,7 +9,10 @@
   // We'll need a better solution than this!
   function captureKeydown(event) {
     // capture all events
-    document.activeElement.blur();
+
+    // FIXME: `.blur()` doesn't exist on activeElement --
+    // What was the intent here @djbarnwal?
+    // document.activeElement.blur();
     event.preventDefault();
   }
 
@@ -19,18 +22,18 @@
 
 <svelte:window on:keydown={captureKeydown} />
 
-<Portal>
+<div use:portal>
   {#key bg}
     <div
-      transition:fade={{ duration: 200 }}
+      transition:fade|global={{ duration: 200 }}
       style:background={bg}
       class={classes}
     />
   {/key}
-  <div transition:fade={{ duration: 300 }} class={classes}>
+  <div transition:fade|global={{ duration: 300 }} class={classes}>
     <slot />
   </div>
-</Portal>
+</div>
 
 <style lang="postcss">
   :global(.body) {

@@ -2,13 +2,14 @@
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import TooltipDescription from "@rilldata/web-common/components/tooltip/TooltipDescription.svelte";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import { isClipboardApiSupported } from "../../../lib/actions/shift-click-action";
 
   export let measure: MetricsViewSpecMeasureV2;
-  export let value: any;
+  export let value = "";
 
   $: description =
     measure?.description || measure?.label || measure?.expression;
@@ -31,14 +32,14 @@
   <TooltipShortcutContainer>
     <div>Expand measure</div>
     <Shortcut>Click</Shortcut>
-  </TooltipShortcutContainer>
-  <TooltipShortcutContainer>
-    <div>
-      <StackingWord key="shift">Copy</StackingWord>
-      number
-    </div>
-    <Shortcut>
-      <span style="font-family: var(--system);">⇧</span> + Click
-    </Shortcut>
+    {#if isClipboardApiSupported()}
+      <div>
+        <StackingWord key="shift">Copy</StackingWord>
+        number
+      </div>
+      <Shortcut>
+        <span style="font-family: var(--system);">⇧</span> + Click
+      </Shortcut>
+    {/if}
   </TooltipShortcutContainer>
 </TooltipContent>

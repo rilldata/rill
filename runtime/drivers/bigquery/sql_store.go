@@ -6,15 +6,16 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/big"
 	"os"
 	"regexp"
 	"strings"
 	"time"
 
 	"cloud.google.com/go/bigquery"
-	"github.com/apache/arrow/go/v13/parquet"
-	"github.com/apache/arrow/go/v13/parquet/compress"
-	"github.com/apache/arrow/go/v13/parquet/pqarrow"
+	"github.com/apache/arrow/go/v14/parquet"
+	"github.com/apache/arrow/go/v14/parquet/compress"
+	"github.com/apache/arrow/go/v14/parquet/pqarrow"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -94,7 +95,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		if metadata.Type == bigquery.RegularTable || metadata.Type == bigquery.Snapshot {
 			it = table.Read(ctx)
 		} else {
-			c.logger.Info("source is not a regular table or a snapshot, falling back to a query execution")
+			c.logger.Debug("source is not a regular table or a snapshot, falling back to a query execution")
 			fallbackToQueryExecution = true
 			client.Close()
 		}
@@ -127,7 +128,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		if err != nil && !strings.Contains(err.Error(), "Syntax error") {
 			// close the read storage API client
 			client.Close()
-			c.logger.Info("query failed, retrying without storage api", zap.Error(err))
+			c.logger.Debug("query failed, retrying without storage api", zap.Error(err))
 			// the query results are always cached in a temporary table that storage api can use
 			// there are some exceptions when results aren't cached
 			// so we also try without storage api
@@ -145,7 +146,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 			return nil, err
 		}
 
-		c.logger.Info("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
+		c.logger.Debug("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 	}
 
 	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
@@ -198,13 +199,13 @@ func (f *fileIterator) Next() ([]string, error) {
 	}
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
-		f.logger.Info("downloading results in json file", observability.ZapCtx(f.ctx))
+		f.logger.Debug("downloading results in json file", observability.ZapCtx(f.ctx))
 		if err := f.downloadAsJSONFile(); err != nil {
 			return nil, err
 		}
 		return []string{f.tempFilePath}, nil
 	}
-	f.logger.Info("downloading results in parquet file", observability.ZapCtx(f.ctx))
+	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
 	// create a temp file
 	fw, err := os.CreateTemp("", "temp*.parquet")
@@ -223,7 +224,7 @@ func (f *fileIterator) Next() ([]string, error) {
 
 	tf := time.Now()
 	defer func() {
-		f.logger.Info("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+		f.logger.Debug("time taken to write arrow records in parquet file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
 	}()
 	writer, err := pqarrow.NewFileWriter(rdr.Schema(), fw,
 		parquet.NewWriterProperties(
@@ -235,9 +236,6 @@ func (f *fileIterator) Next() ([]string, error) {
 		),
 		pqarrow.NewArrowWriterProperties(pqarrow.WithStoreSchema()))
 	if err != nil {
-		if strings.Contains(err.Error(), "not implemented: support for DECIMAL256") {
-			return nil, fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
-		}
 		return nil, err
 	}
 	defer writer.Close()
@@ -278,7 +276,7 @@ func (f *fileIterator) Next() ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	f.logger.Info("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
+	f.logger.Debug("size of file", zap.String("size", datasize.ByteSize(fileInfo.Size()).HumanReadable()), observability.ZapCtx(f.ctx))
 	return []string{fw.Name()}, nil
 }
 
@@ -301,7 +299,7 @@ func (f *fileIterator) Format() string {
 func (f *fileIterator) downloadAsJSONFile() error {
 	tf := time.Now()
 	defer func() {
-		f.logger.Info("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
+		f.logger.Debug("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
 	}()
 
 	// create a temp file
@@ -317,6 +315,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 	rows := 0
 	enc := json.NewEncoder(fw)
 	enc.SetEscapeHTML(false)
+	bigNumericFields := make([]string, 0)
 	for {
 		row := make(map[string]bigquery.Value)
 		err := f.bqIter.Next(&row)
@@ -334,8 +333,24 @@ func (f *fileIterator) downloadAsJSONFile() error {
 		if !init {
 			init = true
 			f.progress.Target(int64(f.bqIter.TotalRows), drivers.ProgressUnitRecord)
-			if hasBigNumericType(f.bqIter.Schema) {
-				return fmt.Errorf("BIGNUMERIC datatype is not supported. Consider casting to STRING or NUMERIC (if loss of precision is acceptable) in the submitted query")
+			for _, f := range f.bqIter.Schema {
+				if f.Type == bigquery.BigNumericFieldType {
+					bigNumericFields = append(bigNumericFields, f.Name)
+				}
+			}
+		}
+
+		// convert fields into a.b else fields are marshalled as a/b
+		for _, f := range bigNumericFields {
+			r, ok := row[f].(*big.Rat)
+			if !ok {
+				continue
+			}
+			num, exact := r.Float64()
+			if exact {
+				row[f] = num
+			} else { // number doesn't fit in float so cast to string,
+				row[f] = r.FloatString(38)
 			}
 		}
 
@@ -357,17 +372,6 @@ func (f *fileIterator) downloadAsJSONFile() error {
 			}
 		}
 	}
-}
-
-func hasBigNumericType(s bigquery.Schema) bool {
-	for _, f := range s {
-		if f.Type == bigquery.BigNumericFieldType {
-			return true
-		} else if f.Type == bigquery.RecordFieldType && hasBigNumericType(f.Schema) {
-			return true
-		}
-	}
-	return false
 }
 
 var _ drivers.FileIterator = &fileIterator{}

@@ -17,10 +17,12 @@ tsc-tmp/
 /runtime/sql/deps
 /runtime/release
 /runtime/pkg/examples/embed/dist
-/cli/pkg/web/embed/dist
 /rill
 /cli/pkg/examples/embed/dist
+/cli/pkg/installscript/embed/install.sh
+/cli/pkg/web/embed/dist
 /dev-project*
+/dev-cloud-state*
 
 # data files
 *.duckdb
@@ -37,9 +39,9 @@ tsc-tmp/
 /sources
 
 # check in generated data files
-!/web-local/test/data/*.parquet
-!/web-local/test/data/*.csv
-!/web-local/test/data/*.tsv
+!/web-local/tests/data/*.parquet
+!/web-local/tests/data/*.csv
+!/web-local/tests/data/*.tsv
 !/runtime/testruntime/**/*.parquet
 !/runtime/testruntime/**/*.csv
 
@@ -74,4 +76,3 @@ rill-binary-sa.json
 sysroot/
 latest.txt
 /web-common/coverage
-/web-local/.jest/rill-e2e-test

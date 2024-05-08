@@ -4,7 +4,7 @@ import {
 } from "@rilldata/web-common/lib/time/timezone";
 export function convertTimestampPreviewFcn(
   ts,
-  removeLocalTimezoneOffset = false
+  removeLocalTimezoneOffset = false,
 ) {
   return removeLocalTimezoneOffset ? remove(new Date(ts)) : new Date(ts);
 }
@@ -19,7 +19,10 @@ export function convertTimestampPreview(d, removeLocalTimezoneOffset = false) {
 }
 
 /** used to remove local timezone offset and add dashboard selected zone offset */
-export function adjustOffsetForZone(ts, zone) {
+export function adjustOffsetForZone(
+  ts: Date | string | undefined,
+  zone: string,
+) {
   if (!ts) return ts;
   return addZoneOffset(remove(new Date(ts)), zone);
 }

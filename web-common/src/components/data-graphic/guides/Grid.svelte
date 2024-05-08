@@ -28,19 +28,9 @@
   let yTicks = [];
 
   $: if ($config) {
-    xTicks = getTicks(
-      "x",
-      $xScale,
-      $config.graphicWidth,
-      $config[`xType`] === "date"
-    );
+    xTicks = getTicks("x", $xScale, $config.graphicWidth, $config[`xType`]);
 
-    yTicks = getTicks(
-      "y",
-      $yScale,
-      $config.graphicHeight,
-      $config[`yType`] === "date"
-    );
+    yTicks = getTicks("y", $yScale, $config.graphicHeight, $config[`yType`]);
   }
 </script>
 

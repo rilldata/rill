@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Algolia crawler creation and crawl
-        uses: algolia/algoliasearch-crawler-github-actions@v1.0.10
+        uses: algolia/algoliasearch-crawler-github-actions@v1.1.10
         id: algolia_crawler
         with:
           crawler-name: rilldata

@@ -19,7 +19,9 @@
 
   const dark = getContext("rill:menu:dark");
   const onSelect: () => void = getContext("rill:menu:onSelect");
-  const menuItems: Writable<any> = getContext("rill:menu:menuItems");
+  const menuItems: Writable<{ id: number; disabled: boolean }[]> = getContext(
+    "rill:menu:menuItems",
+  );
   const currentItem: Writable<any> = getContext("rill:menu:currentItem");
 
   let itemID;
@@ -75,6 +77,7 @@
     if (!disabled) {
       hovered = true;
     }
+    dispatch("hover");
   }
 
   function onFocus() {
@@ -82,6 +85,7 @@
       $currentItem = itemID;
       hovered = true;
     }
+    dispatch("focus");
   }
 
   function onBlur() {
@@ -108,7 +112,7 @@
         if (propogateSelect) onSelect();
         justClicked = false;
       },
-      animateSelect ? 150 : 0
+      animateSelect ? 150 : 0,
     );
   }
 
@@ -119,13 +123,16 @@
     : `${
         disabled ? "text-gray-500" : "focus:bg-gray-200 dark:focus:bg-gray-600"
       }`;
+
+  $: bgColor = dark
+    ? `${hovered ? "bg-gray-600" : ""}`
+    : `${hovered ? "bg-gray-200" : ""}`;
 </script>
 
 <button
   bind:this={element}
   {...ariaProperties}
   class:dark
-  class:surface-focus={hovered}
   style="--tw-ring-color: transparent; --flicker-color:{dark
     ? 'rgb(75, 85, 99)'
     : 'rgb(235, 235, 235)'}"
@@ -144,6 +151,7 @@
         ui-copy
         w-full
         {textColor}
+        {bgColor}
     "
   style:grid-template-columns="{icon ? "max-content" : ""} auto {$$slots[
     "right"

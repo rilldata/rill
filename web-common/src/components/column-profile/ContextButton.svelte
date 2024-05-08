@@ -1,57 +1,28 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createHoverStateActionFactory } from "@rilldata/web-common/lib/actions/hover-state-action-factory";
+  import type { Builder } from "bits-ui";
+  import { builderActions, getAttrs } from "bits-ui";
 
-  export let rotated = false;
-  export let suppressTooltip = false;
-  export let tooltipText: string;
-  export let location = "right";
   // utilize the ID for easier UI testing.
   export let id: string;
-  export let width = 16;
-  export let height = 16;
-  export let isHovered = false;
-  export let rounded = false;
-  export let border = false;
+  export let suppressTooltip = false;
+  export let tooltipText: string;
   export let label: string | undefined = undefined;
-
-  const { hovered, captureHoverState } = createHoverStateActionFactory();
-  hovered.subscribe((trueOrFalse) => {
-    isHovered = trueOrFalse;
-  });
+  export let builders: Builder[] = [];
 </script>
 
-<Tooltip
-  {location}
-  alignment="middle"
-  distance={16}
-  suppress={suppressTooltip || tooltipText === undefined}
->
+<!-- Opening the ContextMenu causes this tooltip to flash in another location, likely due 
+  to a race condition. Disabling the tooltip for now.   -->
+<Tooltip distance={16} location="right" suppress={true}>
   <button
-    on:click|preventDefault
-    {id}
-    use:captureHoverState
-    style:width={`${width}px`}
-    style:height={`${height}px`}
-    style:grid-column="left-control"
-    class:rounded
-    class="
-        focus:outline-none
-        focus:bg-gray-300
-        hover:bg-gray-300
-        transition-tranform
-        text-gray-500
-        duration-100
-        grid
-        p-0
-        items-center
-        justify-center
-        {border ? 'border' : ''}
-        border-transparent
-        hover:border-gray-400
-        {rotated ? '-rotate-90' : ''}"
+    {...getAttrs(builders)}
     aria-label={label}
+    class="group-hover:opacity-100"
+    class:!group-hover:opacity-100={suppressTooltip}
+    {id}
+    on:click|preventDefault|stopPropagation
+    use:builderActions={{ builders }}
   >
     <slot />
   </button>
@@ -59,3 +30,17 @@
     {tooltipText}
   </TooltipContent>
 </Tooltip>
+
+<style lang="postcss">
+  button {
+    @apply h-full aspect-square p-1.5;
+    @apply flex justify-center items-center;
+    @apply text-gray-500 opacity-0;
+    @apply transition-transform duration-100;
+  }
+
+  button:hover,
+  button:focus {
+    @apply outline-none bg-slate-300;
+  }
+</style>

@@ -8,13 +8,15 @@
   export let dark;
   export let type;
   export let value;
+  export let truncate;
 </script>
 
 <Base
+  {truncate}
   {isNull}
   classes="ui-copy-number font-semibold {customStyle} {dark
     ? 'text-slate-200'
-    : 'text-slate-500'} {inTable && 'text-left'}"
+    : 'text-slate-800'} {inTable && 'text-left'}"
   {dark}
 >
   <slot name="value">

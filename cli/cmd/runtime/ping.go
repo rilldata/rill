@@ -1,16 +1,15 @@
 package runtime
 
 import (
-	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/cli/pkg/config"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/client"
 	"github.com/spf13/cobra"
 )
 
-func PingCmd(cfg *config.Config) *cobra.Command {
+func PingCmd(ch *cmdutil.Helper) *cobra.Command {
 	var runtimeURL string
 
 	pingCmd := &cobra.Command{
@@ -23,7 +22,7 @@ func PingCmd(cfg *config.Config) *cobra.Command {
 			}
 			defer client.Close()
 
-			pong, err := client.Ping(context.Background(), &runtimev1.PingRequest{})
+			pong, err := client.Ping(cmd.Context(), &runtimev1.PingRequest{})
 			if err != nil {
 				return err
 			}

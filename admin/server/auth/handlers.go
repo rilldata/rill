@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"net/http"
 	"net/url"
+	"strconv"
 
 	"github.com/coreos/go-oidc/v3/oidc"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
-	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
@@ -30,30 +31,33 @@ const (
 // Note that these are not gRPC handlers, just regular HTTP endpoints that we mount on the gRPC-gateway mux.
 func (a *Authenticator) RegisterEndpoints(mux *http.ServeMux, limiter ratelimit.Limiter) {
 	// checkLimit needs access to limiter
-	checkLimit := func(route string, req *http.Request) error {
-		claims := GetClaims(req.Context())
-		if claims == nil || claims.OwnerType() == OwnerTypeAnon {
-			limitKey := ratelimit.AnonLimitKey(route, observability.HTTPPeer(req))
-			if err := limiter.Limit(req.Context(), limitKey, ratelimit.Sensitive); err != nil {
-				if errors.As(err, &ratelimit.QuotaExceededError{}) {
-					return middleware.NewHTTPError(http.StatusTooManyRequests, err.Error())
+	checkLimit := func(route string) middleware.CheckFunc {
+		return func(req *http.Request) error {
+			claims := GetClaims(req.Context())
+			if claims == nil || claims.OwnerType() == OwnerTypeAnon {
+				limitKey := ratelimit.AnonLimitKey(route, observability.HTTPPeer(req))
+				if err := limiter.Limit(req.Context(), limitKey, ratelimit.Sensitive); err != nil {
+					if errors.As(err, &ratelimit.QuotaExceededError{}) {
+						return httputil.Error(http.StatusTooManyRequests, err)
+					}
+					return err
 				}
-				return err
 			}
+			return nil
 		}
-		return nil
 	}
+
 	// TODO: Add helper utils to clean this up
 	inner := http.NewServeMux()
-	inner.Handle("/auth/signup", otelhttp.WithRouteTag("/auth/signup", middleware.RequestHTTPHandler("/auth/signup", checkLimit, http.HandlerFunc(a.authSignup))))
-	inner.Handle("/auth/login", otelhttp.WithRouteTag("/auth/login", middleware.RequestHTTPHandler("/auth/login", checkLimit, http.HandlerFunc(a.authLogin))))
-	inner.Handle("/auth/callback", otelhttp.WithRouteTag("/auth/callback", middleware.RequestHTTPHandler("/auth/callback", checkLimit, http.HandlerFunc(a.authLoginCallback))))
-	inner.Handle("/auth/with-token", otelhttp.WithRouteTag("/auth/with-token", middleware.RequestHTTPHandler("/auth/with-token", checkLimit, http.HandlerFunc(a.authWithToken))))
-	inner.Handle("/auth/logout", otelhttp.WithRouteTag("/auth/logout", middleware.RequestHTTPHandler("/auth/logout", checkLimit, http.HandlerFunc(a.authLogout))))
-	inner.Handle("/auth/logout/callback", otelhttp.WithRouteTag("/auth/logout/callback", middleware.RequestHTTPHandler("/auth/logout/callback", checkLimit, http.HandlerFunc(a.authLogoutCallback))))
-	inner.Handle("/auth/oauth/device_authorization", otelhttp.WithRouteTag("/auth/oauth/device_authorization", middleware.RequestHTTPHandler("/auth/oauth/device_authorization", checkLimit, http.HandlerFunc(a.handleDeviceCodeRequest))))
-	inner.Handle("/auth/oauth/device", otelhttp.WithRouteTag("/auth/oauth/device", a.HTTPMiddleware(middleware.RequestHTTPHandler("/auth/oauth/device", checkLimit, http.HandlerFunc(a.handleUserCodeConfirmation))))) // NOTE: Uses auth middleware
-	inner.Handle("/auth/oauth/token", otelhttp.WithRouteTag("/auth/oauth/token", middleware.RequestHTTPHandler("/auth/oauth/token", checkLimit, http.HandlerFunc(a.getAccessToken))))
+	observability.MuxHandle(inner, "/auth/signup", middleware.Check(checkLimit("/auth/signup"), http.HandlerFunc(a.authSignup)))
+	observability.MuxHandle(inner, "/auth/login", middleware.Check(checkLimit("/auth/login"), http.HandlerFunc(a.authLogin)))
+	observability.MuxHandle(inner, "/auth/callback", middleware.Check(checkLimit("/auth/callback"), http.HandlerFunc(a.authLoginCallback)))
+	observability.MuxHandle(inner, "/auth/with-token", middleware.Check(checkLimit("/auth/with-token"), http.HandlerFunc(a.authWithToken)))
+	observability.MuxHandle(inner, "/auth/logout", middleware.Check(checkLimit("/auth/logout"), http.HandlerFunc(a.authLogout)))
+	observability.MuxHandle(inner, "/auth/logout/callback", middleware.Check(checkLimit("/auth/logout/callback"), http.HandlerFunc(a.authLogoutCallback)))
+	observability.MuxHandle(inner, "/auth/oauth/device_authorization", middleware.Check(checkLimit("/auth/oauth/device_authorization"), http.HandlerFunc(a.handleDeviceCodeRequest)))
+	observability.MuxHandle(inner, "/auth/oauth/device", a.HTTPMiddleware(middleware.Check(checkLimit("/auth/oauth/device"), http.HandlerFunc(a.handleUserCodeConfirmation)))) // NOTE: Uses auth middleware
+	observability.MuxHandle(inner, "/auth/oauth/token", middleware.Check(checkLimit("/auth/oauth/token"), http.HandlerFunc(a.getAccessToken)))
 	mux.Handle("/auth/", observability.Middleware("admin", a.logger, inner))
 }
 
@@ -123,6 +127,13 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 	delete(sess.Values, cookieFieldState)
 
+	// Check for errors in the auth flow
+	if errStr := r.URL.Query().Get("error"); errStr != "" {
+		description := r.URL.Query().Get("error_description")
+		http.Error(w, fmt.Sprintf("auth error of type %q: %s", errStr, description), http.StatusUnauthorized)
+		return
+	}
+
 	// Exchange authorization code for an oauth2 token
 	oauthToken, err := a.oauth2.Exchange(r.Context(), r.URL.Query().Get("code"))
 	if err != nil {
@@ -160,8 +171,17 @@ func (a *Authenticator) authLoginCallback(w http.ResponseWriter, r *http.Request
 	}
 	emailVerified, ok := profile["email_verified"].(bool)
 	if !ok {
-		http.Error(w, "claim 'email_verified' not found", http.StatusInternalServerError)
-		return
+		// For SAML flows, it is passed as a string
+		emailVerifiedStr, ok := profile["email_verified"].(string)
+		if !ok {
+			http.Error(w, "claim 'email_verified' not found", http.StatusInternalServerError)
+			return
+		}
+		emailVerified, err = strconv.ParseBool(emailVerifiedStr)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("claim 'email_verified' could not be parsed as a boolean (got %q)", emailVerifiedStr), http.StatusInternalServerError)
+			return
+		}
 	}
 	name, ok := profile["name"].(string)
 	if !ok {

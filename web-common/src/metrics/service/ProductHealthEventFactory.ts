@@ -10,12 +10,13 @@ export class ProductHealthEventFactory extends MetricsEventFactory {
     commonFields: CommonFields,
     commonUserFields: CommonUserFields,
     durationMilSec: number,
-    totalInFocus: number
+    totalInFocus: number,
   ): ActiveEvent {
     const event = this.getBaseMetricsEvent(
       "active",
+      "active",
       commonFields,
-      commonUserFields
+      commonUserFields,
     ) as ActiveEvent;
     event.duration_sec = Math.round(durationMilSec / 1000);
     event.total_in_focus = totalInFocus;

@@ -2,7 +2,9 @@ package admin
 
 import (
 	"context"
+	"fmt"
 
+	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -11,24 +13,35 @@ import (
 )
 
 type Options struct {
-	DatabaseDriver  string
-	DatabaseDSN     string
-	ProvisionerSpec string
-	ExternalURL     string
+	DatabaseDriver     string
+	DatabaseDSN        string
+	ProvisionerSetJSON string
+	DefaultProvisioner string
+	ExternalURL        string
+	VersionNumber      string
+	VersionCommit      string
+	MetricsProjectOrg  string
+	MetricsProjectName string
+	AutoscalerCron     string
 }
 
 type Service struct {
-	DB          database.DB
-	Provisioner *provisioner.StaticProvisioner
-	Email       *email.Client
-	Used        *usedFlusher
-	Github      Github
-	Logger      *zap.Logger
-	opts        *Options
-	issuer      *auth.Issuer
+	DB               database.DB
+	ProvisionerSet   map[string]provisioner.Provisioner
+	Email            *email.Client
+	Github           Github
+	AI               ai.Client
+	Used             *usedFlusher
+	Logger           *zap.Logger
+	opts             *Options
+	issuer           *auth.Issuer
+	VersionNumber    string
+	VersionCommit    string
+	metricsProjectID string
+	AutoscalerCron   string
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -54,21 +67,42 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		logger.Info("database migrated", zap.Int("from_version", v1), zap.Int("to_version", v2))
 	}
 
-	// Create provisioner
-	prov, err := provisioner.NewStatic(opts.ProvisionerSpec, db)
+	// Create provisioner set
+	provSet, err := provisioner.NewSet(opts.ProvisionerSetJSON, db, logger)
 	if err != nil {
 		return nil, err
 	}
 
+	// Verify that the specified default provisioner is in the provisioner set
+	_, ok := provSet[opts.DefaultProvisioner]
+	if !ok {
+		return nil, fmt.Errorf("default provisioner %q is not in the provisioner set", opts.DefaultProvisioner)
+	}
+
+	// Look for the optional metrics project
+	var metricsProjectID string
+	if opts.MetricsProjectOrg != "" && opts.MetricsProjectName != "" {
+		proj, err := db.FindProjectByName(ctx, opts.MetricsProjectOrg, opts.MetricsProjectName)
+		if err != nil {
+			return nil, fmt.Errorf("error looking up metrics project: %w", err)
+		}
+		metricsProjectID = proj.ID
+	}
+
 	return &Service{
-		DB:          db,
-		Provisioner: prov,
-		Email:       emailClient,
-		Github:      github,
-		Used:        newUsedFlusher(logger, db),
-		opts:        opts,
-		Logger:      logger,
-		issuer:      issuer,
+		DB:               db,
+		ProvisionerSet:   provSet,
+		Email:            emailClient,
+		Github:           github,
+		AI:               aiClient,
+		Used:             newUsedFlusher(logger, db),
+		Logger:           logger,
+		opts:             opts,
+		issuer:           issuer,
+		VersionNumber:    opts.VersionNumber,
+		VersionCommit:    opts.VersionCommit,
+		metricsProjectID: metricsProjectID,
+		AutoscalerCron:   opts.AutoscalerCron,
 	}, nil
 }
 

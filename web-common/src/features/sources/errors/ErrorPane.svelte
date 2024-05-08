@@ -1,19 +1,14 @@
 <script lang="ts">
   import CancelCircle from "../../../components/icons/CancelCircle.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import { getFilePathFromNameAndType } from "../../entity-management/entity-mappers";
-  import { EntityType } from "../../entity-management/types";
   import { humanReadableErrorMessage } from "../modal/errors";
   import { useSourceFromYaml } from "../selectors";
 
-  export let sourceName: string;
+  export let filePath: string;
   export let errorMessage: string;
 
   // Parse Source YAML client-side
-  $: sourceFromYaml = useSourceFromYaml(
-    $runtime.instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table)
-  );
+  $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
   // Try to extract the connector type
   $: connectorType = $sourceFromYaml.data?.type;

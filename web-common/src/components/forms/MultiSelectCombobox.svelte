@@ -19,7 +19,7 @@
   let inputValue = "";
 
   $: filteredOptions = options.filter((option) =>
-    option.toLowerCase().includes(inputValue.toLowerCase())
+    option.toLowerCase().includes(inputValue.toLowerCase()),
   );
 
   function toggleOption(option: string) {
@@ -65,7 +65,7 @@
       name={id}
       {placeholder}
       type="text"
-      class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-blue-500 w-full text-xs {error &&
+      class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {error &&
         'border-red-500'}"
       bind:value={inputValue}
       on:input={() => {
@@ -74,6 +74,8 @@
     />
     <Menu
       slot="floating-element"
+      let:active
+      let:toggleFloatingElement
       focusOnMount={false}
       minWidth={`${inputEl.clientWidth}px`}
       maxHeight="120px"
@@ -110,7 +112,7 @@
     </Menu>
   </WithTogglableFloatingElement>
   {#if error}
-    <div in:slide|local={{ duration: 200 }} class="text-red-500 text-sm py-px">
+    <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {error}
     </div>
   {/if}

@@ -11,7 +11,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
@@ -20,59 +22,6 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
-
-// GetLogs implements runtimev1.RuntimeServiceServer
-func (s *Server) GetLogs(ctx context.Context, req *runtimev1.GetLogsRequest) (*runtimev1.GetLogsResponse, error) {
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.Bool("args.ascending", req.Ascending),
-	)
-
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
-		return nil, ErrForbidden
-	}
-
-	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	return &runtimev1.GetLogsResponse{Logs: ctrl.Logs.GetLogs(req.Ascending, int(req.Limit))}, nil
-}
-
-// WatchLogs implements runtimev1.RuntimeServiceServer
-func (s *Server) WatchLogs(req *runtimev1.WatchLogsRequest, srv runtimev1.RuntimeService_WatchLogsServer) error {
-	ctx := srv.Context()
-	s.addInstanceRequestAttributes(ctx, req.InstanceId)
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.instance_id", req.InstanceId),
-		attribute.Bool("args.replay", req.Replay),
-	)
-
-	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
-		return ErrForbidden
-	}
-
-	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
-	if err != nil {
-		return status.Error(codes.InvalidArgument, err.Error())
-	}
-	if req.Replay {
-		for _, l := range ctrl.Logs.GetLogs(true, int(req.ReplayLimit)) {
-			err := srv.Send(&runtimev1.WatchLogsResponse{Log: l})
-			if err != nil {
-				return status.Error(codes.InvalidArgument, err.Error())
-			}
-		}
-	}
-
-	return ctrl.Logs.WatchLogs(srv.Context(), func(item *runtimev1.Log) {
-		err := srv.Send(&runtimev1.WatchLogsResponse{Log: item})
-		if err != nil {
-			s.logger.Info("failed to send log event", zap.Error(err))
-		}
-	})
-}
 
 // ListResources implements runtimev1.RuntimeServiceServer
 func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResourcesRequest) (*runtimev1.ListResourcesResponse, error) {
@@ -91,7 +40,7 @@ func (s *Server) ListResources(ctx context.Context, req *runtimev1.ListResources
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	rs, err := ctrl.List(ctx, req.Kind, false)
+	rs, err := ctrl.List(ctx, req.Kind, req.Path, false)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -146,7 +95,7 @@ func (s *Server) WatchResources(req *runtimev1.WatchResourcesRequest, ss runtime
 	}
 
 	if req.Replay {
-		rs, err := ctrl.List(ss.Context(), req.Kind, false)
+		rs, err := ctrl.List(ss.Context(), req.Kind, "", false)
 		if err != nil {
 			return status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -280,7 +229,9 @@ func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runt
 	case *runtimev1.Resource_MetricsView:
 		return s.applySecurityPolicyMetricsView(ctx, instID, r)
 	case *runtimev1.Resource_Report:
-		return s.applySecurityPolicyReport(ctx, instID, r)
+		return s.applySecurityPolicyReport(ctx, r)
+	case *runtimev1.Resource_Alert:
+		return s.applySecurityPolicyAlert(ctx, r)
 	default:
 		return r, true, nil
 	}
@@ -320,11 +271,20 @@ func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID stri
 
 // applySecurityPolicyIncludesAndExcludes rewrites a metrics view based on the include/exclude conditions of a security policy.
 func (s *Server) applySecurityPolicyMetricsViewIncludesAndExcludes(mv *runtimev1.MetricsViewV2, policy *runtime.ResolvedMetricsViewSecurity) (*runtimev1.MetricsViewV2, bool) {
-	if policy == nil || (len(policy.Include) == 0 && len(policy.Exclude) == 0) {
+	if policy == nil {
 		return mv, false
 	}
-
 	mv = proto.Clone(mv).(*runtimev1.MetricsViewV2)
+
+	if policy.ExcludeAll {
+		mv.Spec.Measures = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
+		mv.Spec.Dimensions = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
+		if mv.State.ValidSpec != nil {
+			mv.State.ValidSpec.Measures = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
+			mv.State.ValidSpec.Dimensions = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
+		}
+		return mv, true
+	}
 
 	if len(policy.Include) > 0 {
 		allowed := make(map[string]bool)
@@ -413,7 +373,7 @@ func (s *Server) applySecurityPolicyMetricsViewIncludesAndExcludes(mv *runtimev1
 
 // applySecurityPolicyReport applies security policies to a report.
 // TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
-func (s *Server) applySecurityPolicyReport(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
 	report := r.GetReport()
 	claims := auth.GetClaims(ctx)
 
@@ -436,9 +396,76 @@ func (s *Server) applySecurityPolicyReport(ctx context.Context, instID string, r
 	}
 
 	// Allow if the user is a recipient
-	for _, recipient := range report.Spec.EmailRecipients {
-		if recipient == email {
-			return r, true, nil
+	for _, notifier := range report.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+			for _, recipient := range recipients {
+				if recipient == email {
+					return r, true, nil
+				}
+			}
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, false, err
+			}
+			for _, user := range props.Users {
+				if user == email {
+					return r, true, nil
+				}
+			}
+		}
+	}
+
+	// Don't allow
+	return nil, false, nil
+}
+
+// applySecurityPolicyAlert applies security policies to an alert.
+// TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
+func (s *Server) applySecurityPolicyAlert(ctx context.Context, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
+	alert := r.GetAlert()
+	claims := auth.GetClaims(ctx)
+
+	// Allow if the owner is accessing the alert
+	if alert.Spec.Annotations != nil && claims.Subject() == alert.Spec.Annotations["admin_owner_user_id"] {
+		return r, true, nil
+	}
+
+	// Extract admin attributes
+	var email string
+	admin := true // If no attributes are set, assume it's an admin
+	if attrs := claims.Attributes(); len(attrs) != 0 {
+		email, _ = attrs["email"].(string)
+		admin, _ = attrs["admin"].(bool)
+	}
+
+	// Allow if the user is an admin
+	if admin {
+		return r, true, nil
+	}
+
+	// Allow if the user is an email recipient
+	for _, notifier := range alert.Spec.Notifiers {
+		switch notifier.Connector {
+		case "email":
+			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
+			for _, recipient := range recipients {
+				if recipient == email {
+					return r, true, nil
+				}
+			}
+		case "slack":
+			props, err := slack.DecodeProps(notifier.Properties.AsMap())
+			if err != nil {
+				return nil, false, err
+			}
+			for _, user := range props.Users {
+				if user == email {
+					return r, true, nil
+				}
+			}
 		}
 	}
 

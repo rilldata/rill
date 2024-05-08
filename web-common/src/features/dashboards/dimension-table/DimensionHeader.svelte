@@ -1,6 +1,5 @@
 <script lang="ts">
   import { Switch } from "@rilldata/web-common/components/button";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
@@ -10,23 +9,22 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { cancelDashboardQueries } from "@rilldata/web-common/features/dashboards/dashboard-queries";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
-  import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
+  import SelectAllButton from "./SelectAllButton.svelte";
 
   export let dimensionName: string;
   export let isFetching: boolean;
   export let areAllTableRowsSelected = false;
   export let isRowsEmpty = true;
+  export let enableSearch = true;
 
   const dispatch = createEventDispatcher();
 
@@ -44,13 +42,13 @@
         clearDimensionTableSearchString,
       },
       dimensions: { setPrimaryDimension },
+      dimensionsFilter: { toggleDimensionFilterMode },
     },
-    metricsViewName,
   } = stateManagers;
 
-  $: excludeMode = $isFilterExcludeMode(dimensionName);
+  const { adminServer } = featureFlags;
 
-  const queryClient = useQueryClient();
+  $: excludeMode = $isFilterExcludeMode(dimensionName);
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
@@ -72,6 +70,13 @@
     searchBarOpen = false;
   }
 
+  function onSubmit() {
+    if (!areAllTableRowsSelected) {
+      dispatch("toggle-all-search-items");
+      closeSearchBar();
+    }
+  }
+
   const goBackToLeaderboard = () => {
     if ($sortedByDimensionValue) {
       toggleSort(SortType.VALUE);
@@ -79,12 +84,11 @@
     setPrimaryDimension(undefined);
   };
   function toggleFilterMode() {
-    cancelDashboardQueries(queryClient, $metricsViewName);
-    metricsExplorerStore.toggleFilterMode($metricsViewName, dimensionName);
+    toggleDimensionFilterMode(dimensionName);
   }
 </script>
 
-<div class="flex justify-between items-center p-1">
+<div class="flex justify-between items-center p-1 pr-5">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
     {#if isFetching}
       <div>
@@ -99,30 +103,28 @@
   </button>
 
   <!-- We fix the height to avoid a layout shift when the Search component is expanded. -->
-  <div class="flex items-center gap-x-5 cursor-pointer h-9">
-    {#if searchText && !isRowsEmpty}
-      <Button
-        type="secondary"
-        compact={true}
-        on:click={() => dispatch("toggle-all-search-items")}
-      >
-        {areAllTableRowsSelected ? "Deselect all" : "Select all"}
-      </Button>
+  <div class="flex items-center gap-x-1 cursor-pointer h-9">
+    {#if !isRowsEmpty}
+      <SelectAllButton {areAllTableRowsSelected} on:toggle-all-search-items />
     {/if}
     {#if searchBarOpen || (searchText && searchText !== "")}
       <div
-        transition:slideRight|local={{ leftOffset: 8 }}
-        class="flex items-center gap-x-1"
+        transition:slideRight={{ leftOffset: 8 }}
+        class="flex items-center gap-x-2 p-1.5"
       >
-        <Search bind:value={searchText} on:input={onSearch} />
+        <Search
+          bind:value={searchText}
+          on:input={onSearch}
+          on:submit={onSubmit}
+        />
         <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
           <Close />
         </button>
       </div>
-    {:else}
+    {:else if enableSearch}
       <button
-        class="flex items-center gap-x-1 text-gray-700"
-        in:fly={{ x: 10, duration: 300 }}
+        class="flex items-center gap-x-2 p-1.5 text-gray-700"
+        in:fly|global={{ x: 10, duration: 300 }}
         on:click={() => (searchBarOpen = !searchBarOpen)}
       >
         <SearchIcon size="16px" />
@@ -131,7 +133,7 @@
     {/if}
 
     <Tooltip distance={16} location="left">
-      <div class="flex items-center gap-x-1 ui-copy-icon">
+      <div class="flex items-center gap-x-1 px-1.5 ui-copy-icon">
         <Switch checked={excludeMode} on:click={() => toggleFilterMode()}>
           Exclude
         </Switch>
@@ -149,9 +151,6 @@
       </TooltipContent>
     </Tooltip>
 
-    <ExportDimensionTableDataButton
-      metricViewName={$metricsViewName}
-      includeScheduledReport={$featureFlags.adminServer}
-    />
+    <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
   </div>
 </div>

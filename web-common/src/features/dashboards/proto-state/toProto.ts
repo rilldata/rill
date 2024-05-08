@@ -1,35 +1,44 @@
 import {
   NullValue,
   PartialMessage,
+  protoBase64,
   Timestamp,
   Value,
 } from "@bufbuild/protobuf";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
-import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
+  PivotChipType,
+  type PivotState,
+} from "@rilldata/web-common/features/dashboards/pivot/types";
+import {
+  ToProtoOperationMap,
+  ToProtoPivotRowJoinTypeMap,
+  ToProtoTimeGrainMap,
+} from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
+import type {
   DashboardTimeControls,
   ScrubRange,
+} from "@rilldata/web-common/lib/time/types";
+import {
   TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  MetricsViewFilter,
-  MetricsViewFilter_Cond,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/queries_pb";
+  Condition,
+  Expression,
+} from "@rilldata/web-common/proto/gen/rill/runtime/v1/expression_pb";
 import {
-  TimeGrain,
-  TimeGrain as TimeGrainProto,
-} from "@rilldata/web-common/proto/gen/rill/runtime/v1/time_grain_pb";
-import {
+  DashboardDimensionFilter,
   DashboardState,
+  DashboardState_ActivePage,
   DashboardState_LeaderboardContextColumn,
+  DashboardState_PivotRowJoinType,
   DashboardTimeRange,
 } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
-  MetricsViewFilterCond,
-  V1MetricsViewFilter,
-} from "@rilldata/web-common/runtime-client";
-import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+import type { V1Expression } from "@rilldata/web-common/runtime-client";
+import { V1Operation, V1TimeGrain } from "@rilldata/web-common/runtime-client";
 
 // TODO: make a follow up PR to use the one from the proto directly
 const LeaderboardContextColumnMap: Record<
@@ -46,24 +55,42 @@ const LeaderboardContextColumnMap: Record<
     DashboardState_LeaderboardContextColumn.HIDDEN,
 };
 
+const TDDChartTypeMap: Record<TDDChart, string> = {
+  [TDDChart.DEFAULT]: "default",
+  [TDDChart.STACKED_BAR]: "stacked_bar",
+  [TDDChart.GROUPED_BAR]: "grouped_bar",
+  [TDDChart.STACKED_AREA]: "stacked_area",
+};
+
 export function getProtoFromDashboardState(
-  metrics: MetricsExplorerEntity
+  metrics: MetricsExplorerEntity,
 ): string {
   if (!metrics) return "";
 
   const state: PartialMessage<DashboardState> = {};
-  if (metrics.filters) {
-    state.filters = toFiltersProto(metrics.filters) as any;
+  if (metrics.whereFilter) {
+    state.where = toExpressionProto(metrics.whereFilter);
+  }
+  if (metrics.dimensionThresholdFilters.length) {
+    state.having = metrics.dimensionThresholdFilters.map(
+      ({ name, filter }) =>
+        new DashboardDimensionFilter({
+          name,
+          filter: toExpressionProto(filter),
+        }),
+    );
   }
   if (metrics.selectedTimeRange) {
     state.timeRange = toTimeRangeProto(metrics.selectedTimeRange);
     if (metrics.selectedTimeRange.interval) {
-      state.timeGrain = toTimeGrainProto(metrics.selectedTimeRange.interval);
+      state.timeGrain =
+        ToProtoTimeGrainMap[metrics.selectedTimeRange.interval] ??
+        V1TimeGrain.TIME_GRAIN_UNSPECIFIED;
     }
   }
   if (metrics.selectedComparisonTimeRange) {
     state.compareTimeRange = toTimeRangeProto(
-      metrics.selectedComparisonTimeRange
+      metrics.selectedComparisonTimeRange,
     );
   }
   if (metrics.lastDefinedScrubRange) {
@@ -73,20 +100,18 @@ export function getProtoFromDashboardState(
   if (metrics.selectedComparisonDimension) {
     state.comparisonDimension = metrics.selectedComparisonDimension;
   }
-  if (metrics.selectedTimezone) {
-    state.selectedTimezone = metrics.selectedTimezone;
-  }
+
+  state.selectedTimezone = metrics.selectedTimezone;
+
   if (metrics.leaderboardMeasureName) {
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
-  if (metrics.expandedMeasureName) {
-    state.expandedMeasure = metrics.expandedMeasureName;
+
+  if (metrics.tdd.pinIndex !== undefined) {
+    state.pinIndex = metrics.tdd.pinIndex;
   }
-  if (metrics.pinIndex !== undefined) {
-    state.pinIndex = metrics.pinIndex;
-  }
-  if (metrics.selectedDimensionName) {
-    state.selectedDimension = metrics.selectedDimensionName;
+  if (metrics.tdd.chartType !== undefined) {
+    state.chartType = TDDChartTypeMap[metrics.tdd.chartType];
   }
 
   if (metrics.allMeasuresVisible) {
@@ -113,19 +138,18 @@ export function getProtoFromDashboardState(
     state.leaderboardSortType = metrics.dashboardSortType;
   }
 
+  if (metrics.pivot) {
+    Object.assign(state, toPivotProto(metrics.pivot));
+  }
+
+  Object.assign(state, toActivePageProto(metrics));
+
   const message = new DashboardState(state);
   return protoToBase64(message.toBinary());
 }
 
 function protoToBase64(proto: Uint8Array) {
-  return btoa(String.fromCharCode.apply(null, proto));
-}
-
-function toFiltersProto(filters: V1MetricsViewFilter) {
-  return new MetricsViewFilter({
-    include: toFilterCondProto(filters.include) as any,
-    exclude: toFilterCondProto(filters.exclude) as any,
-  });
+  return protoBase64.enc(proto);
 }
 
 function toTimeRangeProto(range: DashboardTimeControls) {
@@ -136,8 +160,8 @@ function toTimeRangeProto(range: DashboardTimeControls) {
     range.name === TimeRangePreset.CUSTOM ||
     range.name === TimeComparisonOption.CUSTOM
   ) {
-    timeRangeArgs.timeStart = toTimeProto(range.start);
-    timeRangeArgs.timeEnd = toTimeProto(range.end);
+    if (range.start) timeRangeArgs.timeStart = toTimeProto(range.start);
+    if (range.end) timeRangeArgs.timeEnd = toTimeProto(range.end);
   }
   return new DashboardTimeRange(timeRangeArgs);
 }
@@ -158,54 +182,139 @@ function toTimeProto(date: Date) {
   });
 }
 
-function toTimeGrainProto(timeGrain: V1TimeGrain) {
-  switch (timeGrain) {
-    case V1TimeGrain.TIME_GRAIN_UNSPECIFIED:
+function toExpressionProto(
+  expression: V1Expression | undefined,
+): Expression | undefined {
+  if (!expression) return undefined;
+  if ("ident" in expression) {
+    return new Expression({
+      expression: {
+        case: "ident",
+        value: expression.ident as string,
+      },
+    });
+  }
+  if ("val" in expression) {
+    return new Expression({
+      expression: {
+        case: "val",
+        value: toPbValue(expression.val),
+      },
+    });
+  }
+  if (expression.cond) {
+    return new Expression({
+      expression: {
+        case: "cond",
+        value: new Condition({
+          op: ToProtoOperationMap[
+            expression.cond.op ?? V1Operation.OPERATION_UNSPECIFIED
+          ],
+          exprs: expression.cond.exprs?.map((e) => toExpressionProto(e)) ?? [],
+        }),
+      },
+    });
+  }
+  return undefined;
+}
+
+function toPbValue(val: unknown) {
+  if (val === null) {
+    return new Value({
+      kind: {
+        case: "nullValue",
+        value: NullValue.NULL_VALUE,
+      },
+    });
+  }
+  switch (typeof val) {
+    case "string":
+      return new Value({
+        kind: {
+          case: "stringValue",
+          value: val,
+        },
+      });
+    case "number":
+      return new Value({
+        kind: {
+          case: "numberValue",
+          value: val,
+        },
+      });
+    case "boolean":
+      return new Value({
+        kind: {
+          case: "boolValue",
+          value: val,
+        },
+      });
+    // TODO: other options are not currently in a filter. but we might need them in future
     default:
-      return TimeGrain.UNSPECIFIED;
-    case V1TimeGrain.TIME_GRAIN_MILLISECOND:
-      return TimeGrain.MILLISECOND;
-    case V1TimeGrain.TIME_GRAIN_SECOND:
-      return TimeGrain.SECOND;
-    case V1TimeGrain.TIME_GRAIN_MINUTE:
-      return TimeGrainProto.MINUTE;
-    case V1TimeGrain.TIME_GRAIN_HOUR:
-      return TimeGrainProto.HOUR;
-    case V1TimeGrain.TIME_GRAIN_DAY:
-      return TimeGrainProto.DAY;
-    case V1TimeGrain.TIME_GRAIN_WEEK:
-      return TimeGrainProto.WEEK;
-    case V1TimeGrain.TIME_GRAIN_MONTH:
-      return TimeGrainProto.MONTH;
-    case V1TimeGrain.TIME_GRAIN_QUARTER:
-      return TimeGrainProto.QUARTER;
-    case V1TimeGrain.TIME_GRAIN_YEAR:
-      return TimeGrainProto.YEAR;
+      // force as string for unknown types. this is the older behaviour
+      return new Value({
+        kind: {
+          case: "stringValue",
+          value: JSON.stringify(val),
+        },
+      });
   }
 }
 
-function toFilterCondProto(conds: Array<MetricsViewFilterCond>) {
-  return conds.map(
-    (include) =>
-      new MetricsViewFilter_Cond({
-        name: include.name,
-        like: include.like,
-        in: include.in.map(
-          (v) =>
-            (v === null
-              ? new Value({
-                  kind: {
-                    case: "nullValue",
-                    value: NullValue.NULL_VALUE,
-                  },
-                })
-              : new Value({
-                  kind: {
-                    case: "stringValue",
-                    value: v as string,
-                  },
-                })) as any
-        ),
-      })
-  );
+function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
+  if (!pivotState.active)
+    return {
+      pivotIsActive: false,
+      pivotExpanded: {},
+      pivotRowJoinType: DashboardState_PivotRowJoinType.UNSPECIFIED,
+    };
+  return {
+    pivotIsActive: true,
+
+    pivotRowTimeDimensions: pivotState.rows.dimension
+      .filter((d) => d.type === PivotChipType.Time)
+      .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
+    pivotRowDimensions: pivotState.rows.dimension
+      .filter((d) => d.type === PivotChipType.Dimension)
+      .map((d) => d.id),
+
+    pivotColumnTimeDimensions: pivotState.columns.dimension
+      .filter((d) => d.type === PivotChipType.Time)
+      .map((d) => ToProtoTimeGrainMap[d.id as V1TimeGrain]),
+    pivotColumnDimensions: pivotState.columns.dimension
+      .filter((d) => d.type === PivotChipType.Dimension)
+      .map((d) => d.id),
+    pivotColumnMeasures: pivotState.columns.measure.map((m) => m.id),
+
+    // pivotExpanded: pivotState.expanded,
+    pivotSort: pivotState.sorting,
+    pivotColumnPage: pivotState.columnPage,
+    pivotRowJoinType: ToProtoPivotRowJoinTypeMap[pivotState.rowJoinType],
+  };
+}
+
+function toActivePageProto(
+  metrics: MetricsExplorerEntity,
+): PartialMessage<DashboardState> {
+  switch (metrics.activePage) {
+    case DashboardState_ActivePage.DEFAULT:
+    case DashboardState_ActivePage.PIVOT:
+      return {
+        activePage: metrics.activePage,
+      };
+
+    case DashboardState_ActivePage.DIMENSION_TABLE:
+      return {
+        activePage: metrics.activePage,
+        selectedDimension: metrics.selectedDimensionName,
+      };
+
+    case DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL:
+      return {
+        activePage: metrics.activePage,
+        expandedMeasure: metrics.tdd.expandedMeasureName,
+      };
+  }
+
+  return {};
 }

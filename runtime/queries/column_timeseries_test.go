@@ -2,6 +2,8 @@ package queries_test
 
 import (
 	"context"
+	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -9,11 +11,52 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+func TestAgainstClickHouse(t *testing.T) {
+	if testing.Short() {
+		t.Skip("clickhouse: skipping test in short mode")
+	}
+
+	ctx := context.Background()
+	clickHouseContainer, err := clickhouse.RunContainer(ctx,
+		testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+		clickhouse.WithUsername("clickhouse"),
+		clickhouse.WithPassword("clickhouse"),
+		clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+	)
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		err := clickHouseContainer.Terminate(ctx)
+		require.NoError(t, err)
+	})
+
+	host, err := clickHouseContainer.Host(ctx)
+	require.NoError(t, err)
+	port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+	require.NoError(t, err)
+
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DRIVER", "clickhouse")
+	t.Setenv("RILL_RUNTIME_TEST_OLAP_DSN", fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port()))
+	t.Run("TestTimeseries_normaliseTimeRange", func(t *testing.T) { TestTimeseries_normaliseTimeRange(t) })
+	t.Run("TestTimeseries_normaliseTimeRange_NoEnd", func(t *testing.T) { TestTimeseries_normaliseTimeRange_NoEnd(t) })
+	t.Run("TestTimeseries_normaliseTimeRange_Specified", func(t *testing.T) { TestTimeseries_normaliseTimeRange_Specified(t) })
+	t.Run("TestTimeseries_SparkOnly", func(t *testing.T) { TestTimeseries_SparkOnly(t) })
+	t.Run("TestTimeseries_FirstDayOfWeek_Monday", func(t *testing.T) { TestTimeseries_FirstDayOfWeek_Monday(t) })
+	t.Run("TestTimeseries_FirstDayOfWeek_Sunday", func(t *testing.T) { TestTimeseries_FirstDayOfWeek_Sunday(t) })
+	// t.Run("TestTimeseries_FirstDayOfWeek_Sunday_OnSunday", func(t *testing.T) { TestTimeseries_FirstDayOfWeek_Sunday_OnSunday(t) })
+	t.Run("TestTimeseries_FirstDayOfWeek_Saturday", func(t *testing.T) { TestTimeseries_FirstDayOfWeek_Saturday(t) })
+	t.Run("TestTimeseries_FirstMonthOfYear_January", func(t *testing.T) { TestTimeseries_FirstMonthOfYear_January(t) })
+	// t.Run("TestTimeseries_FirstMonthOfYear_March", func(t *testing.T) { TestTimeseries_FirstMonthOfYear_March(t) })
+	t.Run("TestTimeseries_FirstMonthOfYear_December", func(t *testing.T) { TestTimeseries_FirstMonthOfYear_December(t) })
+	// t.Run("TestTimeseries_FirstMonthOfYear_December_InDecember", func(t *testing.T) { TestTimeseries_FirstMonthOfYear_December_InDecember(t) })
+}
 
 func instanceWith2RowsModel(t *testing.T) (*runtime.Runtime, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
@@ -40,23 +83,44 @@ func instanceWith1RowModelWithTime(t *testing.T, tm string) (*runtime.Runtime, s
 
 func instanceWithSparkModel(t *testing.T) (*runtime.Runtime, string) {
 	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01 00:00:00' AS time, 'android' AS device
+		UNION ALL
+		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-02 00:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 3.0 AS clicks, TIMESTAMP '2019-01-03 00:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 4.0 AS clicks, TIMESTAMP '2019-01-04 00:00:00' AS time, 'android' AS device
+		UNION ALL
+		SELECT 5.0 AS clicks, TIMESTAMP '2019-01-05 00:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 4.5 AS clicks, TIMESTAMP '2019-01-06 00:00:00' AS time, 'android' AS device
+		UNION ALL
+		SELECT 3.5 AS clicks, TIMESTAMP '2019-01-07 00:00:00' AS time, 'android' AS device
+		UNION ALL
+		SELECT 2.5 AS clicks, TIMESTAMP '2019-01-08 00:00:00' AS time, 'iphone' AS device
+		UNION ALL
+		SELECT 1.5 AS clicks, TIMESTAMP '2019-01-09 00:00:00' AS time, 'iphone' AS device
+	`)
+	return rt, instanceID
+}
+
+func instanceWithSparkSameTimestampModel(t *testing.T) (*runtime.Runtime, string) {
+	rt, instanceID := testruntime.NewInstanceWithModel(t, "test", `
 		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 2.0 AS clicks, TIMESTAMP '2019-01-02T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 3.0 AS clicks, TIMESTAMP '2019-01-03T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 4.0 AS clicks, TIMESTAMP '2019-01-04T00:00:00Z' AS time, 'android' AS device
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 5.0 AS clicks, TIMESTAMP '2019-01-05T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 4.5 AS clicks, TIMESTAMP '2019-01-06T00:00:00Z' AS time, 'android' AS device
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 3.5 AS clicks, TIMESTAMP '2019-01-07T00:00:00Z' AS time, 'android' AS device
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 		UNION ALL
-		SELECT 2.5 AS clicks, TIMESTAMP '2019-01-08T00:00:00Z' AS time, 'iphone' AS device
-		UNION ALL
-		SELECT 1.5 AS clicks, TIMESTAMP '2019-01-09T00:00:00Z' AS time, 'iphone' AS device
+		SELECT 1.0 AS clicks, TIMESTAMP '2019-01-01T00:00:00Z' AS time, 'android' AS device
 	`)
 	return rt, instanceID
 }
@@ -116,7 +180,36 @@ func TestTimeseries_normaliseTimeRange_Specified(t *testing.T) {
 	require.Equal(t, runtimev1.TimeGrain_TIME_GRAIN_YEAR, r.Interval)
 }
 
+func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
+	if testing.Short() {
+		// Ignoring test in CI because it sometimes fails with a segmentation fault in DuckDB when running with -race
+		t.SkipNow()
+	}
+
+	time.Local = time.UTC
+
+	rt, instanceID := instanceWithSparkSameTimestampModel(t)
+
+	q := &queries.ColumnTimeseries{
+		TableName:           "test",
+		TimestampColumnName: "time",
+		Pixels:              2.0,
+	}
+	ctx := context.Background()
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
+	require.NoError(t, err)
+	defer release()
+	values, err := q.CreateTimestampRollupReduction(context.Background(), rt, olap, instanceID, 0, "test", "time", "clicks")
+	require.NoError(t, err)
+	require.True(t, math.IsNaN(values[0].Bin))
+}
+
 func TestTimeseries_SparkOnly(t *testing.T) {
+	if testing.Short() {
+		// Ignoring test in CI because it sometimes fails with a segmentation fault in DuckDB when running with -race
+		t.SkipNow()
+	}
+
 	time.Local = time.UTC
 
 	rt, instanceID := instanceWithSparkModel(t)
@@ -131,7 +224,7 @@ func TestTimeseries_SparkOnly(t *testing.T) {
 		Pixels: 2.0,
 	}
 	ctx := context.Background()
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	require.NoError(t, err)
 	defer release()
 	values, err := q.CreateTimestampRollupReduction(context.Background(), rt, olap, instanceID, 0, "test", "time", "clicks")
@@ -257,6 +350,7 @@ func TestTimeseries_FirstDayOfWeek_Sunday_OnSunday(t *testing.T) {
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
+	require.Equal(t, 1, len(q.Result.Results))
 	require.Equal(t, parseTime(t, "2023-10-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
@@ -305,6 +399,7 @@ func TestTimeseries_FirstMonthOfYear_March(t *testing.T) {
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
+	require.Equal(t, 1, len(q.Result.Results))
 	require.Equal(t, parseTime(t, "2023-03-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 
@@ -337,6 +432,7 @@ func TestTimeseries_FirstMonthOfYear_December_InDecember(t *testing.T) {
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
+	require.Equal(t, 1, len(q.Result.Results))
 	require.Equal(t, parseTime(t, "2023-12-01T00:00:00.000Z").AsTime(), q.Result.Results[0].Ts.AsTime())
 }
 

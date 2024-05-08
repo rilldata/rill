@@ -211,7 +211,7 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+	if !claims.Superuser(ctx) && !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not authorized to read org members")
 	}
 
@@ -338,6 +338,9 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 			RoleID:    role.ID,
 		})
 		if err != nil {
+			if errors.Is(err, database.ErrNotUnique) {
+				return nil, status.Error(codes.AlreadyExists, err.Error())
+			}
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
@@ -412,17 +415,20 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
-	}
-
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotFound) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		// check if there is a pending invite
+
+		// Only admins can remove pending invites.
+		// NOTE: If we change invites to accept/decline (instead of auto-accept on signup), we need to revisit this.
+		claims := auth.GetClaims(ctx)
+		if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
+		}
+
+		// Check if there is a pending invite
 		invite, err := s.admin.DB.FindOrganizationInvite(ctx, org.ID, req.Email)
 		if err != nil {
 			if errors.Is(err, database.ErrNotFound) {
@@ -430,27 +436,34 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 			}
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
 		err = s.admin.DB.DeleteOrganizationInvite(ctx, invite.ID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+
 		return &adminv1.RemoveOrganizationMemberResponse{}, nil
 	}
 
-	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
-	if err != nil {
-		panic(err)
+	// The caller must either have ManageOrgMembers permission or be the user being removed.
+	claims := auth.GetClaims(ctx)
+	isManager := claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers
+	isSelf := claims.OwnerType() == auth.OwnerTypeUser && claims.OwnerID() == user.ID
+	if !isManager && !isSelf {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
 
-	// check if the user is the last owner
-	// TODO optimize this, may be extract roles during auth token validation
-	//  and store as part of the claims and fetch admins only if the user is an admin
+	// Check that the user is not the last admin
+	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
 	users, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, org.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if len(users) == 1 && users[0].ID == user.ID {
-		return nil, status.Error(codes.InvalidArgument, "cannot remove the last owner")
+		return nil, status.Error(codes.InvalidArgument, "cannot remove the last admin member")
 	}
 
 	ctx, tx, err := s.admin.DB.NewTx(ctx)
@@ -458,6 +471,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	defer func() { _ = tx.Rollback() }()
+
 	err = s.admin.DB.DeleteOrganizationMemberUser(ctx, org.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -687,7 +701,6 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		OrgRoleID: role.ID,
 		Domain:    req.Domain,
 	})
-
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

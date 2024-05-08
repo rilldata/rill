@@ -8,6 +8,16 @@ export type FetchWrapperOptions = {
   signal?: AbortSignal;
 };
 
+export interface HTTPError {
+  response: {
+    status: number;
+    data: {
+      message: string;
+    };
+  };
+  message: string;
+}
+
 export async function fetchWrapper({
   url,
   method,
@@ -19,6 +29,8 @@ export async function fetchWrapper({
   if (signal && signal.aborted) return Promise.reject(new Error("Aborted"));
 
   headers ??= { "Content-Type": "application/json" };
+
+  url = encodeURI(url);
 
   if (params) {
     const paramParts = [];

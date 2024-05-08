@@ -7,12 +7,11 @@ import (
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func lookupCmd(cfg *config.Config) *cobra.Command {
+func lookupCmd(ch *cmdutil.Helper) *cobra.Command {
 	lookupCmd := &cobra.Command{
 		Use:   "lookup {user|org|project|deployment|instance} <id>",
 		Short: "Lookup resource by ID",
@@ -20,11 +19,10 @@ func lookupCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			switch args[0] {
 			case "user":
@@ -90,9 +88,11 @@ func getProject(ctx context.Context, c *client.Client, projectID string) error {
 	fmt.Printf("Org: %s (ID: %s)\n", project.OrgName, project.OrgId)
 	fmt.Printf("Created on: %s\n", project.CreatedOn.AsTime().Format(time.RFC3339Nano))
 	fmt.Printf("Public: %t\n", project.Public)
-	fmt.Printf("Region: %s\n", project.Region)
+	fmt.Printf("Created by user ID: %s\n", project.CreatedByUserId)
+	fmt.Printf("Provisioner: %s\n", project.Provisioner)
 	fmt.Printf("Github URL: %s\n", project.GithubUrl)
 	fmt.Printf("Subpath: %s\n", project.Subpath)
+	fmt.Printf("Prod version: %s\n", project.ProdVersion)
 	fmt.Printf("Prod branch: %s\n", project.ProdBranch)
 	fmt.Printf("Prod OLAP driver: %s\n", project.ProdOlapDriver)
 	fmt.Printf("Prod OLAP DSN: %s\n", project.ProdOlapDsn)

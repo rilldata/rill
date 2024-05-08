@@ -1,12 +1,12 @@
 <script lang="ts">
   import Base from "./Base.svelte";
-  import { PERC_DIFF } from "./type-utils";
+  import { PERC_DIFF, isPercDiff } from "./type-utils";
   import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   export let isNull = false;
   export let inTable = false;
   export let dark = false;
   export let customStyle = "";
-  export let value: null | NumberParts | PERC_DIFF;
+  export let value: number | undefined | null | NumberParts | PERC_DIFF;
   export let tabularNumber = true;
 
   let diffIsNegative = false;
@@ -15,12 +15,16 @@
   let approxSign = "";
   let suffix = "";
 
-  const isPercDiff = (token: unknown): token is PERC_DIFF[keyof PERC_DIFF] =>
-    Object.values(PERC_DIFF).includes(token as PERC_DIFF);
+  $: isNoData = isPercDiff(value) || value === null || value === undefined;
 
-  $: isNoData = isPercDiff(value) || value === null;
-
-  $: if (!isNoData && !isPercDiff(value) && value !== null) {
+  $: if (
+    !isNoData &&
+    // expanding this out in full provides type narrowing
+    !isPercDiff(value) &&
+    value !== null &&
+    value !== undefined &&
+    typeof value !== "number"
+  ) {
     // in this case, we have a NumberParts object.
     // We have a couple cases to consider:
     // * If the NumberParts object has approxZero===true,
@@ -29,11 +33,23 @@
     // small negative change.
     //
     // Otherwise, we format the number as usual.
-    intValue = value.int;
+    let intPart = +value.int;
+    let fracPart = +value.frac / 10 ** value.frac.length;
+    intValue = Math.round(intPart + fracPart).toString();
+
     diffIsNegative = value?.neg === "-";
     negSign = diffIsNegative && !value?.approxZero ? "-" : "";
     approxSign = value?.approxZero ? "~" : "";
     suffix = value?.suffix ?? "";
+  } else if (typeof value === "number") {
+    // FIXME: this seems to only come up in the tool tip,
+    // for percentages in the dimension table,
+    // but this whole thing is a mess and needs to be cleaned up.
+
+    intValue = Math.round(100 * value).toString();
+    approxSign = Math.abs(value) < 0.005 ? "~" : "";
+    negSign = "";
+    suffix = "";
   }
 </script>
 
@@ -41,7 +57,7 @@
   {isNull}
   classes="{tabularNumber
     ? 'ui-copy-number'
-    : ''} font-normal {customStyle} {inTable && 'block text-right'}"
+    : ''} font-normal w-full {customStyle} {inTable && 'block text-right'}"
   {dark}
 >
   <slot name="value">

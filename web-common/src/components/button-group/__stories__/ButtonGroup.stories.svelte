@@ -3,9 +3,9 @@
 
   import { action } from "@storybook/addon-actions";
 
-  import { ButtonGroup, SubButton } from "../index";
   import Delta from "../../icons/Delta.svelte";
   import PieChart from "../../icons/PieChart.svelte";
+  import { ButtonGroup, SubButton } from "../index";
 
   const pieTooltips = {
     selected: "Hide percent of total",
@@ -29,7 +29,7 @@
   }}
 />
 
-<Story name="Button group, selected vs disabled (tabular)" let:args>
+<Story name="Button group, selected vs disabled (tabular)">
   <p>
     This story shows the different combinations of selected and disabled props.
     Note that this component does not maintain internal state, so it is up to

@@ -39,8 +39,10 @@ type Remote struct {
 	URL  string
 }
 
-func ExtractRemotes(projectPath string) ([]Remote, error) {
-	repo, err := git.PlainOpen(projectPath)
+func ExtractRemotes(projectPath string, detectDotGit bool) ([]Remote, error) {
+	repo, err := git.PlainOpenWithOptions(projectPath, &git.PlainOpenOptions{
+		DetectDotGit: detectDotGit,
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +74,7 @@ func RemotesToGithubURL(remotes []Remote) (*Remote, string, error) {
 	// If no Github remotes were found, return the first error.
 	var firstErr error
 	for _, remote := range remotes {
-		ghurl, err := remoteToGithubURL(remote.URL)
+		ghurl, err := RemoteToGithubURL(remote.URL)
 		if err == nil {
 			// Found a Github remote. Success!
 			return &remote, ghurl, nil
@@ -89,7 +91,7 @@ func RemotesToGithubURL(remotes []Remote) (*Remote, string, error) {
 	return nil, "", firstErr
 }
 
-func remoteToGithubURL(remote string) (string, error) {
+func RemoteToGithubURL(remote string) (string, error) {
 	ep, err := transport.NewEndpoint(remote)
 	if err != nil {
 		return "", err
@@ -134,8 +136,8 @@ func SplitGithubURL(githubURL string) (account, repo string, ok bool) {
 	return account, repo, true
 }
 
-func ExtractGitRemote(projectPath, remoteName string) (*Remote, string, error) {
-	remotes, err := ExtractRemotes(projectPath)
+func ExtractGitRemote(projectPath, remoteName string, detectDotGit bool) (*Remote, string, error) {
+	remotes, err := ExtractRemotes(projectPath, detectDotGit)
 	if err != nil {
 		return nil, "", err
 	}
@@ -208,7 +210,7 @@ func GetSyncStatus(repoPath, branch, remote string) (SyncStatus, error) {
 	}
 
 	// check if there are local commits not pushed to remote yet
-	// no easy way to get it from go-get library so running git command directly and checking response
+	// no easy way to get it from go-git library so running git command directly and checking response
 	cmd := exec.Command("git", "-C", repoPath, "log", "@{u}..")
 	data, err := cmd.Output()
 	if err != nil {

@@ -21,7 +21,6 @@ FIXME: In the future, we should also be listening to focus events from the child
   import { setContext } from "svelte";
   import { writable } from "svelte/store";
   import FloatingElement from "../floating-element/FloatingElement.svelte";
-  import Portal from "../Portal.svelte";
 
   export let location = "bottom";
   export let alignment = "middle";
@@ -53,11 +52,12 @@ FIXME: In the future, we should also be listening to focus events from the child
   const childRequestedTooltipSuppression = writable(false);
   setContext(
     "rill:app:childRequestedTooltipSuppression",
-    childRequestedTooltipSuppression
+    childRequestedTooltipSuppression,
   );
 </script>
 
 <div
+  role="tooltip"
   class="contents"
   bind:this={parent}
   on:mouseenter={() => {
@@ -73,18 +73,8 @@ FIXME: In the future, we should also be listening to focus events from the child
 >
   <slot />
   {#if active && !suppress && !$childRequestedTooltipSuppression}
-    <Portal>
-      <div style="z-index:50;">
-        <FloatingElement
-          target={parent}
-          {location}
-          {alignment}
-          {distance}
-          {pad}
-        >
-          <slot name="tooltip-content" />
-        </FloatingElement>
-      </div>
-    </Portal>
+    <FloatingElement target={parent} {location} {alignment} {distance} {pad}>
+      <slot name="tooltip-content" />
+    </FloatingElement>
   {/if}
 </div>

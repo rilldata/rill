@@ -21,10 +21,10 @@
     class:bg-yellow-300={level === "warning" && active}
     class:text-yellow-500={level === "warning" && !active}
     class:text-yellow-600={level === "warning" && active}
-    class:bg-blue-200={level === "info"}
-    class:bg-blue-300={level === "info" && !active}
-    class:bg-blue-500={level === "info" && active}
-    class:text-blue-600={level === "info" && !active}
+    class:bg-primary-200={level === "info"}
+    class:bg-primary-300={level === "info" && !active}
+    class:bg-primary-500={level === "info" && active}
+    class:text-primary-600={level === "info" && !active}
   >
     <div
       style:grid-column="icon"

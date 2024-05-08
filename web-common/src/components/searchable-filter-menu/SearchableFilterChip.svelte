@@ -23,16 +23,17 @@ props as needed.
 -->
 <script lang="ts">
   import type { SearchableFilterSelectableItem } from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterSelectableItem";
+  import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
   import WithTogglableFloatingElement from "../floating-element/WithTogglableFloatingElement.svelte";
-  import { createEventDispatcher } from "svelte";
 
+  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
+  import { Chip } from "@rilldata/web-common/components/chip";
+  import { defaultChipColors } from "@rilldata/web-common/components/chip/chip-types";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
   import SearchableFilterDropdown from "./SearchableFilterDropdown.svelte";
-  import { Chip } from "@rilldata/web-common/components/chip";
-  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   export let selectableItems: SearchableFilterSelectableItem[];
   export let selectedItems: boolean[];
@@ -48,17 +49,16 @@ props as needed.
       selectableItems?.length !== selectedItems?.length
     ) {
       throw new Error(
-        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length"
+        "SearchableFilterButton component requires props `selectableItems` and `selectedItems` to be arrays of equal length",
       );
     }
   }
-  let active = false;
 </script>
 
 <WithTogglableFloatingElement
   alignment="start"
-  bind:active
   distance={8}
+  let:active
   let:toggleFloatingElement
 >
   <Tooltip
@@ -68,8 +68,16 @@ props as needed.
     location="bottom"
     suppress={active}
   >
-    <Chip extraRounded={false} {label} on:click={toggleFloatingElement}>
-      <div slot="body" class="flex gap-x-2">
+    <!-- TODO: Switch to Measure colors once Theming supports it -->
+    <Chip
+      {...defaultChipColors}
+      {active}
+      extraRounded={false}
+      {label}
+      on:click={toggleFloatingElement}
+      outline={true}
+    >
+      <div class="flex gap-x-2" slot="body">
         <div
           class="font-bold text-ellipsis overflow-hidden whitespace-nowrap ml-2"
         >
@@ -85,26 +93,27 @@ props as needed.
         </div>
       </div>
     </Chip>
-    <div slot="tooltip-content" transition:fly|local={{ duration: 300, y: 4 }}>
+    <div slot="tooltip-content" transition:fly={{ duration: 300, y: 4 }}>
       <TooltipContent maxWidth="400px">
         {tooltipText}
       </TooltipContent>
     </div>
   </Tooltip>
   <SearchableFilterDropdown
+    allowMultiSelect={false}
+    let:handleClose
     on:apply
-    on:click-outside={toggleFloatingElement}
+    on:click-outside={handleClose}
     on:deselect-all
-    on:escape={toggleFloatingElement}
+    on:escape={handleClose}
     on:item-clicked={(e) => {
-      toggleFloatingElement();
+      handleClose();
       dispatch("item-clicked", e.detail.name);
     }}
     on:search
     on:select-all
-    {selectableItems}
-    {selectedItems}
-    allowMultiSelect={false}
+    selectableGroups={[{ name: "", items: selectableItems }]}
+    selectedItems={[selectedItems]}
     slot="floating-element"
   />
 </WithTogglableFloatingElement>

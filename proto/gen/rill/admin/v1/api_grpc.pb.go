@@ -19,72 +19,86 @@ import (
 const _ = grpc.SupportPackageIsVersion7
 
 const (
-	AdminService_Ping_FullMethodName                         = "/rill.admin.v1.AdminService/Ping"
-	AdminService_ListOrganizations_FullMethodName            = "/rill.admin.v1.AdminService/ListOrganizations"
-	AdminService_GetOrganization_FullMethodName              = "/rill.admin.v1.AdminService/GetOrganization"
-	AdminService_CreateOrganization_FullMethodName           = "/rill.admin.v1.AdminService/CreateOrganization"
-	AdminService_DeleteOrganization_FullMethodName           = "/rill.admin.v1.AdminService/DeleteOrganization"
-	AdminService_UpdateOrganization_FullMethodName           = "/rill.admin.v1.AdminService/UpdateOrganization"
-	AdminService_ListProjectsForOrganization_FullMethodName  = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
-	AdminService_GetProject_FullMethodName                   = "/rill.admin.v1.AdminService/GetProject"
-	AdminService_SearchProjectNames_FullMethodName           = "/rill.admin.v1.AdminService/SearchProjectNames"
-	AdminService_GetProjectVariables_FullMethodName          = "/rill.admin.v1.AdminService/GetProjectVariables"
-	AdminService_CreateProject_FullMethodName                = "/rill.admin.v1.AdminService/CreateProject"
-	AdminService_DeleteProject_FullMethodName                = "/rill.admin.v1.AdminService/DeleteProject"
-	AdminService_UpdateProject_FullMethodName                = "/rill.admin.v1.AdminService/UpdateProject"
-	AdminService_UpdateProjectVariables_FullMethodName       = "/rill.admin.v1.AdminService/UpdateProjectVariables"
-	AdminService_TriggerReconcile_FullMethodName             = "/rill.admin.v1.AdminService/TriggerReconcile"
-	AdminService_TriggerRefreshSources_FullMethodName        = "/rill.admin.v1.AdminService/TriggerRefreshSources"
-	AdminService_TriggerRedeploy_FullMethodName              = "/rill.admin.v1.AdminService/TriggerRedeploy"
-	AdminService_ListOrganizationMembers_FullMethodName      = "/rill.admin.v1.AdminService/ListOrganizationMembers"
-	AdminService_ListOrganizationInvites_FullMethodName      = "/rill.admin.v1.AdminService/ListOrganizationInvites"
-	AdminService_AddOrganizationMember_FullMethodName        = "/rill.admin.v1.AdminService/AddOrganizationMember"
-	AdminService_RemoveOrganizationMember_FullMethodName     = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
-	AdminService_LeaveOrganization_FullMethodName            = "/rill.admin.v1.AdminService/LeaveOrganization"
-	AdminService_SetOrganizationMemberRole_FullMethodName    = "/rill.admin.v1.AdminService/SetOrganizationMemberRole"
-	AdminService_ListProjectMembers_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectMembers"
-	AdminService_ListProjectInvites_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectInvites"
-	AdminService_AddProjectMember_FullMethodName             = "/rill.admin.v1.AdminService/AddProjectMember"
-	AdminService_RemoveProjectMember_FullMethodName          = "/rill.admin.v1.AdminService/RemoveProjectMember"
-	AdminService_SetProjectMemberRole_FullMethodName         = "/rill.admin.v1.AdminService/SetProjectMemberRole"
-	AdminService_GetCurrentUser_FullMethodName               = "/rill.admin.v1.AdminService/GetCurrentUser"
-	AdminService_IssueRepresentativeAuthToken_FullMethodName = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
-	AdminService_RevokeCurrentAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
-	AdminService_GetGithubRepoStatus_FullMethodName          = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
-	AdminService_GetGitCredentials_FullMethodName            = "/rill.admin.v1.AdminService/GetGitCredentials"
-	AdminService_CreateWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
-	AdminService_RemoveWhitelistedDomain_FullMethodName      = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
-	AdminService_ListWhitelistedDomains_FullMethodName       = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
-	AdminService_GetUser_FullMethodName                      = "/rill.admin.v1.AdminService/GetUser"
-	AdminService_SearchUsers_FullMethodName                  = "/rill.admin.v1.AdminService/SearchUsers"
-	AdminService_SearchProjectUsers_FullMethodName           = "/rill.admin.v1.AdminService/SearchProjectUsers"
-	AdminService_ListSuperusers_FullMethodName               = "/rill.admin.v1.AdminService/ListSuperusers"
-	AdminService_GetDeploymentCredentials_FullMethodName     = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
-	AdminService_SetSuperuser_FullMethodName                 = "/rill.admin.v1.AdminService/SetSuperuser"
-	AdminService_SudoGetResource_FullMethodName              = "/rill.admin.v1.AdminService/SudoGetResource"
-	AdminService_SudoUpdateUserQuotas_FullMethodName         = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
-	AdminService_SudoUpdateOrganizationQuotas_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
-	AdminService_ListServices_FullMethodName                 = "/rill.admin.v1.AdminService/ListServices"
-	AdminService_CreateService_FullMethodName                = "/rill.admin.v1.AdminService/CreateService"
-	AdminService_UpdateService_FullMethodName                = "/rill.admin.v1.AdminService/UpdateService"
-	AdminService_DeleteService_FullMethodName                = "/rill.admin.v1.AdminService/DeleteService"
-	AdminService_ListServiceAuthTokens_FullMethodName        = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
-	AdminService_IssueServiceAuthToken_FullMethodName        = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
-	AdminService_RevokeServiceAuthToken_FullMethodName       = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
-	AdminService_UpdateUserPreferences_FullMethodName        = "/rill.admin.v1.AdminService/UpdateUserPreferences"
-	AdminService_ListBookmarks_FullMethodName                = "/rill.admin.v1.AdminService/ListBookmarks"
-	AdminService_GetBookmark_FullMethodName                  = "/rill.admin.v1.AdminService/GetBookmark"
-	AdminService_CreateBookmark_FullMethodName               = "/rill.admin.v1.AdminService/CreateBookmark"
-	AdminService_RemoveBookmark_FullMethodName               = "/rill.admin.v1.AdminService/RemoveBookmark"
-	AdminService_GetRepoMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetRepoMeta"
-	AdminService_PullVirtualRepo_FullMethodName              = "/rill.admin.v1.AdminService/PullVirtualRepo"
-	AdminService_GetReportMeta_FullMethodName                = "/rill.admin.v1.AdminService/GetReportMeta"
-	AdminService_CreateReport_FullMethodName                 = "/rill.admin.v1.AdminService/CreateReport"
-	AdminService_EditReport_FullMethodName                   = "/rill.admin.v1.AdminService/EditReport"
-	AdminService_UnsubscribeReport_FullMethodName            = "/rill.admin.v1.AdminService/UnsubscribeReport"
-	AdminService_DeleteReport_FullMethodName                 = "/rill.admin.v1.AdminService/DeleteReport"
-	AdminService_TriggerReport_FullMethodName                = "/rill.admin.v1.AdminService/TriggerReport"
-	AdminService_GenerateReportYAML_FullMethodName           = "/rill.admin.v1.AdminService/GenerateReportYAML"
+	AdminService_Ping_FullMethodName                           = "/rill.admin.v1.AdminService/Ping"
+	AdminService_ListOrganizations_FullMethodName              = "/rill.admin.v1.AdminService/ListOrganizations"
+	AdminService_GetOrganization_FullMethodName                = "/rill.admin.v1.AdminService/GetOrganization"
+	AdminService_CreateOrganization_FullMethodName             = "/rill.admin.v1.AdminService/CreateOrganization"
+	AdminService_DeleteOrganization_FullMethodName             = "/rill.admin.v1.AdminService/DeleteOrganization"
+	AdminService_UpdateOrganization_FullMethodName             = "/rill.admin.v1.AdminService/UpdateOrganization"
+	AdminService_ListProjectsForOrganization_FullMethodName    = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
+	AdminService_GetProject_FullMethodName                     = "/rill.admin.v1.AdminService/GetProject"
+	AdminService_SearchProjectNames_FullMethodName             = "/rill.admin.v1.AdminService/SearchProjectNames"
+	AdminService_GetProjectVariables_FullMethodName            = "/rill.admin.v1.AdminService/GetProjectVariables"
+	AdminService_CreateProject_FullMethodName                  = "/rill.admin.v1.AdminService/CreateProject"
+	AdminService_DeleteProject_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteProject"
+	AdminService_UpdateProject_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateProject"
+	AdminService_UpdateProjectVariables_FullMethodName         = "/rill.admin.v1.AdminService/UpdateProjectVariables"
+	AdminService_TriggerReconcile_FullMethodName               = "/rill.admin.v1.AdminService/TriggerReconcile"
+	AdminService_TriggerRefreshSources_FullMethodName          = "/rill.admin.v1.AdminService/TriggerRefreshSources"
+	AdminService_TriggerRedeploy_FullMethodName                = "/rill.admin.v1.AdminService/TriggerRedeploy"
+	AdminService_ListOrganizationMembers_FullMethodName        = "/rill.admin.v1.AdminService/ListOrganizationMembers"
+	AdminService_ListOrganizationInvites_FullMethodName        = "/rill.admin.v1.AdminService/ListOrganizationInvites"
+	AdminService_AddOrganizationMember_FullMethodName          = "/rill.admin.v1.AdminService/AddOrganizationMember"
+	AdminService_RemoveOrganizationMember_FullMethodName       = "/rill.admin.v1.AdminService/RemoveOrganizationMember"
+	AdminService_LeaveOrganization_FullMethodName              = "/rill.admin.v1.AdminService/LeaveOrganization"
+	AdminService_SetOrganizationMemberRole_FullMethodName      = "/rill.admin.v1.AdminService/SetOrganizationMemberRole"
+	AdminService_ListProjectMembers_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectMembers"
+	AdminService_ListProjectInvites_FullMethodName             = "/rill.admin.v1.AdminService/ListProjectInvites"
+	AdminService_AddProjectMember_FullMethodName               = "/rill.admin.v1.AdminService/AddProjectMember"
+	AdminService_RemoveProjectMember_FullMethodName            = "/rill.admin.v1.AdminService/RemoveProjectMember"
+	AdminService_SetProjectMemberRole_FullMethodName           = "/rill.admin.v1.AdminService/SetProjectMemberRole"
+	AdminService_GetCurrentUser_FullMethodName                 = "/rill.admin.v1.AdminService/GetCurrentUser"
+	AdminService_IssueRepresentativeAuthToken_FullMethodName   = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
+	AdminService_RevokeCurrentAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
+	AdminService_GetGithubRepoStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
+	AdminService_GetGithubUserStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubUserStatus"
+	AdminService_GetGitCredentials_FullMethodName              = "/rill.admin.v1.AdminService/GetGitCredentials"
+	AdminService_CreateWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
+	AdminService_RemoveWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
+	AdminService_ListWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
+	AdminService_GetUser_FullMethodName                        = "/rill.admin.v1.AdminService/GetUser"
+	AdminService_SearchUsers_FullMethodName                    = "/rill.admin.v1.AdminService/SearchUsers"
+	AdminService_SearchProjectUsers_FullMethodName             = "/rill.admin.v1.AdminService/SearchProjectUsers"
+	AdminService_ListSuperusers_FullMethodName                 = "/rill.admin.v1.AdminService/ListSuperusers"
+	AdminService_GetDeploymentCredentials_FullMethodName       = "/rill.admin.v1.AdminService/GetDeploymentCredentials"
+	AdminService_GetIFrame_FullMethodName                      = "/rill.admin.v1.AdminService/GetIFrame"
+	AdminService_SetSuperuser_FullMethodName                   = "/rill.admin.v1.AdminService/SetSuperuser"
+	AdminService_SudoGetResource_FullMethodName                = "/rill.admin.v1.AdminService/SudoGetResource"
+	AdminService_SudoUpdateUserQuotas_FullMethodName           = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
+	AdminService_SudoUpdateOrganizationQuotas_FullMethodName   = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
+	AdminService_SudoUpdateAnnotations_FullMethodName          = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
+	AdminService_CreateProjectWhitelistedDomain_FullMethodName = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
+	AdminService_RemoveProjectWhitelistedDomain_FullMethodName = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
+	AdminService_ListProjectWhitelistedDomains_FullMethodName  = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
+	AdminService_ListServices_FullMethodName                   = "/rill.admin.v1.AdminService/ListServices"
+	AdminService_CreateService_FullMethodName                  = "/rill.admin.v1.AdminService/CreateService"
+	AdminService_UpdateService_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateService"
+	AdminService_DeleteService_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteService"
+	AdminService_ListServiceAuthTokens_FullMethodName          = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
+	AdminService_IssueServiceAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
+	AdminService_RevokeServiceAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
+	AdminService_UpdateUserPreferences_FullMethodName          = "/rill.admin.v1.AdminService/UpdateUserPreferences"
+	AdminService_ListBookmarks_FullMethodName                  = "/rill.admin.v1.AdminService/ListBookmarks"
+	AdminService_GetBookmark_FullMethodName                    = "/rill.admin.v1.AdminService/GetBookmark"
+	AdminService_CreateBookmark_FullMethodName                 = "/rill.admin.v1.AdminService/CreateBookmark"
+	AdminService_UpdateBookmark_FullMethodName                 = "/rill.admin.v1.AdminService/UpdateBookmark"
+	AdminService_RemoveBookmark_FullMethodName                 = "/rill.admin.v1.AdminService/RemoveBookmark"
+	AdminService_GetRepoMeta_FullMethodName                    = "/rill.admin.v1.AdminService/GetRepoMeta"
+	AdminService_PullVirtualRepo_FullMethodName                = "/rill.admin.v1.AdminService/PullVirtualRepo"
+	AdminService_GetReportMeta_FullMethodName                  = "/rill.admin.v1.AdminService/GetReportMeta"
+	AdminService_GetAlertMeta_FullMethodName                   = "/rill.admin.v1.AdminService/GetAlertMeta"
+	AdminService_CreateReport_FullMethodName                   = "/rill.admin.v1.AdminService/CreateReport"
+	AdminService_EditReport_FullMethodName                     = "/rill.admin.v1.AdminService/EditReport"
+	AdminService_UnsubscribeReport_FullMethodName              = "/rill.admin.v1.AdminService/UnsubscribeReport"
+	AdminService_DeleteReport_FullMethodName                   = "/rill.admin.v1.AdminService/DeleteReport"
+	AdminService_TriggerReport_FullMethodName                  = "/rill.admin.v1.AdminService/TriggerReport"
+	AdminService_GenerateReportYAML_FullMethodName             = "/rill.admin.v1.AdminService/GenerateReportYAML"
+	AdminService_CreateAlert_FullMethodName                    = "/rill.admin.v1.AdminService/CreateAlert"
+	AdminService_EditAlert_FullMethodName                      = "/rill.admin.v1.AdminService/EditAlert"
+	AdminService_UnsubscribeAlert_FullMethodName               = "/rill.admin.v1.AdminService/UnsubscribeAlert"
+	AdminService_DeleteAlert_FullMethodName                    = "/rill.admin.v1.AdminService/DeleteAlert"
+	AdminService_GenerateAlertYAML_FullMethodName              = "/rill.admin.v1.AdminService/GenerateAlertYAML"
+	AdminService_GetAlertYAML_FullMethodName                   = "/rill.admin.v1.AdminService/GetAlertYAML"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -156,6 +170,9 @@ type AdminServiceClient interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(ctx context.Context, in *GetGithubRepoStatusRequest, opts ...grpc.CallOption) (*GetGithubRepoStatusResponse, error)
+	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
+	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
+	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
 	// GetGitCredentials returns credentials and other details for a project's Git repository.
 	GetGitCredentials(ctx context.Context, in *GetGitCredentialsRequest, opts ...grpc.CallOption) (*GetGitCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -172,8 +189,10 @@ type AdminServiceClient interface {
 	SearchProjectUsers(ctx context.Context, in *SearchProjectUsersRequest, opts ...grpc.CallOption) (*SearchProjectUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(ctx context.Context, in *ListSuperusersRequest, opts ...grpc.CallOption) (*ListSuperusersResponse, error)
-	// GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
 	GetDeploymentCredentials(ctx context.Context, in *GetDeploymentCredentialsRequest, opts ...grpc.CallOption) (*GetDeploymentCredentialsResponse, error)
+	// GetIFrame returns the iframe URL for the given project
+	GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -182,6 +201,14 @@ type AdminServiceClient interface {
 	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
+	// SudoUpdateAnnotations endpoint for superusers to update project annotations
+	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
+	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
+	CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error)
+	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
+	RemoveProjectWhitelistedDomain(ctx context.Context, in *RemoveProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveProjectWhitelistedDomainResponse, error)
+	// ListWhitelistedDomains lists all the whitelisted domains of the project
+	ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(ctx context.Context, in *ListServicesRequest, opts ...grpc.CallOption) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -198,13 +225,15 @@ type AdminServiceClient interface {
 	RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
 	ListBookmarks(ctx context.Context, in *ListBookmarksRequest, opts ...grpc.CallOption) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(ctx context.Context, in *GetBookmarkRequest, opts ...grpc.CallOption) (*GetBookmarkResponse, error)
-	// CreateBookmark creates a bookmark for the given user for the given project
+	// CreateBookmark creates a bookmark for the given user or for all users for the dashboard
 	CreateBookmark(ctx context.Context, in *CreateBookmarkRequest, opts ...grpc.CallOption) (*CreateBookmarkResponse, error)
-	// RemoveBookmark removes the bookmark for the given user for the given project
+	// UpdateBookmark updates a bookmark for the given user for the given project
+	UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error)
+	// RemoveBookmark removes the bookmark for the given user or all users
 	RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
 	GetRepoMeta(ctx context.Context, in *GetRepoMetaRequest, opts ...grpc.CallOption) (*GetRepoMetaResponse, error)
@@ -212,6 +241,8 @@ type AdminServiceClient interface {
 	PullVirtualRepo(ctx context.Context, in *PullVirtualRepoRequest, opts ...grpc.CallOption) (*PullVirtualRepoResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error)
+	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+	GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(ctx context.Context, in *CreateReportRequest, opts ...grpc.CallOption) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -224,6 +255,18 @@ type AdminServiceClient interface {
 	TriggerReport(ctx context.Context, in *TriggerReportRequest, opts ...grpc.CallOption) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
 	GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error)
+	// CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+	CreateAlert(ctx context.Context, in *CreateAlertRequest, opts ...grpc.CallOption) (*CreateAlertResponse, error)
+	// EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+	EditAlert(ctx context.Context, in *EditAlertRequest, opts ...grpc.CallOption) (*EditAlertResponse, error)
+	// UnsubscribeAlert removes the calling user from a alert's recipients list
+	UnsubscribeAlert(ctx context.Context, in *UnsubscribeAlertRequest, opts ...grpc.CallOption) (*UnsubscribeAlertResponse, error)
+	// DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+	DeleteAlert(ctx context.Context, in *DeleteAlertRequest, opts ...grpc.CallOption) (*DeleteAlertResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
 }
 
 type adminServiceClient struct {
@@ -522,6 +565,15 @@ func (c *adminServiceClient) GetGithubRepoStatus(ctx context.Context, in *GetGit
 	return out, nil
 }
 
+func (c *adminServiceClient) GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error) {
+	out := new(GetGithubUserStatusResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetGithubUserStatus_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetGitCredentials(ctx context.Context, in *GetGitCredentialsRequest, opts ...grpc.CallOption) (*GetGitCredentialsResponse, error) {
 	out := new(GetGitCredentialsResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetGitCredentials_FullMethodName, in, out, opts...)
@@ -603,6 +655,15 @@ func (c *adminServiceClient) GetDeploymentCredentials(ctx context.Context, in *G
 	return out, nil
 }
 
+func (c *adminServiceClient) GetIFrame(ctx context.Context, in *GetIFrameRequest, opts ...grpc.CallOption) (*GetIFrameResponse, error) {
+	out := new(GetIFrameResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetIFrame_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SetSuperuser(ctx context.Context, in *SetSuperuserRequest, opts ...grpc.CallOption) (*SetSuperuserResponse, error) {
 	out := new(SetSuperuserResponse)
 	err := c.cc.Invoke(ctx, AdminService_SetSuperuser_FullMethodName, in, out, opts...)
@@ -633,6 +694,42 @@ func (c *adminServiceClient) SudoUpdateUserQuotas(ctx context.Context, in *SudoU
 func (c *adminServiceClient) SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error) {
 	out := new(SudoUpdateOrganizationQuotasResponse)
 	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationQuotas_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error) {
+	out := new(SudoUpdateAnnotationsResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateAnnotations_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error) {
+	out := new(CreateProjectWhitelistedDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateProjectWhitelistedDomain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveProjectWhitelistedDomain(ctx context.Context, in *RemoveProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*RemoveProjectWhitelistedDomainResponse, error) {
+	out := new(RemoveProjectWhitelistedDomainResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveProjectWhitelistedDomain_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListProjectWhitelistedDomains(ctx context.Context, in *ListProjectWhitelistedDomainsRequest, opts ...grpc.CallOption) (*ListProjectWhitelistedDomainsResponse, error) {
+	out := new(ListProjectWhitelistedDomainsResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListProjectWhitelistedDomains_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -738,6 +835,15 @@ func (c *adminServiceClient) CreateBookmark(ctx context.Context, in *CreateBookm
 	return out, nil
 }
 
+func (c *adminServiceClient) UpdateBookmark(ctx context.Context, in *UpdateBookmarkRequest, opts ...grpc.CallOption) (*UpdateBookmarkResponse, error) {
+	out := new(UpdateBookmarkResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateBookmark_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) RemoveBookmark(ctx context.Context, in *RemoveBookmarkRequest, opts ...grpc.CallOption) (*RemoveBookmarkResponse, error) {
 	out := new(RemoveBookmarkResponse)
 	err := c.cc.Invoke(ctx, AdminService_RemoveBookmark_FullMethodName, in, out, opts...)
@@ -768,6 +874,15 @@ func (c *adminServiceClient) PullVirtualRepo(ctx context.Context, in *PullVirtua
 func (c *adminServiceClient) GetReportMeta(ctx context.Context, in *GetReportMetaRequest, opts ...grpc.CallOption) (*GetReportMetaResponse, error) {
 	out := new(GetReportMetaResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetReportMeta_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetAlertMeta(ctx context.Context, in *GetAlertMetaRequest, opts ...grpc.CallOption) (*GetAlertMetaResponse, error) {
+	out := new(GetAlertMetaResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetAlertMeta_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -822,6 +937,60 @@ func (c *adminServiceClient) TriggerReport(ctx context.Context, in *TriggerRepor
 func (c *adminServiceClient) GenerateReportYAML(ctx context.Context, in *GenerateReportYAMLRequest, opts ...grpc.CallOption) (*GenerateReportYAMLResponse, error) {
 	out := new(GenerateReportYAMLResponse)
 	err := c.cc.Invoke(ctx, AdminService_GenerateReportYAML_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateAlert(ctx context.Context, in *CreateAlertRequest, opts ...grpc.CallOption) (*CreateAlertResponse, error) {
+	out := new(CreateAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) EditAlert(ctx context.Context, in *EditAlertRequest, opts ...grpc.CallOption) (*EditAlertResponse, error) {
+	out := new(EditAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_EditAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UnsubscribeAlert(ctx context.Context, in *UnsubscribeAlertRequest, opts ...grpc.CallOption) (*UnsubscribeAlertResponse, error) {
+	out := new(UnsubscribeAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_UnsubscribeAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteAlert(ctx context.Context, in *DeleteAlertRequest, opts ...grpc.CallOption) (*DeleteAlertResponse, error) {
+	out := new(DeleteAlertResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteAlert_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error) {
+	out := new(GenerateAlertYAMLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GenerateAlertYAML_FullMethodName, in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error) {
+	out := new(GetAlertYAMLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetAlertYAML_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -897,6 +1066,9 @@ type AdminServiceServer interface {
 	// GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 	// If the caller has not granted access to the repository, instructions for granting access are returned.
 	GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error)
+	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
+	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
+	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
 	// GetGitCredentials returns credentials and other details for a project's Git repository.
 	GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -913,8 +1085,10 @@ type AdminServiceServer interface {
 	SearchProjectUsers(context.Context, *SearchProjectUsersRequest) (*SearchProjectUsersResponse, error)
 	// ListSuperusers lists all the superusers
 	ListSuperusers(context.Context, *ListSuperusersRequest) (*ListSuperusersResponse, error)
-	// GetDeploymentCredentials returns runtime info and JWT on behalf of a specific user, or alternatively for a raw set of JWT attributes
+	// GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
 	GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error)
+	// GetIFrame returns the iframe URL for the given project
+	GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error)
 	// SetSuperuser adds/remove a superuser
 	SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error)
 	// SudoGetResource returns details about a resource by ID lookup
@@ -923,6 +1097,14 @@ type AdminServiceServer interface {
 	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
+	// SudoUpdateAnnotations endpoint for superusers to update project annotations
+	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
+	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
+	CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error)
+	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
+	RemoveProjectWhitelistedDomain(context.Context, *RemoveProjectWhitelistedDomainRequest) (*RemoveProjectWhitelistedDomainResponse, error)
+	// ListWhitelistedDomains lists all the whitelisted domains of the project
+	ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error)
 	// ListService returns all the services per organization
 	ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error)
 	// CreateService creates a new service per organization
@@ -939,13 +1121,15 @@ type AdminServiceServer interface {
 	RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
-	// ListBookmarks lists all the bookmarks for the user
+	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
 	ListBookmarks(context.Context, *ListBookmarksRequest) (*ListBookmarksResponse, error)
 	// GetBookmark returns the bookmark for the given user for the given project
 	GetBookmark(context.Context, *GetBookmarkRequest) (*GetBookmarkResponse, error)
-	// CreateBookmark creates a bookmark for the given user for the given project
+	// CreateBookmark creates a bookmark for the given user or for all users for the dashboard
 	CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error)
-	// RemoveBookmark removes the bookmark for the given user for the given project
+	// UpdateBookmark updates a bookmark for the given user for the given project
+	UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error)
+	// RemoveBookmark removes the bookmark for the given user or all users
 	RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error)
 	// GetRepoMeta returns credentials and other metadata for accessing a project's repo
 	GetRepoMeta(context.Context, *GetRepoMetaRequest) (*GetRepoMetaResponse, error)
@@ -953,6 +1137,8 @@ type AdminServiceServer interface {
 	PullVirtualRepo(context.Context, *PullVirtualRepoRequest) (*PullVirtualRepoResponse, error)
 	// GetReportMeta returns metadata for generating a report. It's currently only called by the report reconciler in the runtime.
 	GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error)
+	// GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
+	GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error)
 	// CreateReport adds a virtual file for a report, triggers a reconcile, and waits for the report to be added to the runtime catalog
 	CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error)
 	// EditReport edits a virtual file for a UI-managed report, triggers a reconcile, and waits for the report to be updated in the runtime
@@ -965,6 +1151,18 @@ type AdminServiceServer interface {
 	TriggerReport(context.Context, *TriggerReportRequest) (*TriggerReportResponse, error)
 	// GenerateReportYAML generates YAML for a scheduled report to be copied into a project's Git repository
 	GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error)
+	// CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
+	CreateAlert(context.Context, *CreateAlertRequest) (*CreateAlertResponse, error)
+	// EditAlert edits a virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be updated in the runtime
+	EditAlert(context.Context, *EditAlertRequest) (*EditAlertResponse, error)
+	// UnsubscribeAlert removes the calling user from a alert's recipients list
+	UnsubscribeAlert(context.Context, *UnsubscribeAlertRequest) (*UnsubscribeAlertResponse, error)
+	// DeleteAlert deletes the virtual file for a UI-managed alert, triggers a reconcile, and waits for the alert to be deleted in the runtime
+	DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
+	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
+	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1068,6 +1266,9 @@ func (UnimplementedAdminServiceServer) RevokeCurrentAuthToken(context.Context, *
 func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *GetGithubRepoStatusRequest) (*GetGithubRepoStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubRepoStatus not implemented")
 }
+func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetGithubUserStatus not implemented")
+}
 func (UnimplementedAdminServiceServer) GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGitCredentials not implemented")
 }
@@ -1095,6 +1296,9 @@ func (UnimplementedAdminServiceServer) ListSuperusers(context.Context, *ListSupe
 func (UnimplementedAdminServiceServer) GetDeploymentCredentials(context.Context, *GetDeploymentCredentialsRequest) (*GetDeploymentCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetDeploymentCredentials not implemented")
 }
+func (UnimplementedAdminServiceServer) GetIFrame(context.Context, *GetIFrameRequest) (*GetIFrameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetIFrame not implemented")
+}
 func (UnimplementedAdminServiceServer) SetSuperuser(context.Context, *SetSuperuserRequest) (*SetSuperuserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetSuperuser not implemented")
 }
@@ -1106,6 +1310,18 @@ func (UnimplementedAdminServiceServer) SudoUpdateUserQuotas(context.Context, *Su
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationQuotas not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateAnnotations not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateProjectWhitelistedDomain not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveProjectWhitelistedDomain(context.Context, *RemoveProjectWhitelistedDomainRequest) (*RemoveProjectWhitelistedDomainResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveProjectWhitelistedDomain not implemented")
+}
+func (UnimplementedAdminServiceServer) ListProjectWhitelistedDomains(context.Context, *ListProjectWhitelistedDomainsRequest) (*ListProjectWhitelistedDomainsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListProjectWhitelistedDomains not implemented")
 }
 func (UnimplementedAdminServiceServer) ListServices(context.Context, *ListServicesRequest) (*ListServicesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListServices not implemented")
@@ -1140,6 +1356,9 @@ func (UnimplementedAdminServiceServer) GetBookmark(context.Context, *GetBookmark
 func (UnimplementedAdminServiceServer) CreateBookmark(context.Context, *CreateBookmarkRequest) (*CreateBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateBookmark not implemented")
 }
+func (UnimplementedAdminServiceServer) UpdateBookmark(context.Context, *UpdateBookmarkRequest) (*UpdateBookmarkResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBookmark not implemented")
+}
 func (UnimplementedAdminServiceServer) RemoveBookmark(context.Context, *RemoveBookmarkRequest) (*RemoveBookmarkResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveBookmark not implemented")
 }
@@ -1151,6 +1370,9 @@ func (UnimplementedAdminServiceServer) PullVirtualRepo(context.Context, *PullVir
 }
 func (UnimplementedAdminServiceServer) GetReportMeta(context.Context, *GetReportMetaRequest) (*GetReportMetaResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetReportMeta not implemented")
+}
+func (UnimplementedAdminServiceServer) GetAlertMeta(context.Context, *GetAlertMetaRequest) (*GetAlertMetaResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertMeta not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateReport(context.Context, *CreateReportRequest) (*CreateReportResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateReport not implemented")
@@ -1169,6 +1391,24 @@ func (UnimplementedAdminServiceServer) TriggerReport(context.Context, *TriggerRe
 }
 func (UnimplementedAdminServiceServer) GenerateReportYAML(context.Context, *GenerateReportYAMLRequest) (*GenerateReportYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GenerateReportYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) CreateAlert(context.Context, *CreateAlertRequest) (*CreateAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) EditAlert(context.Context, *EditAlertRequest) (*EditAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method EditAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) UnsubscribeAlert(context.Context, *UnsubscribeAlertRequest) (*UnsubscribeAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UnsubscribeAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteAlert(context.Context, *DeleteAlertRequest) (*DeleteAlertResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteAlert not implemented")
+}
+func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GenerateAlertYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -1759,6 +1999,24 @@ func _AdminService_GetGithubRepoStatus_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetGithubUserStatus_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetGithubUserStatusRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetGithubUserStatus(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetGithubUserStatus_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetGithubUserStatus(ctx, req.(*GetGithubUserStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetGitCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetGitCredentialsRequest)
 	if err := dec(in); err != nil {
@@ -1921,6 +2179,24 @@ func _AdminService_GetDeploymentCredentials_Handler(srv interface{}, ctx context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetIFrame_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetIFrameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetIFrame(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetIFrame_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetIFrame(ctx, req.(*GetIFrameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SetSuperuser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetSuperuserRequest)
 	if err := dec(in); err != nil {
@@ -1989,6 +2265,78 @@ func _AdminService_SudoUpdateOrganizationQuotas_Handler(srv interface{}, ctx con
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).SudoUpdateOrganizationQuotas(ctx, req.(*SudoUpdateOrganizationQuotasRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoUpdateAnnotations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateAnnotationsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateAnnotations(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateAnnotations_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateAnnotations(ctx, req.(*SudoUpdateAnnotationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateProjectWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateProjectWhitelistedDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateProjectWhitelistedDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateProjectWhitelistedDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateProjectWhitelistedDomain(ctx, req.(*CreateProjectWhitelistedDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveProjectWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveProjectWhitelistedDomainRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveProjectWhitelistedDomain(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveProjectWhitelistedDomain_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveProjectWhitelistedDomain(ctx, req.(*RemoveProjectWhitelistedDomainRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListProjectWhitelistedDomains_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListProjectWhitelistedDomainsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListProjectWhitelistedDomains(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListProjectWhitelistedDomains_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListProjectWhitelistedDomains(ctx, req.(*ListProjectWhitelistedDomainsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2191,6 +2539,24 @@ func _AdminService_CreateBookmark_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_UpdateBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBookmarkRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateBookmark(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateBookmark_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateBookmark(ctx, req.(*UpdateBookmarkRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_RemoveBookmark_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RemoveBookmarkRequest)
 	if err := dec(in); err != nil {
@@ -2259,6 +2625,24 @@ func _AdminService_GetReportMeta_Handler(srv interface{}, ctx context.Context, d
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetReportMeta(ctx, req.(*GetReportMetaRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetAlertMeta_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAlertMetaRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetAlertMeta(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetAlertMeta_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetAlertMeta(ctx, req.(*GetAlertMetaRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2367,6 +2751,114 @@ func _AdminService_GenerateReportYAML_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GenerateReportYAML(ctx, req.(*GenerateReportYAMLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateAlert(ctx, req.(*CreateAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_EditAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(EditAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).EditAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_EditAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).EditAlert(ctx, req.(*EditAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UnsubscribeAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UnsubscribeAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UnsubscribeAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UnsubscribeAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UnsubscribeAlert(ctx, req.(*UnsubscribeAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteAlert_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteAlertRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteAlert(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteAlert_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteAlert(ctx, req.(*DeleteAlertRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GenerateAlertYAML_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GenerateAlertYAMLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GenerateAlertYAML(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GenerateAlertYAML_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GenerateAlertYAML(ctx, req.(*GenerateAlertYAMLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetAlertYAMLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetAlertYAML(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetAlertYAML_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetAlertYAML(ctx, req.(*GetAlertYAMLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2507,6 +2999,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetGithubRepoStatus_Handler,
 		},
 		{
+			MethodName: "GetGithubUserStatus",
+			Handler:    _AdminService_GetGithubUserStatus_Handler,
+		},
+		{
 			MethodName: "GetGitCredentials",
 			Handler:    _AdminService_GetGitCredentials_Handler,
 		},
@@ -2543,6 +3039,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetDeploymentCredentials_Handler,
 		},
 		{
+			MethodName: "GetIFrame",
+			Handler:    _AdminService_GetIFrame_Handler,
+		},
+		{
 			MethodName: "SetSuperuser",
 			Handler:    _AdminService_SetSuperuser_Handler,
 		},
@@ -2557,6 +3057,22 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateOrganizationQuotas",
 			Handler:    _AdminService_SudoUpdateOrganizationQuotas_Handler,
+		},
+		{
+			MethodName: "SudoUpdateAnnotations",
+			Handler:    _AdminService_SudoUpdateAnnotations_Handler,
+		},
+		{
+			MethodName: "CreateProjectWhitelistedDomain",
+			Handler:    _AdminService_CreateProjectWhitelistedDomain_Handler,
+		},
+		{
+			MethodName: "RemoveProjectWhitelistedDomain",
+			Handler:    _AdminService_RemoveProjectWhitelistedDomain_Handler,
+		},
+		{
+			MethodName: "ListProjectWhitelistedDomains",
+			Handler:    _AdminService_ListProjectWhitelistedDomains_Handler,
 		},
 		{
 			MethodName: "ListServices",
@@ -2603,6 +3119,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_CreateBookmark_Handler,
 		},
 		{
+			MethodName: "UpdateBookmark",
+			Handler:    _AdminService_UpdateBookmark_Handler,
+		},
+		{
 			MethodName: "RemoveBookmark",
 			Handler:    _AdminService_RemoveBookmark_Handler,
 		},
@@ -2617,6 +3137,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetReportMeta",
 			Handler:    _AdminService_GetReportMeta_Handler,
+		},
+		{
+			MethodName: "GetAlertMeta",
+			Handler:    _AdminService_GetAlertMeta_Handler,
 		},
 		{
 			MethodName: "CreateReport",
@@ -2641,6 +3165,30 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GenerateReportYAML",
 			Handler:    _AdminService_GenerateReportYAML_Handler,
+		},
+		{
+			MethodName: "CreateAlert",
+			Handler:    _AdminService_CreateAlert_Handler,
+		},
+		{
+			MethodName: "EditAlert",
+			Handler:    _AdminService_EditAlert_Handler,
+		},
+		{
+			MethodName: "UnsubscribeAlert",
+			Handler:    _AdminService_UnsubscribeAlert_Handler,
+		},
+		{
+			MethodName: "DeleteAlert",
+			Handler:    _AdminService_DeleteAlert_Handler,
+		},
+		{
+			MethodName: "GenerateAlertYAML",
+			Handler:    _AdminService_GenerateAlertYAML_Handler,
+		},
+		{
+			MethodName: "GetAlertYAML",
+			Handler:    _AdminService_GetAlertYAML_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

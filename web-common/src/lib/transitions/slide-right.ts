@@ -8,7 +8,7 @@ export default function slideRight(
     easing = cubicOut,
     rightOffset = 0,
     leftOffset = 0,
-  }
+  },
 ) {
   const style = getComputedStyle(node);
   const width = parseFloat(style.width);

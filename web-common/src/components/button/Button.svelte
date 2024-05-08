@@ -1,13 +1,35 @@
 <script lang="ts">
+  import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { createEventDispatcher } from "svelte";
 
-  export let type: "primary" | "secondary" | "highlighted" | "text" = "primary";
+  type ButtonType =
+    | "primary"
+    | "secondary"
+    | "highlighted"
+    | "text"
+    | "link"
+    | "brand"
+    | "add";
+
+  export let type: ButtonType = "primary";
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
   export let submitForm = false;
   export let form = "";
-  export let label: string | undefined = undefined;
+  export let label: string | undefined | null = null;
+  export let square = false;
+  export let circle = false;
+  export let selected = false;
+  export let large = false;
+  export let small = false;
+  export let noStroke = false;
+  export let dashed = false;
+  export let rounded = false;
+  export let href: string | null = null;
+  export let builders: Builder[] = [];
+  export let loading = false;
+  export let target: string | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
@@ -16,54 +38,252 @@
       dispatch("click", event);
     }
   };
-
-  const disabledClasses = `disabled:cursor-not-allowed disabled:text-gray-700 disabled:bg-gray-200 disabled:border disabled:border-gray-400 disabled:opacity-50`;
-  export const levels = {
-    info: {
-      primary: `bg-gray-800 text-white border rounded-sm border-gray-800 hover:bg-gray-700 hover:border-gray-700 focus:ring-blue-300`,
-      secondary:
-        "text-gray-800 border rounded-sm border-gray-300 shadow-sm hover:bg-gray-100 hover:text-gray-700 hover:border-gray-300 focus:ring-blue-300",
-      highlighted:
-        "text-gray-500 border border-gray-200 hover:bg-gray-200 hover:text-gray-600 hover:border-gray-200 focus:ring-blue-300 shadow-lg rounded-sm h-8 ",
-      text: "text-gray-900 hover:bg-gray-300 focus:ring-blue-300",
-    },
-    error: {
-      primary:
-        "bg-red-200 border border-red-200 hover:bg-red-300 hover:border-red-300 text-red-800 active:ring-red-600 focus:ring-red-400",
-      secondary:
-        "border border-red-500 hover:bg-red-100 hover:border-red-600  focus:ring-red-400",
-      text: "text-red-400 hover:bg-red-200  focus:ring-red-400",
-    },
-  };
-
-  export function buttonClasses({
-    /** one of four: primary, secondary, highlighted, text */
-    type = "primary",
-    compact = false,
-    status = "info",
-    /** if you want to define a custom button style, use this string */
-    customClasses = undefined,
-  }) {
-    return `
-  ${compact ? "px-2 py-0.5" : "px-3 py-0.5"} text-xs font-normal leading-snug
- flex flex-row gap-x-2 items-center transition-transform duration-100
-  focus:outline-none focus:ring-2
-  ${customClasses ? customClasses : levels[status][type]}
-  ${disabledClasses}
-  `;
-  }
-
-  const height = type === "highlighted" ? "32px" : compact ? "auto" : "28px";
 </script>
 
-<button
-  style:height
+<svelte:element
+  this={disabled || !href ? "button" : "a"}
+  role="button"
+  tabindex={disabled ? -1 : 0}
+  {href}
+  class="{$$props.class} {type}"
   {disabled}
-  class={buttonClasses({ type, compact, status })}
-  on:click={handleClick}
-  type={submitForm && "submit"}
-  form={submitForm && form}
+  class:square
+  class:circle
+  class:selected
+  class:large
+  class:small
+  class:dashed
+  class:compact
+  class:rounded
+  class:danger={status === "error"}
+  class:no-stroke={noStroke}
+  type={submitForm ? "submit" : "button"}
+  form={submitForm ? form : undefined}
   aria-label={label}
+  {target}
+  rel={target === "_blank" ? "noopener noreferrer" : undefined}
+  {...getAttrs(builders)}
+  use:builderActions={{ builders }}
+  on:click={handleClick}
 >
-  <slot />
-</button>
+  {#if loading}
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width="32"
+      height="32"
+      class="p-1.5"
+      viewBox="0 0 24 24"
+    >
+      <path
+        fill="currentColor"
+        d="M12,1A11,11,0,1,0,23,12,11,11,0,0,0,12,1Zm0,19a8,8,0,1,1,8-8A8,8,0,0,1,12,20Z"
+        opacity=".25"
+      />
+      <path
+        fill="currentColor"
+        d="M12,4a8,8,0,0,1,7.89,6.7A1.53,1.53,0,0,0,21.38,12h0a1.5,1.5,0,0,0,1.48-1.75,11,11,0,0,0-21.72,0A1.5,1.5,0,0,0,2.62,12h0a1.53,1.53,0,0,0,1.49-1.3A8,8,0,0,1,12,4Z"
+      >
+        <animateTransform
+          attributeName="transform"
+          dur="0.75s"
+          repeatCount="indefinite"
+          type="rotate"
+          values="0 12 12;360 12 12"
+        />
+      </path>
+    </svg>
+  {:else}
+    <slot />
+  {/if}
+</svelte:element>
+
+<style lang="postcss">
+  button,
+  a {
+    @apply flex text-center items-center justify-center;
+    @apply text-xs leading-snug font-normal;
+    @apply gap-x-2 min-w-fit select-none;
+    @apply rounded-[2px];
+    @apply px-3 h-7 min-h-[28px] cursor-pointer;
+  }
+
+  button:disabled {
+    @apply opacity-50 cursor-not-allowed;
+  }
+
+  /* PRIMARY STYLES */
+
+  .primary {
+    @apply bg-slate-800 text-white;
+  }
+
+  .primary:hover,
+  .primary.selected {
+    @apply bg-slate-700;
+  }
+
+  .primary:active {
+    @apply bg-slate-900;
+  }
+
+  /* SECONDARY STYLES */
+
+  .secondary {
+    @apply bg-white text-slate-600;
+    @apply px-3 h-7 border border-slate-300;
+  }
+
+  .secondary:hover,
+  .secondary:disabled,
+  .secondary.selected,
+  .add:hover,
+  .add:disabled,
+  .add.selected {
+    @apply bg-slate-100;
+  }
+
+  .secondary:active,
+  .add:active {
+    @apply bg-slate-200;
+  }
+
+  /* HIGHLGHTED STYLES (REMOVE) */
+
+  .highlighted {
+    @apply bg-white text-slate-700;
+    @apply border border-slate-100;
+    @apply shadow-md;
+  }
+
+  .highlighted:hover,
+  .highlighted.selected {
+    @apply bg-slate-50;
+  }
+
+  .highlighted:active {
+    @apply bg-slate-200;
+  }
+
+  /* LINK STYLES */
+
+  .link {
+    @apply text-primary-500;
+  }
+
+  .link:hover,
+  .link.selected {
+    @apply text-primary-600;
+  }
+
+  .link:active {
+    @apply text-primary-700;
+  }
+
+  .link:disabled {
+    @apply text-slate-400;
+  }
+
+  /* SHAPE STYLES */
+
+  .square,
+  .circle {
+    @apply p-0 aspect-square;
+    @apply text-ellipsis overflow-hidden whitespace-nowrap flex-grow-0 flex-shrink-0;
+  }
+
+  .rounded,
+  .circle {
+    @apply rounded-full;
+  }
+
+  /* DANGER STYLES */
+
+  .danger {
+    @apply bg-red-500 text-white;
+  }
+
+  .danger:hover,
+  .danger.selected {
+    @apply bg-red-600;
+  }
+
+  .danger:active {
+    @apply bg-red-700;
+  }
+
+  .danger.secondary {
+    @apply bg-white;
+    @apply text-red-500;
+    @apply border-red-500;
+  }
+
+  .danger:disabled {
+    @apply text-slate-400;
+    @apply bg-slate-50;
+    @apply border-slate-300;
+  }
+
+  /* BRAND STYLES */
+
+  .brand {
+    @apply bg-primary-600 text-white;
+  }
+
+  .brand:hover {
+    @apply bg-primary-500;
+  }
+
+  .brand:active {
+    @apply bg-primary-700;
+  }
+
+  /* TEXT STYLES */
+
+  .text {
+    @apply px-0 font-medium text-slate-600;
+  }
+
+  .text:hover {
+    @apply text-primary-700;
+  }
+
+  .text:active {
+    @apply text-primary-800;
+  }
+
+  /* TWEAKS */
+
+  .small {
+    @apply h-6 text-[11px];
+  }
+
+  .large {
+    @apply h-9 text-sm;
+  }
+
+  .large.square,
+  .large.circle {
+    @apply h-10;
+  }
+
+  .compact {
+    @apply px-2;
+  }
+
+  .no-stroke {
+    @apply border-none;
+  }
+
+  .dashed {
+    @apply border border-dashed;
+  }
+
+  /* ADD BUTTON STYLES */
+
+  .add {
+    @apply w-[34px] h-[26px] rounded-2xl;
+    @apply flex items-center justify-center;
+    @apply border border-dashed border-slate-300;
+    @apply bg-white px-0;
+  }
+</style>

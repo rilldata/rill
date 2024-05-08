@@ -5,6 +5,7 @@ export const editorTheme = () =>
       overflowX: "hidden",
       width: "100%",
       height: "100%",
+      fontWeight: "500",
       "&.cm-focused": {
         outline: "none",
       },
@@ -63,12 +64,13 @@ export const editorTheme = () =>
       backgroundColor: "#f3f9ff",
     },
     ".cm-tooltip": {
-      border: "none",
       borderRadius: "0.25rem",
-      backgroundColor: "rgb(243 249 255)",
+      padding: "0.5rem",
       color: "black",
     },
     ".cm-tooltip-autocomplete": {
+      backgroundColor: "rgb(243 249 255)",
+      border: "none",
       "& > ul > li[aria-selected]": {
         border: "none",
         borderRadius: "0.25rem",
@@ -89,13 +91,19 @@ export const editorTheme = () =>
 
     // key
     ".ͼc": {
-      color: "hsl(263, 70%, 50%)",
+      color: "#2C2689",
     },
     // strings
     // note: we have to code .cm-line as well since CodeMirror does not seem to always wrap
     // strings in a classed span.
-    ".ͼe, .cm-line": {
+    ".cm-line": {
       color: "hsl(175, 77%, 26%)",
+    },
+    ".ͼe": {
+      color: "#00c",
+    },
+    ".ͼl": {
+      color: "hsl(263, 70%, 50%)",
     },
     // decimal / number
     ".ͼd": {

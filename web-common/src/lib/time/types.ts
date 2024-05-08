@@ -1,6 +1,5 @@
 import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import type { DateTimeUnit } from "luxon";
-import type { DEFAULT_TIME_RANGES } from "./config";
 
 // Used for luxon's time units
 export enum TimeUnit {
@@ -113,33 +112,38 @@ export interface TimeRangeMeta {
   end?: string | RelativePointInTime;
 }
 
-// FIXME: this will have to be relaxed when the dashboard time ranges
-// are settable within a config.
-export type TimeRangeType = keyof typeof DEFAULT_TIME_RANGES;
-
-// FIXME: this is confusing. Why do we have RangePreset and TimeRangePreset?
-// And why do we need to define this explicitly?
-export const TimeRangePreset: { [K in TimeRangeType]: K } = {
-  ALL_TIME: "ALL_TIME",
-  LAST_SIX_HOURS: "LAST_SIX_HOURS",
-  LAST_24_HOURS: "LAST_24_HOURS",
-  LAST_7_DAYS: "LAST_7_DAYS",
-  LAST_14_DAYS: "LAST_14_DAYS",
-  LAST_4_WEEKS: "LAST_4_WEEKS",
-  LAST_12_MONTHS: "LAST_12_MONTHS",
-  TODAY: "TODAY",
-  WEEK_TO_DATE: "WEEK_TO_DATE",
-  MONTH_TO_DATE: "MONTH_TO_DATE",
-  QUARTER_TO_DATE: "QUARTER_TO_DATE",
-  YEAR_TO_DATE: "YEAR_TO_DATE",
-  CUSTOM: "CUSTOM",
-  DEFAULT: "DEFAULT",
-};
+// Enum for ease of access to the default presets
+export enum TimeRangePreset {
+  ALL_TIME = "inf",
+  LAST_SIX_HOURS = "PT6H",
+  LAST_24_HOURS = "PT24H",
+  LAST_7_DAYS = "P7D",
+  LAST_14_DAYS = "P14D",
+  LAST_4_WEEKS = "P4W",
+  LAST_12_MONTHS = "P12M",
+  TODAY = "rill-TD",
+  WEEK_TO_DATE = "rill-WTD",
+  MONTH_TO_DATE = "rill-MTD",
+  QUARTER_TO_DATE = "rill-QTD",
+  YEAR_TO_DATE = "rill-YTD",
+  YESTERDAY_COMPLETE = "rill-PDC",
+  PREVIOUS_WEEK_COMPLETE = "rill-PWC",
+  PREVIOUS_MONTH_COMPLETE = "rill-PMC",
+  PREVIOUS_QUARTER_COMPLETE = "rill-PQC",
+  PREVIOUS_YEAR_COMPLETE = "rill-PYC",
+  CUSTOM = "CUSTOM",
+  DEFAULT = "DEFAULT",
+}
 
 export interface TimeRange {
-  name?: TimeRangeType;
+  name?: TimeRangePreset | TimeComparisonOption;
   start: Date;
   end: Date;
+}
+
+export interface TimeRangeString {
+  start: string | undefined;
+  end: string | undefined;
 }
 
 export interface TimeRangeOption extends TimeRange {
@@ -160,9 +164,12 @@ export interface TimeGrain {
   /** the grain defined by the runtime */
   grain: V1TimeGrain;
   /** a human-readable name, e.g. minute, second, etc. */
-  label: DateTimeUnit | string;
+  label: DateTimeUnit;
   /** the ISO8601 duration, e.g. P1D, PT6H */
   duration: Period;
+  /** the d3 time format string that outputs a human-readable
+   * representation. Currently used for TDD column headers */
+  d3format: string;
   /** the DateTimeFormatOptions of the Intl API that outputs
    * a human-readable representation of a timestamp based on
    * the time grain. This preserves locale-based formatting.
@@ -178,13 +185,13 @@ export type AvailableTimeGrain = Exclude<
 >;
 
 export enum TimeComparisonOption {
-  CONTIGUOUS = "CONTIGUOUS",
+  CONTIGUOUS = "rill-PP",
   CUSTOM = "CUSTOM_COMPARISON_RANGE",
-  DAY = "P1D",
-  WEEK = "P1W",
-  MONTH = "P1M",
-  QUARTER = "P3M",
-  YEAR = "P1Y",
+  DAY = "rill-PD",
+  WEEK = "rill-PW",
+  MONTH = "rill-PM",
+  QUARTER = "rill-PQ",
+  YEAR = "rill-PY",
 }
 
 export enum TimeRoundingStrategy {

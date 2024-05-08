@@ -15,7 +15,7 @@
   let inputClasses =
     "h-10 px-4 py-2 border border-slate-300 rounded-sm text-base";
   let focusClasses =
-    "ring-offset-2 focus:ring-2 focus:ring-blue-300 focus:outline-none";
+    "ring-offset-2 focus:ring-2 focus:ring-primary-300 focus:outline-none";
 
   function handleSubmit() {
     if (!showForm) {
@@ -47,7 +47,7 @@
 <!-- "mb-6" -->
 <div class:mb-6={showForm}>
   {#if showForm}
-    <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide>
+    <div class="mt-6 mb-4 flex flex-col gap-y-4" transition:slide|global>
       <input
         class="{inputClasses} {focusClasses}"
         style:width="400px"

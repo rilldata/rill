@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"strings"
@@ -22,23 +21,29 @@ type MetricsViewYAML struct {
 	DisplayName        string           `yaml:"display_name"` // Backwards compatibility
 	Description        string           `yaml:"description"`
 	Model              string           `yaml:"model"`
+	Database           string           `yaml:"database"`
+	DatabaseSchema     string           `yaml:"database_schema"`
 	Table              string           `yaml:"table"`
 	TimeDimension      string           `yaml:"timeseries"`
+	Watermark          string           `yaml:"watermark"`
 	SmallestTimeGrain  string           `yaml:"smallest_time_grain"`
 	DefaultTimeRange   string           `yaml:"default_time_range"`
 	AvailableTimeZones []string         `yaml:"available_time_zones"`
 	FirstDayOfWeek     uint32           `yaml:"first_day_of_week"`
 	FirstMonthOfYear   uint32           `yaml:"first_month_of_year"`
+	DefaultTheme       string           `yaml:"default_theme"`
 	Dimensions         []*struct {
 		Name        string
 		Label       string
 		Column      string
+		Expression  string
 		Property    string // For backwards compatibility
 		Description string
 		Ignore      bool `yaml:"ignore"`
 		Unnest      bool
 	}
-	Measures []*struct {
+	DefaultDimensions []string `yaml:"default_dimensions"`
+	Measures          []*struct {
 		Name                string
 		Label               string
 		Expression          string
@@ -48,7 +53,8 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	Security *struct {
+	DefaultMeasures []string `yaml:"default_measures"`
+	Security        *struct {
 		Access    string `yaml:"access"`
 		RowFilter string `yaml:"row_filter"`
 		Include   []*struct {
@@ -64,6 +70,89 @@ type MetricsViewYAML struct {
 		Mode      string `yaml:"mode"`
 		Dimension string `yaml:"dimension"`
 	} `yaml:"default_comparison"`
+	AvailableTimeRanges []AvailableTimeRange `yaml:"available_time_ranges"`
+}
+
+type AvailableTimeRange struct {
+	Range             string
+	ComparisonOffsets []AvailableComparisonOffset
+}
+type tmpAvailableTimeRange struct {
+	Range             string                      `yaml:"range"`
+	ComparisonOffsets []AvailableComparisonOffset `yaml:"comparison_offsets"`
+}
+
+func (t *AvailableTimeRange) UnmarshalYAML(v *yaml.Node) error {
+	// This adds support for mixed definition
+	// EG:
+	// available_time_ranges:
+	//   - P1W
+	//   - range: P4W
+	//     comparison_ranges ...
+	if v == nil {
+		return nil
+	}
+
+	switch v.Kind {
+	case yaml.ScalarNode:
+		t.Range = v.Value
+
+	case yaml.MappingNode:
+		// avoid infinite loop by using a separate struct
+		tmp := &tmpAvailableTimeRange{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		t.Range = tmp.Range
+		t.ComparisonOffsets = tmp.ComparisonOffsets
+
+	default:
+		return fmt.Errorf("available_time_range entry should be either a string or an object")
+	}
+
+	return nil
+}
+
+type AvailableComparisonOffset struct {
+	Offset string
+	Range  string
+}
+type tmpAvailableComparisonOffset struct {
+	Offset string `yaml:"offset"`
+	Range  string `yaml:"range"`
+}
+
+func (o *AvailableComparisonOffset) UnmarshalYAML(v *yaml.Node) error {
+	// This adds support for mixed definition
+	// EG:
+	// comparison_offsets:
+	//   - rill-PY
+	//   - offset: rill-PM
+	//     range: P2M
+	if v == nil {
+		return nil
+	}
+
+	switch v.Kind {
+	case yaml.ScalarNode:
+		o.Offset = v.Value
+
+	case yaml.MappingNode:
+		// avoid infinite loop by using a separate struct
+		tmp := &tmpAvailableComparisonOffset{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+		o.Offset = tmp.Offset
+		o.Range = tmp.Range
+
+	default:
+		return fmt.Errorf("comparison_offsets entry should be either a string or an object")
+	}
+
+	return nil
 }
 
 var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
@@ -74,22 +163,18 @@ var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
 }
 var validComparisonModes = []string{"none", "time", "dimension"}
 
+const (
+	nameIsMeasure   uint8 = 1
+	nameIsDimension uint8 = 2
+)
+
 // parseMetricsView parses a metrics view (dashboard) definition and adds the resulting resource to p.Resources.
-func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
+func (p *Parser) parseMetricsView(node *Node) error {
 	// Parse YAML
 	tmp := &MetricsViewYAML{}
-	if p.RillYAML != nil && !p.RillYAML.Defaults.MetricsViews.IsZero() {
-		if err := p.RillYAML.Defaults.MetricsViews.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: fmt.Errorf("failed applying defaults from rill.yaml: %w", err)}
-		}
-	}
-	if node.YAMLRaw != "" {
-		// Can't use node.YAML because we need to set KnownFields for metrics views
-		dec := yaml.NewDecoder(strings.NewReader(node.YAMLRaw))
-		dec.KnownFields(true)
-		if err := dec.Decode(tmp); err != nil {
-			return pathError{path: node.YAMLPath, err: newYAMLError(err)}
-		}
+	err := p.decodeNodeYAML(node, true, tmp)
+	if err != nil {
+		return err
 	}
 
 	// Backwards compatibility
@@ -115,7 +200,7 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	if tmp.DefaultTimeRange != "" {
-		_, err := duration.ParseISO8601(tmp.DefaultTimeRange)
+		err := validateISO8601(tmp.DefaultTimeRange, false, false)
 		if err != nil {
 			return fmt.Errorf(`invalid "default_time_range": %w`, err)
 		}
@@ -128,8 +213,8 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 	}
 
-	names := make(map[string]bool)
-	columns := make(map[string]bool)
+	names := make(map[string]uint8)
+
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
 			continue
@@ -149,17 +234,21 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			}
 		}
 
+		if (dim.Column == "" && dim.Expression == "") || (dim.Column != "" && dim.Expression != "") {
+			return fmt.Errorf("exactly one of column or expression should be set for dimension: %q", dim.Name)
+		}
+
 		lower := strings.ToLower(dim.Name)
-		if ok := names[lower]; ok {
+		if _, ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", dim.Name)
 		}
-		names[lower] = true
+		names[lower] = nameIsDimension
+	}
 
-		lower = strings.ToLower(dim.Column)
-		if ok := columns[lower]; ok {
-			return fmt.Errorf("found duplicate dimension column name %q", dim.Column)
+	for _, dimension := range tmp.DefaultDimensions {
+		if v, ok := names[strings.ToLower(dimension)]; !ok || v != nameIsDimension {
+			return fmt.Errorf(`dimension %q referenced in "default_dimensions" not found`, dimension)
 		}
-		columns[lower] = true
 	}
 
 	measureCount := 0
@@ -176,14 +265,10 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		}
 
 		lower := strings.ToLower(measure.Name)
-		if ok := names[lower]; ok {
+		if _, ok := names[lower]; ok {
 			return fmt.Errorf("found duplicate dimension or measure name %q", measure.Name)
 		}
-		names[lower] = true
-
-		if ok := columns[lower]; ok {
-			return fmt.Errorf("measure name %q coincides with a dimension column name", measure.Name)
-		}
+		names[lower] = nameIsMeasure
 
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
@@ -193,24 +278,56 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		return fmt.Errorf("must define at least one measure")
 	}
 
+	for _, measure := range tmp.DefaultMeasures {
+		if v, ok := names[strings.ToLower(measure)]; !ok || v != nameIsMeasure {
+			return fmt.Errorf(`measure %q referenced in "default_dimensions" not found`, measure)
+		}
+	}
+
 	tmp.DefaultComparison.Mode = strings.ToLower(tmp.DefaultComparison.Mode)
 	if _, ok := comparisonModesMap[tmp.DefaultComparison.Mode]; !ok {
 		return fmt.Errorf("invalid mode: %q. allowed values: %s", tmp.DefaultComparison.Mode, strings.Join(validComparisonModes, ","))
 	}
 	if tmp.DefaultComparison.Dimension != "" {
-		if ok := names[tmp.DefaultComparison.Dimension]; !ok {
+		if v, ok := names[strings.ToLower(tmp.DefaultComparison.Dimension)]; !ok && v != nameIsDimension {
 			return fmt.Errorf("default comparison dimension %q doesn't exist", tmp.DefaultComparison.Dimension)
 		}
 	}
 
+	if tmp.AvailableTimeRanges != nil {
+		for _, r := range tmp.AvailableTimeRanges {
+			err := validateISO8601(r.Range, false, false)
+			if err != nil {
+				return fmt.Errorf("invalid range in available_time_ranges: %w", err)
+			}
+
+			for _, o := range r.ComparisonOffsets {
+				err := validateISO8601(o.Offset, false, false)
+				if err != nil {
+					return fmt.Errorf("invalid offset in comparison_offsets: %w", err)
+				}
+
+				if o.Range != "" {
+					err := validateISO8601(o.Range, false, false)
+					if err != nil {
+						return fmt.Errorf("invalid range in comparison_offsets: %w", err)
+					}
+				}
+			}
+		}
+	}
+
 	if tmp.Security != nil {
-		templateData := TemplateData{User: map[string]interface{}{
-			"name":   "dummy",
-			"email":  "mock@example.org",
-			"domain": "example.org",
-			"groups": []interface{}{"all"},
-			"admin":  false,
-		}}
+		templateData := TemplateData{
+			Environment: p.Environment,
+			User: map[string]interface{}{
+				"name":   "dummy",
+				"email":  "mock@example.org",
+				"domain": "example.org",
+				"groups": []interface{}{"all"},
+				"admin":  false,
+			},
+		}
 
 		if tmp.Security.Access != "" {
 			access, err := ResolveTemplate(tmp.Security.Access, templateData)
@@ -240,11 +357,12 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 				}
 				seen := make(map[string]bool)
 				for _, name := range include.Names {
-					if seen[name] {
+					lower := strings.ToLower(name)
+					if seen[lower] {
 						return fmt.Errorf("invalid 'security': 'include' property %q is duplicated", name)
 					}
-					seen[name] = true
-					if !names[name] {
+					seen[lower] = true
+					if _, ok := names[lower]; !ok {
 						return fmt.Errorf("invalid 'security': 'include' property %q does not exists in dimensions or measures list", name)
 					}
 				}
@@ -265,11 +383,12 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 				}
 				seen := make(map[string]bool)
 				for _, name := range exclude.Names {
-					if seen[name] {
+					lower := strings.ToLower(name)
+					if seen[lower] {
 						return fmt.Errorf("invalid 'security': 'exclude' property %q is duplicated", name)
 					}
-					seen[name] = true
-					if !names[name] {
+					seen[lower] = true
+					if _, ok := names[lower]; !ok {
 						return fmt.Errorf("invalid 'security': 'exclude' property %q does not exists in dimensions or measures list", name)
 					}
 				}
@@ -286,6 +405,9 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	}
 
 	node.Refs = append(node.Refs, ResourceName{Name: table})
+	if tmp.DefaultTheme != "" {
+		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
+	}
 
 	r, err := p.insertResource(ResourceKindMetricsView, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -295,15 +417,19 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 	spec := r.MetricsViewSpec
 
 	spec.Connector = node.Connector
+	spec.Database = tmp.Database
+	spec.DatabaseSchema = tmp.DatabaseSchema
 	spec.Table = table
 	spec.Title = tmp.Title
 	spec.Description = tmp.Description
 	spec.TimeDimension = tmp.TimeDimension
+	spec.WatermarkExpression = tmp.Watermark
 	spec.SmallestTimeGrain = smallestTimeGrain
 	spec.DefaultTimeRange = tmp.DefaultTimeRange
 	spec.AvailableTimeZones = tmp.AvailableTimeZones
 	spec.FirstDayOfWeek = tmp.FirstDayOfWeek
 	spec.FirstMonthOfYear = tmp.FirstMonthOfYear
+	spec.DefaultTheme = tmp.DefaultTheme
 
 	for _, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -313,11 +439,13 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 		spec.Dimensions = append(spec.Dimensions, &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:        dim.Name,
 			Column:      dim.Column,
+			Expression:  dim.Expression,
 			Label:       dim.Label,
 			Description: dim.Description,
 			Unnest:      dim.Unnest,
 		})
 	}
+	spec.DefaultDimensions = tmp.DefaultDimensions
 
 	for _, measure := range tmp.Measures {
 		if measure == nil || measure.Ignore {
@@ -334,10 +462,29 @@ func (p *Parser) parseMetricsView(ctx context.Context, node *Node) error {
 			ValidPercentOfTotal: measure.ValidPercentOfTotal,
 		})
 	}
+	spec.DefaultMeasures = tmp.DefaultMeasures
 
 	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]
 	if tmp.DefaultComparison.Dimension != "" {
 		spec.DefaultComparisonDimension = tmp.DefaultComparison.Dimension
+	}
+
+	if tmp.AvailableTimeRanges != nil {
+		for _, r := range tmp.AvailableTimeRanges {
+			t := &runtimev1.MetricsViewSpec_AvailableTimeRange{
+				Range: r.Range,
+			}
+			if r.ComparisonOffsets != nil {
+				t.ComparisonOffsets = make([]*runtimev1.MetricsViewSpec_AvailableComparisonOffset, len(r.ComparisonOffsets))
+				for i, o := range r.ComparisonOffsets {
+					t.ComparisonOffsets[i] = &runtimev1.MetricsViewSpec_AvailableComparisonOffset{
+						Offset: o.Offset,
+						Range:  o.Range,
+					}
+				}
+			}
+			spec.AvailableTimeRanges = append(spec.AvailableTimeRanges, t)
+		}
 	}
 
 	if tmp.Security != nil {
@@ -394,4 +541,57 @@ func parseTimeGrain(s string) (runtimev1.TimeGrain, error) {
 	default:
 		return runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED, fmt.Errorf("invalid time grain %q", s)
 	}
+}
+
+// validateISO8601 is a wrapper around duration.ParseISO8601 with additional validation:
+// a) that the duration does not have seconds granularity,
+// b) if onlyStandard is true, that the duration does not use any of the Rill-specific extensions (such as year-to-date).
+// c) if onlySingular is true, that the duration does not consist of more than one component (e.g. P2Y is valid, P2Y3M is not).
+func validateISO8601(isoDuration string, onlyStandard, onlyOneComponent bool) error {
+	d, err := duration.ParseISO8601(isoDuration)
+	if err != nil {
+		return err
+	}
+
+	sd, ok := d.(duration.StandardDuration)
+	if !ok {
+		if onlyStandard {
+			return fmt.Errorf("only standard durations are allowed")
+		}
+		return nil
+	}
+
+	if sd.Second != 0 {
+		return fmt.Errorf("durations with seconds are not allowed")
+	}
+
+	if onlyOneComponent {
+		n := 0
+		if sd.Year != 0 {
+			n++
+		}
+		if sd.Month != 0 {
+			n++
+		}
+		if sd.Week != 0 {
+			n++
+		}
+		if sd.Day != 0 {
+			n++
+		}
+		if sd.Hour != 0 {
+			n++
+		}
+		if sd.Minute != 0 {
+			n++
+		}
+		if sd.Second != 0 {
+			n++
+		}
+		if n > 1 {
+			return fmt.Errorf("only one component is allowed")
+		}
+	}
+
+	return nil
 }

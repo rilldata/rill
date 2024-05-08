@@ -1,4 +1,5 @@
 ---
+note: GENERATED. DO NOT EDIT.
 title: rill env configure
 ---
 ## rill env configure
@@ -13,7 +14,6 @@ rill env configure [flags]
 
 ```
       --path string      Project directory (default ".")
-      --subpath string   Project path to sub directory of a larger repository
       --project string   
       --redeploy         Redeploy project
 ```
@@ -21,7 +21,8 @@ rill env configure [flags]
 ### Global flags
 
 ```
-      --api-token string   Token for authenticating with the admin API
+      --api-token string   Token for authenticating with the cloud API
+      --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
 ```

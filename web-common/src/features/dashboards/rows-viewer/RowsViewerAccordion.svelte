@@ -1,22 +1,25 @@
 <script lang="ts">
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
-  import RowsViewer from "./RowsViewer.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+  import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { formatCompactInteger } from "@rilldata/web-common/lib/formatters";
   import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
-  import { useModelHasTimeSeries } from "../selectors";
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
-  import { featureFlags } from "../../feature-flags";
+  import RowsViewer from "./RowsViewer.svelte";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
 
   export let metricViewName: string;
+
+  const INITIAL_HEIGHT_EXPANDED = 300;
+  const MIN_HEIGHT_EXPANDED = 30;
+  const MAX_HEIGHT_EXPANDED = 1000;
+
   let isOpen = false;
-  const toggle = () => {
-    isOpen = !isOpen;
-  };
+  let label = "";
+  let height = INITIAL_HEIGHT_EXPANDED;
 
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
@@ -37,17 +40,11 @@
         queryKey: ["dashboardAllRowsCt", metricViewName],
         enabled: true,
       },
-    }
+    },
   );
 
   $: dashboardStore = useDashboardStore(metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
-
-  $: metricTimeSeries = useModelHasTimeSeries(
-    $runtime.instanceId,
-    metricViewName
-  );
-  $: hasTimeSeries = $metricTimeSeries.data;
 
   let timeEnd: string;
   $: {
@@ -70,7 +67,7 @@
       ],
       timeStart: $timeControlsStore.timeStart,
       timeEnd,
-      filter: $dashboardStore?.filters,
+      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },
     {
       query: {
@@ -80,45 +77,63 @@
           {
             timeStart: $timeControlsStore.timeStart,
             timeEnd,
-            filter: $dashboardStore?.filters,
+            where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
           },
         ],
-        enabled: $timeControlsStore.ready && !!$dashboardStore?.filters,
+        enabled: $timeControlsStore.ready && !!$dashboardStore?.whereFilter,
       },
-    }
+    },
   );
-
-  let label = "";
 
   $: {
     if ($totalsQuery.data && $filteredTotalsQuery.data) {
       label = `${formatCompactInteger(
-        $filteredTotalsQuery.data.data?.count
+        $filteredTotalsQuery.data.data?.count,
       )} of ${formatCompactInteger($totalsQuery.data.data?.count)} rows`;
     }
   }
 
-  $: isLocal = $featureFlags.readOnly === false;
+  function toggle() {
+    isOpen = !isOpen;
+  }
 </script>
 
-<div>
-  <button
-    aria-label="Toggle rows viewer"
-    class="w-full bg-gray-100 h-7 text-left px-2 border-t border-t-gray-200 text-xs text-gray-800 flex items-center gap-1"
-    on:click={toggle}
-  >
-    {#if isOpen}
-      <CaretDownIcon size="14px" />
-    {:else}
-      <CaretUpIcon size="14px" />
-    {/if}
-    <span class="font-bold">Model Data</span>
-    {label}
+<div
+  class="relative w-screen flex-none overflow-hidden flex flex-col bg-gray-100"
+>
+  <Resizer
+    disabled={!isOpen}
+    dimension={height}
+    min={MIN_HEIGHT_EXPANDED}
+    max={MAX_HEIGHT_EXPANDED}
+    basis={INITIAL_HEIGHT_EXPANDED}
+    onUpdate={(dimension) => (height = dimension)}
+    direction="NS"
+  />
+  <div class="bar">
+    <button
+      aria-label="Toggle rows viewer"
+      class="text-xs text-gray-800 rounded-sm hover:bg-gray-200 h-6 px-1.5 py-px flex items-center gap-1"
+      on:click={toggle}
+    >
+      <span class:rotate-180={isOpen}>
+        <CaretDownIcon size="14px" />
+      </span>
+      <span class="font-bold">Model Data</span>
+      {label}
+    </button>
     <div class="ml-auto">
-      {#if isLocal}<ExportModelDataButton {metricViewName} />{/if}
+      <ExportModelDataButton />
     </div>
-  </button>
+  </div>
+
   {#if isOpen}
-    <RowsViewer {metricViewName} />
+    <RowsViewer {metricViewName} {height} />
   {/if}
 </div>
+
+<style lang="postcss">
+  .bar {
+    @apply flex items-center px-2 h-7 w-full bg-gray-100 border-t;
+  }
+</style>

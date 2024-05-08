@@ -39,12 +39,12 @@
         typeof subButtonKey !== "string"
       ) {
         throw new Error(
-          `Subbutton value must be a number or string. Received ${typeof subButtonKey}.`
+          `Subbutton value must be a number or string. Received ${typeof subButtonKey}.`,
         );
       }
       if (get(subButtons).includes(subButtonKey)) {
         throw new Error(
-          `Subbutton with value ${subButtonKey} already registered. Subbutton values must be unique.`
+          `Subbutton with value ${subButtonKey} already registered. Subbutton values must be unique.`,
         );
       }
       subButtons.set([...get(subButtons), subButtonKey]);
@@ -60,7 +60,7 @@
         selectedKeys.update((current) =>
           current.findIndex((key) => key === subButtonKey) === -1
             ? current
-            : current.filter((key) => key !== subButtonKey)
+            : current.filter((key) => key !== subButtonKey),
         );
       });
     },
@@ -70,7 +70,7 @@
     // Note: we pass the dispatch function here so that the subbutton
     // the subbutton can dispatch events "from" the parent button group.
     // Since the subbutton is slotted into the parent button group,
-    // the wrapper div in the parent button group does not recieve
+    // the wrapper div in the parent button group does not receive
     // the event normally and cannot forward it.
     dispatch,
   });

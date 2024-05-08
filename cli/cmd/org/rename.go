@@ -5,14 +5,14 @@ import (
 
 	"github.com/fatih/color"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RenameCmd(cfg *config.Config) *cobra.Command {
+func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 	var name, newName string
+	var force bool
 
 	renameCmd := &cobra.Command{
 		Use:   "rename",
@@ -21,24 +21,26 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
-			if !cmd.Flags().Changed("org") && cfg.Interactive {
-				orgNames, err := cmdutil.OrgNames(ctx, client)
+			if !cmd.Flags().Changed("org") && ch.Interactive {
+				orgNames, err := orgNames(ctx, ch)
 				if err != nil {
 					return err
 				}
 
-				name = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
+				name, err = cmdutil.SelectPrompt("Select org to rename", orgNames, "")
+				if err != nil {
+					return err
+				}
 			}
 
-			if cfg.Interactive {
+			if ch.Interactive {
 				err = cmdutil.SetFlagsByInputPrompts(*cmd, "new-name")
 				if err != nil {
 					return err
@@ -49,9 +51,15 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return fmt.Errorf("please provide valid org new-name, provided: %q", newName)
 			}
 
-			msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
-			if !cmdutil.ConfirmPrompt(msg, "", false) {
-				return nil
+			if !force {
+				msg := fmt.Sprintf("Do you want to rename org \"%s\" to \"%s\"?", color.YellowString(name), color.YellowString(newName))
+				ok, err := cmdutil.ConfirmPrompt(msg, "", false)
+				if err != nil {
+					return err
+				}
+				if !ok {
+					return nil
+				}
 			}
 
 			updatedOrg, err := client.UpdateOrganization(ctx, &adminv1.UpdateOrganizationRequest{
@@ -67,14 +75,16 @@ func RenameCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess("Renamed organization")
-			cmdutil.TablePrinter(toRow(updatedOrg.Organization))
+			ch.PrintfSuccess("Renamed organization\n")
+			ch.PrintOrgs([]*adminv1.Organization{updatedOrg.Organization}, "")
+
 			return nil
 		},
 	}
 	renameCmd.Flags().SortFlags = false
-	renameCmd.Flags().StringVar(&name, "org", cfg.Org, "Current Org Name")
+	renameCmd.Flags().StringVar(&name, "org", ch.Org, "Current Org Name")
 	renameCmd.Flags().StringVar(&newName, "new-name", "", "New Org Name")
+	renameCmd.Flags().BoolVar(&force, "force", false, "Force rename org without confirmation prompt")
 
 	return renameCmd
 }

@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -65,7 +64,9 @@ type DB interface {
 	DeleteOrganizationWhitelistedDomain(ctx context.Context, id string) error
 
 	FindProjects(ctx context.Context, afterName string, limit int) ([]*Project, error)
+	FindProjectsByVersion(ctx context.Context, version, afterName string, limit int) ([]*Project, error)
 	FindProjectPathsByPattern(ctx context.Context, namePattern, afterName string, limit int) ([]string, error)
+	FindProjectPathsByPatternAndAnnotations(ctx context.Context, namePattern, afterName string, annotationKeys []string, annotationPairs map[string]string, limit int) ([]string, error)
 	FindProjectsForUser(ctx context.Context, userID string) ([]*Project, error)
 	FindProjectsForOrganization(ctx context.Context, orgID, afterProjectName string, limit int) ([]*Project, error)
 	// FindProjectsForOrgAndUser lists the public projects in the org and the projects where user is added as an external user
@@ -79,6 +80,11 @@ type DB interface {
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
+	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
+	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
+	FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*ProjectWhitelistedDomain, error)
+	InsertProjectWhitelistedDomain(ctx context.Context, opts *InsertProjectWhitelistedDomainOptions) (*ProjectWhitelistedDomain, error)
+	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
@@ -87,6 +93,7 @@ type DB interface {
 	InsertDeployment(ctx context.Context, opts *InsertDeploymentOptions) (*Deployment, error)
 	DeleteDeployment(ctx context.Context, id string) error
 	UpdateDeploymentStatus(ctx context.Context, id string, status DeploymentStatus, msg string) (*Deployment, error)
+	UpdateDeploymentRuntimeVersion(ctx context.Context, id, version string) (*Deployment, error)
 	UpdateDeploymentBranch(ctx context.Context, id, branch string) (*Deployment, error)
 	UpdateDeploymentUsedOn(ctx context.Context, ids []string) error
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
@@ -105,6 +112,7 @@ type DB interface {
 	FindSuperusers(ctx context.Context) ([]*User, error)
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
 	CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error)
+	CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
@@ -179,14 +187,17 @@ type DB interface {
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 
-	FindBookmarks(ctx context.Context, projectID, userID string) ([]*Bookmark, error)
+	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
+	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
 	InsertBookmark(ctx context.Context, opts *InsertBookmarkOptions) (*Bookmark, error)
+	UpdateBookmark(ctx context.Context, opts *UpdateBookmarkOptions) error
 	DeleteBookmark(ctx context.Context, bookmarkID string) error
 
 	SearchProjectUsers(ctx context.Context, projectID, emailQuery string, afterEmail string, limit int) ([]*User, error)
 
 	FindVirtualFiles(ctx context.Context, projectID, branch string, afterUpdatedOn time.Time, afterPath string, limit int) ([]*VirtualFile, error)
+	FindVirtualFile(ctx context.Context, projectID, branch, path string) (*VirtualFile, error)
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
@@ -254,30 +265,22 @@ type Project struct {
 	Name                 string
 	Description          string
 	Public               bool
-	Region               string
-	GithubURL            *string   `db:"github_url"`
-	GithubInstallationID *int64    `db:"github_installation_id"`
-	Subpath              string    `db:"subpath"`
-	ProdBranch           string    `db:"prod_branch"`
-	ProdVariables        Variables `db:"prod_variables"`
-	ProdOLAPDriver       string    `db:"prod_olap_driver"`
-	ProdOLAPDSN          string    `db:"prod_olap_dsn"`
-	ProdSlots            int       `db:"prod_slots"`
-	ProdTTLSeconds       *int64    `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string   `db:"prod_deployment_id"`
-	CreatedOn            time.Time `db:"created_on"`
-	UpdatedOn            time.Time `db:"updated_on"`
-}
-
-// Variables implements JSON SQL encoding of variables in Project.
-type Variables map[string]string
-
-func (e *Variables) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("failed type assertion to []byte")
-	}
-	return json.Unmarshal(b, &e)
+	CreatedByUserID      *string `db:"created_by_user_id"`
+	Provisioner          string
+	GithubURL            *string           `db:"github_url"`
+	GithubInstallationID *int64            `db:"github_installation_id"`
+	Subpath              string            `db:"subpath"`
+	ProdVersion          string            `db:"prod_version"`
+	ProdBranch           string            `db:"prod_branch"`
+	ProdVariables        map[string]string `db:"prod_variables"`
+	ProdOLAPDriver       string            `db:"prod_olap_driver"`
+	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
+	ProdSlots            int               `db:"prod_slots"`
+	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID     *string           `db:"prod_deployment_id"`
+	Annotations          map[string]string `db:"annotations"`
+	CreatedOn            time.Time         `db:"created_on"`
+	UpdatedOn            time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -286,10 +289,12 @@ type InsertProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
-	Region               string
+	CreatedByUserID      *string
+	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	Subpath              string
+	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdOLAPDriver       string
@@ -303,14 +308,16 @@ type UpdateProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
+	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string
 	ProdDeploymentID     *string
 	ProdSlots            int
 	ProdTTLSeconds       *int64
-	Region               string
+	Annotations          map[string]string
 }
 
 // DeploymentStatus is an enum representing the state of a deployment
@@ -328,6 +335,9 @@ const (
 type Deployment struct {
 	ID                string           `db:"id"`
 	ProjectID         string           `db:"project_id"`
+	Provisioner       string           `db:"provisioner"`
+	ProvisionID       string           `db:"provision_id"`
+	RuntimeVersion    string           `db:"runtime_version"`
 	Slots             int              `db:"slots"`
 	Branch            string           `db:"branch"`
 	RuntimeHost       string           `db:"runtime_host"`
@@ -343,6 +353,9 @@ type Deployment struct {
 // InsertDeploymentOptions defines options for inserting a new Deployment.
 type InsertDeploymentOptions struct {
 	ProjectID         string
+	Provisioner       string `validate:"required"`
+	ProvisionID       string
+	RuntimeVersion    string
 	Slots             int
 	Branch            string `validate:"required"`
 	RuntimeHost       string `validate:"required"`
@@ -366,6 +379,7 @@ type User struct {
 	DisplayName         string    `db:"display_name"`
 	PhotoURL            string    `db:"photo_url"`
 	GithubUsername      string    `db:"github_username"`
+	GithubRefreshToken  string    `db:"github_refresh_token"`
 	CreatedOn           time.Time `db:"created_on"`
 	UpdatedOn           time.Time `db:"updated_on"`
 	ActiveOn            time.Time `db:"active_on"`
@@ -388,6 +402,7 @@ type UpdateUserOptions struct {
 	DisplayName         string
 	PhotoURL            string
 	GithubUsername      string
+	GithubRefreshToken  string
 	QuotaSingleuserOrgs int
 	PreferenceTimeZone  string
 }
@@ -564,6 +579,8 @@ type ProjectRole struct {
 	ManageProjectMembers bool `db:"manage_project_members"`
 	CreateReports        bool `db:"create_reports"`
 	ManageReports        bool `db:"manage_reports"`
+	CreateAlerts         bool `db:"create_alerts"`
+	ManageAlerts         bool `db:"manage_alerts"`
 }
 
 // Member is a convenience type used for display-friendly representation of an org or project member.
@@ -629,6 +646,26 @@ type OrganizationWhitelistedDomainWithJoinedRoleNames struct {
 	RoleName string `db:"name"`
 }
 
+type ProjectWhitelistedDomain struct {
+	ID            string
+	ProjectID     string `db:"project_id"`
+	ProjectRoleID string `db:"project_role_id"`
+	Domain        string
+	CreatedOn     time.Time `db:"created_on"`
+	UpdatedOn     time.Time `db:"updated_on"`
+}
+
+type InsertProjectWhitelistedDomainOptions struct {
+	ProjectID     string `validate:"required"`
+	ProjectRoleID string `validate:"required"`
+	Domain        string `validate:"domain"`
+}
+
+type ProjectWhitelistedDomainWithJoinedRoleNames struct {
+	Domain   string
+	RoleName string `db:"name"`
+}
+
 const (
 	DefaultQuotaProjects           = 5
 	DefaultQuotaDeployments        = 10
@@ -653,23 +690,40 @@ type InsertProjectInviteOptions struct {
 }
 
 type Bookmark struct {
-	ID            string
-	DisplayName   string    `db:"display_name"`
-	Data          []byte    `db:"data"`
-	DashboardName string    `db:"dashboard_name"`
-	ProjectID     string    `db:"project_id"`
-	UserID        string    `db:"user_id"`
-	CreatedOn     time.Time `db:"created_on"`
-	UpdatedOn     time.Time `db:"updated_on"`
+	ID           string
+	DisplayName  string    `db:"display_name"`
+	Description  string    `db:"description"`
+	Data         []byte    `db:"data"`
+	ResourceKind string    `db:"resource_kind"`
+	ResourceName string    `db:"resource_name"`
+	ProjectID    string    `db:"project_id"`
+	UserID       string    `db:"user_id"`
+	Default      bool      `db:"default"`
+	Shared       bool      `db:"shared"`
+	CreatedOn    time.Time `db:"created_on"`
+	UpdatedOn    time.Time `db:"updated_on"`
 }
 
-// InsertBookmarksOptions defines options for inserting a new bookmark
+// InsertBookmarkOptions defines options for inserting a new bookmark
 type InsertBookmarkOptions struct {
-	DisplayName   string `json:"display_name"`
-	Data          []byte `json:"data"`
-	DashboardName string `json:"dashboard_name"`
-	ProjectID     string `json:"project_id"`
-	UserID        string `json:"user_id"`
+	DisplayName  string `json:"display_name"`
+	Data         []byte `json:"data"`
+	ResourceKind string `json:"resource_kind"`
+	ResourceName string `json:"resource_name"`
+	Description  string `json:"description"`
+	ProjectID    string `json:"project_id"`
+	UserID       string `json:"user_id"`
+	Default      bool   `json:"default"`
+	Shared       bool   `json:"shared"`
+}
+
+// UpdateBookmarkOptions defines options for updating an existing bookmark
+type UpdateBookmarkOptions struct {
+	BookmarkID  string `json:"bookmark_id"`
+	DisplayName string `json:"display_name"`
+	Description string `json:"description"`
+	Data        []byte `json:"data"`
+	Shared      bool   `json:"shared"`
 }
 
 // VirtualFile represents an ad-hoc file for a project (not managed in Git)

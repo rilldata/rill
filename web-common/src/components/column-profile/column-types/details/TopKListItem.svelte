@@ -4,19 +4,16 @@
   import { slide } from "svelte/transition";
 
   export let value: number; // should be between 0 and 1.
-  export let color = "bg-blue-200 dark:bg-blue-600";
+  export let color = "bg-primary-200 dark:bg-primary-600";
 
   /** compact mode is used in e.g. profiles */
 
   const dispatch = createEventDispatcher();
 
-  let hovered = false;
   const onHover = () => {
-    hovered = true;
     dispatch("focus");
   };
   const onLeave = () => {
-    hovered = false;
     dispatch("blur");
   };
 </script>
@@ -28,7 +25,7 @@
   on:focus={onHover}
   on:mouseleave={onLeave}
   on:mouseover={onHover}
-  transition:slide|local={{ duration: 200 }}
+  transition:slide={{ duration: 200 }}
 >
   <BarAndLabel
     {color}

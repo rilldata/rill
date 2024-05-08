@@ -14,12 +14,12 @@
     {#key isFetching}
       <div
         class="absolute m-auto grid place-items-center"
-        transition:fade|local={{ duration: LIST_SLIDE_DURATION }}
+        transition:fade={{ duration: LIST_SLIDE_DURATION }}
         style:width="16px"
         style:height="16px"
       >
         {#if isFetching}
-          <Spinner status={EntityStatus.Running} bg="rgba(0,0,0,.2)" />
+          <Spinner status={EntityStatus.Running} />
         {:else}
           <DataTypeIcon {type} />
         {/if}

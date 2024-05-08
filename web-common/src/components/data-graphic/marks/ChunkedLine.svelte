@@ -21,8 +21,8 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   import {
     areaFactory,
     lineFactory,
-    pathIsDefined,
   } from "@rilldata/web-common/components/data-graphic/utils";
+  import { LineMutedColor } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { interpolatePath } from "d3-interpolate-path";
   import { getContext } from "svelte";
@@ -32,16 +32,17 @@ Over time, we'll make this the default Line implementation, but it's not quite t
   export let yAccessor: string;
 
   export let isComparingDimension = false;
-  export let area = true;
+
   /** time in ms to trigger a delay when the underlying data changes */
   export let delay = 0;
   export let duration = 400;
 
   export let stopOpacity = 0.3;
   // FIXME – this is a different prop than elsewhere
-  export let lineColor = "hsla(217,60%, 55%, 1)";
-  export let areaColor = "hsla(217,70%, 80%, .4)";
-  export let lineClasses = "";
+  export let lineColor = LineMutedColor;
+  export let areaGradientColors: [string, string] | null = null;
+
+  $: area = areaGradientColors !== null;
 
   const id = guidGenerator();
 
@@ -82,7 +83,7 @@ Over time, we'll make this the default Line implementation, but it's not quite t
     }
   }
 
-  $: segments = computeSegments(data, pathIsDefined(yAccessor));
+  $: segments = computeSegments(data, yAccessor);
   /** plot these as points */
   $: singletons = segments.filter((segment) => segment.length === 1);
 
@@ -106,15 +107,14 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       x={$xScale(singleton[xAccessor]) - 0.75}
       y={Math.min($yScale(0), $yScale(singleton[yAccessor]))}
       width="1.5"
-      class={lineClasses}
       height={Math.abs($yScale(0) - $yScale(singleton[yAccessor]))}
-      fill="hsla(217,60%, 55%, .5)"
+      fill={lineColor}
     />
     <circle
       cx={$xScale(singleton[xAccessor])}
       cy={$yScale(singleton[yAccessor])}
       r="1.5"
-      fill="hsla(217,60%, 55%, .5)"
+      fill={lineColor}
     />
   {/each}
   <g>
@@ -131,14 +131,13 @@ Over time, we'll make this the default Line implementation, but it's not quite t
       <path
         stroke-width={isComparingDimension ? 1.5 : 1}
         stroke={lineColor}
-        class={lineClasses}
         d={dt}
         id="segments-line"
         fill="none"
         style="clip-path: url(#path-segments-{id})"
       />
     </WithTween>
-    {#if area}
+    {#if areaGradientColors !== null}
       <WithTween
         value={areaFunction(yAccessor)(delayedFilteredData)}
         tweenProps={{
@@ -154,40 +153,29 @@ Over time, we'll make this the default Line implementation, but it's not quite t
           style="clip-path: url(#path-segments-{id})"
         />
       </WithTween>
+      <defs>
+        <linearGradient id="gradient-{id}" x1="0" x2="0" y1="0" y2="1">
+          <stop
+            offset="5%"
+            stop-color={areaGradientColors[0]}
+            stop-opacity={stopOpacity}
+          />
+          <stop
+            offset="95%"
+            stop-color={areaGradientColors[1]}
+            stop-opacity={stopOpacity}
+          />
+        </linearGradient>
+      </defs>
     {/if}
     <!-- clip rects for segments -->
     <defs>
-      <linearGradient id="gradient-{id}" x1="0" x2="0" y1="0" y2="1">
-        <stop offset="5%" stop-color={areaColor} />
-        <stop offset="95%" stop-color={areaColor} stop-opacity={stopOpacity} />
-      </linearGradient>
       <clipPath id="path-segments-{id}">
         {#each delayedSegments as segment (segment[0][xAccessor])}
           {@const x = $xScale(segment[0][xAccessor])}
           {@const width =
             $xScale(segment.at(-1)[xAccessor]) - $xScale(segment[0][xAccessor])}
-          <WithTween
-            initialValue={{
-              x: x - width / 2,
-              width: width * 2,
-            }}
-            value={{
-              x,
-              width,
-            }}
-            tweenProps={{
-              duration,
-              easing: cubicOut,
-            }}
-            let:output
-          >
-            <rect
-              x={output.x}
-              y={0}
-              height={$yScale.range()[0]}
-              width={output.width}
-            />
-          </WithTween>
+          <rect {x} y={0} height={$yScale.range()[0]} {width} />
         {/each}
       </clipPath>
     </defs>

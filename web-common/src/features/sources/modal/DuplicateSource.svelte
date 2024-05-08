@@ -1,6 +1,7 @@
 <script lang="ts">
-  import { Dialog } from "@rilldata/web-common/components/modal/index";
-  import { createEventDispatcher } from "svelte";
+  import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
+  import DialogCTA from "@rilldata/web-common/components/modal/dialog/DialogCTA.svelte";
+  import { createEventDispatcher, onDestroy } from "svelte";
   import {
     DuplicateActions,
     duplicateSourceAction,
@@ -8,34 +9,46 @@
   } from "../sources-store";
 
   const dispatch = createEventDispatcher();
+
   function onCancel() {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.Cancel;
     dispatch("cancel");
   }
-</script>
 
-<Dialog
-  showCancel
-  size="md"
-  on:cancel={onCancel}
-  on:click-outside={onCancel}
-  on:primary-action={() => {
+  function onPrimaryAction() {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.KeepBoth;
-  }}
-  on:secondary-action={() => {
+    dispatch("complete");
+  }
+
+  function onSecondaryAction() {
     $duplicateSourceName = null;
     $duplicateSourceAction = DuplicateActions.Overwrite;
-  }}
->
-  <svelte:fragment slot="title">Duplicate source name</svelte:fragment>
-  <svelte:fragment slot="body">
-    A source with the name <b>{$duplicateSourceName}</b> already exists.
-  </svelte:fragment>
+    dispatch("complete");
+  }
 
-  <svelte:fragment slot="secondary-action-body"
-    >Replace Existing Source</svelte:fragment
+  onDestroy(() => {
+    $duplicateSourceName = null;
+  });
+</script>
+
+<p class="py-2">
+  A source with the name <b>{$duplicateSourceName}</b> already exists.
+</p>
+
+<DialogFooter>
+  <DialogCTA
+    on:cancel={onCancel}
+    on:primary-action={onPrimaryAction}
+    on:secondary-action={onSecondaryAction}
+    showSecondary
   >
-  <svelte:fragment slot="primary-action-body">Keep Both</svelte:fragment>
-</Dialog>
+    <svelte:fragment slot="secondary-action-body"
+      ><slot name="secondary-action-body" />Replace Existing Source</svelte:fragment
+    >
+    <svelte:fragment slot="primary-action-body"
+      ><slot name="primary-action-body" />Keep Both</svelte:fragment
+    >
+  </DialogCTA>
+</DialogFooter>

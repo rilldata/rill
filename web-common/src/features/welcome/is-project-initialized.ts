@@ -7,50 +7,28 @@ import {
 import type { QueryClient } from "@tanstack/query-core";
 
 export function useIsProjectInitialized(instanceId: string) {
-  return createRuntimeServiceListFiles(
-    instanceId,
-    {
-      glob: "rill.yaml",
-    },
-    {
-      query: {
-        select: (data) => {
-          // Return true if `rill.yaml` exists, else false
-          return data.paths.length === 1;
-        },
-        refetchOnWindowFocus: true,
+  return createRuntimeServiceListFiles(instanceId, undefined, {
+    query: {
+      select: (data) => {
+        // Return true if `rill.yaml` exists, else false
+        return data.files?.some((file) => file.path === "/rill.yaml");
       },
-    }
-  );
+      refetchOnWindowFocus: true,
+    },
+  });
 }
 
 export async function isProjectInitialized(
-  instanceId: string
-): Promise<boolean> {
-  const data = await runtimeServiceListFiles(instanceId, {
-    glob: "rill.yaml",
-  });
-
-  // Return true if `rill.yaml` exists, else false
-  return data.paths.length === 1;
-}
-
-// V2 is an improvement because it uses the queryClient to cache the result
-export async function isProjectInitializedV2(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ) {
-  const rillYAMLFiles = await queryClient.fetchQuery<V1ListFilesResponse>({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, {
-      glob: "rill.yaml",
-    }),
-    queryFn: () => {
-      return runtimeServiceListFiles(instanceId, {
-        glob: "rill.yaml",
-      });
+  const files = await queryClient.fetchQuery<V1ListFilesResponse>({
+    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
+    queryFn: ({ signal }) => {
+      return runtimeServiceListFiles(instanceId, undefined, signal);
     },
   });
 
   // Return true if `rill.yaml` exists, else false
-  return rillYAMLFiles.paths.length === 1;
+  return files.files?.some((file) => file.path === "/rill.yaml");
 }

@@ -31,18 +31,18 @@ export function getActionMethods(instance: unknown): Array<string> {
     (prototypeMember) => {
       const descriptor = Object.getOwnPropertyDescriptor(
         instance.constructor.prototype,
-        prototypeMember
+        prototypeMember,
       );
       return (
         prototypeMember !== "constructor" &&
         typeof descriptor.value === "function"
       );
-    }
+    },
   );
 }
 
 export interface ActionServiceBase<
-  ActionsDefinition extends Record<string, Array<unknown>>
+  ActionsDefinition extends Record<string, Array<unknown>>,
 > {
   /**
    * Will be called by ActionQueueOrchestrator once the action has been scheduled
@@ -51,6 +51,6 @@ export interface ActionServiceBase<
    */
   dispatch<Action extends keyof ActionsDefinition>(
     action: Action,
-    args: ActionsDefinition[Action]
+    args: ActionsDefinition[Action],
   ): Promise<unknown>;
 }

@@ -2,11 +2,12 @@
   import { fade } from "svelte/transition";
 
   export let bgColor = "bg-gray-900/30";
-  export let element;
+  export let element: HTMLDivElement | undefined = undefined;
 </script>
 
 <div
-  transition:fade={{ duration: 100 }}
+  role="presentation"
+  transition:fade|global={{ duration: 100 }}
   bind:this={element}
   part="overlay"
   class="{bgColor} fixed top-0 right-0 left-0 bottom-0"

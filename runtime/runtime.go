@@ -7,8 +7,10 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
+	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -26,22 +28,22 @@ type Options struct {
 	ControllerLogBufferCapacity  int
 	ControllerLogBufferSizeBytes int64
 	AllowHostAccess              bool
-	SafeSourceRefresh            bool
+	DataDir                      string
 }
 
 type Runtime struct {
 	Email          *email.Client
 	opts           *Options
 	logger         *zap.Logger
-	activity       activity.Client
+	activity       *activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
-	connCache      *connectionCache
+	connCache      conncache.Cache
 	queryCache     *queryCache
 	securityEngine *securityEngine
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Client, emailClient *email.Client) (*Runtime, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Client, emailClient *email.Client) (*Runtime, error) {
 	if emailClient == nil {
 		emailClient = email.New(email.NewNoopSender())
 	}
@@ -55,7 +57,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Cli
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
 	}
 
-	rt.connCache = newConnectionCache(opts.ConnectionCacheSize, logger, rt, ac)
+	rt.connCache = rt.newConnectionCache()
 
 	store, _, err := rt.AcquireSystemHandle(ctx, opts.MetastoreConnector)
 	if err != nil {
@@ -67,10 +69,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac activity.Cli
 		return nil, fmt.Errorf("metastore must be a valid registry")
 	}
 
-	rt.registryCache, err = newRegistryCache(ctx, rt, reg, logger, ac)
-	if err != nil {
-		return nil, err
-	}
+	rt.registryCache = newRegistryCache(rt, reg, logger, ac)
 	err = rt.registryCache.init(ctx)
 	if err != nil {
 		return nil, err
@@ -86,14 +85,18 @@ func (r *Runtime) AllowHostAccess() bool {
 func (r *Runtime) Close() error {
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	err1 := r.registryCache.close(ctx)
-	err2 := r.queryCache.close()
-	err3 := r.connCache.Close() // Also closes metastore // TODO: Propagate ctx cancellation
-	return errors.Join(err1, err2, err3)
+	r.registryCache.close(ctx)
+	err1 := r.queryCache.close()
+	err2 := r.connCache.Close(ctx) // Also closes metastore // TODO: Propagate ctx cancellation
+	return errors.Join(err1, err2)
 }
 
 func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
-	return r.securityEngine.resolveMetricsViewSecurity(attributes, instanceID, mv, lastUpdatedOn)
+	inst, err := r.Instance(context.Background(), instanceID)
+	if err != nil {
+		return nil, err
+	}
+	return r.securityEngine.resolveMetricsViewSecurity(instanceID, inst.Environment, mv, lastUpdatedOn, attributes)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
@@ -105,6 +108,39 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	}
 
 	return instanceAnnotationsToAttribs(instance)
+}
+
+func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, rillYAML *rillv1.RillYAML, dotEnv map[string]string, restartController bool) error {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	// Shallow clone for editing
+	tmp := *inst
+	inst = &tmp
+
+	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
+
+	conns := make([]*runtimev1.Connector, 0, len(rillYAML.Connectors))
+	for _, c := range rillYAML.Connectors {
+		conns = append(conns, &runtimev1.Connector{
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: c.Defaults,
+		})
+	}
+	inst.ProjectConnectors = conns
+	vars := make(map[string]string)
+	for _, v := range rillYAML.Variables {
+		vars[v.Name] = v.Default
+	}
+	for k, v := range dotEnv {
+		vars[k] = v
+	}
+	inst.ProjectVariables = vars
+	inst.FeatureFlags = rillYAML.FeatureFlags
+	return r.EditInstance(ctx, inst, restartController)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

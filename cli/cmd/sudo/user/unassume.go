@@ -5,13 +5,12 @@ import (
 
 	"github.com/rilldata/rill/cli/cmd/auth"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func UnassumeCmd(cfg *config.Config) *cobra.Command {
+func UnassumeCmd(ch *cmdutil.Helper) *cobra.Command {
 	unassumeCmd := &cobra.Command{
 		Use:   "unassume",
 		Args:  cobra.NoArgs,
@@ -19,11 +18,10 @@ func UnassumeCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			originalToken, err := dotrill.GetBackupToken()
 			if err != nil {
@@ -44,7 +42,7 @@ func UnassumeCmd(cfg *config.Config) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			cfg.AdminTokenDefault = originalToken
+			ch.AdminTokenDefault = originalToken
 
 			// Set original_token as empty
 			err = dotrill.SetBackupToken("")
@@ -59,7 +57,7 @@ func UnassumeCmd(cfg *config.Config) *cobra.Command {
 			}
 
 			// Select org again for original user
-			err = auth.SelectOrgFlow(ctx, cfg)
+			err = auth.SelectOrgFlow(ctx, ch, true)
 			if err != nil {
 				return err
 			}

@@ -1,17 +1,16 @@
 <script lang="ts">
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { createShowHideMeasuresStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
   import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
-  import { useDashboardStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
 
-  import SeachableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SeachableFilterButton.svelte";
+  import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
 
   export let metricViewName;
   export let exploreContainerWidth;
@@ -34,19 +33,20 @@
     MEASURES_PADDING_LEFT -
     LEADERBOARD_PADDING_RIGHT;
 
-  $: dashboardStore = useDashboardStore(metricViewName);
+  const {
+    dashboardStore,
+    selectors: {
+      activeMeasure: { selectedMeasureNames },
+    },
+  } = getStateManagers();
 
   $: instanceId = $runtime.instanceId;
 
   // query the `/meta` endpoint to get the measures and the default time grain
-  $: metaQuery = useMetaQuery(instanceId, metricViewName);
+  $: metricsView = useMetricsView(instanceId, metricViewName);
   const timeControlsStore = useTimeControlStore(getStateManagers());
 
-  $: selectedMeasureNames = $dashboardStore?.selectedMeasureNames;
-
-  const { observedNode, listenToNodeResize } =
-    createResizeListenerActionFactory();
-  $: metricsContainerHeight = ($observedNode?.offsetHeight as number) || 0;
+  let metricsContainerHeight: number;
 
   let measuresWrapper;
   let measuresHeight: number[] = [];
@@ -70,16 +70,16 @@
 
   function calculateGridColumns() {
     measuresHeight = measureNodes.map(
-      (measureNode) => measureNode?.offsetHeight
+      (measureNode) => measureNode?.offsetHeight,
     );
 
     const minInMeasures = Math.min(...measuresHeight);
     measuresHeight = measuresHeight.map((height) =>
-      height > minInMeasures ? MEASURE_HEIGHT_MULTILINE : MEASURE_HEIGHT
+      height > minInMeasures ? MEASURE_HEIGHT_MULTILINE : MEASURE_HEIGHT,
     );
     const totalMeasuresHeight = measuresHeight.reduce(
       (s, v) => s + v + MARGIN_TOP,
-      0
+      0,
     );
 
     if (totalMeasuresHeight && metricsContainerHeight) {
@@ -88,7 +88,7 @@
         numColumns = Math.min(Math.ceil(columns), 3);
         measureGridHeights = getMeasureHeightsForColumn(
           measuresHeight,
-          numColumns
+          numColumns,
         );
       } else {
         numColumns = 2;
@@ -115,7 +115,7 @@
           numColumns = numColumns - 1;
           measureGridHeights = getMeasureHeightsForColumn(
             measuresHeight,
-            numColumns
+            numColumns,
           );
         } else break;
       }
@@ -128,17 +128,17 @@
     instanceId,
     metricViewName,
     {
-      measureNames: selectedMeasureNames,
-      filter: $dashboardStore?.filters,
+      measureNames: $selectedMeasureNames,
+      where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },
     {
       query: {
         enabled:
-          selectedMeasureNames?.length > 0 &&
+          $selectedMeasureNames?.length > 0 &&
           $timeControlsStore.ready &&
-          !!$dashboardStore?.filters,
+          !!$dashboardStore?.whereFilter,
       },
-    }
+    },
   );
 
   let measureNodes: HTMLDivElement[] = [];
@@ -147,7 +147,10 @@
     calculateGridColumns();
   }
 
-  $: showHideMeasures = createShowHideMeasuresStore(metricViewName, metaQuery);
+  $: showHideMeasures = createShowHideMeasuresStore(
+    metricViewName,
+    metricsView,
+  );
 
   const toggleMeasureVisibility = (e) => {
     showHideMeasures.toggleVisibility(e.detail.name);
@@ -162,9 +165,10 @@
 
 <svelte:window on:resize={() => calculateGridColumns()} />
 <div
+  class="overflow-y-scroll"
   style:height="calc(100% - {GRID_MARGIN_TOP}px)"
   style:width={containerWidths[numColumns]}
-  use:listenToNodeResize
+  bind:clientHeight={metricsContainerHeight}
 >
   <div
     bind:this={measuresWrapper}
@@ -172,7 +176,7 @@
     style:column-gap="{COLUMN_GAP}px"
   >
     <div class="bg-white sticky top-0">
-      <SeachableFilterButton
+      <SearchableFilterButton
         label="Measures"
         on:deselect-all={setAllMeasuresNotVisible}
         on:item-clicked={toggleMeasureVisibility}
@@ -182,8 +186,8 @@
         tooltipText="Choose measures to display"
       />
     </div>
-    {#if $metaQuery.data?.measures}
-      {#each $metaQuery.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
+    {#if $metricsView.data?.measures}
+      {#each $metricsView.data?.measures.filter((_, i) => $showHideMeasures.selectedItems[i]) as measure, index (measure.name)}
         <div
           bind:this={measureNodes[index]}
           style:width="{MEASURE_WIDTH}px"
@@ -194,7 +198,8 @@
           <!-- FIXME: I can't select the big number by the measure id. -->
           <MeasureBigNumber
             {measure}
-            value={$totalsQuery?.data?.data?.[measure?.name ?? ""] ?? 0}
+            value={// catch nulls and pass only undefined to the component
+            $totalsQuery?.data?.data?.[measure?.name ?? ""] ?? undefined}
             withTimeseries={false}
             status={$totalsQuery?.isFetching
               ? EntityStatus.Running

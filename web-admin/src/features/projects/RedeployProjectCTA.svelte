@@ -1,4 +1,8 @@
 <script lang="ts">
+  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
+  import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
+  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
+  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import CLICommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
@@ -6,16 +10,24 @@
   export let project: string;
 </script>
 
-<div class="text-gray-800 flex flex-col gap-y-1">
-  <ProjectAccessControls {organization} {project}>
-    <span slot="manage-project">
-      This project does not currently have a deployment. To redeploy the
-      project, run this command in the Rill CLI:
-      <CLICommandDisplay command="rill project reconcile --project {project}" />
-    </span>
-    <span slot="read-project">
-      This project is not currently deployed. Contact your project's
-      administrator to redeploy the project.
-    </span>
-  </ProjectAccessControls>
-</div>
+<CtaLayoutContainer>
+  <CtaContentContainer>
+    <ProjectAccessControls {organization} {project}>
+      <svelte:fragment slot="manage-project">
+        <CtaHeader variant="bold">Your project is hibernating</CtaHeader>
+        <CtaMessage>
+          To redeploy the project, run the following command in the Rill CLI:
+        </CtaMessage>
+        <CLICommandDisplay
+          command="rill project reconcile --project {project}"
+        />
+      </svelte:fragment>
+      <svelte:fragment slot="read-project">
+        <CtaHeader variant="bold">This project is hibernating</CtaHeader>
+        <CtaMessage>
+          Contact the project's administrator to redeploy the project.
+        </CtaMessage>
+      </svelte:fragment>
+    </ProjectAccessControls>
+  </CtaContentContainer>
+</CtaLayoutContainer>

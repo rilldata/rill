@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
-    V1ProjectPermissions,
+    type V1ProjectPermissions,
   } from "@rilldata/web-admin/client";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
 
@@ -9,11 +9,16 @@
   export let project: string;
 
   let projectPermissions: CreateQueryResult<V1ProjectPermissions>;
-  $: projectPermissions = createAdminServiceGetProject(organization, project, {
-    query: {
-      select: (data) => data.projectPermissions,
+  $: projectPermissions = createAdminServiceGetProject(
+    organization,
+    project,
+    undefined,
+    {
+      query: {
+        select: (data) => data.projectPermissions,
+      },
     },
-  });
+  );
 </script>
 
 {#if $projectPermissions?.data}

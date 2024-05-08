@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
+	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
@@ -15,7 +17,7 @@ import (
 )
 
 // Built-in parser limits
-var (
+const (
 	maxFiles    = 10000
 	maxFileSize = 1 << 17 // 128kb
 )
@@ -35,6 +37,11 @@ type Resource struct {
 	MetricsViewSpec *runtimev1.MetricsViewSpec
 	MigrationSpec   *runtimev1.MigrationSpec
 	ReportSpec      *runtimev1.ReportSpec
+	AlertSpec       *runtimev1.AlertSpec
+	ThemeSpec       *runtimev1.ThemeSpec
+	ComponentSpec   *runtimev1.ComponentSpec
+	DashboardSpec   *runtimev1.DashboardSpec
+	APISpec         *runtimev1.APISpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -64,6 +71,11 @@ const (
 	ResourceKindMetricsView
 	ResourceKindMigration
 	ResourceKindReport
+	ResourceKindAlert
+	ResourceKindTheme
+	ResourceKindComponent
+	ResourceKindDashboard
+	ResourceKindAPI
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -76,14 +88,24 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindSource, nil
 	case "model":
 		return ResourceKindModel, nil
-	case "metricsview", "metrics_view", "dashboard":
+	case "metricsview", "metrics_view":
 		return ResourceKindMetricsView, nil
 	case "migration":
 		return ResourceKindMigration, nil
 	case "report":
 		return ResourceKindReport, nil
+	case "alert":
+		return ResourceKindAlert, nil
+	case "theme":
+		return ResourceKindTheme, nil
+	case "component":
+		return ResourceKindComponent, nil
+	case "dashboard":
+		return ResourceKindDashboard, nil
+	case "api":
+		return ResourceKindAPI, nil
 	default:
-		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
+		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}
 }
 
@@ -101,8 +123,18 @@ func (k ResourceKind) String() string {
 		return "Migration"
 	case ResourceKindReport:
 		return "Report"
+	case ResourceKindAlert:
+		return "Alert"
+	case ResourceKindTheme:
+		return "Theme"
+	case ResourceKindComponent:
+		return "Component"
+	case ResourceKindDashboard:
+		return "Dashboard"
+	case ResourceKindAPI:
+		return "API"
 	default:
-		panic(fmt.Sprintf("unexpected resource kind: %d", k))
+		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
 }
 
@@ -121,10 +153,10 @@ type Diff struct {
 // Parser is not concurrency safe.
 type Parser struct {
 	// Options
-	Repo             drivers.RepoStore
-	InstanceID       string
-	DefaultConnector string
-	DuckDBConnectors []string
+	Repo                 drivers.RepoStore
+	InstanceID           string
+	Environment          string
+	DefaultOLAPConnector string
 
 	// Output
 	RillYAML  *RillYAML
@@ -142,9 +174,14 @@ type Parser struct {
 
 // ParseRillYAML parses only the project's rill.yaml (or rill.yml) file.
 func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID string) (*RillYAML, error) {
-	paths, err := repo.ListRecursive(ctx, "rill.{yaml,yml}")
+	files, err := repo.ListRecursive(ctx, "rill.{yaml,yml}", true)
 	if err != nil {
 		return nil, fmt.Errorf("could not list project files: %w", err)
+	}
+
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
 	}
 
 	p := Parser{Repo: repo, InstanceID: instanceID}
@@ -154,22 +191,44 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 	}
 
 	if p.RillYAML == nil {
-		return nil, errors.New("rill.yaml not found")
+		return nil, ErrRillYAMLNotFound
 	}
 
 	return p.RillYAML, nil
 }
 
+// ParseDotEnv parses only the .env file present in project's root.
+func ParseDotEnv(ctx context.Context, repo drivers.RepoStore, instanceID string) (map[string]string, error) {
+	files, err := repo.ListRecursive(ctx, ".env", true)
+	if err != nil {
+		return nil, fmt.Errorf("could not list project files: %w", err)
+	}
+
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
+	}
+
+	p := Parser{Repo: repo, InstanceID: instanceID}
+	err = p.parsePaths(ctx, paths)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.DotEnv, nil
+}
+
 // Parse creates a new parser and parses the entire project.
-//
-// Note on SQL parsing: For DuckDB SQL specifically, the parser can use a SQL parser to extract refs and annotations (instead of relying on templating or YAML).
-// To enable SQL parsing for a connector, pass it in duckDBConnectors. If DuckDB SQL parsing should be used on files where no connector is specified, put the defaultConnector in duckDBConnectors.
-func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConnector string, duckDBConnectors []string) (*Parser, error) {
+func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string) (*Parser, error) {
 	p := &Parser{
-		Repo:             repo,
-		InstanceID:       instanceID,
-		DefaultConnector: defaultConnector,
-		DuckDBConnectors: duckDBConnectors,
+		Repo:                 repo,
+		InstanceID:           instanceID,
+		Environment:          environment,
+		DefaultOLAPConnector: defaultOLAPConnector,
 	}
 
 	err := p.reload(ctx)
@@ -185,11 +244,21 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, defaultConne
 // If a previous call to Reparse has returned an error, the Parser may not be accessed or called again.
 func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	var changedRillYAML bool
-	for _, p := range paths {
-		if pathIsRillYAML(p) {
-			changedRillYAML = true
-			break
+	for _, path := range paths {
+		if !pathIsRillYAML(path) {
+			continue
 		}
+		oldRillYAML := p.RillYAML
+		err := p.parseRillYAML(ctx, path)
+		if err == nil {
+			// Watcher sends multiple events for a single edit. We want to only restart the controller when rill.yaml actually changes.
+			// So we check the new rill.yaml contents against the contents stored in parser state.
+			changedRillYAML = !reflect.DeepEqual(oldRillYAML, p.RillYAML)
+		} else {
+			// any error including parse error means rill.yaml changed
+			changedRillYAML = true
+		}
+		break
 	}
 
 	if changedRillYAML {
@@ -208,6 +277,28 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	return p.reparseExceptRillYAML(ctx, paths)
 }
 
+// IsSkippable returns true if the path will be skipped by Reparse.
+// It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
+func (p *Parser) IsSkippable(path string) bool {
+	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+}
+
+// TrackedPathsInDir returns the paths under the given directory that the parser currently has cached results for.
+func (p *Parser) TrackedPathsInDir(dir string) []string {
+	// Ensure dir has a trailing path separator
+	if dir != "" && dir[len(dir)-1] != '/' {
+		dir += "/"
+	}
+	// Find paths
+	var paths []string
+	for path := range p.resourcesForPath {
+		if strings.HasPrefix(path, dir) {
+			paths = append(paths, path)
+		}
+	}
+	return paths
+}
+
 // reload resets the parser's state and then parses the entire project.
 func (p *Parser) reload(ctx context.Context) error {
 	// Reset state
@@ -222,9 +313,15 @@ func (p *Parser) reload(ctx context.Context) error {
 	p.deletedResources = nil
 
 	// Load entire repo
-	paths, err := p.Repo.ListRecursive(ctx, "**/*.{sql,yaml,yml}")
+	files, err := p.Repo.ListRecursive(ctx, "**/*.{env,sql,yaml,yml}", true)
 	if err != nil {
 		return fmt.Errorf("could not list project files: %w", err)
+	}
+
+	// Build paths slice
+	paths := make([]string, 0, len(files))
+	for _, file := range files {
+		paths = append(paths, file.Path)
 	}
 
 	// Parse all files
@@ -283,27 +380,42 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 		seenPaths[path] = true
 
-		// Skip files that aren't SQL or YAML or .env file
-		isSQL := strings.HasSuffix(path, ".sql")
-		isYAML := strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+		isSQL := pathIsSQL(path)
+		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
 		if !isSQL && !isYAML && !isDotEnv {
 			continue
 		}
 
+		// Check if path is .env and clear it (so we can re-parse it)
+		// Watcher sends multiple events for a single edit. We want to only restart the controller when .env actually changes.
+		// So we check the new .env contents against the contents stored in parser state.
+		if isDotEnv {
+			oldDotEnv := p.DotEnv
+			err := p.parseDotEnv(ctx, checkPaths[i])
+			if err == nil {
+				modifiedDotEnv = !maps.Equal(p.DotEnv, oldDotEnv)
+			} else {
+				// any error means .env is under change
+				modifiedDotEnv = true
+			}
+			if !modifiedDotEnv {
+				continue
+			}
+			p.DotEnv = nil
+		}
+
 		// If a file exists at path, add it to the parse list
-		_, err := p.Repo.Stat(ctx, path)
+		info, err := p.Repo.Stat(ctx, path)
 		if err == nil {
+			if info.IsDir {
+				continue
+			}
 			parsePaths = append(parsePaths, path)
 		} else if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
-
-		// Check if path is .env and clear it (so we can re-parse it)
-		if isDotEnv {
-			modifiedDotEnv = true
-			p.DotEnv = nil
-		}
+		// NOTE: Continue even if the file has been deleted because it may have associated state we need to clear.
 
 		// Since .sql and .yaml files provide context for each other, if one was modified, we need to reparse both.
 		// For cases where a file was modified or deleted, the transitive check through resourcesForPath will already take of that.
@@ -559,9 +671,9 @@ func (p *Parser) parseStemPaths(ctx context.Context, paths []string) error {
 	}
 
 	// Parse the SQL/YAML file pair to a Node, then parse the Node to p.Resources.
-	node, err := p.parseStem(ctx, paths, yamlPath, yaml, sqlPath, sql)
+	node, err := p.parseStem(paths, yamlPath, yaml, sqlPath, sql)
 	if err == nil {
-		err = p.parseNode(ctx, node)
+		err = p.parseNode(node)
 	}
 
 	// Spread error across the node's paths (YAML and/or SQL files)
@@ -652,6 +764,16 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	r.Refs = refs
 }
 
+// insertDryRun returns an error if calling insertResource with the given resource name would fail.
+func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
+	rn := ResourceName{Kind: kind, Name: name}
+	_, ok := p.Resources[rn.Normalized()]
+	if ok {
+		return externalError{err: fmt.Errorf("name collision: another resource of type %q is also named %q", rn.Kind, rn.Name)}
+	}
+	return nil
+}
+
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
 func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
@@ -659,7 +781,7 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
 	if ok {
-		return nil, externalError{err: fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)}
+		return nil, externalError{err: fmt.Errorf("name collision: another resource of type %q is also named %q", rn.Kind, rn.Name)}
 	}
 
 	// Dedupe refs (it's not guaranteed by the upstream logic).
@@ -696,8 +818,18 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.MigrationSpec = &runtimev1.MigrationSpec{}
 	case ResourceKindReport:
 		r.ReportSpec = &runtimev1.ReportSpec{}
+	case ResourceKindAlert:
+		r.AlertSpec = &runtimev1.AlertSpec{}
+	case ResourceKindTheme:
+		r.ThemeSpec = &runtimev1.ThemeSpec{}
+	case ResourceKindComponent:
+		r.ComponentSpec = &runtimev1.ComponentSpec{}
+	case ResourceKindDashboard:
+		r.DashboardSpec = &runtimev1.DashboardSpec{}
+	case ResourceKindAPI:
+		r.APISpec = &runtimev1.APISpec{}
 	default:
-		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
 
 	// Track it
@@ -809,6 +941,46 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 	})
 }
 
+// driverForConnector resolves a connector name to a connector driver.
+// It should not be invoked until after rill.yaml has been parsed.
+func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error) {
+	// Unless overridden in rill.yaml, the connector name is the driver name
+	driver := name
+	if p.RillYAML != nil {
+		for _, c := range p.RillYAML.Connectors {
+			if c.Name == name {
+				driver = c.Type
+				break
+			}
+		}
+	}
+
+	connector, ok := drivers.Connectors[driver]
+	if !ok {
+		return "", nil, fmt.Errorf("unknown connector type %q", driver)
+	}
+	return driver, connector, nil
+}
+
+// defaultOLAPConnector resolves the project's default OLAP connector.
+// It should not be invoked until after rill.yaml has been parsed.
+func (p *Parser) defaultOLAPConnector() string {
+	if p.RillYAML != nil && p.RillYAML.OLAPConnector != "" {
+		return p.RillYAML.OLAPConnector
+	}
+	return p.DefaultOLAPConnector
+}
+
+// pathIsSQL returns true if the path is a SQL file
+func pathIsSQL(path string) bool {
+	return strings.HasSuffix(path, ".sql")
+}
+
+// pathIsYAML returns true if the path is a YAML file
+func pathIsYAML(path string) bool {
+	return strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml")
+}
+
 // pathIsRillYAML returns true if the path is rill.yaml
 func pathIsRillYAML(path string) bool {
 	return path == "/rill.yaml" || path == "/rill.yml"
@@ -829,7 +1001,7 @@ func normalizePath(path string) string {
 }
 
 // pathStem returns a slice of the path without the final file extension.
-// If the path does not contain a file extension, the entire path is returned.f
+// If the path does not contain a file extension, the entire path is returned
 func pathStem(path string) string {
 	i := strings.LastIndexByte(path, '.')
 	if i == -1 {

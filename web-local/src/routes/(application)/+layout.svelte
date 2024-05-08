@@ -1,33 +1,71 @@
 <script lang="ts">
-  import { beforeNavigate } from "$app/navigation";
-  import { startWatchFilesClient } from "@rilldata/web-common/features/entity-management/watch-files-client";
-  import { startWatchResourcesClient } from "@rilldata/web-common/features/entity-management/watch-resources-client";
-  import { retainFeaturesFlags } from "@rilldata/web-common/features/feature-flags";
-  import RillDeveloperLayout from "@rilldata/web-common/layout/RillDeveloperLayout.svelte";
-  import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
-  import { RuntimeUrl } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
-  import { QueryClientProvider } from "@tanstack/svelte-query";
-  import { onMount } from "svelte";
-  import { createQueryClient } from "../../lib/svelte-query/globalQueryClient";
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
+  import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
+  import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
+  import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
+  import BlockingOverlayContainer from "@rilldata/web-common/layout/BlockingOverlayContainer.svelte";
+  import {
+    importOverlayVisible,
+    overlay,
+  } from "@rilldata/web-common/layout/overlay-store";
+  import PreparingImport from "@rilldata/web-common/features/sources/modal/PreparingImport.svelte";
+  import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
+  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
+  import { page } from "$app/stores";
 
-  const queryClient = createQueryClient();
+  let showDropOverlay = false;
 
-  beforeNavigate(retainFeaturesFlags);
+  $: ({
+    url: { pathname },
+  } = $page);
 
-  onMount(() => {
-    const stopWatchFilesClient = startWatchFilesClient(queryClient);
-    const stopWatchResourcesClient = startWatchResourcesClient(queryClient);
-    return () => {
-      stopWatchFilesClient();
-      stopWatchResourcesClient();
-    };
-  });
+  function isEventWithFiles(event: DragEvent) {
+    let types = event?.dataTransfer?.types;
+    return types && types.indexOf("Files") != -1;
+  }
 </script>
 
-<QueryClientProvider client={queryClient}>
-  <RuntimeProvider host={RuntimeUrl} instanceId="default">
-    <RillDeveloperLayout>
-      <slot />
-    </RillDeveloperLayout>
-  </RuntimeProvider>
-</QueryClientProvider>
+<main
+  role="application"
+  class="index-body absolute w-screen h-screen flex overflow-hidden"
+  on:drag|preventDefault|stopPropagation
+  on:drop|preventDefault|stopPropagation
+  on:dragenter|preventDefault|stopPropagation
+  on:dragleave|preventDefault|stopPropagation
+  on:dragover|preventDefault|stopPropagation={(e) => {
+    if (isEventWithFiles(e)) showDropOverlay = true;
+  }}
+>
+  {#if pathname !== "/welcome"}
+    <Navigation />
+  {/if}
+  <section class="size-full overflow-hidden">
+    <slot />
+  </section>
+</main>
+
+{#if $importOverlayVisible}
+  <PreparingImport />
+{:else if showDropOverlay}
+  <FileDrop bind:showDropOverlay />
+{:else if $overlay !== null}
+  <BlockingOverlayContainer
+    bg="linear-gradient(to right, rgba(0,0,0,.6), rgba(0,0,0,.8))"
+  >
+    <div slot="title" class="font-bold">
+      {$overlay?.title}
+    </div>
+    <svelte:fragment slot="detail">
+      {#if $overlay?.detail}
+        <svelte:component
+          this={$overlay.detail.component}
+          {...$overlay.detail.props}
+        />
+      {/if}
+    </svelte:fragment>
+  </BlockingOverlayContainer>
+{/if}
+
+<AddSourceModal />
+<SourceImportedModal sourcePath={$sourceImportedPath} />
+<NotificationCenter />

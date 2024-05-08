@@ -12,8 +12,11 @@ import (
 )
 
 type TableCardinality struct {
-	TableName string
-	Result    int64
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	Result         int64
 }
 
 var _ runtime.Query = &TableCardinality{}
@@ -46,20 +49,17 @@ func (q *TableCardinality) UnmarshalResult(v any) error {
 }
 
 func (q *TableCardinality) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	countSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s",
-		safeName(q.TableName),
-	)
-
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
+	countSQL := fmt.Sprintf("SELECT count(*) AS count FROM %s", olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            countSQL,
 		Priority:         priority,

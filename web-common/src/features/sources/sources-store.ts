@@ -8,28 +8,9 @@ export enum DuplicateActions {
 }
 
 export const duplicateSourceAction: Writable<DuplicateActions> = writable(
-  DuplicateActions.None
+  DuplicateActions.None,
 );
 
-export const duplicateSourceName: Writable<string> = writable(null);
+export const duplicateSourceName: Writable<string | null> = writable(null);
 
-interface SourceStore {
-  clientYAML: string;
-}
-
-// Dictionary of source stores
-const sourceStores: { [key: string]: Writable<SourceStore> } = {};
-
-function createSourceStore(): Writable<SourceStore> {
-  return writable({ clientYAML: null });
-}
-
-export function useSourceStore(sourceName: string): Writable<SourceStore> {
-  if (!sourceStores[sourceName]) {
-    sourceStores[sourceName] = createSourceStore();
-  }
-
-  return sourceStores[sourceName];
-}
-
-export const sourceImportedName = writable<string>(null);
+export const sourceImportedPath = writable<string | null>(null);

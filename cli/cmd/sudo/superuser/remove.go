@@ -1,15 +1,12 @@
 package superuser
 
 import (
-	"fmt"
-
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func RemoveCmd(cfg *config.Config) *cobra.Command {
+func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	removeCmd := &cobra.Command{
 		Use:   "remove <email>",
 		Args:  cobra.ExactArgs(1),
@@ -17,11 +14,10 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
-			client, err := cmdutil.Client(cfg)
+			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
-			defer client.Close()
 
 			_, err = client.SetSuperuser(ctx, &adminv1.SetSuperuserRequest{
 				Email:     args[0],
@@ -31,7 +27,7 @@ func RemoveCmd(cfg *config.Config) *cobra.Command {
 				return err
 			}
 
-			cmdutil.PrintlnSuccess(fmt.Sprintf("Removed superuser from %q", args[0]))
+			ch.PrintfSuccess("Removed superuser from %q\n", args[0])
 
 			return nil
 		},

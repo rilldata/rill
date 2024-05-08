@@ -1,7 +1,7 @@
 import {
   adminServiceGetDeploymentCredentials,
   getAdminServiceGetDeploymentCredentialsQueryKey,
-  V1GetDeploymentCredentialsResponse,
+  type V1GetDeploymentCredentialsResponse,
   type V1User,
 } from "@rilldata/web-admin/client";
 import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
@@ -14,7 +14,7 @@ export async function setViewedAsUser(
   queryClient: QueryClient,
   organization: string,
   project: string,
-  user: V1User
+  user: V1User,
 ) {
   viewAsUserStore.set(user);
 
@@ -25,17 +25,20 @@ export async function setViewedAsUser(
         project,
         {
           userId: user.id,
-        }
+        },
       ),
       queryFn: () =>
         adminServiceGetDeploymentCredentials(organization, project, {
           userId: user.id,
         }),
     });
-  const jwt = jwtResp.jwt;
+  const jwt = jwtResp.accessToken;
 
   runtime.update((runtimeState) => {
-    runtimeState.jwt = jwt;
+    runtimeState.jwt = {
+      token: jwt,
+      receivedAt: Date.now(),
+    };
     return runtimeState;
   });
 

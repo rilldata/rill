@@ -12,7 +12,7 @@
   } from "@rilldata/web-common/lib/formatters";
   import BarAndLabel from "../../../BarAndLabel.svelte";
 
-  export let cardinality: number;
+  export let cardinality: number | undefined;
   export let totalRows: number;
   export let compact = false;
   export let type = "VARCHAR";

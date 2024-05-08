@@ -1,9 +1,19 @@
 <script lang="ts">
-  import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
   import { IconSpaceFixer } from "../../components/button";
   import Button from "../../components/button/Button.svelte";
   import Add from "../../components/icons/Add.svelte";
-  import { WorkspaceContainer } from "../../layout/workspace";
+  import { createRuntimeServiceGetInstance } from "../../runtime-client";
+  import { runtime } from "../../runtime-client/runtime-store";
+  import { addSourceModal } from "../sources/modal/add-source-visibility";
+
+  let steps: OnboardingStep[];
+  $: instance = createRuntimeServiceGetInstance($runtime.instanceId, {
+    sensitive: true,
+  });
+  $: olapConnector = $instance.data?.instance?.olapConnector;
+  $: if (olapConnector) {
+    steps = olapConnector === "duckdb" ? duckDbSteps : nonDuckDbSteps;
+  }
 
   interface OnboardingStep {
     id: string;
@@ -11,7 +21,8 @@
     description: string;
   }
 
-  const steps: OnboardingStep[] = [
+  // Onboarding steps for DuckDB OLAP driver
+  const duckDbSteps: OnboardingStep[] = [
     {
       id: "source",
       heading: "Import your data source",
@@ -38,21 +49,40 @@
     },
   ];
 
-  let showAddSourceModal = false;
-  function openAddSourceModal() {
-    showAddSourceModal = true;
-  }
+  // Onboarding steps for non-DuckDB OLAP drivers (ClickHouse, Druid)
+  const nonDuckDbSteps: OnboardingStep[] = [
+    {
+      id: "table",
+      heading: "Explore your tables",
+      description:
+        "Find your database tables in the left-hand-side navigational sidebar.",
+    },
+    {
+      id: "metrics",
+      heading: "Define your metrics and dimensions",
+      description:
+        "Define aggregate metrics and break out dimensions for your tables.",
+    },
+    {
+      id: "dashboard",
+      heading: "Explore your metrics dashboard",
+      description:
+        "Interactively explore line charts and leaderboards to uncover insights.",
+    },
+  ];
 </script>
 
-<WorkspaceContainer top="0px" assetID="onboarding" inspector={false}>
-  <div class="pt-20 px-8 flex flex-col gap-y-6 items-center" slot="body">
-    <div class="text-center">
-      <div class="font-bold">Getting started</div>
-      <p>Building data intuition at every step of analysis</p>
-    </div>
-    <ol
-      class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-gray-50 rounded-lg border border-gray-200"
-    >
+<div
+  class="pt-20 px-8 flex flex-col gap-y-6 items-center bg-gray-100 size-full"
+>
+  <div class="text-center">
+    <div class="font-bold">Getting started</div>
+    <p>Building data intuition at every step of analysis</p>
+  </div>
+  <ol
+    class="max-w-fit flex flex-col gap-y-4 px-9 pt-9 pb-[60px] bg-gray-50 rounded-lg border border-gray-200"
+  >
+    {#if olapConnector}
       {#each steps as step, i (step.heading)}
         <li class="flex gap-x-0.5">
           <span class="font-bold">{i + 1}.</span>
@@ -62,7 +92,7 @@
               <p>{step.description}</p>
             </div>
             {#if step.id === "source"}
-              <Button type="secondary" on:click={openAddSourceModal}>
+              <Button type="secondary" on:click={addSourceModal.open}>
                 <IconSpaceFixer pullLeft><Add /></IconSpaceFixer>
                 <span>Add data</span>
               </Button>
@@ -70,10 +100,6 @@
           </div>
         </li>
       {/each}
-    </ol>
-    <AddSourceModal
-      open={showAddSourceModal}
-      on:close={() => (showAddSourceModal = false)}
-    />
-  </div>
-</WorkspaceContainer>
+    {/if}
+  </ol>
+</div>

@@ -12,11 +12,14 @@ import (
 )
 
 type ColumnTopK struct {
-	TableName  string
-	ColumnName string
-	Agg        string
-	K          int
-	Result     *runtimev1.TopK
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Agg            string
+	K              int
+	Result         *runtimev1.TopK
 }
 
 var _ runtime.Query = &ColumnTopK{}
@@ -50,14 +53,14 @@ func (q *ColumnTopK) UnmarshalResult(v any) error {
 
 func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Get OLAP connection
-	olap, release, err := rt.OLAP(ctx, instanceID)
+	olap, release, err := rt.OLAP(ctx, instanceID, q.Connector)
 	if err != nil {
 		return err
 	}
 	defer release()
 
 	// Check dialect
-	if olap.Dialect() != drivers.DialectDuckDB {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -65,7 +68,7 @@ func (q *ColumnTopK) Resolve(ctx context.Context, rt *runtime.Runtime, instanceI
 	qry := fmt.Sprintf("SELECT %s AS value, %s AS count FROM %s GROUP BY %s ORDER BY count DESC, value ASC LIMIT %d",
 		safeName(q.ColumnName),
 		q.Agg,
-		safeName(q.TableName),
+		olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName),
 		safeName(q.ColumnName),
 		q.K,
 	)

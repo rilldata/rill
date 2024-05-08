@@ -3,42 +3,51 @@ package druid
 import (
 	"context"
 	"fmt"
+	"strings"
+	"time"
 
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
+)
+
+const (
+	numRetries = 3
+	retryWait  = 300 * time.Millisecond
 )
 
 var _ drivers.OLAPStore = &connection{}
 
 // AddTableColumn implements drivers.OLAPStore.
 func (c *connection) AddTableColumn(ctx context.Context, tableName, columnName, typ string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // AlterTableColumn implements drivers.OLAPStore.
 func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName, newType string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
 func (c *connection) Dialect() drivers.Dialect {
@@ -46,7 +55,7 @@ func (c *connection) Dialect() drivers.Dialect {
 }
 
 func (c *connection) WithConnection(ctx context.Context, priority int, longRunning, tx bool, fn drivers.WithConnectionFunc) error {
-	panic("not implemented")
+	return fmt.Errorf("druid: WithConnection not supported")
 }
 
 func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
@@ -61,13 +70,18 @@ func (c *connection) Exec(ctx context.Context, stmt *drivers.Statement) error {
 }
 
 func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*drivers.Result, error) {
+	// Log query if enabled (usually disabled)
+	if c.config.LogQueries {
+		c.logger.Info("druid query", zap.String("sql", stmt.Query), zap.Any("args", stmt.Args))
+	}
+
 	if stmt.DryRun {
-		// TODO: Find way to validate with args
-		prepared, err := c.db.PrepareContext(ctx, stmt.Query)
+		rows, err := c.db.QueryxContext(ctx, "EXPLAIN PLAN FOR "+stmt.Query, stmt.Args...)
 		if err != nil {
 			return nil, err
 		}
-		return nil, prepared.Close()
+
+		return nil, rows.Close()
 	}
 
 	var cancelFunc context.CancelFunc
@@ -75,17 +89,24 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 		ctx, cancelFunc = context.WithTimeout(ctx, stmt.ExecutionTimeout)
 	}
 
-	rows, err := c.db.QueryxContext(ctx, stmt.Query, stmt.Args...)
+	var rows *sqlx.Rows
+	var err error
+
+	re := retrier.New(retrier.ExponentialBackoff(numRetries, retryWait), retryErrClassifier{})
+	err = re.RunCtx(ctx, func(ctx2 context.Context) error {
+		rows, err = c.db.QueryxContext(ctx2, stmt.Query, stmt.Args...)
+		return err
+	})
 	if err != nil {
 		if cancelFunc != nil {
 			cancelFunc()
 		}
-
 		return nil, err
 	}
 
 	schema, err := rowsToSchema(rows)
 	if err != nil {
+		rows.Close()
 		if cancelFunc != nil {
 			cancelFunc()
 		}
@@ -105,10 +126,6 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (*dri
 	return r, nil
 }
 
-func (c *connection) DropDB() error {
-	return fmt.Errorf("dropping database not supported")
-}
-
 func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 	if r == nil {
 		return nil, nil
@@ -126,20 +143,21 @@ func rowsToSchema(r *sqlx.Rows) (*runtimev1.StructType, error) {
 			nullable = true
 		}
 
-		t, err := databaseTypeToPB(ct.DatabaseTypeName(), nullable)
-		if err != nil {
-			return nil, err
-		}
-
 		fields[i] = &runtimev1.StructType_Field{
 			Name: ct.Name(),
-			Type: t,
+			Type: databaseTypeToPB(ct.DatabaseTypeName(), nullable),
 		}
 	}
 
 	return &runtimev1.StructType{Fields: fields}, nil
 }
 
+// In druid there are multiple schemas but all user tables are in druid schema.
+// Other useful schema is INFORMATION_SCHEMA for metadata.
+// There are 2 more schemas - sys (internal things) and lookup (druid specific lookup).
+// While querying druid does not support db name just use schema.table
+//
+// Since all user tables are in `druid` schema so we hardcode schema as `druid` and does not query database
 type informationSchema struct {
 	c *connection
 }
@@ -151,7 +169,6 @@ func (c *connection) InformationSchema() drivers.InformationSchema {
 func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	q := `
 		SELECT
-			T.TABLE_CATALOG AS DATABASE,
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE, 
@@ -161,7 +178,7 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'druid'
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
 	rows, err := i.c.db.QueryxContext(ctx, q)
@@ -178,10 +195,9 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	return tables, nil
 }
 
-func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Table, error) {
+func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
 	q := `
 		SELECT
-			T.TABLE_CATALOG AS DATABASE,
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
 			T.TABLE_TYPE AS TABLE_TYPE, 
@@ -191,7 +207,7 @@ func (i informationSchema) Lookup(ctx context.Context, name string) (*drivers.Ta
 		FROM INFORMATION_SCHEMA.TABLES T 
 		JOIN INFORMATION_SCHEMA.COLUMNS C ON T.TABLE_SCHEMA = C.TABLE_SCHEMA AND T.TABLE_NAME = C.TABLE_NAME
 		WHERE T.TABLE_SCHEMA = 'druid' AND T.TABLE_NAME = ?
-		ORDER BY DATABASE, SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
 	rows, err := i.c.db.QueryxContext(ctx, q, name)
@@ -216,7 +232,6 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	var res []*drivers.Table
 
 	for rows.Next() {
-		var database string
 		var schema string
 		var name string
 		var tableType string
@@ -224,7 +239,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		var columnType string
 		var nullable bool
 
-		err := rows.Scan(&database, &schema, &name, &tableType, &columnName, &columnType, &nullable)
+		err := rows.Scan(&schema, &name, &tableType, &columnName, &columnType, &nullable)
 		if err != nil {
 			return nil, err
 		}
@@ -233,30 +248,24 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 		var t *drivers.Table
 		if len(res) > 0 {
 			t = res[len(res)-1]
-			if !(t.Database == database && t.DatabaseSchema == schema && t.Name == name) {
+			if !(t.DatabaseSchema == schema && t.Name == name) {
 				t = nil
 			}
 		}
 		if t == nil {
 			t = &drivers.Table{
-				Database:       database,
-				DatabaseSchema: schema,
-				Name:           name,
-				Schema:         &runtimev1.StructType{},
+				DatabaseSchema:          schema,
+				IsDefaultDatabaseSchema: true,
+				Name:                    name,
+				Schema:                  &runtimev1.StructType{},
 			}
 			res = append(res, t)
-		}
-
-		// parse column type
-		colType, err := databaseTypeToPB(columnType, nullable)
-		if err != nil {
-			return nil, err
 		}
 
 		// append column
 		t.Schema.Fields = append(t.Schema.Fields, &runtimev1.StructType_Field{
 			Name: columnName,
-			Type: colType,
+			Type: databaseTypeToPB(columnType, nullable),
 		})
 	}
 
@@ -267,7 +276,7 @@ func (i informationSchema) scanTables(rows *sqlx.Rows) ([]*drivers.Table, error)
 	return res, nil
 }
 
-func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
+func databaseTypeToPB(dbt string, nullable bool) *runtimev1.Type {
 	t := &runtimev1.Type{Nullable: nullable}
 	switch dbt {
 	case "BOOLEAN":
@@ -300,5 +309,20 @@ func databaseTypeToPB(dbt string, nullable bool) (*runtimev1.Type, error) {
 		t.Code = runtimev1.Type_CODE_JSON
 	}
 
-	return t, nil
+	return t
+}
+
+// retryErrClassifier classifies 429 errors as retryable and all other errors as non retryable
+type retryErrClassifier struct{}
+
+func (retryErrClassifier) Classify(err error) retrier.Action {
+	if err == nil {
+		return retrier.Succeed
+	}
+
+	if strings.Contains(err.Error(), "QueryCapacityExceededException") {
+		return retrier.Retry
+	}
+
+	return retrier.Fail
 }

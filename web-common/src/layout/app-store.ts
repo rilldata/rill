@@ -1,7 +1,7 @@
+import { page } from "$app/stores";
 import type { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { derived, writable } from "svelte/store";
-import { page } from "$app/stores";
 import {
   MetricsEventScreenName,
   ScreenToEntityMap,
@@ -18,12 +18,15 @@ export interface ActiveEntity {
  * Currently caches active entity from URL
  */
 interface AppStore {
-  activeEntity: ActiveEntity;
-  previousActiveEntity: ActiveEntity;
+  activeEntity: ActiveEntity | undefined;
+  previousActiveEntity: ActiveEntity | undefined;
 }
 
 export const appScreen = derived(page, ($page) => {
-  let activeEntity;
+  let activeEntity: {
+    name: string;
+    type: MetricsEventScreenName;
+  };
   switch ($page.route.id) {
     case "/(application)":
       activeEntity = {
@@ -55,6 +58,18 @@ export const appScreen = derived(page, ($page) => {
         type: MetricsEventScreenName.MetricsDefinition,
       };
       break;
+    case "/(application)/chart/[name]":
+      activeEntity = {
+        name: $page?.params?.name,
+        type: MetricsEventScreenName.Chart,
+      };
+      break;
+    case "/(application)/custom-dashboard/[name]":
+      activeEntity = {
+        name: $page?.params?.name,
+        type: MetricsEventScreenName.CustomDashboard,
+      };
+      break;
     case "/(application)/welcome":
       activeEntity = {
         name: $page?.params?.name,
@@ -74,7 +89,7 @@ export const appScreen = derived(page, ($page) => {
 
   appStore.setActiveEntity(
     activeEntity.name,
-    ScreenToEntityMap[activeEntity.type]
+    ScreenToEntityMap[activeEntity.type],
   );
   return activeEntity;
 });
@@ -102,6 +117,6 @@ const appStoreReducers = {
   },
 };
 
-const appStore: typeof appStoreReducers = {
+export const appStore: typeof appStoreReducers = {
   ...appStoreReducers,
 };

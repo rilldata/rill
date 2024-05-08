@@ -19,12 +19,13 @@ This component needs to do the following:
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { useMetaQuery } from "@rilldata/web-common/features/dashboards/selectors";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     metricsExplorerStore,
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { NO_COMPARISON_LABEL } from "@rilldata/web-common/lib/time/config";
+  import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { matchSorter } from "match-sorter";
   import SelectorButton from "./SelectorButton.svelte";
@@ -34,25 +35,27 @@ This component needs to do the following:
 
   const TIME = "Time";
 
-  let dimensions = [];
+  let dimensions: MetricsViewSpecDimensionV2[] | undefined = [];
 
   $: dashboardStore = useDashboardStore(metricViewName);
-  $: metaQuery = useMetaQuery($runtime.instanceId, metricViewName);
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   $: showTimeComparison = $dashboardStore?.showTimeComparison;
   $: selectedDimension = $dashboardStore?.selectedComparisonDimension;
-  $: dimensions = $metaQuery?.data?.dimensions;
+  $: dimensions = $metricsView?.data?.dimensions;
 
   let searchText = "";
 
   function getLabelForDimension(dimension: string) {
-    return dimensions.find((d) => d.name === dimension)?.label;
+    if (!dimensions) return dimension;
+    const dimensionObj = dimensions.find((d) => d.name === dimension);
+    return dimensionObj?.label || dimension;
   }
 
   /** compile the comparison options */
-  $: options = dimensions.map((d) => ({
+  $: options = (dimensions || []).map((d) => ({
     name: d.name,
-    label: d.label,
+    label: d.label || d.name,
   }));
 
   $: menuOptions = matchSorter(options, searchText, { keys: ["label"] });
@@ -60,14 +63,14 @@ This component needs to do the following:
   $: label = selectedDimension
     ? getLabelForDimension(selectedDimension)
     : showTimeComparison
-    ? TIME
-    : NO_COMPARISON_LABEL;
+      ? TIME
+      : NO_COMPARISON_LABEL;
 
   $: intermediateSelection = selectedDimension
     ? selectedDimension
     : showTimeComparison
-    ? TIME
-    : NO_COMPARISON_LABEL;
+      ? TIME
+      : NO_COMPARISON_LABEL;
 
   function enableComparison(type: string, name = "") {
     if (type === "time") {
@@ -90,12 +93,7 @@ This component needs to do the following:
 >
   <Tooltip distance={8} suppress={active}>
     {#if chipStyle}
-      <Chip
-        on:click={() => {
-          toggleFloatingElement();
-        }}
-        {label}
-      >
+      <Chip on:click={toggleFloatingElement} {label} {active} outline={true}>
         <div slot="body" class="flex gap-x-2">
           <div
             class="font-bold text-ellipsis overflow-hidden whitespace-nowrap ml-2"
@@ -113,12 +111,7 @@ This component needs to do the following:
         </div>
       </Chip>
     {:else}
-      <SelectorButton
-        {active}
-        on:click={() => {
-          toggleFloatingElement();
-        }}
-      >
+      <SelectorButton {active} on:click={toggleFloatingElement}>
         <div class="flex items-center gap-x-3">
           <span class="ui-copy-icon"><Compare size="16px" /></span>
 
@@ -136,8 +129,9 @@ This component needs to do the following:
   <Menu
     minWidth="280px"
     slot="floating-element"
-    on:escape={toggleFloatingElement}
-    on:click-outside={toggleFloatingElement}
+    let:handleClose
+    on:escape={handleClose}
+    on:click-outside={handleClose}
     label="Comparison selector"
   >
     <div class="px-2 pb-2">
@@ -155,7 +149,7 @@ This component needs to do the following:
       }}
       on:select={() => {
         disableAllComparisons();
-        toggleFloatingElement();
+        handleClose();
       }}
     >
       <span class:font-bold={intermediateSelection === NO_COMPARISON_LABEL}>
@@ -170,7 +164,7 @@ This component needs to do the following:
       }}
       on:select={() => {
         enableComparison("time");
-        toggleFloatingElement();
+        handleClose();
       }}
     >
       <span class:font-bold={intermediateSelection === TIME}> {TIME} </span>
@@ -183,11 +177,13 @@ This component needs to do the following:
         <MenuItem
           selected={option.name === intermediateSelection}
           on:before-select={() => {
-            intermediateSelection = option.name;
+            if (option.name) {
+              intermediateSelection = option.name;
+            }
           }}
           on:select={() => {
             enableComparison("dimension", option.name);
-            toggleFloatingElement();
+            handleClose();
           }}
         >
           <span class:font-bold={intermediateSelection === option.name}>

@@ -10,7 +10,7 @@ and the menu closes.
   import type { Alignment, Location } from "../../floating-element/types";
 
   export let options = [];
-  export let dark: boolean = undefined;
+  export let dark: boolean | undefined = undefined;
   export let location: Location = "bottom";
   export let alignment: Alignment = "start";
   export let distance = 16;
@@ -41,6 +41,7 @@ and the menu closes.
   <slot {handleClose} toggleMenu={toggleFloatingElement} {active} />
   <Menu
     slot="floating-element"
+    let:handleClose
     {dark}
     {minWidth}
     focusOnMount={false}
@@ -50,7 +51,7 @@ and the menu closes.
     }}
     on:escape={handleClose}
   >
-    {#each options as { main, right, callback }, i}
+    {#each options as { main, right, callback }}
       <MenuItem
         on:select={createOnClickHandler(callback, handleClose)}
         focusOnMount={false}

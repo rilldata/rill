@@ -1,0 +1,6 @@
+kind : api
+
+metrics_sql: | 
+  SELECT publisher, domain, measure_2 
+  FROM ad_bids_mini_metrics
+  WHERE domain = '{{ .args.domain }}'

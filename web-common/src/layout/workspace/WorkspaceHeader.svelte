@@ -3,136 +3,129 @@
   import { IconButton } from "@rilldata/web-common/components/button";
   import HideRightSidebar from "@rilldata/web-common/components/icons/HideRightSidebar.svelte";
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createResizeListenerActionFactory } from "@rilldata/web-common/lib/actions/create-resize-listener-factory";
-  import { dynamicTextInputWidth } from "@rilldata/web-common/lib/actions/dynamic-text-input-width";
-  import { getContext } from "svelte";
-  import type { Tweened } from "svelte/motion";
-  import type { Writable } from "svelte/store";
-  import SourceUnsavedIndicator from "../../features/sources/editor/SourceUnsavedIndicator.svelte";
-  import type { LayoutElement } from "./types";
+  import { workspaces } from "./workspace-stores";
+  import { navigationOpen } from "../navigation/Navigation.svelte";
+  import { scale } from "svelte/transition";
+  import { cubicOut } from "svelte/easing";
+  import HideBottomPane from "@rilldata/web-common/components/icons/HideBottomPane.svelte";
 
-  export let onChangeCallback;
-  export let titleInput;
-  export let appRunning = true;
+  export let titleInput: string;
   export let editable = true;
   export let showInspectorToggle = true;
-  export let width: number = undefined;
+  export let showTableToggle = false;
+  export let hasUnsavedChanges = false;
 
-  let titleInputElement;
-  let editingTitle = false;
+  let width: number;
+  let titleWidth: number;
 
-  let titleInputValue;
-  let tooltipActive;
-
-  const { listenToNodeResize, observedNode } =
-    createResizeListenerActionFactory();
-
-  const inspectorLayout = getContext(
-    "rill:app:inspector-layout"
-  ) as Writable<LayoutElement>;
-
-  const navigationVisibilityTween = getContext(
-    "rill:app:navigation-visibility-tween"
-  ) as Tweened<number>;
-
-  function onKeydown(event) {
-    if (editingTitle && event.key === "Enter") {
-      titleInputElement.blur();
-    }
-  }
-
-  $: applicationStatus = appRunning ? EntityStatus.Running : EntityStatus.Idle;
-
-  $: width = $observedNode?.getBoundingClientRect()?.width;
+  $: value = titleInput;
+  $: context = $page.url.pathname;
+  $: workspaceLayout = workspaces.get(context);
+  $: visible = workspaceLayout.inspector.visible;
+  $: tableVisible = workspaceLayout.table.visible;
 </script>
 
-<svelte:window on:keydown={onKeydown} />
-<header
-  class="grid items-center content-stretch justify-between pl-4 border-b border-gray-300"
-  style:grid-template-columns="[title] auto [controls] auto"
-  style:height="var(--header-height)"
-  use:listenToNodeResize
->
-  <div style:padding-left="{$navigationVisibilityTween * 24}px">
-    {#if titleInput !== undefined && titleInput !== null}
-      <h1
-        style:font-size="16px"
-        class="w-full overflow-x-hidden grid grid-flow-col justify-start items-center gap-x-1"
-      >
-        <Tooltip
-          distance={8}
-          alignment="start"
-          bind:active={tooltipActive}
-          suppress={editingTitle || !editable}
-        >
-          <input
-            autocomplete="off"
-            disabled={!editable}
-            id="model-title-input"
-            class:text-overflow-ellipsis={!editable}
-            bind:this={titleInputElement}
-            on:focus={() => {
-              editingTitle = true;
-              titleInputValue = titleInput;
-            }}
-            on:input={(evt) => {
-              if (editable) {
-                titleInputValue = evt.target.value;
-                editingTitle = true;
-              }
-            }}
-            class="w-full text-overflow-ellipses whitespace-wrap bg-transparent border border-transparent border-2 {editable
-              ? 'hover:border-gray-400 cursor-pointer'
-              : ''} rounded pl-2 pr-2"
-            class:font-bold={editingTitle === false}
-            on:blur={() => {
-              editingTitle = false;
-            }}
-            value={titleInput}
-            use:dynamicTextInputWidth
-            on:change={onChangeCallback}
-          />
-          <TooltipContent slot="tooltip-content">
-            <div class="flex items-center gap-x-2">Edit</div>
-          </TooltipContent>
-        </Tooltip>
+<header class="slide" bind:clientWidth={width}>
+  <div class="wrapper slide" class:pl-4={!$navigationOpen}>
+    <label aria-hidden for="model-title-input" bind:clientWidth={titleWidth}>
+      {value}
+    </label>
+    <input
+      id="model-title-input"
+      name="title"
+      type="text"
+      autocomplete="off"
+      spellcheck="false"
+      disabled={!editable}
+      style:width="{titleWidth}px"
+      bind:value
+      on:change
+      on:keydown={(e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          e.currentTarget.blur();
+        }
+      }}
+      on:blur={() => {
+        if (value.length === 0) {
+          value = titleInput;
+        }
+      }}
+    />
 
-        {#if $page.url.pathname.startsWith("/source")}
-          <SourceUnsavedIndicator sourceName={titleInput} />
-        {/if}
-      </h1>
+    {#if hasUnsavedChanges}
+      <span
+        class="w-1.5 h-1.5 bg-gray-300 rounded flex-none"
+        transition:scale={{ duration: 200, easing: cubicOut }}
+      />
     {/if}
   </div>
 
-  <div class="flex items-center mr-4">
+  <div class="flex items-center mr-4 flex-none">
     <slot name="workspace-controls" {width} />
-    {#if showInspectorToggle}
-      <IconButton
-        on:click={() => {
-          inspectorLayout.update((state) => {
-            state.visible = !state.visible;
-            return state;
-          });
-        }}
-      >
+
+    {#if showTableToggle}
+      <IconButton on:click={workspaceLayout.table.toggle}>
         <span class="text-gray-500">
-          <HideRightSidebar size="18px" />
+          <HideBottomPane size="18px" />
         </span>
         <svelte:fragment slot="tooltip-content">
-          <SlidingWords
-            active={$inspectorLayout?.visible}
-            direction="horizontal"
-            reverse>inspector</SlidingWords
-          >
+          <SlidingWords active={$tableVisible} reverse>
+            results preview
+          </SlidingWords>
         </svelte:fragment>
       </IconButton>
     {/if}
 
-    <div class="pl-4">
+    {#if showInspectorToggle}
+      <IconButton on:click={workspaceLayout.inspector.toggle}>
+        <span class="text-gray-500">
+          <HideRightSidebar size="18px" />
+        </span>
+        <svelte:fragment slot="tooltip-content">
+          <SlidingWords active={$visible} direction="horizontal" reverse>
+            inspector
+          </SlidingWords>
+        </svelte:fragment>
+      </IconButton>
+    {/if}
+
+    <div class="pl-4 flex-none">
       <slot name="cta" {width} />
     </div>
   </div>
 </header>
+
+<style lang="postcss">
+  input:focus,
+  input:not(:disabled):hover {
+    @apply border-2 border-gray-400 outline-none;
+  }
+
+  input,
+  label {
+    @apply whitespace-pre rounded border-2 border-transparent;
+  }
+
+  input {
+    @apply absolute text-left;
+    text-indent: 6px;
+  }
+
+  label {
+    @apply w-fit min-w-8 px-2 text-transparent max-w-full;
+  }
+
+  header {
+    @apply justify-between;
+    @apply flex items-center pl-4 border-b border-gray-300 overflow-hidden;
+    height: var(--header-height);
+  }
+
+  .wrapper {
+    @apply overflow-hidden max-w-full gap-x-2;
+    @apply size-full relative flex items-center;
+    @apply font-bold pr-2 self-start;
+    font-size: 16px;
+  }
+</style>

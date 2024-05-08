@@ -22,8 +22,8 @@
   }
 </script>
 
-<div class="flex flex-row items-center pl-1 pb-1 gap-x-1">
-  <label for={id} class="text-gray-600">{label}</label>
+<div class="flex flex-row items-center pb-2 gap-x-1">
+  <label for={id} class="text-gray-800 text-sm font-medium">{label}</label>
   {#if hint}
     <Tooltip location="right" alignment="middle" distance={8}>
       <div class="text-gray-500" style="transform:translateY(-.5px)">
@@ -45,13 +45,10 @@
   type="text"
   {placeholder}
   autocomplete="off"
-  class="border border-gray-400 rounded px-2 py-2 cursor-pointer focus:outline-blue-500 w-full text-xs"
+  class="border border-gray-300 rounded-sm px-3 py-1 cursor-pointer focus:outline-primary-500 w-full text-xs"
 />
 {#if error}
-  <div
-    in:slide|local={{ duration: 200 }}
-    class="pl-1 text-red-500 text-xs pt-1"
-  >
+  <div in:slide={{ duration: 200 }} class="pl-1 text-red-500 text-xs pt-1">
     {error}
   </div>
 {/if}

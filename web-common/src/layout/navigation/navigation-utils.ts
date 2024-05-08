@@ -13,14 +13,16 @@ export function getNavURLToScreenMap(href: string) {
   if (href.includes("/dashboard/")) return MetricsEventScreenName.Dashboard;
 }
 
-export function emitNavigationTelemetry(href) {
-  const previousActiveEntity = get(appScreen)?.type;
+export async function emitNavigationTelemetry(href: string, name: string) {
+  const previousActiveEntity = get(appScreen).type;
   const screenName = getNavURLToScreenMap(href);
-  behaviourEvent.fireNavigationEvent(
+
+  if (!screenName) return;
+  await behaviourEvent.fireNavigationEvent(
     name,
     BehaviourEventMedium.Menu,
     MetricsEventSpace.LeftPanel,
     previousActiveEntity,
-    screenName
+    screenName,
   );
 }

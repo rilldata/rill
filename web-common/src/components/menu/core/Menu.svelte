@@ -1,8 +1,3 @@
-<script context="module">
-  // only one at a time
-  const globalActiveMenu = writable(undefined);
-</script>
-
 <script lang="ts">
   import {
     createEventDispatcher,
@@ -13,13 +8,12 @@
   import { Writable, writable } from "svelte/store";
   import { fade } from "svelte/transition";
   import { clickOutside } from "../../../lib/actions/click-outside";
-  import { guidGenerator } from "../../../lib/guid";
 
-  export let dark: boolean = undefined;
-  export let maxWidth: string = undefined;
+  export let dark: boolean | undefined = undefined;
+  export let maxWidth: string | undefined = undefined;
   export let minWidth = "300px";
-  export let minHeight: string = undefined;
-  export let maxHeight: string = undefined;
+  export let minHeight: string | undefined = undefined;
+  export let maxHeight: string | undefined = undefined;
   export let paddingTop = 2;
   export let paddingBottom = 2;
   export let rounded = true;
@@ -33,8 +27,6 @@
     setContext("rill:menu:dark", dark);
   }
   const dispatch = createEventDispatcher();
-
-  const menuID = guidGenerator();
 
   let key;
 
@@ -87,8 +79,8 @@
     dispatch("item-select");
   }
 
-  const menuItems = writable([]);
-  const currentItem = writable(undefined);
+  const menuItems = writable<{ id: number; disabled: boolean }[]>([]);
+  const currentItem = writable<number | undefined>(undefined);
 
   setContext("rill:menu:onSelect", onSelect);
   setContext("rill:menu:menuItems", menuItems);
@@ -99,18 +91,12 @@
 
   let mounted = false;
   onMount(() => {
-    $globalActiveMenu = menuID;
     mounted = true;
   });
 
   // once open, we should select the first menu item.
   $: if (focusOnMount && mounted) {
     $currentItem = $menuItems.find((item) => !item.disabled)?.id;
-  }
-
-  // This will effectively close any additional menus that might be open.
-  $: if ($globalActiveMenu !== menuID) {
-    dispatch("escape");
   }
 
   /** Accessibility properties */
@@ -128,20 +114,17 @@
 <svelte:window on:keydown={handleKeydown} />
 
 <div
+  role="menu"
+  tabindex="0"
   style:max-width={maxWidth}
   style:min-height={minHeight}
   style:max-height={maxHeight}
   style:min-width={minWidth}
-  transition:fade|local={{ duration: 50 }}
+  transition:fade={{ duration: 50 }}
   on:mouseleave={() => {
     $currentItem = undefined;
   }}
-  use:clickOutside={[
-    [$menuTrigger],
-    () => {
-      dispatch("click-outside");
-    },
-  ]}
+  use:clickOutside={[$menuTrigger, () => dispatch("click-outside")]}
   class:rounded
   class="
         pt-{paddingTop} 

@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math"
 	"math/big"
+	"net"
+	"reflect"
 	"time"
 	"unicode/utf8"
 
@@ -17,6 +19,8 @@ import (
 // structpb.NewValue, but adds support for a few extra primitive types.
 func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 	switch v := v.(type) {
+	case nil:
+		return structpb.NewNullValue(), nil
 	// In addition to the extra supported types, we also override handling for
 	// maps and lists since we need to use valToPB on nested fields.
 	case map[string]any:
@@ -65,6 +69,13 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 			return structpb.NewNullValue(), nil
 		}
 		return structpb.NewNumberValue(v), nil
+	case big.Int:
+		// Evil cast to float until frontend can deal with bigs:
+		v2, _ := new(big.Float).SetInt(&v).Float64()
+		return structpb.NewNumberValue(v2), nil
+		// This is what we should do when frontend supports it:
+		// s := v.String()
+		// return structpb.NewStringValue(s), nil
 	case *big.Int:
 		// Evil cast to float until frontend can deal with bigs:
 		v2, _ := new(big.Float).SetInt(v).Float64()
@@ -104,11 +115,77 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 				return structpb.NewStringValue(uid.String()), nil
 			}
 		}
-		return structpb.NewValue(v)
+	case net.IP:
+		return structpb.NewStringValue(v.String()), nil
+	// pointers to base types
+	case *bool:
+		return structpb.NewBoolValue(*v), nil
+	case *int:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *int32:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *int64:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint32:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint64:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *string:
+		if !utf8.ValidString(*v) {
+			return nil, fmt.Errorf("invalid UTF-8 in string: %q", *v)
+		}
+		return structpb.NewStringValue(*v), nil
+	case *int8:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *int16:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint8:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *uint16:
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *time.Time:
+		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
+			s := v.Format(time.DateOnly)
+			return structpb.NewStringValue(s), nil
+		}
+		s := v.Format(time.RFC3339Nano)
+		return structpb.NewStringValue(s), nil
+	case *float32:
+		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
+		// (They don't have a native JSON representation)
+		if math.IsNaN(float64(*v)) || math.IsInf(float64(*v), 0) {
+			return structpb.NewNullValue(), nil
+		}
+		return structpb.NewNumberValue(float64(*v)), nil
+	case *float64:
+		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
+		// (They don't have a native JSON representation)
+		if math.IsNaN(*v) || math.IsInf(*v, 0) {
+			return structpb.NewNullValue(), nil
+		}
+		return structpb.NewNumberValue(*v), nil
+	case *net.IP:
+		return structpb.NewStringValue(v.String()), nil
 	default:
-		// Default handling for basic types (ints, string, etc.)
-		return structpb.NewValue(v)
 	}
+	if t != nil && t.ArrayElementType != nil {
+		v2, err := ToListValueUnknown(v, t)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewListValue(v2), nil
+	}
+	if t != nil && t.MapType != nil {
+		v2, err := ToStructCoerceKeysUnknown(v, t.MapType)
+		if err != nil {
+			return nil, err
+		}
+		return structpb.NewStructValue(v2), nil
+	}
+	// Default handling for basic types (ints, string, etc.)
+	return structpb.NewValue(v)
 }
 
 // ToStruct converts a map to a google.protobuf.Struct. It's similar to
@@ -207,6 +284,84 @@ func ToListValue(v []interface{}, t *runtimev1.Type) (*structpb.ListValue, error
 	return x, nil
 }
 
+// ToListValueUnknown converts a list google.protobuf.List similar to ToListValue but when the type of list is list of unknown type.
+// It uses reflection so should not be used when ToListValue can be used.
+func ToListValueUnknown(s any, t *runtimev1.Type) (*structpb.ListValue, error) {
+	if s == nil { // defensive check, nil is already handled upstream
+		return nil, nil
+	}
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		return ToListValueUnknown(v.Elem().Interface(), t)
+	}
+	if v.Kind() != reflect.Slice {
+		return nil, fmt.Errorf("received invalid type %T, expected slice", s)
+	}
+	var elemType *runtimev1.Type
+	if t != nil {
+		elemType = t.ArrayElementType
+	}
+	x := &structpb.ListValue{Values: make([]*structpb.Value, v.Len())}
+	for i := 0; i < v.Len(); i++ {
+		var err error
+		x.Values[i], err = ToValue(v.Index(i).Interface(), elemType)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return x, nil
+}
+
+// ToStructCoerceKeysUnknown is similar to ToStructCoerceKeys but when type of map is unknown.
+// It uses reflection so should not be used when ToStructCoerceKeys can be used.
+func ToStructCoerceKeysUnknown(s any, t *runtimev1.MapType) (*structpb.Struct, error) {
+	if s == nil { // defensive check, nil is already handled upstream
+		return nil, nil
+	}
+	v := reflect.ValueOf(s)
+	if v.Kind() == reflect.Ptr {
+		return ToStructCoerceKeysUnknown(v.Elem().Interface(), t)
+	}
+	if v.Kind() != reflect.Map {
+		return nil, fmt.Errorf("received invalid type %T, expected map", s)
+	}
+
+	var keyType, valType *runtimev1.Type
+	if t != nil {
+		keyType = t.KeyType
+		valType = t.ValueType
+	}
+	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, v.Len())}
+	iter := v.MapRange()
+	for iter.Next() {
+		k1 := iter.Key()
+		k2, ok := k1.Interface().(string)
+		if !ok {
+			// Encode k1 using ToValue (to correctly coerce time, big numbers, etc.) and then to JSON.
+			// This yields more idiomatic/consistent strings than using fmt.Sprintf("%v", k1).
+			val, err := ToValue(k1.Interface(), keyType)
+			if err != nil {
+				return nil, err
+			}
+
+			data, err := val.MarshalJSON()
+			if err != nil {
+				return nil, err
+			}
+
+			// Remove surrounding quotes returned by MarshalJSON for strings
+			k2 = trimQuotes(string(data))
+		}
+
+		var err error
+		x.Fields[k2], err = ToValue(iter.Value().Interface(), valType)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return x, nil
+}
+
 func FromValue(val *structpb.Value) (any, error) {
 	switch v := val.GetKind().(type) {
 	case *structpb.Value_StringValue:
@@ -220,4 +375,35 @@ func FromValue(val *structpb.Value) (any, error) {
 	default:
 		return nil, fmt.Errorf("value not supported: %v", v)
 	}
+}
+
+// ToSliceAny converts a slice of any type to a slice of type any (interface{})
+// making the slice compatible with structpb.NewStruct
+func ToSliceAny[T any](v []T) []any {
+	values := make([]any, len(v))
+	for i, s := range v {
+		values[i] = s
+	}
+	return values
+}
+
+// ToSliceString (as opposed to ToSliceAny) converts a slice of any type to a slice of strings
+// It returns nil if the input is nil or not a slice of any
+func ToSliceString(a any) []string {
+	if a == nil {
+		return nil
+	}
+	ss, ok := a.([]string)
+	if ok {
+		return ss
+	}
+	sa, ok := a.([]any)
+	if !ok {
+		return nil
+	}
+	s := make([]string, len(sa))
+	for i, v := range sa {
+		s[i] = v.(string)
+	}
+	return s
 }

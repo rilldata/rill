@@ -33,6 +33,31 @@ func convTimeGrain(tg runtimev1.TimeGrain) timeutil.TimeGrain {
 	return timeutil.TimeGrainUnspecified
 }
 
+func timeGrainToDuration(tg runtimev1.TimeGrain) duration.Duration {
+	switch tg {
+	// not supported
+	// case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return duration.StandardDuration{Second: 1}
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return duration.StandardDuration{Minute: 1}
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return duration.StandardDuration{Hour: 1}
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return duration.StandardDuration{Day: 1}
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return duration.StandardDuration{Week: 1}
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return duration.StandardDuration{Month: 1}
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return duration.StandardDuration{Month: 3}
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return duration.StandardDuration{Year: 1}
+	}
+
+	return duration.InfDuration{}
+}
+
 func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (time.Time, time.Time, error) {
 	tz := time.UTC
 

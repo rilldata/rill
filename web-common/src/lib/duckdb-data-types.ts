@@ -56,6 +56,7 @@ export const TIMESTAMPS = new Set([
   "TIMESTAMP",
   "TIME",
   "DATETIME",
+  "TIMESTAMPTZ",
   "TIMESTAMP WITH TIME ZONE",
 
   ...DATES,
@@ -167,7 +168,7 @@ export const INTERVAL_TOKENS: ColorTokens = TIMESTAMP_TOKENS;
 function setTypeTailwindStyles(
   list: string[],
   // a tailwind class, for now.
-  colorTokens: ColorTokens
+  colorTokens: ColorTokens,
 ) {
   return list.reduce((acc, v) => {
     acc[v] = { ...colorTokens };

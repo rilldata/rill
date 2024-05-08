@@ -6,3 +6,14 @@
  * the other keys will be optional
  */
 export type AtLeast<T, K extends keyof T> = Partial<T> & Pick<T, K>;
+
+/**
+ * Helper type based on the internal `Expand` type from the TypeScript.
+ *
+ * If types on actions and selectors ever look nasty,
+ * it's probably because we're missing an `Expand` somewhere.
+ *
+ *
+ * see https://stackoverflow.com/questions/57683303/how-can-i-see-the-full-expanded-contract-of-a-typescript-type
+ */
+export type Expand<T> = T extends infer O ? { [K in keyof O]: O[K] } : never;

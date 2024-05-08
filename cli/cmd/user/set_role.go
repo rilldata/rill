@@ -5,12 +5,11 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/config"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
 
-func SetRoleCmd(cfg *config.Config) *cobra.Command {
+func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var email string
 	var role string
@@ -19,18 +18,24 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 		Use:   "set-role",
 		Short: "Set Role",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
-			cmdutil.StringPromptIfEmpty(&email, "Enter email")
-
-			client, err := cmdutil.Client(cfg)
+			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
 			if err != nil {
 				return err
 			}
-			defer client.Close()
+
+			err = cmdutil.StringPromptIfEmpty(&email, "Enter email")
+			if err != nil {
+				return err
+			}
+
+			client, err := ch.Client()
+			if err != nil {
+				return err
+			}
 
 			if projectName != "" {
 				_, err = client.SetProjectMemberRole(cmd.Context(), &adminv1.SetProjectMemberRoleRequest{
-					Organization: cfg.Org,
+					Organization: ch.Org,
 					Project:      projectName,
 					Email:        email,
 					Role:         role,
@@ -38,27 +43,27 @@ func SetRoleCmd(cfg *config.Config) *cobra.Command {
 				if err != nil {
 					return err
 				}
-				cmdutil.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the project \"%s/%s\"", email, role, cfg.Org, projectName))
+				ch.PrintfSuccess("Updated role of user %q to %q in the project \"%s/%s\"\n", email, role, ch.Org, projectName)
 			} else {
 				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
-					Organization: cfg.Org,
+					Organization: ch.Org,
 					Email:        email,
 					Role:         role,
 				})
 				if err != nil {
 					return err
 				}
-				cmdutil.PrintlnSuccess(fmt.Sprintf("Updated role of user %q to %q in the organization %q", email, role, cfg.Org))
+				ch.PrintfSuccess("Updated role of user %q to %q in the organization %q\n", email, role, ch.Org)
 			}
 
 			return nil
 		},
 	}
 
-	setRoleCmd.Flags().StringVar(&cfg.Org, "org", cfg.Org, "Organization")
+	setRoleCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	setRoleCmd.Flags().StringVar(&projectName, "project", "", "Project")
 	setRoleCmd.Flags().StringVar(&email, "email", "", "Email of the user")
-	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user [%v]", strings.Join(userRoles, ", ")))
+	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(userRoles, ", ")))
 
 	return setRoleCmd
 }

@@ -2,11 +2,11 @@ package duckdb
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -201,14 +201,18 @@ func TestClose(t *testing.T) {
 	})
 
 	err := g.Wait()
-	require.Equal(t, errors.New("sql: database is closed"), err)
+
+	require.Error(t, err)
+	isConnErr := strings.Contains(err.Error(), "database/sql/driver: could not connect to database")
+	isClosedErr := strings.Contains(err.Error(), "sql: database is closed")
+	require.True(t, isConnErr || isClosedErr, "Error should be either connection error or database closed error")
 
 	x := <-results
 	require.Greater(t, x, 0)
 }
 
 func prepareConn(t *testing.T) drivers.Handle {
-	conn, err := Driver{}.Open(map[string]any{"dsn": "?access_mode=read_write", "pool_size": 4}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")
@@ -244,11 +248,11 @@ func Test_safeSQLString(t *testing.T) {
 	require.NoError(t, err)
 
 	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open(map[string]any{"dsn": dbFile}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 
-	conn, err = Driver{}.Open(map[string]any{}, false, activity.NewNoopClient(), zap.NewNop())
+	conn, err = Driver{}.Open("default", map[string]any{}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, ok := conn.AsOLAP("")

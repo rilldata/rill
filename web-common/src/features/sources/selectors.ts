@@ -1,9 +1,6 @@
-import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
-  useFilteredResourceNames,
   useFilteredResources,
-  useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   V1ProfileColumn,
@@ -13,8 +10,6 @@ import {
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import { parse } from "yaml";
-import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
-import { EntityType } from "../entity-management/types";
 
 export type SourceFromYaml = {
   type: string;
@@ -23,79 +18,57 @@ export type SourceFromYaml = {
 };
 
 export function useSources(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Source);
-}
-
-export function useSourceNames(instanceId: string) {
-  return useFilteredResourceNames(instanceId, ResourceKind.Source);
-}
-
-export function useSourceFileNames(instanceId: string) {
-  return useMainEntityFiles(instanceId, "sources");
-}
-
-export function useSource(instanceId: string, name: string) {
-  return useResource(instanceId, name, ResourceKind.Source);
+  return useFilteredResources(instanceId, ResourceKind.Source, (data) =>
+    data.resources?.filter((r) => !!r.source?.state?.table),
+  );
 }
 
 export function useSourceFromYaml(instanceId: string, filePath: string) {
-  return createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      select: (data) => (data.blob ? parse(data.blob) : {}),
-    },
-  }) as CreateQueryResult<SourceFromYaml>;
-}
-
-export function useIsSourceUnsaved(
-  instanceId: string,
-  sourceName: string,
-  // Include clientYAML in the function call to force the selector to recompute when it changes
-  clientYAML: string
-) {
   return createRuntimeServiceGetFile(
     instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
+    { path: filePath },
     {
       query: {
-        select: (data) => {
-          const serverYAML = data.blob;
-          return clientYAML !== serverYAML;
-        },
+        select: (data) => (data.blob ? parse(data.blob) : {}),
       },
-    }
-  );
+    },
+  ) as CreateQueryResult<SourceFromYaml>;
 }
+
 /**
  * This client-side YAML parsing is a rudimentary hack to check if the source is a local file.
  */
-export function useIsLocalFileConnector(
-  instanceId: string,
-  sourceName: string
-) {
+export function useIsLocalFileConnector(instanceId: string, filePath: string) {
   return createRuntimeServiceGetFile(
     instanceId,
-    getFilePathFromNameAndType(sourceName, EntityType.Table),
+    { path: filePath },
     {
       query: {
         select: (data) => {
           const serverYAML = data.blob;
+          if (!serverYAML) return false;
           const yaml = parse(serverYAML);
           // Check that the `type` is `duckdb` and that the `sql` includes 'data/'
-          return yaml?.type === "duckdb" && yaml?.sql?.includes("'data/");
+          return Boolean(
+            yaml?.type === "duckdb" && yaml?.sql?.includes("'data/"),
+          );
         },
+        enabled:
+          !!filePath &&
+          (filePath.endsWith(".yaml") || filePath.endsWith(".yml")),
       },
-    }
+    },
   );
 }
 
-type TableColumnsWithName = {
+export type TableColumnsWithName = {
   tableName: string;
   profileColumns: Array<V1ProfileColumn>;
 };
 
 export function useAllSourceColumns(
   queryClient: QueryClient,
-  instanceId: string
+  instanceId: string,
 ): Readable<Array<TableColumnsWithName>> {
   return derived([useSources(instanceId)], ([allSources], set) => {
     if (!allSources.data?.length) {
@@ -105,10 +78,12 @@ export function useAllSourceColumns(
 
     derived(
       allSources.data.map((r) =>
-        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name)
+        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name),
       ),
       (sourceColumnResponses) =>
-        sourceColumnResponses.filter((res) => !!res.data).map((res) => res.data)
+        sourceColumnResponses
+          .filter((res) => !!res.data)
+          .map((res) => res.data),
     ).subscribe(set);
   });
 }
@@ -116,10 +91,10 @@ export function useAllSourceColumns(
 /**
  * Fetches columns and adds the table name. By using the selector the results will be cached.
  */
-function createTableColumnsWithName(
+export function createTableColumnsWithName(
   queryClient: QueryClient,
   instanceId: string,
-  tableName: string
+  tableName: string,
 ): CreateQueryResult<TableColumnsWithName> {
   return createQueryServiceTableColumns(
     instanceId,
@@ -135,6 +110,6 @@ function createTableColumnsWithName(
         },
         queryClient,
       },
-    }
+    },
   );
 }

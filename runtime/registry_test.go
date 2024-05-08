@@ -30,10 +30,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit env",
 			inst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
-				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
+				Variables:        map[string]string{"connector.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -43,7 +44,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 					{
 						Type:   "sqlite",
@@ -53,10 +54,11 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
-				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
+				Variables:        map[string]string{"connector.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -66,7 +68,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 					{
 						Type:   "sqlite",
@@ -79,6 +81,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit drivers",
 			inst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "olap1",
 				RepoConnector:    "repo1",
 				CatalogConnector: "catalog1",
@@ -93,11 +96,12 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "olap1",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "olap1",
 				RepoConnector:    "repo1",
 				CatalogConnector: "catalog1",
@@ -112,7 +116,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "olap1",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -120,11 +124,12 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit env and embed catalog",
 			inst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
 				EmbedCatalog:     true,
-				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
+				Variables:        map[string]string{"connector.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -134,16 +139,17 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
 				EmbedCatalog:     true,
-				Variables:        map[string]string{"connectors.s3.region": "us-east-1"},
+				Variables:        map[string]string{"connector.s3.region": "us-east-1"},
 				Connectors: []*runtimev1.Connector{
 					{
 						Type:   "file",
@@ -153,7 +159,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -161,6 +167,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit olap dsn",
 			inst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
@@ -175,11 +182,12 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": "?access_mode=read_write"},
+						Config: map[string]string{"dsn": ":memory:?access_mode=read_write"},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
@@ -194,7 +202,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": "?access_mode=read_write"},
+						Config: map[string]string{"dsn": ":memory:?access_mode=read_write"},
 					},
 				},
 			},
@@ -202,6 +210,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit repo dsn",
 			inst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
@@ -216,11 +225,12 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
 			savedInst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
@@ -235,7 +245,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			},
@@ -243,6 +253,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 		{
 			name: "edit annotations",
 			inst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
@@ -257,7 +268,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 				Annotations: map[string]string{
@@ -265,6 +276,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 				},
 			},
 			savedInst: &drivers.Instance{
+				Environment:      "test",
 				OLAPConnector:    "duckdb",
 				RepoConnector:    "repo",
 				CatalogConnector: "catalog",
@@ -279,7 +291,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 				Annotations: map[string]string{
@@ -289,12 +301,14 @@ func TestRuntime_EditInstance(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			rt := newTestRuntime(t)
 			ctx := context.Background()
 
 			// Create instance
 			inst := &drivers.Instance{
+				Environment:   "test",
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
@@ -307,7 +321,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": ""},
+						Config: map[string]string{"dsn": ":memory:"},
 					},
 				},
 			}
@@ -316,7 +330,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.NoError(t, err)
 
 			// Acquire OLAP (to make sure it's opened)
-			firstOlap, release, err := rt.OLAP(ctx, inst.ID)
+			firstOlap, release, err := rt.OLAP(ctx, inst.ID, "")
 			require.NoError(t, err)
 			release()
 
@@ -331,7 +345,7 @@ func TestRuntime_EditInstance(t *testing.T) {
 			}
 
 			// Wait for controller restart
-			time.Sleep(500 * time.Millisecond)
+			time.Sleep(2 * time.Second)
 			_, err = rt.Controller(ctx, inst.ID)
 			require.NoError(t, err)
 
@@ -350,10 +364,10 @@ func TestRuntime_EditInstance(t *testing.T) {
 			require.Equal(t, tt.savedInst.Variables, newInst.Variables)
 
 			// Verify new olap connection is opened
-			olap, release, err := rt.OLAP(ctx, inst.ID)
+			olap, release, err := rt.OLAP(ctx, inst.ID, "")
 			require.NoError(t, err)
 			defer release()
-			_, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
+			err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.NoError(t, err)
 
 			// Verify new olap is not the old one
@@ -365,22 +379,19 @@ func TestRuntime_EditInstance(t *testing.T) {
 func TestRuntime_DeleteInstance(t *testing.T) {
 	repodsn := t.TempDir()
 	rt := newTestRuntime(t)
+	rt.opts.DataDir = t.TempDir()
 	tests := []struct {
-		name       string
-		instanceID string
-		dropDB     bool
-		wantErr    bool
+		name    string
+		wantErr bool
 	}{
-		{"delete valid no drop", "default", false, false},
-		{"delete valid drop", "default", true, false},
+		{"delete valid drop", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			// create test data
 			ctx := context.Background()
-			dbFile := filepath.Join(t.TempDir(), "test.db")
 			inst := &drivers.Instance{
-				ID:            "default",
+				Environment:   "test",
 				OLAPConnector: "duckdb",
 				RepoConnector: "repo",
 				EmbedCatalog:  true,
@@ -393,16 +404,17 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 					{
 						Type:   "duckdb",
 						Name:   "duckdb",
-						Config: map[string]string{"dsn": dbFile},
+						Config: map[string]string{"data_dir": rt.opts.DataDir},
 					},
 				},
 			}
 			require.NoError(t, rt.CreateInstance(context.Background(), inst))
 			_, err := rt.Controller(ctx, inst.ID)
 			require.NoError(t, err)
+			dbFile := filepath.Join(t.TempDir(), inst.ID, "duckdb", "main.db")
 
 			// Acquire OLAP
-			olap, release, err := rt.OLAP(ctx, inst.ID)
+			olap, release, err := rt.OLAP(ctx, inst.ID, "")
 			require.NoError(t, err)
 			defer release()
 
@@ -411,7 +423,7 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.NoError(t, olap.Exec(ctx, &drivers.Statement{Query: "INSERT INTO data VALUES (1, 'Mark'), (2, 'Hannes')"}))
 
 			// delete instance
-			err = rt.DeleteInstance(ctx, tt.instanceID, tt.dropDB)
+			err = rt.DeleteInstance(ctx, inst.ID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Runtime.DeleteInstance() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -424,14 +436,15 @@ func TestRuntime_DeleteInstance(t *testing.T) {
 			require.Error(t, err)
 
 			// verify older olap connection is closed and cache updated
-			require.False(t, rt.connCache.lru.Contains(inst.ID+"duckdb"+fmt.Sprintf("dsn:%s ", dbFile)))
-			require.False(t, rt.connCache.lru.Contains(inst.ID+"file"+fmt.Sprintf("dsn:%s ", repodsn)))
-			_, err = olap.Execute(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
+			// require.False(t, rt.connCache.lru.Contains(inst.ID+"duckdb"+fmt.Sprintf("dsn:%s ", dbFile)))
+			// require.False(t, rt.connCache.lru.Contains(inst.ID+"file"+fmt.Sprintf("dsn:%s ", repodsn)))
+			time.Sleep(2 * time.Second)
+			err = olap.Exec(context.Background(), &drivers.Statement{Query: "SELECT COUNT(*) FROM rill.migration_version"})
 			require.True(t, err != nil)
 
-			// verify db file is dropped if requested
+			// verify db file is dropped
 			_, err = os.Stat(dbFile)
-			require.Equal(t, tt.dropDB, os.IsNotExist(err))
+			require.True(t, os.IsNotExist(err))
 		})
 	}
 }
@@ -442,11 +455,10 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	// Prepare
 	ctx := context.Background()
 	rt := newTestRuntime(t)
-	dbpath := filepath.Join(t.TempDir(), "test.db")
-
+	rt.opts.DataDir = t.TempDir()
 	// Create instance
 	inst := &drivers.Instance{
-		ID:            "default",
+		Environment:   "test",
 		OLAPConnector: "duckdb",
 		RepoConnector: "repo",
 		EmbedCatalog:  true,
@@ -459,34 +471,36 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 			{
 				Type:   "duckdb",
 				Name:   "duckdb",
-				Config: map[string]string{"dsn": dbpath},
+				Config: map[string]string{"data_dir": rt.opts.DataDir},
 			},
 		},
 	}
 	err := rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 
+	dbpath := filepath.Join(rt.opts.DataDir, inst.ID, "duckdb", "main.db")
+
 	// Put some data into it to create a .db file on disk
-	olap, release, err := rt.OLAP(ctx, inst.ID)
+	olap, release, err := rt.OLAP(ctx, inst.ID, "")
 	require.NoError(t, err)
 	defer release()
 	err = olap.Exec(ctx, &drivers.Statement{Query: "CREATE TABLE data(id INTEGER, name VARCHAR)"})
 	require.NoError(t, err)
 
 	// Close OLAP connection
-	rt.connCache.evictAll(ctx, inst.ID)
+	rt.evictInstanceConnections(inst.ID)
 
 	// Corrupt database file
 	err = os.WriteFile(dbpath, []byte("corrupted"), 0644)
 	require.NoError(t, err)
 
 	// Check we can't open it anymore
-	_, _, err = rt.OLAP(ctx, inst.ID)
+	_, _, err = rt.OLAP(ctx, inst.ID, "")
 	require.Error(t, err)
 	require.FileExists(t, dbpath)
 
-	// Delete instance and check it still drops the .db file
-	err = rt.DeleteInstance(ctx, inst.ID, true)
+	// Delete instance and check it still drops the .db file for DuckDB
+	err = rt.DeleteInstance(ctx, inst.ID)
 	require.NoError(t, err)
 	require.NoFileExists(t, dbpath)
 }

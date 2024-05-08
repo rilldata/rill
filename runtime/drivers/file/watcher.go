@@ -13,7 +13,9 @@ import (
 	"github.com/fsnotify/fsnotify"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
+	"golang.org/x/sys/unix"
 )
 
 const batchInterval = 250 * time.Millisecond
@@ -22,7 +24,9 @@ const maxBufferSize = 1000
 
 // watcher implements a recursive, batching file watcher on top of fsnotify.
 type watcher struct {
+	logger           *zap.Logger
 	root             string
+	ignorePaths      []string
 	watcher          *fsnotify.Watcher
 	closed           atomic.Bool
 	done             chan struct{}
@@ -33,21 +37,25 @@ type watcher struct {
 	buffer           map[string]drivers.WatchEvent
 }
 
-func newWatcher(root string) (*watcher, error) {
+// newWatcher creates a new watcher for the given root directory.
+// The root directory must be an absolute path.
+func newWatcher(root string, ignorePaths []string, logger *zap.Logger) (*watcher, error) {
 	fsw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
 	}
 
 	w := &watcher{
+		logger:      logger,
 		root:        root,
+		ignorePaths: ignorePaths,
 		watcher:     fsw,
 		done:        make(chan struct{}),
 		subscribers: make(map[int]drivers.WatchCallback),
 		buffer:      make(map[string]drivers.WatchEvent),
 	}
 
-	err = w.addDir(root, false)
+	err = w.addDir(root, false, true)
 	if err != nil {
 		w.watcher.Close()
 		return nil, err
@@ -141,6 +149,9 @@ func (w *watcher) runInner() error {
 			if !ok {
 				return nil
 			}
+			if err == nil || isNotExists(err) {
+				continue
+			}
 			return err
 		case e, ok := <-w.watcher.Events:
 			if !ok {
@@ -148,20 +159,27 @@ func (w *watcher) runInner() error {
 			}
 
 			we := drivers.WatchEvent{}
-			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
-				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
-			} else if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
+			if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
 				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
+			} else if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
+				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
 			} else {
 				continue
 			}
 
 			path, err := filepath.Rel(w.root, e.Name)
 			if err != nil {
-				return err
+				w.logger.Warn("ignoring watcher event: failed to get relative path", zap.String("root", w.root), zap.String("event_name", e.Name), zap.String("event_op", e.Op.String()))
+				continue
 			}
+
 			path = filepath.Join("/", path)
 			we.Path = path
+
+			// Do not send files for ignored paths
+			if drivers.IsIgnored(path, w.ignorePaths) {
+				continue
+			}
 
 			if e.Has(fsnotify.Create) {
 				info, err := os.Stat(e.Name)
@@ -172,7 +190,7 @@ func (w *watcher) runInner() error {
 
 			// Calling addDir after appending to w.buffer, to sequence events correctly
 			if we.Dir && e.Has(fsnotify.Create) {
-				err = w.addDir(e.Name, true)
+				err = w.addDir(e.Name, true, false)
 				if err != nil {
 					return err
 				}
@@ -190,15 +208,19 @@ func (w *watcher) runInner() error {
 	}
 }
 
-func (w *watcher) addDir(path string, replay bool) error {
+func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 	err := w.watcher.Add(path)
 	if err != nil {
+		// Need to check unix.ENOENT (and probably others) since fsnotify doesn't always use cross-platform syscalls.
+		if !errIfNotExist && isNotExists(err) {
+			return nil
+		}
 		return err
 	}
 
 	entries, err := os.ReadDir(path)
 	if err != nil {
-		if os.IsNotExist(err) {
+		if !errIfNotExist && isNotExists(err) {
 			return nil
 		}
 		return err
@@ -222,7 +244,7 @@ func (w *watcher) addDir(path string, replay bool) error {
 		}
 
 		if e.IsDir() {
-			err := w.addDir(fullPath, replay)
+			err := w.addDir(fullPath, replay, errIfNotExist)
 			if err != nil {
 				return err
 			}
@@ -230,4 +252,8 @@ func (w *watcher) addDir(path string, replay bool) error {
 	}
 
 	return nil
+}
+
+func isNotExists(err error) bool {
+	return os.IsNotExist(err) || errors.Is(err, unix.ENOENT)
 }

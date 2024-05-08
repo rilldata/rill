@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/container"
 	"github.com/bmatcuk/doublestar/v4"
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	rillblob "github.com/rilldata/rill/runtime/drivers/blob"
@@ -30,45 +32,50 @@ func init() {
 }
 
 var spec = drivers.Spec{
-	DisplayName:        "Azure Blob Storage",
-	Description:        "Connect to Azure Blob Storage.",
-	ServiceAccountDocs: "https://docs.rilldata.com/deploy/credentials/azure",
-	SourceProperties: []drivers.PropertySchema{
+	DisplayName: "Azure Blob Storage",
+	Description: "Connect to Azure Blob Storage.",
+	DocsURL:     "https://docs.rilldata.com/reference/connectors/azure",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "azure_storage_account",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_sas_token",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "azure_storage_connection_string",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "path",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Blob URI",
 			Description: "Path to file on the disk.",
 			Placeholder: "azure://container-name/path/to/file.csv",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			Hint:        "Glob patterns are supported",
 		},
 		{
 			Key:         "account",
+			Type:        drivers.StringPropertyType,
 			DisplayName: "Account name",
 			Description: "Azure storage account name.",
-			Type:        drivers.StringPropertyType,
 			Required:    false,
 		},
 	},
-	ConfigProperties: []drivers.PropertySchema{
-		{
-			Key:    "azure_storage_account",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_key",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_sas_token",
-			Secret: true,
-		},
-		{
-			Key:    "azure_storage_connection_string",
-			Secret: true,
-		},
-	},
+	ImplementsObjectStore: true,
 }
 
 type driver struct{}
@@ -81,12 +88,13 @@ type configProperties struct {
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
 }
 
-func (d driver) Open(config map[string]any, shared bool, client activity.Client, logger *zap.Logger) (drivers.Handle, error) {
-	if shared {
-		return nil, fmt.Errorf("azure driver does not support shared connections")
+func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
+	if instanceID == "" {
+		return nil, errors.New("azure driver can't be shared")
 	}
+
 	conf := &configProperties{}
-	err := mapstructure.Decode(config, conf)
+	err := mapstructure.WeakDecode(config, conf)
 	if err != nil {
 		return nil, err
 	}
@@ -96,10 +104,6 @@ func (d driver) Open(config map[string]any, shared bool, client activity.Client,
 		logger: logger,
 	}
 	return conn, nil
-}
-
-func (d driver) Drop(config map[string]any, logger *zap.Logger) error {
-	return drivers.ErrDropNotSupported
 }
 
 func (d driver) Spec() drivers.Spec {
@@ -112,12 +116,11 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 		return false, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	c, err := d.Open(map[string]any{}, false, activity.NewNoopClient(), logger)
-	if err != nil {
-		return false, err
+	conn := &Connection{
+		config: &configProperties{},
+		logger: logger,
 	}
 
-	conn := c.(*Connection)
 	bucketObj, err := conn.openBucketWithNoCredentials(ctx, conf)
 	if err != nil {
 		return false, fmt.Errorf("failed to open container %q, %w", conf.url.Host, err)
@@ -175,6 +178,11 @@ func (c *Connection) AsAdmin(instanceID string) (drivers.AdminService, bool) {
 	return nil, false
 }
 
+// AsAI implements drivers.Handle.
+func (c *Connection) AsAI(instanceID string) (drivers.AIService, bool) {
+	return nil, false
+}
+
 // AsOLAP implements drivers.Connection.
 func (c *Connection) AsOLAP(instanceID string) (drivers.OLAPStore, bool) {
 	return nil, false
@@ -209,6 +217,11 @@ func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsNotifier implements drivers.Connection.
+func (c *Connection) AsNotifier(properties map[string]any) (drivers.Notifier, error) {
+	return nil, drivers.ErrNotNotifier
+}
+
 // DownloadFiles returns a file iterator over objects stored in azure blob storage.
 func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (drivers.FileIterator, error) {
 	conf, err := parseSourceProperties(props)
@@ -216,7 +229,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		return nil, fmt.Errorf("failed to parse config: %w", err)
 	}
 
-	client, err := c.getClient(ctx, conf)
+	client, err := c.getClient(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -228,6 +241,16 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 	}
 	defer bucketObj.Close()
 
+	var batchSize datasize.ByteSize
+	if conf.BatchSize == "-1" {
+		batchSize = math.MaxInt64 // download everything in one batch
+	} else {
+		batchSize, err = datasize.ParseString(conf.BatchSize)
+		if err != nil {
+			return nil, err
+		}
+	}
+
 	// prepare fetch configs
 	opts := rillblob.Options{
 		GlobMaxTotalSize:      conf.GlobMaxTotalSize,
@@ -236,6 +259,8 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		GlobPageSize:          conf.GlobPageSize,
 		GlobPattern:           conf.url.Path,
 		ExtractPolicy:         conf.extractPolicy,
+		BatchSizeBytes:        int64(batchSize.Bytes()),
+		KeepFilesUntilClose:   conf.BatchSize == "-1",
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
@@ -244,9 +269,9 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		var respErr *azcore.ResponseError
 		if gcerrors.Code(err) == gcerrors.Unknown ||
 			(errors.As(err, &respErr) && respErr.RawResponse.StatusCode == http.StatusForbidden && (respErr.ErrorCode == "AuthorizationPermissionMismatch" || respErr.ErrorCode == "AuthenticationFailed")) {
-			c.logger.Named("Console").Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
+			c.logger.Warn("Azure Blob Storage account does not have permission to list blobs. Falling back to anonymous access.")
 
-			client, err = c.createAnonymousClient(ctx, conf)
+			client, err = c.createAnonymousClient(conf)
 			if err != nil {
 				return nil, err
 			}
@@ -281,6 +306,7 @@ type sourceProperties struct {
 	GlobMaxObjectsMatched int            `mapstructure:"glob.max_objects_matched"`
 	GlobMaxObjectsListed  int64          `mapstructure:"glob.max_objects_listed"`
 	GlobPageSize          int            `mapstructure:"glob.page_size"`
+	BatchSize             string         `mapstructure:"batch_size"`
 	url                   *globutil.URL
 	extractPolicy         *rillblob.ExtractPolicy
 }
@@ -307,10 +333,10 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 }
 
 // getClient returns a new azure blob client.
-func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
+func (c *Connection) getClient(conf *sourceProperties) (*container.Client, error) {
 	var accountKey, sasToken, connectionString string
 
-	accountName, err := c.getAccountName(ctx, conf)
+	accountName, err := c.getAccountName(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -399,8 +425,8 @@ func (c *Connection) getClient(ctx context.Context, conf *sourceProperties) (*co
 }
 
 // Create anonymous azure blob client.
-func (c *Connection) createAnonymousClient(ctx context.Context, conf *sourceProperties) (*container.Client, error) {
-	accountName, err := c.getAccountName(ctx, conf)
+func (c *Connection) createAnonymousClient(conf *sourceProperties) (*container.Client, error) {
+	accountName, err := c.getAccountName(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -420,7 +446,7 @@ func (c *Connection) createAnonymousClient(ctx context.Context, conf *sourceProp
 
 func (c *Connection) openBucketWithNoCredentials(ctx context.Context, conf *sourceProperties) (*blob.Bucket, error) {
 	// Create containerURL object.
-	accountName, err := c.getAccountName(ctx, conf)
+	accountName, err := c.getAccountName(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -439,7 +465,7 @@ func (c *Connection) openBucketWithNoCredentials(ctx context.Context, conf *sour
 	return bucketObj, nil
 }
 
-func (c *Connection) getAccountName(ctx context.Context, conf *sourceProperties) (string, error) {
+func (c *Connection) getAccountName(conf *sourceProperties) (string, error) {
 	if conf.Account != "" {
 		return conf.Account, nil
 	}

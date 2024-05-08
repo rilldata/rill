@@ -1,36 +1,44 @@
 <script lang="ts">
-  import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
-  import { createEventDispatcher, getContext } from "svelte";
-  import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
-  import type { Writable } from "svelte/store";
   import { contexts } from "@rilldata/web-common/components/data-graphic/constants";
+  import WithGraphicContexts from "@rilldata/web-common/components/data-graphic/functional-components/WithGraphicContexts.svelte";
   import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import type { PlotConfig } from "@rilldata/web-common/components/data-graphic/utils";
+  import {
+    ScrubArea0Color,
+    ScrubArea1Color,
+    ScrubArea2Color,
+    ScrubBoxColor,
+  } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { getBisectedTimeFromCordinates } from "@rilldata/web-common/features/dashboards/time-series/utils";
+  import { createEventDispatcher, getContext } from "svelte";
+  import type { Writable } from "svelte/store";
+  import type { TimeSeriesDatum } from "./timeseries-data-store";
+  import type { DateTimeUnit } from "luxon";
 
-  export let start;
-  export let stop;
+  export let start: Date | null;
+  export let stop: Date | null;
   export let isScrubbing = false;
   export let showLabels = false;
-  export let mouseoverTimeFormat;
+  export let mouseoverTimeFormat: (d: unknown) => string;
 
-  export let labelAccessor;
-  export let timeGrainLabel;
-  export let data;
+  export let labelAccessor: string;
+  export let timeGrainLabel: DateTimeUnit;
+  export let data: TimeSeriesDatum[];
 
-  export let isOverStart;
-  export let isOverEnd;
-  export let isInsideScrub;
+  export let isOverStart: boolean;
+  export let isOverEnd: boolean;
+  export let isInsideScrub: boolean;
 
   // scrub local control points
   let justCreatedScrub = false;
   let moveStartDelta = 0;
   let moveEndDelta = 0;
-  let isResizing: "start" | "end" = undefined;
+  let isResizing: "start" | "end" | undefined = undefined;
   let isMovingScrub = false;
 
   const dispatch = createEventDispatcher();
   const plotConfig: Writable<PlotConfig> = getContext(contexts.config);
-  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const xScale = getContext<ScaleStore>(contexts.scale("x"));
 
   const strokeWidth = 1;
   const xLabelBuffer = 8;
@@ -40,19 +48,21 @@
 
   $: hasSubrangeSelected = Boolean(start && stop);
 
-  export let cursorClass = "";
+  export let cursorClass = "cursor-pointer";
   $: cursorClass = isMovingScrub
     ? "cursor-grabbing"
     : isInsideScrub
-    ? "cursor-grab"
-    : isScrubbing || isOverStart || isOverEnd
-    ? "cursor-ew-resize"
-    : "";
+      ? "cursor-grab"
+      : isScrubbing || isOverStart || isOverEnd
+        ? "cursor-ew-resize"
+        : "cursor-pointer";
 
-  export let preventScrubReset;
-  $: preventScrubReset = justCreatedScrub || isScrubbing || isResizing;
+  export let preventScrubReset: boolean;
+  $: preventScrubReset = justCreatedScrub || isScrubbing || Boolean(isResizing);
 
-  export function startScrub(event) {
+  export function startScrub(event: CustomEvent<{ start: { x: number } }>) {
+    if (!start || !stop) return;
+
     if (hasSubrangeSelected) {
       const startX = event.detail?.start?.x;
       // check if we are scrubbing on the edges of scrub rect
@@ -75,14 +85,16 @@
     }
   }
 
-  export function moveScrub(event) {
+  export function moveScrub(
+    event: CustomEvent<{ start: { x: number }; stop: { x: number } }>,
+  ) {
     const startX = event.detail?.start?.x;
     const scrubStartDate = getBisectedTimeFromCordinates(
       startX,
       $xScale,
       labelAccessor,
       data,
-      timeGrainLabel
+      timeGrainLabel,
     );
 
     let stopX = event.detail?.stop?.x;
@@ -91,7 +103,7 @@
       $xScale,
       labelAccessor,
       data,
-      timeGrainLabel
+      timeGrainLabel,
     );
 
     if (hasSubrangeSelected && (isResizing || isMovingScrub)) {
@@ -126,7 +138,7 @@
           $xScale,
           labelAccessor,
           data,
-          timeGrainLabel
+          timeGrainLabel,
         );
 
         const newEnd = getBisectedTimeFromCordinates(
@@ -134,8 +146,10 @@
           $xScale,
           labelAccessor,
           data,
-          timeGrainLabel
+          timeGrainLabel,
         );
+
+        if (!newStart || !newEnd) return;
 
         const insideBounds = $xScale(newStart) >= 0 && $xScale(newEnd) >= 0;
         if (insideBounds && newStart?.getTime() !== start?.getTime()) {
@@ -205,32 +219,34 @@
 </script>
 
 {#if start && stop}
-  <WithGraphicContexts let:xScale let:yScale>
-    {@const xStart = xScale(Math.min(start, stop))}
-    {@const xEnd = xScale(Math.max(start, stop))}
+  <WithGraphicContexts let:xScale>
+    {@const numStart = Number(start)}
+    {@const numStop = Number(stop)}
+    {@const xStart = xScale(Math.min(numStart, numStop))}
+    {@const xEnd = xScale(Math.max(numStart, numStop))}
     <g>
       {#if showLabels}
         <text text-anchor="end" x={xStart - xLabelBuffer} y={y1 + yLabelBuffer}>
-          {mouseoverTimeFormat(Math.min(start, stop))}
+          {mouseoverTimeFormat(Math.min(numStart, numStop))}
         </text>
         <circle
           cx={xStart}
           cy={y1}
           r={3}
           paint-order="stroke"
-          class="fill-blue-700"
+          class="fill-primary-700"
           stroke="white"
           stroke-width="3"
         />
         <text text-anchor="start" x={xEnd + xLabelBuffer} y={y1 + yLabelBuffer}>
-          {mouseoverTimeFormat(Math.max(start, stop))}
+          {mouseoverTimeFormat(Math.max(numStart, numStop))}
         </text>
         <circle
           cx={xEnd}
           cy={y1}
           r={3}
           paint-order="stroke"
-          class="fill-blue-700"
+          class="fill-primary-700"
           stroke="white"
           stroke-width="3"
         />
@@ -240,7 +256,7 @@
         x2={xStart}
         {y1}
         {y2}
-        stroke="#60A5FA"
+        stroke={ScrubBoxColor}
         stroke-width={strokeWidth}
       />
       <line
@@ -248,11 +264,15 @@
         x2={xEnd}
         {y1}
         {y2}
-        stroke="#60A5FA"
+        stroke={ScrubBoxColor}
         stroke-width={strokeWidth}
       />
     </g>
-    <g on:mouseup={() => onMouseUp()} opacity={isScrubbing ? "0.4" : "0.2"}>
+    <g
+      role="presentation"
+      opacity={isScrubbing ? "0.4" : "0.2"}
+      on:mouseup={() => onMouseUp()}
+    >
       <rect
         class:rect-shadow={isScrubbing}
         x={Math.min(xStart, xEnd)}
@@ -266,10 +286,10 @@
 {/if}
 
 <defs>
-  <linearGradient id="scrubbing-gradient" gradientUnits="userSpaceOnUse">
-    <stop stop-color="#558AFF" />
-    <stop offset="0.36" stop-color="#4881FF" />
-    <stop offset="1" stop-color="#2563EB" />
+  <linearGradient gradientUnits="userSpaceOnUse" id="scrubbing-gradient">
+    <stop stop-color={ScrubArea0Color} />
+    <stop offset="0.36" stop-color={ScrubArea1Color} />
+    <stop offset="1" stop-color={ScrubArea2Color} />
   </linearGradient>
 </defs>
 
