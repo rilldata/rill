@@ -3,11 +3,11 @@ const appId = import.meta.env.RILL_UI_PUBLIC_PYLON_APP_ID as string;
 /**
  * Function implementation is copied from https://docs.usepylon.com/chat/setup
  */
-export async function initPylonWidget() {
+export function initPylonWidget() {
   const e = window;
   const t = document;
   const n = function () {
-    n.e(arguments);
+    n.e(arguments); // eslint-disable-line
   };
   n.q = [];
   n.e = function (e) {
