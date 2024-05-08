@@ -56,8 +56,27 @@ export function getAlertQueryArgsFromFormValues(
 
   return {
     metricsView: formValues.metricsViewName,
-    measures: [{ name: formValues.measure }],
-    comparisonMeasures: addComparison ? [formValues.measure] : [],
+    measures: [
+      {
+        name: formValues.measure,
+      },
+      ...(addComparison
+        ? [
+            {
+              name: formValues.measure + "__prev",
+              comparisonValue: { measure: formValues.measure },
+            },
+            {
+              name: formValues.measure + "__delta_abs",
+              comparisonDelta: { measure: formValues.measure },
+            },
+            {
+              name: formValues.measure + "__delta_rel",
+              comparisonRatio: { measure: formValues.measure },
+            },
+          ]
+        : []),
+    ],
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
@@ -76,8 +95,7 @@ export function getAlertQueryArgsFromFormValues(
     sort: [
       {
         name: formValues.measure,
-        sortType:
-          V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+        desc: false,
       },
     ],
     ...(addComparison
@@ -93,20 +111,6 @@ export function getAlertQueryArgsFromFormValues(
           },
         }
       : {}),
-    aliases: addComparison
-      ? [
-          {
-            name: formValues.measure,
-            type: V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA,
-            alias: formValues.measure + "__delta_abs",
-          },
-          {
-            name: formValues.measure,
-            type: V1MetricsViewComparisonMeasureType.METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
-            alias: formValues.measure + "__delta_rel",
-          },
-        ]
-      : [],
   };
 }
 
