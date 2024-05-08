@@ -399,6 +399,9 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	if a.Debug {
 		group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
 	}
+	group.Go(func() error {
+		return runtimeServer.ServePostgres(ctx)
+	})
 
 	// if keypath and certpath are provided
 	secure := tlsCertPath != "" && tlsKeyPath != ""

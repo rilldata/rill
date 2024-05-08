@@ -170,6 +170,11 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	return graceful.ServeHTTP(ctx, server, options)
 }
 
+// ServePostgres starts a Postgres server.
+func (s *Server) ServePostgres(ctx context.Context) error {
+	return graceful.ServePostgres(ctx, QueryHandler(s), auth.PostgresAuthHandler(s.aud), 5432, s.logger)
+}
+
 // HTTPHandler HTTP handler serving REST gateway.
 func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers func(mux *http.ServeMux)) (http.Handler, error) {
 	// Create REST gateway

@@ -3,6 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/http"
 	"strings"
 
@@ -93,6 +94,16 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 
 		next.ServeHTTP(w, r.WithContext(newCtx))
 	})
+}
+
+func PostgresAuthHandler(aud *Audience) func(ctx context.Context, username, password string) (context.Context, bool, error) {
+	return func(ctx context.Context, username, password string) (context.Context, bool, error) {
+		ctxWithClaim, err := parseClaims(ctx, aud, password)
+		if err != nil {
+			return ctx, false, fmt.Errorf("authentication failed: %w", err)
+		}
+		return ctxWithClaim, true, nil
+	}
 }
 
 func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {

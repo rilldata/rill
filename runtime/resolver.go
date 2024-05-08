@@ -31,7 +31,7 @@ type Resolver interface {
 	// Validate the properties and args without running any expensive operations.
 	Validate(ctx context.Context) error
 	// ResolveInteractive resolves data for interactive use (e.g. API requests or alerts).
-	ResolveInteractive(ctx context.Context) (*ResolverResult, error)
+	ResolveInteractive(ctx context.Context, opts *ResolverInteractiveOptions) (*ResolverResult, error)
 	// ResolveExport resolve data for export (e.g. downloads or reports).
 	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
 }
@@ -40,6 +40,7 @@ type Resolver interface {
 type ResolverResult struct {
 	// Data is a JSON encoded array of objects.
 	Data []byte
+	Rows [][]any
 	// Schema is the schema for the Data
 	Schema *runtimev1.StructType
 	// Cache indicates whether the result can be cached.
@@ -52,6 +53,12 @@ type ResolverExportOptions struct {
 	Format runtimev1.ExportFormat
 	// PreWriteHook is a function that is called after the export has been prepared, but before the first bytes are output to the io.Writer.
 	PreWriteHook func(filename string) error
+}
+
+// ResolverInteractiveOptions are the options passed to a resolver's ResolveInteractive method.
+type ResolverInteractiveOptions struct {
+	// Format is the format to export the result in. Possible values : JSON(default), OBJECTS
+	Format string
 }
 
 // ResolverOptions are the options passed to a resolver initializer.
@@ -85,11 +92,14 @@ type ResolveOptions struct {
 	ResolverProperties map[string]any
 	Args               map[string]any
 	UserAttributes     map[string]any
+	// should this be part of ResolverProperties ?
+	ResolverInteractiveOptions *ResolverInteractiveOptions
 }
 
 // ResolveResult is subset of ResolverResult that is cached
 type ResolveResult struct {
 	Data   []byte
+	Rows   [][]any
 	Schema *runtimev1.StructType
 }
 
@@ -157,7 +167,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 			return val, nil
 		}
 
-		res, err := resolver.ResolveInteractive(ctx)
+		res, err := resolver.ResolveInteractive(ctx, opts.ResolverInteractiveOptions)
 		if err != nil {
 			return ResolveResult{}, err
 		}
