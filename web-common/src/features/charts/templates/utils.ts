@@ -22,11 +22,14 @@ export function multiLayerBaseSpec() {
   return baseSpec;
 }
 
-export function sanitizeValueForVega(value: string | null) {
-  return value
-    ? value.replace(/[\.\-\{\}\[\]]/g, (match) => `\\${match}`) //eslint-disable-line
-    : String(value);
+export function sanitizeValueForVega(value: unknown) {
+  if (typeof value === "string") {
+    return value.replace(/[\.\-\{\}\[\]]/g, (match) => `\\${match}`);
+  } else {
+    return String(value);
+  }
 }
-export function sanitizeValuesForSpec(values: (string | null)[]) {
+
+export function sanitizeValuesForSpec(values: unknown[]) {
   return values.map((value) => sanitizeValueForVega(value));
 }
