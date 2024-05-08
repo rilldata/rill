@@ -2,7 +2,7 @@
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
-  import { getDashboardStateForReport } from "@rilldata/web-admin/features/scheduled-reports/get-dashboard-state-for-report";
+  import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -18,8 +18,8 @@
 
   $: alert = useAlert($runtime.instanceId, alertId);
 
-  let dashboardStateForReport: ReturnType<typeof getDashboardStateForReport>;
-  $: dashboardStateForReport = getDashboardStateForReport(
+  let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
+  $: dashboardStateForReport = mapQueryToDashboard(
     $alert.data?.resource?.alert?.spec?.queryName,
     $alert.data?.resource?.alert?.spec?.queryArgsJson,
     executionTime,
@@ -46,7 +46,7 @@
         </CtaMessage>
       </div>
       <CtaButton
-        on:click={() => goto(`/${organization}/${project}/-/alerts/${alert}`)}
+        on:click={() => goto(`/${organization}/${project}/-/alerts/${$alert}`)}
         variant="primary-outline"
       >
         Go to Alerts page
