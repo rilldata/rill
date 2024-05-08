@@ -10,6 +10,7 @@ import (
 	"io"
 	"net/http"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/google/uuid"
@@ -131,6 +132,44 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 					switch v := v.(type) {
 					case float64:
 						return int64(v), nil
+					default:
+						return v, nil
+					}
+				}
+			case "FLOAT":
+				transformers[i] = func(v any) (any, error) {
+					switch v := v.(type) {
+					case float64:
+						return float32(v), nil
+					case string:
+						return strconv.ParseFloat(v, 32)
+					default:
+						return v, nil
+					}
+				}
+			case "DOUBLE":
+				transformers[i] = func(v any) (any, error) {
+					switch v := v.(type) {
+					case string:
+						return strconv.ParseFloat(v, 64)
+					default:
+						return v, nil
+					}
+				}
+			case "REAL":
+				transformers[i] = func(v any) (any, error) {
+					switch v := v.(type) {
+					case string:
+						return strconv.ParseFloat(v, 64)
+					default:
+						return v, nil
+					}
+				}
+			case "DECIMAL":
+				transformers[i] = func(v any) (any, error) {
+					switch v := v.(type) {
+					case string:
+						return strconv.ParseFloat(v, 64)
 					default:
 						return v, nil
 					}

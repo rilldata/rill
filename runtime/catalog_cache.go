@@ -539,6 +539,12 @@ func resourceFromDriver(r drivers.Resource) *runtimev1.Resource {
 		panic(err)
 	}
 
+	// Reset resource name to the appropriate DB column values (enables migrations to change the kind and name.)
+	res.Meta.Name = &runtimev1.ResourceName{
+		Kind: r.Kind,
+		Name: r.Name,
+	}
+
 	// Reset ephemeral fields.
 	res.Meta.ReconcileStatus = runtimev1.ReconcileStatus_RECONCILE_STATUS_IDLE
 	res.Meta.ReconcileError = ""

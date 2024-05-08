@@ -38,9 +38,9 @@ In your `rill.yaml`, the top level property for the resource type needs to be **
 :::
 
 For example, the following YAML configuration below will set a project-wide default for:
-- **Sources** - Configure a [source refresh](/build/connect/source-refresh.md) 
-- **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified)
-- **Dashboards** - Set the [first day of the week](dashboards.md) for timeseries aggregations to be Sunday along with defining available timezones on a dashboard
+- **Sources** - Configure a [source refresh](/build/connect/source-refresh.md).
+- **Models** - Automatically materialize the models as tables instead of views (the default behavior if unspecified).
+- **Dashboards** - Set the [first day of the week](dashboards.md) for timeseries aggregations to be Sunday along with defining available timezones on a dashboard.
 
 ```yaml
 title: My Rill Project

@@ -15,10 +15,8 @@
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
   export let data: { fileArtifact?: FileArtifact } = {};
 
-  const DEFAULT_EDITOR_WIDTH = 400;
   let containerWidth: number;
-  let editorWidth = DEFAULT_EDITOR_WIDTH;
-
+  let editorPercentage = 0.55;
   let filePath: string;
   let chartName: string;
 
@@ -31,20 +29,27 @@
     filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
   }
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
-    query: {
-      onError: (err) => {
-        if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-          throw error(404, "Dashboard not found");
-        }
-
-        throw error(err.response?.status || 500, err.message);
-      },
-      refetchOnWindowFocus: false,
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    {
+      path: filePath,
     },
-  });
+    {
+      query: {
+        onError: (err) => {
+          if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
+            throw error(404, "Dashboard not found");
+          }
+
+          throw error(err.response?.status || 500, err.message);
+        },
+        refetchOnWindowFocus: false,
+      },
+    },
+  );
 
   $: yaml = $fileQuery.data?.blob || "";
+  $: editorWidth = editorPercentage * containerWidth;
 </script>
 
 <svelte:head>
@@ -55,13 +60,17 @@
   <WorkspaceContainer inspector={false} bind:width={containerWidth}>
     <ChartsHeader slot="header" {filePath} />
     <div slot="body" class="flex size-full">
-      <div style:width="{editorWidth}px" class="relative flex-none">
+      <div
+        style:width="{editorPercentage * 100}%"
+        class="relative flex-none border-r"
+      >
         <Resizer
           direction="EW"
           side="right"
-          bind:dimension={editorWidth}
+          dimension={editorWidth}
           min={300}
-          max={0.6 * containerWidth}
+          max={0.65 * containerWidth}
+          onUpdate={(width) => (editorPercentage = width / containerWidth)}
         />
         <ChartsEditor {filePath} />
       </div>
@@ -70,7 +79,7 @@
           chartView
           gap={8}
           columns={10}
-          components={[{ width: 10, height: 10, x: 0, y: 0, chart: chartName }]}
+          items={[{ width: 10, height: 10, x: 0, y: 0, component: chartName }]}
         />
       </ChartPromptStatusDisplay>
     </div>

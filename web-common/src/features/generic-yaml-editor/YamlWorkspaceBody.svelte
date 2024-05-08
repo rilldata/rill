@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
-  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { parse } from "yaml";
   import YAMLEditor from "../../components/editor/YAMLEditor.svelte";
   import {
@@ -9,7 +9,6 @@
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import ErrorPane from "./ErrorPane.svelte";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   export let filePath: string;
 
@@ -19,7 +18,7 @@
 
   $: file = createRuntimeServiceGetFile(
     $runtime.instanceId,
-    removeLeadingSlash(filePath),
+    { path: filePath },
     {
       query: {
         // this will ensure that any changes done outside our app is pulled in.
@@ -35,13 +34,10 @@
 
   async function handleUpdate(e: CustomEvent<{ content: string }>) {
     const blob = e.detail.content;
-    await runtimeServicePutFile(
-      $runtime.instanceId,
-      removeLeadingSlash(filePath),
-      {
-        blob: blob,
-      },
-    );
+    await runtimeServicePutFile($runtime.instanceId, {
+      path: filePath,
+      blob: blob,
+    });
     error = validateYAMLAndReturnError(blob);
   }
 
@@ -73,8 +69,9 @@
         bind:this={editor}
         bind:view
         {content}
+        key={filePath}
+        on:save={debouncedUpdate}
         whenFocused
-        on:update={debouncedUpdate}
       />
     </div>
   </div>

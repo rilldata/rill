@@ -179,9 +179,6 @@ func (r *ProjectParserReconciler) Reconcile(ctx context.Context, n *runtimev1.Re
 			if e.Dir {
 				continue
 			}
-			if parser.IsIgnored(e.Path) {
-				continue
-			}
 			if parser.IsSkippable(e.Path) {
 				// We do not get events for files in deleted/renamed directories.
 				// So we need to manually find paths we're tracking in the directory and add them to changedPaths.
@@ -293,16 +290,16 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return parseErrsErr
 	}
 
-	// Treat reloads the same as a fresh parse (where there's no diff)
-	if diff != nil && diff.Reloaded {
-		diff = nil
-	}
-
-	// Update state from rill.yaml and .env
-	if diff == nil || diff.ModifiedDotEnv {
-		err := r.reconcileProjectConfig(ctx, parser)
+	// not setting restartController=true when diff is actually nil prevents infinite restarts
+	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded
+	if updateConfig {
+		restartController := diff != nil
+		err := r.reconcileProjectConfig(ctx, parser, restartController)
 		if err != nil {
 			return err
+		}
+		if restartController {
+			return nil
 		}
 	}
 
@@ -327,46 +324,8 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 }
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
-func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser) error {
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return err
-	}
-
-	// Shallow clone for editing
-	tmp := *inst
-	inst = &tmp
-
-	inst.ProjectOLAPConnector = parser.RillYAML.OLAPConnector
-
-	conns := make([]*runtimev1.Connector, 0, len(parser.RillYAML.Connectors))
-	for _, c := range parser.RillYAML.Connectors {
-		conns = append(conns, &runtimev1.Connector{
-			Type:   c.Type,
-			Name:   c.Name,
-			Config: c.Defaults,
-		})
-	}
-	inst.ProjectConnectors = conns
-
-	vars := make(map[string]string)
-	for _, v := range parser.RillYAML.Variables {
-		vars[v.Name] = v.Default
-	}
-	for k, v := range parser.DotEnv {
-		vars[k] = v
-	}
-	inst.ProjectVariables = vars
-
-	// TODO: Passing "false" guards against infinite cancellations and restarts of the controller,
-	// but it also ignores potential consistency issues where we update connector config without evicting cached connctions,
-	// or where we update variables and don't re-evaluate all resources.
-	err = r.C.Runtime.EditInstance(ctx, inst, false)
-	if err != nil {
-		return err
-	}
-
-	return nil
+func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser, restartController bool) error {
+	return r.C.Runtime.UpdateInstanceWithRillYAML(ctx, r.C.InstanceID, parser.RillYAML, parser.DotEnv, restartController)
 }
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.
@@ -565,9 +524,9 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalThemeSpec(existing.GetTheme().Spec, def.ThemeSpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Theme{Theme: &runtimev1.Theme{Spec: def.ThemeSpec}}}
 		}
-	case compilerv1.ResourceKindChart:
-		if existing == nil || !equalChartSpec(existing.GetChart().Spec, def.ChartSpec) {
-			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Chart{Chart: &runtimev1.Chart{Spec: def.ChartSpec}}}
+	case compilerv1.ResourceKindComponent:
+		if existing == nil || !equalComponentSpec(existing.GetComponent().Spec, def.ComponentSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Component{Component: &runtimev1.Component{Spec: def.ComponentSpec}}}
 		}
 	case compilerv1.ResourceKindDashboard:
 		if existing == nil || !equalDashboardSpec(existing.GetDashboard().Spec, def.DashboardSpec) {
@@ -578,7 +537,7 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Api{Api: &runtimev1.API{Spec: def.APISpec}}}
 		}
 	default:
-		panic(fmt.Errorf("unknown resource kind %q", def.Name.Kind))
+		panic(fmt.Errorf("unknown resource type %q", def.Name.Kind))
 	}
 
 	// Make refs for the resource meta
@@ -751,7 +710,7 @@ func equalThemeSpec(a, b *runtimev1.ThemeSpec) bool {
 	return proto.Equal(a, b)
 }
 
-func equalChartSpec(a, b *runtimev1.ChartSpec) bool {
+func equalComponentSpec(a, b *runtimev1.ComponentSpec) bool {
 	return proto.Equal(a, b)
 }
 

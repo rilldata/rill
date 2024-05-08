@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
 	"os"
+	"reflect"
 	"regexp"
 	"slices"
 	"strconv"
@@ -19,13 +21,6 @@ const (
 	maxFiles    = 10000
 	maxFileSize = 1 << 17 // 128kb
 )
-
-// IgnoredPaths is a list of paths that are ignored by the parser.
-var IgnoredPaths = []string{
-	"/tmp",
-	"/.git",
-	"/node_modules",
-}
 
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.
@@ -44,7 +39,7 @@ type Resource struct {
 	ReportSpec      *runtimev1.ReportSpec
 	AlertSpec       *runtimev1.AlertSpec
 	ThemeSpec       *runtimev1.ThemeSpec
-	ChartSpec       *runtimev1.ChartSpec
+	ComponentSpec   *runtimev1.ComponentSpec
 	DashboardSpec   *runtimev1.DashboardSpec
 	APISpec         *runtimev1.APISpec
 }
@@ -78,7 +73,7 @@ const (
 	ResourceKindReport
 	ResourceKindAlert
 	ResourceKindTheme
-	ResourceKindChart
+	ResourceKindComponent
 	ResourceKindDashboard
 	ResourceKindAPI
 )
@@ -103,14 +98,14 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindAlert, nil
 	case "theme":
 		return ResourceKindTheme, nil
-	case "chart":
-		return ResourceKindChart, nil
+	case "component":
+		return ResourceKindComponent, nil
 	case "dashboard":
 		return ResourceKindDashboard, nil
 	case "api":
 		return ResourceKindAPI, nil
 	default:
-		return ResourceKindUnspecified, fmt.Errorf("invalid resource kind %q", kind)
+		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}
 }
 
@@ -132,14 +127,14 @@ func (k ResourceKind) String() string {
 		return "Alert"
 	case ResourceKindTheme:
 		return "Theme"
-	case ResourceKindChart:
-		return "Chart"
+	case ResourceKindComponent:
+		return "Component"
 	case ResourceKindDashboard:
 		return "Dashboard"
 	case ResourceKindAPI:
 		return "API"
 	default:
-		panic(fmt.Sprintf("unexpected resource kind: %d", k))
+		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
 }
 
@@ -196,10 +191,35 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 	}
 
 	if p.RillYAML == nil {
-		return nil, errors.New("rill.yaml not found")
+		return nil, ErrRillYAMLNotFound
 	}
 
 	return p.RillYAML, nil
+}
+
+// ParseDotEnv parses only the .env file present in project's root.
+func ParseDotEnv(ctx context.Context, repo drivers.RepoStore, instanceID string) (map[string]string, error) {
+	files, err := repo.ListRecursive(ctx, ".env", true)
+	if err != nil {
+		return nil, fmt.Errorf("could not list project files: %w", err)
+	}
+
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
+	}
+
+	p := Parser{Repo: repo, InstanceID: instanceID}
+	err = p.parsePaths(ctx, paths)
+	if err != nil {
+		return nil, err
+	}
+
+	return p.DotEnv, nil
 }
 
 // Parse creates a new parser and parses the entire project.
@@ -224,11 +244,21 @@ func Parse(ctx context.Context, repo drivers.RepoStore, instanceID, environment,
 // If a previous call to Reparse has returned an error, the Parser may not be accessed or called again.
 func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	var changedRillYAML bool
-	for _, p := range paths {
-		if pathIsRillYAML(p) {
-			changedRillYAML = true
-			break
+	for _, path := range paths {
+		if !pathIsRillYAML(path) {
+			continue
 		}
+		oldRillYAML := p.RillYAML
+		err := p.parseRillYAML(ctx, path)
+		if err == nil {
+			// Watcher sends multiple events for a single edit. We want to only restart the controller when rill.yaml actually changes.
+			// So we check the new rill.yaml contents against the contents stored in parser state.
+			changedRillYAML = !reflect.DeepEqual(oldRillYAML, p.RillYAML)
+		} else {
+			// any error including parse error means rill.yaml changed
+			changedRillYAML = true
+		}
+		break
 	}
 
 	if changedRillYAML {
@@ -245,19 +275,6 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 	}
 
 	return p.reparseExceptRillYAML(ctx, paths)
-}
-
-// IsIgnored returns true if the path (and any files in nested directories) should be ignored.
-func (p *Parser) IsIgnored(path string) bool {
-	for _, dir := range IgnoredPaths {
-		if path == dir {
-			return true
-		}
-		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
-			return true
-		}
-	}
-	return false
 }
 
 // IsSkippable returns true if the path will be skipped by Reparse.
@@ -304,12 +321,6 @@ func (p *Parser) reload(ctx context.Context) error {
 	// Build paths slice
 	paths := make([]string, 0, len(files))
 	for _, file := range files {
-		// Filter out ignored files
-		// TODO: Incorporate the ignore list directly into the ListRecursive call.
-		if p.IsIgnored(file.Path) {
-			continue
-		}
-
 		paths = append(paths, file.Path)
 	}
 
@@ -369,15 +380,29 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 		}
 		seenPaths[path] = true
 
-		// Skip ignores files and files that aren't SQL or YAML or .env file
-		if p.IsIgnored(path) {
-			continue
-		}
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
 		isDotEnv := pathIsDotEnv(path)
 		if !isSQL && !isYAML && !isDotEnv {
 			continue
+		}
+
+		// Check if path is .env and clear it (so we can re-parse it)
+		// Watcher sends multiple events for a single edit. We want to only restart the controller when .env actually changes.
+		// So we check the new .env contents against the contents stored in parser state.
+		if isDotEnv {
+			oldDotEnv := p.DotEnv
+			err := p.parseDotEnv(ctx, checkPaths[i])
+			if err == nil {
+				modifiedDotEnv = !maps.Equal(p.DotEnv, oldDotEnv)
+			} else {
+				// any error means .env is under change
+				modifiedDotEnv = true
+			}
+			if !modifiedDotEnv {
+				continue
+			}
+			p.DotEnv = nil
 		}
 
 		// If a file exists at path, add it to the parse list
@@ -391,12 +416,6 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			return nil, fmt.Errorf("unexpected file stat error: %w", err)
 		}
 		// NOTE: Continue even if the file has been deleted because it may have associated state we need to clear.
-
-		// Check if path is .env and clear it (so we can re-parse it)
-		if isDotEnv {
-			modifiedDotEnv = true
-			p.DotEnv = nil
-		}
 
 		// Since .sql and .yaml files provide context for each other, if one was modified, we need to reparse both.
 		// For cases where a file was modified or deleted, the transitive check through resourcesForPath will already take of that.
@@ -745,6 +764,16 @@ func (p *Parser) inferUnspecifiedRefs(r *Resource) {
 	r.Refs = refs
 }
 
+// insertDryRun returns an error if calling insertResource with the given resource name would fail.
+func (p *Parser) insertDryRun(kind ResourceKind, name string) error {
+	rn := ResourceName{Kind: kind, Name: name}
+	_, ok := p.Resources[rn.Normalized()]
+	if ok {
+		return externalError{err: fmt.Errorf("name collision: another resource of type %q is also named %q", rn.Kind, rn.Name)}
+	}
+	return nil
+}
+
 // insertResource inserts a resource in the parser's internal state.
 // After calling insertResource, the caller can directly modify the returned resource's spec.
 func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, refs ...ResourceName) (*Resource, error) {
@@ -752,7 +781,7 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 	rn := ResourceName{Kind: kind, Name: name}
 	_, ok := p.Resources[rn.Normalized()]
 	if ok {
-		return nil, externalError{err: fmt.Errorf("name collision: another resource of kind %q is also named %q", rn.Kind, rn.Name)}
+		return nil, externalError{err: fmt.Errorf("name collision: another resource of type %q is also named %q", rn.Kind, rn.Name)}
 	}
 
 	// Dedupe refs (it's not guaranteed by the upstream logic).
@@ -793,14 +822,14 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.AlertSpec = &runtimev1.AlertSpec{}
 	case ResourceKindTheme:
 		r.ThemeSpec = &runtimev1.ThemeSpec{}
-	case ResourceKindChart:
-		r.ChartSpec = &runtimev1.ChartSpec{}
+	case ResourceKindComponent:
+		r.ComponentSpec = &runtimev1.ComponentSpec{}
 	case ResourceKindDashboard:
 		r.DashboardSpec = &runtimev1.DashboardSpec{}
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
 	default:
-		panic(fmt.Errorf("unexpected resource kind: %s", kind.String()))
+		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
 
 	// Track it

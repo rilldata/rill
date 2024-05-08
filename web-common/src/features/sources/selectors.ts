@@ -1,9 +1,6 @@
-import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
-  useFilteredResourceNames,
   useFilteredResources,
-  useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   V1ProfileColumn,
@@ -13,8 +10,6 @@ import {
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { Readable, derived } from "svelte/store";
 import { parse } from "yaml";
-import { getRouteFromName } from "../entity-management/entity-mappers";
-import { EntityType } from "../entity-management/types";
 
 export type SourceFromYaml = {
   type: string;
@@ -28,51 +23,42 @@ export function useSources(instanceId: string) {
   );
 }
 
-export function useSourceNames(instanceId: string) {
-  return useFilteredResourceNames(instanceId, ResourceKind.Source);
-}
-
-export function useSourceFileNames(instanceId: string) {
-  return useMainEntityFiles(instanceId, "sources");
-}
-
-export function useSourceRoutes(instanceId: string) {
-  return useMainEntityFiles(instanceId, "sources", (name) =>
-    getRouteFromName(name, EntityType.Table),
-  );
-}
-
-export function useSource(instanceId: string, name: string) {
-  return useResource(instanceId, name, ResourceKind.Source);
-}
-
 export function useSourceFromYaml(instanceId: string, filePath: string) {
-  return createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      select: (data) => (data.blob ? parse(data.blob) : {}),
+  return createRuntimeServiceGetFile(
+    instanceId,
+    { path: filePath },
+    {
+      query: {
+        select: (data) => (data.blob ? parse(data.blob) : {}),
+      },
     },
-  }) as CreateQueryResult<SourceFromYaml>;
+  ) as CreateQueryResult<SourceFromYaml>;
 }
 
 /**
  * This client-side YAML parsing is a rudimentary hack to check if the source is a local file.
  */
 export function useIsLocalFileConnector(instanceId: string, filePath: string) {
-  return createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      select: (data) => {
-        const serverYAML = data.blob;
-        if (!serverYAML) return false;
-        const yaml = parse(serverYAML);
-        // Check that the `type` is `duckdb` and that the `sql` includes 'data/'
-        return Boolean(
-          yaml?.type === "duckdb" && yaml?.sql?.includes("'data/"),
-        );
+  return createRuntimeServiceGetFile(
+    instanceId,
+    { path: filePath },
+    {
+      query: {
+        select: (data) => {
+          const serverYAML = data.blob;
+          if (!serverYAML) return false;
+          const yaml = parse(serverYAML);
+          // Check that the `type` is `duckdb` and that the `sql` includes 'data/'
+          return Boolean(
+            yaml?.type === "duckdb" && yaml?.sql?.includes("'data/"),
+          );
+        },
+        enabled:
+          !!filePath &&
+          (filePath.endsWith(".yaml") || filePath.endsWith(".yml")),
       },
-      enabled:
-        !!filePath && (filePath.endsWith(".yaml") || filePath.endsWith(".yml")),
     },
-  });
+  );
 }
 
 export type TableColumnsWithName = {

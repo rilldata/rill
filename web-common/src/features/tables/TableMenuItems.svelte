@@ -10,34 +10,42 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
+  import TableIcon from "../../components/icons/TableIcon.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromSource } from "../sources/createModel";
+  import { makeTablePreviewHref } from "./olap-config";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
 
   export let connector: string;
   export let database: string = "";
-  export let databaseSchema: string;
+  export let databaseSchema: string = "";
   export let table: string;
-
-  const queryClient = useQueryClient();
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
-  $: tableName = table;
+  $: href = makeTablePreviewHref(connector, database, databaseSchema, table);
+  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
+    $runtime.instanceId,
+    connector,
+    database,
+    databaseSchema,
+    table,
+    "dashboards",
+    BehaviourEventMedium.Menu,
+    MetricsEventSpace.LeftPanel,
+  );
 
-  const handleCreateModel = async () => {
+  async function handleCreateModel() {
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await createModelFromSource(
-        queryClient,
-        tableName,
-        tableName,
+        table,
+        table,
         "models",
       );
-      await goto(`/file${newModelPath}`);
+      await goto(`/files${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
         newModelName,
         BehaviourEventMedium.Menu,
@@ -48,22 +56,15 @@
     } catch (err) {
       console.error(err);
     }
-  };
-
-  $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
-    $runtime.instanceId,
-    connector,
-    database,
-    databaseSchema,
-    tableName,
-    "dashboards",
-    BehaviourEventMedium.Menu,
-    MetricsEventSpace.LeftPanel,
-  );
+  }
 </script>
 
+<NavigationMenuItem {href}>
+  <TableIcon slot="icon" />
+  Preview table
+</NavigationMenuItem>
 {#if $isModelingSupportedForCurrentOlapDriver.data}
-  <NavigationMenuItem on:click={() => handleCreateModel()}>
+  <NavigationMenuItem on:click={handleCreateModel}>
     <Model slot="icon" />
     Create new model
   </NavigationMenuItem>

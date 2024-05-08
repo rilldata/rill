@@ -11,11 +11,9 @@ A container GraphicContext for the time series in a metrics dashboard.
   export let enableFullWidth = false;
 
   const paddingForFullWidth = 80;
-
-  $: paddingRight = enableFullWidth ? "pr-6" : "pr-2";
 </script>
 
-<div class={`max-w-full h-fit flex flex-col max-h-full ${paddingRight}`}>
+<div class="max-w-full h-fit flex flex-col max-h-full pr-2">
   <GraphicContext
     bottom={4}
     height={enableFullWidth

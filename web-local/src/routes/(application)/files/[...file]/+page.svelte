@@ -1,20 +1,20 @@
 <script lang="ts">
-  import { afterNavigate } from "$app/navigation";
+  import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
-  import { yaml } from "@rilldata/web-common/components/editor/presets/yaml";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
-  import {
-    addLeadingSlash,
-    removeLeadingSlash,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { FILES_WITHOUT_AUTOSAVE } from "@rilldata/web-common/features/editor/config";
+  import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
+  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
+  import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import {
     createRuntimeServiceGetFile,
     createRuntimeServicePutFile,
@@ -27,17 +27,24 @@
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
-  const FILE_SAVE_DEBOUNCE_TIME = 400;
+
+  let interceptedUrl: string | null = null;
+
+  const putFile = createRuntimeServicePutFile(); // TODO: optimistically update the Get File cache
 
   $: filePath = addLeadingSlash($page.params.file);
   $: fileExtension = extractFileExtension(filePath);
   $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath, {
-    query: {
-      enabled: !fileTypeUnsupported,
+  $: fileQuery = createRuntimeServiceGetFile(
+    $runtime.instanceId,
+    { path: filePath },
+    {
+      query: {
+        enabled: !fileTypeUnsupported,
+      },
     },
-  });
+  );
   $: fileError = !!$fileQuery.error;
   $: fileErrorMessage = $fileQuery.error?.response.data.message;
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
@@ -47,15 +54,10 @@
   $: isSource = resourceKind === ResourceKind.Source;
   $: isModel = resourceKind === ResourceKind.Model;
   $: isDashboard = resourceKind === ResourceKind.MetricsView;
-  $: isChart = resourceKind === ResourceKind.Chart;
+  $: isChart = resourceKind === ResourceKind.Component;
   $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
-
-  $: isYaml = filePath.endsWith(".yaml") || filePath.endsWith(".yml");
-
-  // TODO: optimistically update the get file cache
-  const putFile = createRuntimeServicePutFile();
 
   onMount(() => {
     expandDirectory(filePath);
@@ -69,21 +71,39 @@
     // TODO: Focus on the code editor
   });
 
-  const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
+  beforeNavigate((e) => {
+    if (!hasUnsavedChanges || interceptedUrl) return;
+
+    e.cancel();
+
+    if (e.to) interceptedUrl = e.to.url.href;
+  });
+
   let blob = "";
   $: blob = $fileQuery.data?.blob ?? blob;
 
   $: latest = blob;
+  $: hasUnsavedChanges = latest !== blob;
 
-  function save(content: string) {
-    if ($fileQuery.data?.blob === content) return;
-    return $putFile.mutateAsync({
+  $: pathname = $page.url.pathname;
+  $: workspace = workspaces.get(pathname);
+  $: autoSave = workspace.editor.autoSave;
+  $: disableAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
+
+  async function save() {
+    if (!hasUnsavedChanges) return;
+
+    await $putFile.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
-        blob: content,
+        path: filePath,
+        blob: latest,
       },
-      path: removeLeadingSlash(filePath),
     });
+  }
+
+  function revert() {
+    latest = blob;
   }
 
   // TODO: move this logic into the DirectoryState
@@ -91,6 +111,19 @@
   function expandDirectory(filePath: string) {
     const directory = filePath.split("/").slice(0, -1).join("/");
     directoryState.expand(directory);
+  }
+
+  function handleConfirm() {
+    if (!interceptedUrl) return;
+    const url = interceptedUrl;
+    latest = blob;
+    hasUnsavedChanges = false;
+    interceptedUrl = null;
+    goto(url).catch(console.error);
+  }
+
+  function handleCancel() {
+    interceptedUrl = null;
   }
 </script>
 
@@ -110,18 +143,35 @@
   <CustomDashboardPage data={{ fileArtifact }} />
 {:else if isOther}
   <WorkspaceContainer inspector={false}>
-    <FileWorkspaceHeader filePath={$page.params.file} slot="header" />
-    <div class="editor-pane size-full" slot="body">
-      <div class="editor flex flex-col border border-gray-200 rounded h-full">
-        <div class="grow flex bg-white overflow-y-auto rounded">
-          <Editor
-            {blob}
-            bind:latest
-            extensions={isYaml ? [yaml()] : []}
-            on:update={({ detail: { content } }) => debounceSave(content)}
-          />
-        </div>
-      </div>
+    <FileWorkspaceHeader
+      filePath={$page.params.file}
+      {hasUnsavedChanges}
+      slot="header"
+    />
+    <div
+      slot="body"
+      class="editor-pane size-full overflow-hidden flex flex-col"
+    >
+      <WorkspaceEditorContainer>
+        <Editor
+          {blob}
+          {hasUnsavedChanges}
+          extensions={getExtensionsForFile(filePath)}
+          {disableAutoSave}
+          bind:latest
+          bind:autoSave={$autoSave}
+          on:save={save}
+          on:revert={revert}
+        />
+      </WorkspaceEditorContainer>
     </div>
   </WorkspaceContainer>
+{/if}
+
+{#if interceptedUrl}
+  <UnsavedSourceDialog
+    context="file"
+    on:confirm={handleConfirm}
+    on:cancel={handleCancel}
+  />
 {/if}

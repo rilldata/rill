@@ -5,14 +5,18 @@ import {
 import { OLAP_DRIVERS_WITHOUT_MODELING } from "./olap-config";
 
 export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
-  return createRuntimeServiceGetInstance(instanceId, {
-    query: {
-      select: (data) => {
-        const olapConnector = data.instance?.olapConnector as string;
-        return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector);
+  return createRuntimeServiceGetInstance(
+    instanceId,
+    { sensitive: true },
+    {
+      query: {
+        select: (data) => {
+          const olapConnector = data.instance?.olapConnector as string;
+          return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector);
+        },
       },
     },
-  });
+  );
 }
 
 export function useTables(

@@ -1,2 +1,2 @@
-type: local_file
+connector: local_file
 path: data/AdBids.csv.gz

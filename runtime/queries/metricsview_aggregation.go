@@ -90,7 +90,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectPinot {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -599,8 +599,13 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		}
 		whereClause += clause
 	}
+
+	whereBuilder := &ExpressionBuilder{
+		mv:      mv,
+		dialect: dialect,
+	}
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+		clause, clauseArgs, err := whereBuilder.buildExpression(q.Where)
 		if err != nil {
 			return "", nil, err
 		}
@@ -618,11 +623,22 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 		whereClause = "WHERE 1=1" + whereClause
 	}
 
-	havingClause := ""
-	var havingClauseArgs []any
+	var havingClause, extraWhereClause string
+	var havingClauseArgs, extraWhereClauseArgs []any
 	if q.Having != nil {
 		var err error
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		// HAVING expression is converted to WHERE expression here
+		extraWhereClause, extraWhereClauseArgs, err = whereBuilder.buildExpression(q.Having)
+		if err != nil {
+			return "", nil, err
+		}
+
+		havingBuilder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+			having:  true,
+		}
+		havingClause, havingClauseArgs, err = havingBuilder.buildExpression(q.Having)
 		if err != nil {
 			return "", nil, err
 		}
@@ -705,7 +721,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 			bacause FILTER cannot be applied for arbitrary measure, ie sum(a)/1000
 		*/
 		if filterCount == 1 {
-			return q.buildMeasureFilterSQL(mv, unnestClauses, selectCols, limitClause, orderClause, havingClause, whereClause, groupClause, args, selectArgs, whereArgs, havingClauseArgs, dialect)
+			return q.buildMeasureFilterSQL(mv, unnestClauses, selectCols, limitClause, orderClause, havingClause, whereClause, groupClause, args, selectArgs, whereArgs, havingClauseArgs, extraWhereClause, extraWhereClauseArgs, dialect)
 		}
 		sql = fmt.Sprintf("SELECT %s FROM %s %s %s %s %s %s %s OFFSET %d",
 			strings.Join(selectCols, ", "),
@@ -723,7 +739,7 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	return sql, args, nil
 }
 
-func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsViewSpec, unnestClauses, selectCols []string, limitClause, orderClause, havingClause, whereClause, groupClause string, args, selectArgs, whereArgs, havingClauseArgs []any, dialect drivers.Dialect) (string, []any, error) {
+func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsViewSpec, unnestClauses, selectCols []string, limitClause, orderClause, havingClause, whereClause, groupClause string, args, selectArgs, whereArgs, havingClauseArgs []any, extraWhereClause string, extraWhereClauseArgs []any, dialect drivers.Dialect) (string, []any, error) {
 	joinConditions := make([]string, 0, len(q.Dimensions))
 	selfJoinCols := make([]string, 0, len(q.Dimensions)+1)
 	finalProjection := make([]string, 0, len(q.Dimensions)+1)
@@ -731,9 +747,13 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	selfJoinTableAlias := tempName("self_join")
 	nonNullValue := tempName("non_null")
 	for _, d := range q.Dimensions {
-		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", escapeMetricsViewTable(dialect, mv), safeName(d.Name), selfJoinTableAlias, nonNullValue))
-		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", escapeMetricsViewTable(dialect, mv), safeName(d.Name)))
-		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(d.Name)))
+		name := d.Name
+		if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && d.Alias != "" {
+			name = d.Alias
+		}
+		joinConditions = append(joinConditions, fmt.Sprintf("COALESCE(%[1]s.%[2]s, '%[4]s') = COALESCE(%[3]s.%[2]s, '%[4]s')", escapeMetricsViewTable(dialect, mv), safeName(name), selfJoinTableAlias, nonNullValue))
+		selfJoinCols = append(selfJoinCols, fmt.Sprintf("%s.%s", escapeMetricsViewTable(dialect, mv), safeName(name)))
+		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(name)))
 	}
 	if dialect == drivers.DialectDruid { // Apache Druid cannot order without timestamp or GROUP BY
 		finalProjection = append(finalProjection, fmt.Sprintf("ANY_VALUE(%[1]s) as %[1]s", safeName(q.Measures[0].Name)))
@@ -741,8 +761,11 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 		finalProjection = append(finalProjection, fmt.Sprintf("%[1]s", safeName(q.Measures[0].Name)))
 	}
 	selfJoinCols = append(selfJoinCols, fmt.Sprintf("%[1]s.%[2]s as %[3]s", selfJoinTableAlias, safeName(q.Measures[0].Name), safeName(q.Measures[0].Name)))
-
-	measureExpression, measureWhereArgs, err := buildExpression(mv, q.Measures[0].Filter, nil, dialect)
+	builder := &ExpressionBuilder{
+		mv:      mv,
+		dialect: dialect,
+	}
+	measureExpression, measureWhereArgs, err := builder.buildExpression(q.Measures[0].Filter)
 	if err != nil {
 		return "", nil, err
 	}
@@ -752,19 +775,28 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	}
 
 	measureWhereClause := whereClause + fmt.Sprintf(" AND (%s)", measureExpression)
-	var extraWhere string
-	var extraWhereArgs []any
-	if q.Having != nil {
-		extraWhere, extraWhereArgs, err = buildExpression(mv, q.Having, nil, dialect)
-		if err != nil {
-			return "", nil, err
-		}
-		extraWhere = "WHERE " + extraWhere
+	if extraWhereClause != "" {
+		extraWhereClause = "WHERE " + extraWhereClause
 	}
 	druidGroupBy := ""
 	if dialect == drivers.DialectDruid {
 		druidGroupBy = groupClause
 	}
+
+	/*
+		SQL example:
+		SELECT "pub","measure_1" FROM (
+			SELECT "ad_bids"."pub", self_join3ba680fe589e49ceabf404f6c6d920e7."measure_1" as "measure_1" FROM (
+				SELECT ("publisher") as "pub", COUNT(*) as "measure_1" FROM "ad_bids"  WHERE 1=1 GROUP BY 1
+			) "ad_bids"
+			LEFT JOIN (
+				SELECT ("publisher") as "pub", COUNT(*) as "measure_1" FROM "ad_bids"  WHERE 1=1 AND (("domain") = (?)) GROUP BY 1
+			) self_join3ba680fe589e49ceabf404f6c6d920e7
+			ON (COALESCE("ad_bids"."pub", 'non_nulle9c9dae4c90746978d24a838c88b9879') = COALESCE(self_join3ba680fe589e49ceabf404f6c6d920e7."pub", 'non_nulle9c9dae4c90746978d24a838c88b9879'))
+		)
+		ORDER BY "pub" NULLS LAST
+		OFFSET 0
+	*/
 
 	sql := fmt.Sprintf(`
 					SELECT %[16]s FROM (
@@ -795,7 +827,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 		limitClause,                           // 11
 		q.Offset,                              // 12
 		orderClause,                           // 13
-		extraWhere,                            // 14
+		extraWhereClause,                      // 14
 		druidGroupBy,                          // 15
 		strings.Join(finalProjection, ","),    // 16
 	)
@@ -807,7 +839,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterSQL(mv *runtimev1.MetricsView
 	args = append(args, whereArgs...)
 	args = append(args, measureWhereArgs...)
 	args = append(args, havingClauseArgs...)
-	args = append(args, extraWhereArgs...)
+	args = append(args, extraWhereClauseArgs...)
 
 	return sql, args, nil
 }
@@ -847,6 +879,9 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 			return fmt.Sprintf("date_trunc('%s', %s)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
 		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
+	case drivers.DialectPinot:
+		// ToDateTime format truncates millis to secs because we don't support that, for example timeseries api does timestamppb.New(ts) which truncates to seconds
+		return fmt.Sprintf("ToDateTime(date_trunc('%s', %s, 'MILLISECONDS', ?), 'yyyy-MM-dd''T''HH:mm:ss''Z''')", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone}, nil
 	default:
 		return "", nil, fmt.Errorf("unsupported dialect %q", dialect)
 	}

@@ -2,9 +2,9 @@
   import type { EditorView } from "@codemirror/view";
   import { Meta, Story, Template } from "@storybook/addon-svelte-csf";
   import Button from "../../button/Button.svelte";
+  import YAMLEditor from "../YAMLEditor.svelte";
   import { setLineStatuses } from "../line-status";
   import type { LineStatus } from "../line-status/state";
-  import YAMLEditor from "../YAMLEditor.svelte";
 
   let content = `name: this is the name
 values:
@@ -49,9 +49,10 @@ values:
       >
     </div>
     <YAMLEditor
+      key="key"
       {content}
       bind:view
-      on:update={(event) => {
+      on:save={(event) => {
         // Often, you want to debounce the update to parent content.
         // Here, we have no such requirement.
         content = event.detail;

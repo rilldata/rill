@@ -7,7 +7,9 @@
   import { addSourceModal } from "../sources/modal/add-source-visibility";
 
   let steps: OnboardingStep[];
-  $: instance = createRuntimeServiceGetInstance($runtime.instanceId);
+  $: instance = createRuntimeServiceGetInstance($runtime.instanceId, {
+    sensitive: true,
+  });
   $: olapConnector = $instance.data?.instance?.olapConnector;
   $: if (olapConnector) {
     steps = olapConnector === "duckdb" ? duckDbSteps : nonDuckDbSteps;

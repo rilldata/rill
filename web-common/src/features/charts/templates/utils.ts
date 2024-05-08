@@ -19,6 +19,17 @@ export function multiLayerBaseSpec() {
     data: { name: "table" },
     layer: [],
   };
-
   return baseSpec;
+}
+
+export function sanitizeValueForVega(value: unknown) {
+  if (typeof value === "string") {
+    return value.replace(/[\.\-\{\}\[\]]/g, (match) => `\\${match}`); //eslint-disable-line
+  } else {
+    return String(value);
+  }
+}
+
+export function sanitizeValuesForSpec(values: unknown[]) {
+  return values.map((value) => sanitizeValueForVega(value));
 }

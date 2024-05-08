@@ -21,7 +21,10 @@ const LINE_LIKE_CHARTS = [
 export interface ChartField {
   name: string;
   label: string;
-  values?: (string | null)[];
+  // for custom tooltip field names
+  tooltipName?: string;
+  // for mapping nominal values to colors
+  values?: (number | undefined | string | null)[];
 }
 
 export function buildVegaLiteSpec(

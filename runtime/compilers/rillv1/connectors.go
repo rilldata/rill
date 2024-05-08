@@ -53,10 +53,21 @@ type connectorAnalyzer struct {
 
 // analyze is the entrypoint for connector analysis. After running it, you can access the result.
 func (a *connectorAnalyzer) analyze(ctx context.Context) error {
-	if a.parser.RillYAML != nil && a.parser.RillYAML.OLAPConnector != "" {
-		err := a.trackConnector(a.parser.RillYAML.OLAPConnector, nil, false)
-		if err != nil {
-			return err
+	if a.parser.RillYAML != nil {
+		// Track any connectors explicitly configured in rill.yaml
+		for _, c := range a.parser.RillYAML.Connectors {
+			err := a.trackConnector(c.Name, nil, false)
+			if err != nil {
+				return err
+			}
+		}
+
+		// Track the OLAP connector specified in rill.yaml
+		if a.parser.RillYAML.OLAPConnector != "" {
+			err := a.trackConnector(a.parser.RillYAML.OLAPConnector, nil, false)
+			if err != nil {
+				return err
+			}
 		}
 	}
 
@@ -82,8 +93,8 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) er
 		return a.trackConnector(r.MigrationSpec.Connector, r, false)
 	} else if r.APISpec != nil {
 		return a.analyzeResourceWithResolver(r, r.APISpec.Resolver, r.APISpec.ResolverProperties)
-	} else if r.ChartSpec != nil {
-		return a.analyzeResourceWithResolver(r, r.ChartSpec.Resolver, r.ChartSpec.ResolverProperties)
+	} else if r.ComponentSpec != nil {
+		return a.analyzeResourceWithResolver(r, r.ComponentSpec.Resolver, r.ComponentSpec.ResolverProperties)
 	} else if r.AlertSpec != nil {
 		return a.analyzeResourceNotifiers(r, r.AlertSpec.Notifiers)
 	} else if r.ReportSpec != nil {

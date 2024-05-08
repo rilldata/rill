@@ -123,7 +123,7 @@ func (q *TableColumns) Resolve(ctx context.Context, rt *runtime.Runtime, instanc
 			}
 			return nil
 		})
-	case drivers.DialectClickHouse, drivers.DialectDruid:
+	case drivers.DialectClickHouse, drivers.DialectDruid, drivers.DialectPinot:
 		tbl, err := olap.InformationSchema().Lookup(ctx, q.Database, q.DatabaseSchema, q.TableName)
 		if err != nil {
 			return err

@@ -69,13 +69,13 @@ A list of measures that should be visible by default. Operates the same as the `
 
 In your Rill project directory, create a `<theme_name>.yaml` file in any directory. Rill will automatically ingest the theme next time you run `rill start` or deploy to Rill Cloud and change the color scheme of your dashboard.
 
-First, create the yaml file as below. In this example, the charts and hover in Rill will change to Crimson while spinners will change to Lime.
+First, create the YAML file as below. In this example, the charts and hover in Rill will change to Plum while spinners will change to Violet.
 
 ```yaml
-kind: theme
+type: theme
 colors:
-  primary: crimson 
-  secondary: lime 
+  primary: plum
+  secondary: violet 
 ```
 
 Once you have created that file, update the `dashboard.yaml` with the following configuration (we typically add this at the top along with time zones, time series and other configurations):
@@ -97,8 +97,9 @@ Formatting for individual measures on a dashboard can be controlled through the 
 Instead of displaying a numeric measure in USD currency, the euro currency can be used instead through `format_preset`. In the following example `dashboard.yaml`, the `Total Revenue` measure will be displayed using euros in the resulting dashboard.
 
 ```yaml
+type: metrics_view
 title: example_dashboard
-mode: example_model
+model: example_model
 measures:
   - label: "Total Revenue"
     expression: SUM(revenue)

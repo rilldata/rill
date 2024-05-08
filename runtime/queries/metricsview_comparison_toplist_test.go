@@ -639,3 +639,131 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	rowStrings := strings.Split(str, "\n")
 	require.Equal(t, "Domain Label,Total volume", rowStrings[0])
 }
+
+func TestMetricsViewsComparison_comparsion_having_same_name(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bid_price",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(maxTime),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(maxTime),
+			End:   ctr.Result.Max,
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
+			},
+		},
+		Limit: 250,
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "bid_price",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Len(t, q.Result.Rows, 3)
+	require.Equal(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "news.google.com", q.Result.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "instagram.com", q.Result.Rows[2].DimensionValue.GetStringValue())
+}
+
+func TestMetricsViewsComparison_general_toplist_having_same_name(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
+	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "bid_price",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: ctr.Result.Min,
+			End:   timestamppb.New(maxTime),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "dom",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
+			},
+		},
+		Limit: 250,
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_GT,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "bid_price",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3.25),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	require.Len(t, q.Result.Rows, 3)
+	require.Equal(t, "sports.yahoo.com", q.Result.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "news.google.com", q.Result.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "instagram.com", q.Result.Rows[2].DimensionValue.GetStringValue())
+}

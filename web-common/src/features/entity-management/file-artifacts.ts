@@ -1,4 +1,3 @@
-import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
 import {
   fetchFileContent,
@@ -10,7 +9,6 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
 import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -44,6 +42,10 @@ export class FileArtifact {
    */
   public lastStateUpdatedOn: string | undefined;
 
+  public hasTable = false;
+
+  public deleted = false;
+
   public constructor(filePath: string) {
     this.path = filePath;
   }
@@ -58,6 +60,8 @@ export class FileArtifact {
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
     this.renaming = !!resource.meta?.renamedFrom;
+    this.hasTable = resourceHasTable(resource);
+    this.deleted = false;
   }
 
   public updateReconciling(resource: V1Resource) {
@@ -73,7 +77,7 @@ export class FileArtifact {
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
-  public deleteResource() {
+  public softDeleteResource() {
     this.reconciling.set(false);
   }
 
@@ -134,59 +138,13 @@ export class FileArtifact {
     );
   }
 
-  public getResourceStatusStore(
-    queryClient: QueryClient,
-    instanceId: string,
-    validator?: (res: V1Resource) => boolean,
-  ) {
-    return derived(
-      [
-        this.getResource(queryClient, instanceId),
-        this.getAllErrors(queryClient, instanceId),
-        useProjectParser(queryClient, instanceId),
-      ],
-      ([resourceResp, errors, projectParserResp]) => {
-        if (projectParserResp.isError) {
-          return {
-            status: ResourceStatus.Errored,
-            error: projectParserResp.error,
-          };
-        }
-
-        if (
-          errors.length ||
-          (resourceResp.isError && !resourceResp.isFetching) ||
-          projectParserResp.isError
-        ) {
-          return {
-            status: ResourceStatus.Errored,
-            error: resourceResp.error ?? projectParserResp.error,
-          };
-        }
-
-        let isBusy: boolean;
-        if (validator && resourceResp.data) {
-          isBusy = !validator(resourceResp.data);
-        } else {
-          isBusy =
-            resourceResp.isFetching ||
-            resourceResp.data?.meta?.reconcileStatus !==
-              V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-        }
-
-        return {
-          status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,
-          resource: resourceResp.data,
-        };
-      },
-    );
-  }
-
   public getEntityName() {
     return get(this.name)?.name ?? extractFileName(this.path);
   }
 
   private updateNameIfChanged(resource: V1Resource) {
+    const isSubResource = !!resource.component?.spec?.definedInDashboard;
+    if (isSubResource) return;
     const curName = get(this.name);
     if (
       curName?.name !== resource.meta?.name?.name ||
@@ -215,7 +173,7 @@ export class FileArtifacts {
         case ResourceKind.Source:
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
-        case ResourceKind.Chart:
+        case ResourceKind.Component:
         case ResourceKind.Dashboard:
           this.updateArtifacts(resource);
           break;
@@ -228,17 +186,15 @@ export class FileArtifacts {
     );
     await Promise.all(
       missingFiles.map((filePath) =>
-        fetchFileContent(
-          queryClient,
-          instanceId,
-          removeLeadingSlash(filePath),
-        ).then((fileContents) => {
-          const artifact =
-            this.artifacts[filePath] ?? new FileArtifact(filePath);
-          const newName = parseKindAndNameFromFile(filePath, fileContents);
-          if (newName) artifact.name.set(newName);
-          this.artifacts[filePath] ??= artifact;
-        }),
+        fetchFileContent(queryClient, instanceId, filePath).then(
+          (fileContents) => {
+            const artifact =
+              this.artifacts[filePath] ?? new FileArtifact(filePath);
+            const newName = parseKindAndNameFromFile(filePath, fileContents);
+            if (newName) artifact.name.set(newName);
+            this.artifacts[filePath] ??= artifact;
+          },
+        ),
       ),
     );
   }
@@ -250,7 +206,7 @@ export class FileArtifacts {
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
-      removeLeadingSlash(filePath),
+      filePath,
     );
     const newName = parseKindAndNameFromFile(filePath, fileContents);
     if (newName) this.artifacts[filePath].name.set(newName);
@@ -260,7 +216,31 @@ export class FileArtifacts {
    * This is called when an artifact is deleted.
    */
   public fileDeleted(filePath: string) {
-    delete this.artifacts[filePath];
+    // 2-way delete to handle race condition with delete from file and resource watchers
+    // TODO: avoid this if `name` is undefined - event from resource will not be present
+    if (this.artifacts[filePath]?.deleted) {
+      // already marked for delete in resourceDeleted, delete from cache
+      delete this.artifacts[filePath];
+    } else if (this.artifacts[filePath]) {
+      // seeing delete for the 1st time, mark for delete
+      this.artifacts[filePath].deleted = true;
+    }
+  }
+
+  public resourceDeleted(name: V1ResourceName) {
+    const artifact = this.findFileArtifact(
+      (name.kind ?? "") as ResourceKind,
+      name.name ?? "",
+    );
+    if (!artifact) return;
+    // 2-way delete to handle race condition with delete from file and resource watchers
+    if (artifact.deleted) {
+      // already marked for delete in fileDeleted, delete from cache
+      delete this.artifacts[artifact.path];
+    } else {
+      // seeing delete for the 1st time, mark for delete
+      artifact.deleted = true;
+    }
   }
 
   public updateArtifacts(resource: V1Resource) {
@@ -284,6 +264,15 @@ export class FileArtifacts {
     });
   }
 
+  public tableStatusChanged(resource: V1Resource) {
+    const hadTable =
+      resource.meta?.filePaths?.some((filePath) => {
+        return this.artifacts[filePath].hasTable;
+      }) ?? false;
+    const hasTable = resourceHasTable(resource);
+    return hadTable !== hasTable;
+  }
+
   public wasRenaming(resource: V1Resource) {
     const finishedRename = !resource.meta?.renamedFrom;
     return (
@@ -296,9 +285,9 @@ export class FileArtifacts {
   /**
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
-  public deleteResource(resource: V1Resource) {
+  public softDeleteResource(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath]?.deleteResource();
+      this.artifacts[filePath]?.softDeleteResource();
     });
   }
 
@@ -337,6 +326,24 @@ export class FileArtifacts {
       },
     );
   }
+
+  /**
+   * Filters all fileArtifacts based on kind param and returns the file paths.
+   * This can be expensive if the project gets large.
+   * If we ever need this reactively then we should look into caching this list.
+   */
+  public getNamesForKind(kind: ResourceKind): string[] {
+    return Object.values(this.artifacts)
+      .filter((artifact) => get(artifact.name)?.kind === kind)
+      .map((artifact) => get(artifact.name)?.name ?? "");
+  }
+}
+
+function resourceHasTable(resource: V1Resource) {
+  return (
+    (!!resource.model && !!resource.model.state?.table) ||
+    (!!resource.source && !!resource.source.state?.table)
+  );
 }
 
 export const fileArtifacts = new FileArtifacts();

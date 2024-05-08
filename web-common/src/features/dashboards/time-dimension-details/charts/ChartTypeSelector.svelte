@@ -9,46 +9,58 @@
 
   export let metricViewName: string;
   export let chartType: TDDChart;
+  export let hasComparison: boolean;
 
-  function handleChartTypeChange(type: TDDChart) {
-    metricsExplorerStore.setTDDChartType(metricViewName, type);
-  }
+  const comparisonCharts = [TDDChart.STACKED_AREA, TDDChart.STACKED_BAR];
+
   const chartTypeTabs = [
     {
-      label: "Line chart",
+      label: "Line",
       id: TDDChart.DEFAULT,
       Icon: LineChart,
     },
     {
-      label: "Bar  chart",
+      label: "Bar",
       id: TDDChart.GROUPED_BAR,
       Icon: BarChart,
     },
     {
-      label: "Stacked Bar chart",
-      id: TDDChart.STACKED_BAR,
-      Icon: StackedBar,
-    },
-    {
-      label: "Stacked Area chart",
+      label: "Stacked area",
       id: TDDChart.STACKED_AREA,
       Icon: StackedArea,
     },
+    {
+      label: "Stacked bar",
+      id: TDDChart.STACKED_BAR,
+      Icon: StackedBar,
+    },
   ];
+
+  function handleChartTypeChange(type: TDDChart, isDisabled: boolean) {
+    if (isDisabled) return;
+    metricsExplorerStore.setTDDChartType(metricViewName, type);
+  }
+
+  // switch to default if current selected chart is not available
+  $: if (!hasComparison && comparisonCharts.includes(chartType)) {
+    metricsExplorerStore.setTDDChartType(metricViewName, TDDChart.DEFAULT);
+  }
 </script>
 
 <div class="chart-type-selector">
   {#each chartTypeTabs as { label, id, Icon } (label)}
     {@const active = chartType === id}
+    {@const disabled = !hasComparison && comparisonCharts.includes(id)}
     <div class:bg-primary-100={active} class="chart-icon-wrapper">
       <IconButton
+        {disabled}
         disableHover
         tooltipLocation="top"
-        on:click={() => handleChartTypeChange(id)}
+        on:click={() => handleChartTypeChange(id, disabled)}
       >
         <Icon
-          primaryColor="var(--color-primary-700)"
-          secondaryColor="var(--color-primary-300)"
+          primaryColor={disabled ? "#9CA3AF" : "var(--color-primary-700)"}
+          secondaryColor={disabled ? "#CBD5E1" : "var(--color-primary-300)"}
           size="20px"
         />
         <svelte:fragment slot="tooltip-content">
@@ -61,7 +73,7 @@
 
 <style lang="postcss">
   .chart-type-selector {
-    @apply flex ml-auto overflow-hidden;
+    @apply flex ml-auto overflow-hidden mr-4;
     @apply border border-primary-300 divide-x divide-primary-300 rounded-sm;
   }
   .chart-icon-wrapper {

@@ -57,7 +57,7 @@ var ReconcilerInitializers = make(map[string]ReconcilerInitializer)
 // RegisterReconciler registers a reconciler initializer for a specific resource kind
 func RegisterReconcilerInitializer(resourceKind string, initializer ReconcilerInitializer) {
 	if ReconcilerInitializers[resourceKind] != nil {
-		panic(fmt.Errorf("reconciler already registered for resource kind %q", resourceKind))
+		panic(fmt.Errorf("reconciler already registered for resource type %q", resourceKind))
 	}
 	ReconcilerInitializers[resourceKind] = initializer
 }
@@ -800,7 +800,7 @@ func (c *Controller) reconciler(resourceKind string) Reconciler {
 
 	initializer := ReconcilerInitializers[resourceKind]
 	if initializer == nil {
-		panic(fmt.Errorf("no reconciler registered for resource kind %q", resourceKind))
+		panic(fmt.Errorf("no reconciler registered for resource type %q", resourceKind))
 	}
 
 	reconciler = initializer(c)
@@ -1108,7 +1108,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 			return false, err
 		}
 		if !r.Meta.Hidden {
-			logArgs := []zap.Field{zap.String("name", n.Name), zap.String("kind", unqualifiedKind(n.Kind)), zap.Any("error", errCyclicDependency)}
+			logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", unqualifiedKind(n.Kind)), zap.Any("error", errCyclicDependency)}
 			c.Logger.Warn("Skipping resource", logArgs...)
 		}
 		return true, nil
@@ -1249,7 +1249,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 
 	// Log invocation
 	if !inv.isHidden {
-		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("kind", unqualifiedKind(n.Kind))}
+		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", unqualifiedKind(n.Kind))}
 		if inv.isDelete {
 			logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
 		}
@@ -1268,7 +1268,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 			if r := recover(); r != nil {
 				stack := make([]byte, 64<<10)
 				stack = stack[:runtime.Stack(stack, false)]
-				c.Logger.Error("panic in reconciler", zap.String("name", n.Name), zap.String("kind", n.Kind), zap.Any("error", r), zap.String("stack", string(stack)))
+				c.Logger.Error("panic in reconciler", zap.String("name", n.Name), zap.String("type", n.Kind), zap.Any("error", r), zap.String("stack", string(stack)))
 
 				inv.result = ReconcileResult{Err: fmt.Errorf("panic: %v", r)}
 				if inv.holdsLock {
@@ -1285,7 +1285,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		tracerAttrs := []attribute.KeyValue{
 			attribute.String("instance_id", c.InstanceID),
 			attribute.String("name", n.Name),
-			attribute.String("kind", unqualifiedKind(n.Kind)),
+			attribute.String("type", unqualifiedKind(n.Kind)),
 		}
 		if inv.isDelete {
 			tracerAttrs = append(tracerAttrs, attribute.Bool("deleted", inv.isDelete))
@@ -1318,7 +1318,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	// Log result
 	logArgs := []zap.Field{
 		zap.String("name", inv.name.Name),
-		zap.String("kind", unqualifiedKind(inv.name.Kind)),
+		zap.String("type", unqualifiedKind(inv.name.Kind)),
 	}
 	elapsed := time.Since(inv.startedOn).Round(time.Millisecond)
 	if elapsed > 0 {
