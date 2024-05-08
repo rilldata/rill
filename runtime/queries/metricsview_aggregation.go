@@ -108,8 +108,10 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		if err != nil {
 			return err
 		}
-		q.TimeRange.Start = timestamppb.New(start.In(time.UTC))
-		q.TimeRange.End = timestamppb.New(end.In(time.UTC))
+		q.TimeRange = &runtimev1.TimeRange{
+			Start: timestamppb.New(start.In(time.UTC)),
+			End:   timestamppb.New(end.In(time.UTC)),
+		}
 	}
 
 	// backwards compatibility
@@ -121,15 +123,28 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	if q.ComparisonTimeRange != nil {
-		if isTimeRangeNil(q.ComparisonTimeRange) {
+		if isTimeRangeNil(q.ComparisonTimeRange) || isTimeRangeNil(q.TimeRange) {
 			return fmt.Errorf("Undefined time range boundaries")
 		}
-		start, end, err := ResolveTimeRange(q.ComparisonTimeRange, mv)
+
+		start, end, err := ResolveTimeRange(q.TimeRange, mv)
 		if err != nil {
 			return err
 		}
-		q.ComparisonTimeRange.Start = timestamppb.New(start.In(time.UTC))
-		q.ComparisonTimeRange.End = timestamppb.New(end.In(time.UTC))
+
+		q.TimeRange = &runtimev1.TimeRange{
+			Start: timestamppb.New(start.In(time.UTC)),
+			End:   timestamppb.New(end.In(time.UTC)),
+		}
+
+		start, end, err = ResolveTimeRange(q.ComparisonTimeRange, mv)
+		if err != nil {
+			return err
+		}
+		q.ComparisonTimeRange = &runtimev1.TimeRange{
+			Start: timestamppb.New(start.In(time.UTC)),
+			End:   timestamppb.New(end.In(time.UTC)),
+		}
 
 		return q.executeComparisonAggregation(ctx, olap, priority, mv, olap.Dialect(), security, cfg)
 	}
