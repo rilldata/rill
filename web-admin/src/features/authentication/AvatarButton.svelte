@@ -20,10 +20,7 @@
   }
 
   function handleAskForHelp() {
-    window.open(
-      "https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu",
-      "_blank",
-    );
+    window.Pylon("show");
   }
 
   function handleLogOut() {
