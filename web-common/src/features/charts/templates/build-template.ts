@@ -24,7 +24,7 @@ export interface ChartField {
   // for custom tooltip field names
   tooltipName?: string;
   // for mapping nominal values to colors
-  values?: (string | null)[];
+  values?: (number | undefined | string | null)[];
 }
 
 export function buildVegaLiteSpec(
