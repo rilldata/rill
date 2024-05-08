@@ -1,3 +1,5 @@
+const appId = import.meta.env.RILL_UI_PUBLIC_PYLON_APP_ID as string;
+
 /**
  * Function implementation is copied from https://docs.usepylon.com/chat/setup
  */
@@ -16,11 +18,7 @@ export async function initPylonWidget() {
     const e = t.createElement("script");
     e.setAttribute("type", "text/javascript");
     e.setAttribute("async", "true");
-    e.setAttribute(
-      "src",
-      // TODO: get the APP_ID from an environment variable
-      "https://widget.usepylon.com/widget/26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
-    );
+    e.setAttribute("src", `https://widget.usepylon.com/widget/${appId}`);
     const n = t.getElementsByTagName("script")[0];
     n.parentNode.insertBefore(e, n);
   };
