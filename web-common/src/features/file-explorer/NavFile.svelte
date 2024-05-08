@@ -5,8 +5,6 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
@@ -22,7 +20,6 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { AlertCircleIcon } from "lucide-svelte";
   import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
@@ -62,8 +59,7 @@
   $: isDotFile = fileName && fileName.startsWith(".");
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
-  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
-  $: showErrors = $allErrors.length;
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, $runtime.instanceId);
 
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
@@ -107,19 +103,8 @@
         size="14px"
       />
     </div>
-    <span
-      class="truncate w-full flex flex-row items-center gap-x-1"
-      class:text-red-500={showErrors}
-    >
-      <span>{fileName}</span>
-      {#if showErrors}
-        <Tooltip distance={8}>
-          <AlertCircleIcon size={16} />
-          <TooltipContent slot="tooltip-content">
-            {$allErrors[0].message}
-          </TooltipContent>
-        </Tooltip>
-      {/if}
+    <span class="truncate w-full" class:text-red-600={$hasErrors}>
+      {fileName}
     </span>
   </a>
   {#if !isProtectedDirectory && !isProtectedFile}
