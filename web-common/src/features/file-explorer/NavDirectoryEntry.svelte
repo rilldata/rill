@@ -5,12 +5,18 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
-  import { Directory } from "@rilldata/web-common/features/file-explorer/transform-file-list";
+  import {
+    Directory,
+    getDirectoryHasErrors,
+  } from "@rilldata/web-common/features/file-explorer/transform-file-list";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
-  import { Folder } from "lucide-svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { AlertCircleIcon, Folder } from "lucide-svelte";
   import { createRuntimeServiceCreateDirectory } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
   import { removeLeadingSlash } from "../entity-management/entity-mappers";
@@ -34,6 +40,8 @@
   $: instanceId = $runtime.instanceId;
   $: topLevelFolder = getTopLevelFolder(dir.path);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+
+  $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     instanceId,
@@ -85,7 +93,20 @@
   <CaretDownIcon
     className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
   />
-  <span class="truncate w-full">{dir.name}</span>
+  <span
+    class="truncate w-full flex flex-row items-center gap-x-1"
+    class:text-red-500={$hasErrors}
+  >
+    <span>{dir.name}</span>
+    {#if $hasErrors}
+      <Tooltip distance={8}>
+        <AlertCircleIcon size={16} />
+        <TooltipContent slot="tooltip-content">
+          File(s) have error(s)
+        </TooltipContent>
+      </Tooltip>
+    {/if}
+  </span>
   {#if !isProtectedDirectory}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>

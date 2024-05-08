@@ -5,11 +5,14 @@
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import MoreHorizontal from "@rilldata/web-common/components/icons/MoreHorizontal.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -18,6 +21,8 @@
     ResourceKindToScreenMap,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { AlertCircleIcon } from "lucide-svelte";
   import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
@@ -57,6 +62,9 @@
   $: isDotFile = fileName && fileName.startsWith(".");
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
+  $: allErrors = fileArtifact.getAllErrors(queryClient, $runtime.instanceId);
+  $: showErrors = $allErrors.length;
+
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
     behaviourEvent
@@ -78,9 +86,8 @@
 
 <li
   aria-label="{filePath} Nav Entry"
-  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center
-  {isCurrentFile ? 'bg-slate-100' : ''} 
-   hover:bg-slate-100"
+  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-slate-100"
+  class:bg-slate-100={isCurrentFile}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
@@ -100,7 +107,20 @@
         size="14px"
       />
     </div>
-    <span class="truncate w-full">{fileName}</span>
+    <span
+      class="truncate w-full flex flex-row items-center gap-x-1"
+      class:text-red-500={showErrors}
+    >
+      <span>{fileName}</span>
+      {#if showErrors}
+        <Tooltip distance={8}>
+          <AlertCircleIcon size={16} />
+          <TooltipContent slot="tooltip-content">
+            {$allErrors[0].message}
+          </TooltipContent>
+        </Tooltip>
+      {/if}
+    </span>
   </a>
   {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>

@@ -101,11 +101,14 @@ export class FileArtifact {
   ): Readable<V1ParseError[]> {
     return derived(
       [
+        this.name,
         useProjectParser(queryClient, instanceId),
         this.getResource(queryClient, instanceId),
       ],
-      ([projectParser, resource]) => {
+      ([name, projectParser, resource]) => {
         if (
+          // not having a name will signify a non-entity file
+          !name?.kind ||
           projectParser.isFetching ||
           projectParser.isError ||
           resource.isFetching
