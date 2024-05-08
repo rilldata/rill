@@ -8,6 +8,7 @@ import {
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -194,10 +195,7 @@ function getDashboardFromAggregationRequest({
     dashboard.dimensionThresholdFilters = [
       {
         name: req.dimensions?.[0]?.name ?? metricsView.dimensions[0]?.name,
-        filter:
-          req.having.cond?.exprs?.length === 1
-            ? req.having.cond.exprs[0]
-            : req.having,
+        filter: createAndExpression([req.having.cond?.exprs?.[0]]),
       },
     ];
   }
