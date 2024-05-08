@@ -37,7 +37,7 @@ func (a *Authenticator) handlePKCE(w http.ResponseWriter, r *http.Request, clien
 		return
 	}
 
-	// Build the redirection URI with the authorization code as per OAuth2 spec
+	// Build the redirection URI with the authorization code as per OAuth2 spec, state is URL-encoded
 	redirectWithCode := fmt.Sprintf("%s?code=%s&state=%s", redirectURI, code, r.URL.Query().Get("state"))
 
 	// Redirect the user agent to the redirect URI with the authorization code

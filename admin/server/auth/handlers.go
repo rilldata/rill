@@ -367,7 +367,6 @@ func (a *Authenticator) handleAuthorizeRequest(w http.ResponseWriter, r *http.Re
 	}
 	if claims.OwnerType() == OwnerTypeAnon {
 		// not logged in, redirect to login
-		// TODO how to choose between login and signup?
 		// after login redirect back to same path so encode the current URL as a redirect parameter
 		encodedURL := url.QueryEscape(r.URL.String())
 		http.Redirect(w, r, "/auth/login?redirect="+encodedURL, http.StatusTemporaryRedirect)

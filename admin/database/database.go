@@ -517,10 +517,10 @@ type AuthClient struct {
 
 // Hard-coded auth client IDs (created in the migrations).
 const (
-	AuthClientIDRillWeb     = "12345678-0000-0000-0000-000000000001"
-	AuthClientIDRillCLI     = "12345678-0000-0000-0000-000000000002"
-	AuthClientIDRillSupport = "12345678-0000-0000-0000-000000000003"
-	AuthClientIDWebLocal    = "12345678-0000-0000-0000-000000000004"
+	AuthClientIDRillWeb      = "12345678-0000-0000-0000-000000000001"
+	AuthClientIDRillCLI      = "12345678-0000-0000-0000-000000000002"
+	AuthClientIDRillSupport  = "12345678-0000-0000-0000-000000000003"
+	AuthClientIDRillWebLocal = "12345678-0000-0000-0000-000000000004"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode
@@ -546,6 +546,7 @@ type DeviceAuthCode struct {
 	UpdatedOn     time.Time           `db:"updated_on"`
 }
 
+// AuthorizationCode represents an authorization code used for OAuth2 PKCE auth flow.
 type AuthorizationCode struct {
 	ID                  string    `db:"id"`
 	Code                string    `db:"code"`

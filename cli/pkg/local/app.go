@@ -609,13 +609,13 @@ func (a *App) initiateAuthFlow(httpPort int, secure bool) http.Handler {
 		}
 		state := base64.URLEncoding.EncodeToString(b)
 
-		// check the request for origin query param, we will use this to redirect back to the origin after auth
-		origin := r.URL.Query().Get("origin")
+		// check the request for redirect query param, we will use this to redirect back to this after auth
+		origin := r.URL.Query().Get("redirect")
 		if origin == "" {
 			origin = "/"
 		}
 
-		authenticator, err := pkce.NewAuthenticator(a.adminURL, redirectURL, database.AuthClientIDWebLocal, origin)
+		authenticator, err := pkce.NewAuthenticator(a.adminURL, redirectURL, database.AuthClientIDRillWebLocal, origin)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("failed to generate pkce authenticator: %s", err), http.StatusInternalServerError)
 			return
@@ -660,7 +660,7 @@ func (a *App) handleAuthCallback() http.Handler {
 			http.Error(w, "failed to exchange code for token", http.StatusInternalServerError)
 			return
 		}
-		// save token and redirect to home screen or TODO url provided in initial request i.e. initiateAuthFlow
+		// save token and redirect back to url provided by caller when initiating auth flow
 		err = dotrill.SetAccessToken(token)
 		if err != nil {
 			http.Error(w, "failed to save access token", http.StatusInternalServerError)
