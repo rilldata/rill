@@ -2,7 +2,6 @@ import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/aler
 import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import {
   createAndExpression,
-  createBinaryExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {

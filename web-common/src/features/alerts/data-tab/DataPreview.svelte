@@ -13,7 +13,7 @@
 
   $: alertPreviewQuery = getAlertPreviewData(queryClient, {
     ...formValues,
-    criteria: undefined,
+    criteria: [],
   });
 </script>
 
