@@ -295,7 +295,8 @@ func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, 
 	case *runtimev1.Expression_Ident:
 		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident, dialect)
 		if !isIdent {
-			return "", nil, fmt.Errorf("unknown column filter: %s", e.Ident)
+			// todo: refactor to validate matching with comparison measure aliases
+			return safeName(e.Ident), nil, nil
 		}
 		return expr, nil, nil
 
