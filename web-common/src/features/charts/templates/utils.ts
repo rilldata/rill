@@ -24,7 +24,7 @@ export function multiLayerBaseSpec() {
 
 export function sanitizeValueForVega(value: unknown) {
   if (typeof value === "string") {
-    return value.replace(/[\.\-\{\}\[\]]/g, (match) => `\\${match}`);
+    return value.replace(/[\.\-\{\}\[\]]/g, (match) => `\\${match}`); //eslint-disable-line
   } else {
     return String(value);
   }
