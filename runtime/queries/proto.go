@@ -26,17 +26,18 @@ func ProtoToQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, erro
 		}
 
 		return &MetricsViewAggregation{
-			MetricsViewName:    req.MetricsView,
-			Dimensions:         req.Dimensions,
-			Measures:           req.Measures,
-			Sort:               req.Sort,
-			TimeRange:          tr,
-			Where:              req.Where,
-			Having:             req.Having,
-			Filter:             req.Filter,
-			Offset:             req.Offset,
-			PivotOn:            req.PivotOn,
-			SecurityAttributes: attrs,
+			MetricsViewName:     req.MetricsView,
+			Dimensions:          req.Dimensions,
+			Measures:            req.Measures,
+			Sort:                req.Sort,
+			TimeRange:           tr,
+			ComparisonTimeRange: req.ComparisonTimeRange,
+			Where:               req.Where,
+			Having:              req.Having,
+			Filter:              req.Filter,
+			Offset:              req.Offset,
+			PivotOn:             req.PivotOn,
+			SecurityAttributes:  attrs,
 		}, nil
 	case *runtimev1.Query_MetricsViewComparisonRequest:
 		req := r.MetricsViewComparisonRequest
