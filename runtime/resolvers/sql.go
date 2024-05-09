@@ -155,7 +155,7 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context, opts *runtime.Reso
 	}
 	defer res.Close()
 
-	if opts != nil && opts.Format == "OBJECTS" {
+	if opts != nil && opts.Format == runtime.GOOBJECTS {
 		return r.scanAsGoObjects(res)
 	}
 

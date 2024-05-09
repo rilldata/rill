@@ -330,7 +330,7 @@ func (a *App) Close() error {
 	return nil
 }
 
-func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
+func (a *App) Serve(httpPort, grpcPort, postgresPort int, enableUI, openBrowser, readonly bool, userID, tlsCertPath, tlsKeyPath string) error {
 	// Get analytics info
 	installID, enabled, err := dotrill.AnalyticsInfo()
 	if err != nil {
@@ -367,6 +367,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	opts := &runtimeserver.Options{
 		HTTPPort:        httpPort,
 		GRPCPort:        grpcPort,
+		PostgresPort:    postgresPort,
 		TLSCertPath:     tlsCertPath,
 		TLSKeyPath:      tlsKeyPath,
 		AllowedOrigins:  []string{"*"},
@@ -399,9 +400,11 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	if a.Debug {
 		group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
 	}
-	group.Go(func() error {
-		return runtimeServer.ServePostgres(ctx)
-	})
+	if postgresPort != 0 {
+		group.Go(func() error {
+			return runtimeServer.ServePostgres(ctx, false)
+		})
+	}
 
 	// if keypath and certpath are provided
 	secure := tlsCertPath != "" && tlsKeyPath != ""

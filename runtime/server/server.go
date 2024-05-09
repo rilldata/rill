@@ -41,6 +41,7 @@ var ErrForbidden = status.Error(codes.Unauthenticated, "action not allowed")
 type Options struct {
 	HTTPPort        int
 	GRPCPort        int
+	PostgresPort    int
 	AllowedOrigins  []string
 	ServePrometheus bool
 	SessionKeyPairs [][]byte
@@ -171,8 +172,12 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 }
 
 // ServePostgres starts a Postgres server.
-func (s *Server) ServePostgres(ctx context.Context) error {
-	return graceful.ServePostgres(ctx, QueryHandler(s), auth.PostgresAuthHandler(s.aud), 5432, s.logger)
+func (s *Server) ServePostgres(ctx context.Context, requirePassword bool) error {
+	var authHandler func(ctx context.Context, username, password string) (context.Context, bool, error)
+	if requirePassword {
+		authHandler = auth.PostgresAuthHandler(s.aud)
+	}
+	return graceful.ServePostgres(ctx, QueryHandler(s), authHandler, 5432, s.logger)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.

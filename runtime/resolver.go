@@ -58,8 +58,17 @@ type ResolverExportOptions struct {
 // ResolverInteractiveOptions are the options passed to a resolver's ResolveInteractive method.
 type ResolverInteractiveOptions struct {
 	// Format is the format to export the result in. Possible values : JSON(default), OBJECTS
-	Format string
+	Format InteractiveFormat
 }
+
+type InteractiveFormat int32
+
+const (
+	UNSPECIFIED InteractiveFormat = 0
+	JSON        InteractiveFormat = 1
+	// OBJECTS is used for formats that return rows as array of go objects
+	GOOBJECTS InteractiveFormat = 2
+)
 
 // ResolverOptions are the options passed to a resolver initializer.
 type ResolverOptions struct {
@@ -93,7 +102,7 @@ type ResolveOptions struct {
 	Args               map[string]any
 	UserAttributes     map[string]any
 	// should this be part of ResolverProperties ?
-	ResolverInteractiveOptions *ResolverInteractiveOptions
+	ResolveInteractiveOptions *ResolverInteractiveOptions
 }
 
 // ResolveResult is subset of ResolverResult that is cached
@@ -167,7 +176,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 			return val, nil
 		}
 
-		res, err := resolver.ResolveInteractive(ctx, opts.ResolverInteractiveOptions)
+		res, err := resolver.ResolveInteractive(ctx, opts.ResolveInteractiveOptions)
 		if err != nil {
 			return ResolveResult{}, err
 		}
@@ -175,6 +184,7 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 		cRes := ResolveResult{
 			Data:   res.Data,
 			Schema: res.Schema,
+			Rows:   res.Rows,
 		}
 		if res.Cache {
 			r.queryCache.cache.Set(key, cRes, int64(len(res.Data)))

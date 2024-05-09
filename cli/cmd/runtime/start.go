@@ -62,6 +62,7 @@ type Config struct {
 	HTTPPort                int                    `default:"8080" split_words:"true"`
 	GRPCPort                int                    `default:"9090" split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
+	PostgresPort            int                    `default:"5432" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
@@ -237,6 +238,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			srvOpts := &server.Options{
 				HTTPPort:        conf.HTTPPort,
 				GRPCPort:        conf.GRPCPort,
+				PostgresPort:    conf.PostgresPort,
 				AllowedOrigins:  conf.AllowedOrigins,
 				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
 				SessionKeyPairs: keyPairs,
@@ -253,7 +255,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
-			group.Go(func() error { return s.ServePostgres(cctx) })
+			group.Go(func() error { return s.ServePostgres(cctx, true) })
 			if conf.DebugPort != 0 {
 				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 			}

@@ -3,6 +3,7 @@ package graceful
 import (
 	"context"
 	"fmt"
+	"log/slog"
 	"net"
 	"strings"
 
@@ -11,12 +12,7 @@ import (
 )
 
 // ServePostgres serves a Postgres server and performs a graceful shutdown if/when ctx is cancelled.
-func ServePostgres(ctx context.Context,
-	queryHandler func(ctx context.Context, query string) (wire.PreparedStatements, error),
-	authHandler func(ctx context.Context, username, password string) (context.Context, bool, error),
-	port int,
-	logger *zap.Logger) error {
-
+func ServePostgres(ctx context.Context, queryHandler func(ctx context.Context, query string) (wire.PreparedStatements, error), authHandler func(ctx context.Context, username, password string) (context.Context, bool, error), port int, logger *zap.Logger) error {
 	// Calling net.Listen("tcp", ...) will succeed if the port is blocked on IPv4 but not on IPv6.
 	// This workaround ensures we get the port on IPv4 (and most likely also on IPv6).
 	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", port))
@@ -31,10 +27,26 @@ func ServePostgres(ctx context.Context,
 		return err
 	}
 
-	server, err := wire.NewServer(queryHandler)
+	opts := []wire.OptionFn{
+		wire.Logger(slog.New(discard)),
+	}
+	if authHandler != nil {
+		opts = append(opts, wire.SessionAuthStrategy(wire.ClearTextPassword(authHandler)))
+	}
+	server, err := wire.NewServer(queryHandler, opts...)
 	if err != nil {
 		return err
 	}
 
 	return server.Serve(lis)
 }
+
+// discard is a slog.Handler which is always disabled and therefore logs nothing.
+var discard slog.Handler = discardHandler{}
+
+type discardHandler struct{}
+
+func (discardHandler) Enabled(context.Context, slog.Level) bool  { return false }
+func (discardHandler) Handle(context.Context, slog.Record) error { return nil }
+func (d discardHandler) WithAttrs([]slog.Attr) slog.Handler      { return d }
+func (d discardHandler) WithGroup(string) slog.Handler           { return d }

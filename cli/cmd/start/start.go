@@ -24,6 +24,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	var olapDSN string
 	var httpPort int
 	var grpcPort int
+	var postgresPort int
 	var verbose bool
 	var debug bool
 	var readonly bool
@@ -156,7 +157,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			userID, _ := ch.CurrentUserID(cmd.Context())
 
-			err = app.Serve(httpPort, grpcPort, !noUI, !noOpen, readonly, userID, tlsCertPath, tlsKeyPath)
+			err = app.Serve(httpPort, grpcPort, postgresPort, !noUI, !noOpen, readonly, userID, tlsCertPath, tlsKeyPath)
 			if err != nil {
 				return fmt.Errorf("serve: %w", err)
 			}
@@ -169,6 +170,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	startCmd.Flags().BoolVar(&noOpen, "no-open", false, "Do not open browser")
 	startCmd.Flags().IntVar(&httpPort, "port", 9009, "Port for HTTP")
 	startCmd.Flags().IntVar(&grpcPort, "port-grpc", 49009, "Port for gRPC (internal)")
+	startCmd.Flags().IntVar(&postgresPort, "port-postgres", 0, "Port for postgres server")
 	startCmd.Flags().BoolVar(&readonly, "readonly", false, "Show only dashboards in UI")
 	startCmd.Flags().BoolVar(&noUI, "no-ui", false, "Serve only the backend")
 	startCmd.Flags().BoolVar(&verbose, "verbose", false, "Sets the log level to debug")
