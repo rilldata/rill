@@ -69,6 +69,7 @@ jobs:
           npm run build -w web-admin
         env:
           RILL_UI_PUBLIC_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
+          RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
 
       - name: Deploy Cloud UI to Netlify ui.${{ env.DOMAIN }}
         uses: nwtgck/actions-netlify@v3.0
