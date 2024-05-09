@@ -1014,17 +1014,17 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 
 	// Required for t_offset, ie
 	// SELECT t_offset, d1, d2, t1, t2, m1, m2
-	smallestTimeGrain := runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+	minTimeGrain := runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
 	for _, d := range q.Dimensions {
 		if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && d.GetName() == mv.TimeDimension {
-			if smallestTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || d.TimeGrain < smallestTimeGrain {
-				smallestTimeGrain = d.TimeGrain
+			if minTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || d.TimeGrain < minTimeGrain {
+				minTimeGrain = d.TimeGrain
 			}
 		}
 	}
 
 	// it's required for joining the base and comparison tables
-	timeOffsetExpression, err := q.buildOffsetExpression(mv.TimeDimension, smallestTimeGrain, dialect)
+	timeOffsetExpression, err := q.buildOffsetExpression(mv.TimeDimension, minTimeGrain, dialect)
 	if err != nil {
 		return "", nil, err
 	}
@@ -1390,12 +1390,16 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	var sql string
 	if dialect != drivers.DialectDruid {
 		// base subquery
-		args = append(args, q.TimeRange.Start.AsTime())
+		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			args = append(args, q.TimeRange.Start.AsTime())
+		}
 		args = append(args, selectArgs...)
 		args = append(args, baseTimeRangeArgs...)
 		args = append(args, whereClauseArgs...)
 		// comparison subquery
-		args = append(args, q.ComparisonTimeRange.Start.AsTime())
+		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			args = append(args, q.ComparisonTimeRange.Start.AsTime())
+		}
 		args = append(args, selectArgs...)
 		args = append(args, comparisonTimeRangeArgs...)
 		args = append(args, whereClauseArgs...)
@@ -1532,12 +1536,16 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				outterGroupCols = append(outterGroupCols, fmt.Sprintf("%d", i+1))
 			}
 			// base subquery
-			args = append(args, q.TimeRange.Start.AsTime())
+			if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				args = append(args, q.TimeRange.Start.AsTime())
+			}
 			args = append(args, selectArgs...)
 			args = append(args, baseTimeRangeArgs...)
 			args = append(args, whereClauseArgs...)
 			// comparison subquery
-			args = append(args, q.ComparisonTimeRange.Start.AsTime())
+			if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				args = append(args, q.ComparisonTimeRange.Start.AsTime())
+			}
 			args = append(args, selectArgs...)
 			args = append(args, comparisonTimeRangeArgs...)
 			args = append(args, whereClauseArgs...)
@@ -1672,12 +1680,16 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			}
 
 			// base subquery
-			args = append(args, q.TimeRange.Start.AsTime())
+			if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				args = append(args, q.TimeRange.Start.AsTime())
+			}
 			args = append(args, selectArgs...)
 			args = append(args, baseTimeRangeArgs...)
 			args = append(args, whereClauseArgs...)
 			// comparison subquery
-			args = append(args, q.ComparisonTimeRange.Start.AsTime())
+			if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				args = append(args, q.ComparisonTimeRange.Start.AsTime())
+			}
 			args = append(args, selectArgs...)
 			args = append(args, comparisonTimeRangeArgs...)
 			args = append(args, whereClauseArgs...)
@@ -1940,6 +1952,10 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 }
 
 func (q *MetricsViewAggregation) buildOffsetExpression(col string, timeGrain runtimev1.TimeGrain, dialect drivers.Dialect) (string, error) {
+	if timeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+		return "0 as t_offset", nil
+	}
+
 	timeCol, err := q.truncateExpression(safeName(col), timeGrain, dialect)
 	if err != nil {
 		return "", err

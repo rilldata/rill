@@ -2130,6 +2130,96 @@ func TestMetricsViewsAggregation_comparison_having_of_comparison(t *testing.T) {
 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
 }
 
+func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+			{
+				Name: "measure_1",
+			},
+			{
+				Name: "m1",
+			},
+			{
+				Name: "measure_0__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "measure_0",
+					},
+				},
+			},
+		},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "Yahoo"),
+			expressionpb.Eq("pub", "Google"),
+		),
+		Having: expressionpb.Gt("measure_1", 0.0),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "dom",
+			},
+			{
+				Name: "measure_1",
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit: &limit,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "pub,dom,measure_0,measure_1,m1,measure_0__p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 4, len(rows))
+
+	i = 0
+	require.Equal(t, "Google,google.com,106.00,101.00,1.48,1.48", fieldsToString2digits(rows[i], "pub", "dom", "measure_0", "measure_0__p", "measure_1", "m1"))
+	i++
+	require.Equal(t, "Google,news.google.com,381.00,372.00,3.65,3.65", fieldsToString2digits(rows[i], "pub", "dom", "measure_0", "measure_0__p", "measure_1", "m1"))
+	i++
+	require.Equal(t, "Yahoo,news.yahoo.com,106.00,106.00,1.50,1.50", fieldsToString2digits(rows[i], "pub", "dom", "measure_0", "measure_0__p", "measure_1", "m1"))
+}
+
 func TestMetricsViewsAggregation_comparison(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
