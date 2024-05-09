@@ -14,6 +14,7 @@
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
+  import { initPylonWidget } from "../features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
@@ -29,7 +30,9 @@
 
   beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
+
   initCloudMetrics();
+  initPylonWidget();
 
   onMount(() => errorEventHandler?.addJavascriptErrorListeners());
 
