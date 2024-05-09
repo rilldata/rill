@@ -52,6 +52,8 @@
   $: emailNotifier = extractNotifier(alertSpec?.notifiers, "email");
   $: slackNotifier = extractNotifier(alertSpec?.notifiers, "slack");
 
+  $: console.log(metricsViewAggregationRequest);
+
   // Actions
   const queryClient = useQueryClient();
   const deleteAlert = createAdminServiceDeleteAlert();

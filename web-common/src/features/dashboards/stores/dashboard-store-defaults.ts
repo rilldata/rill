@@ -155,7 +155,6 @@ export function getDefaultMetricsExplorerEntity(
       metricsView.defaultDimensions?.length === defaultDimNames.length,
     leaderboardMeasureName: defaultMeasureNames[0],
     whereFilter: createAndExpression([]),
-    havingFilter: createAndExpression([]),
     dimensionThresholdFilters: [],
     dimensionFilterExcludeMode: new Map(),
     leaderboardContextColumn: LeaderboardContextColumn.HIDDEN,

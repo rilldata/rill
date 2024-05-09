@@ -1,6 +1,11 @@
 import { mapExpressionToAlertCriteria } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
-import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import type {
+  AlertCriteria,
+  AlertFormValues,
+} from "@rilldata/web-common/features/alerts/form-utils";
+import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   V1AlertSpec,
@@ -17,6 +22,7 @@ export type AlertFormValuesSubset = Pick<
   AlertFormValues,
   | "metricsViewName"
   | "whereFilter"
+  | "dimensionThresholdFilters"
   | "timeRange"
   | "measure"
   | "splitByDimension"
@@ -53,6 +59,7 @@ export function extractAlertFormValues(
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
     whereFilter: queryArgs.where ?? createAndExpression([]),
+    dimensionThresholdFilters: [],
     timeRange,
   };
 }
@@ -90,6 +97,30 @@ export function extractAlertNotification(
     enableEmailNotification: !!emailNotifier,
     emailRecipients: mapAndAddEmptyEntry(emailRecipients, "email"),
   };
+}
+
+export function extractCriteriaForDimension(
+  dimensionThresholdFilters: DimensionThresholdFilter[],
+  dimension: string,
+  measure: string,
+): AlertCriteria[] {
+  const dimensionThresholdFilter = dimensionThresholdFilters.find(
+    (dtf) => dtf.name === dimension,
+  );
+  if (!dimensionThresholdFilter)
+    return [
+      // default empty criteria
+      {
+        field: measure,
+        operation: MeasureFilterOperation.GreaterThan,
+        value: "0",
+      },
+    ];
+  return (
+    dimensionThresholdFilter.filter.cond?.exprs?.map(
+      mapExpressionToAlertCriteria,
+    ) ?? []
+  );
 }
 
 function mapAndAddEmptyEntry<R>(entries: string[] | undefined, key: string): R {

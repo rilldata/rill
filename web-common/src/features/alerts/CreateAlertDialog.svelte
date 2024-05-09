@@ -7,6 +7,7 @@
   } from "@rilldata/web-admin/client";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
+  import { extractCriteriaForDimension } from "@rilldata/web-common/features/alerts/extract-alert-form-values";
   import {
     AlertFormValues,
     alertFormValidationSchema,
@@ -53,22 +54,22 @@
     dimension = $dashboardStore.selectedDimensionName ?? "";
   }
 
+  let measure =
+    $dashboardStore.tdd.expandedMeasureName ??
+    $dashboardStore.leaderboardMeasureName ??
+    "";
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
-      measure:
-        $dashboardStore.tdd.expandedMeasureName ??
-        $dashboardStore.leaderboardMeasureName ??
-        "",
+      measure,
       splitByDimension: dimension,
       evaluationInterval: "",
-      criteria: [
-        {
-          field: $dashboardStore.leaderboardMeasureName ?? "",
-          operation: V1Operation.OPERATION_GTE,
-          value: "0",
-        },
-      ],
+      criteria: extractCriteriaForDimension(
+        $dashboardStore.dimensionThresholdFilters,
+        dimension,
+        measure,
+      ),
       criteriaOperation: V1Operation.OPERATION_AND,
       snooze: SnoozeOptions[0].value, // Defaults to `Off`
       enableSlackNotification: false,
@@ -90,6 +91,7 @@
       // Also, in the future, they might even be editable.
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
+      dimensionThresholdFilters: $dashboardStore.dimensionThresholdFilters,
       timeRange: {
         isoDuration: timeControls.selectedTimeRange?.name,
         start: timeControls.timeStart,

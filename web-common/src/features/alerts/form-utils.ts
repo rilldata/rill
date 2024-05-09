@@ -4,6 +4,7 @@ import {
   createAndExpression,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   V1Expression,
   V1MetricsViewAggregationRequest,
@@ -34,6 +35,7 @@ export type AlertFormValues = {
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
   whereFilter: V1Expression;
+  dimensionThresholdFilters: Array<DimensionThresholdFilter>;
   timeRange: V1TimeRange;
 };
 

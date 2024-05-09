@@ -73,7 +73,6 @@ export interface MetricsExplorerEntity {
   sortDirection: SortDirection;
 
   whereFilter: V1Expression;
-  havingFilter: V1Expression;
   dimensionThresholdFilters: Array<DimensionThresholdFilter>;
 
   /**
