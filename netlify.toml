@@ -10,7 +10,7 @@
       frame-src data:; \
       frame-ancestors *; \
       object-src 'none'; \
-      connect-src https: *.usepylon.com *.posthog.com *.pusher.com; \
+      connect-src https: *.usepylon.com *.posthog.com wss://*.pusher.com; \
       font-src 'self' https://fonts.gstatic.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
