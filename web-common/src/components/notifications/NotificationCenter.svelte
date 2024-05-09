@@ -1,27 +1,24 @@
 <script lang="ts">
   import Notification from "./Notification.svelte";
-  import PersistedLinkNotification from "./PersistedLinkNotification.svelte";
-  import PersistedNotification from "./PersistedNotification.svelte";
-  import notificationStore from "./notificationStore";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { NotificationMessage } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onMount } from "svelte";
+
+  let notification: NotificationMessage | null = null;
+
+  onMount(() => {
+    const unsubscribe = eventBus.on("notification", (newNotification) => {
+      notification = newNotification;
+    });
+
+    return unsubscribe;
+  });
+
+  function clear() {
+    notification = null;
+  }
 </script>
 
-{#key $notificationStore.id}
-  {#if $notificationStore.id}
-    {#if $notificationStore?.options?.persisted}
-      <PersistedNotification on:clear={() => notificationStore.clear()}>
-        <div slot="title">{$notificationStore.message}</div>
-        <div slot="body">{$notificationStore.detail}</div>
-      </PersistedNotification>
-    {:else if $notificationStore?.options?.persistedLink && $notificationStore.link}
-      <PersistedLinkNotification
-        message={$notificationStore.message}
-        link={$notificationStore.link}
-        on:clear={() => notificationStore.clear()}
-      />
-    {:else}
-      <Notification location="bottom" {...$notificationStore.options}>
-        {$notificationStore.message}
-      </Notification>
-    {/if}
-  {/if}
-{/key}
+{#if notification}
+  <Notification {notification} onClose={clear} />
+{/if}

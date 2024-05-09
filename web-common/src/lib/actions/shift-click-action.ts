@@ -1,4 +1,4 @@
-import { notifications } from "@rilldata/web-common/components/notifications";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { setContext } from "svelte";
 import { get, writable } from "svelte/store";
 interface CreateShiftClick {
@@ -16,7 +16,7 @@ export function isClipboardApiSupported(): boolean {
 
 export async function copyToClipboard(value, message = "copied to clipboard") {
   await navigator.clipboard.writeText(value);
-  notifications.send({
+  eventBus.emit("notification", {
     message,
   });
 }

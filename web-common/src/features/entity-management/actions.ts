@@ -1,4 +1,4 @@
-import { notifications } from "@rilldata/web-common/components/notifications";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
@@ -59,12 +59,12 @@ export async function renameFileArtifact(
         fromResName?.kind &&
       !toPath.endsWith(".sql")
     ) {
-      notifications.send({
+      eventBus.emit("notification", {
         message: `Moving ${fromName} out of its native folder. Make sure to specify the resource type with the "type" key.`,
       });
     }
   } catch (err) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
     });
   }
@@ -84,7 +84,7 @@ export async function deleteFileArtifact(
 
     httpRequestQueue.removeByName(name);
   } catch (err) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: `Failed to delete ${name}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
     });
   }
