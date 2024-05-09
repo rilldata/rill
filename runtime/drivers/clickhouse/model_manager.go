@@ -136,7 +136,3 @@ func olapForceRenameTable(ctx context.Context, olap drivers.OLAPStore, fromName 
 	// Do the rename
 	return olap.RenameTable(ctx, fromName, toName, fromIsView)
 }
-
-func boolPtr(b bool) *bool {
-	return &b
-}
