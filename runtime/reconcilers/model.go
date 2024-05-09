@@ -230,6 +230,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		InputProperties:  inputProps,
 		OutputConnector:  model.Spec.OutputConnector,
 		OutputProperties: outputProps,
+		Incremental:      model.Spec.Incremental,
 		IncrementalRun:   incrementalRun,
 		PreviousResult:   prevResult,
 	}

@@ -215,7 +215,7 @@ func (a *appender) appendData(ctx context.Context, files []string) error {
 		return err
 	}
 
-	err = a.to.InsertTableAsSelect(ctx, a.sink.Table, a.allowSchemaRelaxation, sql)
+	err = a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, a.allowSchemaRelaxation, true, drivers.IncrementalStrategyAppend, nil)
 	if err == nil || !a.allowSchemaRelaxation || !containsAny(err.Error(), []string{"binder error", "conversion error"}) {
 		return err
 	}
@@ -226,7 +226,7 @@ func (a *appender) appendData(ctx context.Context, files []string) error {
 	if err != nil {
 		return fmt.Errorf("failed to update schema %w", err)
 	}
-	return a.to.InsertTableAsSelect(ctx, a.sink.Table, true, sql)
+	return a.to.InsertTableAsSelect(ctx, a.sink.Table, sql, true, true, drivers.IncrementalStrategyAppend, nil)
 }
 
 // updateSchema updates the schema of the table in case new file adds a new column or

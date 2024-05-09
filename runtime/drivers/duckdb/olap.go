@@ -5,6 +5,7 @@ import (
 	dbsql "database/sql"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -354,6 +355,98 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	return err
 }
 
+// InsertTableAsSelect implements drivers.OLAPStore.
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+	c.logger.Debug("insert table", zap.String("name", name), zap.Bool("byName", byName), zap.String("strategy", string(strategy)), zap.Strings("uniqueKey", uniqueKey))
+
+	if !c.config.ExtTableStorage {
+		return c.execIncrementalInsert(ctx, safeSQLName(name), sql, byName, strategy, uniqueKey)
+	}
+
+	if inPlace {
+		version, exist, err := c.tableVersion(name)
+		if err != nil {
+			return err
+		}
+		if !exist {
+			return fmt.Errorf("insert: table %q does not exist", name)
+		}
+
+		db := dbName(name, version)
+		safeName := fmt.Sprintf("%s.default", db)
+
+		return c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
+	}
+
+	var cleanupFunc func()
+	err := c.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *dbsql.Conn) error {
+		// Get current table version
+		oldVersion, oldVersionExists, _ := c.tableVersion(name)
+		if !oldVersionExists {
+			return fmt.Errorf("table %q does not exist", name)
+		}
+
+		// Prepare a new version
+		newVersion := fmt.Sprint(time.Now().UnixMilli())
+
+		// Prepare paths
+		sourceDir := filepath.Join(c.config.DBStoragePath, name)
+		oldDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", oldVersion))
+		newDBFile := filepath.Join(sourceDir, fmt.Sprintf("%s.db", newVersion))
+		oldDB := dbName(name, oldVersion)
+		newDB := dbName(name, newVersion)
+
+		// Copy the old version to the new version
+		if err := copyFile(oldDBFile, newDBFile); err != nil {
+			return fmt.Errorf("insert: copy file failed: %w", err)
+		}
+
+		// Attach the new db
+		err := c.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH %s AS %s", safeSQLString(newDBFile), safeSQLName(newDB))})
+		if err != nil {
+			removeDBFile(newDBFile)
+			return fmt.Errorf("insert: attach %q db failed: %w", newDBFile, err)
+		}
+
+		// Execute the insert
+		safeName := fmt.Sprintf("%s.default", safeSQLName(newDB))
+		err = c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
+		if err != nil {
+			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
+			return fmt.Errorf("insert: create %q.default table failed: %w", newDB, err)
+		}
+
+		// Success: update version
+		err = c.updateVersion(name, newVersion)
+		if err != nil {
+			// extreme bad luck
+			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
+			return fmt.Errorf("insert: update version %q failed: %w", newVersion, err)
+		}
+
+		// Update the view to the external table in the main DB handle
+		qry, err := c.generateSelectQuery(ctx, newDB)
+		if err != nil {
+			return err
+		}
+		err = c.Exec(ctx, &drivers.Statement{
+			Query: fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), qry),
+		})
+		if err != nil {
+			cleanupFunc = func() { c.detachAndRemoveFile(newDB, newDBFile) }
+			return fmt.Errorf("insert: create view %q failed: %w", name, err)
+		}
+
+		// Delete the old version (ignoring errors since source the new data has already been correctly inserted and attached)
+		cleanupFunc = func() { c.detachAndRemoveFile(oldDB, oldDBFile) }
+		return nil
+	})
+	if cleanupFunc != nil {
+		cleanupFunc()
+	}
+	return err
+}
+
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
 	c.logger.Debug("drop table", zap.String("name", name), zap.Bool("view", view))
@@ -407,39 +500,6 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 
 	// delete source directory
 	return os.RemoveAll(filepath.Join(c.config.DBStoragePath, name))
-}
-
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
-	c.logger.Debug("insert into table", zap.String("name", name), zap.Bool("byName", byName))
-	var insertByNameClause string
-	if byName {
-		insertByNameClause = "BY NAME"
-	} else {
-		insertByNameClause = ""
-	}
-
-	if !c.config.ExtTableStorage {
-		// Enforce storage limits
-		return c.execWithLimits(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("INSERT INTO %s %s (%s)", safeSQLName(name), insertByNameClause, sql),
-			Priority:    1,
-			LongRunning: true,
-		})
-	}
-
-	version, exist, err := c.tableVersion(name)
-	if err != nil {
-		return err
-	}
-	if !exist {
-		return fmt.Errorf("InsertTableAsSelect: table %q does not exist", name)
-	}
-	return c.execWithLimits(ctx, &drivers.Statement{
-		Query:       fmt.Sprintf("INSERT INTO %s.default %s (%s)", safeSQLName(dbName(name, version)), insertByNameClause, sql),
-		Priority:    1,
-		LongRunning: true,
-	})
 }
 
 // RenameTable implements drivers.OLAPStore.
@@ -547,6 +607,64 @@ func (c *connection) RenameTable(ctx context.Context, oldName, newName string, v
 		return nil
 	})
 	return err
+}
+
+func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql string, byName bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+	var byNameClause string
+	if byName {
+		byNameClause = "BY NAME"
+	}
+
+	if strategy == drivers.IncrementalStrategyAppend {
+		return c.execWithLimits(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s %s (%s\n)", safeName, byNameClause, sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+	}
+
+	if strategy == drivers.IncrementalStrategyMerge {
+		// Create a temporary table with the new data
+		tmp := uuid.New().String()
+		err := c.execWithLimits(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+		if err != nil {
+			return err
+		}
+
+		// Drop the rows from the target table where the unique key is present in the temporary table
+		where := ""
+		for i, key := range uniqueKey {
+			key = safeSQLName(key)
+			if i != 0 {
+				where += " AND "
+			}
+			where += fmt.Sprintf("base.%s = tmp.%s", key, key)
+		}
+		err = c.execWithLimits(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeName, safeSQLName(tmp), where),
+			Priority:    1,
+			LongRunning: true,
+		})
+		if err != nil {
+			return err
+		}
+
+		// Insert the new data into the target table
+		err = c.execWithLimits(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeName, byNameClause, safeSQLName(tmp)),
+			Priority:    1,
+			LongRunning: true,
+		})
+		if err != nil {
+			return err
+		}
+	}
+
+	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 
 func (c *connection) dropAndReplace(ctx context.Context, oldName, newName string, view bool) error {
@@ -873,4 +991,21 @@ func safeSQLString(name string) string {
 		return name
 	}
 	return fmt.Sprintf("'%s'", strings.ReplaceAll(name, "'", "''"))
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }

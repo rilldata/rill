@@ -183,10 +183,10 @@ func Test_connection_InsertTableAsSelect(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "select 1")
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "select 2")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", "select 2", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", true, "select 3")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", "select 3", true, true, drivers.IncrementalStrategyAppend, nil)
 	require.Error(t, err)
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'test-insert'"})
@@ -375,12 +375,12 @@ func Test_connection_InsertTableAsSelectLimits(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')", false, true, drivers.IncrementalStrategyAppend, nil)
 	if err != nil {
 		require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 	}
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 }
 
@@ -398,16 +398,16 @@ func Test_connection_CastEnum(t *testing.T) {
 	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'bglr' AS city, 'IND' AS country")
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 2, 'mUm', 'IND'")
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 2, 'mUm', 'IND'", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, 'Perth', 'Aus'")
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, 'Perth', 'Aus'", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, null, 'Aus'")
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, null, 'Aus'", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, 'bglr', null")
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, 'bglr', null", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
 	err = c.convertToEnum(context.Background(), "test", []string{"city", "country"})

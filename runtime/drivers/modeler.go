@@ -35,6 +35,7 @@ type ModelExecutorOptions struct {
 	OutputHandle     Handle
 	OutputConnector  string
 	OutputProperties map[string]any
+	Incremental      bool
 	IncrementalRun   bool
 	PreviousResult   *ModelResult
 }

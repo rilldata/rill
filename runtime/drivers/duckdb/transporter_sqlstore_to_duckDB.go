@@ -101,7 +101,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 			err = s.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
 			create = false
 		} else {
-			err = s.to.InsertTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
+			err = s.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), false, true, drivers.IncrementalStrategyAppend, nil)
 		}
 		if err != nil {
 			return err
