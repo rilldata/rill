@@ -131,17 +131,6 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		reportTime = timestamppb.Now()
 	}
 
-	// Create new execution and save in State.CurrentExecution
-	rep.State.CurrentExecution = &runtimev1.ReportExecution{
-		Adhoc:      rep.Spec.Trigger,
-		ReportTime: reportTime,
-		StartedOn:  timestamppb.Now(),
-	}
-	err = r.C.UpdateState(ctx, self.Meta.Name, self)
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
-
 	retry, executeErr := r.executeAll(ctx, self, rep, reportTime.AsTime(), adhocTrigger)
 
 	// If we want to retry, exit without advancing NextRunOn or clearing spec.Trigger.
@@ -380,7 +369,7 @@ func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Re
 	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
 	err = r.popCurrentExecution(ctx, self, rep)
 	if err != nil {
-		return retry, err
+		return false, err
 	}
 
 	return retry, reportErr
