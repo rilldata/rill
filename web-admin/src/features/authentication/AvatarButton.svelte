@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createAdminServiceGetCurrentUser } from "../../client";
@@ -8,42 +7,25 @@
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
 
-  const isDev = process.env.NODE_ENV === "development";
   const user = createAdminServiceGetCurrentUser();
 
   let subMenuOpen = false;
 
   $: if ($user.data?.user) initPylonChat($user.data.user);
-
-  function handleDocumentation() {
-    window.open("https://docs.rilldata.com", "_blank");
-  }
-
-  function handleDiscord() {
-    window.open(
-      "https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu",
-      "_blank",
-    );
-  }
+  $: ({ params } = $page);
 
   function handlePylon() {
     window.Pylon("show");
   }
 
-  function handleLogOut() {
+  function makeLogOutHref(): string {
     // Create a login URL that redirects back to the current page
     const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
 
-    // Go to the logout URL, providing the login URL as a redirect
-    window.location.href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;
-  }
+    // Create the logout URL, providing the login URL as a redirect
+    const href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;
 
-  function handleAlerts() {
-    goto(`/${$page.params.organization}/${$page.params.project}/-/alerts`);
-  }
-
-  function handleReports() {
-    goto(`/${$page.params.organization}/${$page.params.project}/-/reports`);
+    return href;
   }
 </script>
 
@@ -52,15 +34,15 @@
     <img
       src={$user.data?.user?.photoUrl}
       alt="avatar"
-      class="h-7 inline-flex items-center rounded-full cursor-pointer"
-      referrerpolicy={isDev ? "no-referrer" : ""}
+      class="h-7 inline-flex items-center rounded-full"
+      referrerpolicy="no-referrer"
     />
   </DropdownMenu.Trigger>
   <DropdownMenu.Content>
-    {#if $page.params.organization && $page.params.project && $page.params.dashboard}
+    {#if params.organization && params.project && params.dashboard}
       <ProjectAccessControls
-        organization={$page.params.organization}
-        project={$page.params.project}
+        organization={params.organization}
+        project={params.project}
       >
         <svelte:fragment slot="manage-project">
           <DropdownMenu.Sub bind:open={subMenuOpen}>
@@ -74,25 +56,50 @@
               class="flex flex-col min-w-[150px] max-w-[300px] min-h-[150px] max-h-[190px]"
             >
               <ViewAsUserPopover
-                organization={$page.params.organization}
-                project={$page.params.project}
+                organization={params.organization}
+                project={params.project}
               />
             </DropdownMenu.SubContent>
           </DropdownMenu.Sub>
         </svelte:fragment>
       </ProjectAccessControls>
-      <DropdownMenu.Item on:click={handleAlerts}>Alerts</DropdownMenu.Item>
-      <DropdownMenu.Item on:click={handleReports}>Reports</DropdownMenu.Item>
+      <DropdownMenu.Item
+        href={`/${params.organization}/${params.project}/-/alerts`}
+        class="text-gray-800 font-normal"
+      >
+        Alerts
+      </DropdownMenu.Item>
+      <DropdownMenu.Item
+        href={`/${params.organization}/${params.project}/-/reports`}
+        class="text-gray-800 font-normal"
+      >
+        Reports
+      </DropdownMenu.Item>
     {/if}
-    <DropdownMenu.Item on:click={handleDocumentation}>
+    <DropdownMenu.Item
+      href="https://docs.rilldata.com"
+      target="_blank"
+      rel="noreferrer noopener"
+      class="text-gray-800 font-normal"
+    >
       Documentation
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={handleDiscord}>
+    <DropdownMenu.Item
+      href="https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu"
+      target="_blank"
+      rel="noreferrer noopener"
+      class="text-gray-800 font-normal"
+    >
       Join us on Discord
     </DropdownMenu.Item>
     <DropdownMenu.Item on:click={handlePylon}>
       Contact Rill support
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={handleLogOut}>Logout</DropdownMenu.Item>
+    <DropdownMenu.Item
+      href={makeLogOutHref()}
+      class="text-gray-800 font-normal"
+    >
+      Logout
+    </DropdownMenu.Item>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
