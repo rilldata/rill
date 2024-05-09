@@ -19,7 +19,14 @@
     window.open("https://docs.rilldata.com", "_blank");
   }
 
-  function handleAskForHelp() {
+  function handleDiscord() {
+    window.open(
+      "https://discord.com/invite/ngVV4KzEGv?utm_source=rill&utm_medium=rill-cloud-avatar-menu",
+      "_blank",
+    );
+  }
+
+  function handlePylon() {
     window.Pylon("show");
   }
 
@@ -80,8 +87,11 @@
     <DropdownMenu.Item on:click={handleDocumentation}>
       Documentation
     </DropdownMenu.Item>
-    <DropdownMenu.Item on:click={handleAskForHelp}>
-      Ask for help
+    <DropdownMenu.Item on:click={handleDiscord}>
+      Join us on Discord
+    </DropdownMenu.Item>
+    <DropdownMenu.Item on:click={handlePylon}>
+      Contact Rill support
     </DropdownMenu.Item>
     <DropdownMenu.Item on:click={handleLogOut}>Logout</DropdownMenu.Item>
   </DropdownMenu.Content>
