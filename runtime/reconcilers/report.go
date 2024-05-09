@@ -25,6 +25,8 @@ import (
 const (
 	reportExecutionHistoryLimit = 10
 	reportCheckDefaultTimeout   = 5 * time.Minute
+	reportDefaultIntervalsLimit = 25
+	reportQueryPriority = 1
 )
 
 func init() {
@@ -265,7 +267,7 @@ func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resou
 
 	// There was an execution error. Add it to the execution history.
 	if rep.State.CurrentExecution == nil {
-		// CurrentExecution will only be nil if we never made it to the point of checking the alert query.
+		// CurrentExecution will only be nil if we never made it to the point of checking the report query.
 		rep.State.CurrentExecution = &runtimev1.ReportExecution{
 			Adhoc:      adhocTrigger,
 			ReportTime: nil, // NOTE: Setting execution time to nil. The only alternative is using triggerTime, but a) it might not be the reportTime, b) it might lead to previousWatermark being advanced too far on the next invocation.
@@ -321,11 +323,11 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 	}
 
 	if len(ts) == 0 {
-		r.C.Logger.Debug("Skipped alert check because watermark is unchanged or has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration))
+		r.C.Logger.Debug("Skipped report because watermark is unchanged or has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration))
 		return false, nil
 	}
 
-	// Evaluate alert for each execution time
+	// Evaluate report for each execution time
 	for _, t := range ts {
 		retry, err := r.executeSingle(ctx, self, rep, t, adhocTrigger)
 		if err != nil {
@@ -517,7 +519,7 @@ func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs [
 			ResourceKind: ref.Kind,
 			ResourceName: ref.Name,
 		}
-		err := r.C.Runtime.Query(ctx, r.C.InstanceID, q, alertQueryPriority)
+		err := r.C.Runtime.Query(ctx, r.C.InstanceID, q, reportQueryPriority)
 		if err != nil {
 			return t, false, fmt.Errorf("failed to resolve watermark for %s/%s: %w", ref.Kind, ref.Name, err)
 		}
@@ -594,7 +596,7 @@ func calculateReportExecutionTimes(r *runtimev1.Report, watermark, previousWater
 	// Set a limit on the number of intervals to check
 	limit := int(r.Spec.IntervalsLimit)
 	if limit <= 0 {
-		limit = alertDefaultIntervalsLimit
+		limit = reportDefaultIntervalsLimit
 	}
 
 	// Calculate the execution times
