@@ -26,7 +26,7 @@ const (
 	reportExecutionHistoryLimit = 10
 	reportCheckDefaultTimeout   = 5 * time.Minute
 	reportDefaultIntervalsLimit = 25
-	reportQueryPriority = 1
+	reportQueryPriority         = 1
 )
 
 func init() {
