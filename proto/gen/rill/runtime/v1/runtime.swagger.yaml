@@ -2802,7 +2802,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -4928,6 +4928,16 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      watermarkInherit:
+        type: boolean
+        description: If true, will use the lowest watermark of its refs instead of the trigger time.
+      intervalsIsoDuration:
+        type: string
+      intervalsLimit:
+        type: integer
+        format: int32
+      intervalsCheckUnclosed:
+        type: boolean
   v1ReportState:
     type: object
     properties:
