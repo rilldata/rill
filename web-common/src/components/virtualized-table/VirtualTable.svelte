@@ -1,19 +1,7 @@
 <script lang="ts" context="module">
-  const columnSizes = (() => {
-    const sizes = new Map<string, number[]>();
+  import { VirtualizedTableColumnSizes } from "@rilldata/web-common/components/virtualized-table/columnSizes";
 
-    return {
-      get: (key: string, calculator: () => number[]): number[] => {
-        let array = sizes.get(key);
-        if (!array) {
-          array = calculator();
-          sizes.set(key, array);
-        }
-        return array;
-      },
-      set: (key: string, value: number[]) => sizes.set(key, value),
-    };
-  })();
+  const columnSizes = new VirtualizedTableColumnSizes();
 
   export const ROW_HEIGHT = 24;
   export const MIN_COL_WIDTH = 108;
@@ -107,7 +95,7 @@
   let scrollLeft = 0;
   let nextPinnedColumnPosition = ROW_HEADER_WIDTH;
 
-  $: columnWidths = columnSizes.get(name, () =>
+  $: columnWidths = columnSizes.get(name, columns, columnAccessor, () =>
     initColumnWidths({
       columns,
       rows,
@@ -173,6 +161,11 @@
         resizing.initialPixelWidth + delta,
         maxColWidth,
       );
+      columnSizes.set(
+        name,
+        columns[resizing.columnIndex].name as string,
+        columnWidths[resizing.columnIndex],
+      );
     });
   }
 
@@ -198,7 +191,7 @@
     const value =
       description ?? isHeader
         ? column
-        : (rows[index][column] as string | number | null);
+        : (rows[index]?.[column] as string | number | null);
     const type = columns.find((c) => c.name === column)?.type ?? "string";
 
     hovering = {
