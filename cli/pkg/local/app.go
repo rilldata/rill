@@ -2,7 +2,9 @@ package local
 
 import (
 	"context"
+	"crypto/rand"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,9 +18,11 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/pkce"
 	"github.com/rilldata/rill/cli/pkg/update"
 	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -73,6 +77,9 @@ type App struct {
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
 	activity              *activity.Client
+	adminURL              string
+	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
+	ch                    *cmdutil.Helper
 }
 
 type AppOptions struct {
@@ -89,6 +96,7 @@ type AppOptions struct {
 	Activity    *activity.Client
 	AdminURL    string
 	AdminToken  string
+	CMDHelper   *cmdutil.Helper
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -299,6 +307,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
 		activity:              opts.Activity,
+		adminURL:              opts.AdminURL,
+		pkceAuthenticators:    make(map[string]*pkce.Authenticator),
+		ch:                    opts.CMDHelper,
 	}
 
 	// Collect and emit information about connectors at start time
@@ -382,6 +393,9 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		return runtimeServer.ServeGRPC(ctx)
 	})
 
+	// if keypath and certpath are provided
+	secure := tlsCertPath != "" && tlsKeyPath != ""
+
 	// Start the local HTTP server
 	group.Go(func() error {
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
@@ -392,6 +406,8 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 			mux.Handle("/local/config", a.infoHandler(inf))
 			mux.Handle("/local/version", a.versionHandler())
 			mux.Handle("/local/track", a.trackingHandler())
+			mux.Handle("/auth", a.initiateAuthFlow(httpPort, secure))
+			mux.Handle("/auth/callback", a.handleAuthCallback())
 		})
 	})
 
@@ -399,9 +415,6 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	if a.Debug {
 		group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
 	}
-
-	// if keypath and certpath are provided
-	secure := tlsCertPath != "" && tlsKeyPath != ""
 
 	// Open the browser when health check succeeds
 	go a.pollServer(ctx, httpPort, enableUI && openBrowser, secure)
@@ -576,6 +589,86 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 	a.activity.RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
 
 	return nil
+}
+
+// initiateAuthFlow starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
+func (a *App) initiateAuthFlow(httpPort int, secure bool) http.Handler {
+	scheme := "http"
+	if secure {
+		scheme = "https"
+	}
+	redirectURL := fmt.Sprintf("%s://localhost:%d/auth/callback", scheme, httpPort)
+
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// generate random state
+		b := make([]byte, 32)
+		_, err := rand.Read(b)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to generate state: %s", err), http.StatusInternalServerError)
+			return
+		}
+		state := base64.URLEncoding.EncodeToString(b)
+
+		// check the request for redirect query param, we will use this to redirect back to this after auth
+		origin := r.URL.Query().Get("redirect")
+		if origin == "" {
+			origin = "/"
+		}
+
+		authenticator, err := pkce.NewAuthenticator(a.adminURL, redirectURL, database.AuthClientIDRillWebLocal, origin)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to generate pkce authenticator: %s", err), http.StatusInternalServerError)
+			return
+		}
+		a.pkceAuthenticators[state] = authenticator
+		authURL := authenticator.GetAuthURL(state)
+		http.Redirect(w, r, authURL, http.StatusFound)
+	})
+}
+
+// handleAuthCallback handles the OAuth2 PKCE callback to exchange the authorization code for a rill access token.
+func (a *App) handleAuthCallback() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		code := r.URL.Query().Get("code")
+		if code == "" {
+			http.Error(w, "missing code", http.StatusBadRequest)
+			return
+		}
+		state := r.URL.Query().Get("state")
+		if code == "" {
+			http.Error(w, "missing state", http.StatusBadRequest)
+			return
+		}
+
+		authenticator, ok := a.pkceAuthenticators[state]
+		if !ok {
+			http.Error(w, "invalid state", http.StatusBadRequest)
+			return
+		}
+
+		// remove authenticator from map
+		delete(a.pkceAuthenticators, state)
+
+		if authenticator == nil {
+			http.Error(w, "failed to get authenticator", http.StatusInternalServerError)
+			return
+		}
+
+		// Exchange the code for an access token
+		token, err := authenticator.ExchangeCodeForToken(code)
+		if err != nil {
+			http.Error(w, "failed to exchange code for token", http.StatusInternalServerError)
+			return
+		}
+		// save token and redirect back to url provided by caller when initiating auth flow
+		err = dotrill.SetAccessToken(token)
+		if err != nil {
+			http.Error(w, "failed to save access token", http.StatusInternalServerError)
+			return
+		}
+		a.ch.AdminTokenDefault = token
+		http.Redirect(w, r, authenticator.OriginURL, http.StatusFound)
+	})
 }
 
 // IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.
