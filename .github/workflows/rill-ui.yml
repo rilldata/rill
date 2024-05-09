@@ -68,7 +68,7 @@ jobs:
           npm install
           npm run build -w web-admin
         env:
-          VITE_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
+          RILL_UI_PUBLIC_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
 
       - name: Deploy Cloud UI to Netlify ui.${{ env.DOMAIN }}
         uses: nwtgck/actions-netlify@v3.0
