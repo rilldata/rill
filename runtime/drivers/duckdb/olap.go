@@ -373,7 +373,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		}
 
 		db := dbName(name, version)
-		safeName := fmt.Sprintf("%s.default", db)
+		safeName := fmt.Sprintf("%s.default", safeSQLName(db))
 
 		return c.execIncrementalInsert(ctx, safeName, sql, byName, strategy, uniqueKey)
 	}
