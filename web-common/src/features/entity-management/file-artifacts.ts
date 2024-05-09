@@ -99,7 +99,7 @@ export class FileArtifact {
     queryClient: QueryClient,
     instanceId: string,
   ): Readable<V1ParseError[]> {
-    return derived(
+    const store = derived(
       [
         this.name,
         useProjectParser(queryClient, instanceId),
@@ -107,13 +107,22 @@ export class FileArtifact {
       ],
       ([name, projectParser, resource]) => {
         if (
+          projectParser.isFetching ||
+          resource.isFetching ||
+          // retain old state while reconciling
+          resource.data?.meta?.reconcileStatus ===
+            V1ReconcileStatus.RECONCILE_STATUS_RUNNING ||
+          resource.data?.meta?.reconcileStatus ===
+            V1ReconcileStatus.RECONCILE_STATUS_PENDING
+        ) {
+          // to avoid flicker during a re-fetch, retain the previous value
+          return get(store);
+        }
+        if (
           // not having a name will signify a non-entity file
           !name?.kind ||
-          projectParser.isFetching ||
-          projectParser.isError ||
-          resource.isFetching
+          projectParser.isError
         ) {
-          // TODO: what should the error be for failed get resource API
           return [];
         }
         return [
@@ -132,6 +141,7 @@ export class FileArtifact {
       },
       [],
     );
+    return store;
   }
 
   public getHasErrors(queryClient: QueryClient, instanceId: string) {
