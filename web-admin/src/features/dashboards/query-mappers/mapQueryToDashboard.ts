@@ -15,9 +15,6 @@ import {
   createQueryServiceMetricsViewTimeRange,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewComparisonRequest,
-  type V1MetricsViewRowsRequest,
-  type V1MetricsViewTimeSeriesRequest,
-  type V1MetricsViewToplistRequest,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { derived, get, readable } from "svelte/store";
