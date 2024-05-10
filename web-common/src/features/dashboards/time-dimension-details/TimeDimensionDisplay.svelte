@@ -13,6 +13,7 @@
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { timeFormat } from "d3-time-format";
+  import { onDestroy } from "svelte";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import {
@@ -181,6 +182,13 @@
       toggleAllSearchItems();
     }
   }
+
+  onDestroy(() => {
+    tableInteractionStore.set({
+      dimensionValue: undefined,
+      time: undefined,
+    });
+  });
 </script>
 
 <div class="h-full w-full flex flex-col">
