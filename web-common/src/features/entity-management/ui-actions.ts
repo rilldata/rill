@@ -1,4 +1,4 @@
-import { notifications } from "@rilldata/web-common/components/notifications";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import {
@@ -18,7 +18,7 @@ export async function handleEntityRename(
   const [folder] = splitFolderAndName(existingPath);
 
   if (!target.value.match(VALID_NAME_PATTERN)) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: INVALID_NAME_MESSAGE,
     });
     target.value = existingName; // resets the input
@@ -26,7 +26,7 @@ export async function handleEntityRename(
   }
 
   if (isDuplicateName(target.value, existingName, allNames)) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: `Name ${target.value} is already in use`,
     });
     target.value = existingName; // resets the input

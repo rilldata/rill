@@ -1,142 +1,125 @@
-<script>
+<script lang="ts">
   import { scale } from "svelte/transition";
+  import { portal } from "@rilldata/web-common/lib/actions/portal";
+  import type { NotificationMessage } from "@rilldata/web-common/lib/event-bus/events";
+  import Close from "../icons/Close.svelte";
+  import Check from "../icons/Check.svelte";
+  import Button from "../button/Button.svelte";
+  import { onMount } from "svelte";
+  import WarningIcon from "../icons/WarningIcon.svelte";
 
-  export let width = undefined;
-  export let level = "info"; // info, error.
+  const NOTIFICATION_TIMEOUT = 3500;
 
-  export let xOffset = undefined;
-  export let yOffset = undefined;
+  export let location: "top" | "bottom" | "middle" = "bottom";
+  export let justify: "left" | "right" | "center" = "center";
+  export let notification: NotificationMessage;
+  export let onClose: () => void;
 
-  // positioning elements.
-  export let location;
+  $: ({ message, link, type, detail, options } = notification);
 
-  // if specified, set the width variable.
-
-  function makeStyle({ width, xOffset, yOffset }) {
-    let styles = [
-      width ? `--width: ${width}` : undefined,
-      xOffset ? `--x-offset: ${xOffset}` : undefined,
-      yOffset ? `--y-offset: ${yOffset}` : undefined,
-    ];
-    return styles.filter((d) => d !== undefined).join("; ");
-  }
-
-  $: style = makeStyle({ width, xOffset, yOffset });
+  onMount(() => {
+    if (!options?.persisted || link) {
+      setTimeout(onClose, NOTIFICATION_TIMEOUT);
+    }
+  });
 </script>
 
 <aside
-  transition:scale|global={{ duration: 200, start: 0.98, opacity: 0 }}
-  {style}
-  class="whitespace-pre radius-sm notification-{level} 
-      {location !== undefined
-    ? `notification-floating notification-floating-${location}`
-    : ''}"
+  use:portal
+  transition:scale={{ duration: 200, start: 0.98, opacity: 0 }}
+  class="{location} {justify}"
 >
-  <div class="icon centered">
-    <slot name="icon" />
+  <div class="main-section">
+    <div class="message-container" class:font-medium={detail}>
+      {#if type === "success"}
+        <Check size="18px" className="text-white" />
+      {:else if type == "error"}
+        <WarningIcon />
+      {/if}
+
+      {message}
+    </div>
+
+    {#if link}
+      <div class="link-container">
+        <a href={link.href} on:click={onClose}>{link.text}</a>
+      </div>
+    {/if}
+
+    {#if options?.persisted}
+      <div class="px-2 py-2 border-l">
+        <Button on:click={onClose} square>
+          <Close size="18px" color="#fff" />
+        </Button>
+      </div>
+    {/if}
   </div>
-  <div class="body centered">
-    <slot name="body" />
-    <slot />
-  </div>
-  <div class="cta centered">
-    <slot name="cta" />
-  </div>
+
+  {#if detail}
+    <hr />
+    <div class="detail">
+      {detail}
+    </div>
+  {/if}
 </aside>
 
 <style lang="postcss">
+  * {
+    @apply border-gray-600;
+  }
+
   aside {
-    --width: max-content;
-    padding: 8px 14px;
-    width: var(--width);
-    box-shadow: var(--rally-box-shadow-sm);
-    font-style: normal;
-    /* font-weight: 600; */
-    font-size: 15px;
-    line-height: 22px;
-    display: grid;
-    grid-column-gap: 10px;
-    grid-template-columns: max-content auto max-content;
-    align-items: center;
-    align-content: center;
-    @apply shadow-lg rounded-md;
+    @apply absolute w-fit z-50 flex flex-col text-sm;
+    @apply bg-gray-900 text-gray-50 p-0 rounded-md shadow-lg;
   }
 
-  .notification-info,
-  .notification-info > * {
-    color: #0c0c0d;
-    @apply bg-slate-800 text-slate-100;
+  .main-section {
+    @apply flex;
   }
 
-  .notification-error,
-  .notification-error > * {
-    color: var(--color-white);
-    background-color: var(--color-red-60);
+  .detail {
+    @apply px-4 pt-2 pb-3;
   }
 
-  .icon {
-    font-size: 24px;
-    height: 24px;
+  .link-container {
+    @apply px-4 py-2 border-l items-center flex;
   }
 
-  .centered {
-    height: max-content;
-    display: grid;
-    align-self: center;
-    align-items: center;
-    align-content: center;
+  .message-container {
+    @apply flex items-center px-4 py-2 gap-x-2;
   }
 
-  .centered > * {
-    height: max-content;
-    display: grid;
-    align-self: center;
-    align-items: center;
-    align-content: center;
+  a {
+    @apply text-primary-300;
   }
 
-  .notification-floating {
-    position: fixed;
-    --pad: 20px;
-    /* stylelint-disable */
-    --x-offset: 0px;
-    --y-offset: 0px;
-    /* stylelint-enable */
-    --x-pad: calc(var(--pad) + var(--x-offset));
-    --y-pad: calc(var(--pad) + var(--y-offset));
+  a:hover {
+    @apply text-primary-200;
   }
 
-  .notification-floating-bottom,
-  .notification-floating-bottom-center {
-    bottom: var(--y-pad);
-    left: calc(50% + var(--x-offset));
-    transform: translateX(-50%);
+  .top {
+    @apply top-[30px];
   }
 
-  .notification-floating-bottom-right {
-    right: var(--x-pad);
-    bottom: var(--y-pad);
+  .bottom {
+    @apply bottom-[30px];
   }
 
-  .notification-floating-bottom-left {
-    left: var(--x-pad);
-    bottom: var(--y-pad);
+  .middle {
+    @apply top-1/2;
+    @apply -translate-y-1/2;
   }
 
-  .notification-floating-top,
-  .notification-floating-top-center {
-    top: var(--y-pad);
-    left: calc(50% + var(--x-offset));
-    transform: translateX(-50%);
+  .left {
+    @apply left-4;
   }
 
-  .notification-floating-top-left {
-    left: var(--x-pad);
-    top: var(--y-pad);
+  .right {
+    @apply right-4;
   }
 
-  .notification-floating-top-right {
-    right: var(--x-pad);
-    top: var(--y-pad);
+  .center {
+    @apply left-1/2;
+    @apply -translate-x-1/2;
   }
 </style>
