@@ -1,52 +1,36 @@
-import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
+import { asyncWait } from "../lib/waitUtils";
 
 export class ExponentialBackoffTracker {
-  private curTime: number;
   private curRetries = 0;
-  private trackerPeriod: number;
+  private currentDelay: number;
 
   public constructor(
-    private readonly retries: number,
-    /**
-     * Time period within which to trigger the tracker.
-     * Any failure after this will be considered as an intermittent failure.
-     */
-    private readonly trackerTriggerPeriod: number,
-    // time
-    private readonly waitPeriod: number,
+    private readonly maxRetries: number,
+    private readonly initialDelay: number,
   ) {
-    this.trackerPeriod = trackerTriggerPeriod;
+    this.currentDelay = initialDelay;
   }
 
   public static createBasicTracker() {
-    return new ExponentialBackoffTracker(5, 1000, 250);
+    return new ExponentialBackoffTracker(5, 1000);
   }
 
-  public async failed(): Promise<boolean> {
-    const lastTime = this.curTime;
-    this.curTime = Date.now();
+  public async try(fn: () => Promise<void> | void) {
+    try {
+      await fn();
 
-    // if failed after the tracker period, reset everything
-    if (this.curTime - lastTime >= this.trackerPeriod) {
-      this.reset();
-      await asyncWait(this.waitPeriod);
-      return true;
+      this.curRetries = 0;
+      this.currentDelay = this.initialDelay;
+    } catch (e) {
+      if (this.curRetries >= this.maxRetries) {
+        throw e;
+      }
+
+      this.currentDelay = this.initialDelay * 2 ** this.curRetries;
+      await asyncWait(this.currentDelay);
+
+      this.curRetries++;
+      return this.try(fn);
     }
-
-    // if retry count has reached max return false to stop the connection
-    if (this.curRetries === this.retries) return false;
-
-    // increment retry and update the tracker periods.
-    this.curRetries++;
-    // A simple function to increase the tracking period.
-    this.trackerPeriod = this.trackerTriggerPeriod * 2 ** this.curRetries;
-    // multiply the retires to the wait period as well.
-    await asyncWait(this.waitPeriod * 2 ** this.curRetries);
-    return true;
-  }
-
-  private reset() {
-    this.curRetries = 0;
-    this.trackerPeriod = this.trackerTriggerPeriod;
   }
 }
