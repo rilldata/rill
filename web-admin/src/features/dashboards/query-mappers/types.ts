@@ -8,6 +8,7 @@ import type {
   V1MetricsViewToplistRequest,
   V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 export type QueryRequests =
   | V1MetricsViewAggregationRequest
@@ -17,6 +18,8 @@ export type QueryRequests =
   | V1MetricsViewComparisonRequest;
 
 export type QueryMapperArgs<R extends QueryRequests> = {
+  queryClient: QueryClient;
+  instanceId: string;
   dashboard: MetricsExplorerEntity;
   req: R;
   metricsView: V1MetricsViewSpec;

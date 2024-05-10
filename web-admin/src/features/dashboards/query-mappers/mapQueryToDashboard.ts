@@ -10,6 +10,7 @@ import { useMetricsView } from "@rilldata/web-common/features/dashboards/selecto
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   createQueryServiceMetricsViewTimeRange,
   type V1MetricsViewAggregationRequest,
@@ -47,7 +48,7 @@ export function mapQueryToDashboard(
   );
   let getDashboardState: (
     args: QueryMapperArgs<QueryRequests>,
-  ) => MetricsExplorerEntity;
+  ) => Promise<MetricsExplorerEntity>;
 
   // get metrics view name and the query mapper function based on the query name.
   switch (queryName) {
@@ -55,22 +56,16 @@ export function mapQueryToDashboard(
       metricsViewName = (req as V1MetricsViewAggregationRequest).metricsView;
       getDashboardState = getDashboardFromAggregationRequest;
       break;
-    case "MetricsViewToplist":
-      metricsViewName = (req as V1MetricsViewToplistRequest).metricsViewName;
-      getDashboardState = getDashboardFromToplistRequest;
-      break;
-    case "MetricsViewRows":
-      metricsViewName = (req as V1MetricsViewRowsRequest).metricsViewName;
-      getDashboardState = getDashboardFromRowsRequest;
-      break;
-    case "MetricsViewTimeSeries":
-      metricsViewName = (req as V1MetricsViewTimeSeriesRequest).metricsViewName;
-      getDashboardState = getDashboardFromTimeSeriesRequest;
-      break;
+
     case "MetricsViewComparison":
       metricsViewName = (req as V1MetricsViewComparisonRequest).metricsViewName;
       getDashboardState = getDashboardFromComparisonRequest;
       break;
+
+    // TODO
+    // case "MetricsViewToplist":
+    // case "MetricsViewRows":
+    // case "MetricsViewTimeSeries":
   }
 
   if (!metricsViewName) {
@@ -82,9 +77,11 @@ export function mapQueryToDashboard(
     });
   }
 
+  const instanceId = get(runtime).instanceId;
+
   return derived(
     [
-      useMetricsView(get(runtime).instanceId, metricsViewName),
+      useMetricsView(instanceId, metricsViewName),
       // TODO: handle non-timestamp dashboards
       createQueryServiceMetricsViewTimeRange(
         get(runtime).instanceId,
@@ -92,21 +89,24 @@ export function mapQueryToDashboard(
         {},
       ),
     ],
-    ([metricsViewResource, timeRangeSummary]) => {
-      if (!metricsViewResource.data || !timeRangeSummary.data)
-        return {
+    ([metricsViewResource, timeRangeSummary], set) => {
+      if (!metricsViewResource.data || !timeRangeSummary.data) {
+        set({
           isFetching: true,
           error: "",
-        };
+        });
+        return;
+      }
 
       if (metricsViewResource.error || timeRangeSummary.error) {
         // error state
-        return {
+        set({
           isFetching: false,
           error:
             metricsViewResource.error?.message ??
             timeRangeSummary.error?.message,
-        };
+        });
+        return;
       }
 
       initLocalUserPreferenceStore(metricsViewName);
@@ -115,21 +115,31 @@ export function mapQueryToDashboard(
         metricsViewResource.data,
         timeRangeSummary.data,
       );
-      const newDashboard = getDashboardState({
+      getDashboardState({
+        queryClient,
+        instanceId,
         dashboard: defaultDashboard,
         req,
         metricsView: metricsViewResource.data,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
         executionTime,
-      });
-      return {
-        isFetching: false,
-        error: "",
-        data: {
-          state: getProtoFromDashboardState(newDashboard),
-          metricsView: metricsViewName,
-        },
-      };
+      })
+        .then((newDashboard) => {
+          set({
+            isFetching: false,
+            error: "",
+            data: {
+              state: getProtoFromDashboardState(newDashboard),
+              metricsView: metricsViewName,
+            },
+          });
+        })
+        .catch((err) => {
+          set({
+            isFetching: false,
+            error: err.message,
+          });
+        });
     },
   );
 }
@@ -154,34 +164,4 @@ function convertRequestKeysToCamelCase(
   }
 
   return newReq;
-}
-
-function getDashboardFromToplistRequest({
-  req,
-  dashboard,
-}: QueryMapperArgs<V1MetricsViewToplistRequest>) {
-  if (req.where) dashboard.whereFilter = req.where;
-  // TODO
-
-  return dashboard;
-}
-
-function getDashboardFromRowsRequest({
-  req,
-  dashboard,
-}: QueryMapperArgs<V1MetricsViewRowsRequest>) {
-  if (req.where) dashboard.whereFilter = req.where;
-  // TODO
-
-  return dashboard;
-}
-
-function getDashboardFromTimeSeriesRequest({
-  req,
-  dashboard,
-}: QueryMapperArgs<V1MetricsViewTimeSeriesRequest>) {
-  if (req.where) dashboard.whereFilter = req.where;
-  // TODO
-
-  return dashboard;
 }

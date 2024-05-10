@@ -1,4 +1,4 @@
-import { getSelectedTimeRange } from "@rilldata/web-admin/features/dashboards/query-mappers/getSelectedTimeRange";
+import { getSelectedTimeRange } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import { getSortType } from "@rilldata/web-common/features/dashboards/leaderboard/leaderboard-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
@@ -6,7 +6,7 @@ import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type { V1MetricsViewComparisonRequest } from "@rilldata/web-common/runtime-client";
 
-export function getDashboardFromComparisonRequest({
+export async function getDashboardFromComparisonRequest({
   req,
   dashboard,
   metricsView,
