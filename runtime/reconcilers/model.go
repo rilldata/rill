@@ -549,7 +549,7 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.Mod
 	}
 
 	opts.InputHandle = ic
-	opts.OutputHandle = ic
+	opts.OutputHandle = oc
 
 	executorName := opts.InputConnector
 	e, ok := ic.AsModelExecutor(r.C.InstanceID, opts)

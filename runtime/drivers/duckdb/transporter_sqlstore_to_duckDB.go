@@ -114,7 +114,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	schema, err := iter.Schema(ctx)
 	if err != nil {
 		if errors.Is(err, drivers.ErrIteratorDone) {
-			return fmt.Errorf("no results found for the query")
+			return drivers.ErrNoRows
 		}
 		return err
 	}

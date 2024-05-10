@@ -113,7 +113,8 @@ func (e *sqlStoreToSelfExecutor) queryAndInsert(ctx context.Context, olap driver
 	for {
 		files, err := iter.Next()
 		if err != nil {
-			if errors.Is(err, io.EOF) {
+			// TODO: Why is this not just one error?
+			if errors.Is(err, io.EOF) || errors.Is(err, drivers.ErrNoRows) || errors.Is(err, drivers.ErrIteratorDone) {
 				break
 			}
 			return err
@@ -152,6 +153,11 @@ func (e *sqlStoreToSelfExecutor) queryAndInsert(ctx context.Context, olap driver
 		}
 
 		create = false
+	}
+
+	// We were supposed to create the table, but didn't get any data
+	if create {
+		return drivers.ErrNoRows
 	}
 
 	return nil
