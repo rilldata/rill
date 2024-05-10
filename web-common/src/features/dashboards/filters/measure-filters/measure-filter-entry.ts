@@ -64,6 +64,8 @@ export function mapExprToMeasureFilter(
           : MeasureFilterOperation.NotBetween;
       break;
 
+    case V1Operation.OPERATION_EQ:
+    case V1Operation.OPERATION_NEQ:
     case V1Operation.OPERATION_GT:
     case V1Operation.OPERATION_GTE:
     case V1Operation.OPERATION_LT:
@@ -118,6 +120,8 @@ export function mapMeasureFilterToExpr(
       : DeltaAbsoluteSuffix;
 
   switch (measureFilter.operation) {
+    case MeasureFilterOperation.Equals:
+    case MeasureFilterOperation.NotEquals:
     case MeasureFilterOperation.GreaterThan:
     case MeasureFilterOperation.GreaterThanOrEquals:
     case MeasureFilterOperation.LessThan:
