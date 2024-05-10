@@ -13,6 +13,8 @@ type selfToSelfExecutor struct {
 	opts *drivers.ModelExecutorOptions
 }
 
+var _ drivers.ModelExecutor = &selfToSelfExecutor{}
+
 func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
 	olap, ok := e.c.AsOLAP(e.c.instanceID)
 	if !ok {
@@ -48,18 +50,18 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 
 	asView := !materialize
 	tableName := outputProps.Table
-	stagingTableName := tableName
-	if e.opts.Env.StageChanges {
-		stagingTableName = stagingTableNameFor(tableName)
-	}
-
-	// Drop the staging view/table if it exists.
-	// NOTE: This intentionally drops the end table if not staging changes.
-	if t, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
-		_ = olap.DropTable(ctx, stagingTableName, t.View)
-	}
 
 	if !e.opts.IncrementalRun {
+		// Prepare for ingesting into the staging view/table.
+		// NOTE: This intentionally drops the end table if not staging changes.
+		stagingTableName := tableName
+		if e.opts.Env.StageChanges {
+			stagingTableName = stagingTableNameFor(tableName)
+		}
+		if t, err := olap.InformationSchema().Lookup(ctx, "", "", stagingTableName); err == nil {
+			_ = olap.DropTable(ctx, stagingTableName, t.View)
+		}
+
 		// Create the table
 		err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL)
 		if err != nil {

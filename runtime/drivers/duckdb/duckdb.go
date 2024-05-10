@@ -373,6 +373,11 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.InputHandle == c && opts.OutputHandle == c {
 		return &selfToSelfExecutor{c, opts}, true
 	}
+	if opts.OutputHandle == c {
+		if sqlstore, ok := opts.InputHandle.AsSQLStore(); ok {
+			return &sqlStoreToSelfExecutor{c, sqlstore, opts}, true
+		}
+	}
 	return nil, false
 }
 
