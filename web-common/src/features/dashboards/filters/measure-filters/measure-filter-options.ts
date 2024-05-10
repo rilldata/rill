@@ -77,3 +77,17 @@ export const MeasureFilterOptions: MeasureFilterOption[] = [
     shortLabel: "",
   },
 ];
+// Full list with options not supported in filter pills just yet.
+export const AllMeasureFilterOptions = [
+  ...MeasureFilterOptions,
+  {
+    value: MeasureFilterOperation.Equals,
+    label: "Equals",
+    shortLabel: "=",
+  },
+  {
+    value: MeasureFilterOperation.NotEquals,
+    label: "Does Not Equals",
+    shortLabel: "!=",
+  },
+];
