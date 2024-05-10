@@ -177,7 +177,7 @@ func (s *Server) ServePostgres(ctx context.Context, requirePassword bool) error 
 	if requirePassword {
 		authHandler = auth.PostgresAuthHandler(s.aud)
 	}
-	return graceful.ServePostgres(ctx, QueryHandler(s), authHandler, 5432, s.logger)
+	return graceful.ServePostgres(ctx, QueryHandler(s), authHandler, s.opts.PostgresPort, s.logger)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.

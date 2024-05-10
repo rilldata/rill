@@ -7,6 +7,7 @@ import (
 	wire "github.com/jeroenrinzema/psql-wire"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"go.uber.org/zap"
 )
 
 func QueryHandler(s *Server) func(ctx context.Context, query string) (wire.PreparedStatements, error) {
@@ -33,8 +34,12 @@ func QueryHandler(s *Server) func(ctx context.Context, query string) (wire.Prepa
 		}
 
 		handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-			for _, row := range res.Rows {
-				if err := writer.Row(row); err != nil {
+			if len(res.Rows) == 0 {
+				return writer.Empty()
+			}
+			for i := 0; i < len(res.Rows); i++ {
+				if err := writer.Row(res.Rows[i]); err != nil {
+					s.logger.Warn("failed to write row", zap.Error(err))
 					return err
 				}
 			}

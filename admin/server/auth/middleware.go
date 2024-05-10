@@ -75,6 +75,19 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 	return a.httpMiddleware(next, true)
 }
 
+type PasswordKey struct{}
+
+func (a *Authenticator) PostgresAuthHandler() func(ctx context.Context, username, password string) (context.Context, bool, error) {
+	return func(ctx context.Context, username, password string) (context.Context, bool, error) {
+		ctx = context.WithValue(ctx, PasswordKey{}, password)
+		newCtx, err := a.parseClaimsFromBearer(ctx, password)
+		if err != nil {
+			newCtx = context.WithValue(ctx, claimsContextKey{}, anonClaims{})
+		}
+		return newCtx, true, nil
+	}
+}
+
 // httpMiddleware is the actual implementation of HTTPMiddleware and HTTPMiddlewareLenient.
 func (a *Authenticator) httpMiddleware(next http.Handler, lenient bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

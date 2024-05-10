@@ -38,7 +38,18 @@ func ServePostgres(ctx context.Context, queryHandler func(ctx context.Context, q
 		return err
 	}
 
-	return server.Serve(lis)
+	cctx, cancel := context.WithCancel(ctx)
+	var serveErr error
+	go func() {
+		serveErr = server.Serve(lis)
+		cancel()
+	}()
+
+	<-cctx.Done()
+	if serveErr == nil {
+		server.Close()
+	}
+	return serveErr
 }
 
 // discard is a slog.Handler which is always disabled and therefore logs nothing.

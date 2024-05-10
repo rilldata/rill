@@ -48,6 +48,7 @@ var (
 type Options struct {
 	HTTPPort               int
 	GRPCPort               int
+	PostgresPort           int
 	ExternalURL            string
 	FrontendURL            string
 	AllowedOrigins         []string
@@ -187,6 +188,12 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	return graceful.ServeHTTP(ctx, server, graceful.ServeOptions{
 		Port: s.opts.HTTPPort,
 	})
+}
+
+// ServePostgres Starts the postrges server.
+func (s *Server) ServePostgres(ctx context.Context) error {
+	authHandler := s.authenticator.PostgresAuthHandler()
+	return graceful.ServePostgres(ctx, s.QueryHandler, authHandler, s.opts.PostgresPort, s.logger)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
