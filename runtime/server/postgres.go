@@ -2,11 +2,16 @@ package server
 
 import (
 	"context"
+	"encoding/json"
+	"fmt"
+	"math/big"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	wire "github.com/jeroenrinzema/psql-wire"
+	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
 
@@ -38,6 +43,9 @@ func QueryHandler(s *Server) func(ctx context.Context, query string) (wire.Prepa
 				return writer.Empty()
 			}
 			for i := 0; i < len(res.Rows); i++ {
+				if err := convert(res.Rows[i], res.Schema); err != nil {
+					return fmt.Errorf("data conversion failed")
+				}
 				if err := writer.Row(res.Rows[i]); err != nil {
 					s.logger.Warn("failed to write row", zap.Error(err))
 					return err
@@ -47,6 +55,51 @@ func QueryHandler(s *Server) func(ctx context.Context, query string) (wire.Prepa
 		}
 		return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(convertSchema(res.Schema)))), nil
 	}
+}
+
+func convert(row []any, schema *runtimev1.StructType) error {
+	for i := 0; i < len(row); i++ {
+		code := schema.Fields[i].Type.Code
+		switch code {
+		case runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
+			if v, ok := row[i].(*big.Int); ok {
+				row[i] = decimal.NewFromBigInt(v, 0)
+			}
+		case runtimev1.Type_CODE_UINT64:
+			if v, ok := row[i].(uint64); ok {
+				row[i] = decimal.NewFromUint64(v)
+			}
+		case runtimev1.Type_CODE_DECIMAL:
+			switch v := row[i].(type) {
+			case duckdb.Decimal: // may be this duckdb specific handling should go in resolver ?
+				row[i] = decimal.NewFromBigInt(v.Value, 0)
+			case uint64:
+				row[i] = decimal.NewFromUint64(v)
+			}
+		case runtimev1.Type_CODE_MAP:
+			val, err := json.Marshal(row[i])
+			if err != nil {
+				return err
+			}
+			row[i] = string(val)
+		case runtimev1.Type_CODE_STRUCT:
+			val, err := json.Marshal(row[i])
+			if err != nil {
+				return err
+			}
+			row[i] = string(val)
+		case runtimev1.Type_CODE_ARRAY:
+			elemType := schema.Fields[i].Type.ArrayElementType
+			if elemType != nil && (elemType.Code == runtimev1.Type_CODE_ARRAY || elemType.Code == runtimev1.Type_CODE_STRUCT || elemType.Code == runtimev1.Type_CODE_MAP) {
+				val, err := json.Marshal(row[i])
+				if err != nil {
+					return err
+				}
+				row[i] = string(val)
+			}
+		}
+	}
+	return nil
 }
 
 func convertSchema(schema *runtimev1.StructType) wire.Columns {
@@ -113,11 +166,15 @@ func columnForType(field *runtimev1.StructType_Field) wire.Column {
 		col.Width = 16
 	case runtimev1.Type_CODE_ARRAY:
 		return columnForArrayType(field)
+	case runtimev1.Type_CODE_MAP:
+		col.Oid = pgtype.JSONOID
+		col.Width = -1
+	case runtimev1.Type_CODE_STRUCT:
+		col.Oid = pgtype.JSONOID
+		col.Width = -1
 	default:
 		col.Oid = pgtype.UnknownOID
 		col.Width = -1
-		// Type_CODE_STRUCT      Type_Code = 20
-		// Type_CODE_MAP         Type_Code = 21
 	}
 	return col
 }

@@ -62,6 +62,7 @@ require (
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
+	github.com/lib/pq v1.10.9
 	github.com/marcboeker/go-duckdb v1.6.2
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/mapstructure v1.5.0
@@ -72,6 +73,7 @@ require (
 	github.com/rs/cors v1.9.0
 	github.com/santhosh-tekuri/jsonschema/v5 v5.2.0
 	github.com/sashabaranov/go-openai v1.19.3
+	github.com/shopspring/decimal v1.4.0
 	github.com/slack-go/slack v0.12.5
 	github.com/snowflakedb/gosnowflake v1.8.0
 	github.com/spf13/cobra v1.8.0
@@ -248,7 +250,6 @@ require (
 	github.com/klauspost/compress v1.17.1 // indirect
 	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
-	github.com/lib/pq v1.10.9 // indirect
 	github.com/lufia/plan9stats v0.0.0-20230326075908-cb1d2100619a // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/mailru/easyjson v0.7.7 // indirect
@@ -292,7 +293,6 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/shirou/gopsutil/v3 v3.23.11 // indirect
 	github.com/shoenig/go-m1cpu v0.1.6 // indirect
-	github.com/shopspring/decimal v1.3.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.2.2 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
