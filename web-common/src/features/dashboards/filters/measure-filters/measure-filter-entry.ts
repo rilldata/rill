@@ -100,12 +100,17 @@ export function mapExprToMeasureFilter(
 export function mapMeasureFilterToExpr(
   measureFilter: MeasureFilterEntry,
 ): V1Expression | undefined {
-  const value =
-    Number(measureFilter.value1) /
-    (measureFilter.comparison ===
+  let value = Number(measureFilter.value1);
+  if (Number.isNaN(value)) {
+    return undefined;
+  }
+
+  if (
+    measureFilter.comparison ===
     MeasureFilterComparisonType.PercentageComparison
-      ? 100
-      : 1);
+  ) {
+    value /= 100;
+  }
   const comparisonSuffix =
     measureFilter.comparison ===
     MeasureFilterComparisonType.PercentageComparison

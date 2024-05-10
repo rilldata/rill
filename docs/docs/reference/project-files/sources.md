@@ -34,7 +34,7 @@ Files that are *nested at any level* under your native `sources` directory will 
   - _`duckdb`_ - use the [embedded DuckDB](../olap-engines/duckdb.md) engine to submit a DuckDB-supported native [SELECT](https://duckdb.org/docs/sql/statements/select.html) query (should be used in conjunction with the `sql` property)
 
 **`type`**
- — _Deprecated_ but preserves a legacy alias to `connector`. Can be used instead to specify the source connector, instead of the resource type (see above), **only** if the source YAML file belongs in the `<RILL_HOME>/sources/` directory (preserved primarily for backwards compatibility).
+ — _Deprecated_ but preserves a legacy alias to `connector`. Can be used instead to specify the source connector, instead of the resource type (see above), **only** if the source YAML file belongs in the `<RILL_PROJECT_DIRECTORY>/sources/` directory (preserved primarily for backwards compatibility).
 
 **`uri`**
  —  Refers to the URI of the remote connector you are using for the source. Rill also supports glob patterns as part of the URI for S3 and GCS _(required for type: http, s3, gcs)_.

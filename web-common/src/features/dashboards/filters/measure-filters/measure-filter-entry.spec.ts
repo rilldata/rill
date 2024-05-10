@@ -30,6 +30,17 @@ const TestCases: [
     createBinaryExpression("imp", V1Operation.OPERATION_GT, 10),
   ],
   [
+    "invalid value",
+    {
+      value1: "abc",
+      value2: "",
+      measure: "imp",
+      operation: MeasureFilterOperation.GreaterThan,
+      comparison: MeasureFilterComparisonType.None,
+    },
+    undefined,
+  ],
+  [
     "greater than or equals",
     {
       value1: "10",
