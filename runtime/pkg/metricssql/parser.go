@@ -21,7 +21,11 @@ import (
 )
 
 var supportedFuncs = map[string]any{
-	"date_trunc": nil,
+	"date_trunc":   nil,
+	"date_add":     nil,
+	"date_sub":     nil,
+	"now":          nil,
+	"current_date": nil,
 }
 
 type Compiler struct {
@@ -87,8 +91,9 @@ type transformer struct {
 	instanceID     string
 	userAttributes map[string]any
 
-	metricsView   *runtimev1.MetricsViewV2
-	refs          []*runtimev1.ResourceName
+	metricsView *runtimev1.MetricsViewV2
+	refs        []*runtimev1.ResourceName
+	// connector is only available after from call
 	connector     string
 	dimsToExpr    map[string]string
 	measureToExpr map[string]string
@@ -329,6 +334,8 @@ func (t *transformer) transformExprNode(ctx context.Context, node ast.ExprNode) 
 		return t.transformValueExpr(ctx, node)
 	case *ast.FuncCallExpr:
 		return t.transformFuncCallExpr(ctx, node)
+	case *ast.TimeUnitExpr:
+		return t.transformTimeUnitExpr(ctx, node)
 	default:
 		return exprResult{}, fmt.Errorf("metrics sql: unsupported expression %q", restore(node))
 	}
@@ -393,24 +400,106 @@ func (t *transformer) transformFuncCallExpr(ctx context.Context, node *ast.FuncC
 	}
 
 	var sb strings.Builder
+	var cols, types []string
+
+	olap, release, err := t.controller.Runtime.OLAP(ctx, t.instanceID, t.connector)
+	if err != nil {
+		return exprResult{}, err
+	}
+	defer release()
+	dialect := olap.Dialect()
+
 	sb.WriteString(fncName.O)
 	sb.WriteString("(")
-	// keeping it generic and not doing any arg validation for now, can be added later in future if required
-	var cols, types []string
-	for i, arg := range node.Args {
-		if i != 0 {
-			sb.WriteString(", ")
+	switch fncName.L {
+	case "date_add", "date_sub": // ex : date_add(col, INTERVAL 1 DAY)
+		if dialect == drivers.DialectDuckDB {
+			return t.transformDate(ctx, node)
 		}
-		expr, err := t.transformExprNode(ctx, arg)
+		expr, err := t.transformExprNode(ctx, node.Args[0]) // handling of col
 		if err != nil {
 			return exprResult{}, err
 		}
 		cols = append(cols, expr.columns...)
 		types = append(types, expr.types...)
 		sb.WriteString(expr.expr)
+
+		sb.WriteString(", ")
+		sb.WriteString("INTERVAL ")
+
+		expr, err = t.transformExprNode(ctx, node.Args[1]) // handling of 1
+		if err != nil {
+			return exprResult{}, err
+		}
+		cols = append(cols, expr.columns...)
+		types = append(types, expr.types...)
+		sb.WriteString(expr.expr)
+
+		expr, err = t.transformExprNode(ctx, node.Args[2]) // handling of DAY
+		if err != nil {
+			return exprResult{}, err
+		}
+		cols = append(cols, expr.columns...)
+		types = append(types, expr.types...)
+		sb.WriteString(expr.expr)
+	default:
+		// generic handling without doing any arg validation
+		for i, arg := range node.Args {
+			if i != 0 {
+				sb.WriteString(", ")
+			}
+			expr, err := t.transformExprNode(ctx, arg)
+			if err != nil {
+				return exprResult{}, err
+			}
+			cols = append(cols, expr.columns...)
+			types = append(types, expr.types...)
+			sb.WriteString(expr.expr)
+		}
 	}
 	sb.WriteString(")")
 	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
+}
+
+// duckdb does not support date_sub(col, INTERVAL 7 DAY)
+// Instead we need to use col - INTERVAL 7 DAY format.
+func (t *transformer) transformDate(ctx context.Context, node *ast.FuncCallExpr) (exprResult, error) {
+	var sb strings.Builder
+	var cols, types []string
+
+	expr, err := t.transformExprNode(ctx, node.Args[0]) // handling of col
+	if err != nil {
+		return exprResult{}, err
+	}
+	cols = append(cols, expr.columns...)
+	types = append(types, expr.types...)
+	sb.WriteString(expr.expr)
+
+	sb.WriteString(" - ")
+	sb.WriteString("INTERVAL ")
+
+	expr, err = t.transformExprNode(ctx, node.Args[1]) // handling of 1
+	if err != nil {
+		return exprResult{}, err
+	}
+	cols = append(cols, expr.columns...)
+	types = append(types, expr.types...)
+	sb.WriteString(expr.expr)
+	sb.WriteString(" ")
+
+	expr, err = t.transformExprNode(ctx, node.Args[2]) // handling of DAY
+	if err != nil {
+		return exprResult{}, err
+	}
+	cols = append(cols, expr.columns...)
+	types = append(types, expr.types...)
+	sb.WriteString(expr.expr)
+
+	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
+}
+
+func (t *transformer) transformTimeUnitExpr(_ context.Context, node *ast.TimeUnitExpr) (exprResult, error) {
+	return exprResult{expr: node.Unit.String()}, nil
 }
 
 func (t *transformer) transformIsNullOperationExpr(ctx context.Context, node *ast.IsNullExpr) (exprResult, error) {
