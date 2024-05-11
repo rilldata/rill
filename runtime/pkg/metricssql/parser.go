@@ -475,7 +475,11 @@ func (t *transformer) transformDate(ctx context.Context, node *ast.FuncCallExpr)
 	types = append(types, expr.types...)
 	sb.WriteString(expr.expr)
 
-	sb.WriteString(" - ")
+	if node.FnName.L == "date_sub" {
+		sb.WriteString(" - ")
+	} else {
+		sb.WriteString(" + ")
+	}
 	sb.WriteString("INTERVAL ")
 
 	expr, err = t.transformExprNode(ctx, node.Args[1]) // handling of 1

@@ -48,6 +48,7 @@ func TestCompiler_Compile(t *testing.T) {
 		"select distinct pub from ad_bids_metrics":                                                                                                    "SELECT DISTINCT \"publisher\" AS \"pub\" FROM \"ad_bids\"",
 		"select pub, dom, date_trunc('hour', timestamp) as day, measure_0 from ad_bids_metrics order by  date_trunc('hour', timestamp) desc limit 10": "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\", date_trunc('hour', timestamp) AS \"day\", count(*) AS \"measure_0\" FROM \"ad_bids\" GROUP BY \"domain\", \"publisher\", date_trunc('hour', timestamp) ORDER BY date_trunc('hour', timestamp) DESC LIMIT 10",
 		"select pub, dom from ad_bids_metrics where timestamp > now() - INTERVAL 90 DAY":                                                              "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE timestamp > now() - INTERVAL 90 DAY",
+		"select pub, dom from ad_bids_metrics where timestamp > now() + INTERVAL 90 DAY":                                                              "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE timestamp > now() + INTERVAL 90 DAY",
 	}
 	for inSQL, outSQL := range passTests {
 		got, _, _, err := compiler.Compile(context.Background(), inSQL)
