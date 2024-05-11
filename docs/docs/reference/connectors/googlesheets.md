@@ -13,7 +13,7 @@ Rill has the ability to read from any http(s) URL endpoint that produces a valid
 ```yaml
 type: source
 connector: "duckdb"
-path: "select * from read_csv_auto('https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/export?format=csv&gid=<SHEET_ID>', normalize_names=True)"
+sql: "select * from read_csv_auto('https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/export?format=csv&gid=<SHEET_ID>', normalize_names=True)"
 ```
 
 :::note Updating the URL
