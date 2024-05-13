@@ -4,6 +4,11 @@ import { V1Operation } from "@rilldata/web-common/runtime-client";
 // TODO: should match measure filter. remove this once that is merged to main
 export const CriteriaOperationOptions = [
   {
+    value: MeasureFilterOperation.GreaterThan,
+    label: "> greater than",
+    shortLabel: ">",
+  },
+  {
     value: MeasureFilterOperation.GreaterThanOrEquals,
     label: ">= greater than or equals",
     shortLabel: ">=",
@@ -12,6 +17,11 @@ export const CriteriaOperationOptions = [
     value: MeasureFilterOperation.LessThan,
     label: "< less than",
     shortLabel: "<",
+  },
+  {
+    value: MeasureFilterOperation.LessThanOrEquals,
+    label: "< less than or equals",
+    shortLabel: "<=",
   },
   {
     value: MeasureFilterOperation.Equals,
