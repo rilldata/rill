@@ -5,22 +5,22 @@ import { V1Operation } from "@rilldata/web-common/runtime-client";
 export const CriteriaOperationOptions = [
   {
     value: MeasureFilterOperation.GreaterThanOrEquals,
-    label: "greater than or equals",
+    label: ">= greater than or equals",
     shortLabel: ">=",
   },
   {
     value: MeasureFilterOperation.LessThan,
-    label: "less than",
+    label: "< less than",
     shortLabel: "<",
   },
   {
     value: MeasureFilterOperation.Equals,
-    label: "equals",
+    label: "= equals",
     shortLabel: "=",
   },
   {
     value: MeasureFilterOperation.NotEquals,
-    label: "does not equal",
+    label: "!= does not equal",
     shortLabel: "!=",
   },
 ];
