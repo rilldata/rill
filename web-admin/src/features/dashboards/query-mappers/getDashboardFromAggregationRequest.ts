@@ -3,6 +3,7 @@ import {
   getSelectedTimeRange,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
+import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   SortDirection,
   SortType,
@@ -10,7 +11,10 @@ import {
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type { V1MetricsViewAggregationRequest } from "@rilldata/web-common/runtime-client";
+import {
+  type V1MetricsViewAggregationRequest,
+  V1Operation,
+} from "@rilldata/web-common/runtime-client";
 
 export async function getDashboardFromAggregationRequest({
   queryClient,
@@ -32,26 +36,28 @@ export async function getDashboardFromAggregationRequest({
 
   if (req.where) dashboard.whereFilter = req.where;
   if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
+    const dimension = req.dimensions[0].name;
     if (req.having.cond.exprs.length > 1) {
       const expr = await convertExprToToplist(
         queryClient,
         instanceId,
         dashboard.name,
-        req.dimensions[0].name,
+        dimension,
         req.measures?.[0]?.name ?? "",
         dashboard.selectedTimeRange,
         req.where,
         req.having.cond.exprs ?? [],
       );
       if (expr) {
-        dashboard.whereFilter ??= createAndExpression([]);
-        if (dashboard.whereFilter.cond?.exprs)
-          dashboard.whereFilter.cond.exprs.push(expr);
+        dashboard.whereFilter = mergeFilters(
+          dashboard.whereFilter ?? createAndExpression([]),
+          createAndExpression([expr]),
+        );
       }
     } else {
       dashboard.dimensionThresholdFilters = [
         {
-          name: req.dimensions[0].name,
+          name: dimension,
           filter: createAndExpression([req.having.cond?.exprs?.[0]]),
         },
       ];

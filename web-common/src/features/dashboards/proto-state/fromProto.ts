@@ -202,7 +202,6 @@ export function getDashboardStateFromProto(
 
   Object.assign(entity, fromActivePageProto(dashboard));
 
-  console.log(dashboard, entity);
   return entity;
 }
 
