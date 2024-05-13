@@ -24,9 +24,9 @@ message GetMetadataRequest {}
 
 message GetMetadataResponse {
   string instance_id = 1;
-  string project_path = 4;
-  string install_id = 2;
-  string user_id = 3;
+  string project_path = 2;
+  string install_id = 3;
+  string user_id = 4;
   string version = 5;
   string build_commit = 6;
   string build_time = 7;

@@ -115,17 +115,17 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
   instanceId = "";
 
   /**
-   * @generated from field: string project_path = 4;
+   * @generated from field: string project_path = 2;
    */
   projectPath = "";
 
   /**
-   * @generated from field: string install_id = 2;
+   * @generated from field: string install_id = 3;
    */
   installId = "";
 
   /**
-   * @generated from field: string user_id = 3;
+   * @generated from field: string user_id = 4;
    */
   userId = "";
 
@@ -173,9 +173,9 @@ export class GetMetadataResponse extends Message<GetMetadataResponse> {
   static readonly typeName = "rill.local.v1.GetMetadataResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "project_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "install_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "install_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "build_commit", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 7, name: "build_time", kind: "scalar", T: 9 /* ScalarType.STRING */ },
