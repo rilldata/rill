@@ -13,7 +13,7 @@
    * The graph will contain an unsmoothed series (showing noise * abnormalities) by default, and
    * a smoothed series (showing the trend) if the time series merits it.
    */
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
@@ -316,7 +316,7 @@
         ).toISOString()}'`;
         await navigator.clipboard.writeText(exportedValue);
         setTimeout(() => {
-          notifications.send({
+          eventBus.emit("notification", {
             message: `copied ${exportedValue} to clipboard`,
           });
         }, 200);

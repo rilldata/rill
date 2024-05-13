@@ -3,10 +3,8 @@ package local
 import (
 	"context"
 	"crypto/tls"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path"
@@ -19,8 +17,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
-	"github.com/rilldata/rill/cli/pkg/update"
-	"github.com/rilldata/rill/cli/pkg/web"
+	"github.com/rilldata/rill/cli/pkg/pkce"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -73,6 +70,9 @@ type App struct {
 	observabilityShutdown observability.ShutdownFunc
 	loggerCleanUp         func()
 	activity              *activity.Client
+	adminURL              string
+	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
+	ch                    *cmdutil.Helper
 }
 
 type AppOptions struct {
@@ -89,6 +89,7 @@ type AppOptions struct {
 	Activity    *activity.Client
 	AdminURL    string
 	AdminToken  string
+	CMDHelper   *cmdutil.Helper
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -299,6 +300,9 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		observabilityShutdown: shutdown,
 		loggerCleanUp:         cleanupFn,
 		activity:              opts.Activity,
+		adminURL:              opts.AdminURL,
+		pkceAuthenticators:    make(map[string]*pkce.Authenticator),
+		ch:                    opts.CMDHelper,
 	}
 
 	// Collect and emit information about connectors at start time
@@ -337,8 +341,8 @@ func (a *App) Serve(httpPort, grpcPort, postgresPort int, enableUI, openBrowser,
 		a.Logger.Warnf("error finding install ID: %v", err)
 	}
 
-	// Build local info for frontend
-	inf := &localInfo{
+	// Build local metadata
+	metadata := &localMetadata{
 		InstanceID:       a.Instance.ID,
 		GRPCPort:         grpcPort,
 		InstallID:        installID,
@@ -352,16 +356,23 @@ func (a *App) Serve(httpPort, grpcPort, postgresPort int, enableUI, openBrowser,
 		Readonly:         readonly,
 	}
 
-	// Create server logger
-	serverLogger := a.BaseLogger
-	// It only logs error messages when !verbose to prevent lots of req/res info messages.
-	if !a.Verbose {
-		serverLogger = a.BaseLogger.WithOptions(zap.IncreaseLevel(zap.ErrorLevel))
+	// Create the local server handler
+	localServer := &Server{
+		logger:   a.BaseLogger,
+		app:      a,
+		metadata: metadata,
 	}
 
 	// Prepare errgroup and context with graceful shutdown
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
+
+	// Create server logger for the runtime
+	runtimeServerLogger := a.BaseLogger
+	if !a.Verbose {
+		// It only logs error messages when !verbose to prevent lots of req/res info messages.
+		runtimeServerLogger = a.BaseLogger.WithOptions(zap.IncreaseLevel(zap.ErrorLevel))
+	}
 
 	// Create a runtime server
 	opts := &runtimeserver.Options{
@@ -373,7 +384,7 @@ func (a *App) Serve(httpPort, grpcPort, postgresPort int, enableUI, openBrowser,
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), a.activity)
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.activity)
 	if err != nil {
 		return err
 	}
@@ -383,16 +394,14 @@ func (a *App) Serve(httpPort, grpcPort, postgresPort int, enableUI, openBrowser,
 		return runtimeServer.ServeGRPC(ctx)
 	})
 
+	// if keypath and certpath are provided
+	secure := tlsCertPath != "" && tlsKeyPath != ""
+
 	// Start the local HTTP server
 	group.Go(func() error {
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
-			// Inject local-only endpoints on the server for the local UI and local backend endpoints
-			if enableUI {
-				mux.Handle("/", web.StaticHandler())
-			}
-			mux.Handle("/local/config", a.infoHandler(inf))
-			mux.Handle("/local/version", a.versionHandler())
-			mux.Handle("/local/track", a.trackingHandler())
+			// Inject local-only endpoints on the runtime server
+			localServer.RegisterHandlers(mux, httpPort, secure, enableUI)
 		})
 	})
 
@@ -405,9 +414,6 @@ func (a *App) Serve(httpPort, grpcPort, postgresPort int, enableUI, openBrowser,
 			return runtimeServer.ServePostgres(ctx, false)
 		})
 	}
-
-	// if keypath and certpath are provided
-	secure := tlsCertPath != "" && tlsKeyPath != ""
 
 	// Open the browser when health check succeeds
 	go a.pollServer(ctx, httpPort, enableUI && openBrowser, secure)
@@ -461,99 +467,6 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 			a.Logger.Debugf("could not open browser: %v", err)
 		}
 	}
-}
-
-type localInfo struct {
-	InstanceID       string `json:"instance_id"`
-	GRPCPort         int    `json:"grpc_port"`
-	InstallID        string `json:"install_id"`
-	UserID           string `json:"user_id"`
-	ProjectPath      string `json:"project_path"`
-	Version          string `json:"version"`
-	BuildCommit      string `json:"build_commit"`
-	BuildTime        string `json:"build_time"`
-	IsDev            bool   `json:"is_dev"`
-	AnalyticsEnabled bool   `json:"analytics_enabled"`
-	Readonly         bool   `json:"readonly"`
-}
-
-// infoHandler servers the local info struct.
-func (a *App) infoHandler(info *localInfo) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, err := json.Marshal(info)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.Header().Add("Content-Type", "application/json")
-		_, err = w.Write(data)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
-			return
-		}
-	})
-}
-
-// versionHandler servers the version struct.
-func (a *App) versionHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Get the latest version available
-		latestVersion, err := update.LatestVersion(r.Context())
-		if err != nil {
-			a.Logger.Warnf("error finding latest version: %v", err)
-		}
-
-		inf := &versionInfo{
-			CurrentVersion: a.Version.Number,
-			LatestVersion:  latestVersion,
-		}
-
-		data, err := json.Marshal(inf)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.Header().Add("Content-Type", "application/json")
-		_, err = w.Write(data)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
-			return
-		}
-	})
-}
-
-type versionInfo struct {
-	CurrentVersion string `json:"current_version"`
-	LatestVersion  string `json:"latest_version"`
-}
-
-// trackingHandler proxies events to intake.rilldata.io.
-func (a *App) trackingHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Read entire body up front (since it may be closed before the request is sent in the goroutine below)
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			a.BaseLogger.Info("failed to read telemetry request", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Parse the body as JSON
-		var event map[string]any
-		err = json.Unmarshal(body, &event)
-		if err != nil {
-			a.BaseLogger.Info("failed to parse telemetry request", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Pass as raw event to the telemetry client
-		err = a.activity.RecordRaw(event)
-		if err != nil {
-			a.BaseLogger.Info("failed to proxy telemetry event from UI", zap.Error(err))
-		}
-		w.WriteHeader(http.StatusOK)
-	})
 }
 
 // emitStartEvent sends a telemetry event with information about the project' state.

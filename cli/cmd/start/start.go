@@ -149,6 +149,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				Activity:    ch.Telemetry(cmd.Context()),
 				AdminURL:    ch.AdminURL,
 				AdminToken:  ch.AdminToken(),
+				CMDHelper:   ch,
 			})
 			if err != nil {
 				return err

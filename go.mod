@@ -5,6 +5,7 @@ go 1.22.0
 require (
 	cloud.google.com/go/bigquery v1.57.1
 	cloud.google.com/go/storage v1.35.1
+	connectrpc.com/connect v1.16.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Andrew-M-C/go.jsonvalue v1.3.4
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.9.0
@@ -106,7 +107,7 @@ require (
 	google.golang.org/api v0.151.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231212172506-995d672761c0
 	google.golang.org/grpc v1.60.1
-	google.golang.org/protobuf v1.32.0
+	google.golang.org/protobuf v1.33.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1

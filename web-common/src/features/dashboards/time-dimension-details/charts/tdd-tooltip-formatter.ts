@@ -53,7 +53,7 @@ function generateStackedAreaContent(
   let content = "";
   for (const key of keys) {
     const val = rest[key];
-    if (val === null || val === "NaN") continue;
+    if (val === undefined || val === null || val === "NaN") continue;
 
     let label = key;
     let keyColor = colorMap[String(key)] || "#000";

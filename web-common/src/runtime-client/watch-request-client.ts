@@ -33,6 +33,7 @@ type Callback<T, K extends keyof EventMap<T>> = (
 export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private controller: AbortController | undefined;
+  private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
   private tracker = ExponentialBackoffTracker.createBasicTracker();
   private outOfFocusThrottler = new Throttler(10000);
   private listeners: Listeners<Res> = new Map([
@@ -50,12 +51,19 @@ export class WatchRequestClient<Res extends WatchResponse> {
   public watch(url: string) {
     this.cancel();
     this.url = url;
-    this.restart().catch(console.log);
+    this.init();
+    this.listen().catch(console.error);
   }
 
   public cancel() {
     this.controller?.abort();
-    this.controller = undefined;
+    this.stream = this.controller = undefined;
+  }
+
+  public init() {
+    if (!this.url) throw new Error("URL not set");
+    this.controller = new AbortController();
+    this.stream = this.getFetchStream(this.url, this.controller);
   }
 
   public throttle() {
@@ -72,55 +80,27 @@ export class WatchRequestClient<Res extends WatchResponse> {
     // The stream was not cancelled, so don't reconnect
     if (this.controller && !this.controller.signal.aborted) return;
 
-    this.restart().catch(console.log);
+    this.init();
+    this.listen().catch(console.error);
 
     // Reconnecting, notify listeners
-    this.emitReconnect();
+    this.listeners.get("reconnect")?.forEach((cb) => void cb());
   }
 
-  /**
-   * (re)starts the stream connection for watch request.
-   * If there is a disconnect then it reconnects with exponential backoff.
-   */
-  private async restart() {
-    if (!this.url) return console.error("Unable to reconnect without a URL.");
-    // abort previous connections before starting a new one
-    this.controller?.abort();
-    this.controller = new AbortController();
+  private async listen() {
+    if (!this.stream) return;
+    try {
+      for await (const res of this.stream) {
+        if (this.controller?.signal.aborted) break;
+        if (res.error) throw new Error(res.error.message);
 
-    let firstRun = true;
-    // Maintain the controller here to make sure we check `aborted` for the correct one.
-    // Checking for `this.controller` might lead to edge cases where it has a newer controller.
-    let controller = this.controller;
-    while (!controller.signal.aborted) {
-      if (!firstRun) {
-        // Reconnecting, notify listeners
-        this.emitReconnect();
-        // safeguard to cancel the request if not already cancelled
-        controller.abort();
-        controller = new AbortController();
+        if (res.result)
+          this.listeners.get("response")?.forEach((cb) => void cb(res.result));
       }
-      firstRun = false;
-
-      this.controller = controller;
-      try {
-        const stream = this.getFetchStream(this.url, this.controller);
-        for await (const res of stream) {
-          if (controller.signal.aborted) return;
-          if (res.error) throw new Error(res.error.message);
-
-          if (res.result) {
-            this.listeners
-              .get("response")
-              ?.forEach((cb) => void cb(res.result));
-          }
-        }
-      } catch (err) {
-        if (!(await this.tracker.failed())) {
-          // No point in continuing retry once we have failed enough times
-          return;
-        }
-      }
+    } catch (err) {
+      // Stream failed, attempt to reconnect with exponential backoff
+      this.controller = undefined;
+      this.tracker.try(() => this.reconnect());
     }
   }
 
@@ -138,9 +118,5 @@ export class WatchRequestClient<Res extends WatchResponse> {
       headers,
       controller.signal,
     );
-  }
-
-  private emitReconnect() {
-    this.listeners.get("reconnect")?.forEach((cb) => void cb());
   }
 }

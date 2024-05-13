@@ -8,8 +8,12 @@
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import { NavDragData } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
-  import { Directory } from "@rilldata/web-common/features/file-explorer/transform-file-list";
+  import {
+    Directory,
+    getDirectoryHasErrors,
+  } from "@rilldata/web-common/features/file-explorer/transform-file-list";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { Folder } from "lucide-svelte";
   import { createRuntimeServiceCreateDirectory } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
@@ -34,6 +38,8 @@
   $: instanceId = $runtime.instanceId;
   $: topLevelFolder = getTopLevelFolder(dir.path);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
+
+  $: hasErrors = getDirectoryHasErrors(queryClient, instanceId, dir);
 
   $: currentDirectoryDirectoryNamesQuery = useDirectoryNamesInDirectory(
     instanceId,
@@ -81,11 +87,15 @@
   on:click={() => toggleDirectory(dir)}
   on:mousedown={(e) => onMouseDown(e, { id, filePath: dir.path, isDir: true })}
   style:padding-left="{padding}px"
+  aria-controls={`nav-${dir.path}`}
+  aria-expanded={expanded}
 >
   <CaretDownIcon
     className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
   />
-  <span class="truncate w-full">{dir.name}</span>
+  <span class="truncate w-full" class:text-red-600={$hasErrors}>
+    {dir.name}
+  </span>
   {#if !isProtectedDirectory}
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>

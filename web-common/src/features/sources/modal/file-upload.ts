@@ -1,5 +1,5 @@
 import { goto } from "$app/navigation";
-import { notifications } from "@rilldata/web-common/components/notifications";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -143,7 +143,7 @@ export async function uploadFile(
 }
 
 function reportFileErrors(invalidFiles: File[]) {
-  notifications.send({
+  eventBus.emit("notification", {
     message: `${invalidFiles.length} file${
       invalidFiles.length !== 1 ? "s are" : " is"
     } invalid: \n${invalidFiles.map((file) => file.name).join("\n")}`,
