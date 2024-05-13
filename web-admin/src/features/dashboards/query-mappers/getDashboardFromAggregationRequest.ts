@@ -31,13 +31,13 @@ export async function getDashboardFromAggregationRequest({
   }
 
   if (req.where) dashboard.whereFilter = req.where;
-  if (req.having?.cond?.exprs?.length) {
-    if (req.having.cond.exprs.length > 1 && req.dimensions?.[0]?.name) {
+  if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
+    if (req.having.cond.exprs.length > 1) {
       const expr = await convertExprToToplist(
         queryClient,
         instanceId,
         dashboard.name,
-        req.dimensions?.[0]?.name,
+        req.dimensions[0].name,
         req.measures?.[0]?.name ?? "",
         dashboard.selectedTimeRange,
         req.where,
@@ -51,10 +51,7 @@ export async function getDashboardFromAggregationRequest({
     } else {
       dashboard.dimensionThresholdFilters = [
         {
-          name:
-            req.dimensions?.[0]?.name ??
-            metricsView.dimensions?.[0]?.name ??
-            "",
+          name: req.dimensions[0].name,
           filter: createAndExpression([req.having.cond?.exprs?.[0]]),
         },
       ];
