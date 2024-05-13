@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -708,7 +709,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	if msg != nil {
 		if adminMeta != nil {
 			// Note: adminMeta may not always be available (if outside of cloud). In those cases, we leave the links blank (no clickthrough available).
-			msg.OpenLink = fmt.Sprintf("%s?execution_time=%s", adminMeta.OpenURL, executionTime.UTC().Format(time.RFC3339))
+			openLink, err := addExecutionTime(adminMeta.OpenURL, executionTime)
+			if err != nil {
+				return fmt.Errorf("failed to build open url: %w", err)
+			}
+			msg.OpenLink = openLink
 			msg.EditLink = adminMeta.EditURL
 		}
 
@@ -985,4 +990,18 @@ func formatValue(f formatter.Formatter, v any, logger *zap.Logger) any {
 	}
 	logger.Warn("Failed to format measure value", zap.Any("value", v))
 	return fmt.Sprintf("%v", v)
+}
+
+func addExecutionTime(openURL string, executionTime time.Time) (string, error) {
+	u, err := url.Parse(openURL)
+	if err != nil {
+		return "", err
+	}
+	q, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		return "", err
+	}
+	q.Set("execution_time", executionTime.UTC().Format(time.RFC3339))
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }

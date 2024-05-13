@@ -25,14 +25,14 @@ export async function getDashboardFromAggregationRequest({
     dashboard.selectedTimeRange = getSelectedTimeRange(
       req.timeRange,
       timeRangeSummary,
-      req.timeRange.isoDuration,
+      req.timeRange.isoDuration ?? "",
       executionTime,
     );
   }
 
   if (req.where) dashboard.whereFilter = req.where;
-  if (req.having) {
-    if (req.having.cond?.exprs.length > 1 && req.dimensions?.[0]?.name) {
+  if (req.having?.cond?.exprs?.length) {
+    if (req.having.cond.exprs.length > 1 && req.dimensions?.[0]?.name) {
       const expr = await convertExprToToplist(
         queryClient,
         instanceId,
@@ -41,16 +41,20 @@ export async function getDashboardFromAggregationRequest({
         req.measures?.[0]?.name ?? "",
         dashboard.selectedTimeRange,
         req.where,
-        req.having.cond?.exprs,
+        req.having.cond.exprs ?? [],
       );
       if (expr) {
         dashboard.whereFilter ??= createAndExpression([]);
-        dashboard.whereFilter.cond?.exprs?.push(expr);
+        if (dashboard.whereFilter.cond?.exprs)
+          dashboard.whereFilter.cond.exprs.push(expr);
       }
     } else {
       dashboard.dimensionThresholdFilters = [
         {
-          name: req.dimensions?.[0]?.name ?? metricsView.dimensions[0]?.name,
+          name:
+            req.dimensions?.[0]?.name ??
+            metricsView.dimensions?.[0]?.name ??
+            "",
           filter: createAndExpression([req.having.cond?.exprs?.[0]]),
         },
       ];
@@ -61,14 +65,17 @@ export async function getDashboardFromAggregationRequest({
     dashboard.selectedTimezone = req.timeRange?.timeZone || "UTC";
   }
 
-  dashboard.visibleMeasureKeys = new Set(req.measures.map((m) => m.name));
+  dashboard.visibleMeasureKeys = new Set(
+    req.measures?.map((m) => m.name ?? "") ?? [],
+  );
 
   // if the selected sort is a measure set it to leaderboardMeasureName
   if (
-    req.sort?.length &&
-    metricsView.measures.findIndex((m) => m.name === req.sort[0].name) >= 0
+    req.sort?.[0] &&
+    (metricsView.measures?.findIndex((m) => m.name === req.sort?.[0]?.name) ??
+      -1) >= 0
   ) {
-    dashboard.leaderboardMeasureName = req.sort[0].name;
+    dashboard.leaderboardMeasureName = req.sort[0].name ?? "";
     dashboard.sortDirection = req.sort[0].desc
       ? SortDirection.DESCENDING
       : SortDirection.ASCENDING;
@@ -81,7 +88,7 @@ export async function getDashboardFromAggregationRequest({
   } else {
     dashboard.tdd = {
       chartType: TDDChart.DEFAULT,
-      expandedMeasureName: req.measures[0].name,
+      expandedMeasureName: req.measures?.[0]?.name ?? "",
       pinIndex: -1,
     };
     dashboard.activePage = DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;

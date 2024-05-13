@@ -20,8 +20,8 @@
 
   let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
   $: dashboardStateForReport = mapQueryToDashboard(
-    $alert.data?.resource?.alert?.spec?.queryName,
-    $alert.data?.resource?.alert?.spec?.queryArgsJson,
+    $alert.data?.resource?.alert?.spec?.queryName ?? "",
+    $alert.data?.resource?.alert?.spec?.queryArgsJson ?? "",
     executionTime,
   );
 

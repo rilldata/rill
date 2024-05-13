@@ -31,7 +31,7 @@ for (const preset in PreviousCompleteRangeMap) {
 export function getSelectedTimeRange(
   timeRange: V1TimeRange,
   timeRangeSummary: V1TimeRangeSummary,
-  duration: string,
+  duration: string | undefined,
   executionTime: string,
 ): DashboardTimeControls | undefined {
   let selectedTimeRange: DashboardTimeControls;
@@ -47,7 +47,7 @@ export function getSelectedTimeRange(
       start: new Date(timeRange.start),
       end: new Date(timeRange.end),
     };
-  } else if (duration) {
+  } else if (duration && timeRangeSummary.min) {
     selectedTimeRange = isoDurationToFullTimeRange(
       duration,
       new Date(timeRangeSummary.min),

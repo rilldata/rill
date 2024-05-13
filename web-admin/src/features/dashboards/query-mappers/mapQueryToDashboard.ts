@@ -33,7 +33,7 @@ export function mapQueryToDashboard(
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
 ): CompoundQueryResult<DashboardStateForQuery> {
-  if (!queryName)
+  if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,
       error: "",
@@ -41,7 +41,7 @@ export function mapQueryToDashboard(
 
   let metricsViewName: string = "";
   const req: QueryRequests = convertRequestKeysToCamelCase(
-    JSON.parse(queryArgsJson ?? "{}"),
+    JSON.parse(queryArgsJson),
   );
   let getDashboardState: (
     args: QueryMapperArgs<QueryRequests>,
@@ -50,12 +50,14 @@ export function mapQueryToDashboard(
   // get metrics view name and the query mapper function based on the query name.
   switch (queryName) {
     case "MetricsViewAggregation":
-      metricsViewName = (req as V1MetricsViewAggregationRequest).metricsView;
+      metricsViewName =
+        (req as V1MetricsViewAggregationRequest).metricsView ?? "";
       getDashboardState = getDashboardFromAggregationRequest;
       break;
 
     case "MetricsViewComparison":
-      metricsViewName = (req as V1MetricsViewComparisonRequest).metricsViewName;
+      metricsViewName =
+        (req as V1MetricsViewComparisonRequest).metricsViewName ?? "";
       getDashboardState = getDashboardFromComparisonRequest;
       break;
 
@@ -119,7 +121,7 @@ export function mapQueryToDashboard(
         req,
         metricsView: metricsViewResource.data,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
-        executionTime,
+        executionTime: executionTime,
       })
         .then((newDashboard) => {
           set({
