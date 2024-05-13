@@ -30,20 +30,10 @@ export class FileArtifact {
   public readonly reconciling = writable<boolean>(false);
 
   /**
-   * Used to check if a file has finished renaming.
-   *
-   * Reconciler uses meta.renamedFrom internally to track it.
-   * It is unset once rename is complete.
-   */
-  public renaming = false;
-
-  /**
    * Last time the state of the resource `kind/name` was updated.
    * This is updated in watch-resources and is used there to avoid unnecessary calls to GetResource API.
    */
   public lastStateUpdatedOn: string | undefined;
-
-  public hasTable = false;
 
   public deleted = false;
 
@@ -60,8 +50,6 @@ export class FileArtifact {
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
-    this.renaming = !!resource.meta?.renamedFrom;
-    this.hasTable = resourceHasTable(resource);
     this.deleted = false;
   }
 
@@ -289,24 +277,6 @@ export class FileArtifacts {
     });
   }
 
-  public tableStatusChanged(resource: V1Resource) {
-    const hadTable =
-      resource.meta?.filePaths?.some((filePath) => {
-        return this.artifacts[filePath].hasTable;
-      }) ?? false;
-    const hasTable = resourceHasTable(resource);
-    return hadTable !== hasTable;
-  }
-
-  public wasRenaming(resource: V1Resource) {
-    const finishedRename = !resource.meta?.renamedFrom;
-    return (
-      resource.meta?.filePaths?.some((filePath) => {
-        return this.artifacts[filePath].renaming && finishedRename;
-      }) ?? false
-    );
-  }
-
   /**
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
@@ -362,13 +332,6 @@ export class FileArtifacts {
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");
   }
-}
-
-function resourceHasTable(resource: V1Resource) {
-  return (
-    (!!resource.model && !!resource.model.state?.table) ||
-    (!!resource.source && !!resource.source.state?.table)
-  );
 }
 
 export const fileArtifacts = new FileArtifacts();

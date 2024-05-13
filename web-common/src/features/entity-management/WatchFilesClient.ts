@@ -12,7 +12,7 @@ import { get } from "svelte/store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export class WatchFilesClient {
-  public readonly client: WatchRequestClient<V1WatchFilesResponse>;
+  private readonly client: WatchRequestClient<V1WatchFilesResponse>;
   private seenFiles = new Set<string>();
 
   public constructor() {
