@@ -6,14 +6,18 @@
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import { DateTime } from "luxon";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { error } from "@rilldata/web-common/components/forms/InputV2.svelte";
 
   export const open = writable(false);
 
   const formatsWithoutYear = [
     "M/d", // 7/4 or 07/04
-    "MMM d", // Jul 4 or July 04
     "MMMM d", // July 4 or July 04
+    "MMM d", // Jul 4 or Jul 04
     "M-d", // 7-4 or 07-04
+    "d MMMM", // 4 July or 04 July
+    "d MMM", // 4 Jul or 04 Jul
+    "d.M", // 4.7 or 04.07
   ];
 
   const formatsWithYear = [
@@ -25,6 +29,11 @@
     "MMMM d yyyy", // July 4 2021 or July 04 2021
     "yyyy-M-d", // July 4, 2021 or July 04, 2021
     "M-d-yyyy", // July 4, 2021 or July 04, 2021
+    "d MMMM yyyy", // 4 July 2021 or 04 July 2021
+    "d MMM yyyy", // 05 Jul 2021 or 5 Jul 2021
+    "d MMMM, yyyy", // 4 July 2021 or 04 July 2021
+    "d MMM, yyyy", // 05 Jul 2021 or 5 Jul 2021
+    "d.M.yyyy", // 4.7.2021 or 04.07.2021
   ];
 
   const formats = [...formatsWithoutYear, ...formatsWithYear];
@@ -38,6 +47,7 @@
   let selectingStart = true;
   let startInput: HTMLInputElement;
   let endInput: HTMLInputElement;
+  let displayError = false;
 
   let firstVisibleMonth: DateTime<true>;
 
@@ -59,11 +69,15 @@
 
       if (date.isValid) {
         format = potentialFormat;
+        displayError = false;
         break;
       }
     }
 
-    if (!date.isValid) return;
+    if (!date.isValid) {
+      displayError = true;
+      return;
+    }
 
     if (
       date.year !== firstVisibleMonth.year &&
@@ -105,7 +119,7 @@
     <Calendar bind:interval bind:selectingStart bind:firstVisibleMonth />
     <DropdownMenu.Separator />
     <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">
-      <label for="start-date">
+      <label for="start-date" class:error={selectingStart && displayError}>
         Start Date <span class="secondary">(Inclusive)</span>
       </label>
       <div class="flex gap-x-1">
@@ -115,6 +129,7 @@
           type="text"
           bind:this={startInput}
           class:active={selectingStart}
+          class:error={displayError}
           on:click={() => {
             selectingStart = true;
           }}
@@ -130,9 +145,10 @@
             year: "numeric",
           })}
         />
+
         <!-- <input type="text" value={interval.start.toFormat("hh:mm a")} /> -->
       </div>
-      <label for="start-date">
+      <label for="start-date" class:error={!selectingStart && displayError}>
         End Date <span class="secondary">(Exclusive)</span>
       </label>
       <div class="flex gap-x-1 w-full">
@@ -143,6 +159,7 @@
           bind:this={endInput}
           on:blur={validateInput}
           class:active={!selectingStart}
+          class:error={displayError}
           on:click={() => {
             selectingStart = false;
           }}
@@ -188,6 +205,13 @@
     border-color: #007bff;
   }
   label {
-    @apply font-semibold;
+    @apply font-semibold flex gap-x-1;
   }
+  input.error.active {
+    @apply border-destructive text-destructive;
+  }
+
+  /* label.error {
+    @apply text-destructive;
+  } */
 </style>

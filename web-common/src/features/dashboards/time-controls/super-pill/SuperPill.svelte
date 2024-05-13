@@ -242,6 +242,7 @@
 </script>
 
 <div class="wrapper">
+  <Elements.Nudge canPanLeft={$canPanLeft} canPanRight={$canPanRight} {onPan} />
   <Elements.RangePicker
     {ranges}
     {showDefaultItem}
@@ -266,7 +267,7 @@
       }}
     />
   {/if}
-  <Elements.Nudge canPanLeft={$canPanLeft} canPanRight={$canPanRight} {onPan} />
+
   <!-- <Elements.Zoom /> -->
   {#if availableTimeZones.length}
     <Elements.Zone
