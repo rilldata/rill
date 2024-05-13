@@ -7,6 +7,8 @@ export type MeasureFilterOption = {
 };
 
 export enum MeasureFilterOperation {
+  Equals = "OPERATION_EQ",
+  NotEquals = "OPERATION_NEQ",
   GreaterThan = "OPERATION_GT",
   GreaterThanOrEquals = "OPERATION_GTE",
   LessThan = "OPERATION_LT",
@@ -21,6 +23,8 @@ export enum MeasureFilterOperation {
 }
 
 export const MeasureFilterToProtoOperation = {
+  [MeasureFilterOperation.Equals]: V1Operation.OPERATION_EQ,
+  [MeasureFilterOperation.NotEquals]: V1Operation.OPERATION_NEQ,
   [MeasureFilterOperation.GreaterThan]: V1Operation.OPERATION_GT,
   [MeasureFilterOperation.GreaterThanOrEquals]: V1Operation.OPERATION_GTE,
   [MeasureFilterOperation.LessThan]: V1Operation.OPERATION_LT,
@@ -71,5 +75,19 @@ export const MeasureFilterOptions: MeasureFilterOption[] = [
     value: MeasureFilterOperation.NotBetween,
     label: "Not Between",
     shortLabel: "",
+  },
+];
+// Full list with options not supported in filter pills just yet.
+export const AllMeasureFilterOptions = [
+  ...MeasureFilterOptions,
+  {
+    value: MeasureFilterOperation.Equals,
+    label: "Equals",
+    shortLabel: "=",
+  },
+  {
+    value: MeasureFilterOperation.NotEquals,
+    label: "Does Not Equals",
+    shortLabel: "!=",
   },
 ];
