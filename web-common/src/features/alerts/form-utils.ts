@@ -11,9 +11,7 @@ import {
 import {
   V1Expression,
   V1MetricsViewAggregationRequest,
-  V1MetricsViewComparisonMeasureType,
   V1Operation,
-  V1TimeGrain,
   V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";

@@ -8,6 +8,7 @@ import { useMetricsView } from "@rilldata/web-common/features/dashboards/selecto
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
+  type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
@@ -34,7 +35,7 @@ export function getAlertPreviewData(
       createQueryServiceMetricsViewAggregation(
         get(runtime).instanceId,
         formValues.metricsViewName,
-        getAlertQueryBody(formValues),
+        getAlertPreviewQueryRequest(formValues),
         {
           query: getAlertPreviewQueryOptions(
             queryClient,
@@ -46,15 +47,19 @@ export function getAlertPreviewData(
   );
 }
 
-function getAlertQueryBody(formValues: AlertFormValues) {
-  const args = getAlertQueryArgsFromFormValues(formValues);
-  if (args.timeRange) {
-    args.timeRange.end = formValues.timeRange.end;
+function getAlertPreviewQueryRequest(
+  formValues: AlertFormValues,
+): V1MetricsViewAggregationRequest {
+  const req = getAlertQueryArgsFromFormValues(formValues);
+  req.limit = "50"; // arbitrary limit to make sure we do not pull too much of data
+  if (req.timeRange) {
+    req.timeRange.end = formValues.timeRange.end;
   }
-  if ((args as any).comparisonTimeRange && formValues.comparisonTimeRange) {
-    (args as any).comparisonTimeRange.end = formValues.comparisonTimeRange.end;
+  // TODO: We do not have types since API changes are not merged yet. Remove once that is merged.
+  if ((req as any).comparisonTimeRange && formValues.comparisonTimeRange) {
+    (req as any).comparisonTimeRange.end = formValues.comparisonTimeRange.end;
   }
-  return args;
+  return req;
 }
 
 function getAlertPreviewQueryOptions(

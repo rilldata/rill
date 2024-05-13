@@ -19,20 +19,24 @@ export const CompareWithOptions = [
 // TODO: should match measure filter. merge them once we add support for comparison based filters
 export const CriteriaOperationOptions = [
   {
-    value: MeasureFilterOperation.GreaterThan,
-    label: "is greater than",
-  },
-  {
     value: MeasureFilterOperation.GreaterThanOrEquals,
-    label: "is greater than or equals",
+    label: "greater than or equals",
+    shortLabel: ">=",
   },
   {
     value: MeasureFilterOperation.LessThan,
-    label: "is less than",
+    label: "less than",
+    shortLabel: "<",
   },
   {
-    value: MeasureFilterOperation.LessThanOrEquals,
-    label: "is less than or equals",
+    value: MeasureFilterOperation.Equals,
+    label: "equals",
+    shortLabel: "=",
+  },
+  {
+    value: MeasureFilterOperation.NotEquals,
+    label: "does not equal",
+    shortLabel: "!=",
   },
 ];
 export const CriteriaOperationComparisonOptions = [

@@ -1,16 +1,17 @@
 <script lang="ts">
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { V1ComponentSpecResolverProperties } from "@rilldata/web-common/runtime-client";
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import type { VisualizationSpec } from "svelte-vega";
+  import type { View, VisualizationSpec } from "svelte-vega";
   import VegaLiteRenderer from "../charts/render/VegaLiteRenderer.svelte";
-  import { V1ComponentSpecResolverProperties } from "@rilldata/web-common/runtime-client";
 
   export let chartName: string;
   export let chartView: boolean;
   export let vegaSpec: string;
   export let resolverProperties: V1ComponentSpecResolverProperties;
 
+  let viewVL: View;
   let error: string | null = null;
   let parsedVegaSpec: VisualizationSpec | null = null;
 
@@ -35,6 +36,7 @@
 
 {#if parsedVegaSpec}
   <VegaLiteRenderer
+    bind:viewVL
     customDashboard
     {error}
     {chartView}

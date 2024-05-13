@@ -1006,6 +1006,36 @@ func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context, retention
 	return parseErr("device auth code", err)
 }
 
+func (c *connection) FindAuthorizationCode(ctx context.Context, code string) (*database.AuthorizationCode, error) {
+	authCode := &database.AuthorizationCode{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM authorization_codes WHERE code = $1", code).StructScan(authCode)
+	if err != nil {
+		return nil, parseErr("authorization code", err)
+	}
+	return authCode, nil
+}
+
+func (c *connection) InsertAuthorizationCode(ctx context.Context, code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiration time.Time) (*database.AuthorizationCode, error) {
+	res := &database.AuthorizationCode{}
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`INSERT INTO authorization_codes (code, user_id, client_id, redirect_uri, code_challenge, code_challenge_method, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`, code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod, expiration).StructScan(res)
+	if err != nil {
+		return nil, parseErr("authorization code", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteAuthorizationCode(ctx context.Context, code string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM authorization_codes WHERE code=$1", code)
+	return checkDeleteRow("authorization code", res, err)
+}
+
+func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM authorization_codes WHERE expires_on + $1 < now()", retention)
+	return parseErr("authorization code", err)
+}
+
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {
 	role := &database.OrganizationRole{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM org_roles WHERE lower(name)=lower($1)", name).StructScan(role)

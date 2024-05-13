@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/service"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
+	"github.com/rilldata/rill/cli/cmd/uninstall"
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
@@ -153,6 +154,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		completionCmd,
 		versioncmd.VersionCmd(),
 		upgrade.UpgradeCmd(ch),
+		uninstall.UninstallCmd(ch),
 		sudo.SudoCmd(ch),
 		devtool.DevtoolCmd(ch),
 		admin.AdminCmd(ch),

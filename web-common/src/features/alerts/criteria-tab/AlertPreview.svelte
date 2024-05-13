@@ -1,5 +1,6 @@
 <script lang="ts">
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
+  import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
   import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -13,14 +14,15 @@
 
   $: alertPreviewQuery = getAlertPreviewData(queryClient, formValues);
 
-  // $: isCriteriaEmpty = isExpressionIncomplete(criteria); // TODO
+  $: isCriteriaEmpty =
+    formValues.criteria.map(mapAlertCriteriaToExpression).length === 0;
 </script>
 
 {#if $alertPreviewQuery.isFetching}
   <div class="p-2 flex flex-col justify-center">
     <Spinner status={EntityStatus.Running} />
   </div>
-{:else if !$alertPreviewQuery.data}
+{:else if isCriteriaEmpty || !$alertPreviewQuery.data}
   <PreviewEmpty
     topLine="No criteria selected"
     bottomLine="Select criteria to see a preview"

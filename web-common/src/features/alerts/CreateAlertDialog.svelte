@@ -27,7 +27,7 @@
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import { get } from "svelte/store";
-  import { notifications } from "../../components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "../../runtime-client/runtime-store";
   import BaseAlertForm from "./BaseAlertForm.svelte";
 
@@ -151,14 +151,11 @@
           getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
         );
         dispatch("close");
-        notifications.send({
+        eventBus.emit("notification", {
           message: "Alert created",
           link: {
             href: `/${organization}/${project}/-/alerts`,
             text: "Go to alerts",
-          },
-          options: {
-            persistedLink: true,
           },
         });
       } catch (e) {

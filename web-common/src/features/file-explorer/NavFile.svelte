@@ -10,6 +10,7 @@
   import { getPaddingFromPath } from "@rilldata/web-common/features/file-explorer/nav-tree-spacing";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import {
@@ -18,6 +19,7 @@
     ResourceKindToScreenMap,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
@@ -57,6 +59,8 @@
   $: isDotFile = fileName && fileName.startsWith(".");
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, $runtime.instanceId);
+
   function fireTelemetry() {
     const previousScreenName = getScreenNameFromPage();
     behaviourEvent
@@ -78,9 +82,8 @@
 
 <li
   aria-label="{filePath} Nav Entry"
-  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center
-  {isCurrentFile ? 'bg-slate-100' : ''} 
-   hover:bg-slate-100"
+  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-slate-100"
+  class:bg-slate-100={isCurrentFile}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
@@ -100,7 +103,9 @@
         size="14px"
       />
     </div>
-    <span class="truncate w-full">{fileName}</span>
+    <span class="truncate w-full" class:text-red-600={$hasErrors}>
+      {fileName}
+    </span>
   </a>
   {#if !isProtectedDirectory && !isProtectedFile}
     <DropdownMenu.Root bind:open={contextMenuOpen}>

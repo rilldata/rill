@@ -21,7 +21,8 @@ export function parseKindAndNameFromFile(
   if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
     return tryParseYaml(kind, name, fileContents);
   } else if (filePath.endsWith(".sql")) {
-    return tryParseSql(kind, name, fileContents);
+    // .sql is defaulted to Model
+    return tryParseSql(ResourceKind.Model, name, fileContents);
   }
   return undefined;
 }

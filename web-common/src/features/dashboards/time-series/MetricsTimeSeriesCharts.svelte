@@ -213,7 +213,11 @@
   <div class:mb-6={isAlternateChart} class="flex pl-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
-      <ChartTypeSelector {metricViewName} chartType={tddChartType} />
+      <ChartTypeSelector
+        hasComparison={Boolean(showComparison || dimensionData.length)}
+        {metricViewName}
+        chartType={tddChartType}
+      />
     {:else}
       <SearchableFilterButton
         label="Measures"

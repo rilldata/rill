@@ -11,8 +11,6 @@ import {
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { type V1Expression } from "@rilldata/web-common/runtime-client";
 
-// TODO: once we have a design for comparison measure filter in dashboard we should merge the definiton and get rid of this mapping
-
 export function mapAlertCriteriaToExpression(
   criteria: AlertCriteria,
 ): V1Expression | undefined {

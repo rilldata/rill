@@ -72,6 +72,7 @@
     options={CompareWithOptions}
     placeholder="compare with"
   />
+  <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
   <InputV2
     alwaysShowError
     bind:value

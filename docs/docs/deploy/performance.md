@@ -50,6 +50,7 @@ There are a few ways to achieve this:
 
 There are different ways this can be achieved and the method also depends heavily on the datasource being used. For example, assuming we had a [S3 source](/reference/connectors/s3.md) that was well partitioned by year and month (and written into a partitioned bucket), the recommended pattern would be to leverage the `path` [source property](/reference/project-files/sources.md) and a [glob pattern](/build/connect/glob-patterns.md) to limit the size of the ingestion in your development environment. Something like (as your `source.yaml`):
 ```yaml
+type: source
 connector: s3
 path: s3://bucket/path/**/*.parquet
 env:
@@ -59,6 +60,7 @@ env:
 
 By leveraging the [environment YAML syntax](/build/models/environments.md), this ensures that only data from December 2023 will be read in from this S3 source when using Rill Developer locally while the full range of data will still be used in production (on Rill Cloud). However, if this data was **not** partitioned, then we could simply leverage DuckDB's ability to read from S3 files directly and _apply a filter post-download_ on the source. Taking this same example and using some [templating](templating.md), the `source.yaml` could be rewritten to something like the following:
 ```yaml
+type: source
 connector: "duckdb"
 sql: SELECT * FROM read_parquet('s3://bucket/path/*.parquet') {{ if dev }} where timestamp_column >= '2023-12-01' AND timestamp_column < '2024-01-01' {{ end }}
 ```
