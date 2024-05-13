@@ -11,10 +11,7 @@ import {
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import {
-  type V1MetricsViewAggregationRequest,
-  V1Operation,
-} from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewAggregationRequest } from "@rilldata/web-common/runtime-client";
 
 export async function getDashboardFromAggregationRequest({
   queryClient,
@@ -46,7 +43,7 @@ export async function getDashboardFromAggregationRequest({
         req.measures?.[0]?.name ?? "",
         dashboard.selectedTimeRange,
         req.where,
-        req.having.cond.exprs ?? [],
+        req.having,
       );
       if (expr) {
         dashboard.whereFilter = mergeFilters(

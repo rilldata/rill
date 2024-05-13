@@ -1,8 +1,5 @@
 import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
-import {
-  createAndExpression,
-  createInExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   type DashboardTimeControls,
@@ -70,13 +67,13 @@ export async function convertExprToToplist(
   measureName: string,
   timeRange: DashboardTimeControls | undefined,
   where: V1Expression | undefined,
-  exprs: V1Expression[],
+  having: V1Expression,
 ) {
   const toplistBody: QueryServiceMetricsViewToplistBody = {
     dimensionName,
     measureNames: [measureName],
     where,
-    having: createAndExpression(exprs),
+    having,
     limit: "250",
     timeStart: timeRange?.start.toISOString(),
     timeEnd: timeRange?.end.toISOString(),
