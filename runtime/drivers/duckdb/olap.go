@@ -654,14 +654,11 @@ func (c *connection) execIncrementalInsert(ctx context.Context, safeName, sql st
 		}
 
 		// Insert the new data into the target table
-		err = c.execWithLimits(ctx, &drivers.Statement{
+		return c.execWithLimits(ctx, &drivers.Statement{
 			Query:       fmt.Sprintf("INSERT INTO %s %s SELECT * FROM %s", safeName, byNameClause, safeSQLName(tmp)),
 			Priority:    1,
 			LongRunning: true,
 		})
-		if err != nil {
-			return err
-		}
 	}
 
 	return fmt.Errorf("incremental insert strategy %q not supported", strategy)

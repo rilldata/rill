@@ -221,6 +221,20 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 	state["incremental"] = incrementalRun // The incremental flag is hard-coded in the state by convention
 
+	// Build log message
+	args := []zap.Field{zap.String("name", n.Name)}
+	if incrementalRun {
+		args = append(args, zap.String("run_type", "incremental"))
+	} else {
+		args = append(args, zap.String("run_type", "reset"))
+	}
+	if model.Spec.InputConnector == model.Spec.OutputConnector {
+		args = append(args, zap.String("connector", model.Spec.InputConnector))
+	} else {
+		args = append(args, zap.String("input_connector", model.Spec.InputConnector), zap.String("output_connector", model.Spec.OutputConnector))
+	}
+	r.C.Logger.Debug("Building model output", args...)
+
 	// Prepare the new execution options
 	inputProps, err := r.resolveTemplatedProps(ctx, self, state, model.Spec.InputConnector, model.Spec.InputProperties.AsMap())
 	if err != nil {
