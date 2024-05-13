@@ -1,6 +1,6 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -103,7 +103,7 @@
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
     await navigator.clipboard.writeText(exportedValue);
-    notifications.send({
+    eventBus.emit("notification", {
       message: `copied value "${exportedValue}" to clipboard`,
     });
     // update this to set the active animation in the tooltip text
