@@ -12,6 +12,7 @@ import {
 import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  getRuntimeServiceGetResourceQueryKey,
   type V1ParseError,
   V1ReconcileStatus,
   type V1Resource,
@@ -23,6 +24,7 @@ import { derived, get, type Readable, writable } from "svelte/store";
 
 export class FileArtifact {
   public readonly path: string;
+  public isNew = true;
 
   public readonly name = writable<V1ResourceName | undefined>(undefined);
 
@@ -188,6 +190,16 @@ export class FileArtifacts {
         case ResourceKind.MetricsView:
         case ResourceKind.Component:
         case ResourceKind.Dashboard:
+          // set query data for GetResource to avoid refetching data we already have
+          queryClient.setQueryData(
+            getRuntimeServiceGetResourceQueryKey(instanceId, {
+              "name.name": resource.meta?.name?.name,
+              "name.kind": resource.meta?.name?.kind,
+            }),
+            {
+              resource,
+            },
+          );
           this.updateArtifacts(resource);
           break;
       }
@@ -206,6 +218,7 @@ export class FileArtifacts {
             const newName = parseKindAndNameFromFile(filePath, fileContents);
             if (newName) artifact.name.set(newName);
             this.artifacts[filePath] ??= artifact;
+            artifact.isNew = false;
           },
         ),
       ),
@@ -213,9 +226,12 @@ export class FileArtifacts {
   }
 
   public async fileUpdated(filePath: string) {
-    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
+    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind) {
+      this.artifacts[filePath].isNew = false;
       return;
+    }
     this.artifacts[filePath] ??= new FileArtifact(filePath);
+    this.artifacts[filePath].isNew = false;
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
@@ -349,6 +365,10 @@ export class FileArtifacts {
     return Object.values(this.artifacts)
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");
+  }
+
+  public isNew(filePath: string): boolean {
+    return !(filePath in this.artifacts) || this.artifacts[filePath].isNew;
   }
 }
 

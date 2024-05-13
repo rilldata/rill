@@ -3,6 +3,7 @@ import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceIssueDevJWTQueryKey,
   getRuntimeServiceListFilesQueryKey,
+  V1FileEvent,
   V1WatchFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -22,11 +23,14 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
   if (!res?.path || res.path.includes(".db")) return;
 
   const instanceId = get(runtime).instanceId;
+  const isNew = fileArtifacts.isNew(res.path);
+  console.log(`[${res.event}] ${res.path} (${isNew})`);
+
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here on `refetchQueries`
   if (!res.isDir) {
     switch (res.event) {
-      case "FILE_EVENT_WRITE":
+      case V1FileEvent.FILE_EVENT_WRITE:
         void queryClient.refetchQueries(
           getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
         );
@@ -39,7 +43,7 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
         }
         break;
 
-      case "FILE_EVENT_DELETE":
+      case V1FileEvent.FILE_EVENT_DELETE:
         void queryClient.resetQueries(
           getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
         );
@@ -47,10 +51,12 @@ function handleWatchFileResponse(res: V1WatchFilesResponse) {
         break;
     }
   }
-  // TODO: should this be throttled?
-  void queryClient.refetchQueries(
-    getRuntimeServiceListFilesQueryKey(instanceId),
-  );
+  if (isNew || res.event === V1FileEvent.FILE_EVENT_DELETE) {
+    // TODO: should this be throttled?
+    void queryClient.refetchQueries(
+      getRuntimeServiceListFilesQueryKey(instanceId),
+    );
+  }
 }
 
 async function invalidateAllFiles() {

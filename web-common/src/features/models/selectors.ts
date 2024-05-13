@@ -1,6 +1,6 @@
 import {
   ResourceKind,
-  useFilteredResources,
+  useClientFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { QueryClient } from "@tanstack/query-core";
@@ -12,8 +12,10 @@ import {
 } from "../sources/selectors";
 
 export function useModels(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Model, (data) =>
-    data.resources?.filter((r) => r.meta?.name?.name === r.model?.state?.table),
+  return useClientFilteredResources(
+    instanceId,
+    ResourceKind.Model,
+    (res) => res.meta?.name?.name === res.model?.state?.table,
   );
 }
 

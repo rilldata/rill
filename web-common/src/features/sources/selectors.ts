@@ -1,6 +1,6 @@
 import {
   ResourceKind,
-  useFilteredResources,
+  useClientFilteredResources,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import {
   V1ProfileColumn,
@@ -18,8 +18,10 @@ export type SourceFromYaml = {
 };
 
 export function useSources(instanceId: string) {
-  return useFilteredResources(instanceId, ResourceKind.Source, (data) =>
-    data.resources?.filter((r) => !!r.source?.state?.table),
+  return useClientFilteredResources(
+    instanceId,
+    ResourceKind.Source,
+    (res) => !!res.source?.state?.table,
   );
 }
 
