@@ -24,7 +24,6 @@ import { derived, get, type Readable, writable } from "svelte/store";
 
 export class FileArtifact {
   public readonly path: string;
-  public isNew = true;
 
   public readonly name = writable<V1ResourceName | undefined>(undefined);
 
@@ -218,7 +217,6 @@ export class FileArtifacts {
             const newName = parseKindAndNameFromFile(filePath, fileContents);
             if (newName) artifact.name.set(newName);
             this.artifacts[filePath] ??= artifact;
-            artifact.isNew = false;
           },
         ),
       ),
@@ -226,12 +224,10 @@ export class FileArtifacts {
   }
 
   public async fileUpdated(filePath: string) {
-    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind) {
-      this.artifacts[filePath].isNew = false;
+    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
       return;
-    }
+
     this.artifacts[filePath] ??= new FileArtifact(filePath);
-    this.artifacts[filePath].isNew = false;
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
@@ -365,10 +361,6 @@ export class FileArtifacts {
     return Object.values(this.artifacts)
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");
-  }
-
-  public isNew(filePath: string): boolean {
-    return !(filePath in this.artifacts) || this.artifacts[filePath].isNew;
   }
 }
 

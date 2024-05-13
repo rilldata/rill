@@ -1,12 +1,12 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { createWatchFilesClient } from "@rilldata/web-common/features/entity-management/watch-files-client";
+  import { WatchFilesClient } from "@rilldata/web-common/features/entity-management/watch-files-client";
   import { createWatchResourceClient } from "@rilldata/web-common/features/entity-management/watch-resources-client";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
 
-  const fileWatcher = createWatchFilesClient();
+  const fileWatcher = WatchFilesClient.New();
   const resourceWatcher = createWatchResourceClient();
 
   export let host: string;
