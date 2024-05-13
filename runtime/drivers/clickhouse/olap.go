@@ -17,8 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var useCache = false
-
 // Create instruments
 var (
 	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/clickhouse")
