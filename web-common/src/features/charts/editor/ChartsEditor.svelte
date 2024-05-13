@@ -59,6 +59,6 @@
     content={yaml}
     extensions={[customYAMLwithJSONandSQL]}
     key={filePath}
-    on:update={(e) => debounceUpdateChartContent(e.detail.content)}
+    on:save={(e) => debounceUpdateChartContent(e.detail.content)}
   />
 </ChartsEditorContainer>

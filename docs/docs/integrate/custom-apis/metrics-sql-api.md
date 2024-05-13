@@ -9,7 +9,7 @@ Metrics SQL API allows you to query data from your predefined [metrics view](/bu
 Example:
 
 ```yaml
-kind: api
+type: api
 metrics_sql: SELECT dimension, AGGREGATE(measure) FROM my_metrics GROUP BY dimension
 ```
 

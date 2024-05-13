@@ -556,6 +556,9 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 
 	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
 	if err != nil {
+		if errors.Is(err, rillv1.ErrRillYAMLNotFound) { // empty project
+			return nil
+		}
 		return err
 	}
 	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)

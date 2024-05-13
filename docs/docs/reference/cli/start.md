@@ -22,6 +22,8 @@ rill start [<path>] [flags]
       --debug               Collect additional debug info
       --reset               Clear and re-ingest source data
       --log-format string   Log format (options: "console", "json") (default "console")
+      --tls-cert string     Path to TLS certificate
+      --tls-key string      Path to TLS key file
   -e, --env strings         Environment name (default "dev")
   -v, --var strings         Set project variables
 ```

@@ -2,13 +2,13 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
-  function handleCopyLink() {
+  async function handleCopyLink() {
     // Copy the current URL to the clipboard
-    navigator.clipboard.writeText(window.location.href);
+    await navigator.clipboard.writeText(window.location.href);
 
-    notifications.send({
+    eventBus.emit("notification", {
       message: "Link copied to clipboard",
     });
   }
