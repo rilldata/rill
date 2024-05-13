@@ -20,7 +20,7 @@ export const CriteriaOperationOptions = [
   },
   {
     value: MeasureFilterOperation.NotEquals,
-    label: "does not equals",
+    label: "does not equal",
     shortLabel: "!=",
   },
 ];
