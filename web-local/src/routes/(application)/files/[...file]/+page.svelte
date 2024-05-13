@@ -72,7 +72,10 @@
   });
 
   beforeNavigate((e) => {
-    if (!hasUnsavedChanges || interceptedUrl) return;
+    if (!hasUnsavedChanges || interceptedUrl) {
+      latest = undefined; // Avoids a flash of "unsaved changes" when navigating between files
+      return;
+    }
 
     e.cancel();
 
@@ -82,8 +85,8 @@
   let blob = "";
   $: blob = $fileQuery.data?.blob ?? blob;
 
-  $: latest = blob;
-  $: hasUnsavedChanges = latest !== blob;
+  let latest: string | undefined; // updated by the Editor via the binding below
+  $: hasUnsavedChanges = latest !== undefined && latest !== blob;
 
   $: pathname = $page.url.pathname;
   $: workspace = workspaces.get(pathname);

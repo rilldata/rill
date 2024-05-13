@@ -25,8 +25,7 @@
   let editor: EditorView;
   let container: HTMLElement;
 
-  $: latest = blob;
-  $: updateEditorContents(latest);
+  $: if (editor) updateEditorDocIfUnfocused(blob);
   $: if (editor) updateEditorExtensions(extensions);
 
   onMount(() => {
@@ -70,19 +69,22 @@
     );
   }
 
-  function updateEditorContents(newContent: string) {
-    if (editor && !editor.hasFocus) {
-      // NOTE: when changing files, we still want to update the editor
-      let curContent = editor.state.doc.toString();
-      if (newContent != curContent) {
-        editor.dispatch({
-          changes: {
-            from: 0,
-            to: curContent.length,
-            insert: newContent,
-          },
-        });
-      }
+  /**
+   * When the `blob` changes and the editor is not focused, update the editor's document.
+   * This updates the editor:
+   * - when the file is updated via an external IDE
+   * - when navigating between files
+   */
+  function updateEditorDocIfUnfocused(blob: string) {
+    let latest = editor.state.doc.toString();
+    if (!editor.hasFocus && blob !== latest) {
+      editor.dispatch({
+        changes: {
+          from: 0,
+          to: latest.length,
+          insert: blob,
+        },
+      });
     }
   }
 
