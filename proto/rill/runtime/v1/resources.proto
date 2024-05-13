@@ -122,6 +122,7 @@ message ModelState {
   google.protobuf.Struct result_properties = 5;
   string result_table = 2;
   string spec_hash = 3;
+  string refs_hash = 9;
   google.protobuf.Timestamp refreshed_on = 4;
   google.protobuf.Struct state = 7;
   StructType state_schema = 8;

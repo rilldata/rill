@@ -4570,6 +4570,8 @@ definitions:
         type: string
       specHash:
         type: string
+      refsHash:
+        type: string
       refreshedOn:
         type: string
         format: date-time

@@ -153,10 +153,16 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	// Use a hash of execution-related fields from the spec to determine if something has changed
-	hash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec)
+	// Compute hashes to determine if something has changes.
+	// If the specHash changes, a full model reset is required (because the config changed).
+	// If the refsHash changes, an incremental model run is sufficient (because the refs only went through a regular refresh).
+	specHash, err := r.executionSpecHash(ctx, self.Meta.Refs, model.Spec)
 	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute spec hash: %w", err)}
+	}
+	refsHash, err := r.refsStateHash(ctx, self.Meta.Refs, model.Spec)
+	if err != nil {
+		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute refs hash: %w", err)}
 	}
 
 	// Compute next time to refresh based on the RefreshSchedule (if any)
@@ -180,13 +186,14 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// Decide if we should trigger a reset
 	triggerReset := model.State.ResultConnector == "" // If its nil, ResultProperties/ResultTable will also be nil
 	triggerReset = triggerReset || model.State.RefreshedOn == nil
-	triggerReset = triggerReset || model.State.SpecHash != hash
+	triggerReset = triggerReset || model.State.SpecHash != specHash
 	triggerReset = triggerReset || !exists
 
 	// Decide if we should trigger
 	trigger := triggerReset
 	trigger = trigger || model.Spec.Trigger
 	trigger = trigger || !refreshOn.IsZero() && time.Now().After(refreshOn)
+	trigger = trigger || model.State.RefsHash != refsHash
 
 	// Reschedule if we're not triggering
 	if !trigger {
@@ -271,7 +278,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// If the build succeeded, update the model's state accodingly
 	if execErr == nil {
 		model.State.ExecutorConnector = executorConnector
-		model.State.SpecHash = hash
+		model.State.SpecHash = specHash
+		model.State.RefsHash = refsHash
 		model.State.RefreshedOn = timestamppb.Now()
 		model.State.State = newState
 		model.State.StateSchema = newStateSchema
@@ -314,7 +322,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
 }
 
-// executionSpecHash computes a hash of only those model properties that impact execution.
+// executionSpecHash computes a hash of those model properties that impact execution.
+// It also incorporates the spec hashes of the model's refs.
+// If the spec hash changes, it means the model should be reset and fully re-executed.
 func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec) (string, error) {
 	hash := md5.New()
 
@@ -329,26 +339,26 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 			return "", err
 		}
 
-		// Incorporate the ref's state info in the hash if and only if we are supposed to trigger when a ref has refreshed (denoted by RefreshSchedule.RefUpdate).
-		if spec.RefreshSchedule != nil && spec.RefreshSchedule.RefUpdate {
-			// Note: Only writing the state info to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
-			// Note: Also using StateUpdatedOn because the state version is reset when the resource is deleted and recreated.
-			r, err := r.C.Get(ctx, ref, false)
-			var stateVersion, stateUpdatedOn int64
-			if err == nil {
-				stateVersion = r.Meta.StateVersion
-				stateUpdatedOn = r.Meta.StateUpdatedOn.Seconds
-			} else {
-				stateVersion = -1
-			}
-			err = binary.Write(hash, binary.BigEndian, stateVersion)
-			if err != nil {
-				return "", err
-			}
-			err = binary.Write(hash, binary.BigEndian, stateUpdatedOn)
-			if err != nil {
-				return "", err
-			}
+		if ref.Kind != runtime.ResourceKindSource && ref.Kind != runtime.ResourceKindModel {
+			continue
+		}
+
+		r, err := r.C.Get(ctx, ref, false)
+		if err != nil {
+			continue
+		}
+
+		var refSpechHash string
+		switch ref.Kind {
+		case runtime.ResourceKindSource:
+			refSpechHash = r.GetSource().State.SpecHash
+		case runtime.ResourceKindModel:
+			refSpechHash = r.GetModel().State.SpecHash
+		}
+
+		_, err = hash.Write([]byte(refSpechHash))
+		if err != nil {
+			return "", err
 		}
 	}
 
@@ -428,6 +438,49 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
+// refsStateHash computes a hash of the state of the model's refs.
+// It is used to check if the model's refs have been updated, which should trigger an (incremental) model execution.
+// (Note that the refs state hash identifies when to trigger incremental runs, whereas the the execution spec hash identifies when to trigger full resets.)
+func (r *ModelReconciler) refsStateHash(ctx context.Context, refs []*runtimev1.ResourceName, spec *runtimev1.ModelSpec) (string, error) {
+	if spec.RefreshSchedule == nil || !spec.RefreshSchedule.RefUpdate {
+		return "", nil
+	}
+
+	hash := md5.New()
+
+	for _, ref := range refs {
+		_, err := hash.Write([]byte(ref.Kind))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(ref.Name))
+		if err != nil {
+			return "", err
+		}
+
+		// Note: Only writing the state info to the hash, not spec version, because it doesn't matter whether the spec/meta changes, only whether the state changes.
+		// Note: Also using StateUpdatedOn because the state version is reset when the resource is deleted and recreated.
+		r, err := r.C.Get(ctx, ref, false)
+		var stateVersion, stateUpdatedOn int64
+		if err == nil {
+			stateVersion = r.Meta.StateVersion
+			stateUpdatedOn = r.Meta.StateUpdatedOn.Seconds
+		} else {
+			stateVersion = -1
+		}
+		err = binary.Write(hash, binary.BigEndian, stateVersion)
+		if err != nil {
+			return "", err
+		}
+		err = binary.Write(hash, binary.BigEndian, stateUpdatedOn)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
+}
+
 // updateStateWithResult updates the model resource's state with the result of a model execution.
 // It only updates the result-related fields. If changing other fields, such as RefreshedOn and SpecHash, they must be assigned before calling this function.
 func (r *ModelReconciler) updateStateWithResult(ctx context.Context, self *runtimev1.Resource, res *drivers.ModelResult) error {
@@ -454,6 +507,7 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.ResultProperties = nil
 	mdl.State.ResultTable = ""
 	mdl.State.SpecHash = ""
+	mdl.State.RefsHash = ""
 	mdl.State.RefreshedOn = nil
 	mdl.State.State = nil
 	mdl.State.StateSchema = nil

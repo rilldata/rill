@@ -852,6 +852,11 @@ export class ModelState extends Message<ModelState> {
   specHash = "";
 
   /**
+   * @generated from field: string refs_hash = 9;
+   */
+  refsHash = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
    */
   refreshedOn?: Timestamp;
@@ -879,6 +884,7 @@ export class ModelState extends Message<ModelState> {
     { no: 5, name: "result_properties", kind: "message", T: Struct },
     { no: 2, name: "result_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "state", kind: "message", T: Struct },
     { no: 8, name: "state_schema", kind: "message", T: StructType },

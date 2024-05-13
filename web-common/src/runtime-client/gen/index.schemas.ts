@@ -1003,6 +1003,7 @@ export interface V1ModelState {
   resultProperties?: V1ModelStateResultProperties;
   resultTable?: string;
   specHash?: string;
+  refsHash?: string;
   refreshedOn?: string;
   state?: V1ModelStateState;
   stateSchema?: V1StructType;
