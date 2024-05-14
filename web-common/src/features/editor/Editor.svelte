@@ -7,39 +7,64 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
-  import { createEventDispatcher, onMount } from "svelte";
-  import { bindEditorEventsToDispatcher } from "../../components/editor/dispatch-events";
+  import { onMount } from "svelte";
   import { base } from "../../components/editor/presets/base";
   import { debounce } from "../../lib/create-debouncer";
   import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
+  import { FileArtifact } from "../entity-management/file-artifacts";
 
-  const dispatch = createEventDispatcher();
-
-  export let blob: string;
-  export let latest: string;
   export let extensions: Extension[] = [];
   export let autoSave: boolean;
   export let disableAutoSave: boolean;
-  export let hasUnsavedChanges: boolean;
+  export let fileArtifact: FileArtifact;
 
   let editor: EditorView;
   let container: HTMLElement;
 
-  $: latest = blob;
-  $: updateEditorContents(latest);
   $: if (editor) updateEditorExtensions(extensions);
+  $: ({
+    hasUnsavedChanges,
+    saveLocalContent,
+    updateLocalContent,
+    revert,
+    fileQuery,
+    blob,
+  } = fileArtifact);
+
+  $: ({ data } = $fileQuery);
+
+  $: if (editor && data && data.blob !== null && data.blob !== undefined) {
+    if (!editor.hasFocus && data.blob !== editor.state.doc.toString()) {
+      editor.dispatch({
+        changes: {
+          from: 0,
+          to: editor.state.doc.length,
+          insert: data.blob,
+          newLength: data.blob.length,
+        },
+        scrollIntoView: true,
+      });
+    }
+  }
 
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
-        doc: blob,
+        doc: blob ?? "",
         extensions: [
           // any extensions passed as props
           ...extensions,
           // establish a basic editor
           base(),
-          // this will catch certain events and dispatch them to the parent
-          bindEditorEventsToDispatcher(dispatch),
+          EditorView.updateListener.of(({ docChanged, state }) => {
+            if (docChanged && editor.hasFocus) {
+              const latest = state.doc.toString();
+              updateLocalContent(latest);
+              if (!disableAutoSave && autoSave) {
+                debounceSave();
+              }
+            }
+          }),
         ],
       }),
       parent: container,
@@ -49,20 +74,20 @@
   function updateEditorExtensions(newExtensions: Extension[]) {
     editor.setState(
       EditorState.create({
-        doc: blob,
+        doc: data?.blob,
         extensions: [
           // establish a basic editor
           base(),
           // any extensions passed as props
           ...newExtensions,
-          EditorView.updateListener.of((v) => {
-            if (v.focusChanged && v.view.hasFocus) {
-              dispatch("receive-focus");
-            }
-            if (v.docChanged) {
-              latest = v.state.doc.toString();
 
-              if (!disableAutoSave && autoSave) debounceSave();
+          EditorView.updateListener.of(({ docChanged, state }) => {
+            if (docChanged) {
+              const latest = state.doc.toString();
+              updateLocalContent(latest);
+              if (!disableAutoSave && autoSave) {
+                debounceSave();
+              }
             }
           }),
         ],
@@ -70,37 +95,26 @@
     );
   }
 
-  function updateEditorContents(newContent: string) {
-    if (editor && !editor.hasFocus) {
-      // NOTE: when changing files, we still want to update the editor
-      let curContent = editor.state.doc.toString();
-      if (newContent != curContent) {
-        editor.dispatch({
-          changes: {
-            from: 0,
-            to: curContent.length,
-            insert: newContent,
-          },
-        });
-      }
-    }
-  }
-
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      save();
+      saveLocalContent().catch(console.error);
     }
   }
 
-  function save() {
-    dispatch("save");
-  }
-
-  const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
+  $: debounceSave = debounce(saveLocalContent, FILE_SAVE_DEBOUNCE_TIME);
 
   function revertContent() {
-    dispatch("revert");
+    revert();
+    editor.dispatch({
+      changes: {
+        from: 0,
+        to: editor.state.doc.length,
+        insert: data?.blob ?? "",
+        newLength: data?.blob?.length ?? 0,
+      },
+      scrollIntoView: true,
+    });
   }
 </script>
 
@@ -126,14 +140,14 @@
   <footer>
     <div class="flex gap-x-3">
       {#if !autoSave || disableAutoSave}
-        <Button disabled={!hasUnsavedChanges} on:click={save}>
+        <Button disabled={!$hasUnsavedChanges} on:click={saveLocalContent}>
           <Check size="14px" />
           Save
         </Button>
 
         <Button
           type="text"
-          disabled={!hasUnsavedChanges}
+          disabled={!$hasUnsavedChanges}
           on:click={revertContent}
         >
           <UndoIcon size="14px" />

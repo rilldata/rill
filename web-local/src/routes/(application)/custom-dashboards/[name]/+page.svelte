@@ -248,6 +248,7 @@
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
             <CustomDashboardEditor
+              {fileArtifact}
               {filePath}
               {errors}
               {yaml}

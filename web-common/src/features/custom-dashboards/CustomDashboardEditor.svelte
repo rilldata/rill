@@ -1,21 +1,19 @@
 <script lang="ts">
-  import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import ChartsEditorContainer from "../charts/editor/ChartsEditorContainer.svelte";
+  import { FileArtifact } from "../entity-management/file-artifacts";
 
   const dispatch = createEventDispatcher();
 
   export let yaml: string;
   export let errors: V1ParseError[] = [];
   export let filePath: string;
+  export let fileArtifact: FileArtifact;
 
   const QUERY_DEBOUNCE_TIME = 300;
-
-  let view: EditorView;
-  let editor: YAMLEditor;
 
   function updateChart(content: string) {
     dispatch("update", content);
@@ -25,11 +23,9 @@
 
 <ChartsEditorContainer error={errors[0]}>
   <YAMLEditor
-    bind:this={editor}
-    bind:view
     content={yaml}
+    {fileArtifact}
     key={filePath}
-    whenFocused
     on:save={(e) => debounceUpdateChartContent(e.detail.content)}
   />
 </ChartsEditorContainer>

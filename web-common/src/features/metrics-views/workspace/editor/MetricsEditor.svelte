@@ -11,11 +11,13 @@
   import { createUpdateMetricsCallback } from "./update-metrics";
 
   import { JSONSchema7 } from "json-schema";
+  import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
 
   export let filePath: string;
   export let yaml: string;
   export let metricViewName: string;
   export let allErrors: V1ParseError[];
+  export let fileArtifact: FileArtifact;
 
   let view: EditorView;
   const metricsJsonSchema = metricsSchema as JSONSchema7;
@@ -45,7 +47,7 @@
     bind:view
     content={yaml}
     extensions={[placeholderElements.extension, yamlSchema(metricsJsonSchema)]}
-    whenFocused
+    {fileArtifact}
     on:save={updateMetrics}
   />
 </MetricsEditorContainer>

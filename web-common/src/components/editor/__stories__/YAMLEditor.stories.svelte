@@ -5,6 +5,7 @@
   import YAMLEditor from "../YAMLEditor.svelte";
   import { setLineStatuses } from "../line-status";
   import type { LineStatus } from "../line-status/state";
+  import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
 
   let content = `name: this is the name
 values:
@@ -13,6 +14,8 @@ values:
   - label: yet another
     expression: sum(revenue) / count(*)
   `;
+
+  const fileArtifact = new FileArtifact("/file.yaml");
 
   let view: EditorView;
 
@@ -49,6 +52,7 @@ values:
       >
     </div>
     <YAMLEditor
+      {fileArtifact}
       key="key"
       {content}
       bind:view

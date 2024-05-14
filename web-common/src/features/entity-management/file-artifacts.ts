@@ -9,17 +9,27 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
+import {
+  extractFileExtension,
+  extractFileName,
+} from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   type V1ParseError,
   V1ReconcileStatus,
   type V1Resource,
   type V1ResourceName,
+  getRuntimeServiceGetFileQueryKey,
+  createRuntimeServiceGetFile,
+  V1GetFileResponse,
+  runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { QueryClient } from "@tanstack/svelte-query";
+import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
 import { derived, get, type Readable, writable } from "svelte/store";
+import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
+import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
   public readonly path: string;
@@ -46,11 +56,64 @@ export class FileArtifact {
 
   public deleted = false;
 
+  public localContent: string | null = null;
+  public hasUnsavedChanges = writable<boolean>(false);
+  public blob: string | null = null;
+  public fileExtension: string;
+  public fileQuery: Readable<QueryObserverResult<V1GetFileResponse, HTTPError>>;
+  public ready: Promise<boolean>;
+
   public constructor(filePath: string) {
     this.path = filePath;
+
+    this.fileExtension = extractFileExtension(filePath);
+    const fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
+      this.fileExtension,
+    );
+
+    const queryKey = getRuntimeServiceGetFileQueryKey(get(runtime).instanceId, {
+      path: filePath,
+    });
+
+    this.ready = queryClient
+      .fetchQuery({
+        queryKey,
+        queryFn: () =>
+          runtimeServiceGetFile(get(runtime).instanceId, {
+            path: filePath,
+          }),
+      })
+      .then(({ blob }) => {
+        this.blob = blob ?? "";
+        return true;
+      })
+      .catch((e) => {
+        console.error(e);
+        return false;
+      });
+
+    this.fileQuery = derived(runtime, ({ instanceId }, set) => {
+      if (!instanceId) return;
+      createRuntimeServiceGetFile(
+        instanceId,
+        {
+          path: filePath,
+        },
+        { query: { queryClient, enabled: !fileTypeUnsupported } },
+      ).subscribe((response) => {
+        this.blob = response?.data?.blob ?? "";
+        set(response);
+      });
+    });
   }
 
   // actions
+
+  public newDataCallbacks: ((data: V1GetFileResponse) => void)[] = [];
+
+  public onNewData(callback: (data: V1GetFileResponse) => void) {
+    this.newDataCallbacks.push(callback);
+  }
 
   public updateAll(resource: V1Resource) {
     this.updateNameIfChanged(resource);
@@ -151,6 +214,37 @@ export class FileArtifact {
     );
   }
 
+  public updateLocalContent = (content: string | null) => {
+    this.localContent = content;
+
+    this.hasUnsavedChanges.set(content !== this.blob);
+  };
+
+  public revert = () => {
+    this.updateLocalContent(null);
+    this.hasUnsavedChanges.set(false);
+  };
+
+  public saveLocalContent = async () => {
+    if (!this.localContent) return;
+
+    const blob = this.localContent;
+
+    const instanceId = get(runtime).instanceId;
+    const key = getRuntimeServiceGetFileQueryKey(instanceId, {
+      path: this.path,
+    });
+
+    queryClient.setQueryData(key, {
+      blob,
+    });
+
+    await runtimeServicePutFile(instanceId, {
+      path: this.path,
+      blob,
+    }).catch(console.error);
+  };
+
   public getEntityName() {
     return get(this.name)?.name ?? extractFileName(this.path);
   }
@@ -197,6 +291,7 @@ export class FileArtifacts {
     const missingFiles = files.filter(
       (f) => !this.artifacts[f] || !get(this.artifacts[f].name)?.kind,
     );
+
     await Promise.all(
       missingFiles.map((filePath) =>
         fetchFileContent(queryClient, instanceId, filePath).then(
@@ -215,7 +310,7 @@ export class FileArtifacts {
   public async fileUpdated(filePath: string) {
     if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
       return;
-    this.artifacts[filePath] ??= new FileArtifact(filePath);
+    // this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
@@ -258,21 +353,21 @@ export class FileArtifacts {
 
   public updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      // this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateAll(resource);
     });
   }
 
   public updateReconciling(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      // this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
   public updateLastUpdated(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      // this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
   }

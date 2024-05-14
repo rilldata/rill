@@ -2,25 +2,21 @@
   import type { EditorView } from "@codemirror/view";
   import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import { setLineStatuses } from "../../../components/editor/line-status";
   import { mapParseErrorsToLines } from "../../metrics-views/errors";
-
-  const dispatch = createEventDispatcher();
+  import { FileArtifact } from "../../entity-management/file-artifacts";
 
   export let blob: string;
-  export let latest: string;
-  export let hasUnsavedChanges: boolean;
+
   export let allErrors: V1ParseError[];
   export let filePath: string;
+  export let fileArtifact: FileArtifact;
 
   let view: EditorView;
 
-  $: latest = blob;
+  $: ({ saveLocalContent } = fileArtifact);
 
   function handleUpdate(e: CustomEvent<{ content: string }>) {
-    latest = e.detail.content;
-
     // Clear line errors (it's confusing when they're outdated)
     setLineStatuses([], view);
   }
@@ -34,8 +30,7 @@
 
     event.preventDefault();
 
-    if (!hasUnsavedChanges) return;
-    dispatch("save");
+    saveLocalContent().catch(console.error);
   }
 </script>
 
@@ -43,11 +38,6 @@
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">
   <div class="grow flex bg-white overflow-y-auto rounded">
-    <YAMLEditor
-      content={latest}
-      bind:view
-      on:save={handleUpdate}
-      key={filePath}
-    />
+    <YAMLEditor content={blob} bind:view {fileArtifact} key={filePath} />
   </div>
 </div>

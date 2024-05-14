@@ -2,18 +2,19 @@
   import type { Extension } from "@codemirror/state";
   import { EditorState } from "@codemirror/state";
   import { EditorView } from "@codemirror/view";
-  import { createEventDispatcher, onMount } from "svelte";
-  import { bindEditorEventsToDispatcher } from "./dispatch-events";
+  import { onMount } from "svelte";
   import { base } from "./presets/base";
   import { yaml } from "./presets/yaml";
-
-  const dispatch = createEventDispatcher();
+  import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
 
   export let content: string;
   export let extensions: Extension[] = [];
   export let view: EditorView | undefined = undefined;
-  export let whenFocused = false;
   export let key: string;
+  export let fileArtifact: FileArtifact;
+  export let autoSave = true;
+
+  $: ({ saveLocalContent, updateLocalContent } = fileArtifact);
 
   let container: HTMLElement;
 
@@ -29,36 +30,21 @@
           // establish the yaml editor, which currently only has
           // syntax highlighting
           yaml(),
-          // this will catch certain events and dispatch them to the parent
-          bindEditorEventsToDispatcher(dispatch, whenFocused),
+
+          EditorView.updateListener.of(({ docChanged, state }) => {
+            if (docChanged) {
+              const latest = state.doc.toString();
+              updateLocalContent(latest);
+              if (autoSave) {
+                saveLocalContent().catch(console.error);
+              }
+            }
+          }),
         ],
       }),
       parent: container,
     });
   });
-
-  $: if (key) {
-    // When the key changes, unfocus the Editor so that the update is dispatched
-    view?.contentDOM.blur();
-  }
-
-  // reactive statements to dynamically update the editor when inputs change
-  $: updateEditorContents(content);
-
-  function updateEditorContents(newContent: string) {
-    if (view && !view.hasFocus) {
-      let curContent = view.state.doc.toString();
-      if (newContent != curContent) {
-        view.dispatch({
-          changes: {
-            from: 0,
-            to: curContent.length,
-            insert: newContent,
-          },
-        });
-      }
-    }
-  }
 </script>
 
 <div bind:this={container} class="contents" />

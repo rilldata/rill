@@ -57,6 +57,7 @@
     bind:this={editor}
     bind:view
     content={yaml}
+    {fileArtifact}
     extensions={[customYAMLwithJSONandSQL]}
     key={filePath}
     on:save={(e) => debounceUpdateChartContent(e.detail.content)}

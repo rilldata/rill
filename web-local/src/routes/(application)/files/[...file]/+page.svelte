@@ -15,10 +15,7 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import {
-    createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
@@ -29,8 +26,6 @@
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
   let interceptedUrl: string | null = null;
-
-  const putFile = createRuntimeServicePutFile(); // TODO: optimistically update the Get File cache
 
   $: filePath = addLeadingSlash($page.params.file);
   $: fileExtension = extractFileExtension(filePath);
@@ -50,6 +45,8 @@
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: name = fileArtifact.name;
   $: resourceKind = $name?.kind;
+
+  $: ({ hasUnsavedChanges, revert } = fileArtifact);
 
   $: isSource = resourceKind === ResourceKind.Source;
   $: isModel = resourceKind === ResourceKind.Model;
@@ -72,7 +69,7 @@
   });
 
   beforeNavigate((e) => {
-    if (!hasUnsavedChanges || interceptedUrl) return;
+    if (!$hasUnsavedChanges || interceptedUrl) return;
 
     e.cancel();
 
@@ -82,29 +79,29 @@
   let blob = "";
   $: blob = $fileQuery.data?.blob ?? blob;
 
-  $: latest = blob;
-  $: hasUnsavedChanges = latest !== blob;
+  // $: latest = blob;
+  // $: hasUnsavedChanges = latest !== blob;
 
   $: pathname = $page.url.pathname;
   $: workspace = workspaces.get(pathname);
   $: autoSave = workspace.editor.autoSave;
   $: disableAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
 
-  async function save() {
-    if (!hasUnsavedChanges) return;
+  // async function save() {
+  //   if (!hasUnsavedChanges) return;
 
-    await $putFile.mutateAsync({
-      instanceId: $runtime.instanceId,
-      data: {
-        path: filePath,
-        blob: latest,
-      },
-    });
-  }
+  //   await $putFile.mutateAsync({
+  //     instanceId: $runtime.instanceId,
+  //     data: {
+  //       path: filePath,
+  //       blob: latest,
+  //     },
+  //   });
+  // }
 
-  function revert() {
-    latest = blob;
-  }
+  // function revert() {
+  //   latest = blob;
+  // }
 
   // TODO: move this logic into the DirectoryState
   // TODO: expand all directories in the path, not just the last one
@@ -116,8 +113,9 @@
   function handleConfirm() {
     if (!interceptedUrl) return;
     const url = interceptedUrl;
-    latest = blob;
-    hasUnsavedChanges = false;
+    revert();
+    // latest = blob;
+    // hasUnsavedChanges = false;
     interceptedUrl = null;
     goto(url).catch(console.error);
   }
@@ -136,7 +134,7 @@
 {:else if isDashboard}
   <DashboardPage data={{ fileArtifact }} />
 {:else if isChart}
-  {#key $page.params.file}
+  {#key filePath}
     <ChartPage data={{ fileArtifact }} />
   {/key}
 {:else if isCustomDashboard}
@@ -144,8 +142,8 @@
 {:else if isOther}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader
-      filePath={$page.params.file}
-      {hasUnsavedChanges}
+      {filePath}
+      hasUnsavedChanges={$hasUnsavedChanges}
       slot="header"
     />
     <div
@@ -153,16 +151,14 @@
       class="editor-pane size-full overflow-hidden flex flex-col"
     >
       <WorkspaceEditorContainer>
-        <Editor
-          {blob}
-          {hasUnsavedChanges}
-          extensions={getExtensionsForFile(filePath)}
-          {disableAutoSave}
-          bind:latest
-          bind:autoSave={$autoSave}
-          on:save={save}
-          on:revert={revert}
-        />
+        {#await fileArtifact.ready then}
+          <Editor
+            {fileArtifact}
+            extensions={getExtensionsForFile(filePath)}
+            {disableAutoSave}
+            bind:autoSave={$autoSave}
+          />
+        {/await}
       </WorkspaceEditorContainer>
     </div>
   </WorkspaceContainer>

@@ -53,27 +53,30 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { createEventDispatcher, onMount } from "svelte";
+  import { onMount } from "svelte";
   import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
   import { editorTheme } from "../../../components/editor/theme";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useAllSourceColumns } from "../../sources/selectors";
   import { useAllModelColumns } from "../selectors";
+  import { FileArtifact } from "../../entity-management/file-artifacts";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
-  const dispatch = createEventDispatcher();
   const schema: { [table: string]: string[] } = {};
 
   export let blob: string;
-  export let latest: string;
   export let selections: SelectionRange[] = [];
   export let autoSave = true;
-  export let hasUnsavedChanges: boolean;
+  export let fileArtifact: FileArtifact;
 
   let editor: EditorView;
   let editorContainerComponent: HTMLDivElement;
   let autocompleteCompartment = new Compartment();
 
-  $: latest = blob;
+  $: ({ hasUnsavedChanges, saveLocalContent, updateLocalContent, fileQuery } =
+    fileArtifact);
+
+  $: debounceSave = debounce(saveLocalContent, 500);
 
   // Autocomplete: source tables
   $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
@@ -99,8 +102,6 @@
     }
   }
 
-  // reactive statements to dynamically update the editor when inputs change
-  $: updateEditorContents(latest);
   $: defaultTable = getTableNameFromFromClause(blob, schema);
   $: updateAutocompleteSources(schema, defaultTable);
   $: underlineSelection(selections || []);
@@ -216,13 +217,12 @@
           sql({ dialect: DuckDBSQL }),
           keymap.of([indentWithTab]),
           EditorView.updateListener.of((v) => {
-            if (v.focusChanged && v.view.hasFocus) {
-              dispatch("receive-focus");
-            }
             if (v.docChanged) {
-              latest = v.state.doc.toString();
-
-              if (autoSave) saveContent();
+              const latest = v.state.doc.toString();
+              updateLocalContent(latest);
+              if (autoSave) {
+                debounceSave();
+              }
             }
           }),
         ],
@@ -230,24 +230,6 @@
       parent: editorContainerComponent,
     });
   });
-
-  // REACTIVE FUNCTIONS
-
-  function updateEditorContents(newContent: string) {
-    if (editor && !editor.hasFocus) {
-      let curContent = editor.state.doc.toString();
-      if (newContent != curContent) {
-        // TODO: should we debounce this?
-        editor.dispatch({
-          changes: {
-            from: 0,
-            to: curContent.length,
-            insert: newContent,
-          },
-        });
-      }
-    }
-  }
 
   function updateAutocompleteSources(
     schema: { [table: string]: string[] },
@@ -276,19 +258,28 @@
     }
   }
 
-  function saveContent() {
-    dispatch("save");
-  }
-
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      saveContent();
+
+      saveLocalContent().catch(console.error);
     }
   }
 
-  function revertContent() {
-    dispatch("revert");
+  $: ({ data } = $fileQuery);
+
+  $: if (editor && data && data.blob !== null && data.blob !== undefined) {
+    if (!editor.hasFocus && data.blob !== editor.state.doc.toString()) {
+      editor.dispatch({
+        changes: {
+          from: 0,
+          to: editor.state.doc.length,
+          insert: data.blob,
+          newLength: data.blob.length,
+        },
+        scrollIntoView: true,
+      });
+    }
   }
 </script>
 
@@ -314,15 +305,27 @@
   <footer>
     <div class="flex gap-x-3">
       {#if !autoSave}
-        <Button disabled={!hasUnsavedChanges} on:click={saveContent}>
+        <Button
+          disabled={!$hasUnsavedChanges}
+          on:click={fileArtifact.saveLocalContent}
+        >
           <Check size="14px" />
           Save
         </Button>
 
         <Button
           type="text"
-          disabled={!hasUnsavedChanges}
-          on:click={revertContent}
+          disabled={!$hasUnsavedChanges}
+          on:click={() => {
+            fileArtifact.revert();
+            editor.dispatch({
+              changes: {
+                from: 0,
+                to: editor.state.doc.length,
+                insert: blob,
+              },
+            });
+          }}
         >
           <UndoIcon size="14px" />
           Revert changes
