@@ -18,31 +18,31 @@
 
   $: alert = useAlert($runtime.instanceId, alertId);
 
-  let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
-  $: dashboardStateForReport = mapQueryToDashboard(
+  let dashboardStateForAlert: ReturnType<typeof mapQueryToDashboard>;
+  $: dashboardStateForAlert = mapQueryToDashboard(
     $alert.data?.resource?.alert?.spec?.queryName ?? "",
     $alert.data?.resource?.alert?.spec?.queryArgsJson ?? "",
     executionTime,
   );
 
-  $: if ($dashboardStateForReport.data) {
+  $: if ($dashboardStateForAlert.data) {
     goto(
-      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${encodeURIComponent($dashboardStateForReport.data.state)}`,
+      `/${organization}/${project}/${$dashboardStateForAlert.data.metricsView}?state=${$dashboardStateForAlert.data.state}`,
     );
   }
 </script>
 
 <CtaLayoutContainer>
   <CtaContentContainer>
-    {#if $dashboardStateForReport.isFetching}
+    {#if $dashboardStateForAlert.isFetching}
       <div class="h-36 mt-10">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
       </div>
-    {:else if $dashboardStateForReport.error}
+    {:else if $dashboardStateForAlert.error}
       <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">Unable to open report</h2>
+        <h2 class="text-lg font-semibold">Unable to open Alert</h2>
         <CtaMessage>
-          {$dashboardStateForReport.error}
+          {$dashboardStateForAlert.error}
         </CtaMessage>
       </div>
       <CtaButton

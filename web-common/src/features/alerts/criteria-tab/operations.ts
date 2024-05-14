@@ -20,7 +20,7 @@ export const CriteriaOperationOptions = [
   },
   {
     value: MeasureFilterOperation.LessThanOrEquals,
-    label: "< less than or equals",
+    label: "<= less than or equals",
     shortLabel: "<=",
   },
   {

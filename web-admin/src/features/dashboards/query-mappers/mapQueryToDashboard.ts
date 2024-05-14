@@ -36,7 +36,7 @@ export function mapQueryToDashboard(
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
       isFetching: false,
-      error: "",
+      error: "Required parameters are missing.",
     });
 
   let metricsViewName: string = "";
