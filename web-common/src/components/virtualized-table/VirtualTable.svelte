@@ -21,7 +21,7 @@
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/shift-click-action";
   import type {
@@ -224,9 +224,10 @@
         hovering.type,
       );
       await navigator.clipboard.writeText(exportedValue);
-      notifications.send({
+      eventBus.emit("notification", {
         message: `copied value "${exportedValue}" to clipboard`,
       });
+
       return;
     }
 

@@ -18,10 +18,10 @@ We have extended the ISO 8601 standard to specify ranges like `Week-to-Date`.
 | rill-MTD           | Month to Date    | Yes           | No                 |
 | rill-QTD           | Quarter to Date  | Yes           | No                 |
 | rill-YTD           | Year to Date     | Yes           | No                 |
-| rill-WTC           | Previous Week    | Yes           | No                 |
-| rill-MTC           | Previous Month   | Yes           | No                 |
-| rill-QTC           | Previous Quarter | Yes           | No                 |
-| rill-YTC           | Previous Year    | Yes           | No                 |
+| rill-PWC           | Previous Week    | Yes           | No                 |
+| rill-PMC           | Previous Month   | Yes           | No                 |
+| rill-PQC           | Previous Quarter | Yes           | No                 |
+| rill-PYC           | Previous Year    | Yes           | No                 |
 | rill-PP            | Previous Period  | No            | Yes                |
 | rill-PD            | Previous Day     | No            | Yes                |
 | rill-PW            | Previous Week    | No            | Yes                |

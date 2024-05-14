@@ -1805,6 +1805,28 @@ export class ReportSpec extends Message<ReportSpec> {
    */
   annotations: { [key: string]: string } = {};
 
+  /**
+   * If true, will use the lowest watermark of its refs instead of the trigger time.
+   *
+   * @generated from field: bool watermark_inherit = 12;
+   */
+  watermarkInherit = false;
+
+  /**
+   * @generated from field: string intervals_iso_duration = 13;
+   */
+  intervalsIsoDuration = "";
+
+  /**
+   * @generated from field: int32 intervals_limit = 14;
+   */
+  intervalsLimit = 0;
+
+  /**
+   * @generated from field: bool intervals_check_unclosed = 15;
+   */
+  intervalsCheckUnclosed = false;
+
   constructor(data?: PartialMessage<ReportSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1823,6 +1845,10 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "intervals_iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 15, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {

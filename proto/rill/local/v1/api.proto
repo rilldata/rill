@@ -1,0 +1,44 @@
+syntax = "proto3";
+package rill.local.v1;
+
+import "google/protobuf/timestamp.proto";
+
+service LocalService {
+  // Ping returns the current time.
+  rpc Ping(PingRequest) returns (PingResponse) {}
+
+  // GetMetadata returns information about the local Rill instance.
+  rpc GetMetadata(GetMetadataRequest) returns (GetMetadataResponse) {}
+
+  // GetVersion returns details about the current and latest available Rill versions.
+  rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
+}
+
+message PingRequest {}
+
+message PingResponse {
+  google.protobuf.Timestamp time = 1;
+}
+
+message GetMetadataRequest {}
+
+message GetMetadataResponse {
+  string instance_id = 1;
+  string project_path = 2;
+  string install_id = 3;
+  string user_id = 4;
+  string version = 5;
+  string build_commit = 6;
+  string build_time = 7;
+  bool is_dev = 8;
+  bool analytics_enabled = 9;
+  bool readonly = 10;
+  int32 grpc_port = 11;
+}
+
+message GetVersionRequest {}
+
+message GetVersionResponse {
+  string current = 1;
+  string latest = 2;
+}

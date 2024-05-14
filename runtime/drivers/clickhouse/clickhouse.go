@@ -49,6 +49,8 @@ type driver struct{}
 type configProperties struct {
 	// DSN is the connection string
 	DSN string `mapstructure:"dsn"`
+	// EnableCache controls whether to enable cache for Clickhouse queries.
+	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 }

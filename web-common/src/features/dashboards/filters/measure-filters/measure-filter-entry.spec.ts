@@ -74,6 +74,28 @@ const TestCases: [
     createBinaryExpression("imp", V1Operation.OPERATION_LTE, 10),
   ],
   [
+    "equals",
+    {
+      value1: "10",
+      value2: "",
+      measure: "imp",
+      operation: MeasureFilterOperation.Equals,
+      comparison: MeasureFilterComparisonType.None,
+    },
+    createBinaryExpression("imp", V1Operation.OPERATION_EQ, 10),
+  ],
+  [
+    "not equals",
+    {
+      value1: "10",
+      value2: "",
+      measure: "imp",
+      operation: MeasureFilterOperation.NotEquals,
+      comparison: MeasureFilterComparisonType.None,
+    },
+    createBinaryExpression("imp", V1Operation.OPERATION_NEQ, 10),
+  ],
+  [
     "between",
     {
       value1: "10",

@@ -2,7 +2,7 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
@@ -84,7 +84,7 @@
   async function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
     await navigator.clipboard.writeText(number);
-    notifications.send({
+    eventBus.emit("notification", {
       message: `copied dimension value "${number}" to clipboard`,
     });
   }

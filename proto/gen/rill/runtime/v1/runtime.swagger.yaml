@@ -4938,6 +4938,16 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      watermarkInherit:
+        type: boolean
+        description: If true, will use the lowest watermark of its refs instead of the trigger time.
+      intervalsIsoDuration:
+        type: string
+      intervalsLimit:
+        type: integer
+        format: int32
+      intervalsCheckUnclosed:
+        type: boolean
   v1ReportState:
     type: object
     properties:

@@ -3874,6 +3874,14 @@ func (m *ReportSpec) validate(all bool) error {
 
 	// no validation rules for Annotations
 
+	// no validation rules for WatermarkInherit
+
+	// no validation rules for IntervalsIsoDuration
+
+	// no validation rules for IntervalsLimit
+
+	// no validation rules for IntervalsCheckUnclosed
+
 	if len(errors) > 0 {
 		return ReportSpecMultiError(errors)
 	}
