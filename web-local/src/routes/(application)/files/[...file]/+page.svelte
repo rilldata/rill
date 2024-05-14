@@ -72,7 +72,10 @@
   });
 
   beforeNavigate((e) => {
-    if (!hasUnsavedChanges || interceptedUrl) return;
+    if (!hasUnsavedChanges || interceptedUrl) {
+      localContent = null;
+      return;
+    }
 
     e.cancel();
 
