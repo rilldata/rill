@@ -15,24 +15,24 @@
 
   const dispatch = createEventDispatcher();
 
-  export let blob: string;
-  export let latest: string;
+  export let remoteContent: string;
+  export let localContent: string | null;
   export let extensions: Extension[] = [];
   export let autoSave: boolean;
   export let disableAutoSave: boolean;
   export let hasUnsavedChanges: boolean;
+  export let editor: EditorView | undefined = undefined;
+  export let key: string;
 
-  let editor: EditorView;
   let container: HTMLElement;
 
-  $: latest = blob;
-  $: updateEditorContents(latest);
+  $: updateEditorContents(remoteContent);
   $: if (editor) updateEditorExtensions(extensions);
 
   onMount(() => {
     editor = new EditorView({
       state: EditorState.create({
-        doc: blob,
+        doc: remoteContent,
         extensions: [
           // any extensions passed as props
           ...extensions,
@@ -47,9 +47,10 @@
   });
 
   function updateEditorExtensions(newExtensions: Extension[]) {
+    if (!editor) return;
     editor.setState(
       EditorState.create({
-        doc: blob,
+        doc: remoteContent,
         extensions: [
           // establish a basic editor
           base(),
@@ -60,7 +61,7 @@
               dispatch("receive-focus");
             }
             if (v.docChanged) {
-              latest = v.state.doc.toString();
+              localContent = v.state.doc.toString();
 
               if (!disableAutoSave && autoSave) debounceSave();
             }
@@ -68,6 +69,11 @@
         ],
       }),
     );
+  }
+
+  $: if (key) {
+    // When the key changes, unfocus the Editor so that the update is dispatched
+    editor?.contentDOM.blur();
   }
 
   function updateEditorContents(newContent: string) {
@@ -100,6 +106,13 @@
   const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
   function revertContent() {
+    editor?.dispatch({
+      changes: {
+        from: 0,
+        to: editor.state.doc.length,
+        insert: remoteContent,
+      },
+    });
     dispatch("revert");
   }
 </script>
@@ -113,7 +126,7 @@
       class="size-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
-        if (!editor.hasFocus) editor.focus();
+        if (!editor?.hasFocus) editor?.focus();
       }}
       on:keydown={() => {
         /** no op for now */
@@ -145,7 +158,15 @@
       class="flex gap-x-1 items-center h-full bg-white rounded-full"
       class:hidden={disableAutoSave}
     >
-      <Switch bind:checked={autoSave} id="auto-save" small />
+      <Switch
+        bind:checked={autoSave}
+        on:click={() => {
+          console.log({ autoSave });
+          // if (autoSave) debounceSave();
+        }}
+        id="auto-save"
+        small
+      />
       <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
     </div>
   </footer>

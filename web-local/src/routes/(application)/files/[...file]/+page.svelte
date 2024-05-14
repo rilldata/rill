@@ -82,8 +82,8 @@
   let blob = "";
   $: blob = $fileQuery.data?.blob ?? blob;
 
-  $: latest = blob;
-  $: hasUnsavedChanges = latest !== blob;
+  let localContent: string | null = null;
+  $: hasUnsavedChanges = localContent !== null && localContent !== blob;
 
   $: pathname = $page.url.pathname;
   $: workspace = workspaces.get(pathname);
@@ -91,19 +91,19 @@
   $: disableAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
 
   async function save() {
-    if (!hasUnsavedChanges) return;
+    if (localContent === null) return;
 
     await $putFile.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
         path: filePath,
-        blob: latest,
+        blob: localContent,
       },
     });
   }
 
   function revert() {
-    latest = blob;
+    localContent = null;
   }
 
   // TODO: move this logic into the DirectoryState
@@ -116,8 +116,7 @@
   function handleConfirm() {
     if (!interceptedUrl) return;
     const url = interceptedUrl;
-    latest = blob;
-    hasUnsavedChanges = false;
+    localContent = null;
     interceptedUrl = null;
     goto(url).catch(console.error);
   }
@@ -154,11 +153,11 @@
     >
       <WorkspaceEditorContainer>
         <Editor
-          {blob}
+          remoteContent={blob}
           {hasUnsavedChanges}
           extensions={getExtensionsForFile(filePath)}
           {disableAutoSave}
-          bind:latest
+          bind:localContent
           bind:autoSave={$autoSave}
           on:save={save}
           on:revert={revert}

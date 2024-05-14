@@ -64,16 +64,20 @@
   const schema: { [table: string]: string[] } = {};
 
   export let blob: string;
-  export let latest: string;
+  export let localContent: string | null;
   export let selections: SelectionRange[] = [];
   export let autoSave = true;
   export let hasUnsavedChanges: boolean;
+  export let key: string;
 
   let editor: EditorView;
   let editorContainerComponent: HTMLDivElement;
   let autocompleteCompartment = new Compartment();
 
-  $: latest = blob;
+  $: if (key) {
+    // When the key changes, unfocus the Editor so that the update is dispatched
+    editor?.contentDOM.blur();
+  }
 
   // Autocomplete: source tables
   $: allSourceColumns = useAllSourceColumns(queryClient, $runtime?.instanceId);
@@ -100,7 +104,7 @@
   }
 
   // reactive statements to dynamically update the editor when inputs change
-  $: updateEditorContents(latest);
+  $: updateEditorContents(blob);
   $: defaultTable = getTableNameFromFromClause(blob, schema);
   $: updateAutocompleteSources(schema, defaultTable);
   $: underlineSelection(selections || []);
@@ -220,7 +224,7 @@
               dispatch("receive-focus");
             }
             if (v.docChanged) {
-              latest = v.state.doc.toString();
+              localContent = v.state.doc.toString();
 
               if (autoSave) saveContent();
             }
