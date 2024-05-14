@@ -334,7 +334,14 @@
       {/if}
     </div>
     <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
-      <Switch bind:checked={autoSave} id="auto-save" small />
+      <Switch
+        bind:checked={autoSave}
+        id="auto-save"
+        small
+        on:click={() => {
+          if (!autoSave) saveContent();
+        }}
+      />
       <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
     </div>
   </footer>

@@ -160,12 +160,11 @@
     >
       <Switch
         bind:checked={autoSave}
-        on:click={() => {
-          console.log({ autoSave });
-          // if (autoSave) debounceSave();
-        }}
         id="auto-save"
         small
+        on:click={() => {
+          if (!autoSave) debounceSave();
+        }}
       />
       <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
     </div>
