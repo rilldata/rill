@@ -209,17 +209,17 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// Prepare the state to pass to the executor
+	// Prepare the incremental state to pass to the executor
 	incrementalRun := false
-	state := map[string]any{}
+	incrementalState := map[string]any{}
 	if !triggerReset && model.Spec.Incremental && prevResult != nil {
 		// This is an incremental run!
 		incrementalRun = true
-		if model.State.State != nil {
-			state = model.State.State.AsMap()
+		if model.State.IncrementalState != nil {
+			incrementalState = model.State.IncrementalState.AsMap()
 		}
 	}
-	state["incremental"] = incrementalRun // The incremental flag is hard-coded in the state by convention
+	incrementalState["incremental"] = incrementalRun // The incremental flag is hard-coded by convention
 
 	// Build log message
 	args := []zap.Field{zap.String("name", n.Name)}
@@ -236,11 +236,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	r.C.Logger.Debug("Building model output", args...)
 
 	// Prepare the new execution options
-	inputProps, err := r.resolveTemplatedProps(ctx, self, state, model.Spec.InputConnector, model.Spec.InputProperties.AsMap())
+	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.InputConnector, model.Spec.InputProperties.AsMap())
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
-	outputProps, err := r.resolveTemplatedProps(ctx, self, state, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap())
+	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap())
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -282,11 +282,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		execErr = fmt.Errorf("failed to build output: %w", execErr)
 	}
 
-	// After the model has executed successfully, we re-evaluate the model state (not to be confused with the resource state)
-	var newState *structpb.Struct
-	var newStateSchema *runtimev1.StructType
+	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
+	var newIncrementalState *structpb.Struct
+	var newIncrementalStateSchema *runtimev1.StructType
 	if execErr == nil {
-		newState, newStateSchema, execErr = r.resolveState(ctx, model)
+		newIncrementalState, newIncrementalStateSchema, execErr = r.resolveIncrementalState(ctx, model)
 	}
 
 	// If the build succeeded, update the model's state accodingly
@@ -295,8 +295,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		model.State.SpecHash = specHash
 		model.State.RefsHash = refsHash
 		model.State.RefreshedOn = timestamppb.Now()
-		model.State.State = newState
-		model.State.StateSchema = newStateSchema
+		model.State.IncrementalState = newIncrementalState
+		model.State.IncrementalStateSchema = newIncrementalStateSchema
 		err := r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -386,18 +386,18 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		return "", err
 	}
 
-	_, err = hash.Write([]byte(spec.StateResolver))
+	_, err = hash.Write([]byte(spec.IncrementalStateResolver))
 	if err != nil {
 		return "", err
 	}
 
-	if spec.StateResolverProperties != nil {
-		err = pbutil.WriteHash(structpb.NewStructValue(spec.StateResolverProperties), hash)
+	if spec.IncrementalStateResolverProperties != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.IncrementalStateResolverProperties), hash)
 		if err != nil {
 			return "", err
 		}
 
-		res, err := r.analyzeTemplatedVariables(ctx, spec.StateResolverProperties.AsMap())
+		res, err := r.analyzeTemplatedVariables(ctx, spec.IncrementalStateResolverProperties.AsMap())
 		if err != nil {
 			return "", err
 		}
@@ -523,8 +523,8 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.SpecHash = ""
 	mdl.State.RefsHash = ""
 	mdl.State.RefreshedOn = nil
-	mdl.State.State = nil
-	mdl.State.StateSchema = nil
+	mdl.State.IncrementalState = nil
+	mdl.State.IncrementalStateSchema = nil
 
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }
@@ -549,19 +549,23 @@ func (r *ModelReconciler) updateTriggerFalse(ctx context.Context, n *runtimev1.R
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
 }
 
-// resolveState resolves the state of a model using its configured state resolver.
+// resolveIncrementalState resolves the incremental state of a model using its configured incremental state resolver.
 // Note the ambiguity around "state" in models – all resources have a "spec" and a "state",
-// but models also have a "state" resolver that enables incremental/stateful computation by persisting data from the previous execution.
-// It returns nil results if a state resolver is not configured or does not return any data.
-func (r *ModelReconciler) resolveState(ctx context.Context, mdl *runtimev1.ModelV2) (*structpb.Struct, *runtimev1.StructType, error) {
-	if mdl.Spec.StateResolver == "" {
+// but models also have a resolver for "incremental state" that enables incremental/stateful computation by persisting data from the previous execution.
+// It returns nil results if an incremental state resolver is not configured or does not return any data.
+func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runtimev1.ModelV2) (*structpb.Struct, *runtimev1.StructType, error) {
+	if !mdl.Spec.Incremental {
+		return nil, nil, nil
+	}
+
+	if mdl.Spec.IncrementalStateResolver == "" {
 		return nil, nil, nil
 	}
 
 	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         r.C.InstanceID,
-		Resolver:           mdl.Spec.StateResolver,
-		ResolverProperties: mdl.Spec.StateResolverProperties.AsMap(),
+		Resolver:           mdl.Spec.IncrementalStateResolver,
+		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
 	})
 	if err != nil {
 		return nil, nil, err
@@ -663,7 +667,7 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 
 // resolveTemplatedProps resolves template tags in strings nested in the provided props.
 // Passing a connector is optional. If a connector is provided, it will be used to inform how values are escaped.
-func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, state map[string]any, connector string, props map[string]any) (map[string]any, error) {
+func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, incrementalState map[string]any, connector string, props map[string]any) (map[string]any, error) {
 	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, err
@@ -683,7 +687,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		Environment: inst.Environment,
 		User:        map[string]any{},
 		Variables:   inst.ResolveVariables(),
-		State:       state,
+		State:       incrementalState,
 		Self: compilerv1.TemplateResource{
 			Meta:  self.Meta,
 			Spec:  self.GetModel().Spec,

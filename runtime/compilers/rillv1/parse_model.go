@@ -50,12 +50,12 @@ func (p *Parser) parseModel(node *Node) error {
 		}
 	}
 
-	// Parse state resolver
-	var stateResolver string
-	var stateResolverProps *structpb.Struct
+	// Parse incremental state resolver
+	var incrementalStateResolver string
+	var incrementalStateResolverProps *structpb.Struct
 	if tmp.State != nil {
 		var refs []ResourceName
-		stateResolver, stateResolverProps, refs, err = p.parseDataYAML(tmp.State)
+		incrementalStateResolver, incrementalStateResolverProps, refs, err = p.parseDataYAML(tmp.State)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "state": %w`, err)
 		}
@@ -130,8 +130,8 @@ func (p *Parser) parseModel(node *Node) error {
 
 	r.ModelSpec.Incremental = tmp.Incremental
 
-	r.ModelSpec.StateResolver = stateResolver
-	r.ModelSpec.StateResolverProperties = stateResolverProps
+	r.ModelSpec.IncrementalStateResolver = incrementalStateResolver
+	r.ModelSpec.IncrementalStateResolverProperties = incrementalStateResolverProps
 
 	r.ModelSpec.InputConnector = inputConnector
 	r.ModelSpec.InputProperties = inputPropsPB

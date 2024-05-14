@@ -751,14 +751,14 @@ export class ModelSpec extends Message<ModelSpec> {
   incremental = false;
 
   /**
-   * @generated from field: string state_resolver = 14;
+   * @generated from field: string incremental_state_resolver = 14;
    */
-  stateResolver = "";
+  incrementalStateResolver = "";
 
   /**
-   * @generated from field: google.protobuf.Struct state_resolver_properties = 15;
+   * @generated from field: google.protobuf.Struct incremental_state_resolver_properties = 15;
    */
-  stateResolverProperties?: Struct;
+  incrementalStateResolverProperties?: Struct;
 
   /**
    * @generated from field: string input_connector = 10;
@@ -796,8 +796,8 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 4, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 5, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "incremental", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 14, name: "state_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 15, name: "state_resolver_properties", kind: "message", T: Struct },
+    { no: 14, name: "incremental_state_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "incremental_state_resolver_properties", kind: "message", T: Struct },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -862,14 +862,14 @@ export class ModelState extends Message<ModelState> {
   refreshedOn?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Struct state = 7;
+   * @generated from field: google.protobuf.Struct incremental_state = 7;
    */
-  state?: Struct;
+  incrementalState?: Struct;
 
   /**
-   * @generated from field: rill.runtime.v1.StructType state_schema = 8;
+   * @generated from field: rill.runtime.v1.StructType incremental_state_schema = 8;
    */
-  stateSchema?: StructType;
+  incrementalStateSchema?: StructType;
 
   constructor(data?: PartialMessage<ModelState>) {
     super();
@@ -886,8 +886,8 @@ export class ModelState extends Message<ModelState> {
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
-    { no: 7, name: "state", kind: "message", T: Struct },
-    { no: 8, name: "state_schema", kind: "message", T: StructType },
+    { no: 7, name: "incremental_state", kind: "message", T: Struct },
+    { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {

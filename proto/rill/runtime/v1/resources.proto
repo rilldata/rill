@@ -106,8 +106,8 @@ message ModelSpec {
   Schedule refresh_schedule = 4;
   uint32 timeout_seconds = 5;
   bool incremental = 13;
-  string state_resolver = 14;
-  google.protobuf.Struct state_resolver_properties = 15;
+  string incremental_state_resolver = 14;
+  google.protobuf.Struct incremental_state_resolver_properties = 15;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
   string output_connector = 1;
@@ -124,8 +124,8 @@ message ModelState {
   string spec_hash = 3;
   string refs_hash = 9;
   google.protobuf.Timestamp refreshed_on = 4;
-  google.protobuf.Struct state = 7;
-  StructType state_schema = 8;
+  google.protobuf.Struct incremental_state = 7;
+  StructType incremental_state_schema = 8;
 }
 
 message MetricsViewV2 {

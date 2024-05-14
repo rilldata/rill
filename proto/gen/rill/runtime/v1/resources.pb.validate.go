@@ -2305,14 +2305,14 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for Incremental
 
-	// no validation rules for StateResolver
+	// no validation rules for IncrementalStateResolver
 
 	if all {
-		switch v := interface{}(m.GetStateResolverProperties()).(type) {
+		switch v := interface{}(m.GetIncrementalStateResolverProperties()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ModelSpecValidationError{
-					field:  "StateResolverProperties",
+					field:  "IncrementalStateResolverProperties",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -2320,16 +2320,16 @@ func (m *ModelSpec) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ModelSpecValidationError{
-					field:  "StateResolverProperties",
+					field:  "IncrementalStateResolverProperties",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetStateResolverProperties()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetIncrementalStateResolverProperties()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ModelSpecValidationError{
-				field:  "StateResolverProperties",
+				field:  "IncrementalStateResolverProperties",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -2568,11 +2568,11 @@ func (m *ModelState) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetState()).(type) {
+		switch v := interface{}(m.GetIncrementalState()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ModelStateValidationError{
-					field:  "State",
+					field:  "IncrementalState",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -2580,16 +2580,16 @@ func (m *ModelState) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ModelStateValidationError{
-					field:  "State",
+					field:  "IncrementalState",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetState()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetIncrementalState()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ModelStateValidationError{
-				field:  "State",
+				field:  "IncrementalState",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
@@ -2597,11 +2597,11 @@ func (m *ModelState) validate(all bool) error {
 	}
 
 	if all {
-		switch v := interface{}(m.GetStateSchema()).(type) {
+		switch v := interface{}(m.GetIncrementalStateSchema()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, ModelStateValidationError{
-					field:  "StateSchema",
+					field:  "IncrementalStateSchema",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -2609,16 +2609,16 @@ func (m *ModelState) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, ModelStateValidationError{
-					field:  "StateSchema",
+					field:  "IncrementalStateSchema",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetStateSchema()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetIncrementalStateSchema()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return ModelStateValidationError{
-				field:  "StateSchema",
+				field:  "IncrementalStateSchema",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

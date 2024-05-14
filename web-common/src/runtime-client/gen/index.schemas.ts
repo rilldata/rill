@@ -998,7 +998,7 @@ export interface V1Notifier {
   properties?: V1NotifierProperties;
 }
 
-export type V1ModelStateState = { [key: string]: any };
+export type V1ModelStateIncrementalState = { [key: string]: any };
 
 export type V1ModelStateResultProperties = { [key: string]: any };
 
@@ -1010,22 +1010,24 @@ export interface V1ModelState {
   specHash?: string;
   refsHash?: string;
   refreshedOn?: string;
-  state?: V1ModelStateState;
-  stateSchema?: V1StructType;
+  incrementalState?: V1ModelStateIncrementalState;
+  incrementalStateSchema?: V1StructType;
 }
 
 export type V1ModelSpecOutputProperties = { [key: string]: any };
 
 export type V1ModelSpecInputProperties = { [key: string]: any };
 
-export type V1ModelSpecStateResolverProperties = { [key: string]: any };
+export type V1ModelSpecIncrementalStateResolverProperties = {
+  [key: string]: any;
+};
 
 export interface V1ModelSpec {
   refreshSchedule?: V1Schedule;
   timeoutSeconds?: number;
   incremental?: boolean;
-  stateResolver?: string;
-  stateResolverProperties?: V1ModelSpecStateResolverProperties;
+  incrementalStateResolver?: string;
+  incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
   outputConnector?: string;

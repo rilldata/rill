@@ -4543,9 +4543,9 @@ definitions:
         format: int64
       incremental:
         type: boolean
-      stateResolver:
+      incrementalStateResolver:
         type: string
-      stateResolverProperties:
+      incrementalStateResolverProperties:
         type: object
       inputConnector:
         type: string
@@ -4575,9 +4575,9 @@ definitions:
       refreshedOn:
         type: string
         format: date-time
-      state:
+      incrementalState:
         type: object
-      stateSchema:
+      incrementalStateSchema:
         $ref: '#/definitions/v1StructType'
   v1ModelV2:
     type: object
