@@ -24,6 +24,7 @@
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
@@ -33,6 +34,9 @@
   let tablePercentage = 0.45;
   let filePath: string;
   let chartName: string;
+
+  $: workspace = workspaces.get(filePath);
+  $: autoSave = workspace.editor.autoSave;
 
   if (data.fileArtifact) {
     filePath = data.fileArtifact.path;
@@ -108,7 +112,7 @@
           max={0.65 * containerWidth}
           onUpdate={(width) => (editorPercentage = width / containerWidth)}
         />
-        <ChartsEditor {filePath} />
+        <ChartsEditor {filePath} bind:autoSave={$autoSave} />
       </div>
       <div class="size-full flex-col flex overflow-hidden">
         <ChartPromptStatusDisplay {chartName}>

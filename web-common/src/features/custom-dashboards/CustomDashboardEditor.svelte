@@ -11,6 +11,9 @@
   export let yaml: string;
   export let errors: V1ParseError[] = [];
   export let filePath: string;
+  export let autoSave: boolean;
+  export let localContent: string;
+  export let onRevert: () => void;
 
   const QUERY_DEBOUNCE_TIME = 300;
 
@@ -18,8 +21,6 @@
     dispatch("update", content);
   }
   const debounceUpdateChartContent = debounce(updateChart, QUERY_DEBOUNCE_TIME);
-
-  let localContent: string;
 
   $: hasUnsavedChanges = yaml !== localContent;
 </script>
@@ -30,10 +31,14 @@
       blob={yaml}
       bind:latest={localContent}
       extensions={FileExtensionToEditorExtension[".yaml"]}
-      autoSave
+      bind:autoSave
       disableAutoSave={false}
       {hasUnsavedChanges}
       on:save={() => debounceUpdateChartContent(localContent)}
+      on:revert={() => {
+        localContent = yaml;
+        onRevert();
+      }}
     />
   {/key}
 </ChartsEditorContainer>

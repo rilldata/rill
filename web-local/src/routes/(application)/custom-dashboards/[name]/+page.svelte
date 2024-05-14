@@ -35,12 +35,13 @@
   import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
   const updateFile = createRuntimeServicePutFile({
     mutation: {
-      onMutate({ instanceId, data }) {
-        const key = getRuntimeServiceGetFileQueryKey(instanceId, data);
-        queryClient.setQueryData(key, data);
+      onMutate({ instanceId, data: { blob, path } }) {
+        const key = getRuntimeServiceGetFileQueryKey(instanceId, { path });
+        queryClient.setQueryData(key, { blob });
       },
     },
   });
@@ -59,11 +60,17 @@
   let editorPercentage = 0.5;
   let chartEditorPercentage = 0.4;
   let selectedChartName: string | null = null;
+  let localContent: string;
   let spec: V1DashboardSpec = {
     columns: 20,
     gap: 4,
     items: [],
   };
+
+  $: workspace = workspaces.get(filePath);
+  $: autoSave = workspace.editor.autoSave;
+  $: chartWorkspace = workspaces.get(selectedChartFilePath ?? "");
+  $: chartAutoSave = chartWorkspace.editor.autoSave;
 
   $: if (data.fileArtifact) {
     fileArtifact = data.fileArtifact;
@@ -83,13 +90,9 @@
 
   $: errorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: errors = $errorsQuery;
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    { path: filePath },
-    {
-      query: { keepPreviousData: true },
-    },
-  );
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
+    path: filePath,
+  });
   $: [, fileName] = splitFolderAndName(filePath);
 
   $: yaml = $fileQuery.data?.blob ?? "";
@@ -103,7 +106,7 @@
   $: selectedChartFilePath = selectedChartFileArtifact?.path;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
 
-  $: spec = $resourceQuery.data?.dashboard?.spec ?? spec;
+  $: spec = structuredClone($resourceQuery.data?.dashboard?.spec ?? spec);
 
   $: ({ items = [], columns = 20, gap = 4 } = spec);
 
@@ -157,9 +160,12 @@
     node.set("x", e.detail.position[0]);
     node.set("y", e.detail.position[1]);
 
-    yaml = parsedDocument.toString();
+    localContent = parsedDocument.toString();
 
-    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+    if ($autoSave)
+      await updateChartFile(
+        new CustomEvent("update", { detail: localContent }),
+      );
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
@@ -179,9 +185,10 @@
       items.add(newChart);
     }
 
-    yaml = parsedDocument.toString();
+    localContent = parsedDocument.toString();
 
-    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+    if ($autoSave)
+      await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 </script>
 
@@ -248,10 +255,16 @@
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
             <CustomDashboardEditor
+              bind:autoSave={$autoSave}
               {filePath}
               {errors}
               {yaml}
+              {localContent}
               on:update={updateChartFile}
+              onRevert={() => {
+                spec = structuredClone(spec);
+                parsedDocument = parseDocument(yaml);
+              }}
             />
           </section>
 
@@ -291,7 +304,10 @@
             {#if showChartEditor}
               <div class="size-full overflow-hidden">
                 {#if selectedChartFilePath}
-                  <ChartsEditor filePath={selectedChartFilePath} />
+                  <ChartsEditor
+                    filePath={selectedChartFilePath}
+                    bind:autoSave={$chartAutoSave}
+                  />
                 {/if}
               </div>
             {/if}
