@@ -65,7 +65,7 @@
             : null}
         />
       {:else if noChangeData}
-        <span class="opacity-50 italic" style:font-size=".925em">-</span>
+        <span class="text-gray-400">-</span>
       {:else if $isDeltaPercent}
         <PercentageChange
           value={itemData.deltaRel

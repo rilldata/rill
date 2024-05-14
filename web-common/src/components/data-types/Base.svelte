@@ -12,7 +12,7 @@
   class="whitespace-nowrap {classes} {color} break-normal"
 >
   {#if isNull}
-    <span style:font-size=".925em" class="opacity-50">-</span>
+    <span class="text-gray-400">-</span>
   {:else}
     <slot />
   {/if}

@@ -62,7 +62,7 @@
 >
   <slot name="value">
     {#if isNoData}
-      <span class="opacity-50" style:font-size=".925em">-</span>
+      <span class="text-gray-400">-</span>
     {:else if value !== null}
       <span class:text-red-500={diffIsNegative}>
         {approxSign}{negSign}{intValue}{suffix}<span class="opacity-50">%</span>
