@@ -39,8 +39,9 @@ export class WatchFilesClient {
     if (!res?.path || res.path.includes(".db")) return;
 
     const instanceId = get(runtime).instanceId;
-    const isNew = this.seenFiles.has(res.path);
+    const isNew = !this.seenFiles.has(res.path);
 
+    console.log(res.path, isNew);
     // invalidations will wait until the re-fetched query is completed
     // so, we should not `await` here on `refetchQueries`
     if (!res.isDir) {

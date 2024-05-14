@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ResourceKind,
-    useFilteredResources,
+    useClientFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ChevronDown, Plus } from "lucide-svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -14,12 +14,12 @@
   let value = "";
 
   // We want to get only valid charts here. Hence using ListResources API
-  $: chartFileNamesQuery = useFilteredResources(
+  $: chartsQuery = useClientFilteredResources(
     $runtime.instanceId,
     ResourceKind.Component,
-    (data) => data.resources?.map((r) => r.meta?.name?.name ?? "") ?? [],
   );
-  $: chartFileNames = $chartFileNamesQuery.data ?? [];
+  $: chartFileNames =
+    $chartsQuery.data?.map((c) => c.meta?.name?.name ?? "") ?? [];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>

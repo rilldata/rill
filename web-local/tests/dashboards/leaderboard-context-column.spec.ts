@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { clickMenuButton } from "../utils/commonHelpers";
 import {
   interactWithComparisonMenu,
@@ -12,6 +13,8 @@ test.describe("leaderboard context column", () => {
   useDashboardFlowTestSetup();
 
   test("Leaderboard context column", async ({ page }) => {
+    const watcher = new ResourceWatcher(page);
+
     // reset metrics, and add a metric with `valid_percent_of_total: true`
     const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
@@ -41,7 +44,7 @@ test.describe("leaderboard context column", () => {
       column: domain
       description: ""
       `;
-    await updateAndWaitForDashboard(page, metricsWithValidPercentOfTotal);
+    await watcher.updateAndWaitForDashboard(metricsWithValidPercentOfTotal);
 
     async function clickMenuItem(itemName: string, wait = true) {
       await clickMenuButton(page, itemName);

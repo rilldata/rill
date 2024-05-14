@@ -23,6 +23,7 @@ export function useDashboard(instanceId: string, metricViewName: string) {
 }
 
 export function useValidDashboards(instanceId: string) {
+  // This is used in cloud as well so do not use "useClientFilteredResources"
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
     data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
   );
