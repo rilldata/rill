@@ -46,7 +46,6 @@
   $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
     componentResource?.component?.spec ?? {});
 
-  $: console.log(componentResource);
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
   onMount(async () => {
@@ -54,8 +53,6 @@
       ResizeHandleComponent = (await import("./ResizeHandle.svelte")).default;
     }
   });
-
-  $: console.log(renderer);
 </script>
 
 <div

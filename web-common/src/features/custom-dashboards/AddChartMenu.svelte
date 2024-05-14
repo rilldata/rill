@@ -35,7 +35,7 @@
   <DropdownMenu.Content class="flex flex-col gap-y-1 ">
     <DropdownMenu.Group>
       <DropdownMenu.Item disabled>Generate chart with AI</DropdownMenu.Item>
-      <DropdownMenu.Item disabled>Specify new chart</DropdownMenu.Item>
+      <DropdownMenu.Item disabled>Create new chart</DropdownMenu.Item>
     </DropdownMenu.Group>
     <DropdownMenu.Separator />
     <div class="px-1">

@@ -32,7 +32,6 @@
 
 <DashboardWrapper
   bind:contentRect
-  color="bg-slate-200"
   {scale}
   height={maxBottom * gridCell}
   width={defaults.DASHBOARD_WIDTH}
