@@ -20,6 +20,7 @@ var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema
 type ComponentYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
+	Subtitle   string           `yaml:"subtitle"`
 	Data       *DataYAML        `yaml:"data"`
 	VegaLite   *string          `yaml:"vega_lite"`
 	Markdown   *string          `yaml:"markdown"`
@@ -116,6 +117,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	// Create the component spec
 	spec := &runtimev1.ComponentSpec{
 		Title:              tmp.Title,
+		Subtitle:           tmp.Subtitle,
 		Resolver:           resolver,
 		ResolverProperties: resolverProps,
 		Renderer:           renderer,

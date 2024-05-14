@@ -14,10 +14,14 @@
 
   $: instanceId = $runtime.instanceId;
 
+  const dashboardWidth = chartView
+    ? defaults.DASHBOARD_WIDTH / 2
+    : defaults.DASHBOARD_WIDTH;
+
   $: gridWidth = contentRect.width;
-  $: scale = gridWidth / defaults.DASHBOARD_WIDTH;
-  $: gapSize = defaults.DASHBOARD_WIDTH * (gap / 1000);
-  $: gridCell = defaults.DASHBOARD_WIDTH / columns;
+  $: scale = gridWidth / dashboardWidth;
+  $: gapSize = dashboardWidth * (gap / 1000);
+  $: gridCell = dashboardWidth / columns;
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
 
   $: maxBottom = items.reduce((max, el) => {

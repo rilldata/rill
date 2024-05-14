@@ -1,4 +1,4 @@
-export const DASHBOARD_WIDTH = 800;
+export const DASHBOARD_WIDTH = 1600;
 export const COMPONENT_RADIUS = 0.08;
 export const FONT_SIZE = 40;
 export const COMPONENT_WIDTH = 1;

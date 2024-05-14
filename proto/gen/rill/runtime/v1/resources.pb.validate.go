@@ -7182,6 +7182,8 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for DefinedInDashboard
 
+	// no validation rules for Subtitle
+
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
 	}
