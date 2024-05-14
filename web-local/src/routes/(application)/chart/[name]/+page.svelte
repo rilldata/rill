@@ -4,7 +4,10 @@
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
+  import {
+    EntityStatus,
+    EntityType,
+  } from "@rilldata/web-common/features/entity-management/types";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -20,6 +23,7 @@
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
@@ -77,7 +81,7 @@
     resolverProperties,
   );
 
-  $: chartData = $chartDataQuery?.data as Record<string, unknown>[];
+  $: ({ isFetching: chartDataFetching, data: chartData } = $chartDataQuery);
 </script>
 
 <svelte:head>
@@ -119,7 +123,7 @@
         </ChartPromptStatusDisplay>
 
         <div
-          class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
+          class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0 grid place-content-center"
           style:height="{tablePercentage * 100}%"
         >
           <Resizer
@@ -129,7 +133,13 @@
             max={0.65 * containerHeight}
             onUpdate={(height) => (tablePercentage = height / containerHeight)}
           />
-          {#if chartData}
+
+          {#if chartDataFetching}
+            <div class="flex flex-col gap-y-2 items-center">
+              <Spinner size="2em" status={EntityStatus.Running} />
+              <div>Loading chart data</div>
+            </div>
+          {:else if chartData}
             <PreviewTable
               rows={chartData}
               name={chartName}
@@ -139,9 +149,7 @@
               }))}
             />
           {:else}
-            <div class="size-full grid place-content-center text-lg">
-              Update YAML to view Chart data
-            </div>
+            <p class="text-lg">Update YAML to view chart data</p>
           {/if}
         </div>
       </div>
