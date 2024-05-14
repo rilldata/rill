@@ -3,14 +3,14 @@
 </script>
 
 {#if assembled}
-  <span class="no-data-cell">no data</span>
+  <span class="no-data-cell">-</span>
 {:else}
   <span class="loading-cell" />
 {/if}
 
 <style lang="postcss">
   .no-data-cell {
-    @apply italic text-gray-400;
+    @apply text-gray-400;
     font-size: 0.925em;
   }
 
