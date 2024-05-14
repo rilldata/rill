@@ -154,7 +154,6 @@
     >
       <WorkspaceEditorContainer>
         <Editor
-          key={filePath}
           {blob}
           {hasUnsavedChanges}
           extensions={getExtensionsForFile(filePath)}

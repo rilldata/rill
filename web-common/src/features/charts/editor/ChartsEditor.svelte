@@ -51,15 +51,15 @@
 </script>
 
 <ChartsEditorContainer error={yaml?.length ? mainError : undefined}>
-  <Editor
-    blob={yaml}
-    key={filePath}
-    bind:latest={localContent}
-    extensions={[customYAMLwithJSONandSQL]}
-    autoSave
-    disableAutoSave={false}
-    showSaveControls={false}
-    hasUnsavedChanges={false}
-    on:save={() => debounceUpdateChartContent(localContent)}
-  />
+  {#key filePath}
+    <Editor
+      blob={yaml}
+      bind:latest={localContent}
+      extensions={[customYAMLwithJSONandSQL]}
+      autoSave
+      disableAutoSave={false}
+      hasUnsavedChanges={false}
+      on:save={() => debounceUpdateChartContent(localContent)}
+    />
+  {/key}
 </ChartsEditorContainer>

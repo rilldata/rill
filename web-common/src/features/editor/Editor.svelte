@@ -18,16 +18,15 @@
   export let blob: string;
   export let latest: string;
   export let extensions: Extension[] = [];
-  export let autoSave: boolean = false;
+  export let autoSave: boolean;
   export let disableAutoSave: boolean;
   export let hasUnsavedChanges: boolean;
-  export let key: string;
-  export let showSaveControls = true;
 
   let editor: EditorView;
   let container: HTMLElement;
 
-  $: updateEditorContents(blob);
+  $: latest = blob;
+  $: updateEditorContents(latest);
   $: if (editor) updateEditorExtensions(extensions);
 
   onMount(() => {
@@ -35,10 +34,10 @@
       state: EditorState.create({
         doc: blob,
         extensions: [
-          // establish a basic editor
-          base(),
           // any extensions passed as props
           ...extensions,
+          // establish a basic editor
+          base(),
           // this will catch certain events and dispatch them to the parent
           bindEditorEventsToDispatcher(dispatch),
         ],
@@ -103,11 +102,6 @@
   function revertContent() {
     dispatch("revert");
   }
-
-  $: if (key) {
-    // When the key changes, unfocus the Editor so that the update is dispatched
-    editor?.contentDOM.blur();
-  }
 </script>
 
 <svelte:window on:keydown={handleKeydown} />
@@ -129,34 +123,32 @@
     />
   </div>
 
-  {#if showSaveControls}
-    <footer>
-      <div class="flex gap-x-3">
-        {#if !autoSave || disableAutoSave}
-          <Button disabled={!hasUnsavedChanges} on:click={save}>
-            <Check size="14px" />
-            Save
-          </Button>
+  <footer>
+    <div class="flex gap-x-3">
+      {#if !autoSave || disableAutoSave}
+        <Button disabled={!hasUnsavedChanges} on:click={save}>
+          <Check size="14px" />
+          Save
+        </Button>
 
-          <Button
-            type="text"
-            disabled={!hasUnsavedChanges}
-            on:click={revertContent}
-          >
-            <UndoIcon size="14px" />
-            Revert changes
-          </Button>
-        {/if}
-      </div>
-      <div
-        class="flex gap-x-1 items-center h-full bg-white rounded-full"
-        class:hidden={disableAutoSave}
-      >
-        <Switch bind:checked={autoSave} id="auto-save" small />
-        <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
-      </div>
-    </footer>
-  {/if}
+        <Button
+          type="text"
+          disabled={!hasUnsavedChanges}
+          on:click={revertContent}
+        >
+          <UndoIcon size="14px" />
+          Revert changes
+        </Button>
+      {/if}
+    </div>
+    <div
+      class="flex gap-x-1 items-center h-full bg-white rounded-full"
+      class:hidden={disableAutoSave}
+    >
+      <Switch bind:checked={autoSave} id="auto-save" small />
+      <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
+    </div>
+  </footer>
 </section>
 
 <style lang="postcss">

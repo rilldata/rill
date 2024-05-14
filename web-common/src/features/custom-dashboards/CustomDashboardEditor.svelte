@@ -25,15 +25,15 @@
 </script>
 
 <ChartsEditorContainer error={errors[0]}>
-  <Editor
-    blob={yaml}
-    key={filePath}
-    bind:latest={localContent}
-    extensions={FileExtensionToEditorExtension[".yaml"]}
-    autoSave
-    disableAutoSave={false}
-    showSaveControls={false}
-    {hasUnsavedChanges}
-    on:save={() => debounceUpdateChartContent(localContent)}
-  />
+  {#key filePath}
+    <Editor
+      blob={yaml}
+      bind:latest={localContent}
+      extensions={FileExtensionToEditorExtension[".yaml"]}
+      autoSave
+      disableAutoSave={false}
+      {hasUnsavedChanges}
+      on:save={() => debounceUpdateChartContent(localContent)}
+    />
+  {/key}
 </ChartsEditorContainer>
