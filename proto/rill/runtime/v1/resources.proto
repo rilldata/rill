@@ -262,6 +262,10 @@ message ReportSpec {
   ExportFormat export_format = 8;
   repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
+  bool watermark_inherit = 12; // If true, will use the lowest watermark of its refs instead of the trigger time.
+  string intervals_iso_duration = 13;
+  int32 intervals_limit = 14;
+  bool intervals_check_unclosed = 15;
 }
 
 message ReportState {

@@ -438,6 +438,8 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
 	res.Refresh.TimeZone = opts.RefreshTimeZone
+	res.Watermark = "inherit"
+	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	res.Export.Format = opts.ExportFormat.String()
@@ -481,6 +483,8 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Title = opts.Title
 	res.Refresh.Cron = opts.RefreshCron
 	res.Refresh.TimeZone = opts.RefreshTimeZone
+	res.Watermark = "inherit"
+	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	res.Export.Format = exportFormat
@@ -540,6 +544,7 @@ func recreateReportOptionsFromSpec(spec *runtimev1.ReportSpec) (*adminv1.ReportO
 		opts.RefreshCron = spec.RefreshSchedule.Cron
 		opts.RefreshTimeZone = spec.RefreshSchedule.TimeZone
 	}
+	opts.IntervalDuration = spec.IntervalsIsoDuration
 	opts.QueryName = spec.QueryName
 	opts.QueryArgsJson = spec.QueryArgsJson
 	opts.ExportLimit = spec.ExportLimit
@@ -572,6 +577,10 @@ type reportYAML struct {
 		Cron     string `yaml:"cron"`
 		TimeZone string `yaml:"time_zone"`
 	} `yaml:"refresh"`
+	Watermark string `yaml:"watermark"`
+	Intervals struct {
+		Duration string `yaml:"duration"`
+	} `yaml:"intervals"`
 	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
