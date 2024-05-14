@@ -32,7 +32,7 @@
 
 <DashboardWrapper
   bind:contentRect
-  color="bg-slate-50"
+  color="bg-slate-200"
   {scale}
   height={maxBottom * gridCell}
   width={defaults.DASHBOARD_WIDTH}
@@ -49,6 +49,7 @@
         {scale}
         {radius}
         padding={gapSize}
+        fontSize={component.fontSize}
         width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
         height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
           gridCell}

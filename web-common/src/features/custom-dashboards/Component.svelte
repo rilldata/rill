@@ -33,6 +33,7 @@
   export let chartView = false;
   export let componentName: string;
   export let instanceId: string;
+  export let fontSize: number = 20;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -45,6 +46,7 @@
   $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
     componentResource?.component?.spec ?? {});
 
+  $: console.log(componentResource);
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
   onMount(async () => {
@@ -52,6 +54,8 @@
       ResizeHandleComponent = (await import("./ResizeHandle.svelte")).default;
     }
   });
+
+  $: console.log(renderer);
 </script>
 
 <div
@@ -87,8 +91,7 @@
     {/if}
 
     <div
-      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none"
-      class:bg-white={renderer === "vega_lite"}
+      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none bg-white"
       class:shadow-lg={interacting}
       style:border-radius="{radius}px"
     >
@@ -110,7 +113,7 @@
           {resolverProperties}
         />
       {:else if renderer === "markdown" && rendererProperties?.content}
-        <Markdown markdown={rendererProperties.content} fontSize={20} />
+        <Markdown markdown={rendererProperties.content} {fontSize} />
       {/if}
     </div>
   </div>
