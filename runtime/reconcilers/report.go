@@ -11,6 +11,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
@@ -21,7 +22,12 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const reportExecutionHistoryLimit = 10
+const (
+	reportExecutionHistoryLimit = 10
+	reportCheckDefaultTimeout   = 5 * time.Minute
+	reportDefaultIntervalsLimit = 25
+	reportQueryPriority         = 1
+)
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindReport, newReportReconciler)
@@ -125,53 +131,12 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		reportTime = timestamppb.Now()
 	}
 
-	// Create new execution and save in State.CurrentExecution
-	rep.State.CurrentExecution = &runtimev1.ReportExecution{
-		Adhoc:      rep.Spec.Trigger,
-		ReportTime: reportTime,
-		StartedOn:  timestamppb.Now(),
-	}
-	err = r.C.UpdateState(ctx, self.Meta.Name, self)
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
-
-	// Execute report
-	dirtyErr, reportErr := r.sendReport(ctx, self, rep, reportTime.AsTime())
-
-	// Set execution error and determine whether to retry.
-	// We're only going to retry on non-dirty cancellations.
-	retry := false
-	if reportErr != nil {
-		if errors.Is(reportErr, context.Canceled) {
-			if dirtyErr {
-				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted after some notifications were sent. The report will not automatically retry."
-			} else {
-				retry = true
-				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted. It will automatically retry."
-			}
-		} else {
-			rep.State.CurrentExecution.ErrorMessage = fmt.Sprintf("Report run failed: %v", reportErr.Error())
-		}
-		reportErr = fmt.Errorf("Last report run failed with error: %v", reportErr.Error())
-	}
-
-	// Log it
-	if reportErr != nil {
-		r.C.Logger.Error("Report run failed", zap.Any("report", self.Meta.Name), zap.Any("error", reportErr.Error()))
-	}
-
-	// Commit CurrentExecution to history
-	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
-	err = r.popCurrentExecution(ctx, self, rep)
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
+	retry, executeErr := r.executeAll(ctx, self, rep, reportTime.AsTime(), adhocTrigger)
 
 	// If we want to retry, exit without advancing NextRunOn or clearing spec.Trigger.
 	// NOTE: We don't set Retrigger here because we'll leave re-scheduling to whatever cancelled the reconciler.
-	if retry {
-		return runtime.ReconcileResult{Err: reportErr}
+	if retry || errors.Is(executeErr, context.Canceled) {
+		return runtime.ReconcileResult{Err: executeErr}
 	}
 
 	// Advance NextRunOn
@@ -190,9 +155,9 @@ func (r *ReportReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Done
 	if rep.State.NextRunOn != nil {
-		return runtime.ReconcileResult{Err: reportErr, Retrigger: rep.State.NextRunOn.AsTime()}
+		return runtime.ReconcileResult{Err: executeErr, Retrigger: rep.State.NextRunOn.AsTime()}
 	}
-	return runtime.ReconcileResult{Err: reportErr}
+	return runtime.ReconcileResult{Err: executeErr}
 }
 
 // updateNextRunOn evaluates the report's schedule relative to the current time, and updates the NextRunOn state accordingly.
@@ -256,6 +221,158 @@ func (r *ReportReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 
 	rep.Spec.Trigger = false
 	return r.C.UpdateSpec(ctx, self.Meta.Name, self)
+}
+
+// executeAll runs queries and sends reports. It also adds entries to rep.State.ExecutionHistory.
+// By default, a report is checked once for the current watermark, but if rep.Spec.IntervalsIsoDuration is set, it will be checked *for each* interval that has elapsed since the previous execution watermark.
+func (r *ReportReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, error) {
+	// Enforce timeout
+	timeout := reportCheckDefaultTimeout
+	if rep.Spec.TimeoutSeconds > 0 {
+		timeout = time.Duration(rep.Spec.TimeoutSeconds) * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// Run report queries and send notifications
+	retry, executeErr := r.executeAllWrapped(ctx, self, rep, triggerTime, adhocTrigger)
+	if executeErr == nil {
+		return false, nil
+	}
+
+	// If it's a cancellation, don't add the error to the execution history.
+	// The controller may for example cancel if the runtime is restarting or the underlying source is scheduled to refresh.
+	if retry || errors.Is(executeErr, context.Canceled) {
+		// If there's a CurrentExecution, pretend it never happened
+		if rep.State.CurrentExecution != nil {
+			rep.State.CurrentExecution = nil
+			err := r.C.UpdateState(ctx, self.Meta.Name, self)
+			if err != nil {
+				return false, err
+			}
+		}
+		return retry, executeErr
+	}
+
+	// There was an execution error. Add it to the execution history.
+	if rep.State.CurrentExecution == nil {
+		// CurrentExecution will only be nil if we never made it to the point of checking the report query.
+		rep.State.CurrentExecution = &runtimev1.ReportExecution{
+			Adhoc:      adhocTrigger,
+			ReportTime: nil, // NOTE: Setting execution time to nil. The only alternative is using triggerTime, but a) it might not be the reportTime, b) it might lead to previousWatermark being advanced too far on the next invocation.
+			StartedOn:  timestamppb.Now(),
+		}
+	}
+	rep.State.CurrentExecution.ErrorMessage = executeErr.Error()
+	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
+	err := r.popCurrentExecution(ctx, self, rep)
+	if err != nil {
+		return false, err
+	}
+
+	return retry, executeErr
+}
+
+// executeAllWrapped is called by executeAll, which wraps it with timeout and writing of errors to the execution history.
+func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, triggerTime time.Time, adhocTrigger bool) (bool, error) {
+	// Check refs
+	err := checkRefs(ctx, r.C, self.Meta.Refs)
+	if err != nil {
+		return false, err
+	}
+
+	// Evaluate watermark unless refs check failed.
+	watermark := triggerTime
+	if rep.Spec.WatermarkInherit {
+		t, ok, err := r.computeInheritedWatermark(ctx, self.Meta.Refs)
+		if err != nil {
+			return false, err
+		}
+		if ok {
+			watermark = t
+		}
+		// If !ok, no watermark could be computed. So we'll just stick to triggerTime.
+	}
+
+	// Evaluate previous watermark (if any)
+	var previousWatermark time.Time
+	for _, e := range rep.State.ExecutionHistory {
+		if e.ReportTime != nil {
+			previousWatermark = e.ReportTime.AsTime()
+			break
+		}
+	}
+
+	// Evaluate intervals
+	ts, err := calculateReportExecutionTimes(rep, watermark, previousWatermark)
+	if err != nil {
+		// This should not usually error
+		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err))
+		return false, err
+	}
+
+	if len(ts) == 0 {
+		r.C.Logger.Debug("Skipped report because watermark is unchanged or has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration))
+		return false, nil
+	}
+
+	// Evaluate report for each execution time
+	for _, t := range ts {
+		retry, err := r.executeSingle(ctx, self, rep, t, adhocTrigger)
+		if err != nil {
+			return retry, err
+		}
+	}
+
+	return false, nil
+}
+
+// executeSingle runs the report query and sends notifications for a single execution time.
+func (r *ReportReconciler) executeSingle(ctx context.Context, self *runtimev1.Resource, rep *runtimev1.Report, executionTime time.Time, adhocTrigger bool) (bool, error) {
+	// Create new execution and save in State.CurrentExecution
+	rep.State.CurrentExecution = &runtimev1.ReportExecution{
+		Adhoc:      adhocTrigger,
+		ReportTime: timestamppb.New(executionTime),
+		StartedOn:  timestamppb.Now(),
+	}
+	err := r.C.UpdateState(ctx, self.Meta.Name, self)
+	if err != nil {
+		return false, err
+	}
+
+	// Execute report
+	dirtyErr, reportErr := r.sendReport(ctx, self, rep, executionTime)
+
+	// Set execution error and determine whether to retry.
+	// We're only going to retry on non-dirty cancellations.
+	retry := false
+	if reportErr != nil {
+		if errors.Is(reportErr, context.Canceled) || errors.Is(reportErr, context.DeadlineExceeded) {
+			if dirtyErr {
+				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted after some notifications were sent. The report will not automatically retry."
+			} else {
+				retry = true
+				rep.State.CurrentExecution.ErrorMessage = "Report run was interrupted. It will automatically retry."
+			}
+		} else {
+			rep.State.CurrentExecution.ErrorMessage = fmt.Sprintf("Report run failed: %v", reportErr.Error())
+		}
+		reportErr = fmt.Errorf("Last report run failed with error: %v", reportErr.Error())
+	}
+
+	// Log it
+	if reportErr != nil {
+		r.C.Logger.Error("Report run failed", zap.Any("report", self.Meta.Name), zap.Any("error", reportErr.Error()))
+	}
+
+	// Commit CurrentExecution to history
+	rep.State.CurrentExecution.FinishedOn = timestamppb.Now()
+	err = r.popCurrentExecution(ctx, self, rep)
+	if err != nil {
+		return false, err
+	}
+
+	return retry, reportErr
 }
 
 // sendReport composes and sends the actual report to the configured recipients.
@@ -380,4 +497,110 @@ func formatExportFormat(f runtimev1.ExportFormat) string {
 	default:
 		return f.String()
 	}
+}
+
+// computeInheritedWatermark computes the inherited watermark for the report.
+// It returns false if the watermark could not be computed.
+func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs []*runtimev1.ResourceName) (time.Time, bool, error) {
+	var t time.Time
+	for _, ref := range refs {
+		q := &queries.ResourceWatermark{
+			ResourceKind: ref.Kind,
+			ResourceName: ref.Name,
+		}
+		err := r.C.Runtime.Query(ctx, r.C.InstanceID, q, reportQueryPriority)
+		if err != nil {
+			return t, false, fmt.Errorf("failed to resolve watermark for %s/%s: %w", ref.Kind, ref.Name, err)
+		}
+
+		if q.Result != nil && (t.IsZero() || q.Result.Before(t)) {
+			t = *q.Result
+		}
+	}
+
+	return t, !t.IsZero(), nil
+}
+
+// calculateReportExecutionTimes calculates the execution times for a report, taking into consideration the report's intervals configuration and previous executions.
+// If the report is not configured to run on intervals, it will return a slice containing only the current watermark.
+func calculateReportExecutionTimes(r *runtimev1.Report, watermark, previousWatermark time.Time) ([]time.Time, error) {
+	// If the watermark is unchanged, skip the check.
+	// NOTE: It might make sense to make this configurable in the future, but the use cases seem limited.
+	// The watermark can only be unchanged if watermark="inherit" and since that indicates watermarks can be trusted, why check for the same watermark?
+	if watermark.Equal(previousWatermark) {
+		return nil, nil
+	}
+
+	// If the report is not configured to run on intervals, check it just for the current watermark.
+	if r.Spec.IntervalsIsoDuration == "" {
+		return []time.Time{watermark}, nil
+	}
+
+	// Note: The watermark and previousWatermark may be unaligned with the report's interval duration.
+
+	// Parse the interval duration
+	// The YAML parser validates it as a StandardDuration, so this shouldn't fail.
+	di, err := duration.ParseISO8601(r.Spec.IntervalsIsoDuration)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse interval duration: %w", err)
+	}
+	d, ok := di.(duration.StandardDuration)
+	if !ok {
+		return nil, fmt.Errorf("interval duration %q is not a standard ISO 8601 duration", r.Spec.IntervalsIsoDuration)
+	}
+
+	// Extract time zone
+	tz := time.UTC
+	if r.Spec.RefreshSchedule != nil && r.Spec.RefreshSchedule.TimeZone != "" {
+		tz, err = time.LoadLocation(r.Spec.RefreshSchedule.TimeZone)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load time zone %q: %w", r.Spec.RefreshSchedule.TimeZone, err)
+		}
+	}
+
+	// Compute the last end time (rounded to the interval duration)
+	// NOTE: Hardcoding firstDayOfWeek and firstMonthOfYear. We might consider inferring these from the underlying metrics view (or just customizing in the `intervals:` clause) in the future.
+	end := watermark.In(tz)
+	if r.Spec.IntervalsCheckUnclosed {
+		// Ceil
+		t := d.Truncate(end, 1, 1)
+		if !t.Equal(end) {
+			end = d.Add(t)
+		}
+	} else {
+		// Floor
+		end = d.Truncate(end, 1, 1)
+	}
+
+	// If there isn't a previous watermark, we'll just check the current watermark.
+	if previousWatermark.IsZero() {
+		return []time.Time{end}, nil
+	}
+
+	// Skip if end isn't past the previous watermark (unless we're supposed to check unclosed intervals)
+	if !r.Spec.IntervalsCheckUnclosed && !end.After(previousWatermark) {
+		return nil, nil
+	}
+
+	// Set a limit on the number of intervals to check
+	limit := int(r.Spec.IntervalsLimit)
+	if limit <= 0 {
+		limit = reportDefaultIntervalsLimit
+	}
+
+	// Calculate the execution times
+	ts := []time.Time{end}
+	for i := 0; i < limit; i++ {
+		t := ts[len(ts)-1]
+		t = d.Sub(t)
+		if !t.After(previousWatermark) {
+			break
+		}
+		ts = append(ts, t)
+	}
+
+	// Reverse execution times so we run them in chronological order
+	slices.Reverse(ts)
+
+	return ts, nil
 }
