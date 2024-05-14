@@ -1,6 +1,4 @@
 <script lang="ts">
-  import type { EditorView } from "@codemirror/view";
-  import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -12,14 +10,14 @@
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
+  import Editor from "../../editor/Editor.svelte";
 
   export let filePath: string;
 
   const updateFile = createRuntimeServicePutFile();
   const QUERY_DEBOUNCE_TIME = 100;
 
-  let view: EditorView;
-  let editor: YAMLEditor;
+  let localContent: string;
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
     path: filePath,
@@ -53,12 +51,15 @@
 </script>
 
 <ChartsEditorContainer error={yaml?.length ? mainError : undefined}>
-  <YAMLEditor
-    bind:this={editor}
-    bind:view
-    content={yaml}
-    extensions={[customYAMLwithJSONandSQL]}
+  <Editor
+    blob={yaml}
     key={filePath}
-    on:save={(e) => debounceUpdateChartContent(e.detail.content)}
+    bind:latest={localContent}
+    extensions={[customYAMLwithJSONandSQL]}
+    autoSave
+    disableAutoSave={false}
+    showSaveControls={false}
+    hasUnsavedChanges={false}
+    on:save={() => debounceUpdateChartContent(localContent)}
   />
 </ChartsEditorContainer>
