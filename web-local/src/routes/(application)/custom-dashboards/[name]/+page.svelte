@@ -38,9 +38,9 @@
 
   const updateFile = createRuntimeServicePutFile({
     mutation: {
-      onMutate({ instanceId, data }) {
-        const key = getRuntimeServiceGetFileQueryKey(instanceId, data);
-        queryClient.setQueryData(key, data);
+      onMutate({ instanceId, data: { path, blob } }) {
+        const key = getRuntimeServiceGetFileQueryKey(instanceId, { path });
+        queryClient.setQueryData(key, { blob });
       },
     },
   });
