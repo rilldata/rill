@@ -13,10 +13,20 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
+  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import {
+    ResourceKind,
+    useResource,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+
   export let data: { fileArtifact?: FileArtifact } = {};
 
   let containerWidth: number;
+  let containerHeight: number;
   let editorPercentage = 0.55;
+  let tablePercentage = 0.45;
   let filePath: string;
   let chartName: string;
 
@@ -30,7 +40,7 @@
   }
 
   $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
+    instanceId,
     {
       path: filePath,
     },
@@ -48,8 +58,26 @@
     },
   );
 
+  $: ({ instanceId } = $runtime);
+
   $: yaml = $fileQuery.data?.blob || "";
   $: editorWidth = editorPercentage * containerWidth;
+  $: tableHeight = tablePercentage * containerHeight;
+
+  $: resourceQuery = useResource(instanceId, chartName, ResourceKind.Component);
+
+  $: ({ data: componentResource } = $resourceQuery);
+
+  $: ({ resolverProperties } = componentResource?.component?.spec ?? {});
+
+  $: chartDataQuery = createRuntimeServiceGetChartData(
+    queryClient,
+    instanceId,
+    chartName,
+    resolverProperties,
+  );
+
+  $: chartData = $chartDataQuery?.data as Record<string, unknown>[];
 </script>
 
 <svelte:head>
@@ -57,7 +85,11 @@
 </svelte:head>
 
 {#if $fileQuery.data && yaml !== undefined}
-  <WorkspaceContainer inspector={false} bind:width={containerWidth}>
+  <WorkspaceContainer
+    inspector={false}
+    bind:width={containerWidth}
+    bind:height={containerHeight}
+  >
     <ChartsHeader slot="header" {filePath} />
     <div slot="body" class="flex size-full">
       <div
@@ -74,14 +106,45 @@
         />
         <ChartsEditor {filePath} />
       </div>
-      <ChartPromptStatusDisplay {chartName}>
-        <CustomDashboardEmbed
-          chartView
-          gap={8}
-          columns={10}
-          items={[{ width: 10, height: 10, x: 0, y: 0, component: chartName }]}
-        />
-      </ChartPromptStatusDisplay>
+      <div class="size-full flex-col flex overflow-hidden">
+        <ChartPromptStatusDisplay {chartName}>
+          <CustomDashboardEmbed
+            chartView
+            gap={8}
+            columns={10}
+            items={[
+              { width: 10, height: 10, x: 0, y: 0, component: chartName },
+            ]}
+          />
+        </ChartPromptStatusDisplay>
+
+        <div
+          class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
+          style:height="{tablePercentage * 100}%"
+        >
+          <Resizer
+            direction="NS"
+            dimension={tableHeight}
+            min={100}
+            max={0.65 * containerHeight}
+            onUpdate={(height) => (tablePercentage = height / containerHeight)}
+          />
+          {#if chartData}
+            <PreviewTable
+              rows={chartData}
+              name={chartName}
+              columnNames={Object.keys(chartData[0]).map((key) => ({
+                type: "VARCHAR",
+                name: key,
+              }))}
+            />
+          {:else}
+            <div class="size-full grid place-content-center text-lg">
+              Update YAML to view Chart data
+            </div>
+          {/if}
+        </div>
+      </div>
     </div>
   </WorkspaceContainer>
 {/if}
