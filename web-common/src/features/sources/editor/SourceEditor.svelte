@@ -17,8 +17,8 @@
 
   let editor: EditorView;
 
-  function handleUpdate(e: CustomEvent<{ content: string }>) {
-    localContent = e.detail.content;
+  function handleUpdate() {
+    dispatch("save");
 
     // Clear line errors (it's confusing when they're outdated)
     setLineStatuses([], editor);
