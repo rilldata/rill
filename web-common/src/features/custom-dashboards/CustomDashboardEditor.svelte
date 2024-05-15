@@ -19,21 +19,23 @@
   }
   const debounceUpdateChartContent = debounce(updateChart, QUERY_DEBOUNCE_TIME);
 
-  let localContent: string;
+  let localContent: string | null = null;
 
-  $: hasUnsavedChanges = yaml !== localContent;
+  $: hasUnsavedChanges = localContent !== null && yaml !== localContent;
 </script>
 
 <ChartsEditorContainer error={errors[0]}>
-  {#key filePath}
-    <Editor
-      blob={yaml}
-      bind:latest={localContent}
-      extensions={FileExtensionToEditorExtension[".yaml"]}
-      autoSave
-      disableAutoSave={false}
-      {hasUnsavedChanges}
-      on:save={() => debounceUpdateChartContent(localContent)}
-    />
-  {/key}
+  <Editor
+    key={filePath}
+    remoteContent={yaml}
+    bind:localContent
+    extensions={FileExtensionToEditorExtension[".yaml"]}
+    autoSave
+    disableAutoSave={false}
+    {hasUnsavedChanges}
+    on:save={() => {
+      if (localContent === null) return;
+      debounceUpdateChartContent(localContent);
+    }}
+  />
 </ChartsEditorContainer>

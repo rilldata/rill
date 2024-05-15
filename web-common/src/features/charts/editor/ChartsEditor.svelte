@@ -17,7 +17,7 @@
   const updateFile = createRuntimeServicePutFile();
   const QUERY_DEBOUNCE_TIME = 100;
 
-  let localContent: string;
+  let localContent: string | null = null;
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
     path: filePath,
@@ -48,18 +48,22 @@
     }
   }
   const debounceUpdateChartContent = debounce(updateChart, QUERY_DEBOUNCE_TIME);
+
+  $: hasUnsavedChanges = localContent !== null && yaml !== localContent;
 </script>
 
 <ChartsEditorContainer error={yaml?.length ? mainError : undefined}>
-  {#key filePath}
-    <Editor
-      blob={yaml}
-      bind:latest={localContent}
-      extensions={[customYAMLwithJSONandSQL]}
-      autoSave
-      disableAutoSave={false}
-      hasUnsavedChanges={false}
-      on:save={() => debounceUpdateChartContent(localContent)}
-    />
-  {/key}
+  <Editor
+    key={filePath}
+    remoteContent={yaml}
+    bind:localContent
+    extensions={[customYAMLwithJSONandSQL]}
+    autoSave
+    disableAutoSave={false}
+    {hasUnsavedChanges}
+    on:save={() => {
+      if (localContent === null) return;
+      debounceUpdateChartContent(localContent);
+    }}
+  />
 </ChartsEditorContainer>
