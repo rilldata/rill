@@ -25,3 +25,34 @@ export class Throttler {
     this.timer = undefined;
   }
 }
+
+export class ThrottlerMap extends Map<
+  string,
+  [ReturnType<typeof setTimeout>, () => void | Promise<void>]
+> {
+  public constructor(private readonly timeout: number) {
+    super();
+  }
+
+  public throttle(id: string, callback: () => void | Promise<void>) {
+    this.cancel(id);
+
+    const timer = setTimeout(() => {
+      const entry = this.get(id);
+      if (!entry) return;
+
+      clearTimeout(entry[0]);
+      void entry[1]();
+      this.delete(id);
+    }, this.timeout);
+
+    this.set(id, [timer, callback]);
+  }
+
+  public cancel(id: string): void {
+    const entry = this.get(id);
+    if (!entry) return;
+    clearTimeout(entry[0]);
+    this.delete(id);
+  }
+}

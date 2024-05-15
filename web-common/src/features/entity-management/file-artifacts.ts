@@ -73,15 +73,16 @@ export class FileArtifact {
   // selectors
 
   public getResource(queryClient: QueryClient, instanceId: string) {
-    return derived(this.name, (name, set) =>
-      useResource(
+    return derived(this.name, (name, set) => {
+      console.log("getResource", this.path, name);
+      return useResource(
         instanceId,
         name?.name as string,
         name?.kind as ResourceKind,
         undefined,
         queryClient,
-      ).subscribe(set),
-    ) as ReturnType<typeof useResource<V1Resource>>;
+      ).subscribe(set);
+    }) as ReturnType<typeof useResource<V1Resource>>;
   }
 
   public getAllErrors(

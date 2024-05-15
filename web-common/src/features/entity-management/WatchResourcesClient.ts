@@ -1,5 +1,5 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-import { refreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
+import { throttledRefreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -40,19 +40,13 @@ const UsedResourceKinds: {
 };
 
 export class WatchResourcesClient {
-  private readonly client: WatchRequestClient<V1WatchResourcesResponse>;
-
+  public readonly client: WatchRequestClient<V1WatchResourcesResponse>;
   private readonly tables = new Map<string, string>();
 
   public constructor() {
     this.client = new WatchRequestClient<V1WatchResourcesResponse>();
     this.client.on("response", (res) => this.handleWatchResourceResponse(res));
     this.client.on("reconnect", () => this.invalidateAllResources());
-  }
-
-  public static New() {
-    const watcher = new WatchResourcesClient();
-    return watcher.client;
   }
 
   private handleWatchResourceResponse(res: V1WatchResourcesResponse) {
@@ -108,7 +102,7 @@ export class WatchResourcesClient {
 
       case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
       case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-        void refreshResource(queryClient, instanceId, res);
+        void throttledRefreshResource(queryClient, instanceId, res);
         fileArtifacts.updateReconciling(res);
         return true;
     }
@@ -118,7 +112,7 @@ export class WatchResourcesClient {
 
   private invalidateResource(instanceId: string, resource: V1Resource) {
     if (!resource.meta) return;
-    void refreshResource(queryClient, instanceId, resource);
+    void throttledRefreshResource(queryClient, instanceId, resource);
 
     const lastStateUpdatedOn = fileArtifacts.getFileArtifact(
       resource.meta?.filePaths?.[0] ?? "",
@@ -181,11 +175,14 @@ export class WatchResourcesClient {
 
   private invalidateRemovedResource(instanceId: string, resource: V1Resource) {
     const name = resource.meta?.name?.name ?? "";
-    queryClient.removeQueries(
+    queryClient.setQueryData(
       getRuntimeServiceGetResourceQueryKey(instanceId, {
         "name.name": name,
         "name.kind": resource.meta?.name?.kind,
       }),
+      {
+        resource: undefined,
+      },
     );
     fileArtifacts.softDeleteResource(resource);
     // cancel queries to make sure any pending requests are cancelled.

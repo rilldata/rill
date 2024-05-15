@@ -4,7 +4,6 @@ import { clickMenuButton } from "../utils/commonHelpers";
 import {
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
-  updateAndWaitForDashboard,
 } from "../utils/dashboardHelpers";
 import { test } from "../utils/test";
 import { useDashboardFlowTestSetup } from "./dashboard-flow-test-setup";

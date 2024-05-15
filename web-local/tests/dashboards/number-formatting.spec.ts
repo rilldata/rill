@@ -1,4 +1,5 @@
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
+import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import {
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
@@ -11,6 +12,8 @@ test.describe("smoke tests for number formatting", () => {
   useDashboardFlowTestSetup();
 
   test("smoke tests for number formatting", async ({ page }) => {
+    const watcher = new ResourceWatcher(page);
+
     // This is a metrics spec with all available formatting options
     const formatterFlowDashboard = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 title: "AdBids_model_dashboard"
@@ -65,7 +68,7 @@ dimensions:
 `;
 
     // update the code editor with the new spec
-    await updateAndWaitForDashboard(page, formatterFlowDashboard);
+    await watcher.updateAndWaitForDashboard(formatterFlowDashboard);
 
     const previewButton = page.getByRole("button", { name: "Preview" });
 

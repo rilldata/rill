@@ -12,18 +12,13 @@ import { get } from "svelte/store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export class WatchFilesClient {
-  private readonly client: WatchRequestClient<V1WatchFilesResponse>;
-  private seenFiles = new Set<string>();
+  public readonly client: WatchRequestClient<V1WatchFilesResponse>;
+  private readonly seenFiles = new Set<string>();
 
   public constructor() {
     this.client = new WatchRequestClient<V1WatchFilesResponse>();
     this.client.on("response", (res) => this.handleWatchFileResponse(res));
     this.client.on("reconnect", () => this.invalidateAllFiles());
-  }
-
-  public static New() {
-    const watcher = new WatchFilesClient();
-    return watcher.client;
   }
 
   private invalidateAllFiles() {
@@ -41,7 +36,6 @@ export class WatchFilesClient {
     const instanceId = get(runtime).instanceId;
     const isNew = !this.seenFiles.has(res.path);
 
-    console.log(res.path, isNew);
     // invalidations will wait until the re-fetched query is completed
     // so, we should not `await` here on `refetchQueries`
     if (!res.isDir) {

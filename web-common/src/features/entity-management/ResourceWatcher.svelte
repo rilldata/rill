@@ -6,8 +6,8 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
 
-  const fileWatcher = WatchFilesClient.New();
-  const resourceWatcher = WatchResourcesClient.New();
+  const fileWatcher = new WatchFilesClient().client;
+  const resourceWatcher = new WatchResourcesClient().client;
 
   export let host: string;
   export let instanceId: string;
