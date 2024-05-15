@@ -1,5 +1,6 @@
 <script lang="ts">
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
@@ -83,6 +84,8 @@
     </Tooltip>
   {/if}
 </div>
+
+<GlobalDimensionSearch metricsViewName={metricViewName} />
 
 <DeployDashboardCta
   on:close={() => (showDeployDashboardModal = false)}
