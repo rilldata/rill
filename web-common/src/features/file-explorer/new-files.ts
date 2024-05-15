@@ -14,10 +14,10 @@ export async function handleEntityCreate(kind: ResourceKind) {
   const allNames =
     kind === ResourceKind.Source || kind === ResourceKind.Model
       ? // sources and models share the name
-        [
-          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-        ]
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ]
       : fileArtifacts.getNamesForKind(kind);
   const { name, extension, baseContent } = ResourceKindMap[kind];
   const newName = getName(name, allNames);
@@ -81,11 +81,12 @@ measures:
     extension: ".yaml",
     baseContent: `# API YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/apis
+# Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>
 
 type: api
 
-sql:
-  select ...
+metrics_sql: |
+  select measure, dimension from metrics_view
 `,
   },
   [ResourceKind.Component]: {

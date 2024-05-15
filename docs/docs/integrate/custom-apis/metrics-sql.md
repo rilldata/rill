@@ -11,7 +11,7 @@ sidebar_position: 60
 Metrics SQL is a specialized SQL dialect designed exclusively for querying data from metrics views.
 
 ## Querying Fundamentals
-Metrics SQL transforms queries that reference `dimensions` and `measures` within a `metrics view` into their corresponding database columns or expressions. This transformation is based on the mappings defined in a metrics view YAML configuration, enabling reuse of dimension or measure defintions. Additionally any security policies defined in metrics_view is also inherited.
+Metrics SQL transforms queries that reference `dimensions` and `measures` within a `metrics view` into their corresponding database columns or expressions. This transformation is based on the mappings defined in a metrics view YAML configuration, enabling reuse of dimension or measure definitions. Additionally any security policies defined in metrics_view is also inherited.
 
 ## Example: Crafting a Metrics SQL Query
 
@@ -41,7 +41,7 @@ measures:
 
 To query this view, a user might write a Metrics SQL query like:
 ```
-SELECT publisher, domain, AGGREGATE(total_records) FROM metrics_view GROUP BY publisher, domain
+SELECT publisher, domain, total_records FROM metrics_view
 ```
 This Metrics SQL is internally translated to a standard SQL query as follows:
 ```
@@ -50,7 +50,7 @@ SELECT toUpper(publisher) AS publisher, domain AS domain, COUNT(*) AS total_reco
 
 ## Supported SQL Features
 
-- **SELECT** statements with plain `dimension` and `measure` references. The measures need to be accessed with a custom function `AGGREGATE(measure_name)`
+- **SELECT** statements with plain `dimension` and `measure` references.
 - A single **FROM** clause referencing a `metrics view`.
 - **WHERE** clause that can reference selected `dimensions` only.
 - Operators in **WHERE** and **HAVING** clauses include `=`, `!=`, `>`, `>=`, `<`, `<=`, IN, LIKE, AND, OR, and parentheses for structuring the expression.
@@ -59,7 +59,7 @@ SELECT toUpper(publisher) AS publisher, domain AS domain, COUNT(*) AS total_reco
 - **LIMIT** and **OFFSET** clauses for controlling the result set size and pagination.
 
 
-**Caution** : The Metrics SQL feature is currently evolving. We are dedicated to enhancing the synatx by introducing additional SQL features, while striving to maintain support for existing syntax. However, please be advised that backward compatibility cannot be guaranteed at all times. Additionally, users should be aware that there may be untested edge cases in the current implementation. We appreciate your understanding as we work to refine and improve this feature.
+**Caution** : The Metrics SQL feature is currently evolving. We are dedicated to enhancing the syntax by introducing additional SQL features, while striving to maintain support for existing syntax. However, please be advised that backward compatibility cannot be guaranteed at all times. Additionally, users should be aware that there may be untested edge cases in the current implementation. We appreciate your understanding as we work to refine and improve this feature.
 
 ## Security and Compliance
 Queries executed via Metrics SQL are subject to the security policies and access controls defined in the metrics view YAML configuration, ensuring data security and compliance.
