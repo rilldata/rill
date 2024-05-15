@@ -120,6 +120,7 @@
     if (!interceptedUrl) return;
     const url = interceptedUrl;
     localContent = null;
+    hasUnsavedChanges = false;
     interceptedUrl = null;
     goto(url).catch(console.error);
   }
