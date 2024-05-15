@@ -1085,6 +1085,12 @@ refresh:
   cron: 0 * * * *
   time_zone: America/Los_Angeles
 
+watermark: inherit
+
+intervals:
+  duration: PT1H
+  limit: 10
+
 query:
   name: MetricsViewToplist
   args:
@@ -1108,6 +1114,12 @@ title: My Report
 refresh:
   cron: 0 * * * *
   time_zone: America/Los_Angeles
+
+watermark: inherit
+
+intervals:
+  duration: PT1H
+  limit: 10
 
 query:
   name: MetricsViewToplist
@@ -1153,7 +1165,10 @@ annotations:
 					Connector:  "email",
 					Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"benjamin@example.com"}})),
 				}},
-				Annotations: map[string]string{"foo": "bar"},
+				Annotations:          map[string]string{"foo": "bar"},
+				WatermarkInherit:     true,
+				IntervalsIsoDuration: "PT1H",
+				IntervalsLimit:       10,
 			},
 		},
 		{
@@ -1174,7 +1189,10 @@ annotations:
 					{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"user_1@example.com"}}))},
 					{Connector: "slack", Properties: must(structpb.NewStruct(map[string]any{"users": []any{"user_2@example.com"}, "channels": []any{"reports"}, "webhooks": []any{}}))},
 				},
-				Annotations: map[string]string{"foo": "bar"},
+				Annotations:          map[string]string{"foo": "bar"},
+				WatermarkInherit:     true,
+				IntervalsIsoDuration: "PT1H",
+				IntervalsLimit:       10,
 			},
 		},
 	}

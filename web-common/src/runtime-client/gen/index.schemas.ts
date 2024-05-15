@@ -761,6 +761,11 @@ export interface V1ReportSpec {
   exportFormat?: V1ExportFormat;
   notifiers?: V1Notifier[];
   annotations?: V1ReportSpecAnnotations;
+  /** If true, will use the lowest watermark of its refs instead of the trigger time. */
+  watermarkInherit?: boolean;
+  intervalsIsoDuration?: string;
+  intervalsLimit?: number;
+  intervalsCheckUnclosed?: boolean;
 }
 
 export interface V1ReportExecution {
@@ -1983,7 +1988,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

@@ -1,6 +1,5 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -13,6 +12,7 @@
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/shift-click-action";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
   import BarAndLabel from "../../BarAndLabel.svelte";
@@ -167,7 +167,7 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType dark slot="name" {type} value={tooltipValue} />
+      <FormattedDataType dark slot="name" value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>
