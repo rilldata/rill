@@ -13,6 +13,7 @@
   import Editor from "../../editor/Editor.svelte";
 
   export let filePath: string;
+  export let autoSave: boolean;
 
   const updateFile = createRuntimeServicePutFile();
   const QUERY_DEBOUNCE_TIME = 100;
@@ -33,6 +34,7 @@
   $: lineBasedRuntimeErrors = mapParseErrorsToLines($allErrors, yaml);
   /** display the main error (the first in this array) at the bottom */
   $: mainError = lineBasedRuntimeErrors?.at(0);
+  $: hasUnsavedChanges = localContent !== null && yaml !== localContent;
 
   async function updateChart(content: string) {
     try {
@@ -48,8 +50,6 @@
     }
   }
   const debounceUpdateChartContent = debounce(updateChart, QUERY_DEBOUNCE_TIME);
-
-  $: hasUnsavedChanges = localContent !== null && yaml !== localContent;
 </script>
 
 <ChartsEditorContainer error={yaml?.length ? mainError : undefined}>
@@ -58,12 +58,13 @@
     remoteContent={yaml}
     bind:localContent
     extensions={[customYAMLwithJSONandSQL]}
-    autoSave
+    bind:autoSave
     disableAutoSave={false}
     {hasUnsavedChanges}
     on:save={() => {
       if (localContent === null) return;
       debounceUpdateChartContent(localContent);
     }}
+    on:revert={() => (localContent = yaml)}
   />
 </ChartsEditorContainer>
