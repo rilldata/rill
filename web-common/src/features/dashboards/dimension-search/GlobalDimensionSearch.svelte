@@ -11,9 +11,10 @@
   let searchBarOpen = false;
   let searchText = "";
 
-  function closeSearchBar() {
+  function reset() {
     searchBarOpen = false;
     searchText = "";
+    submittedSearchText = "";
   }
 
   let submittedSearchText = "";
@@ -32,7 +33,7 @@
       on:submit={onSubmit}
       placeholder="Search dimensions"
     />
-    <button class="ui-copy-icon" on:click={() => closeSearchBar()}>
+    <button class="ui-copy-icon" on:click={reset}>
       <Close />
     </button>
   </div>
@@ -49,4 +50,5 @@
 <GlobalDimensionSearchResults
   {metricsViewName}
   searchText={submittedSearchText}
+  onSelect={reset}
 />

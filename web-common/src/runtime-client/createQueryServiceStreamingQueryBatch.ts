@@ -11,7 +11,7 @@ import { get, Readable, writable } from "svelte/store";
 export type StreamingQueryBatchResponse<Resp> = {
   responses: Resp[];
   errors: Error[];
-  completed: number;
+  completed: boolean;
   progress: number;
 };
 
@@ -23,23 +23,26 @@ export function createQueryServiceStreamingQueryBatch<Resp = V1QueryResult>(
   const { subscribe, update } = writable<StreamingQueryBatchResponse<Resp>>({
     responses: new Array<Resp>(queries.length),
     errors: [],
-    completed: 0,
+    completed: false,
     progress: 0,
   });
+  let completed = 0;
 
   const handleResp = (resp: V1QueryResult, index: number) => {
     update((s) => {
       s.responses[index] = select(resp, index);
-      s.completed++;
-      s.progress = Math.round((s.completed * 100) / queries.length);
+      completed++;
+      s.progress = Math.round((completed * 100) / queries.length);
+      s.completed = completed === queries.length;
       return s;
     });
   };
   const handleError = (err: Error) => {
     update((s) => {
       s.errors.push(err);
-      s.completed++;
-      s.progress = Math.round((s.completed * 100) / queries.length);
+      completed++;
+      s.progress = Math.round((completed * 100) / queries.length);
+      s.completed = completed === queries.length;
       return s;
     });
   };
@@ -50,7 +53,7 @@ export function createQueryServiceStreamingQueryBatch<Resp = V1QueryResult>(
   ).catch((err) => {
     update((s) => {
       s.errors.unshift(err instanceof Error ? err : new Error(err));
-      s.completed = queries.length;
+      s.completed = true;
       s.progress = 100;
       return s;
     });

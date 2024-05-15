@@ -8,6 +8,7 @@
 
   export let dimension: string;
   export let values: any[];
+  export let onSelect: (dimension: string, value: any) => void;
 
   const SHORT_LIST_COUNT = 10;
   const FULL_LIST_COUNT = 100;
@@ -20,13 +21,18 @@
 </script>
 
 <DropdownMenuGroup>
-  <DropdownMenuLabel class="flex flex-col">
-    <div>{dimension}</div>
+  <DropdownMenuLabel class="flex flex-col text-gray-500 text-xs">
+    <div class="font-semibold">{dimension.toUpperCase()}</div>
     <div>{count}{count >= FULL_LIST_COUNT ? "+" : ""} results</div>
   </DropdownMenuLabel>
   <div class="flex flex-col">
     {#each shownValues as value}
-      <DropdownMenuItem>{value}</DropdownMenuItem>
+      <DropdownMenuItem
+        class="text-xs"
+        on:click={() => onSelect(dimension, value)}
+      >
+        {value}
+      </DropdownMenuItem>
     {/each}
     {#if showExpand}
       <Button
