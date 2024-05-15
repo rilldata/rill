@@ -26,12 +26,12 @@
     $runtime.instanceId,
   );
   $: modelQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
-  $: connector = $modelQuery.data?.model?.spec?.connector;
+  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
-  $: tableName = $modelQuery.data?.model?.state?.table ?? "";
+  $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
@@ -67,8 +67,8 @@
     disabled={disableCreateDashboard}
     on:click={() => {
       dispatch("generate-chart", {
-        table: $modelQuery.data?.model?.state?.table,
-        connector: $modelQuery.data?.model?.state?.connector,
+        table: $modelQuery.data?.model?.state?.resultTable,
+        connector: $modelQuery.data?.model?.state?.resultConnector,
       });
     }}
   >
