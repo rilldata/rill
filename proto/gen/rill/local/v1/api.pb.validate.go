@@ -695,3 +695,637 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetVersionResponseValidationError{}
+
+// Validate checks the field values on DeployValidationRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeployValidationRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeployValidationRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeployValidationRequestMultiError, or nil if none found.
+func (m *DeployValidationRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeployValidationRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return DeployValidationRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeployValidationRequestMultiError is an error wrapping multiple validation
+// errors returned by DeployValidationRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DeployValidationRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeployValidationRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeployValidationRequestMultiError) AllErrors() []error { return m }
+
+// DeployValidationRequestValidationError is the validation error returned by
+// DeployValidationRequest.Validate if the designated constraints aren't met.
+type DeployValidationRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeployValidationRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeployValidationRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeployValidationRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeployValidationRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeployValidationRequestValidationError) ErrorName() string {
+	return "DeployValidationRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeployValidationRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeployValidationRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeployValidationRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeployValidationRequestValidationError{}
+
+// Validate checks the field values on DeployValidationResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *DeployValidationResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeployValidationResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// DeployValidationResponseMultiError, or nil if none found.
+func (m *DeployValidationResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeployValidationResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for IsAuthenticated
+
+	// no validation rules for IsGithubConnected
+
+	// no validation rules for GitGrantAccessUrl
+
+	// no validation rules for GitUserName
+
+	// no validation rules for IsGitRepo
+
+	// no validation rules for GitUrl
+
+	// no validation rules for UncommittedChanges
+
+	// no validation rules for RillOrgExistsAsGitUserName
+
+	if len(errors) > 0 {
+		return DeployValidationResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeployValidationResponseMultiError is an error wrapping multiple validation
+// errors returned by DeployValidationResponse.ValidateAll() if the designated
+// constraints aren't met.
+type DeployValidationResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeployValidationResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeployValidationResponseMultiError) AllErrors() []error { return m }
+
+// DeployValidationResponseValidationError is the validation error returned by
+// DeployValidationResponse.Validate if the designated constraints aren't met.
+type DeployValidationResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeployValidationResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeployValidationResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeployValidationResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeployValidationResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeployValidationResponseValidationError) ErrorName() string {
+	return "DeployValidationResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e DeployValidationResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeployValidationResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeployValidationResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeployValidationResponseValidationError{}
+
+// Validate checks the field values on PushToGitRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *PushToGitRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PushToGitRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// PushToGitRequestMultiError, or nil if none found.
+func (m *PushToGitRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PushToGitRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return PushToGitRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// PushToGitRequestMultiError is an error wrapping multiple validation errors
+// returned by PushToGitRequest.ValidateAll() if the designated constraints
+// aren't met.
+type PushToGitRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PushToGitRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PushToGitRequestMultiError) AllErrors() []error { return m }
+
+// PushToGitRequestValidationError is the validation error returned by
+// PushToGitRequest.Validate if the designated constraints aren't met.
+type PushToGitRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e PushToGitRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e PushToGitRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e PushToGitRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e PushToGitRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e PushToGitRequestValidationError) ErrorName() string { return "PushToGitRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e PushToGitRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sPushToGitRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = PushToGitRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = PushToGitRequestValidationError{}
+
+// Validate checks the field values on PushToGitResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *PushToGitResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on PushToGitResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// PushToGitResponseMultiError, or nil if none found.
+func (m *PushToGitResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *PushToGitResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for GitUrl
+
+	if len(errors) > 0 {
+		return PushToGitResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// PushToGitResponseMultiError is an error wrapping multiple validation errors
+// returned by PushToGitResponse.ValidateAll() if the designated constraints
+// aren't met.
+type PushToGitResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m PushToGitResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m PushToGitResponseMultiError) AllErrors() []error { return m }
+
+// PushToGitResponseValidationError is the validation error returned by
+// PushToGitResponse.Validate if the designated constraints aren't met.
+type PushToGitResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e PushToGitResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e PushToGitResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e PushToGitResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e PushToGitResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e PushToGitResponseValidationError) ErrorName() string {
+	return "PushToGitResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e PushToGitResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sPushToGitResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = PushToGitResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = PushToGitResponseValidationError{}
+
+// Validate checks the field values on DeployRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *DeployRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeployRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DeployRequestMultiError, or
+// nil if none found.
+func (m *DeployRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeployRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for RillOrg
+
+	// no validation rules for RillProjectName
+
+	if len(errors) > 0 {
+		return DeployRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeployRequestMultiError is an error wrapping multiple validation errors
+// returned by DeployRequest.ValidateAll() if the designated constraints
+// aren't met.
+type DeployRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeployRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeployRequestMultiError) AllErrors() []error { return m }
+
+// DeployRequestValidationError is the validation error returned by
+// DeployRequest.Validate if the designated constraints aren't met.
+type DeployRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeployRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeployRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeployRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeployRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeployRequestValidationError) ErrorName() string { return "DeployRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DeployRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeployRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeployRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeployRequestValidationError{}
+
+// Validate checks the field values on DeployResponse with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *DeployResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on DeployResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in DeployResponseMultiError,
+// or nil if none found.
+func (m *DeployResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *DeployResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for DeployId
+
+	// no validation rules for Org
+
+	// no validation rules for Project
+
+	if len(errors) > 0 {
+		return DeployResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// DeployResponseMultiError is an error wrapping multiple validation errors
+// returned by DeployResponse.ValidateAll() if the designated constraints
+// aren't met.
+type DeployResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m DeployResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m DeployResponseMultiError) AllErrors() []error { return m }
+
+// DeployResponseValidationError is the validation error returned by
+// DeployResponse.Validate if the designated constraints aren't met.
+type DeployResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e DeployResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e DeployResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e DeployResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e DeployResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e DeployResponseValidationError) ErrorName() string { return "DeployResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e DeployResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sDeployResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = DeployResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = DeployResponseValidationError{}

@@ -12,6 +12,15 @@ service LocalService {
 
   // GetVersion returns details about the current and latest available Rill versions.
   rpc GetVersion(GetVersionRequest) returns (GetVersionResponse) {}
+
+  // DeployValidation validates a deploy request.
+  rpc DeployValidation(DeployValidationRequest) returns (DeployValidationResponse) {}
+
+  // PushToGit create a Git repo from local project and pushed to users git account.
+  rpc PushToGit(PushToGitRequest) returns (PushToGitResponse) {}
+
+  // Deploy deploys the local project to the Rill cloud.
+  rpc Deploy(DeployRequest) returns (DeployResponse) {}
 }
 
 message PingRequest {}
@@ -41,4 +50,36 @@ message GetVersionRequest {}
 message GetVersionResponse {
   string current = 1;
   string latest = 2;
+}
+
+message DeployValidationRequest {}
+
+message DeployValidationResponse {
+  bool is_authenticated = 1; // if true below fields are relevant after login
+  bool is_github_connected = 2; // if true below fields are relevant after git install
+  string git_grant_access_url = 3; // redirect to this if 2 is false
+  string git_user_name = 4;
+  repeated string git_user_orgs = 5;
+  bool is_git_repo = 6;
+  string git_url = 7; // only applicable when is_git_repo is true
+  bool uncommitted_changes = 8; // only applicable when is_git_repo is true
+  bool rill_org_exists_as_git_user_name = 9; // only applicable when user does not have any orgs
+  repeated string rill_user_orgs = 10;
+}
+
+message PushToGitRequest {}
+
+message PushToGitResponse {
+  string git_url = 1;
+}
+
+message DeployRequest {
+  string rill_org = 1; // creates the org if does not exists, no validation
+  string rill_project_name = 2; // no validation, assuming user provided correct name as per the prompts
+}
+
+message DeployResponse {
+  string deploy_id = 1;
+  string org = 2;
+  string project = 3;
 }

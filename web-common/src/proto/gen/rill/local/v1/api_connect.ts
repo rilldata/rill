@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse } from "./api_pb.js";
+import { DeployRequest, DeployResponse, DeployValidationRequest, DeployValidationResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGitRequest, PushToGitResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -43,6 +43,39 @@ export const LocalService = {
       name: "GetVersion",
       I: GetVersionRequest,
       O: GetVersionResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DeployValidation validates a deploy request.
+     *
+     * @generated from rpc rill.local.v1.LocalService.DeployValidation
+     */
+    deployValidation: {
+      name: "DeployValidation",
+      I: DeployValidationRequest,
+      O: DeployValidationResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * PushToGit create a Git repo from local project and pushed to users git account.
+     *
+     * @generated from rpc rill.local.v1.LocalService.PushToGit
+     */
+    pushToGit: {
+      name: "PushToGit",
+      I: PushToGitRequest,
+      O: PushToGitResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * Deploy deploys the local project to the Rill cloud.
+     *
+     * @generated from rpc rill.local.v1.LocalService.Deploy
+     */
+    deploy: {
+      name: "Deploy",
+      I: DeployRequest,
+      O: DeployResponse,
       kind: MethodKind.Unary,
     },
   }
