@@ -123,7 +123,7 @@
         </ChartPromptStatusDisplay>
 
         <div
-          class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0 grid place-content-center"
+          class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
           style:height="{tablePercentage * 100}%"
         >
           <Resizer
@@ -135,7 +135,9 @@
           />
 
           {#if chartDataFetching}
-            <div class="flex flex-col gap-y-2 items-center">
+            <div
+              class="flex flex-col gap-y-2 size-full justify-center items-center"
+            >
               <Spinner size="2em" status={EntityStatus.Running} />
               <div>Loading chart data</div>
             </div>
@@ -149,7 +151,9 @@
               }))}
             />
           {:else}
-            <p class="text-lg">Update YAML to view chart data</p>
+            <p class="text-lg size-full grid place-content-center">
+              Update YAML to view chart data
+            </p>
           {/if}
         </div>
       </div>

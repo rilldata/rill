@@ -4,7 +4,6 @@
     IconSpaceFixer,
   } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import { createEventDispatcher } from "svelte";
   import EnterIcon from "../../../components/icons/EnterIcon.svelte";
@@ -23,17 +22,6 @@
     hasUnsavedChanges ? "primary" : "secondary"
   ) as Button["$$prop_def"]["type"];
 </script>
-
-<Button
-  type="secondary"
-  disabled={!hasUnsavedChanges}
-  on:click={() => dispatch("revert-source")}
->
-  <IconSpaceFixer pullLeft pullRight={collapse}>
-    <UndoIcon size="14px" />
-  </IconSpaceFixer>
-  <ResponsiveButtonText {collapse}>Revert changes</ResponsiveButtonText>
-</Button>
 
 {#if !isLocalFileConnector || hasUnsavedChanges}
   <Button
