@@ -11,7 +11,6 @@
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let filePath: string;
 
