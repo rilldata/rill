@@ -1,10 +1,10 @@
-import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   extractFileName,
   getTopLevelFolder,
-} from "@rilldata/web-common/features/sources/extract-file-name";
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceRenameFile,

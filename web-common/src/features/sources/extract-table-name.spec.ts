@@ -2,8 +2,8 @@ import {
   extractFileExtension,
   extractFileName,
   sanitizeEntityName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
-import { describe, it, expect } from "vitest";
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { describe, expect, it } from "vitest";
 
 function generateTestCases(
   fileName: string,

@@ -25,10 +25,10 @@
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
   import DashboardMenuItems from "../dashboards/DashboardMenuItems.svelte";
   import { fileArtifacts } from "../entity-management/file-artifacts";
+  import { getTopLevelFolder } from "../entity-management/file-path-utils";
   import { resourceIconMapping } from "../entity-management/resource-icon-mapping";
   import { ResourceKind } from "../entity-management/resource-selectors";
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
-  import { getTopLevelFolder } from "../sources/extract-file-name";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
 

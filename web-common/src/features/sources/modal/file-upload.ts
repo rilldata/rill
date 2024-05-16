@@ -1,5 +1,4 @@
 import { goto } from "$app/navigation";
-import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -9,8 +8,9 @@ import {
   fileHasValidExtension,
 } from "@rilldata/web-common/features/sources/modal/possible-file-extensions";
 import { importOverlayVisible } from "@rilldata/web-common/layout/overlay-store";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { runtimeServiceFileUpload } from "@rilldata/web-common/runtime-client/manual-clients";
-import { getTableNameFromFile } from "web-common/src/features/sources/extract-file-name";
+import { getTableNameFromFile } from "../extract-file-name";
 import {
   DuplicateActions,
   duplicateSourceAction,

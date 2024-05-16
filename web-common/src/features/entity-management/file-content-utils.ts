@@ -1,12 +1,12 @@
 import { FolderToResourceKind } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import {
+  extractFileName,
+  splitFolderAndName,
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
+import {
   ResourceKind,
   ResourceShortNameToKind,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  extractFileName,
-  splitFolderAndName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
 import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
 import { parse } from "yaml";
 

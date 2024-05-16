@@ -14,8 +14,8 @@
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
+  import { extractFileName } from "../../entity-management/file-path-utils";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { extractFileName } from "../extract-file-name";
 
   export let sourcePath: string | null;
 

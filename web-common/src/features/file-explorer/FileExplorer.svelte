@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
@@ -9,17 +8,18 @@
     renameFileArtifact,
   } from "@rilldata/web-common/features/entity-management/actions";
   import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getTopLevelFolder,
+    splitFolderAndName,
+  } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import ForceDeleteConfirmation from "@rilldata/web-common/features/file-explorer/ForceDeleteConfirmationDialog.svelte";
   import NavEntryPortal from "@rilldata/web-common/features/file-explorer/NavEntryPortal.svelte";
   import { navEntryDragDropStore } from "@rilldata/web-common/features/file-explorer/nav-entry-drag-drop-store";
   import { PROTECTED_DIRECTORIES } from "@rilldata/web-common/features/file-explorer/protected-paths";
   import { isCurrentActivePage } from "@rilldata/web-common/features/file-explorer/utils";
-  import {
-    getTopLevelFolder,
-    splitFolderAndName,
-  } from "@rilldata/web-common/features/sources/extract-file-name";
   import { createRuntimeServiceListFiles } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { eventBus } from "../../lib/event-bus/event-bus";
   import NavDirectory from "./NavDirectory.svelte";
   import { findDirectory, transformFileList } from "./transform-file-list";
 

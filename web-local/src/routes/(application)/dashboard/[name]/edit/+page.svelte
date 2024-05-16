@@ -10,9 +10,10 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
-    resourceIsLoading,
     ResourceKind,
+    resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -20,7 +21,6 @@
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditor.svelte";
   import MetricsInspector from "@rilldata/web-common/features/metrics-views/workspace/inspector/MetricsInspector.svelte";
-  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/tables/selectors";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
@@ -125,7 +125,7 @@
 </script>
 
 <svelte:head>
-  <title>Rill Developer | {metricViewName}</title>
+  <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
 {#if fileNotFound}
