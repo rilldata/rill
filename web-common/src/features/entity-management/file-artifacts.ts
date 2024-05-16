@@ -433,7 +433,7 @@ export class FileArtifacts {
 
 function resourceHasTable(resource: V1Resource) {
   return (
-    (!!resource.model && !!resource.model.state?.table) ||
+    (!!resource.model && !!resource.model.state?.resultTable) ||
     (!!resource.source && !!resource.source.state?.table)
   );
 }

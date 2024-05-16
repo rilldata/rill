@@ -2272,10 +2272,6 @@ func (m *ModelSpec) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Connector
-
-	// no validation rules for Sql
-
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
 		case interface{ ValidateAll() error }:
@@ -2307,17 +2303,102 @@ func (m *ModelSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
-	// no validation rules for UsesTemplating
+	// no validation rules for Incremental
 
-	// no validation rules for StageChanges
+	// no validation rules for IncrementalStateResolver
 
-	// no validation rules for MaterializeDelaySeconds
+	if all {
+		switch v := interface{}(m.GetIncrementalStateResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "IncrementalStateResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "IncrementalStateResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetIncrementalStateResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelSpecValidationError{
+				field:  "IncrementalStateResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for InputConnector
+
+	if all {
+		switch v := interface{}(m.GetInputProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "InputProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "InputProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetInputProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelSpecValidationError{
+				field:  "InputProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for OutputConnector
+
+	if all {
+		switch v := interface{}(m.GetOutputProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "OutputProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "OutputProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOutputProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelSpecValidationError{
+				field:  "OutputProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for Trigger
-
-	if m.Materialize != nil {
-		// no validation rules for Materialize
-	}
 
 	if len(errors) > 0 {
 		return ModelSpecMultiError(errors)
@@ -2418,11 +2499,44 @@ func (m *ModelState) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Connector
+	// no validation rules for ExecutorConnector
 
-	// no validation rules for Table
+	// no validation rules for ResultConnector
+
+	if all {
+		switch v := interface{}(m.GetResultProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelStateValidationError{
+					field:  "ResultProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelStateValidationError{
+					field:  "ResultProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResultProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelStateValidationError{
+				field:  "ResultProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for ResultTable
 
 	// no validation rules for SpecHash
+
+	// no validation rules for RefsHash
 
 	if all {
 		switch v := interface{}(m.GetRefreshedOn()).(type) {
@@ -2447,6 +2561,64 @@ func (m *ModelState) validate(all bool) error {
 		if err := v.Validate(); err != nil {
 			return ModelStateValidationError{
 				field:  "RefreshedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetIncrementalState()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelStateValidationError{
+					field:  "IncrementalState",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelStateValidationError{
+					field:  "IncrementalState",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetIncrementalState()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelStateValidationError{
+				field:  "IncrementalState",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetIncrementalStateSchema()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelStateValidationError{
+					field:  "IncrementalStateSchema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelStateValidationError{
+					field:  "IncrementalStateSchema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetIncrementalStateSchema()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelStateValidationError{
+				field:  "IncrementalStateSchema",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}

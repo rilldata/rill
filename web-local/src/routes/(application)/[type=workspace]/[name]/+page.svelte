@@ -127,9 +127,12 @@
   $: resource = $resourceQuery.data?.[type];
   $: connector =
     type === "model"
-      ? ((resource as V1ModelV2)?.spec?.connector as string)
+      ? ((resource as V1ModelV2)?.spec?.outputConnector as string)
       : ((resource as V1SourceV2)?.spec?.sinkConnector as string);
-  $: tableName = resource?.state?.table;
+  $: tableName =
+    type === "model"
+      ? ((resource as V1ModelV2)?.state?.resultTable as string)
+      : ((resource as V1SourceV2)?.state?.table as string);
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 

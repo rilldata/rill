@@ -26,7 +26,7 @@
   async function onAutogenerateConfigFromModel(modelRes: V1Resource) {
     await createDashboardFromTableInMetricsEditor(
       $runtime.instanceId,
-      modelRes?.model?.state?.table ?? "",
+      modelRes?.model?.state?.resultTable ?? "",
       filePath,
     );
   }
@@ -77,14 +77,14 @@
         let:toggleFloatingElement
       >
         {#each $models?.data ?? [] as model}
-          {#if model?.model?.state?.table}
+          {#if model?.model?.state?.resultTable}
             <MenuItem
               on:select={() => {
                 void onAutogenerateConfigFromModel(model);
                 toggleFloatingElement();
               }}
             >
-              {model?.model?.state?.table}
+              {model?.model?.state?.resultTable}
             </MenuItem>
           {/if}
         {/each}

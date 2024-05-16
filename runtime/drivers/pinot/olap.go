@@ -35,7 +35,7 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	return fmt.Errorf("pinot: data transformation not yet supported")
 }
 
