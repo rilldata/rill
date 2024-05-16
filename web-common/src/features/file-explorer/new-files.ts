@@ -81,11 +81,12 @@ measures:
     extension: ".yaml",
     baseContent: `# API YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/apis
+# Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>
 
 type: api
 
-sql:
-  select ...
+metrics_sql: |
+  select measure, dimension from metrics_view
 `,
   },
   [ResourceKind.Component]: {

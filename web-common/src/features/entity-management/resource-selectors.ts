@@ -36,6 +36,7 @@ export const ResourceShortNameToKind: Record<string, ResourceKind> = {
   report: ResourceKind.Report,
   alert: ResourceKind.Alert,
   theme: ResourceKind.Theme,
+  api: ResourceKind.API,
 };
 
 // In the UI, we shouldn't show the `rill.runtime.v1` prefix
