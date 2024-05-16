@@ -2,7 +2,6 @@
   import { RillTheme } from "@rilldata/web-common/layout";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
-  import { beforeNavigate } from "$app/navigation";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
