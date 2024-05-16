@@ -373,6 +373,11 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
    */
   rillUserOrgs: string[] = [];
 
+  /**
+   * @generated from field: string local_project_name = 11;
+   */
+  localProjectName = "";
+
   constructor(data?: PartialMessage<DeployValidationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -391,6 +396,7 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
     { no: 8, name: "uncommitted_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "rill_org_exists_as_git_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 11, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployValidationResponse {

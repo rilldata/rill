@@ -102,6 +102,8 @@ func (s *Server) GetVersion(ctx context.Context, r *connect.Request[localv1.GetV
 }
 
 func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv1.DeployValidationRequest]) (*connect.Response[localv1.DeployValidationResponse], error) {
+	localProjectName := filepath.Base(s.app.ProjectPath)
+
 	if !s.app.ch.IsAuthenticated() {
 		// user should be logged in first
 		return connect.NewResponse(&localv1.DeployValidationResponse{
@@ -115,6 +117,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			UncommittedChanges:         false,
 			RillOrgExistsAsGitUserName: false,
 			RillUserOrgs:               nil,
+			LocalProjectName:           localProjectName,
 		}), nil
 	}
 	// Get admin client
@@ -141,6 +144,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			UncommittedChanges:         false,
 			RillOrgExistsAsGitUserName: false,
 			RillUserOrgs:               nil,
+			LocalProjectName:           localProjectName,
 		}), nil
 	}
 
@@ -209,6 +213,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		UncommittedChanges:         uncommitedChanges,
 		RillOrgExistsAsGitUserName: rillOrgExistsAsGitUserName,
 		RillUserOrgs:               userOrgs,
+		LocalProjectName:           localProjectName,
 	}), nil
 }
 

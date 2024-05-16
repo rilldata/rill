@@ -836,6 +836,8 @@ func (m *DeployValidationResponse) validate(all bool) error {
 
 	// no validation rules for RillOrgExistsAsGitUserName
 
+	// no validation rules for LocalProjectName
+
 	if len(errors) > 0 {
 		return DeployValidationResponseMultiError(errors)
 	}

@@ -65,6 +65,7 @@ message DeployValidationResponse {
   bool uncommitted_changes = 8; // only applicable when is_git_repo is true
   bool rill_org_exists_as_git_user_name = 9; // only applicable when user does not have any orgs
   repeated string rill_user_orgs = 10;
+  string local_project_name = 11;
 }
 
 message PushToGitRequest {}
