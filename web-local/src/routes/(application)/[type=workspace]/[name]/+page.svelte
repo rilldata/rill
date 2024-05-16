@@ -125,9 +125,9 @@
   $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
   // This gets updated via binding below
-  $: latest = blob;
+  let localContent: string | null = null;
 
-  $: hasUnsavedChanges = latest !== blob;
+  $: hasUnsavedChanges = localContent !== null && localContent !== blob;
 
   $: allErrors = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
@@ -136,9 +136,12 @@
   $: resource = $resourceQuery.data?.[type];
   $: connector =
     type === "model"
-      ? ((resource as V1ModelV2)?.spec?.connector as string)
+      ? ((resource as V1ModelV2)?.spec?.outputConnector as string)
       : ((resource as V1SourceV2)?.spec?.sinkConnector as string);
-  $: tableName = resource?.state?.table;
+  $: tableName =
+    type === "model"
+      ? ((resource as V1ModelV2)?.state?.resultTable as string)
+      : ((resource as V1SourceV2)?.state?.table as string);
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
@@ -154,13 +157,13 @@
   })) as SelectionRange[];
 
   function revert() {
-    latest = blob;
+    localContent = null;
   }
 
   const debounceSave = debounce(save, QUERY_DEBOUNCE_TIME);
 
   async function save() {
-    if (!hasUnsavedChanges) return;
+    if (localContent === null) return;
 
     if (type === "source") {
       overlay.set({ title: `Importing ${filePath}` });
@@ -175,7 +178,7 @@
       instanceId,
       data: {
         path: filePath,
-        blob: latest,
+        blob: localContent,
       },
     });
 
@@ -237,7 +240,10 @@
 
   beforeNavigate((e) => {
     fileNotFound = false;
-    if (!hasUnsavedChanges || interceptedUrl) return;
+    if (!hasUnsavedChanges || interceptedUrl) {
+      localContent = null;
+      return;
+    }
 
     e.cancel();
 
@@ -247,7 +253,7 @@
   function handleConfirm() {
     if (!interceptedUrl) return;
     const url = interceptedUrl;
-    latest = blob;
+    localContent = null;
     hasUnsavedChanges = false;
     interceptedUrl = null;
     goto(url).catch(console.error);
@@ -306,7 +312,6 @@
               hasErrors={$hasErrors}
               {isLocalFileConnector}
               on:save-source={save}
-              on:revert-source={revert}
               on:refresh-source={refresh}
               on:replace-source={replaceSource}
               on:create-model={handleCreateModelFromSource}
@@ -334,15 +339,17 @@
               {blob}
               {hasUnsavedChanges}
               allErrors={$allErrors}
-              bind:latest
+              bind:localContent
+              on:revert={revert}
               on:save={debounceSave}
             />
           {:else}
             <ModelEditor
+              key={filePath}
               {blob}
               {selections}
               {hasUnsavedChanges}
-              bind:latest
+              bind:localContent
               bind:autoSave={$autoSave}
               on:revert={revert}
               on:save={debounceSave}

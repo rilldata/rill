@@ -31,7 +31,7 @@ type sqlResolver struct {
 }
 
 type sqlProps struct {
-	Connector string `mapstructure:"connectors"`
+	Connector string `mapstructure:"connector"`
 	SQL       string `mapstructure:"sql"`
 }
 

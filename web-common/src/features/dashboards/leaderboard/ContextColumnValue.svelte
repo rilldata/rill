@@ -1,12 +1,12 @@
 <script lang="ts">
-  import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
+  import PercentageChange from "../../../components/data-types/PercentageChange.svelte";
+  import { LeaderboardContextColumn } from "../leaderboard-context-column";
+  import { CONTEXT_COL_MAX_WIDTH } from "../state-managers/actions/context-columns";
   import { getStateManagers } from "../state-managers/state-managers";
   import type { LeaderboardItemData } from "./leaderboard-utils";
-  import { formatProperFractionAsPercent } from "@rilldata/web-common/lib/number-formatting/proper-fraction-formatter";
-  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
-  import { CONTEXT_COL_MAX_WIDTH } from "../state-managers/actions/context-columns";
-  import { LeaderboardContextColumn } from "../leaderboard-context-column";
 
   export let itemData: LeaderboardItemData;
 
@@ -65,7 +65,7 @@
             : null}
         />
       {:else if noChangeData}
-        <span class="opacity-50 italic" style:font-size=".925em">no data</span>
+        <span class="text-gray-400">-</span>
       {:else if $isDeltaPercent}
         <PercentageChange
           value={itemData.deltaRel

@@ -152,10 +152,10 @@
   /**
    * Put an example API file in the `apis` directory
    */
-  // async function handleAddAPI() {
-  //   const newRoute = await handleEntityCreate(ResourceKind.API);
-  //   if (newRoute) await goto(newRoute);
-  // }
+  async function handleAddAPI() {
+    const newRoute = await handleEntityCreate(ResourceKind.API);
+    if (newRoute) await goto(newRoute);
+  }
 
   /**
    * Put an example Chart file in the `charts` directory
@@ -266,8 +266,7 @@
             <File size="16px" /> Blank file
           </DropdownMenu.Item>
           <DropdownMenu.Separator />
-          <!-- Temporarily hide API option -->
-          <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
+          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.API]}
               className="text-gray-900"
@@ -275,7 +274,7 @@
             />
             API
             <DropdownMenu.Separator />
-          </DropdownMenu.Item> -->
+          </DropdownMenu.Item>
           {#if $customDashboards}
             <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
               <svelte:component

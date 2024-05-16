@@ -122,7 +122,7 @@ async function invalidateResource(
         instanceId: get(runtime).instanceId,
         connector:
           resource.source?.spec?.sinkConnector ??
-          resource.model?.spec?.connector ??
+          resource.model?.spec?.outputConnector ??
           "",
       }),
     );
@@ -135,7 +135,8 @@ async function invalidateResource(
   switch (resource.meta.name?.kind) {
     case ResourceKind.Source:
     case ResourceKind.Model:
-      table = resource.source?.state?.table ?? resource.model?.state?.table;
+      table =
+        resource.source?.state?.table ?? resource.model?.state?.resultTable;
       if (table && resource.meta.name?.name === table)
         // make sure table is populated
         return invalidateProfilingQueries(queryClient, name, failed);
