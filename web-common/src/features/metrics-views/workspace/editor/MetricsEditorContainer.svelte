@@ -18,9 +18,7 @@ It will show an error message if passed in.
     class:!border-red-500={error}
     class:border-b-0={error}
   >
-    <div class="w-fit h-fit min-h-full min-w-full">
-      <slot />
-    </div>
+    <slot />
   </div>
 
   {#if error}

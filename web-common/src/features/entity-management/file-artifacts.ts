@@ -9,24 +9,34 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
+import {
+  extractFileExtension,
+  extractFileName,
+} from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   type V1ParseError,
   V1ReconcileStatus,
   type V1Resource,
   type V1ResourceName,
+  getRuntimeServiceGetFileQueryKey,
+  V1GetFileResponse,
+  runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, get, type Readable, writable } from "svelte/store";
+import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
+import { derived, get, type Readable, writable, Writable } from "svelte/store";
+import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
+import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+
+const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
-  public readonly path: string;
+  readonly path: string;
 
-  public readonly name = writable<V1ResourceName | undefined>(undefined);
+  readonly name = writable<V1ResourceName | undefined>(undefined);
 
-  public readonly reconciling = writable<boolean>(false);
+  readonly reconciling = writable<boolean>(false);
 
   /**
    * Used to check if a file has finished renaming.
@@ -46,11 +56,51 @@ export class FileArtifact {
 
   public deleted = false;
 
-  public constructor(filePath: string) {
+  public localContent: Writable<string> = writable("");
+  public remoteContent: Writable<string> = writable("");
+  public hasUnsavedChanges = writable<boolean>(false);
+  public fileExtension: string;
+  public fileQuery: Readable<QueryObserverResult<V1GetFileResponse, HTTPError>>;
+  public ready: Promise<boolean>;
+
+  constructor(filePath: string) {
     this.path = filePath;
+
+    this.fileExtension = extractFileExtension(filePath);
+    const fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
+      this.fileExtension,
+    );
+
+    const queryKey = getRuntimeServiceGetFileQueryKey(get(runtime).instanceId, {
+      path: filePath,
+    });
+
+    this.ready = fileTypeUnsupported
+      ? Promise.resolve(false)
+      : queryClient
+          .fetchQuery({
+            queryKey,
+            queryFn: () =>
+              runtimeServiceGetFile(get(runtime).instanceId, {
+                path: filePath,
+              }),
+          })
+          .then(({ blob }) => {
+            if (blob === undefined) return false;
+            this.remoteContent.set(blob);
+            this.localContent.set(blob);
+            return true;
+          })
+          .catch((e) => {
+            console.error(e);
+            return false;
+          });
   }
 
-  // actions
+  public updateRemoteContent(content: string) {
+    this.remoteContent.set(content);
+    this.hasUnsavedChanges.set(content !== get(this.localContent));
+  }
 
   public updateAll(resource: V1Resource) {
     this.updateNameIfChanged(resource);
@@ -81,8 +131,6 @@ export class FileArtifact {
     this.reconciling.set(false);
   }
 
-  // selectors
-
   public getResource(queryClient: QueryClient, instanceId: string) {
     return derived(this.name, (name, set) =>
       useResource(
@@ -95,10 +143,10 @@ export class FileArtifact {
     ) as ReturnType<typeof useResource<V1Resource>>;
   }
 
-  public getAllErrors(
+  public getAllErrors = (
     queryClient: QueryClient,
     instanceId: string,
-  ): Readable<V1ParseError[]> {
+  ): Readable<V1ParseError[]> => {
     const store = derived(
       [
         this.name,
@@ -142,7 +190,7 @@ export class FileArtifact {
       [],
     );
     return store;
-  }
+  };
 
   public getHasErrors(queryClient: QueryClient, instanceId: string) {
     return derived(
@@ -150,6 +198,37 @@ export class FileArtifact {
       (errors) => errors.length > 0,
     );
   }
+
+  public updateLocalContent = (content: string) => {
+    this.localContent.set(content);
+
+    this.hasUnsavedChanges.set(content !== get(this.remoteContent));
+  };
+
+  public revert = () => {
+    this.updateLocalContent(get(this.remoteContent));
+    this.hasUnsavedChanges.set(false);
+  };
+
+  public saveLocalContent = async () => {
+    if (!this.localContent) return;
+
+    const blob = get(this.localContent);
+
+    const instanceId = get(runtime).instanceId;
+    const key = getRuntimeServiceGetFileQueryKey(instanceId, {
+      path: this.path,
+    });
+
+    queryClient.setQueryData(key, {
+      blob,
+    });
+
+    await runtimeServicePutFile(instanceId, {
+      path: this.path,
+      blob: get(this.localContent),
+    }).catch(console.error);
+  };
 
   public getEntityName() {
     return get(this.name)?.name ?? extractFileName(this.path);
@@ -179,7 +258,7 @@ export class FileArtifacts {
 
   // Actions
 
-  public async init(queryClient: QueryClient, instanceId: string) {
+  async init(queryClient: QueryClient, instanceId: string) {
     const resources = await fetchResources(queryClient, instanceId);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
@@ -197,6 +276,7 @@ export class FileArtifacts {
     const missingFiles = files.filter(
       (f) => !this.artifacts[f] || !get(this.artifacts[f].name)?.kind,
     );
+
     await Promise.all(
       missingFiles.map((filePath) =>
         fetchFileContent(queryClient, instanceId, filePath).then(
@@ -212,10 +292,8 @@ export class FileArtifacts {
     );
   }
 
-  public async fileUpdated(filePath: string) {
-    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
-      return;
-    this.artifacts[filePath] ??= new FileArtifact(filePath);
+  async fileUpdated(filePath: string) {
+    // this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
@@ -223,12 +301,13 @@ export class FileArtifacts {
     );
     const newName = parseKindAndNameFromFile(filePath, fileContents);
     if (newName) this.artifacts[filePath].name.set(newName);
+    this.artifacts[filePath].updateRemoteContent(fileContents);
   }
 
   /**
    * This is called when an artifact is deleted.
    */
-  public fileDeleted(filePath: string) {
+  fileDeleted(filePath: string) {
     // 2-way delete to handle race condition with delete from file and resource watchers
     // TODO: avoid this if `name` is undefined - event from resource will not be present
     if (this.artifacts[filePath]?.deleted) {
@@ -240,7 +319,7 @@ export class FileArtifacts {
     }
   }
 
-  public resourceDeleted(name: V1ResourceName) {
+  resourceDeleted(name: V1ResourceName) {
     const artifact = this.findFileArtifact(
       (name.kind ?? "") as ResourceKind,
       name.name ?? "",
@@ -256,28 +335,28 @@ export class FileArtifacts {
     }
   }
 
-  public updateArtifacts(resource: V1Resource) {
+  updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      // this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateAll(resource);
     });
   }
 
-  public updateReconciling(resource: V1Resource) {
+  updateReconciling(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      // this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
-  public updateLastUpdated(resource: V1Resource) {
+  updateLastUpdated(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath] ??= new FileArtifact(filePath);
+      // this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
   }
 
-  public tableStatusChanged(resource: V1Resource) {
+  tableStatusChanged(resource: V1Resource) {
     const hadTable =
       resource.meta?.filePaths?.some((filePath) => {
         return this.artifacts[filePath].hasTable;
@@ -286,7 +365,7 @@ export class FileArtifacts {
     return hadTable !== hasTable;
   }
 
-  public wasRenaming(resource: V1Resource) {
+  wasRenaming(resource: V1Resource) {
     const finishedRename = !resource.meta?.renamedFrom;
     return (
       resource.meta?.filePaths?.some((filePath) => {
@@ -298,7 +377,7 @@ export class FileArtifacts {
   /**
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
-  public softDeleteResource(resource: V1Resource) {
+  softDeleteResource(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath]?.softDeleteResource();
     });
@@ -306,12 +385,12 @@ export class FileArtifacts {
 
   // Selectors
 
-  public getFileArtifact(filePath: string) {
+  getFileArtifact(filePath: string) {
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     return this.artifacts[filePath];
   }
 
-  public findFileArtifact(resKind: ResourceKind, resName: string) {
+  findFileArtifact(resKind: ResourceKind, resName: string) {
     for (const filePath in this.artifacts) {
       const name = get(this.artifacts[filePath].name);
       if (name?.kind === resKind && name?.name === resName) {
@@ -324,7 +403,7 @@ export class FileArtifacts {
   /**
    * Best effort list of all reconciling resources.
    */
-  public getReconcilingResourceNames() {
+  getReconcilingResourceNames() {
     const artifacts = Object.values(this.artifacts);
     return derived(
       artifacts.map((a) => a.reconciling),
@@ -345,7 +424,7 @@ export class FileArtifacts {
    * This can be expensive if the project gets large.
    * If we ever need this reactively then we should look into caching this list.
    */
-  public getNamesForKind(kind: ResourceKind): string[] {
+  getNamesForKind(kind: ResourceKind): string[] {
     return Object.values(this.artifacts)
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");

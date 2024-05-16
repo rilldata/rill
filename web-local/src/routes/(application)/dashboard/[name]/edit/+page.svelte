@@ -155,7 +155,13 @@
       </div>
     </WorkspaceHeader>
 
-    <MetricsEditor slot="body" {yaml} {filePath} {allErrors} {metricViewName} />
+    <MetricsEditor
+      {fileArtifact}
+      slot="body"
+      {filePath}
+      {allErrors}
+      {metricViewName}
+    />
 
     <MetricsInspector {filePath} slot="inspector" />
   </WorkspaceContainer>

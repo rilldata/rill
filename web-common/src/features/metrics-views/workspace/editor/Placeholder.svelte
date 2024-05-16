@@ -1,6 +1,5 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
-  import { skipDebounceAnnotation } from "@rilldata/web-common/components/editor/annotations";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
@@ -53,7 +52,6 @@
         to: view.state.doc.length,
         insert: yaml,
       },
-      annotations: skipDebounceAnnotation.of(true),
     });
   }
 </script>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
+  import { afterNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
@@ -10,15 +10,11 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
-  import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import {
-    createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
@@ -27,10 +23,6 @@
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
   const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
-
-  let interceptedUrl: string | null = null;
-
-  const putFile = createRuntimeServicePutFile(); // TODO: optimistically update the Get File cache
 
   $: filePath = addLeadingSlash($page.params.file);
   $: fileExtension = extractFileExtension(filePath);
@@ -71,17 +63,6 @@
     // TODO: Focus on the code editor
   });
 
-  beforeNavigate((e) => {
-    if (!hasUnsavedChanges || interceptedUrl) {
-      localContent = null;
-      return;
-    }
-
-    e.cancel();
-
-    if (e.to) interceptedUrl = e.to.url.href;
-  });
-
   let blob = "";
   $: blob = $fileQuery.data?.blob ?? blob;
 
@@ -93,40 +74,11 @@
   $: autoSave = workspace.editor.autoSave;
   $: disableAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
 
-  async function save() {
-    if (localContent === null) return;
-
-    await $putFile.mutateAsync({
-      instanceId: $runtime.instanceId,
-      data: {
-        path: filePath,
-        blob: localContent,
-      },
-    });
-  }
-
-  function revert() {
-    localContent = null;
-  }
-
   // TODO: move this logic into the DirectoryState
   // TODO: expand all directories in the path, not just the last one
   function expandDirectory(filePath: string) {
     const directory = filePath.split("/").slice(0, -1).join("/");
     directoryState.expand(directory);
-  }
-
-  function handleConfirm() {
-    if (!interceptedUrl) return;
-    const url = interceptedUrl;
-    localContent = null;
-    hasUnsavedChanges = false;
-    interceptedUrl = null;
-    goto(url).catch(console.error);
-  }
-
-  function handleCancel() {
-    interceptedUrl = null;
   }
 </script>
 
@@ -157,25 +109,12 @@
     >
       <WorkspaceEditorContainer>
         <Editor
-          key={filePath}
-          remoteContent={blob}
-          {hasUnsavedChanges}
+          {fileArtifact}
           extensions={getExtensionsForFile(filePath)}
           {disableAutoSave}
-          bind:localContent
           bind:autoSave={$autoSave}
-          on:save={save}
-          on:revert={revert}
         />
       </WorkspaceEditorContainer>
     </div>
   </WorkspaceContainer>
-{/if}
-
-{#if interceptedUrl}
-  <UnsavedSourceDialog
-    context="file"
-    on:confirm={handleConfirm}
-    on:cancel={handleCancel}
-  />
 {/if}

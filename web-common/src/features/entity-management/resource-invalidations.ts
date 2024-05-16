@@ -90,9 +90,9 @@ async function invalidateResource(
 ) {
   if (!resource.meta) return;
   void refreshResource(queryClient, instanceId, resource);
-
+  if (!resource.meta?.filePaths?.[0]) return;
   const lastStateUpdatedOn = fileArtifacts.getFileArtifact(
-    resource.meta?.filePaths?.[0] ?? "",
+    resource.meta?.filePaths?.[0],
   ).lastStateUpdatedOn;
   if (
     resource.meta.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE &&

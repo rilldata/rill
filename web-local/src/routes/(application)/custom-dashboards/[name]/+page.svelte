@@ -5,7 +5,6 @@
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
-  import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
@@ -36,6 +35,10 @@
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
+  import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
+  import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
+  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
   const updateFile = createRuntimeServicePutFile({
     mutation: {
@@ -60,7 +63,7 @@
   let editorPercentage = 0.5;
   let chartEditorPercentage = 0.4;
   let selectedChartName: string | null = null;
-  let localContent: string;
+  // let localContent: string;
   let spec: V1DashboardSpec = {
     columns: 20,
     gap: 4,
@@ -97,7 +100,14 @@
 
   $: yaml = $fileQuery.data?.blob ?? "";
 
-  $: parsedDocument = parseDocument(yaml);
+  // let parsedDocument: Document.Parsed;
+
+  $: console.log($localContent);
+
+  // $: if ($localContent !== undefined) {
+  //   console.log("PARSING", $localContent);
+  //   parseDocument($localContent);
+  // }
 
   $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
     ResourceKind.Component,
@@ -128,6 +138,8 @@
     if (newRoute) await goto(newRoute);
   }
 
+  $: ({ updateLocalContent, localContent } = fileArtifact);
+
   async function updateChartFile(e: CustomEvent<string>) {
     const content = e.detail;
     if (!content) return;
@@ -151,6 +163,7 @@
       dimensions: Vector;
     }>,
   ) {
+    const parsedDocument = parseDocument($localContent);
     const sequence = parsedDocument.get("items");
 
     const node = sequence.get(e.detail.index);
@@ -160,11 +173,11 @@
     node.set("x", e.detail.position[0]);
     node.set("y", e.detail.position[1]);
 
-    localContent = parsedDocument.toString();
+    updateLocalContent(parsedDocument.toString());
 
     if ($autoSave)
       await updateChartFile(
-        new CustomEvent("update", { detail: localContent }),
+        new CustomEvent("update", { detail: $localContent }),
       );
   }
 
@@ -176,6 +189,7 @@
       x: 0,
       y: 0,
     };
+    const parsedDocument = parseDocument($localContent);
 
     const items = parsedDocument.get("items");
 
@@ -185,11 +199,17 @@
       items.add(newChart);
     }
 
-    localContent = parsedDocument.toString();
+    updateLocalContent(parsedDocument.toString());
 
     if ($autoSave)
       await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
+
+  const QUERY_DEBOUNCE_TIME = 300;
+  const debounceUpdateChartContent = debounce(
+    updateChartFile,
+    QUERY_DEBOUNCE_TIME,
+  );
 </script>
 
 <svelte:head>
@@ -254,18 +274,23 @@
         />
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
-            <CustomDashboardEditor
-              bind:autoSave={$autoSave}
-              {filePath}
-              {errors}
-              {yaml}
-              {localContent}
-              on:update={updateChartFile}
-              onRevert={() => {
-                spec = structuredClone(spec);
-                parsedDocument = parseDocument(yaml);
-              }}
-            />
+            <ChartsEditorContainer error={errors[0]}>
+              <Editor
+                {fileArtifact}
+                extensions={FileExtensionToEditorExtension[".yaml"]}
+                bind:autoSave={$autoSave}
+                disableAutoSave={false}
+                onSave={() => {
+                  if ($localContent === null) return;
+                  debounceUpdateChartContent(
+                    new CustomEvent("update", { detail: $localContent }),
+                  );
+                }}
+                onRevert={() => {
+                  spec = structuredClone(spec);
+                }}
+              />
+            </ChartsEditorContainer>
           </section>
 
           <section

@@ -1,119 +1,113 @@
 <script lang="ts">
-  import type { Extension } from "@codemirror/state";
-  import { EditorState } from "@codemirror/state";
-  import { EditorView } from "@codemirror/view";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
-  import { createEventDispatcher, onMount } from "svelte";
-  import { bindEditorEventsToDispatcher } from "../../components/editor/dispatch-events";
-  import { base } from "../../components/editor/presets/base";
+  import type { Extension } from "@codemirror/state";
+  import { EditorState, Compartment } from "@codemirror/state";
+  import { EditorView } from "@codemirror/view";
+  import { onMount, onDestroy } from "svelte";
+  import { base as baseExtensions } from "../../components/editor/presets/base";
   import { debounce } from "../../lib/create-debouncer";
   import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
+  import { FileArtifact } from "../entity-management/file-artifacts";
 
-  const dispatch = createEventDispatcher();
-
-  export let remoteContent: string;
-  export let localContent: string | null;
+  export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
-  export let autoSave: boolean;
-  export let disableAutoSave: boolean;
-  export let hasUnsavedChanges: boolean;
+  export let autoSave: boolean = true;
+  export let disableAutoSave: boolean = false;
   export let editor: EditorView | undefined = undefined;
-  export let key: string;
+  export let onSave: (content: string) => void = () => {};
+  export let onRevert: () => void = () => {};
 
-  let container: HTMLElement;
+  let parent: HTMLElement;
 
-  $: updateEditorContents(remoteContent);
-  $: if (editor) updateEditorExtensions(extensions);
+  $: ({
+    hasUnsavedChanges,
+    saveLocalContent,
+    updateLocalContent,
+    revert,
+    localContent,
+    remoteContent,
+  } = fileArtifact);
 
-  onMount(() => {
+  const extensionCompartment = new Compartment();
+
+  onMount(async () => {
+    await fileArtifact.ready;
     editor = new EditorView({
       state: EditorState.create({
-        doc: remoteContent,
+        doc: $localContent ?? undefined,
         extensions: [
-          // any extensions passed as props
-          ...extensions,
-          // establish a basic editor
-          base(),
-          // this will catch certain events and dispatch them to the parent
-          bindEditorEventsToDispatcher(dispatch),
-        ],
-      }),
-      parent: container,
-    });
-  });
-
-  function updateEditorExtensions(newExtensions: Extension[]) {
-    if (!editor) return;
-    editor.setState(
-      EditorState.create({
-        doc: remoteContent,
-        extensions: [
-          // establish a basic editor
-          base(),
-          // any extensions passed as props
-          ...newExtensions,
-          EditorView.updateListener.of((v) => {
-            if (v.focusChanged && v.view.hasFocus) {
-              dispatch("receive-focus");
-            }
-            if (v.docChanged) {
-              localContent = v.state.doc.toString();
+          baseExtensions(),
+          extensionCompartment.of([]),
+          EditorView.updateListener.of(({ docChanged, state: { doc } }) => {
+            if (editor?.hasFocus && docChanged) {
+              updateLocalContent(doc.toString());
 
               if (!disableAutoSave && autoSave) debounceSave();
             }
           }),
         ],
       }),
-    );
+      parent,
+    });
+  });
+
+  onDestroy(() => {
+    editor?.destroy();
+  });
+
+  function updateEditorExtensions(newExtensions: Extension[]) {
+    editor?.dispatch({
+      effects: extensionCompartment.reconfigure(newExtensions),
+      scrollIntoView: true,
+    });
   }
 
-  $: if (key) {
-    // When the key changes, unfocus the Editor so that the update is dispatched
-    editor?.contentDOM.blur();
+  $: if (editor) updateEditorExtensions(extensions);
+
+  // Update the editor content when the remote content changes
+  // So long as the editor doesn't have focus
+  $: if (editor && $remoteContent && !editor?.hasFocus) {
+    editor.dispatch({
+      changes: {
+        from: 0,
+        to: editor.state.doc.length,
+        insert: $remoteContent,
+        newLength: $remoteContent?.length,
+      },
+      selection: editor.state.selection,
+    });
   }
 
-  function updateEditorContents(newContent: string) {
-    if (editor && !editor.hasFocus) {
-      // NOTE: when changing files, we still want to update the editor
-      let curContent = editor.state.doc.toString();
-      if (newContent != curContent) {
-        editor.dispatch({
-          changes: {
-            from: 0,
-            to: curContent.length,
-            insert: newContent,
-          },
-        });
-      }
-    }
-  }
+  $: if (fileArtifact) editor?.contentDOM.blur();
 
-  function handleKeydown(e: KeyboardEvent) {
+  async function handleKeydown(e: KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
-      save();
+      await save();
     }
   }
 
-  function save() {
-    dispatch("save");
+  async function save() {
+    await saveLocalContent();
+    onSave($localContent);
   }
 
-  const debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
+  $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
   function revertContent() {
     editor?.dispatch({
       changes: {
         from: 0,
         to: editor.state.doc.length,
-        insert: remoteContent,
+        insert: $remoteContent,
       },
     });
-    dispatch("revert");
+    revert();
+    onRevert();
   }
 </script>
 
@@ -122,7 +116,7 @@
 <section>
   <div class="editor-container">
     <div
-      bind:this={container}
+      bind:this={parent}
       class="size-full"
       on:click={() => {
         /** give the editor focus no matter where we click */
@@ -139,14 +133,14 @@
   <footer>
     <div class="flex gap-x-3">
       {#if !autoSave || disableAutoSave}
-        <Button disabled={!hasUnsavedChanges} on:click={save}>
+        <Button disabled={!$hasUnsavedChanges} on:click={debounceSave}>
           <Check size="14px" />
           Save
         </Button>
 
         <Button
           type="text"
-          disabled={!hasUnsavedChanges}
+          disabled={!$hasUnsavedChanges}
           on:click={revertContent}
         >
           <UndoIcon size="14px" />

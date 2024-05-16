@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { beforeNavigate, goto } from "$app/navigation";
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import type { SelectionRange } from "@codemirror/state";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
@@ -21,7 +21,6 @@
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
   import { createModelFromSource } from "@rilldata/web-common/features/sources/createModel";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
-  import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
   import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
@@ -38,7 +37,6 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -48,7 +46,6 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import {
     createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
     type V1ModelV2,
     type V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
@@ -85,17 +82,12 @@
   }
   $: [, fileName] = splitFolderAndName(filePath);
 
-  const QUERY_DEBOUNCE_TIME = 400;
-
-  const updateFile = createRuntimeServicePutFile();
-
   const queryHighlight = getContext<Writable<QueryHighlightState>>(
     "rill:app:query-highlight",
   );
 
   const { readOnly } = featureFlags;
 
-  let interceptedUrl: string | null = null;
   let fileNotFound = false;
 
   onMount(async () => {
@@ -124,13 +116,12 @@
   let blob = "";
   $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
-  // This gets updated via binding below
-  let localContent: string | null = null;
+  $: ({ hasUnsavedChanges, localContent } = fileArtifact);
 
-  $: hasUnsavedChanges = localContent !== null && localContent !== blob;
-
-  $: allErrors = fileArtifact.getAllErrors(queryClient, instanceId);
+  $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
+
+  $: allErrors = $allErrorsStore;
 
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data?.[type];
@@ -153,15 +144,7 @@
     to: selection?.referenceIndex + selection?.reference?.length,
   })) as SelectionRange[];
 
-  function revert() {
-    localContent = null;
-  }
-
-  const debounceSave = debounce(save, QUERY_DEBOUNCE_TIME);
-
   async function save() {
-    if (localContent === null) return;
-
     if (type === "source") {
       overlay.set({ title: `Importing ${filePath}` });
     } else {
@@ -171,15 +154,8 @@
       });
     }
 
-    await $updateFile.mutateAsync({
-      instanceId,
-      data: {
-        path: filePath,
-        blob: localContent,
-      },
-    });
-
     if (type === "source") {
+      console.log("Saving source");
       await checkSourceImported(queryClient, filePath);
       overlay.set(null);
     }
@@ -235,31 +211,6 @@
     );
   }
 
-  beforeNavigate((e) => {
-    fileNotFound = false;
-    if (!hasUnsavedChanges || interceptedUrl) {
-      localContent = null;
-      return;
-    }
-
-    e.cancel();
-
-    if (e.to) interceptedUrl = e.to.url.href;
-  });
-
-  function handleConfirm() {
-    if (!interceptedUrl) return;
-    const url = interceptedUrl;
-    localContent = null;
-    hasUnsavedChanges = false;
-    interceptedUrl = null;
-    goto(url).catch(console.error);
-  }
-
-  function handleCancel() {
-    interceptedUrl = null;
-  }
-
   function formatRefreshedOn(refreshedOn: string) {
     const date = new Date(refreshedOn);
     return date.toLocaleString(undefined, {
@@ -284,7 +235,7 @@
       slot="header"
       titleInput={fileName}
       showTableToggle
-      {hasUnsavedChanges}
+      hasUnsavedChanges={$hasUnsavedChanges}
       on:change={handleNameChange}
     >
       <svelte:fragment slot="workspace-controls">
@@ -304,11 +255,11 @@
         <div class="flex gap-x-2 items-center">
           {#if type === "source"}
             <SourceCTAs
-              {hasUnsavedChanges}
+              hasUnsavedChanges={$hasUnsavedChanges}
               {collapse}
               hasErrors={$hasErrors}
               {isLocalFileConnector}
-              on:save-source={save}
+              on:save-source={fileArtifact.saveLocalContent}
               on:refresh-source={refresh}
               on:replace-source={replaceSource}
               on:create-model={handleCreateModelFromSource}
@@ -331,35 +282,23 @@
       <WorkspaceEditorContainer>
         {#key assetName}
           {#if type === "source"}
-            <SourceEditor
-              {filePath}
-              {blob}
-              {hasUnsavedChanges}
-              allErrors={$allErrors}
-              bind:localContent
-              on:revert={revert}
-              on:save={debounceSave}
-            />
+            <SourceEditor {fileArtifact} {allErrors} onSave={save} />
           {:else}
             <ModelEditor
-              key={filePath}
-              {blob}
+              {fileArtifact}
               {selections}
-              {hasUnsavedChanges}
-              bind:localContent
               bind:autoSave={$autoSave}
-              on:revert={revert}
-              on:save={debounceSave}
+              onSave={save}
             />
           {/if}
         {/key}
       </WorkspaceEditorContainer>
 
       {#if $tableVisible}
-        <WorkspaceTableContainer fade={type === "source" && hasUnsavedChanges}>
-          {#if type === "source" && $allErrors[0]?.message}
-            <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
-          {:else if !$allErrors.length}
+        <WorkspaceTableContainer fade={type === "source" && $hasUnsavedChanges}>
+          {#if type === "source" && allErrors[0]?.message}
+            <ErrorPane {filePath} errorMessage={allErrors[0].message} />
+          {:else if !allErrors.length}
             <ConnectedPreviewTable
               {connector}
               table={tableName ?? ""}
@@ -368,12 +307,12 @@
           {/if}
           <svelte:fragment slot="error">
             {#if type === "model"}
-              {#if $allErrors.length > 0}
+              {#if allErrors.length > 0}
                 <div
                   transition:slide={{ duration: 200 }}
                   class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
                 >
-                  {#each $allErrors as error}
+                  {#each allErrors as error (error.message)}
                     <div>{error.message}</div>
                   {/each}
                 </div>
@@ -389,7 +328,7 @@
         <WorkspaceInspector
           {tableName}
           hasErrors={$hasErrors}
-          {hasUnsavedChanges}
+          hasUnsavedChanges={$hasUnsavedChanges}
           {...{
             [type]: resource,
           }}
@@ -399,12 +338,4 @@
       {/if}
     </svelte:fragment>
   </WorkspaceContainer>
-{/if}
-
-{#if interceptedUrl}
-  <UnsavedSourceDialog
-    context={type}
-    on:confirm={handleConfirm}
-    on:cancel={handleCancel}
-  />
 {/if}

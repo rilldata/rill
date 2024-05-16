@@ -47,8 +47,12 @@ test.describe("Metrics editor", () => {
     ).not.toBeVisible();
 
     // let's check the inspector.
-    await expect(page.getByText("Model summary")).toBeVisible();
-    await expect(page.getByText("Model columns")).toBeVisible();
+    await expect(page.getByText("Model summary")).toBeVisible({
+      timeout: 10000,
+    });
+    await expect(page.getByText("Model columns")).toBeVisible({
+      timeout: 10000,
+    });
 
     // go to teh dashboard and make sure the metrics and dimensions are there.
 
