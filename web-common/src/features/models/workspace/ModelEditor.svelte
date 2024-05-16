@@ -292,6 +292,13 @@
   }
 
   function revertContent() {
+    editor?.dispatch({
+      changes: {
+        from: 0,
+        to: editor.state.doc.length,
+        insert: blob,
+      },
+    });
     dispatch("revert");
   }
 </script>

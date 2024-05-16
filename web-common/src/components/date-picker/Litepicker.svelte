@@ -20,6 +20,7 @@
     if (picker) {
       picker.show();
       picker.setEditingDate(0);
+      picker.scrollToSpecificDate(picker.datePicked[0]);
     }
   };
 
@@ -27,6 +28,7 @@
     if (picker) {
       picker.show();
       picker.setEditingDate(1);
+      picker.scrollToSpecificDate(picker.datePicked[1]);
     }
   };
 

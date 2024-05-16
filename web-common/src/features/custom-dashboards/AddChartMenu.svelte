@@ -43,7 +43,7 @@
           <WandIcon class="w-3 h-3" />
         {/if}
       </DropdownMenu.Item>
-      <DropdownMenu.Item disabled>Specify new chart</DropdownMenu.Item>
+      <DropdownMenu.Item disabled>Create new chart</DropdownMenu.Item>
     </DropdownMenu.Group>
     <DropdownMenu.Separator />
     <div class="px-1">

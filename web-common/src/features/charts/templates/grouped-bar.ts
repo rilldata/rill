@@ -53,7 +53,6 @@ export function buildGroupedBar(
         on: "pointerover",
         clear: "pointerout",
         encodings: ["x", "color"],
-        nearest: true,
       },
     },
   ];
