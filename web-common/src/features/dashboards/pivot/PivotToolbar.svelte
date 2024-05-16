@@ -6,9 +6,12 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { getStateManagers } from "../state-managers/state-managers";
   import PivotExportButton from "./PivotExportButton.svelte";
+  import { featureFlags } from "../../feature-flags";
 
   export let showPanels = true;
   export let isFetching = false;
+
+  const { exports } = featureFlags;
 
   const stateManagers = getStateManagers();
   const { metricsViewName, dashboardStore } = stateManagers;
@@ -82,5 +85,7 @@
     <Spinner size="18px" status={EntityStatus.Running} />
   {/if}
   <div class="grow" />
-  <PivotExportButton />
+  {#if $exports}
+    <PivotExportButton />
+  {/if}
 </div>

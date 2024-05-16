@@ -3,12 +3,14 @@
     ResourceKind,
     useFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { ChevronDown, Plus } from "lucide-svelte";
+  import { ChevronDown, Plus, WandIcon } from "lucide-svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { runtime } from "../../runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import { featureFlags } from "../feature-flags";
 
+  const { ai } = featureFlags;
   const dispatch = createEventDispatcher();
   let open = false;
   let value = "";
@@ -34,7 +36,13 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content class="flex flex-col gap-y-1 ">
     <DropdownMenu.Group>
-      <DropdownMenu.Item disabled>Generate chart with AI</DropdownMenu.Item>
+      <DropdownMenu.Item disabled>
+        Generate chart
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </DropdownMenu.Item>
       <DropdownMenu.Item disabled>Specify new chart</DropdownMenu.Item>
     </DropdownMenu.Group>
     <DropdownMenu.Separator />

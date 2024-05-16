@@ -12,11 +12,15 @@
   import { runtime } from "../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
   import { makeFullyQualifiedTableName } from "./olap-config";
+  import { WandIcon } from "lucide-svelte";
+  import { featureFlags } from "../feature-flags";
 
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string;
   export let table: string;
+
+  const { ai } = featureFlags;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
     connector,
@@ -55,7 +59,10 @@
             <Add />
           </IconSpaceFixer>
           <ResponsiveButtonText {collapse}>
-            Generate dashboard with AI
+            Generate dashboard {#if $ai}
+              with AI
+              <WandIcon class="w-3 h-3" />
+            {/if}
           </ResponsiveButtonText>
         </Button>
       </PanelCTA>

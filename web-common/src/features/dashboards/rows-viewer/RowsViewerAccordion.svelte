@@ -10,6 +10,7 @@
   import ExportModelDataButton from "./ExportModelDataButton.svelte";
   import RowsViewer from "./RowsViewer.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { featureFlags } from "../../feature-flags";
 
   export let metricViewName: string;
 
@@ -20,7 +21,7 @@
   let isOpen = false;
   let label = "";
   let height = INITIAL_HEIGHT_EXPANDED;
-
+  const { exports } = featureFlags;
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     $runtime.instanceId,
     metricViewName,
@@ -122,9 +123,11 @@
       <span class="font-bold">Model Data</span>
       {label}
     </button>
-    <div class="ml-auto">
-      <ExportModelDataButton />
-    </div>
+    {#if $exports}
+      <div class="ml-auto">
+        <ExportModelDataButton />
+      </div>
+    {/if}
   </div>
 
   {#if isOpen}

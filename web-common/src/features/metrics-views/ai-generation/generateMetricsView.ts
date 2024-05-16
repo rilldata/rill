@@ -64,7 +64,7 @@ export function useCreateDashboardFromTableUIAction(
     const abortController = new AbortController();
 
     overlay.set({
-      title: "Hang tight! AI is personalizing your dashboard",
+      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your dashboard`,
       detail: {
         component: OptionToCancelAIGeneration,
         props: {
@@ -162,7 +162,7 @@ export async function createDashboardFromTableInMetricsEditor(
   const abortController = new AbortController();
 
   overlay.set({
-    title: "Hang tight! AI is personalizing your dashboard",
+    title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your dashboard`,
     detail: {
       component: OptionToCancelAIGeneration,
       props: {

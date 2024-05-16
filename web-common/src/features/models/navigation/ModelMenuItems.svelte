@@ -11,8 +11,11 @@
   import { V1ReconcileStatus } from "../../../runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
 
   export let filePath: string;
+
+  const { ai } = featureFlags;
 
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
@@ -51,8 +54,11 @@
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard with AI
-    <WandIcon class="w-3 h-3" />
+    Generate dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
   </div>
   <svelte:fragment slot="description">
     {#if $modelHasError}
@@ -74,8 +80,11 @@
   >
     <Explore slot="icon" />
     <div class="flex gap-x-2 items-center">
-      Generate chart with AI
-      <WandIcon class="w-3 h-3" />
+      Generate Chart
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
     </div>
     <svelte:fragment slot="description">
       {#if $modelHasError}

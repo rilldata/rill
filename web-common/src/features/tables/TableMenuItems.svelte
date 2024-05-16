@@ -17,6 +17,9 @@
   import { createModelFromSource } from "../sources/createModel";
   import { makeTablePreviewHref } from "./olap-config";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
+  import { featureFlags } from "../feature-flags";
+
+  const { ai } = featureFlags;
 
   export let connector: string;
   export let database: string = "";
@@ -73,7 +76,10 @@
 <NavigationMenuItem on:click={createDashboardFromTable}>
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard with AI
-    <WandIcon class="w-3 h-3" />
+    Generate dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
   </div>
 </NavigationMenuItem>
