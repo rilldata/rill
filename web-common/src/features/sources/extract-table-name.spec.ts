@@ -1,9 +1,9 @@
 import {
   extractFileExtension,
   extractFileName,
-  sanitizeEntityName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { describe, expect, it } from "vitest";
+import { sanitizeEntityName } from "../entity-management/name-utils";
 
 function generateTestCases(
   fileName: string,
