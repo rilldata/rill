@@ -10,6 +10,8 @@
   /* Aria label for input */
   export let label = "Search";
   export let placeholder = "Search";
+  export let border = true;
+  export let background = true;
 
   /* Reference of input DOM element */
   let ref: HTMLInputElement;
@@ -39,7 +41,10 @@
     type="text"
     autocomplete="off"
     class:focus={showBorderOnFocus}
-    class="bg-slate-50 border border-gray-200 outline-none rounded-sm block w-full pl-8 p-1"
+    class:bg-slate-50={background}
+    class:border
+    class:border-gray-200={border}
+    class="outline-none rounded-sm block w-full pl-8 p-1"
     {placeholder}
     bind:value
     on:input

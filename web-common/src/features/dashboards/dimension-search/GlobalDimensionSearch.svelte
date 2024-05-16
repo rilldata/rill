@@ -1,9 +1,10 @@
 <script lang="ts">
-  import Close from "@rilldata/web-common/components/icons/Close.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
+  import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { Search } from "@rilldata/web-common/components/search";
   import GlobalDimensionSearchResults from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearchResults.svelte";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { SearchIcon } from "lucide-svelte";
+  import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
   import { fly } from "svelte/transition";
 
   export let metricsViewName: string;
@@ -14,41 +15,49 @@
   function reset() {
     searchBarOpen = false;
     searchText = "";
-    submittedSearchText = "";
   }
 
   let submittedSearchText = "";
+  let searchResultsOpen = false;
   function onSubmit() {
     submittedSearchText = searchText;
+    searchResultsOpen = true;
   }
 </script>
 
-{#if searchBarOpen}
-  <div
-    transition:slideRight={{ leftOffset: 8 }}
-    class="flex items-center gap-x-2"
-  >
-    <Search
-      bind:value={searchText}
-      on:submit={onSubmit}
-      placeholder="Search dimensions"
-    />
-    <button class="ui-copy-icon" on:click={reset}>
-      <Close />
-    </button>
-  </div>
-{:else}
-  <button
-    class="flex items-center gap-x-2 p-1.5 text-gray-700"
-    in:fly|global={{ x: 10, duration: 300 }}
-    on:click={() => (searchBarOpen = !searchBarOpen)}
-  >
-    <SearchIcon size="16px" />
-  </button>
-{/if}
+<div class="relative flex flex-row">
+  {#if searchBarOpen}
+    <div
+      transition:slideRight={{}}
+      class="flex items-center gap-x-2 pr-2 w-60 bg-slate-50 border border-primary-300"
+    >
+      <Search
+        bind:value={searchText}
+        on:submit={onSubmit}
+        placeholder="Search dimensions"
+        autofocus
+        border={false}
+        background={false}
+      />
+      <button class="ui-copy-icon" on:click={reset}>
+        <CancelCircle size="16px" />
+      </button>
+    </div>
+  {:else}
+    <Button
+      class="flex items-center gap-x-2 p-1.5 text-gray-700"
+      on:click={() => (searchBarOpen = !searchBarOpen)}
+      type="secondary"
+      compact
+    >
+      <SearchIcon size="16px" />
+    </Button>
+  {/if}
 
-<GlobalDimensionSearchResults
-  {metricsViewName}
-  searchText={submittedSearchText}
-  onSelect={reset}
-/>
+  <GlobalDimensionSearchResults
+    {metricsViewName}
+    searchText={submittedSearchText}
+    onSelect={reset}
+    bind:open={searchResultsOpen}
+  />
+</div>

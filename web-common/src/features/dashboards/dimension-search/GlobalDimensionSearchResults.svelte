@@ -3,9 +3,7 @@
   import DimensionSearchResult from "@rilldata/web-common/features/dashboards/dimension-search/DimensionSearchResult.svelte";
   import { useDimensionSearchResults } from "@rilldata/web-common/features/dashboards/dimension-search/useDimensionSearchResults";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
-  import { toggleDimensionValueSelection } from "@rilldata/web-common/features/dashboards/state-managers/actions/dimension-filters";
-  import type { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
-  import { updateMetricsExplorerByName } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     DropdownMenu,
@@ -17,6 +15,13 @@
   export let metricsViewName: string;
   export let searchText: string;
   export let onSelect: () => void;
+  export let open: boolean;
+
+  const {
+    actions: {
+      dimensionsFilter: { toggleDimensionValueSelection },
+    },
+  } = getStateManagers();
 
   $: instanceId = $runtime.instanceId;
   $: metricsViewQuery = useDashboard(instanceId, metricsViewName);
@@ -38,21 +43,21 @@
 
   function onItemSelect(dimension: string, value: any) {
     onSelect();
-    updateMetricsExplorerByName(metricsViewName, (dashboard) => {
-      toggleDimensionValueSelection(
-        { dashboard } as DashboardMutables,
-        dimension,
-        value,
-        false,
-        true,
-      );
-    });
+    toggleDimensionValueSelection(dimension, value, false, true);
   }
 </script>
 
-<DropdownMenu open={!!$results}>
-  <DropdownMenuTrigger />
-  <DropdownMenuContent class="w-[450px] max-h-96 overflow-scroll">
+<DropdownMenu
+  open={open && !!$results && searchText}
+  onOpenChange={(o) => (open = o)}
+>
+  <DropdownMenuTrigger asChild let:builder>
+    <button use:builder.action {...builder} class="absolute left-32"></button>
+  </DropdownMenuTrigger>
+  <DropdownMenuContent
+    class="w-64 max-h-96 overflow-scroll right-2"
+    sideOffset={32}
+  >
     <div class="flex flex-col gap-2">
       {#if $results.completed && responses.length === 0}
         <div class="ui-copy-disabled text-center p-2 w-full">no results</div>
