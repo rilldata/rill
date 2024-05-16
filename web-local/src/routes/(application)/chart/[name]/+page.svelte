@@ -81,13 +81,7 @@
     resolverProperties,
   );
 
-  $: ({
-    isFetching: chartDataFetching,
-    data: chartData,
-    error: chartError,
-  } = $chartDataQuery);
-
-  $: console.log({ chartError });
+  $: ({ isFetching: chartDataFetching, data: chartData } = $chartDataQuery);
 </script>
 
 <svelte:head>
@@ -158,8 +152,7 @@
             />
           {:else}
             <p class="text-lg size-full grid place-content-center">
-              {JSON.stringify(chartError?.response) ??
-                "Update YAML to view chart data"}
+              Update YAML to view chart data
             </p>
           {/if}
         </div>
