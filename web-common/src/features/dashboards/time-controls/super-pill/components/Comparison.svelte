@@ -8,6 +8,8 @@
   } from "@rilldata/web-common/lib/time/types";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { Interval } from "luxon";
+  import { metricsExplorerStore } from "../../../stores/dashboard-stores";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
 
   type Option = {
     name: TimeComparisonOption;
@@ -23,21 +25,20 @@
     start: Date,
     end: Date,
   ) => void;
-  export let disableAllComparisons: () => void;
   export let showComparison: boolean | undefined;
   export let selectedComparison: DashboardTimeControls | undefined;
+  export let metricViewName: string;
 
   let open = false;
 
   $: comparisonOption =
     (selectedComparison?.name as TimeComparisonOption | undefined) || null;
-
+  $: firstOption = timeComparisonOptionsState[0];
   $: label =
-    comparisonOption && TIME_COMPARISON[comparisonOption]?.label
-      ? TIME_COMPARISON[comparisonOption].label
-      : "previous period";
+    TIME_COMPARISON[comparisonOption ?? firstOption?.name]?.label ??
+    "custom period";
 
-  $: selectedLabel = showComparison ? comparisonOption : "previous period";
+  $: selectedLabel = showComparison ? comparisonOption : "custom period";
 
   // function onSelectCustomComparisonRange(startDate: string, endDate: string) {
 
@@ -67,20 +68,37 @@
       );
     }
   }
+
+  function enableTimeComparison() {
+    metricsExplorerStore.displayTimeComparison(metricViewName, true);
+  }
 </script>
 
 <DropdownMenu.Root bind:open>
   <DropdownMenu.Trigger asChild let:builder>
-    <button use:builder.action {...builder}>
-      <div class="gap-x-2 flex" class:inactive={!showComparison}>
-        <b>vs</b>
+    {#if showComparison}
+      <button use:builder.action {...builder}>
+        <div class="gap-x-2 flex" class:inactive={!showComparison}>
+          <b>vs</b>
 
-        <p class="line-clamp-1">{label.toLowerCase()}</p>
-      </div>
-      <span class="flex-none">
-        <CaretDownIcon />
-      </span>
-    </button>
+          <p class="line-clamp-1">{label.toLowerCase()}</p>
+        </div>
+        <span class="flex-none">
+          <CaretDownIcon />
+        </span>
+      </button>
+    {:else}
+      <button on:click={enableTimeComparison}>
+        <div class="gap-x-2 flex" class:inactive={!showComparison}>
+          <b>vs</b>
+
+          <p class="line-clamp-1">{label.toLowerCase()}</p>
+        </div>
+        <span class="flex-none">
+          <CaretDownIcon />
+        </span>
+      </button>
+    {/if}
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start">
@@ -88,11 +106,16 @@
       {@const preset = TIME_COMPARISON[option.name]}
       {@const selected = selectedLabel === option.name}
       <DropdownMenu.Item
+        class="flex gap-x-2"
         on:click={() => {
-          if (selected) disableAllComparisons();
-          else onCompareRangeSelect(option.name);
+          onCompareRangeSelect(option.name);
         }}
       >
+        <span class="w-3 aspect-square">
+          {#if selected}
+            <Check size="14px" />
+          {/if}
+        </span>
         <span class:font-bold={selected}>
           {preset?.label || option.name}
         </span>

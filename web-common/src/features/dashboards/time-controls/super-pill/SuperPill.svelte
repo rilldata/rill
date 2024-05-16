@@ -198,10 +198,6 @@
     );
   }
 
-  function disableAllComparisons() {
-    metricsExplorerStore.disableAllComparisons(metricViewName);
-  }
-
   function onPan(direction: "left" | "right") {
     const panRange = $getNewPanRange(direction);
     if (!panRange) return;
@@ -267,6 +263,7 @@
     />
   {/if}
 
+  <!-- TO DO -->
   <!-- <Elements.Zoom /> -->
   {#if availableTimeZones.length}
     <Elements.Zone
@@ -278,12 +275,12 @@
   {/if}
   {#if $timeComparisonOptionsState}
     <Elements.Comparison
+      {metricViewName}
       timeComparisonOptionsState={$timeComparisonOptionsState}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showComparisonTimeSeries}
       currentInterval={interval}
       {onSelectComparisonRange}
-      {disableAllComparisons}
     />
   {/if}
 </div>
