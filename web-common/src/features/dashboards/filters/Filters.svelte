@@ -81,7 +81,7 @@
   }
 </script>
 
-<div class="flex gap-x-1 pb-2 px-2 flex-grow-0">
+<div class="flex gap-x-1 flex-grow-0">
   {#if !readOnly}
     <div
       class:ui-copy-icon={true}

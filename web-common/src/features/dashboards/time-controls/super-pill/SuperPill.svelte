@@ -250,7 +250,6 @@
     selected={selectedRange}
     {onSelectRange}
     {interval}
-    grain={activeTimeGrain}
   />
   {#if interval.isValid}
     <CalendarPicker

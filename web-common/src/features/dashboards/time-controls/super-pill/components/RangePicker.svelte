@@ -7,7 +7,6 @@
   } from "../../new-time-controls";
   import { getRangeLabel } from "../../new-time-controls";
   import TimeRangeMenu from "./TimeRangeMenu.svelte";
-  import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { Interval } from "luxon";
   import RangeDisplay from "./RangeDisplay.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
@@ -15,7 +14,7 @@
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
   export let interval: Interval;
-  export let grain: V1TimeGrain | undefined;
+
   export let showDefaultItem: boolean;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
@@ -33,7 +32,7 @@
     >
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
       {#if interval.isValid}
-        <RangeDisplay {interval} {grain} />
+        <RangeDisplay {interval} />
       {/if}
       <CaretDownIcon />
     </button>

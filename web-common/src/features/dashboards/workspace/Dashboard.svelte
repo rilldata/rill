@@ -52,22 +52,20 @@
 >
   <div
     id="header"
-    class="border-b w-fit min-w-full flex flex-col bg-slate-50 pl-4 slide"
+    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
     class:left-shift={extraLeftPadding}
   >
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
-      <div class="-ml-3 px-1 pt-2 space-y-2">
-        {#key metricViewName}
-          <section class="flex justify-between gap-x-4">
-            <Filters />
-            <div class="flex flex-col justify-end">
-              <TabBar />
-            </div>
-          </section>
-        {/key}
-      </div>
+      {#key metricViewName}
+        <section class="flex relative justify-between gap-x-4 py-4 pl-4">
+          <Filters />
+          <div class="absolute bottom-0 flex flex-col right-0">
+            <TabBar />
+          </div>
+        </section>
+      {/key}
     {/if}
   </div>
 
