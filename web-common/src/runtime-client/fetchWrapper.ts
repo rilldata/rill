@@ -4,7 +4,7 @@ export type FetchWrapperOptions = {
   method: string;
   headers?: HeadersInit;
   params?: Record<string, unknown>;
-  data?: any;
+  data?: Record<string, unknown> | BodyInit;
   signal?: AbortSignal;
 };
 
@@ -33,7 +33,7 @@ export async function fetchWrapper({
   url = encodeURI(url);
 
   if (params) {
-    const paramParts = [];
+    const paramParts: string[] = [];
     for (const p in params) {
       paramParts.push(`${p}=${encodeURIComponent(params[p] as string)}`);
     }
@@ -48,25 +48,26 @@ export async function fetchWrapper({
     headers,
     signal,
   });
-  if (!resp.ok) {
-    const data = await resp.json();
 
-    // Return runtime errors in the same form as the Axios client had previously
-    if (data.code && data.message) {
-      return Promise.reject({
-        response: {
-          status: resp.status,
-          data,
-        },
-      });
-    }
+  const json = (await resp.json()) as Record<string, unknown>;
 
+  if (resp.ok) return json;
+
+  // Return runtime errors in the same form as the Axios client had previously
+  if (json?.code && json?.message) {
+    return Promise.reject({
+      response: {
+        status: resp.status,
+        data: json,
+      },
+    });
+  } else {
     // Fallback error handling
     const err = new Error();
-    (err as any).response = await resp.json();
+    (err as any).response = json;
+    err.message = JSON.stringify(json);
     return Promise.reject(err);
   }
-  return resp.json();
 }
 
 function serializeBody(body: BodyInit | Record<string, unknown>): BodyInit {
