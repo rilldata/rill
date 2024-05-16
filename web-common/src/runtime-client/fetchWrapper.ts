@@ -4,7 +4,7 @@ export type FetchWrapperOptions = {
   method: string;
   headers?: HeadersInit;
   params?: Record<string, unknown>;
-  data?: Record<string, unknown> | BodyInit;
+  data?: any;
   signal?: AbortSignal;
 };
 
@@ -65,7 +65,6 @@ export async function fetchWrapper({
     // Fallback error handling
     const err = new Error();
     (err as any).response = json;
-    err.message = JSON.stringify(json);
     return Promise.reject(err);
   }
 }
