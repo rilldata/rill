@@ -3,9 +3,10 @@ package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "rill/runtime/v1/export_format.proto";
-import "rill/runtime/v1/time_grain.proto";
 import "rill/runtime/v1/colors.proto";
+import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/schema.proto";
+import "rill/runtime/v1/time_grain.proto";
 
 enum ReconcileStatus {
   RECONCILE_STATUS_UNSPECIFIED = 0;
@@ -102,23 +103,29 @@ message ModelV2 {
 }
 
 message ModelSpec {
-  string connector = 1;
-  string sql = 2;
-  optional bool materialize = 3;
   Schedule refresh_schedule = 4;
   uint32 timeout_seconds = 5;
-  bool uses_templating = 6;
-  // Fields not derived from code files
-  bool stage_changes = 7;
-  uint32 materialize_delay_seconds = 8;
+  bool incremental = 13;
+  string incremental_state_resolver = 14;
+  google.protobuf.Struct incremental_state_resolver_properties = 15;
+  string input_connector = 10;
+  google.protobuf.Struct input_properties = 11;
+  string output_connector = 1;
+  google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
+  reserved 2, 3, 6, 7, 8;
 }
 
 message ModelState {
-  string connector = 1;
-  string table = 2;
+  string executor_connector = 6;
+  string result_connector = 1;
+  google.protobuf.Struct result_properties = 5;
+  string result_table = 2;
   string spec_hash = 3;
+  string refs_hash = 9;
   google.protobuf.Timestamp refreshed_on = 4;
+  google.protobuf.Struct incremental_state = 7;
+  StructType incremental_state_schema = 8;
 }
 
 message MetricsViewV2 {
@@ -262,6 +269,10 @@ message ReportSpec {
   ExportFormat export_format = 8;
   repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
+  bool watermark_inherit = 12; // If true, will use the lowest watermark of its refs instead of the trigger time.
+  string intervals_iso_duration = 13;
+  int32 intervals_limit = 14;
+  bool intervals_check_unclosed = 15;
 }
 
 message ReportState {

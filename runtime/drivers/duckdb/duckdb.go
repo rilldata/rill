@@ -368,6 +368,24 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
 }
 
+// AsModelExecutor implements drivers.Handle.
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.InputHandle == c && opts.OutputHandle == c {
+		return &selfToSelfExecutor{c, opts}, true
+	}
+	if opts.OutputHandle == c {
+		if sqlstore, ok := opts.InputHandle.AsSQLStore(); ok {
+			return &sqlStoreToSelfExecutor{c, sqlstore, opts}, true
+		}
+	}
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	return c, true
+}
+
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	olap, _ := to.(*connection)

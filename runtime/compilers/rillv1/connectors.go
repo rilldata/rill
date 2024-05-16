@@ -86,7 +86,7 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) er
 	if r.SourceSpec != nil {
 		return a.analyzeSource(ctx, r)
 	} else if r.ModelSpec != nil {
-		return a.trackConnector(r.ModelSpec.Connector, r, false)
+		return a.analyzeModel(ctx, r)
 	} else if r.MetricsViewSpec != nil {
 		return a.trackConnector(r.MetricsViewSpec.Connector, r, false)
 	} else if r.MigrationSpec != nil {
@@ -137,6 +137,49 @@ func (a *connectorAnalyzer) analyzeSource(ctx context.Context, r *Resource) erro
 	// NOTE: Not checking anonymous access for these since we don't know what properties to use.
 	// TODO: Can we solve that issue?
 	otherConnectors, _ := sourceConnector.TertiarySourceConnectors(ctx, srcProps, zap.NewNop())
+	for _, connector := range otherConnectors {
+		err := a.trackConnector(connector, r, false)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
+// analyzeModel extracts connector metadata for a model resource.
+// The logic for extracting metadata from a model is more complex than for other resource kinds, hence the separate function.
+func (a *connectorAnalyzer) analyzeModel(ctx context.Context, r *Resource) error {
+	// No analysis necessary for the output connector
+	err := a.trackConnector(r.ModelSpec.OutputConnector, r, false)
+	if err != nil {
+		return err
+	}
+
+	// Prep for analyzing InputConnector
+	spec := r.ModelSpec
+	inputProps := spec.InputProperties.AsMap()
+	_, inputConnector, err := a.parser.driverForConnector(spec.InputConnector)
+	if err != nil {
+		return err
+	}
+
+	// Check if we have anonymous access (unless we already know that we don't)
+	var anonAccess bool
+	if res, ok := a.result[spec.InputConnector]; !ok || res.AnonymousAccess {
+		anonAccess, _ = inputConnector.HasAnonymousSourceAccess(ctx, inputProps, zap.NewNop())
+	}
+
+	// Track the input connector
+	err = a.trackConnector(spec.InputConnector, r, anonAccess)
+	if err != nil {
+		return err
+	}
+
+	// Track any tertiary connectors (like a DuckDB source referencing S3 in its SQL).
+	// NOTE: Not checking anonymous access for these since we don't know what properties to use.
+	// TODO: Can we solve that issue?
+	otherConnectors, _ := inputConnector.TertiarySourceConnectors(ctx, inputProps, zap.NewNop())
 	for _, connector := range otherConnectors {
 		err := a.trackConnector(connector, r, false)
 		if err != nil {

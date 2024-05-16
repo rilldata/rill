@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  title: rill/runtime/v1/export_format.proto
+  title: rill/runtime/v1/colors.proto
   version: version not set
 tags:
   - name: RuntimeService
@@ -4536,39 +4536,49 @@ definitions:
   v1ModelSpec:
     type: object
     properties:
-      connector:
-        type: string
-      sql:
-        type: string
-      materialize:
-        type: boolean
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:
         type: integer
         format: int64
-      usesTemplating:
+      incremental:
         type: boolean
-      stageChanges:
-        type: boolean
-        title: Fields not derived from code files
-      materializeDelaySeconds:
-        type: integer
-        format: int64
+      incrementalStateResolver:
+        type: string
+      incrementalStateResolverProperties:
+        type: object
+      inputConnector:
+        type: string
+      inputProperties:
+        type: object
+      outputConnector:
+        type: string
+      outputProperties:
+        type: object
       trigger:
         type: boolean
   v1ModelState:
     type: object
     properties:
-      connector:
+      executorConnector:
         type: string
-      table:
+      resultConnector:
+        type: string
+      resultProperties:
+        type: object
+      resultTable:
         type: string
       specHash:
+        type: string
+      refsHash:
         type: string
       refreshedOn:
         type: string
         format: date-time
+      incrementalState:
+        type: object
+      incrementalStateSchema:
+        $ref: '#/definitions/v1StructType'
   v1ModelV2:
     type: object
     properties:
@@ -4928,6 +4938,16 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      watermarkInherit:
+        type: boolean
+        description: If true, will use the lowest watermark of its refs instead of the trigger time.
+      intervalsIsoDuration:
+        type: string
+      intervalsLimit:
+        type: integer
+        format: int32
+      intervalsCheckUnclosed:
+        type: boolean
   v1ReportState:
     type: object
     properties:

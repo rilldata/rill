@@ -1,1 +1,0 @@
-The generic YAML editor can be used to edit any "vanilla" YAML file. First, we use it to edit the `rill.yaml` file. We do not use it to edit the Source YAML or Dashboard YAML files, for which we currently have specialized workspaces.

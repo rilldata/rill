@@ -91,7 +91,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 
 	if len(batches) == 0 {
 		// empty result
-		return nil, fmt.Errorf("no results found for the query")
+		return nil, drivers.ErrNoRows
 	}
 
 	// the number of returned rows is unknown at this point, only the number of batches and output files
@@ -169,7 +169,7 @@ func (f *fileIterator) Next() ([]string, error) {
 
 	if len(*firstBatch) == 0 {
 		// empty result
-		return nil, fmt.Errorf("no results found for the query")
+		return nil, drivers.ErrNoRows
 	}
 
 	// common schema

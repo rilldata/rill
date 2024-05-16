@@ -5,6 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
+import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
 import { Color } from "./colors_pb.js";
@@ -735,21 +736,6 @@ export class ModelV2 extends Message<ModelV2> {
  */
 export class ModelSpec extends Message<ModelSpec> {
   /**
-   * @generated from field: string connector = 1;
-   */
-  connector = "";
-
-  /**
-   * @generated from field: string sql = 2;
-   */
-  sql = "";
-
-  /**
-   * @generated from field: optional bool materialize = 3;
-   */
-  materialize?: boolean;
-
-  /**
    * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 4;
    */
   refreshSchedule?: Schedule;
@@ -760,21 +746,39 @@ export class ModelSpec extends Message<ModelSpec> {
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: bool uses_templating = 6;
+   * @generated from field: bool incremental = 13;
    */
-  usesTemplating = false;
+  incremental = false;
 
   /**
-   * Fields not derived from code files
-   *
-   * @generated from field: bool stage_changes = 7;
+   * @generated from field: string incremental_state_resolver = 14;
    */
-  stageChanges = false;
+  incrementalStateResolver = "";
 
   /**
-   * @generated from field: uint32 materialize_delay_seconds = 8;
+   * @generated from field: google.protobuf.Struct incremental_state_resolver_properties = 15;
    */
-  materializeDelaySeconds = 0;
+  incrementalStateResolverProperties?: Struct;
+
+  /**
+   * @generated from field: string input_connector = 10;
+   */
+  inputConnector = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct input_properties = 11;
+   */
+  inputProperties?: Struct;
+
+  /**
+   * @generated from field: string output_connector = 1;
+   */
+  outputConnector = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct output_properties = 12;
+   */
+  outputProperties?: Struct;
 
   /**
    * @generated from field: bool trigger = 9;
@@ -789,14 +793,15 @@ export class ModelSpec extends Message<ModelSpec> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ModelSpec";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "materialize", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 4, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 5, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 6, name: "uses_templating", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "stage_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "materialize_delay_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 13, name: "incremental", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "incremental_state_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "incremental_state_resolver_properties", kind: "message", T: Struct },
+    { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "input_properties", kind: "message", T: Struct },
+    { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
@@ -822,14 +827,24 @@ export class ModelSpec extends Message<ModelSpec> {
  */
 export class ModelState extends Message<ModelState> {
   /**
-   * @generated from field: string connector = 1;
+   * @generated from field: string executor_connector = 6;
    */
-  connector = "";
+  executorConnector = "";
 
   /**
-   * @generated from field: string table = 2;
+   * @generated from field: string result_connector = 1;
    */
-  table = "";
+  resultConnector = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct result_properties = 5;
+   */
+  resultProperties?: Struct;
+
+  /**
+   * @generated from field: string result_table = 2;
+   */
+  resultTable = "";
 
   /**
    * @generated from field: string spec_hash = 3;
@@ -837,9 +852,24 @@ export class ModelState extends Message<ModelState> {
   specHash = "";
 
   /**
+   * @generated from field: string refs_hash = 9;
+   */
+  refsHash = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp refreshed_on = 4;
    */
   refreshedOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Struct incremental_state = 7;
+   */
+  incrementalState?: Struct;
+
+  /**
+   * @generated from field: rill.runtime.v1.StructType incremental_state_schema = 8;
+   */
+  incrementalStateSchema?: StructType;
 
   constructor(data?: PartialMessage<ModelState>) {
     super();
@@ -849,10 +879,15 @@ export class ModelState extends Message<ModelState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ModelState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "executor_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "result_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "result_properties", kind: "message", T: Struct },
+    { no: 2, name: "result_table", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "refs_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
+    { no: 7, name: "incremental_state", kind: "message", T: Struct },
+    { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {
@@ -1770,6 +1805,28 @@ export class ReportSpec extends Message<ReportSpec> {
    */
   annotations: { [key: string]: string } = {};
 
+  /**
+   * If true, will use the lowest watermark of its refs instead of the trigger time.
+   *
+   * @generated from field: bool watermark_inherit = 12;
+   */
+  watermarkInherit = false;
+
+  /**
+   * @generated from field: string intervals_iso_duration = 13;
+   */
+  intervalsIsoDuration = "";
+
+  /**
+   * @generated from field: int32 intervals_limit = 14;
+   */
+  intervalsLimit = 0;
+
+  /**
+   * @generated from field: bool intervals_check_unclosed = 15;
+   */
+  intervalsCheckUnclosed = false;
+
   constructor(data?: PartialMessage<ReportSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1788,6 +1845,10 @@ export class ReportSpec extends Message<ReportSpec> {
     { no: 8, name: "export_format", kind: "enum", T: proto3.getEnumType(ExportFormat) },
     { no: 11, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 10, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 12, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "intervals_iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 15, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportSpec {

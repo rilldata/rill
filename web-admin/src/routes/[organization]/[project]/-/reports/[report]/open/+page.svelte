@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { getDashboardStateForReport } from "@rilldata/web-admin/features/scheduled-reports/get-dashboard-state-for-report";
+  import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
   import { useReport } from "@rilldata/web-admin/features/scheduled-reports/selectors";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -18,9 +18,10 @@
 
   $: report = useReport($runtime.instanceId, reportId);
 
-  let dashboardStateForReport: ReturnType<typeof getDashboardStateForReport>;
-  $: dashboardStateForReport = getDashboardStateForReport(
-    $report.data?.resource,
+  let dashboardStateForReport: ReturnType<typeof mapQueryToDashboard>;
+  $: dashboardStateForReport = mapQueryToDashboard(
+    $report.data?.resource?.report?.spec?.queryName,
+    $report.data?.resource?.report?.spec?.queryArgsJson,
     executionTime,
   );
 
