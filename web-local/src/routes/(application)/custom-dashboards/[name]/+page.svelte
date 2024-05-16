@@ -25,11 +25,6 @@
   } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
-  import {
-    createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
-    getRuntimeServiceGetFileQueryKey,
-  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
@@ -38,16 +33,6 @@
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
-  import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-
-  const updateFile = createRuntimeServicePutFile({
-    mutation: {
-      onMutate({ instanceId, data: { blob, path } }) {
-        const key = getRuntimeServiceGetFileQueryKey(instanceId, { path });
-        queryClient.setQueryData(key, { blob });
-      },
-    },
-  });
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
@@ -93,21 +78,10 @@
 
   $: errorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: errors = $errorsQuery;
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
-    path: filePath,
-  });
+
   $: [, fileName] = splitFolderAndName(filePath);
 
-  $: yaml = $fileQuery.data?.blob ?? "";
-
-  // let parsedDocument: Document.Parsed;
-
-  $: console.log($localContent);
-
-  // $: if ($localContent !== undefined) {
-  //   console.log("PARSING", $localContent);
-  //   parseDocument($localContent);
-  // }
+  $: ({ saveLocalContent: updateChartFile } = fileArtifact);
 
   $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
     ResourceKind.Component,
@@ -140,22 +114,6 @@
 
   $: ({ updateLocalContent, localContent } = fileArtifact);
 
-  async function updateChartFile(e: CustomEvent<string>) {
-    const content = e.detail;
-    if (!content) return;
-    try {
-      await $updateFile.mutateAsync({
-        instanceId,
-        data: {
-          path: filePath,
-          blob: content,
-        },
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
   async function handlePreviewUpdate(
     e: CustomEvent<{
       index: number;
@@ -175,10 +133,7 @@
 
     updateLocalContent(parsedDocument.toString());
 
-    if ($autoSave)
-      await updateChartFile(
-        new CustomEvent("update", { detail: $localContent }),
-      );
+    if ($autoSave) await updateChartFile();
   }
 
   async function addChart(e: CustomEvent<{ chartName: string }>) {
@@ -201,15 +156,8 @@
 
     updateLocalContent(parsedDocument.toString());
 
-    if ($autoSave)
-      await updateChartFile(new CustomEvent("update", { detail: yaml }));
+    if ($autoSave) await updateChartFile();
   }
-
-  const QUERY_DEBOUNCE_TIME = 300;
-  const debounceUpdateChartContent = debounce(
-    updateChartFile,
-    QUERY_DEBOUNCE_TIME,
-  );
 </script>
 
 <svelte:head>
@@ -280,12 +228,7 @@
                 extensions={FileExtensionToEditorExtension[".yaml"]}
                 bind:autoSave={$autoSave}
                 disableAutoSave={false}
-                onSave={() => {
-                  if ($localContent === null) return;
-                  debounceUpdateChartContent(
-                    new CustomEvent("update", { detail: $localContent }),
-                  );
-                }}
+                forceLocalUpdates
                 onRevert={() => {
                   spec = structuredClone(spec);
                 }}

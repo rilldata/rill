@@ -18,6 +18,7 @@
   export let autoSave: boolean = true;
   export let disableAutoSave: boolean = false;
   export let editor: EditorView | undefined = undefined;
+  export let forceLocalUpdates: boolean = false;
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
 
@@ -70,13 +71,27 @@
 
   // Update the editor content when the remote content changes
   // So long as the editor doesn't have focus
-  $: if (editor && $remoteContent && !editor?.hasFocus) {
+  $: if (editor && !editor?.hasFocus) {
     editor.dispatch({
       changes: {
         from: 0,
         to: editor.state.doc.length,
         insert: $remoteContent,
         newLength: $remoteContent?.length,
+      },
+      selection: editor.state.selection,
+    });
+
+    updateLocalContent($remoteContent);
+  }
+
+  $: if (forceLocalUpdates && editor && !editor?.hasFocus) {
+    editor.dispatch({
+      changes: {
+        from: 0,
+        to: editor.state.doc.length,
+        insert: $localContent,
+        newLength: $localContent?.length,
       },
       selection: editor.state.selection,
     });

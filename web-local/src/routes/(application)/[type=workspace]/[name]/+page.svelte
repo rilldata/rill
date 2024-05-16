@@ -116,7 +116,7 @@
   let blob = "";
   $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
-  $: ({ hasUnsavedChanges, localContent } = fileArtifact);
+  $: ({ hasUnsavedChanges } = fileArtifact);
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
