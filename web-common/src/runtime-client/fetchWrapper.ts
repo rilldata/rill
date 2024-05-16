@@ -49,7 +49,7 @@ export async function fetchWrapper({
     signal,
   });
 
-  const json = (await resp.json()) as Record<string, unknown>;
+  const json = await resp.json();
 
   if (resp.ok) return json;
 
