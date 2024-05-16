@@ -2,7 +2,7 @@
 import Litepicker from "litepicker";
 import { DateTime } from "./datetime";
 import { findNestedMonthItem, parseLocaleStringDate } from "./util";
-import { DateTime as LuxonDateTime } from "luxon";
+
 const style = {
   dayItem: "day-item",
   litepicker: "litepicker",
