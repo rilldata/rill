@@ -27,6 +27,7 @@
     <div class="text-gray-600">
       Need help? Reach out to us on <a
         target="_blank"
+        rel="noopener"
         href="http://bit.ly/3jg4IsF">Discord</a
       >
     </div>
@@ -41,6 +42,7 @@
     <div class="text-gray-600">
       Learn more about pivot tables in our <a
         target="_blank"
+        rel="noopener"
         href="https://docs.rilldata.com/explore/filters/pivot">docs</a
       >.
     </div>
