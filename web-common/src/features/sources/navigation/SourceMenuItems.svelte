@@ -42,7 +42,7 @@
 
   const dispatch = createEventDispatcher();
 
-  const { customDashboards } = featureFlags;
+  const { customDashboards, ai } = featureFlags;
 
   $: sourceQuery = fileArtifact.getResource(queryClient, runtimeInstanceId);
   let source: V1SourceV2 | undefined;
@@ -135,8 +135,11 @@
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard with AI
-    <WandIcon class="w-3 h-3" />
+    Generate dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
   </div>
   <svelte:fragment slot="description">
     {#if $sourceHasError}
