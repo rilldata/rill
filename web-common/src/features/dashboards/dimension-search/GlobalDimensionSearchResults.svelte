@@ -1,7 +1,10 @@
 <script lang="ts">
   import { Progress } from "@rilldata/web-common/components/progress";
-  import DimensionSearchResult from "@rilldata/web-common/features/dashboards/dimension-search/DimensionSearchResult.svelte";
-  import { useDimensionSearchResults } from "@rilldata/web-common/features/dashboards/dimension-search/useDimensionSearchResults";
+  import GlobalDimensionSearchResult from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearchResult.svelte";
+  import {
+    DimensionSearchResult,
+    useDimensionSearchResults,
+  } from "@rilldata/web-common/features/dashboards/dimension-search/useDimensionSearchResults";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -39,7 +42,8 @@
     );
   }
 
-  $: responses = $results?.responses.filter((r) => r?.values?.length) ?? [];
+  $: responses = ($results?.responses.filter((r) => r?.values?.length) ??
+    []) as DimensionSearchResult[];
 
   function onItemSelect(dimension: string, value: any) {
     onSelect();
@@ -48,7 +52,7 @@
 </script>
 
 <DropdownMenu
-  open={open && !!$results && searchText}
+  open={open && !!$results && !!searchText}
   onOpenChange={(o) => (open = o)}
 >
   <DropdownMenuTrigger asChild let:builder>
@@ -58,19 +62,21 @@
     class="w-64 max-h-96 overflow-scroll right-2"
     sideOffset={32}
   >
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col">
       {#if $results.completed && responses.length === 0}
         <div class="ui-copy-disabled text-center p-2 w-full">no results</div>
       {:else}
-        {#if $results.progress < 100}
-          <div class="flex flex-row items-center gap-x-2">
-            <Progress value={$results.progress} max={100} />
-            {$results.progress}%
-          </div>
-          <DropdownMenuSeparator />
-        {/if}
+        <div class="flex flex-row items-center gap-x-2 px-2">
+          <Progress value={$results.progress} max={100} class="h-1" />
+          <div class="text-gray-500 text-[11px]">{$results.progress}%</div>
+        </div>
+        <DropdownMenuSeparator />
         {#each responses as { dimension, values } (dimension)}
-          <DimensionSearchResult {dimension} {values} onSelect={onItemSelect} />
+          <GlobalDimensionSearchResult
+            {dimension}
+            {values}
+            onSelect={onItemSelect}
+          />
           <DropdownMenuSeparator />
         {/each}
       {/if}

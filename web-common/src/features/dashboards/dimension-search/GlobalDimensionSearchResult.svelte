@@ -21,9 +21,11 @@
 </script>
 
 <DropdownMenuGroup>
-  <DropdownMenuLabel class="flex flex-col text-gray-500 text-xs">
-    <div class="font-semibold">{dimension.toUpperCase()}</div>
-    <div>{count}{count >= FULL_LIST_COUNT ? "+" : ""} results</div>
+  <DropdownMenuLabel class="flex flex-col text-gray-500">
+    <div class="font-semibold text-[10px] h-4">{dimension.toUpperCase()}</div>
+    <div class="font-normal text-[11px] h-4">
+      {count}{count >= FULL_LIST_COUNT ? "+" : ""} result{count > 1 ? "s" : ""}
+    </div>
   </DropdownMenuLabel>
   <div class="flex flex-col">
     {#each shownValues as value}

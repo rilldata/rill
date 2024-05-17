@@ -5,7 +5,6 @@
   import GlobalDimensionSearchResults from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearchResults.svelte";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
-  import { fly } from "svelte/transition";
 
   export let metricsViewName: string;
 

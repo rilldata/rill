@@ -7,14 +7,12 @@ import {
 import { StreamingQueryBatch } from "@rilldata/web-common/runtime-client/StreamingQueryBatch";
 import { derived } from "svelte/store";
 
+export type DimensionSearchResult = {
+  dimension: string;
+  values: any[];
+};
 export type DimensionSearchResults = {
-  responses: (
-    | {
-        dimension: string;
-        values: any[];
-      }
-    | undefined
-  )[];
+  responses: (DimensionSearchResult | undefined)[];
   errors: Error[];
   completed: boolean;
   progress: number;
