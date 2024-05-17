@@ -21,7 +21,11 @@ import (
 )
 
 var supportedFuncs = map[string]any{
-	"date_trunc": nil,
+	"date_trunc":   nil,
+	"date_add":     nil,
+	"date_sub":     nil,
+	"now":          nil,
+	"current_date": nil,
 }
 
 type Compiler struct {
@@ -29,12 +33,13 @@ type Compiler struct {
 	controller     *runtime.Controller
 	instanceID     string
 	userAttributes map[string]any
+	priority       int
 }
 
 // New returns a compiler and created a tidb parser object.
 // The instantiated parser object and thus compiler is not goroutine safe and not lightweight.
 // It is better to keep it in a single goroutine, and reuse it if possible.
-func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]any) *Compiler {
+func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]any, priority int) *Compiler {
 	p := parser.New()
 	// Weirdly setting just ModeANSI which is a combination having ModeANSIQuotes doesn't ensure double quotes are used to identify SQL identifiers
 	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
@@ -43,6 +48,7 @@ func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]
 		controller:     ctrl,
 		instanceID:     instanceID,
 		userAttributes: userAttributes,
+		priority:       priority,
 	}
 }
 
@@ -70,6 +76,7 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 		controller:     c.controller,
 		instanceID:     c.instanceID,
 		userAttributes: c.userAttributes,
+		priority:       c.priority,
 	}
 	compiledSQL, err := t.transformSelectStmt(ctx, stmt)
 	if err != nil {
@@ -84,11 +91,13 @@ type transformer struct {
 	instanceID     string
 	userAttributes map[string]any
 
-	metricsView   *runtimev1.MetricsViewV2
-	refs          []*runtimev1.ResourceName
+	metricsView *runtimev1.MetricsViewV2
+	refs        []*runtimev1.ResourceName
+	// connector is only available after from call
 	connector     string
 	dimsToExpr    map[string]string
 	measureToExpr map[string]string
+	priority      int
 }
 
 func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectStmt) (string, error) {
@@ -319,10 +328,14 @@ func (t *transformer) transformExprNode(ctx context.Context, node ast.ExprNode) 
 		return t.transformPatternLikeOrIlikeExpr(ctx, node)
 	case *ast.UnaryOperationExpr:
 		return t.transformUnaryOperationExpr(ctx, node)
+	case *ast.BetweenExpr:
+		return t.transformBetweenExpr(ctx, node)
 	case ast.ValueExpr:
 		return t.transformValueExpr(ctx, node)
 	case *ast.FuncCallExpr:
 		return t.transformFuncCallExpr(ctx, node)
+	case *ast.TimeUnitExpr:
+		return t.transformTimeUnitExpr(ctx, node)
 	default:
 		return exprResult{}, fmt.Errorf("metrics sql: unsupported expression %q", restore(node))
 	}
@@ -374,29 +387,123 @@ func (t *transformer) transformBinaryOperationExpr(ctx context.Context, node *as
 
 func (t *transformer) transformFuncCallExpr(ctx context.Context, node *ast.FuncCallExpr) (exprResult, error) {
 	fncName := node.FnName
+	switch fncName.L {
+	case "time_range_start":
+		return t.transformTimeRangeStart(ctx, node)
+	case "time_range_end":
+		return t.transformTimeRangeEnd(ctx, node)
+	}
+
+	// generic functions that do not require translation
 	if _, ok := supportedFuncs[fncName.L]; !ok {
 		return exprResult{}, fmt.Errorf("metrics sql: unsupported function %v", fncName.O)
 	}
 
 	var sb strings.Builder
+	var cols, types []string
+
+	olap, release, err := t.controller.Runtime.OLAP(ctx, t.instanceID, t.connector)
+	if err != nil {
+		return exprResult{}, err
+	}
+	defer release()
+	dialect := olap.Dialect()
+
 	sb.WriteString(fncName.O)
 	sb.WriteString("(")
-	// keeping it generic and not doing any arg validation for now, can be added later in future if required
-	var cols, types []string
-	for i, arg := range node.Args {
-		if i != 0 {
-			sb.WriteString(", ")
+	switch fncName.L {
+	case "date_add", "date_sub": // ex : date_add(col, INTERVAL 1 DAY)
+		if dialect == drivers.DialectDuckDB {
+			return t.transformDate(ctx, node)
 		}
-		expr, err := t.transformExprNode(ctx, arg)
+		expr, err := t.transformExprNode(ctx, node.Args[0]) // handling of col
 		if err != nil {
 			return exprResult{}, err
 		}
 		cols = append(cols, expr.columns...)
 		types = append(types, expr.types...)
 		sb.WriteString(expr.expr)
+
+		sb.WriteString(", ")
+		sb.WriteString("INTERVAL ")
+
+		expr, err = t.transformExprNode(ctx, node.Args[1]) // handling of 1
+		if err != nil {
+			return exprResult{}, err
+		}
+		cols = append(cols, expr.columns...)
+		types = append(types, expr.types...)
+		sb.WriteString(expr.expr)
+
+		expr, err = t.transformExprNode(ctx, node.Args[2]) // handling of DAY
+		if err != nil {
+			return exprResult{}, err
+		}
+		cols = append(cols, expr.columns...)
+		types = append(types, expr.types...)
+		sb.WriteString(expr.expr)
+	default:
+		// generic handling without doing any arg validation
+		for i, arg := range node.Args {
+			if i != 0 {
+				sb.WriteString(", ")
+			}
+			expr, err := t.transformExprNode(ctx, arg)
+			if err != nil {
+				return exprResult{}, err
+			}
+			cols = append(cols, expr.columns...)
+			types = append(types, expr.types...)
+			sb.WriteString(expr.expr)
+		}
 	}
 	sb.WriteString(")")
 	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
+}
+
+// duckdb does not support date_sub(col, INTERVAL 7 DAY)
+// Instead we need to use col - INTERVAL 7 DAY format.
+func (t *transformer) transformDate(ctx context.Context, node *ast.FuncCallExpr) (exprResult, error) {
+	var sb strings.Builder
+	var cols, types []string
+
+	expr, err := t.transformExprNode(ctx, node.Args[0]) // handling of col
+	if err != nil {
+		return exprResult{}, err
+	}
+	cols = append(cols, expr.columns...)
+	types = append(types, expr.types...)
+	sb.WriteString(expr.expr)
+
+	if node.FnName.L == "date_sub" {
+		sb.WriteString(" - ")
+	} else {
+		sb.WriteString(" + ")
+	}
+	sb.WriteString("INTERVAL ")
+
+	expr, err = t.transformExprNode(ctx, node.Args[1]) // handling of 1
+	if err != nil {
+		return exprResult{}, err
+	}
+	cols = append(cols, expr.columns...)
+	types = append(types, expr.types...)
+	sb.WriteString(expr.expr)
+	sb.WriteString(" ")
+
+	expr, err = t.transformExprNode(ctx, node.Args[2]) // handling of DAY
+	if err != nil {
+		return exprResult{}, err
+	}
+	cols = append(cols, expr.columns...)
+	types = append(types, expr.types...)
+	sb.WriteString(expr.expr)
+
+	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
+}
+
+func (t *transformer) transformTimeUnitExpr(_ context.Context, node *ast.TimeUnitExpr) (exprResult, error) {
+	return exprResult{expr: node.Unit.String()}, nil
 }
 
 func (t *transformer) transformIsNullOperationExpr(ctx context.Context, node *ast.IsNullExpr) (exprResult, error) {
@@ -527,6 +634,46 @@ func (t *transformer) transformUnaryOperationExpr(ctx context.Context, node *ast
 	}
 
 	return exprResult{expr: fmt.Sprintf("%s%s", opToString(node.Op), expr.expr), columns: expr.columns, types: expr.types}, nil
+}
+
+func (t *transformer) transformBetweenExpr(ctx context.Context, n *ast.BetweenExpr) (exprResult, error) {
+	expr, err := t.transformExprNode(ctx, n.Expr)
+	if err != nil {
+		return exprResult{}, err
+	}
+
+	var sb strings.Builder
+	sb.WriteString(expr.expr)
+	if n.Not {
+		sb.WriteString(" NOT BETWEEN ")
+	} else {
+		sb.WriteString(" BETWEEN ")
+	}
+
+	left, err := t.transformExprNode(ctx, n.Left)
+	if err != nil {
+		return exprResult{}, err
+	}
+	sb.WriteString(left.expr)
+
+	sb.WriteString(" AND ")
+
+	right, err := t.transformExprNode(ctx, n.Right)
+	if err != nil {
+		return exprResult{}, err
+	}
+	sb.WriteString(right.expr)
+
+	var cols []string
+	cols = append(cols, expr.columns...)
+	cols = append(cols, left.columns...)
+	cols = append(cols, right.columns...)
+
+	var types []string
+	types = append(types, expr.types...)
+	types = append(types, left.types...)
+	types = append(types, right.types...)
+	return exprResult{expr: sb.String(), columns: cols, types: types}, nil
 }
 
 func (t *transformer) transformValueExpr(_ context.Context, node ast.ValueExpr) (exprResult, error) {

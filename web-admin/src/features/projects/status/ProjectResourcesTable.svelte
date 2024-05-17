@@ -23,7 +23,7 @@
   const columns = table.createColumns([
     table.column({
       accessor: (resource) => resource.meta.name.kind,
-      header: "Kind",
+      header: "Type",
       cell: ({ value }) => {
         const prettyKind = prettyResourceKind(value);
         const color = getResourceKindTagColor(value);
@@ -80,7 +80,7 @@
     table.createViewModel(columns);
 </script>
 
-<div class="rounded-md border">
+<div class="border rounded-md">
   <Table.Root {...$tableAttrs}>
     <Table.Header>
       {#each $headerRows as headerRow}

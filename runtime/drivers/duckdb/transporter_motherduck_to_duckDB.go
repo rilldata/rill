@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"go.uber.org/zap"
 )
@@ -15,6 +16,11 @@ type motherduckToDuckDB struct {
 	to     drivers.OLAPStore
 	from   drivers.Handle
 	logger *zap.Logger
+}
+
+type mdConfig struct {
+	Token           string `mapstructure:"token"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 var _ drivers.Transporter = &motherduckToDuckDB{}
@@ -57,7 +63,11 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		}
 	}()
 
-	config := t.from.Config()
+	mdConfig := mdConfig{}
+	err = mapstructure.WeakDecode(t.from.Config(), &mdConfig)
+	if err != nil {
+		return err
+	}
 	err = t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
 		if err != nil {
@@ -74,11 +84,10 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		_ = res.Close()
 
 		// get token
-		token, _ := config["token"].(string)
-		if token == "" && config["allow_host_access"].(bool) {
-			token = os.Getenv("motherduck_token")
+		if mdConfig.Token == "" && mdConfig.AllowHostAccess {
+			mdConfig.Token = os.Getenv("motherduck_token")
 		}
-		if token == "" {
+		if mdConfig.Token == "" {
 			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
 		}
 
@@ -88,7 +97,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			return fmt.Errorf("failed to load motherduck extension %w", err)
 		}
 
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("SET motherduck_token='%s'", token)}); err != nil {
+		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("SET motherduck_token='%s'", mdConfig.Token)}); err != nil {
 			if !strings.Contains(err.Error(), "can only be set during initialization") {
 				return fmt.Errorf("failed to set motherduck token %w", err)
 			}

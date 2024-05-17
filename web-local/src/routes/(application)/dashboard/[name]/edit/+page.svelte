@@ -10,6 +10,10 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import {
+    resourceIsLoading,
+    ResourceKind,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
@@ -46,7 +50,6 @@
   $: if (data.fileArtifact) {
     fileArtifact = data.fileArtifact;
     filePath = fileArtifact.path;
-    metricViewName = fileArtifact.getEntityName();
   } else {
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
     metricViewName = $page.params.name;
@@ -57,26 +60,37 @@
   }
   $: [, fileName] = splitFolderAndName(filePath);
 
+  $: name = fileArtifact?.name;
+  $: metricViewName = $name?.name ?? "";
+
   $: instanceId = $runtime.instanceId;
   $: initLocalUserPreferenceStore(metricViewName);
   $: isModelingSupportedQuery = canModel(instanceId);
   $: isModelingSupported = $isModelingSupportedQuery.data;
 
-  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      onError: () => (fileNotFound = true),
-      // this will ensure that any changes done outside our app is pulled in.
-      refetchOnWindowFocus: true,
-      keepPreviousData: true,
+  $: fileQuery = createRuntimeServiceGetFile(
+    instanceId,
+    { path: filePath },
+    {
+      query: {
+        onError: () => (fileNotFound = true),
+        // this will ensure that any changes done outside our app is pulled in.
+        refetchOnWindowFocus: true,
+        keepPreviousData: true,
+      },
     },
-  });
+  );
   let yaml = "";
   $: yaml = $fileQuery.data?.blob ?? yaml;
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
+  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: ({ data: resourceData, isFetching } = $resourceQuery);
+  $: isResourceLoading = resourceIsLoading(resourceData);
 
-  $: previewDisbaled = !yaml.length || !!allErrors?.length;
+  $: previewDisabled =
+    !yaml.length || !!allErrors?.length || isResourceLoading || isFetching;
 
   $: if (!yaml?.length) {
     previewStatus = [
@@ -104,6 +118,7 @@
       e.currentTarget,
       filePath,
       metricViewName,
+      fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
     if (newRoute) await goto(newRoute);
   }
@@ -135,7 +150,7 @@
         <PreviewButton
           dashboardName={metricViewName}
           status={previewStatus}
-          disabled={previewDisbaled}
+          disabled={previewDisabled}
         />
       </div>
     </WorkspaceHeader>

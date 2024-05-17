@@ -17,7 +17,7 @@
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
 
   const stateManagers = getStateManagers();
@@ -131,7 +131,7 @@
     if (areAllTableRowsSelected) {
       deselectItemsInFilter(dimensionName, labels);
 
-      notifications.send({
+      eventBus.emit("notification", {
         message: `Removed ${labels.length} items from filter`,
       });
       return;
@@ -141,7 +141,7 @@
         labels,
       );
       selectItemsInFilter(dimensionName, labels);
-      notifications.send({
+      eventBus.emit("notification", {
         message: `Added ${newValuesSelected.length} items to filter`,
       });
     }

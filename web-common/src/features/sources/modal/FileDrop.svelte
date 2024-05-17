@@ -3,8 +3,6 @@
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
-  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -20,8 +18,6 @@
   const queryClient = useQueryClient();
 
   $: runtimeInstanceId = $runtime.instanceId;
-  $: sourceNames = useSourceFileNames(runtimeInstanceId);
-  $: modelNames = useModelFileNames(runtimeInstanceId);
   $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
@@ -36,7 +32,6 @@
 
     const uploadedFiles = uploadTableFiles(
       Array.from(files),
-      [$sourceNames?.data ?? [], $modelNames?.data ?? []],
       $runtime.instanceId,
     );
     for await (const { tableName, filePath } of uploadedFiles) {

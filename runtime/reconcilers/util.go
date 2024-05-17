@@ -191,7 +191,7 @@ func resolveTemplatedProps(ctx context.Context, c *runtime.Controller, self comp
 		},
 		Lookup: func(name compilerv1.ResourceName) (compilerv1.TemplateResource, error) {
 			if name.Kind == compilerv1.ResourceKindUnspecified {
-				return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without kind specified", name.Name)
+				return compilerv1.TemplateResource{}, fmt.Errorf("can't resolve name %q without type specified", name.Name)
 			}
 			res, err := c.Get(ctx, runtime.ResourceNameFromCompiler(name), false)
 			if err != nil {

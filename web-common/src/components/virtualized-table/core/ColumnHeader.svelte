@@ -2,7 +2,7 @@
   import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -83,7 +83,7 @@
     use:shiftClickAction
     on:shift-click={async () => {
       await navigator.clipboard.writeText(name);
-      notifications.send({
+      eventBus.emit("notification", {
         message: `copied column name "${name}" to clipboard`,
       });
     }}

@@ -78,8 +78,10 @@ export function getDashboardStateFromUrl(
   metricsView: V1MetricsViewSpec,
   schema: V1StructType,
 ): Partial<MetricsExplorerEntity> {
+  // backwards compatibility for older urls that had encoded state
+  urlState = urlState.includes("%") ? decodeURIComponent(urlState) : urlState;
   return getDashboardStateFromProto(
-    base64ToProto(decodeURIComponent(urlState)),
+    base64ToProto(urlState),
     metricsView,
     schema,
   );

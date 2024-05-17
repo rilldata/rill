@@ -17,7 +17,7 @@ func TestCompiler_Compile(t *testing.T) {
 	require.NoError(t, err)
 	defer release()
 
-	compiler := New(ctrl, instanceID, make(map[string]any))
+	compiler := New(ctrl, instanceID, make(map[string]any), 1)
 	passTests := map[string]string{
 		"select pub, dom from ad_bids_metrics":                                                                                                        "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\"",
 		"select pub, dom from ad_bids_metrics LIMIT 5":                                                                                                "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" LIMIT 5",
@@ -47,6 +47,8 @@ func TestCompiler_Compile(t *testing.T) {
 		"select publisher, domain, measure_2, measure_3 as \"click rate\" from ad_bids_mini_metrics where publisher is not null":                      "SELECT \"publisher\" AS \"publisher\", \"domain\" AS \"domain\", sum(impressions) AS \"measure_2\", sum(clicks) AS \"click rate\" FROM \"ad_bids_mini\" WHERE \"publisher\" IS NOT NULL GROUP BY \"domain\", \"publisher\"",
 		"select distinct pub from ad_bids_metrics":                                                                                                    "SELECT DISTINCT \"publisher\" AS \"pub\" FROM \"ad_bids\"",
 		"select pub, dom, date_trunc('hour', timestamp) as day, measure_0 from ad_bids_metrics order by  date_trunc('hour', timestamp) desc limit 10": "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\", date_trunc('hour', timestamp) AS \"day\", count(*) AS \"measure_0\" FROM \"ad_bids\" GROUP BY \"domain\", \"publisher\", date_trunc('hour', timestamp) ORDER BY date_trunc('hour', timestamp) DESC LIMIT 10",
+		"select pub, dom from ad_bids_metrics where timestamp > now() - INTERVAL 90 DAY":                                                              "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE timestamp > now() - INTERVAL 90 DAY",
+		"select pub, dom from ad_bids_metrics where timestamp > now() + INTERVAL 90 DAY":                                                              "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" WHERE timestamp > now() + INTERVAL 90 DAY",
 	}
 	for inSQL, outSQL := range passTests {
 		got, _, _, err := compiler.Compile(context.Background(), inSQL)
@@ -65,13 +67,13 @@ func TestCompiler_CompileError(t *testing.T) {
 	ctrl, err := runtime.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
 
-	compiler := New(ctrl, instanceID, make(map[string]any))
+	compiler := New(ctrl, instanceID, make(map[string]any), 1)
 
 	sqlToErrMsg := map[string]string{
 		"select max(pub), dom from ad_bids_metrics":                         "metrics sql: can only select plain dimension/measures",
 		"select pub, dom from ad_bids_metrics where toUpper(pub) = 'Yahoo'": "metrics sql: unsupported expression \"TOUPPER(`pub`)\"",
 	}
-	for inSQL, _ := range sqlToErrMsg {
+	for inSQL := range sqlToErrMsg {
 		_, _, _, err := compiler.Compile(context.Background(), inSQL)
 		require.Error(t, err)
 		// require.ErrorContains(t, err, errMsg)

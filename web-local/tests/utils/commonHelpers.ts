@@ -1,4 +1,8 @@
 import { asyncWaitUntil } from "@rilldata/web-common/lib/waitUtils";
+import type {
+  V1GetResourceResponse,
+  V1ListResourcesResponse,
+} from "@rilldata/web-common/runtime-client";
 import type { Page } from "playwright";
 
 export enum TestEntityType {
@@ -117,7 +121,7 @@ export async function deleteFile(page: Page, filePath: string) {
   await Promise.all([
     page.waitForResponse(
       (response) =>
-        response.url().includes(filePath) &&
+        response.url().includes(encodeURIComponent(filePath)) &&
         response.request().method() === "DELETE",
     ),
     clickMenuButton(page, "Delete"),
@@ -140,30 +144,27 @@ export async function waitForValidResource(
   kind: string,
 ) {
   await page.waitForResponse(async (response) => {
-    if (
-      response
-        .url()
-        .includes(
-          `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
-        )
-    ) {
-      // try and check get a single resource response
+    const responseUrl = response.url();
+    const getResourceRequest = responseUrl.includes(
+      `/v1/instances/default/resource?name.kind=${kind}&name.name=${name}`,
+    );
+
+    const listResourceRequest = responseUrl.includes(
+      `/v1/instances/default/resource?name.kind=${kind}`,
+    );
+
+    if (getResourceRequest) {
       try {
-        const resp = JSON.parse((await response.body()).toString());
+        const resp = (await response.json()) as V1GetResourceResponse;
         return resp.resource?.meta?.reconcileStatus === "RECONCILE_STATUS_IDLE";
       } catch (err) {
         return false;
       }
-    } else if (
-      response
-        .url()
-        .includes(`/v1/instances/default/resource?name.kind=${kind}`)
-    ) {
-      // try and check get all resources response
+    } else if (listResourceRequest) {
       try {
-        const resp = JSON.parse((await response.body()).toString());
+        const resp = (await response.json()) as V1ListResourcesResponse;
         return (
-          resp.resources.find((r) => r.meta?.name === name)?.meta
+          resp.resources?.find((r) => r.meta?.name === name)?.meta
             ?.reconcileStatus === "RECONCILE_STATUS_IDLE"
         );
       } catch (err) {

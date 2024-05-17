@@ -9,7 +9,6 @@ import (
 
 	"github.com/AlecAivazis/survey/v2"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
-	"github.com/rilldata/rill/cli/pkg/gitutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
@@ -27,6 +26,12 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "configure",
 		Short: "Configures connector variables for all sources",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			ctx := cmd.Context()
+			client, err := ch.Client()
+			if err != nil {
+				return err
+			}
+
 			// If projectPath is provided, normalize it
 			if projectPath != "" {
 				var err error
@@ -43,34 +48,12 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			ctx := cmd.Context()
-			client, err := ch.Client()
-			if err != nil {
-				return err
-			}
-
-			if projectName == "" {
-				// no project name provided infer name from githubURL
-				// Verify projectPath is a Git repo with remote on Github
-				_, githubURL, err := gitutil.ExtractGitRemote(projectPath, "", true)
+			// Infer project name from project path
+			if projectName == "" && ch.Interactive {
+				var err error
+				projectName, err = ch.InferProjectName(ctx, ch.Org, projectPath)
 				if err != nil {
 					return err
-				}
-
-				// fetch project names for github url
-				names, err := ch.ProjectNamesByGithubURL(ctx, ch.Org, githubURL)
-				if err != nil {
-					return err
-				}
-
-				if len(names) == 1 {
-					projectName = names[0]
-				} else {
-					// prompt for name from user
-					projectName, err = cmdutil.SelectPrompt("Select project", names, "")
-					if err != nil {
-						return err
-					}
 				}
 			}
 
@@ -106,13 +89,6 @@ func ConfigureCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to update variables %w", err)
 			}
 			ch.PrintfSuccess("Updated project variables\n")
-
-			if !cmd.Flags().Changed("redeploy") {
-				redeploy, err = cmdutil.ConfirmPrompt("Do you want to redeploy project", "", redeploy)
-				if err != nil {
-					return err
-				}
-			}
 
 			if redeploy {
 				_, err = client.TriggerRedeploy(ctx, &adminv1.TriggerRedeployRequest{Organization: ch.Org, Project: projectName})

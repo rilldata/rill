@@ -3,11 +3,12 @@
 
   export let inspector = true;
   export let bgClass = "bg-gray-100";
-  export let width: number = 0;
+  export let width = 0;
+  export let height = 0;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
 
-  $: width = contentRect.width;
+  $: ({ width, height } = contentRect);
 </script>
 
 <main class="flex flex-col h-screen w-full overflow-hidden" bind:contentRect>

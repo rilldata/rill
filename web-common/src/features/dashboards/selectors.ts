@@ -1,13 +1,9 @@
 import { filterExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
-  useFilteredResourceNames,
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1Expression,
   V1MetricsViewSpec,
@@ -20,22 +16,6 @@ import type {
   CreateQueryResult,
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
-
-export function useDashboardNames(instanceId: string) {
-  return useFilteredResourceNames(instanceId, ResourceKind.MetricsView);
-}
-
-export function useDashboardFileNames(instanceId: string) {
-  return useMainEntityFiles(instanceId, "dashboards");
-}
-
-export function useDashboardRoutes(instanceId: string) {
-  return useMainEntityFiles(
-    instanceId,
-    "dashboards",
-    (name) => getRouteFromName(name, EntityType.MetricsDefinition) + "/edit",
-  );
-}
 
 export function useDashboard(instanceId: string, metricViewName: string) {
   return useResource(instanceId, metricViewName, ResourceKind.MetricsView);

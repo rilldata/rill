@@ -16,9 +16,12 @@
   {#if value === "LOADING_CELL"}
     <span class="loading-cell" />
   {:else if assembled && row.getCanExpand()}
-    <button on:click={row.getToggleExpandedHandler()} class="cursor-pointer">
+    <button
+      on:click={row.getToggleExpandedHandler()}
+      class="cursor-pointer p-1 -m-1"
+    >
       <div class:rotate={row.getIsExpanded()} class="transition-transform">
-        <ChevronRight />
+        <ChevronRight size="16px" />
       </div>
     </button>
   {/if}

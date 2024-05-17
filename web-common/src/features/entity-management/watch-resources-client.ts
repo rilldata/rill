@@ -15,7 +15,5 @@ export function createWatchResourceClient() {
 }
 
 function handleWatchResourceResponse(res: V1WatchResourcesResponse) {
-  if (!res.resource) return;
-
-  invalidateResourceResponse(queryClient, res);
+  void invalidateResourceResponse(queryClient, res);
 }

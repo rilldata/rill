@@ -19,8 +19,14 @@ type ReportYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
 	Refresh    *ScheduleYAML    `yaml:"refresh"`
-	Timeout    string           `yaml:"timeout"`
-	Query      struct {
+	Watermark  string           `yaml:"watermark"` // options: "trigger_time", "inherit"
+	Intervals  struct {
+		Duration      string `yaml:"duration"`
+		Limit         uint   `yaml:"limit"`
+		CheckUnclosed bool   `yaml:"check_unclosed"`
+	} `yaml:"intervals"`
+	Timeout string `yaml:"timeout"`
+	Query   struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
@@ -66,6 +72,27 @@ func (p *Parser) parseReport(node *Node) error {
 	schedule, err := parseScheduleYAML(tmp.Refresh)
 	if err != nil {
 		return err
+	}
+
+	// Parse watermark
+	watermarkInherit := false
+	if tmp.Watermark != "" {
+		switch strings.ToLower(tmp.Watermark) {
+		case "inherit":
+			watermarkInherit = true
+		case "trigger_time":
+			// Do nothing
+		default:
+			return fmt.Errorf(`invalid value %q for property "watermark"`, tmp.Watermark)
+		}
+	}
+
+	// Validate the interval duration as a standard ISO8601 duration (without Rill extensions) with only one component
+	if tmp.Intervals.Duration != "" {
+		err := validateISO8601(tmp.Intervals.Duration, true, true)
+		if err != nil {
+			return fmt.Errorf(`invalid value %q for property "intervals.duration"`, tmp.Intervals.Duration)
+		}
 	}
 
 	// Parse timeout
@@ -154,6 +181,10 @@ func (p *Parser) parseReport(node *Node) error {
 	if schedule != nil {
 		r.ReportSpec.RefreshSchedule = schedule
 	}
+	r.ReportSpec.WatermarkInherit = watermarkInherit
+	r.ReportSpec.IntervalsIsoDuration = tmp.Intervals.Duration
+	r.ReportSpec.IntervalsLimit = int32(tmp.Intervals.Limit)
+	r.ReportSpec.IntervalsCheckUnclosed = tmp.Intervals.CheckUnclosed
 	if timeout != 0 {
 		r.ReportSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}

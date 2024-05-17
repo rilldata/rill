@@ -4,6 +4,7 @@ import {
   createAndExpression,
   createInExpression,
   getAllIdentifiers,
+  sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -51,10 +52,11 @@ export function prepareMeasureFilterResolutions(
         {
           dimensionName: dtf.name,
           measureNames,
+          where: sanitiseExpression(dashboard.whereFilter, undefined),
           having: dtf.filter,
           timeStart: timeControls.timeStart,
           timeEnd: timeControls.timeEnd,
-          limit: "50",
+          limit: "250",
           offset: "0",
           sort,
         },

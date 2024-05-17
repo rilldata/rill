@@ -16,7 +16,7 @@ we support two types of custom APIs:
     write queries against a [model](/build/models/models.md) that you have created. It should have the following structure:
     
     ```yaml
-    kind: api
+    type: api
     sql: SELECT abc FROM my_table
     ```
     where `my_table` is your model name. Read more details about [SQL apis](./sql-api.md).
@@ -25,7 +25,7 @@ we support two types of custom APIs:
 It should have the following structure:
     
     ```yaml
-    kind: api
+    type: api
     metrics_sql: SELECT dimension, AGGREGATE(measure) FROM my_metrics GROUP BY dimension
     ```
     where `my_metrics` is your metrics view name, `measure` is a custom metrics that you have defined. 

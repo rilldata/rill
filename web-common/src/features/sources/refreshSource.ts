@@ -47,7 +47,8 @@ export async function replaceSourceWithUploadedFile(
   );
 
   // Create source
-  return runtimeServicePutFile(instanceId, filePath, {
+  return runtimeServicePutFile(instanceId, {
+    path: filePath,
     blob: yaml,
   });
 }

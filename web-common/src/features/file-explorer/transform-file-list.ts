@@ -1,5 +1,8 @@
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { V1DirEntry } from "@rilldata/web-common/runtime-client";
+import { QueryClient } from "@tanstack/svelte-query";
+import { derived } from "svelte/store";
 
 export interface Directory {
   name: string; // TODO: Remove 'name' field and instead compute it downstream from 'path'
@@ -70,4 +73,24 @@ export function findDirectory(root: Directory, filePath: string) {
     dir = dir.directories.find((d) => d.name === folderTree[i]);
   }
   return dir;
+}
+
+export function getDirectoryHasErrors(
+  queryClient: QueryClient,
+  instanceId: string,
+  dir: Directory,
+) {
+  return derived(
+    flattenDirectory(dir).map((filePath) =>
+      fileArtifacts
+        .getFileArtifact(filePath)
+        .getAllErrors(queryClient, instanceId),
+    ),
+    (filesErrors) => filesErrors.some((fileErrors) => fileErrors.length > 0),
+  );
+}
+function flattenDirectory(dir: Directory) {
+  const files = dir.files.map((f) => `${dir.path}/${f}`);
+  dir.directories.forEach((subDir) => files.push(...flattenDirectory(subDir)));
+  return files;
 }

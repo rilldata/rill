@@ -98,6 +98,11 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		validateIndividualDimensionsAndMeasures(ctx, olap, t, mv, fields, res)
 	}
 
+	// Pinot does have any native support for time shift using time grain specifiers
+	if olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
+	}
+
 	// Check the default theme exists
 	if mv.DefaultTheme != "" {
 		_, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindTheme, Name: mv.DefaultTheme}, false)

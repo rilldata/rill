@@ -65,23 +65,24 @@
   $: reports = $reportsQuery.data?.resources ?? [];
 
   $: organizationPaths = organizations.reduce(
-    (map, { name }) => map.set(name, { label: name }),
+    (map, { name }) => map.set(name.toLowerCase(), { label: name }),
     new Map<string, PathOption>(),
   );
 
-  $: projectPaths = projects.reduce((map, { name: label }) => {
-    return map.set(label, { label });
-  }, new Map<string, PathOption>());
+  $: projectPaths = projects.reduce(
+    (map, { name }) => map.set(name.toLowerCase(), { label: name }),
+    new Map<string, PathOption>(),
+  );
 
   $: visualizationPaths = visualizations.reduce(
     (map, { meta, metricsView, dashboard }) => {
-      const id = meta.name.name;
+      const name = meta.name.name;
       const isMetricsExplorer = !!metricsView;
-      return map.set(id, {
+      return map.set(name.toLowerCase(), {
         label:
           (isMetricsExplorer
             ? metricsView?.state?.validSpec?.title
-            : dashboard?.spec?.title) || id,
+            : dashboard?.spec?.title) || name,
         section: isMetricsExplorer ? undefined : "-/dashboards",
       });
     },
@@ -89,17 +90,17 @@
   );
 
   $: alertPaths = alerts.reduce((map, alert) => {
-    const id = alert.meta.name.name;
-    return map.set(id, {
-      label: alert.alert.spec.title || id,
+    const name = alert.meta.name.name;
+    return map.set(name.toLowerCase(), {
+      label: alert.alert.spec.title || name,
       section: "-/alerts",
     });
   }, new Map<string, PathOption>());
 
   $: reportPaths = reports.reduce((map, report) => {
-    const id = report.meta.name.name;
-    return map.set(id, {
-      label: report.report.spec.title || id,
+    const name = report.meta.name.name;
+    return map.set(name.toLowerCase(), {
+      label: report.report.spec.title || name,
       section: "-/reports",
     });
   }, new Map<string, PathOption>());

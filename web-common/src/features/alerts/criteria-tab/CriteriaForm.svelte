@@ -3,12 +3,14 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
+  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;
 
   const { form, errors, validateField } = formState;
@@ -60,10 +62,11 @@
     placeholder="compare with"
     value={"Value"}
   />
+  <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
   <InputV2
     alwaysShowError
     bind:value
-    error={$errors["criteria"][index]?.value}
+    error={""}
     id="value"
     on:input={valueUpdater}
     placeholder={"0"}

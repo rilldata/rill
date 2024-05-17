@@ -73,7 +73,6 @@
     try {
       const previousActiveEntity = getScreenNameFromPage();
       const [newModelPath, newModelName] = await createModelFromSource(
-        queryClient,
         sourceName,
         tableName,
         "models",

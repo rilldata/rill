@@ -306,7 +306,7 @@ export function getDimensionValueTimeSeries(
         !dimensionName ||
         timeSeriesData?.isFetching
       )
-        return;
+        return set([]);
       if (!timeDimension || dashboardStore?.selectedScrubRange?.isScrubbing)
         return;
 

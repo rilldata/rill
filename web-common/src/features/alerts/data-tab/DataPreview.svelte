@@ -1,27 +1,19 @@
 <script lang="ts">
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
+  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
   import PreviewTable from "../../../components/preview-table/PreviewTable.svelte";
-  import type { V1Expression, V1TimeRange } from "../../../runtime-client";
   import PreviewEmpty from "../PreviewEmpty.svelte";
 
-  export let metricsViewName: string;
-  export let measure: string;
-  export let splitByDimension: string;
-  export let whereFilter: V1Expression;
-  export let timeRange: V1TimeRange;
+  export let formValues: AlertFormValues;
 
   const queryClient = useQueryClient();
 
   $: alertPreviewQuery = getAlertPreviewData(queryClient, {
-    metricsViewName,
-    measure,
-    splitByDimension,
-    whereFilter,
-    criteria: undefined,
-    timeRange,
+    ...formValues,
+    criteria: [],
   });
 </script>
 

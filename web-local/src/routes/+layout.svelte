@@ -16,6 +16,8 @@
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
+  import type { LayoutData } from "./$types";
+  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
 
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
@@ -32,7 +34,7 @@
 
   beforeNavigate(retainFeaturesFlags);
 
-  export let data;
+  export let data: LayoutData;
 
   onMount(async () => {
     const config = await runtimeServiceGetConfig();
@@ -61,6 +63,8 @@
     </WelcomePageRedirect>
   </QueryClientProvider>
 </RillTheme>
+
+<NotificationCenter />
 
 <style>
   /* Prevent trackpad navigation (like other code editors, like vscode.dev). */

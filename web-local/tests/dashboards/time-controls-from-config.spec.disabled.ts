@@ -223,7 +223,7 @@ function getDashboardYaml(defaults: string) {
   return `
 # Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-kind: metrics_view
+type: metrics_view
 title: "AdBids_model_dashboard_rename"
 model: "AdBids_model"
 timeseries: "timestamp"

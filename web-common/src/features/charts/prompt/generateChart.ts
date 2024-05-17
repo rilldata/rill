@@ -4,21 +4,18 @@ import {
   parseChartYaml,
 } from "@rilldata/web-common/features/charts/chartYaml";
 import {
-  chartPromptsStore,
   ChartPromptStatus,
+  chartPromptsStore,
 } from "@rilldata/web-common/features/charts/prompt/chartPrompt";
 import { useChart } from "@rilldata/web-common/features/charts/selectors";
-import {
-  getFileAPIPathFromNameAndType,
-  removeLeadingSlash,
-} from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
-  createRuntimeServiceGenerateChartSpec,
+  V1ComponentSpec,
+  createRuntimeServiceGenerateRenderer,
   createRuntimeServiceGenerateResolver,
   createRuntimeServiceGetFile,
   runtimeServicePutFile,
-  type V1ChartSpec,
 } from "@rilldata/web-common/runtime-client";
 import { get } from "svelte/store";
 
@@ -27,14 +24,17 @@ export function createChartGenerator(
   chart: string,
   filePath: string,
 ) {
-  const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
+  const generateVegaConfig = createRuntimeServiceGenerateRenderer();
   const chartQuery = useChart(instanceId, chart);
-  const chartContent = createRuntimeServiceGetFile(instanceId, filePath);
+  const chartContent = createRuntimeServiceGetFile(instanceId, {
+    path: filePath,
+  });
+  // TODO: update for new API
 
   return async (prompt: string) => {
     try {
       const [resolver, resolverProperties] = tryParseChart(
-        get(chartQuery).data?.chart?.spec,
+        get(chartQuery).data?.component?.spec,
         get(chartContent).data?.blob,
       );
       chartPromptsStore.startPrompt(chart, chart, prompt);
@@ -47,8 +47,13 @@ export function createChartGenerator(
         },
       });
       chartPromptsStore.updatePromptStatus(chart, ChartPromptStatus.Idle);
-      await runtimeServicePutFile(instanceId, removeLeadingSlash(filePath), {
-        blob: getChartYaml(resp.vegaLiteSpec, resolver, resolverProperties),
+      await runtimeServicePutFile(instanceId, {
+        path: filePath,
+        blob: getChartYaml(
+          resp.rendererProperties?.spec,
+          resolver,
+          resolverProperties,
+        ),
       });
     } catch (e) {
       chartPromptsStore.setPromptError(
@@ -61,7 +66,7 @@ export function createChartGenerator(
 
 export function createFullChartGenerator(instanceId: string) {
   const generateResolver = createRuntimeServiceGenerateResolver();
-  const generateVegaConfig = createRuntimeServiceGenerateChartSpec();
+  const generateVegaConfig = createRuntimeServiceGenerateRenderer();
 
   return async (
     prompt: string,
@@ -78,15 +83,16 @@ export function createFullChartGenerator(instanceId: string) {
     );
     try {
       // add an empty chart
-      await runtimeServicePutFile(instanceId, filePath, {
-        blob: `kind: chart`,
+      await runtimeServicePutFile(instanceId, {
+        path: filePath,
+        blob: `type: component`,
       });
       chartPromptsStore.startPrompt(
         (table || metricsView) ?? "",
         newChartName,
         prompt,
       );
-      await goto(`/files//${filePath}`);
+      await goto(`/files/${filePath}`);
       const resolverResp = await get(generateResolver).mutateAsync({
         instanceId,
         data: {
@@ -98,7 +104,8 @@ export function createFullChartGenerator(instanceId: string) {
       });
 
       // add a chart with just the resolver
-      await runtimeServicePutFile(instanceId, filePath, {
+      await runtimeServicePutFile(instanceId, {
+        path: filePath,
         blob: getChartYaml(
           "{}",
           resolverResp.resolver,
@@ -122,9 +129,10 @@ export function createFullChartGenerator(instanceId: string) {
         newChartName,
         ChartPromptStatus.Idle,
       );
-      await runtimeServicePutFile(instanceId, filePath, {
+      await runtimeServicePutFile(instanceId, {
+        path: filePath,
         blob: getChartYaml(
-          resp.vegaLiteSpec,
+          resp.rendererProperties?.spec,
           resolverResp.resolver,
           resolverResp.resolverProperties,
         ),
@@ -139,7 +147,7 @@ export function createFullChartGenerator(instanceId: string) {
 }
 
 function tryParseChart(
-  chartSpec: V1ChartSpec | undefined,
+  chartSpec: V1ComponentSpec | undefined,
   chartContent: string | undefined,
 ): [resolver: string, resolverProperties: Record<string, string>] {
   if (!chartSpec?.resolver && chartContent) {

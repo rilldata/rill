@@ -17,7 +17,7 @@
   export let collapse = false;
 
   $: modelQuery = useModel($runtime.instanceId, modelName);
-  $: connector = $modelQuery.data?.model?.spec?.connector;
+  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;

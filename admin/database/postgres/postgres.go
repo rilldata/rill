@@ -396,6 +396,51 @@ func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID str
 	return count, nil
 }
 
+func (c *connection) FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*database.ProjectWhitelistedDomainWithJoinedRoleNames, error) {
+	var res []*database.ProjectWhitelistedDomainWithJoinedRoleNames
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT pad.domain, r.name FROM projects_autoinvite_domains pad JOIN project_roles r ON r.id = pad.project_role_id WHERE pad.project_id=$1", projectID)
+	if err != nil {
+		return nil, parseErr("project whitelist domains", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*database.ProjectWhitelistedDomain, error) {
+	var res []*database.ProjectWhitelistedDomain
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM projects_autoinvite_domains WHERE lower(domain)=lower($1)", domain)
+	if err != nil {
+		return nil, parseErr("project whitelist domains", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*database.ProjectWhitelistedDomain, error) {
+	res := &database.ProjectWhitelistedDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM projects_autoinvite_domains WHERE project_id=$1 AND lower(domain)=lower($2)", projectID, domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project whitelist domain", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertProjectWhitelistedDomain(ctx context.Context, opts *database.InsertProjectWhitelistedDomainOptions) (*database.ProjectWhitelistedDomain, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ProjectWhitelistedDomain{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO projects_autoinvite_domains(project_id, project_role_id, domain) VALUES ($1, $2, $3) RETURNING *`, opts.ProjectID, opts.ProjectRoleID, opts.Domain).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project whitelist domain", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteProjectWhitelistedDomain(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM projects_autoinvite_domains WHERE id=$1", id)
+	return checkDeleteRow("project whitelist domain", res, err)
+}
+
 // FindExpiredDeployments returns all the deployments which are expired as per prod ttl
 func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
@@ -628,6 +673,15 @@ func (c *connection) UpdateUserActiveOn(ctx context.Context, ids []string) error
 func (c *connection) CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error) {
 	var res bool
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM users_orgs_roles WHERE user_id=$1 AND org_id=$2)", userID, orgID).Scan(&res)
+	if err != nil {
+		return false, parseErr("check", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error) {
+	var res bool
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT EXISTS (SELECT 1 FROM users_projects_roles WHERE user_id=$1 AND project_id=$2)", userID, projectID).Scan(&res)
 	if err != nil {
 		return false, parseErr("check", err)
 	}
@@ -950,6 +1004,36 @@ func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string
 func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE expires_on + $1 < now()", retention)
 	return parseErr("device auth code", err)
+}
+
+func (c *connection) FindAuthorizationCode(ctx context.Context, code string) (*database.AuthorizationCode, error) {
+	authCode := &database.AuthorizationCode{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM authorization_codes WHERE code = $1", code).StructScan(authCode)
+	if err != nil {
+		return nil, parseErr("authorization code", err)
+	}
+	return authCode, nil
+}
+
+func (c *connection) InsertAuthorizationCode(ctx context.Context, code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiration time.Time) (*database.AuthorizationCode, error) {
+	res := &database.AuthorizationCode{}
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`INSERT INTO authorization_codes (code, user_id, client_id, redirect_uri, code_challenge, code_challenge_method, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`, code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod, expiration).StructScan(res)
+	if err != nil {
+		return nil, parseErr("authorization code", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteAuthorizationCode(ctx context.Context, code string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM authorization_codes WHERE code=$1", code)
+	return checkDeleteRow("authorization code", res, err)
+}
+
+func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM authorization_codes WHERE expires_on + $1 < now()", retention)
+	return parseErr("authorization code", err)
 }
 
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {

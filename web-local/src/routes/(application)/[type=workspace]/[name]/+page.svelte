@@ -4,10 +4,7 @@
   import type { SelectionRange } from "@codemirror/state";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import {
-    getFileAPIPathFromNameAndType,
-    removeLeadingSlash,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import {
     FileArtifact,
     fileArtifacts,
@@ -20,7 +17,7 @@
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
-  import Editor from "@rilldata/web-common/features/models/workspace/Editor.svelte";
+  import ModelEditor from "@rilldata/web-common/features/models/workspace/ModelEditor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
   import { createModelFromSource } from "@rilldata/web-common/features/sources/createModel";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
@@ -58,6 +55,7 @@
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import type { CreateQueryResult } from "@tanstack/svelte-query";
   import { getContext, onMount } from "svelte";
   import { get, type Writable } from "svelte/store";
   import { fade, slide } from "svelte/transition";
@@ -98,7 +96,6 @@
   const { readOnly } = featureFlags;
 
   let interceptedUrl: string | null = null;
-  let focusOnMount = false;
   let fileNotFound = false;
 
   onMount(async () => {
@@ -114,19 +111,23 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: fileQuery = createRuntimeServiceGetFile(instanceId, filePath, {
-    query: {
-      onError: () => (fileNotFound = true),
+  $: fileQuery = createRuntimeServiceGetFile(
+    instanceId,
+    { path: filePath },
+    {
+      query: {
+        onError: () => (fileNotFound = true),
+      },
     },
-  });
+  );
 
   let blob = "";
   $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
   // This gets updated via binding below
-  $: latest = blob;
+  let localContent: string | null = null;
 
-  $: hasUnsavedChanges = latest !== blob;
+  $: hasUnsavedChanges = localContent !== null && localContent !== blob;
 
   $: allErrors = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
@@ -135,15 +136,20 @@
   $: resource = $resourceQuery.data?.[type];
   $: connector =
     type === "model"
-      ? ((resource as V1ModelV2)?.spec?.connector as string)
+      ? ((resource as V1ModelV2)?.spec?.outputConnector as string)
       : ((resource as V1SourceV2)?.spec?.sinkConnector as string);
-  $: tableName = resource?.state?.table;
+  $: tableName =
+    type === "model"
+      ? ((resource as V1ModelV2)?.state?.resultTable as string)
+      : ((resource as V1SourceV2)?.state?.table as string);
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
-  $: isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
-  $: isLocalFileConnector =
-    type === "source" && !!$isLocalFileConnectorQuery.data;
+  let isLocalFileConnectorQuery: CreateQueryResult<boolean>;
+  $: if (type === "source") {
+    isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
+  }
+  $: isLocalFileConnector = !!$isLocalFileConnectorQuery?.data;
 
   $: selections = $queryHighlight?.map((selection) => ({
     from: selection?.referenceIndex,
@@ -151,13 +157,13 @@
   })) as SelectionRange[];
 
   function revert() {
-    latest = blob;
+    localContent = null;
   }
 
   const debounceSave = debounce(save, QUERY_DEBOUNCE_TIME);
 
   async function save() {
-    if (!hasUnsavedChanges) return;
+    if (localContent === null) return;
 
     if (type === "source") {
       overlay.set({ title: `Importing ${filePath}` });
@@ -170,9 +176,9 @@
 
     await $updateFile.mutateAsync({
       instanceId,
-      path: removeLeadingSlash(filePath),
       data: {
-        blob: latest,
+        path: filePath,
+        blob: localContent,
       },
     });
 
@@ -196,6 +202,10 @@
       e.currentTarget,
       filePath,
       assetName,
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ],
     );
 
     if (newRoute) await goto(newRoute);
@@ -214,7 +224,6 @@
 
   async function handleCreateModelFromSource() {
     const [newModelPath, newModelName] = await createModelFromSource(
-      queryClient,
       assetName,
       tableName ?? "",
       "models",
@@ -231,7 +240,10 @@
 
   beforeNavigate((e) => {
     fileNotFound = false;
-    if (!hasUnsavedChanges || interceptedUrl) return;
+    if (!hasUnsavedChanges || interceptedUrl) {
+      localContent = null;
+      return;
+    }
 
     e.cancel();
 
@@ -241,7 +253,7 @@
   function handleConfirm() {
     if (!interceptedUrl) return;
     const url = interceptedUrl;
-    latest = blob;
+    localContent = null;
     hasUnsavedChanges = false;
     interceptedUrl = null;
     goto(url).catch(console.error);
@@ -300,7 +312,6 @@
               hasErrors={$hasErrors}
               {isLocalFileConnector}
               on:save-source={save}
-              on:revert-source={revert}
               on:refresh-source={refresh}
               on:replace-source={replaceSource}
               on:create-model={handleCreateModelFromSource}
@@ -324,19 +335,21 @@
         {#key assetName}
           {#if type === "source"}
             <SourceEditor
+              {filePath}
               {blob}
               {hasUnsavedChanges}
               allErrors={$allErrors}
-              bind:latest
+              bind:localContent
+              on:revert={revert}
               on:save={debounceSave}
             />
           {:else}
-            <Editor
+            <ModelEditor
+              key={filePath}
               {blob}
               {selections}
-              {focusOnMount}
               {hasUnsavedChanges}
-              bind:latest
+              bind:localContent
               bind:autoSave={$autoSave}
               on:revert={revert}
               on:save={debounceSave}
@@ -349,10 +362,10 @@
         <WorkspaceTableContainer fade={type === "source" && hasUnsavedChanges}>
           {#if type === "source" && $allErrors[0]?.message}
             <ErrorPane {filePath} errorMessage={$allErrors[0].message} />
-          {:else if tableName}
+          {:else if !$allErrors.length}
             <ConnectedPreviewTable
               {connector}
-              table={tableName}
+              table={tableName ?? ""}
               loading={resourceIsReconciling}
             />
           {/if}

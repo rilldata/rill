@@ -17,8 +17,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var useCache = false
-
 // Create instruments
 var (
 	meter                 = otel.Meter("github.com/rilldata/rill/runtime/drivers/clickhouse")
@@ -110,7 +108,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 	}
 
 	stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1"
-	if useCache {
+	if c.config.EnableCache {
 		stmt.Query += ", use_query_cache = 1"
 	}
 
@@ -217,6 +215,11 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	})
 }
 
+// InsertTableAsSelect implements drivers.OLAPStore.
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+	return fmt.Errorf("clickhouse: data transformation not yet supported")
+}
+
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
 	var typ string
@@ -229,11 +232,6 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 		Query:    fmt.Sprintf("DROP %s %s", typ, safeSQLName(name)),
 		Priority: 100,
 	})
-}
-
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
-	return fmt.Errorf("clickhouse: data transformation not yet supported")
 }
 
 // RenameTable implements drivers.OLAPStore.

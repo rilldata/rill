@@ -14,9 +14,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"google.golang.org/protobuf/types/known/structpb"
 )
 
-func (s *Server) GenerateChartSpec(ctx context.Context, req *runtimev1.GenerateChartSpecRequest) (*runtimev1.GenerateChartSpecResponse, error) {
+func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRendererRequest) (*runtimev1.GenerateRendererResponse, error) {
 	rp, err := json.Marshal(req.ResolverProperties.AsMap())
 	if err != nil {
 		return nil, err
@@ -45,35 +46,42 @@ func (s *Server) GenerateChartSpec(ctx context.Context, req *runtimev1.GenerateC
 	}
 
 	start := time.Now()
+	renderer, props, err := s.generateRendererWithAI(ctx, req.InstanceId, req.Prompt, res.Schema)
 
-	vegaLiteSpec, err := s.generateChartWithAI(ctx, req.InstanceId, req.Prompt, res.Schema)
-	attrs := []attribute.KeyValue{attribute.Int("table_column_count", len(res.Schema.Fields))}
-	attrs = append(attrs, attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()))
+	var propsPB *structpb.Struct
+	if err == nil && props != nil {
+		propsPB, err = structpb.NewStruct(props)
+	}
+
+	s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_renderer",
+		attribute.Int("table_column_count", len(res.Schema.Fields)),
+		attribute.Int64("elapsed_ms", time.Since(start).Milliseconds()),
+		attribute.Bool("succeeded", err == nil),
+	)
+
 	if err != nil {
-		attrs = append(attrs, attribute.Bool("succeeded", false))
-		s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_chart_spec", attrs...)
 		return nil, err
 	}
 
-	attrs = append(attrs, attribute.Bool("succeeded", true))
-	s.activity.Record(ctx, activity.EventTypeLog, "ai_generated_chart_spec", attrs...)
-	return &runtimev1.GenerateChartSpecResponse{
-		VegaLiteSpec: vegaLiteSpec,
+	return &runtimev1.GenerateRendererResponse{
+		Renderer:           renderer,
+		RendererProperties: propsPB,
 	}, nil
 }
 
-// generateChartWithAI attempts to generate a vega lite chart spec based on the schema of the data.
-func (s *Server) generateChartWithAI(ctx context.Context, instanceID, userPrompt string, schema *runtimev1.StructType) (string, error) {
+// generateRendererWithAI attempts to generate a component renderer based on a user-provided prompt and a data schema.
+// It currently only supports generating a Vega lite render.
+func (s *Server) generateRendererWithAI(ctx context.Context, instanceID, userPrompt string, schema *runtimev1.StructType) (string, map[string]any, error) {
 	// Build messages
 	msgs := []*drivers.CompletionMessage{
-		{Role: "system", Data: chartYAMLSystemPrompt()},
-		{Role: "user", Data: chartYAMLUserPrompt(userPrompt, schema)},
+		{Role: "system", Data: vegaSpecSystemPrompt()},
+		{Role: "user", Data: vegaSpecUserPrompt(userPrompt, schema)},
 	}
 
 	// Connect to the AI service configured for the instance
 	ai, release, err := s.runtime.AI(ctx, instanceID)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 	defer release()
 
@@ -84,7 +92,7 @@ func (s *Server) generateChartWithAI(ctx context.Context, instanceID, userPrompt
 	// Call AI service to infer a metrics view YAML
 	res, err := ai.Complete(ctx, msgs)
 	if err != nil {
-		return "", err
+		return "", nil, err
 	}
 
 	// The AI may produce Markdown output. Remove the code tags around the JSON.
@@ -92,11 +100,11 @@ func (s *Server) generateChartWithAI(ctx context.Context, instanceID, userPrompt
 	res.Data = strings.TrimPrefix(res.Data, "```")
 	res.Data = strings.TrimSuffix(res.Data, "```")
 
-	return res.Data, nil
+	return "vega_lite", map[string]any{"spec": res.Data}, nil
 }
 
-// chartYAMLSystemPrompt returns the static system prompt for the chart generation AI.
-func chartYAMLSystemPrompt() string {
+// vegaSpecSystemPrompt returns the static system prompt for the Vega spec generation AI.
+func vegaSpecSystemPrompt() string {
 	// `{ "name": "table" }` is our format to add data in the UI. To retain the formatting of the json it is better to ask AI to keep this as the `data` config.
 	return `
 You are an agent whose only task is to suggest relevant chart based on a table schema.
@@ -109,7 +117,7 @@ Your output should consist of valid JSON in the format below:
 `
 }
 
-func chartYAMLUserPrompt(userPrompt string, schema *runtimev1.StructType) string {
+func vegaSpecUserPrompt(userPrompt string, schema *runtimev1.StructType) string {
 	prompt := fmt.Sprintf(`
 Prompt provided by the user: %s:
 

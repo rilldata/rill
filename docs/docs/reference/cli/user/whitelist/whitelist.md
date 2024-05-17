@@ -18,7 +18,7 @@ Whitelist access by email domain
 ### SEE ALSO
 
 * [rill user](../user.md)	 - Manage users
-* [rill user whitelist list](list.md)	 - List whitelisted email domains for the org
-* [rill user whitelist remove](remove.md)	 - Remove whitelisted email domain for the org
-* [rill user whitelist setup](setup.md)	 - Whitelist an email domain for the org
+* [rill user whitelist list](list.md)	 - List whitelisted email domains for the org or project
+* [rill user whitelist remove](remove.md)	 - Remove whitelisted email domain for the org or project
+* [rill user whitelist setup](setup.md)	 - Whitelist an email domain for the org or project
 

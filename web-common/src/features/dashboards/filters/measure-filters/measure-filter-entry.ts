@@ -64,6 +64,8 @@ export function mapExprToMeasureFilter(
           : MeasureFilterOperation.NotBetween;
       break;
 
+    case V1Operation.OPERATION_EQ:
+    case V1Operation.OPERATION_NEQ:
     case V1Operation.OPERATION_GT:
     case V1Operation.OPERATION_GTE:
     case V1Operation.OPERATION_LT:
@@ -100,12 +102,17 @@ export function mapExprToMeasureFilter(
 export function mapMeasureFilterToExpr(
   measureFilter: MeasureFilterEntry,
 ): V1Expression | undefined {
-  const value =
-    Number(measureFilter.value1) /
-    (measureFilter.comparison ===
+  let value = Number(measureFilter.value1);
+  if (Number.isNaN(value)) {
+    return undefined;
+  }
+
+  if (
+    measureFilter.comparison ===
     MeasureFilterComparisonType.PercentageComparison
-      ? 100
-      : 1);
+  ) {
+    value /= 100;
+  }
   const comparisonSuffix =
     measureFilter.comparison ===
     MeasureFilterComparisonType.PercentageComparison
@@ -113,6 +120,8 @@ export function mapMeasureFilterToExpr(
       : DeltaAbsoluteSuffix;
 
   switch (measureFilter.operation) {
+    case MeasureFilterOperation.Equals:
+    case MeasureFilterOperation.NotEquals:
     case MeasureFilterOperation.GreaterThan:
     case MeasureFilterOperation.GreaterThanOrEquals:
     case MeasureFilterOperation.LessThan:

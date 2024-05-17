@@ -8,7 +8,7 @@
 
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
 
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
@@ -78,7 +78,7 @@
     if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
       truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
     }
-    notifications.send({
+    eventBus.emit("notification", {
       message: `copied dimension value "${truncatedLabel}" to clipboard`,
     });
   }

@@ -46,20 +46,22 @@ func (p *Parser) parseNode(node *Node) error {
 		return p.parseAlert(node)
 	case ResourceKindTheme:
 		return p.parseTheme(node)
-	case ResourceKindChart:
-		return p.parseChart(node)
+	case ResourceKindComponent:
+		return p.parseComponent(node)
 	case ResourceKindDashboard:
 		return p.parseDashboard(node)
 	case ResourceKindAPI:
 		return p.parseAPI(node)
 	default:
-		panic(fmt.Errorf("unexpected resource kind: %s", node.Kind.String()))
+		panic(fmt.Errorf("unexpected resource type: %s", node.Kind.String()))
 	}
 }
 
 // commonYAML parses YAML fields common to all YAML files.
 type commonYAML struct {
-	// Kind can be inferred from the directory name in certain cases, but otherwise must be specified manually.
+	// Type can be inferred from the directory name in certain cases, but otherwise must be specified manually.
+	Type *string `yaml:"type"`
+	// Deprecated: Changed to Type. "Kind" is still used internally to refer to resource types.
 	Kind *string `yaml:"kind"`
 	// Name is usually inferred from the filename, but can be specified manually.
 	Name string `yaml:"name"`
@@ -145,10 +147,23 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			return nil, pathError{path: ymlPath, err: newYAMLError(err)}
 		}
 
-		// Parse resource kind if set in YAML
+		// Parse resource kind if set in YAML. If not set, we try to infer it from path later.
+		// NOTE: We use "kind" internally, but "type:" is the preferred user-facing field.
+		// However, we still need to support "kind:" for backwards compatibility.
 		if cfg.Kind != nil {
 			res.Kind, err = ParseResourceKind(*cfg.Kind)
 			if err != nil {
+				return nil, pathError{path: ymlPath, err: err}
+			}
+		}
+		if cfg.Type != nil {
+			kind, err := ParseResourceKind(*cfg.Type)
+			if err == nil {
+				res.Kind = kind
+			} else if !strings.HasPrefix(paths[0], "/sources") {
+				// Backwards compatibility: "type:" was previously used in sources instead of "connector:". This was when sources were always created in the "sources" directory.
+				// So for backwards compatibility, we ignore parse errors for the "type:" field when the file is in the "sources" directory.
+				// (The source parser handles the backwards compatibility around mapping "type:" to "connector:".)
 				return nil, pathError{path: ymlPath, err: err}
 			}
 		}
@@ -201,10 +216,10 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 	var err error
 	for k, v := range res.SQLAnnotations {
 		switch strings.ToLower(k) {
-		case "kind":
+		case "type", "kind": // "kind" is for backwards compatibility
 			v, ok := v.(string)
 			if !ok {
-				err = fmt.Errorf("invalid type %T for property 'kind'", v)
+				err = fmt.Errorf("invalid type %T for property 'type'", v)
 				break
 			}
 			res.Kind, err = ParseResourceKind(v)
@@ -253,12 +268,15 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			res.Kind = ResourceKindMetricsView
 		} else if strings.HasPrefix(paths[0], "/init.sql") {
 			res.Kind = ResourceKindMigration
+		} else if sqlPath != "" {
+			// SQL files without an explicit kind are assumed to be models
+			res.Kind = ResourceKindModel
 		} else {
 			path := ymlPath
 			if path == "" {
 				path = sqlPath
 			}
-			return nil, pathError{path: path, err: errors.New("resource kind not specified and could not be inferred from context")}
+			return nil, pathError{path: path, err: errors.New("resource type not specified and could not be inferred from context")}
 		}
 	}
 
@@ -358,7 +376,7 @@ func parseYAMLRefs(refs []yaml.Node) ([]ResourceName, error) {
 			continue
 		}
 
-		// We support map refs of the form { kind: "kind", name: "my-resource" }
+		// We support map refs of the form { type: "kind", name: "my-resource" }
 		if ref.Kind == yaml.MappingNode {
 			m := make(map[string]string)
 			err := ref.Decode(m)
@@ -366,12 +384,21 @@ func parseYAMLRefs(refs []yaml.Node) ([]ResourceName, error) {
 				return nil, fmt.Errorf("invalid refs: %w", err)
 			}
 			if m["name"] == "" {
-				return nil, errors.New(`an object ref must provide the properties "kind" and "name" properties`)
+				return nil, errors.New(`an object ref must provide the properties "type" and "name" properties`)
 			}
 
 			var name ResourceName
 			name.Name = m["name"]
 
+			if m["type"] != "" {
+				kind, err := ParseResourceKind(m["type"])
+				if err != nil {
+					return nil, fmt.Errorf("invalid refs: %w", err)
+				}
+				name.Kind = kind
+			}
+
+			// Backwards compatibility for "kind:" changed to "type:"
 			if m["kind"] != "" {
 				kind, err := ParseResourceKind(m["kind"])
 				if err != nil {

@@ -10,7 +10,7 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../components/button";
-  import { notifications } from "../../components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { getLocalIANA } from "../../lib/time/timezone";
   import {
     V1ExportFormat,
@@ -87,14 +87,11 @@
           getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
         );
         dispatch("close");
-        notifications.send({
+        eventBus.emit("notification", {
           message: "Report created",
           link: {
             href: `/${organization}/${project}/-/reports`,
             text: "Go to scheduled reports",
-          },
-          options: {
-            persistedLink: true,
           },
         });
       } catch (e) {

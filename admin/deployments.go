@@ -24,8 +24,6 @@ type createDeploymentOptions struct {
 	ProjectID      string
 	Provisioner    string
 	Annotations    DeploymentAnnotations
-	VersionNumber  string
-	VersionCommit  string
 	ProdBranch     string
 	ProdVariables  map[string]string
 	ProdOLAPDriver string
@@ -53,13 +51,9 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 
 	runtimeVersion := opts.ProdVersion
 
-	// Try to resolve 'latest' version
+	// Resolve 'latest' version
 	if runtimeVersion == "latest" {
-		if opts.VersionNumber != "" {
-			runtimeVersion = opts.VersionNumber
-		} else if opts.VersionCommit != "" {
-			runtimeVersion = opts.VersionCommit
-		}
+		runtimeVersion = s.ResolveLatestRuntimeVersion()
 	}
 
 	// Verify version is valid
@@ -141,9 +135,10 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	err = p.AwaitReady(ctx, provisionID)
 	if err != nil {
 		s.Logger.Error("provisioner: failed awaiting runtime to be ready", zap.String("project_id", opts.ProjectID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		err2 := p.Deprovision(ctx, provisionID)
 		// Mark deployment error
-		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
-		return nil, multierr.Combine(err, err2)
+		_, err3 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		return nil, multierr.Combine(err, err2, err3)
 	}
 
 	// Open a runtime client
@@ -260,7 +255,10 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 	defer rt.Close()
 
-	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: depl.RuntimeInstanceID})
+	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		Sensitive:  true,
+	})
 	if err != nil {
 		return err
 	}
@@ -359,19 +357,24 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Connect to the deployment's runtime
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	// Delete the deployment
+	err := s.DB.DeleteDeployment(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
 
-	// Delete the instance
-	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-	})
+	// Connect to the deployment's runtime and delete the instance
+	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
-		return err
+		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+	} else {
+		defer rt.Close()
+		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
+			InstanceId: depl.RuntimeInstanceID,
+		})
+		if err != nil {
+			s.Logger.Error("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+		}
 	}
 
 	// Get provisioner and deprovision, skip if the provisioner is no longer defined in the provisioner set
@@ -379,16 +382,10 @@ func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deploym
 	if ok {
 		err = p.Deprovision(ctx, depl.ProvisionID)
 		if err != nil {
-			return err
+			s.Logger.Error("provisioner: failed to deprovision", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	} else {
 		s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-	}
-
-	// Delete the deployment
-	err = s.DB.DeleteDeployment(ctx, depl.ID)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -432,6 +429,16 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		projName:        proj.Name,
 		projAnnotations: proj.Annotations,
 	}
+}
+
+func (s *Service) ResolveLatestRuntimeVersion() string {
+	if s.VersionNumber != "" {
+		return s.VersionNumber
+	}
+	if s.VersionCommit != "" {
+		return s.VersionCommit
+	}
+	return "latest"
 }
 
 func (s *Service) ValidateRuntimeVersion(ver string) error {

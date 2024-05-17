@@ -11,7 +11,7 @@ export function compileCreateSourceYAML(
   const topOfFile = `# Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
 
-kind: source`;
+type: source`;
 
   switch (connectorName) {
     case "s3":
@@ -46,11 +46,11 @@ kind: source`;
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 
-  return `${topOfFile}\n\ntype: "${connectorName}"\n` + compiledKeyValues;
+  return `${topOfFile}\n\nconnector: "${connectorName}"\n` + compiledKeyValues;
 }
 
 function buildDuckDbQuery(path: string): string {
-  const extension = extractFileExtension(path as string);
+  const extension = extractFileExtension(path);
   if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
     return `select * from read_csv('${path}', auto_detect=true, ignore_errors=1, header=true)`;
   } else if (extensionContainsParts(extension, [".parquet"])) {

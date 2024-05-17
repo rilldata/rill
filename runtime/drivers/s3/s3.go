@@ -217,6 +217,16 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return c, true
 }
 
+// AsModelExecutor implements drivers.Handle.
+func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	return nil, false
+}
+
 // AsTransporter implements drivers.Connection.
 func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false

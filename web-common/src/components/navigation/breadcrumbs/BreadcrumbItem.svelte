@@ -14,7 +14,7 @@
   export let currentPath: (string | undefined)[] = [];
   export let onSelect: undefined | ((id: string) => void) = undefined;
 
-  $: selected = options.get(current);
+  $: selected = options.get(current.toLowerCase());
   $: nextChild = $page.route.id?.split(regex)[depth + 1] ?? "";
 
   function linkMaker(

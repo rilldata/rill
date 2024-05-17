@@ -83,7 +83,7 @@
 
 <style lang="postcss">
   button {
-    @apply z-10 flex-none;
+    @apply z-50 flex-none;
     /* @apply bg-red-400; */
   }
 
@@ -92,13 +92,29 @@
   }
 
   .NS {
-    @apply w-full h-2 pr-8;
+    @apply w-full h-3 pr-8;
     @apply cursor-row-resize;
   }
 
   .EW {
-    @apply w-2 h-full;
+    @apply w-3 h-full;
     @apply cursor-col-resize;
+  }
+
+  .NS.maxed {
+    @apply cursor-s-resize;
+  }
+
+  .NS.minned {
+    @apply cursor-n-resize;
+  }
+
+  .EW.minned {
+    @apply cursor-e-resize;
+  }
+
+  .EW.maxed {
+    @apply cursor-w-resize;
   }
 
   .left {
@@ -106,7 +122,7 @@
   }
 
   .right {
-    @apply right-0;
+    @apply -right-1;
   }
 
   .top {

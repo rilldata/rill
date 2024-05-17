@@ -17,6 +17,8 @@ const config: UserConfig = {
     strictPort: true,
   },
   plugins: [sveltekit()],
+  envDir: "../",
+  envPrefix: "RILL_UI_PUBLIC_",
 };
 
 export default config;

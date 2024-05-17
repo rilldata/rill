@@ -13,7 +13,7 @@
   const userFriendlyPhrases: Partial<Record<ResourceKind, string>> = {
     [ResourceKind.API]: "Building API",
     [ResourceKind.Alert]: "Building alert",
-    [ResourceKind.Chart]: "Building chart",
+    [ResourceKind.Component]: "Building chart",
     [ResourceKind.Dashboard]: "Building dashboard",
     [ResourceKind.MetricsView]: "Building dashboard",
     [ResourceKind.Model]: "Building model",

@@ -27,7 +27,7 @@
   async function onAutogenerateConfigFromModel(modelRes: V1Resource) {
     await createDashboardFromTableInMetricsEditor(
       $runtime.instanceId,
-      modelRes?.model?.state?.table ?? "",
+      modelRes?.model?.state?.resultTable ?? "",
       filePath,
     );
   }
@@ -36,7 +36,8 @@
   async function onCreateSkeletonMetricsConfig() {
     const yaml = initBlankDashboardYAML(metricsName);
 
-    await runtimeServicePutFile($runtime.instanceId, filePath, {
+    await runtimeServicePutFile($runtime.instanceId, {
+      path: filePath,
       blob: yaml,
       create: true,
       createOnly: true,
@@ -78,14 +79,14 @@
         let:toggleFloatingElement
       >
         {#each $models?.data ?? [] as model}
-          {#if model?.model?.state?.table}
+          {#if model?.model?.state?.resultTable}
             <MenuItem
               on:select={() => {
                 void onAutogenerateConfigFromModel(model);
                 toggleFloatingElement();
               }}
             >
-              {model?.model?.state?.table}
+              {model?.model?.state?.resultTable}
             </MenuItem>
           {/if}
         {/each}

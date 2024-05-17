@@ -13,7 +13,8 @@ rill env set <key> <value> [flags]
 ### Flags
 
 ```
-      --project string   
+      --path string      Project directory (default ".")
+      --project string   Cloud project name (will attempt to infer from Git remote if not provided)
 ```
 
 ### Global flags

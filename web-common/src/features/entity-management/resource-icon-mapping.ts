@@ -13,7 +13,7 @@ export const resourceIconMapping = {
   [ResourceKind.Model]: Code2Icon,
   [ResourceKind.MetricsView]: MetricsExplorerIcon,
   [ResourceKind.API]: ApiIcon,
-  [ResourceKind.Chart]: Chart,
+  [ResourceKind.Component]: Chart,
   [ResourceKind.Dashboard]: CustomDashboardIcon,
   [ResourceKind.Theme]: ThemeIcon,
   [ResourceKind.Report]: ReportIcon,

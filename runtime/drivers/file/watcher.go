@@ -26,6 +26,7 @@ const maxBufferSize = 1000
 type watcher struct {
 	logger           *zap.Logger
 	root             string
+	ignorePaths      []string
 	watcher          *fsnotify.Watcher
 	closed           atomic.Bool
 	done             chan struct{}
@@ -33,12 +34,20 @@ type watcher struct {
 	mu               sync.Mutex
 	subscribers      map[int]drivers.WatchCallback
 	nextSubscriberID int
-	buffer           map[string]drivers.WatchEvent
+	buffer           map[string]watchEvent
+}
+
+type watchEvent struct {
+	eventType runtimev1.FileEvent
+	path      string
+	relPath   string
+	dir       bool
+	isCreate  bool
 }
 
 // newWatcher creates a new watcher for the given root directory.
 // The root directory must be an absolute path.
-func newWatcher(root string, logger *zap.Logger) (*watcher, error) {
+func newWatcher(root string, ignorePaths []string, logger *zap.Logger) (*watcher, error) {
 	fsw, err := fsnotify.NewWatcher()
 	if err != nil {
 		return nil, err
@@ -47,10 +56,11 @@ func newWatcher(root string, logger *zap.Logger) (*watcher, error) {
 	w := &watcher{
 		logger:      logger,
 		root:        root,
+		ignorePaths: ignorePaths,
 		watcher:     fsw,
 		done:        make(chan struct{}),
 		subscribers: make(map[int]drivers.WatchCallback),
-		buffer:      make(map[string]drivers.WatchEvent),
+		buffer:      make(map[string]watchEvent),
 	}
 
 	err = w.addDir(root, false, true)
@@ -117,16 +127,42 @@ func (w *watcher) flush() {
 		return
 	}
 
+	for p, event := range w.buffer {
+		if !event.isCreate {
+			continue
+		}
+		// check for directory for CREATE events
+		info, err := os.Stat(event.path)
+		event.dir = err == nil && info.IsDir()
+		if event.dir {
+			// add directory to tracking paths
+			err = w.addDir(event.path, true, false)
+			if err != nil {
+				delete(w.buffer, p)
+				continue
+			}
+		}
+		w.buffer[p] = event
+	}
+
 	events := maps.Values(w.buffer)
+	driverEvents := make([]drivers.WatchEvent, len(events))
+	for i, event := range events {
+		driverEvents[i] = drivers.WatchEvent{
+			Type: event.eventType,
+			Path: event.relPath,
+			Dir:  event.dir,
+		}
+	}
 
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	for _, fn := range w.subscribers {
-		fn(events)
+		fn(driverEvents)
 	}
 
-	w.buffer = make(map[string]drivers.WatchEvent)
+	w.buffer = make(map[string]watchEvent)
 }
 
 func (w *watcher) run() {
@@ -156,14 +192,15 @@ func (w *watcher) runInner() error {
 				return nil
 			}
 
-			we := drivers.WatchEvent{}
-			if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
-				we.Type = runtimev1.FileEvent_FILE_EVENT_WRITE
-			} else if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
-				we.Type = runtimev1.FileEvent_FILE_EVENT_DELETE
+			we := watchEvent{}
+			if e.Has(fsnotify.Remove) || e.Has(fsnotify.Rename) {
+				we.eventType = runtimev1.FileEvent_FILE_EVENT_DELETE
+			} else if e.Has(fsnotify.Create) || e.Has(fsnotify.Write) || e.Has(fsnotify.Chmod) {
+				we.eventType = runtimev1.FileEvent_FILE_EVENT_WRITE
 			} else {
 				continue
 			}
+			we.isCreate = e.Has(fsnotify.Create)
 
 			path, err := filepath.Rel(w.root, e.Name)
 			if err != nil {
@@ -172,22 +209,20 @@ func (w *watcher) runInner() error {
 			}
 
 			path = filepath.Join("/", path)
-			we.Path = path
+			we.relPath = path
+			we.path = e.Name
 
-			if e.Has(fsnotify.Create) {
-				info, err := os.Stat(e.Name)
-				we.Dir = err == nil && info.IsDir()
+			// Do not send files for ignored paths
+			if drivers.IsIgnored(path, w.ignorePaths) {
+				continue
 			}
 
+			existing, ok := w.buffer[path]
+			if ok && existing.isCreate && we.eventType == runtimev1.FileEvent_FILE_EVENT_WRITE {
+				// copy over `IsCreate` within the batch for a path
+				we.isCreate = existing.isCreate
+			}
 			w.buffer[path] = we
-
-			// Calling addDir after appending to w.buffer, to sequence events correctly
-			if we.Dir && e.Has(fsnotify.Create) {
-				err = w.addDir(e.Name, true, false)
-				if err != nil {
-					return err
-				}
-			}
 
 			// Reset the timer so we only flush when no events have been observed for batchInterval.
 			// (But to avoid the buffer growing infinitely in edge cases, we enforce a max buffer size.)
@@ -229,10 +264,11 @@ func (w *watcher) addDir(path string, replay, errIfNotExist bool) error {
 			}
 			ep = filepath.Join("/", ep)
 
-			w.buffer[ep] = drivers.WatchEvent{
-				Path: ep,
-				Type: runtimev1.FileEvent_FILE_EVENT_WRITE,
-				Dir:  e.IsDir(),
+			w.buffer[ep] = watchEvent{
+				path:      fullPath,
+				relPath:   ep,
+				eventType: runtimev1.FileEvent_FILE_EVENT_WRITE,
+				dir:       e.IsDir(),
 			}
 		}
 

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import GenerateChartYAMLPrompt from "@rilldata/web-common/features/charts/prompt/GenerateChartYAMLPrompt.svelte";
   import RenameAssetModal from "@rilldata/web-common/features/entity-management/RenameAssetModal.svelte";
   import {
@@ -24,7 +24,7 @@
   import { findDirectory, transformFileList } from "./transform-file-list";
 
   $: instanceId = $runtime.instanceId;
-  $: getFileTree = createRuntimeServiceListFiles("default", undefined, {
+  $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
       select: (data) => {
         if (!data || !data.files?.length) return;
@@ -124,7 +124,7 @@
     if (fromPath !== newFilePath) {
       const newTopLevelPath = getTopLevelFolder(newFilePath);
       if (PROTECTED_DIRECTORIES.includes(newTopLevelPath)) {
-        notifications.send({
+        eventBus.emit("notification", {
           message: "cannot move to restricted directories",
         });
         return;

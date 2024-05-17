@@ -5,7 +5,7 @@
    * This component will render the label bound on the TimestampDetail.svelte graph.
    * It also enables a shift + click to copy the bound as a query-ready timestamp.
    */
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -45,7 +45,9 @@
       if (valueWithoutOffset === undefined) return;
       const exportedValue = `TIMESTAMP '${valueWithoutOffset.toISOString()}'`;
       await navigator.clipboard.writeText(exportedValue);
-      notifications.send({ message: `copied ${exportedValue} to clipboard` });
+      eventBus.emit("notification", {
+        message: `copied ${exportedValue} to clipboard`,
+      });
       // update this to set the active animation in the tooltip text
     }}
   >

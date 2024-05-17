@@ -15,7 +15,7 @@ describe("parseKindAndNameFromFile", () => {
     [
       "implicit kind and name for yaml",
       "sources/AdBids.yaml",
-      `type: sql\nsql: select * from read_csv('data/AdBids.csv')`,
+      `connector: sql\nsql: select * from read_csv('data/AdBids.csv')`,
       { kind: ResourceKind.Source, name: "AdBids" },
     ],
     [
@@ -27,25 +27,25 @@ describe("parseKindAndNameFromFile", () => {
     [
       "explicit kind and name for yaml",
       "sources/AdBids_dashboard.yaml",
-      `\n\nkind : metrics_view\nname:AdBids_dashboard_name\nmodel: AdBids_model\nmeasures: []\ndimensions: []`,
+      `\n\ntype : metrics_view\nname:AdBids_dashboard_name\nmodel: AdBids_model\nmeasures: []\ndimensions: []`,
       { kind: ResourceKind.MetricsView, name: "AdBids_dashboard_name" },
     ],
     [
       "explicit kind and name for sql",
       "sources/AdBids_model.sql",
-      `\n\n-- @kind : model\n--@name:AdBids_model_name\nselect * from AdBids`,
+      `\n\n-- @type : model\n--@name:AdBids_model_name\nselect * from AdBids`,
       { kind: ResourceKind.Model, name: "AdBids_model_name" },
     ],
     [
       "explicit invalid kind for yaml",
       "sources/AdBids_dashboard.yaml",
-      `\n\nkind : invalid\nmodel: AdBids_model\nmeasures: []\ndimensions: []`,
+      `\n\ntype : invalid\nmodel: AdBids_model\nmeasures: []\ndimensions: []`,
       undefined,
     ],
     [
       "explicit invalid kind for sql",
       "sources/AdBids_model.sql",
-      `\n\n-- @kind : invalid\nselect * from AdBids`,
+      `\n\n-- @type : invalid\nselect * from AdBids`,
       undefined,
     ],
   ];

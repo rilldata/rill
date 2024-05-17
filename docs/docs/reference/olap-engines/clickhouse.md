@@ -67,9 +67,7 @@ If you would like to connect Rill to an existing ClickHouse instance, please don
 You'll also need to update the `olap_connector` property in your project's `rill.yaml` to change the default OLAP engine to ClickHouse:
 
 ```yaml
-
 olap_connector: clickhouse
-
 ```
 
 :::note

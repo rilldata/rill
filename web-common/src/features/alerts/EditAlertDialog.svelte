@@ -13,7 +13,7 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
-  import { notifications } from "../../components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     V1AlertSpec,
     V1MetricsViewAggregationRequest,
@@ -103,7 +103,7 @@
           getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
         );
         dispatch("close");
-        notifications.send({
+        eventBus.emit("notification", {
           message: "Alert edited",
           type: "success",
         });

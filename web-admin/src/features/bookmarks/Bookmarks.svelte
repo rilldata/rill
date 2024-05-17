@@ -17,12 +17,12 @@
   import EditBookmarkDialog from "@rilldata/web-admin/features/bookmarks/EditBookmarkDialog.svelte";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
   import type { BookmarkEntry } from "@rilldata/web-admin/features/bookmarks/selectors";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { BookmarkIcon } from "lucide-svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   $: metricsViewName = $page.params.dashboard;
 
@@ -50,7 +50,7 @@
     await homeBookmarkModifier(
       getBookmarkDataForDashboard($dashboardStore, false, false),
     );
-    notifications.send({
+    eventBus.emit("notification", {
       message: "Home bookmark created",
     });
     return queryClient.refetchQueries(
@@ -67,7 +67,7 @@
     await $bookmarkDeleter.mutateAsync({
       bookmarkId: bookmark.resource.id,
     });
-    notifications.send({
+    eventBus.emit("notification", {
       message: `Bookmark ${bookmark.resource.displayName} deleted`,
     });
     return queryClient.refetchQueries(

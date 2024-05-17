@@ -9,7 +9,7 @@ against a [model](/build/models/models.md) or [source](../../reference/project-f
 It should have the following structure:
 
 ```yaml
-kind: api
+type: api
 sql: SELECT abc FROM my_table
 ```
 
@@ -29,7 +29,7 @@ See integration docs [here](/integrate/custom-api.md) to learn how to these are 
 
 Assume a API endpoint defined as `my-api.yaml`:
 ```yaml
-kind: api
+type: api
 sql: |
   SELECT count("measure")
     {{ if ( .user.admin ) }} ,dim  {{ end }} 

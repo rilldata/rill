@@ -1,35 +1,32 @@
-import { notifications } from "@rilldata/web-common/components/notifications";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { fetchAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   INVALID_NAME_MESSAGE,
   isDuplicateName,
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
 import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export async function handleEntityRename(
   instanceId: string,
   target: HTMLInputElement,
   existingPath: string,
   existingName: string,
+  allNames: string[],
 ) {
   const [folder] = splitFolderAndName(existingPath);
 
   if (!target.value.match(VALID_NAME_PATTERN)) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: INVALID_NAME_MESSAGE,
     });
     target.value = existingName; // resets the input
     return;
   }
 
-  const allNames = await fetchAllFileNames(queryClient, instanceId);
-
   if (isDuplicateName(target.value, existingName, allNames)) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: `Name ${target.value} is already in use`,
     });
     target.value = existingName; // resets the input

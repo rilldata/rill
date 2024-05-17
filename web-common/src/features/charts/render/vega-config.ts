@@ -94,4 +94,5 @@ export const getRillTheme: () => Config = () => ({
   tooltipFormat: {
     numberFormat: "d",
   },
+  customFormatTypes: true,
 });

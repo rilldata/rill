@@ -4,11 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -886,6 +889,174 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 	return &adminv1.SudoUpdateAnnotationsResponse{
 		Project: s.projToDTO(proj, req.Organization),
 	}, nil
+}
+
+func (s *Server) CreateProjectWhitelistedDomain(ctx context.Context, req *adminv1.CreateProjectWhitelistedDomainRequest) (*adminv1.CreateProjectWhitelistedDomainResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.domain", req.Domain),
+		attribute.String("args.role", req.Role),
+	)
+
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if !claims.Superuser(ctx) {
+		if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+			return nil, status.Error(codes.PermissionDenied, "only proj admins can add whitelisted domain")
+		}
+		// check if the user's domain matches the whitelist domain
+		user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !strings.HasSuffix(user.Email, "@"+req.Domain) {
+			return nil, status.Error(codes.PermissionDenied, "Domain name doesn’t match verified email domain. Please contact Rill support.")
+		}
+
+		if publicemail.IsPublic(req.Domain) {
+			return nil, status.Errorf(codes.InvalidArgument, "Public Domain %s cannot be whitelisted", req.Domain)
+		}
+	}
+
+	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "role not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// find existing users belonging to the whitelisted domain to the project
+	users, err := s.admin.DB.FindUsersByEmailPattern(ctx, "%@"+req.Domain, "", math.MaxInt)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// filter out users who are already members of the project
+	newUsers := make([]*database.User, 0)
+	for _, user := range users {
+		// check if user is already a member of the project
+		exists, err := s.admin.DB.CheckUserIsAProjectMember(ctx, user.ID, proj.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if !exists {
+			newUsers = append(newUsers, user)
+		}
+	}
+
+	ctx, tx, err := s.admin.DB.NewTx(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	_, err = s.admin.DB.InsertProjectWhitelistedDomain(ctx, &database.InsertProjectWhitelistedDomainOptions{
+		ProjectID:     proj.ID,
+		ProjectRoleID: role.ID,
+		Domain:        req.Domain,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	for _, user := range newUsers {
+		err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
+
+	return &adminv1.CreateProjectWhitelistedDomainResponse{}, nil
+}
+
+func (s *Server) RemoveProjectWhitelistedDomain(ctx context.Context, req *adminv1.RemoveProjectWhitelistedDomainRequest) (*adminv1.RemoveProjectWhitelistedDomainResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.domain", req.Domain),
+	)
+
+	claims := auth.GetClaims(ctx)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if !(claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject || claims.Superuser(ctx)) {
+		return nil, status.Error(codes.PermissionDenied, "only project admins can remove whitelisted domain")
+	}
+
+	invite, err := s.admin.DB.FindProjectWhitelistedDomain(ctx, proj.ID, req.Domain)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Errorf(codes.NotFound, "whitelist not found for project %q and domain %q", proj.Name, req.Domain)
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.DB.DeleteProjectWhitelistedDomain(ctx, invite.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.RemoveProjectWhitelistedDomainResponse{}, nil
+}
+
+func (s *Server) ListProjectWhitelistedDomains(ctx context.Context, req *adminv1.ListProjectWhitelistedDomainsRequest) (*adminv1.ListProjectWhitelistedDomainsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !(claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject || claims.Superuser(ctx)) {
+		return nil, status.Error(codes.PermissionDenied, "only project admins can list whitelisted domains")
+	}
+
+	domains, err := s.admin.DB.FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx, proj.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	dtos := make([]*adminv1.WhitelistedDomain, len(domains))
+	for i, domain := range domains {
+		dtos[i] = &adminv1.WhitelistedDomain{
+			Domain: domain.Domain,
+			Role:   domain.RoleName,
+		}
+	}
+
+	return &adminv1.ListProjectWhitelistedDomainsResponse{Domains: dtos}, nil
 }
 
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {

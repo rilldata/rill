@@ -1,8 +1,6 @@
-import {
-  createAndExpression,
-  createBinaryExpression,
-  sanitiseExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
+import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1Expression,
   V1MetricsViewAggregationRequest,
@@ -11,15 +9,16 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
 
+export type AlertCriteria = {
+  field: string;
+  operation: MeasureFilterOperation;
+  value: string;
+};
 export type AlertFormValues = {
   name: string;
   measure: string;
   splitByDimension: string;
-  criteria: {
-    field: string;
-    operation: string;
-    value: string;
-  }[];
+  criteria: AlertCriteria[];
   criteriaOperation: V1Operation;
   evaluationInterval: string;
   snooze: string;
@@ -45,18 +44,14 @@ export function getAlertQueryArgsFromFormValues(
       ? [{ name: formValues.splitByDimension }]
       : [],
     where: sanitiseExpression(formValues.whereFilter, undefined),
-    having: sanitiseExpression(
-      undefined,
-      createAndExpression(
-        formValues.criteria.map((c) =>
-          createBinaryExpression(
-            c.field,
-            c.operation as V1Operation,
-            Number(c.value),
-          ),
-        ),
-      ),
-    ),
+    having: sanitiseExpression(undefined, {
+      cond: {
+        op: formValues.criteriaOperation,
+        exprs: formValues.criteria
+          .map(mapAlertCriteriaToExpression)
+          .filter((e) => !!e) as V1Expression[],
+      },
+    }),
     timeRange: {
       isoDuration: formValues.timeRange.isoDuration,
     },
@@ -108,7 +103,7 @@ export function checkIsTabValid(
     formValues.criteria.forEach((criteria) => {
       if (
         criteria.field === "" ||
-        criteria.operation === "" ||
+        (criteria.operation as string) === "" ||
         criteria.value === ""
       ) {
         hasRequiredFields = false;
@@ -122,11 +117,11 @@ export function checkIsTabValid(
 
     // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
     // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
-    const receipientErrors = errors.emailRecipients as unknown as {
+    const recipientErrors = errors.emailRecipients as unknown as {
       email: string;
     }[];
 
-    hasErrors = !!errors.snooze || !!receipientErrors[0].email;
+    hasErrors = !!errors.snooze || !!recipientErrors[0].email;
   } else {
     throw new Error(`Unexpected tabIndex: ${tabIndex}`);
   }

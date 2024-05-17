@@ -8,10 +8,11 @@ import (
 
 func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 	var role string
+	var project string
 
 	setupCmd := &cobra.Command{
 		Use:   "setup <email-domain>",
-		Short: "Whitelist an email domain for the org",
+		Short: "Whitelist an email domain for the org or project",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
@@ -21,7 +22,11 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			domain := args[0]
 
-			ch.PrintfWarn("If you confirm, new and existing users with email addresses ending in %q will automatically be added to %q with role %q.\n\nTo whitelist another email domain than your own, reach out to support: https://rilldata.com/support\n", domain, ch.Org, role)
+			if project != "" {
+				ch.PrintfWarn("If you confirm, new and existing users with email addresses ending in %q will automatically be added to project %q of %q with role %q.\n\nTo whitelist another email domain than your own, reach out to support: https://rilldata.com/support\n", domain, project, ch.Org, role)
+			} else {
+				ch.PrintfWarn("If you confirm, new and existing users with email addresses ending in %q will automatically be added to organization %q with role %q.\n\nTo whitelist another email domain than your own, reach out to support: https://rilldata.com/support\n", domain, ch.Org, role)
+			}
 			ok, err := cmdutil.ConfirmPrompt("Do you confirm?", "", false)
 			if err != nil {
 				return err
@@ -31,21 +36,35 @@ func SetupCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			_, err = client.CreateWhitelistedDomain(cmd.Context(), &adminv1.CreateWhitelistedDomainRequest{
-				Organization: ch.Org,
-				Domain:       domain,
-				Role:         role,
-			})
-			if err != nil {
-				return err
+			if project != "" {
+				_, err = client.CreateProjectWhitelistedDomain(cmd.Context(), &adminv1.CreateProjectWhitelistedDomainRequest{
+					Organization: ch.Org,
+					Project:      project,
+					Domain:       domain,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
+				ch.PrintfSuccess("Whitelisted %q for project %q of organization %q (to remove it, use `rill user whitelist remove`).\n", domain, project, ch.Org)
+			} else {
+				_, err = client.CreateWhitelistedDomain(cmd.Context(), &adminv1.CreateWhitelistedDomainRequest{
+					Organization: ch.Org,
+					Domain:       domain,
+					Role:         role,
+				})
+				if err != nil {
+					return err
+				}
+				ch.PrintfSuccess("Whitelisted %q for organization %q (to remove it, use `rill user whitelist remove`).\n", domain, ch.Org)
 			}
-			ch.PrintfSuccess("Whitelisted %q for %q (to remove it, use `rill user whitelist remove`).\n", domain, ch.Org)
 
 			return nil
 		},
 	}
 
 	setupCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
+	setupCmd.Flags().StringVar(&project, "project", "", "Project name")
 	setupCmd.Flags().StringVar(&role, "role", "viewer", "Role of the user")
 
 	return setupCmd

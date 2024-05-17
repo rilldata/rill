@@ -28,6 +28,7 @@ Rill CLI
 * [rill project](project/project.md)	 - Manage projects
 * [rill service](service/service.md)	 - Manage service accounts
 * [rill start](start.md)	 - Build project and start web app
+* [rill uninstall](uninstall.md)	 - Uninstall the Rill binary
 * [rill upgrade](upgrade.md)	 - Upgrade Rill to the latest version
 * [rill user](user/user.md)	 - Manage users
 * [rill version](version.md)	 - Show Rill version

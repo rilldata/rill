@@ -33,9 +33,8 @@ type OLAPStore interface {
 	EstimateSize() (int64, bool)
 
 	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error
-	InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error
+	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, uniqueKey []string) error
 	DropTable(ctx context.Context, name string, view bool) error
-	// RenameTable is force rename
 	RenameTable(ctx context.Context, name, newName string, view bool) error
 	AddTableColumn(ctx context.Context, tableName, columnName string, typ string) error
 	AlterTableColumn(ctx context.Context, tableName, columnName string, newType string) error
@@ -107,6 +106,15 @@ type IngestionSummary struct {
 	BytesIngested int64
 }
 
+// IncrementalStrategy is a strategy to use for incrementally inserting data into a SQL table.
+type IncrementalStrategy string
+
+const (
+	IncrementalStrategyUnspecified IncrementalStrategy = ""
+	IncrementalStrategyAppend      IncrementalStrategy = "append"
+	IncrementalStrategyMerge       IncrementalStrategy = "merge"
+)
+
 // Dialect enumerates OLAP query languages.
 type Dialect int
 
@@ -115,6 +123,7 @@ const (
 	DialectDuckDB
 	DialectDruid
 	DialectClickHouse
+	DialectPinot
 )
 
 func (d Dialect) String() string {
@@ -127,6 +136,8 @@ func (d Dialect) String() string {
 		return "druid"
 	case DialectClickHouse:
 		return "clickhouse"
+	case DialectPinot:
+		return "pinot"
 	default:
 		panic("not implemented")
 	}

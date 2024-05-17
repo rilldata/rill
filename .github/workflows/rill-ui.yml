@@ -38,10 +38,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Set up NodeJS
-        uses: actions/setup-node@v3
+        uses: actions/setup-node@v4
         with:
           node-version: 20
 
@@ -68,10 +68,11 @@ jobs:
           npm install
           npm run build -w web-admin
         env:
-          VITE_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
+          RILL_UI_PUBLIC_RILL_ADMIN_URL: https://admin.${{ env.DOMAIN }}
+          RILL_UI_PUBLIC_PYLON_APP_ID: "26a0fdd2-3bd3-41e2-82bc-1b35a444729f"
 
       - name: Deploy Cloud UI to Netlify ui.${{ env.DOMAIN }}
-        uses: nwtgck/actions-netlify@v1.2
+        uses: nwtgck/actions-netlify@v3.0
         with:
           publish-dir: ./web-admin/build
           github-token: ${{ secrets.GITHUB_TOKEN }}

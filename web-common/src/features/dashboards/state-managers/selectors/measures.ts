@@ -18,6 +18,14 @@ export const visibleMeasures = ({
   return measures === undefined ? [] : measures;
 };
 
+export const getMeasureByName = (
+  dashData: DashboardDataSources,
+): ((name: string) => MetricsViewSpecMeasureV2 | undefined) => {
+  return (name: string) => {
+    return allMeasures(dashData)?.find((measure) => measure.name === name);
+  };
+};
+
 export const measureLabel = ({
   metricsSpecQueryResult,
 }: DashboardDataSources): ((m: string) => string) => {
@@ -43,6 +51,12 @@ export const measureSelectors = {
    * Get all measures in the dashboard.
    */
   allMeasures,
+
+  /**
+   * Returns a function that can be used to get a MetricsViewSpecMeasureV2
+   * by name; this fn returns undefined if the dashboard has no measure with that name.
+   */
+  getMeasureByName,
 
   /**
    * Gets all visible measures in the dashboard.

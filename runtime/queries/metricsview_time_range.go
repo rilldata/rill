@@ -77,7 +77,9 @@ func (q *MetricsViewTimeRange) Resolve(ctx context.Context, rt *runtime.Runtime,
 	case drivers.DialectDruid:
 		return q.resolveDruid(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectDruid, q.MetricsView), policyFilter, priority)
 	case drivers.DialectClickHouse:
-		return q.resolveClickHouse(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectClickHouse, q.MetricsView), policyFilter, priority)
+		return q.resolveClickHouseAndPinot(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectClickHouse, q.MetricsView), policyFilter, priority)
+	case drivers.DialectPinot:
+		return q.resolveClickHouseAndPinot(ctx, olap, q.MetricsView.TimeDimension, escapeMetricsViewTable(drivers.DialectPinot, q.MetricsView), policyFilter, priority)
 	default:
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
@@ -232,7 +234,7 @@ func (q *MetricsViewTimeRange) resolveDruid(ctx context.Context, olap drivers.OL
 	return nil
 }
 
-func (q *MetricsViewTimeRange) resolveClickHouse(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
+func (q *MetricsViewTimeRange) resolveClickHouseAndPinot(ctx context.Context, olap drivers.OLAPStore, timeDim, escapedTableName, filter string, priority int) error {
 	if filter != "" {
 		filter = fmt.Sprintf(" WHERE %s", filter)
 	}

@@ -2,10 +2,10 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -84,13 +84,20 @@
   async function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
     await navigator.clipboard.writeText(number);
-    notifications.send({
+    eventBus.emit("notification", {
       message: `copied dimension value "${number}" to clipboard`,
     });
   }
+
+  let suppressTooltip = false;
 </script>
 
-<Tooltip distance={8} location="right" alignment="start">
+<Tooltip
+  suppress={suppressTooltip}
+  distance={8}
+  location="right"
+  alignment="start"
+>
   <BigNumberTooltipContent
     slot="tooltip-content"
     {measure}
@@ -106,7 +113,11 @@
     class:cursor-pointer={!isMeasureExpanded}
     on:click={(e) => {
       if (e.shiftKey) return;
+      suppressTooltip = true;
       dispatch("expand-measure");
+      setTimeout(() => {
+        suppressTooltip = false;
+      }, 1000);
     }}
     on:shift-click={() => shiftClickHandler(hoveredValue)}
     use:shiftClickAction

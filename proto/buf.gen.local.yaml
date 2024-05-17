@@ -1,0 +1,17 @@
+version: v1
+managed:
+  enabled: true
+  go_package_prefix:
+    default: github.com/rilldata/rill/proto/gen
+    except:
+      - buf.build/googleapis/googleapis
+      - buf.build/envoyproxy/protoc-gen-validate
+plugins:
+  - plugin: buf.build/connectrpc/go
+    out: gen
+    opt:
+      - paths=source_relative
+  - plugin: buf.build/bufbuild/connect-es
+    out: ../web-common/src/proto/gen
+    opt:
+      - target=ts

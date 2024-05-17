@@ -11,6 +11,7 @@
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { createExportTableMutation } from "@rilldata/web-common/features/models/workspace/export-table";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -114,7 +115,9 @@
       type="brand"
       on:click={async () => {
         if (availableDashboards[0]?.meta?.filePaths?.[0]) {
-          await goto(`/files/${availableDashboards[0].meta.filePaths[0]}`);
+          await goto(
+            `/files/${removeLeadingSlash(availableDashboards[0].meta.filePaths[0])}`,
+          );
         }
       }}
     >
@@ -151,7 +154,9 @@
           <MenuItem
             on:select={async () => {
               if (resource?.meta?.filePaths?.[0]) {
-                await goto(`/files/${resource.meta.filePaths[0]}`);
+                await goto(
+                  `/files/${removeLeadingSlash(resource.meta.filePaths[0])}`,
+                );
                 toggleFloatingElement();
               }
             }}

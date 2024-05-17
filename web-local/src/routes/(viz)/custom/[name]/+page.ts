@@ -5,7 +5,7 @@ import { error } from "@sveltejs/kit";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 
-export async function load({ parent, params, depends }) {
+export const load = async ({ parent, params, depends }) => {
   const { instanceId } = await parent();
 
   const dashboardName = params.name;
@@ -48,4 +48,4 @@ export async function load({ parent, params, depends }) {
     console.error(e);
     throw error(404, "Dashboard not found");
   }
-}
+};

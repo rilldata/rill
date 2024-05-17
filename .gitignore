@@ -17,9 +17,10 @@ tsc-tmp/
 /runtime/sql/deps
 /runtime/release
 /runtime/pkg/examples/embed/dist
-/cli/pkg/web/embed/dist
 /rill
 /cli/pkg/examples/embed/dist
+/cli/pkg/installscript/embed/install.sh
+/cli/pkg/web/embed/dist
 /dev-project*
 /dev-cloud-state*
 

@@ -7,14 +7,11 @@ export async function createSource(
   tableName: string,
   yaml: string,
 ) {
-  return runtimeServicePutFile(
-    instanceId,
-    getFileAPIPathFromNameAndType(tableName, EntityType.Table),
-    {
-      blob: yaml,
-      // create source is used to upload and replace.
-      // so we cannot send createOnly=true until we refactor it to use refresh source
-      createOnly: false,
-    },
-  );
+  return runtimeServicePutFile(instanceId, {
+    path: getFileAPIPathFromNameAndType(tableName, EntityType.Table),
+    blob: yaml,
+    // create source is used to upload and replace.
+    // so we cannot send createOnly=true until we refactor it to use refresh source
+    createOnly: false,
+  });
 }

@@ -11,7 +11,7 @@ Retrieve detailed state for a resource
 Retrieve detailed state for a specific resource (source, model, dashboard, ...)
 
 ```
-rill project describe [<project-name>] <kind> <name> [flags]
+rill project describe [<project-name>] <type> <name> [flags]
 ```
 
 ### Flags

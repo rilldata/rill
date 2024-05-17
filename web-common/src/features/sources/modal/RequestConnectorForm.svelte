@@ -4,7 +4,7 @@
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import { object, string } from "yup";
-  import { notifications } from "../../../components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const dispatch = createEventDispatcher();
 
@@ -35,7 +35,7 @@
             },
           });
           dispatch("close");
-          notifications.send({
+          eventBus.emit("notification", {
             message: "Thanks for your request!",
           });
         } catch (e) {

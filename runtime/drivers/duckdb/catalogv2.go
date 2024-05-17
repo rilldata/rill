@@ -101,7 +101,7 @@ func (c *connection) CreateResource(ctx context.Context, v int64, r drivers.Reso
 		return err
 	}
 	if exists {
-		return fmt.Errorf("catalog entry for kind=%q, name=%q already exists", r.Kind, r.Name)
+		return fmt.Errorf("catalog entry for type=%q, name=%q already exists", r.Kind, r.Name)
 	}
 
 	now := time.Now()
@@ -147,7 +147,7 @@ func (c *connection) UpdateResource(ctx context.Context, v int64, r drivers.Reso
 	}
 	if n, err := res.RowsAffected(); err == nil {
 		if n != 1 {
-			return fmt.Errorf("catalog entry for kind=%q, name=%q not found", r.Kind, r.Name)
+			return fmt.Errorf("catalog entry for type=%q, name=%q not found", r.Kind, r.Name)
 		}
 	}
 

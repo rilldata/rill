@@ -12,6 +12,7 @@ export async function checkSourceImported(
   const lastUpdatedOn =
     fileArtifacts.getFileArtifact(filePath).lastStateUpdatedOn;
   if (lastUpdatedOn) return; // For now only show for fresh sources
+
   const success = await waitForResourceUpdate(
     queryClient,
     get(runtime).instanceId,

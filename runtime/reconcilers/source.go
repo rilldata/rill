@@ -128,8 +128,13 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 		return runtime.ReconcileResult{Err: err}
 	}
 
+	srcConfig, err := r.driversSource(ctx, self, src.Spec.Properties)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	// Use a hash of ingestion-related fields from the spec to determine if we need to re-ingest
-	hash, err := r.ingestionSpecHash(src.Spec)
+	hash, err := r.ingestionSpecHash(src.Spec, srcConfig)
 	if err != nil {
 		return runtime.ReconcileResult{Err: fmt.Errorf("failed to compute hash: %w", err)}
 	}
@@ -183,7 +188,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 
 	// Execute ingestion
 	r.C.Logger.Info("Ingesting source data", zap.String("name", n.Name), zap.String("connector", connector))
-	ingestErr := r.ingestSource(ctx, self, stagingTableName)
+	ingestErr := r.ingestSource(ctx, self, srcConfig, driversSink(stagingTableName))
 	if ingestErr != nil {
 		ingestErr = fmt.Errorf("failed to ingest source: %w", ingestErr)
 	}
@@ -261,7 +266,7 @@ func (r *SourceReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceN
 }
 
 // ingestionSpecHash computes a hash of only those source spec properties that impact ingestion.
-func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec) (string, error) {
+func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec, srcConfig map[string]any) (string, error) {
 	hash := md5.New()
 
 	_, err := hash.Write([]byte(spec.SourceConnector))
@@ -274,7 +279,11 @@ func (r *SourceReconciler) ingestionSpecHash(spec *runtimev1.SourceSpec) (string
 		return "", err
 	}
 
-	err = pbutil.WriteHash(structpb.NewStructValue(spec.Properties), hash)
+	st, err := structpb.NewStruct(srcConfig)
+	if err != nil {
+		return "", err
+	}
+	err = pbutil.WriteHash(structpb.NewStructValue(st), hash)
 	if err != nil {
 		return "", err
 	}
@@ -316,7 +325,7 @@ func (r *SourceReconciler) setTriggerFalse(ctx context.Context, n *runtimev1.Res
 // ingestSource ingests the source into a table with tableName.
 // It does NOT drop the table if ingestion fails after the table has been created.
 // It will return an error if the sink connector is not an OLAP.
-func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Resource, tableName string) (outErr error) {
+func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Resource, srcConfig, sinkConfig map[string]any) (outErr error) {
 	src := self.GetSource().Spec
 
 	// Get connections and transporter
@@ -337,13 +346,6 @@ func (r *SourceReconciler) ingestSource(ctx context.Context, self *runtimev1.Res
 			return fmt.Errorf("cannot transfer data between connectors %q and %q", src.SourceConnector, src.SinkConnector)
 		}
 	}
-
-	// Get source and sink configs
-	srcConfig, err := r.driversSource(ctx, self, src.Properties)
-	if err != nil {
-		return err
-	}
-	sinkConfig := driversSink(tableName)
 
 	// Set timeout on ctx
 	timeout := _defaultIngestTimeout
