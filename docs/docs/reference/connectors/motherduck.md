@@ -46,7 +46,7 @@ Once a project with a DuckDB source has been deployed using `rill deploy`, Rill 
 
 :::warning When Using An External DuckDB Database
 
-If the DuckDB database file is external to your Rill project directory, you will still be able to use the fully qualified path to read this SQLite database _locally_ using Rill Developer. However, when deployed to Rill Cloud, this source will throw an **error**.
+If the DuckDB database file is external to your Rill project directory, you will still be able to use the fully qualified path to read this DuckDB database _locally_ using Rill Developer. However, when deployed to Rill Cloud, this source will throw an **error**.
 
 :::
 
