@@ -24,7 +24,7 @@ func init() {
 	}
 }
 
-//go:embed embed/extensions/**/*
+//go:embed embed/extensions/*
 var embeddedFiles embed.FS
 
 // installExtensions copies embedded DuckDB extensions to DuckDB's extensions directory to avoid downloading them
