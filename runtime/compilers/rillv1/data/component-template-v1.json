@@ -1,0 +1,44 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "type": "object",
+    "anyOf": [
+        {
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "const": "line_chart"
+                },
+                "x": {
+                    "type": "string"
+                },
+                "y": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "x",
+                "y"
+            ]
+        },
+        {
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "const": "bar_chart"
+                },
+                "x": {
+                    "type": "string"
+                },
+                "y": {
+                    "type": "string"
+                }
+            },
+            "required": [
+                "name",
+                "x",
+                "y"
+            ]
+        }
+    ]    
+}
