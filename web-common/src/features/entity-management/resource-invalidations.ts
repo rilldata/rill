@@ -1,12 +1,11 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  V1ResourceEvent,
-  V1WatchResourcesResponse,
-} from "@rilldata/web-common/runtime-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ReconcileStatus,
   V1Resource,
+  V1ResourceEvent,
+  V1WatchResourcesResponse,
   getConnectorServiceOLAPListTablesQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
@@ -21,7 +20,6 @@ import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matc
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export const MainResourceKinds: {
   [kind in ResourceKind]?: true;
@@ -211,11 +209,14 @@ export function refreshResource(
   instanceId: string,
   res: V1Resource,
 ) {
-  return queryClient.refetchQueries(
+  return queryClient.setQueryData(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": res.meta?.name?.name,
       "name.kind": res.meta?.name?.kind,
     }),
+    {
+      resource: res,
+    },
   );
 }
 
