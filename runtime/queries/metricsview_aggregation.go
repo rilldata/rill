@@ -1246,7 +1246,11 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		td = fmt.Sprintf("%s::TIMESTAMP", td)
 	}
 
-	whereClause, whereClauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+	whereBuilder := &ExpressionBuilder{
+		mv:      mv,
+		dialect: dialect,
+	}
+	whereClause, whereClauseArgs, err := whereBuilder.buildExpression(q.Where)
 	if err != nil {
 		return "", nil, err
 	}
@@ -1281,7 +1285,11 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	havingClause := "1=1"
 	var havingClauseArgs []any
 	if q.Having != nil {
-		havingClause, havingClauseArgs, err = buildExpression(mv, q.Having, nil, dialect)
+		havingBuilder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+		}
+		havingClause, havingClauseArgs, err = havingBuilder.buildExpression(q.Having)
 		if err != nil {
 			return "", nil, err
 		}
