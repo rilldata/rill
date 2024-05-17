@@ -1,5 +1,5 @@
 import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { includedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
   createInExpression,
@@ -94,7 +94,7 @@ export function getDimensionValuesForComparison(
       // Values to be compared
       let comparisonValues: string[] = [];
       if (surface === "chart") {
-        let dimensionValues = selectedDimensionValues({
+        let dimensionValues = includedDimensionValues({
           dashboard: dashboardStore,
         })(dimensionName);
         if (measureFilterResolution.filter) {
