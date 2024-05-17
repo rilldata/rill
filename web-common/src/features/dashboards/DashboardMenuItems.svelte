@@ -4,10 +4,10 @@
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import Model from "@rilldata/web-common/components/icons/Model.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
-  import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
   import NavigationMenuItem from "@rilldata/web-common/layout/navigation/NavigationMenuItem.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { BehaviourEventMedium } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
