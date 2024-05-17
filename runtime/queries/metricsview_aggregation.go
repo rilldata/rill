@@ -2013,7 +2013,6 @@ func (q *MetricsViewAggregation) buildOffsetExpression(col string, timeGrain run
 		return "", fmt.Errorf("unsupported dialect %q", dialect)
 	}
 	return timeOffsetColumn, nil
-
 }
 
 func (q *MetricsViewAggregation) truncateExpression(s string, timeGrain runtimev1.TimeGrain, dialect drivers.Dialect) (string, error) {
