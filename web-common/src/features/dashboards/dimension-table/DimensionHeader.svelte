@@ -46,7 +46,7 @@
     },
   } = stateManagers;
 
-  const { adminServer } = featureFlags;
+  const { adminServer, exports } = featureFlags;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
@@ -155,6 +155,8 @@
       </TooltipContent>
     </Tooltip>
 
-    <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+    {#if $exports}
+      <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+    {/if}
   </div>
 </div>
