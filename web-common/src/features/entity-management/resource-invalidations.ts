@@ -159,7 +159,7 @@ function invalidateRemovedResource(
   resource: V1Resource,
 ) {
   const name = resource.meta?.name?.name ?? "";
-  queryClient.removeQueries(
+  void queryClient.refetchQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": name,
       "name.kind": resource.meta?.name?.kind,
@@ -211,7 +211,7 @@ export function refreshResource(
   instanceId: string,
   res: V1Resource,
 ) {
-  return queryClient.resetQueries(
+  return queryClient.refetchQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": res.meta?.name?.name,
       "name.kind": res.meta?.name?.kind,
