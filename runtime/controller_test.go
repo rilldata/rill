@@ -528,11 +528,11 @@ path: data/foo.csv
 
 	// Update model to have a CTE with alias same as the source
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/models/bar.sql": `with foo as (select * from foo) select * from foo`,
+		"/models/bar.sql": `with foo as (select * from memory.foo) select * from foo`,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	model.Spec.InputProperties = must(structpb.NewStruct(map[string]any{"sql": `with foo as (select * from foo) select * from foo`}))
+	model.Spec.InputProperties = must(structpb.NewStruct(map[string]any{"sql": `with foo as (select * from memory.foo) select * from foo`}))
 	modelRes.Meta.Refs = []*runtimev1.ResourceName{}
 	testruntime.RequireResource(t, rt, id, modelRes)
 	// Refs are removed but the model is valid.
