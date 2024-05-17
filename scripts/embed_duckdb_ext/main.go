@@ -53,6 +53,7 @@ func main() {
 		}
 
 		for _, extension := range extensions {
+			// Make sure an embedded extension is compressed (gzipped) to save space
 			url := fmt.Sprintf("http://extensions.duckdb.org/%s/%s/%s.duckdb_extension.gz", duckdbVersion, platform, extension)
 			destPath := filepath.Join(destDir, fmt.Sprintf("%s.duckdb_extension.gz", extension))
 
