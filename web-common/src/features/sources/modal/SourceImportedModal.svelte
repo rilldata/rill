@@ -10,14 +10,14 @@
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { CreateQueryResult, useQueryClient } from "@tanstack/svelte-query";
+  import { WandIcon } from "lucide-svelte";
   import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import type { V1Resource } from "../../../runtime-client";
   import type { HTTPError } from "../../../runtime-client/fetchWrapper";
-  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { extractFileName } from "../extract-file-name";
-  import { WandIcon } from "lucide-svelte";
+  import { extractFileName } from "../../entity-management/file-path-utils";
   import { featureFlags } from "../../feature-flags";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
 
   const { ai } = featureFlags;
 
