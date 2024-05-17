@@ -1439,7 +1439,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		// SELECT t_offset, d1, d2, d3 ... GROUP BY 1, 2, 3, 4 ...
 		innerGroupCols := make([]string, 0, len(q.Dimensions)+1)
 		innerGroupCols = append(innerGroupCols, "1")
-		for i, _ := range q.Dimensions {
+		for i := range q.Dimensions {
 			innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 		}
 
@@ -1496,7 +1496,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		if !comparisonSort {
 			// SELECT d1, d2, d3 ... GROUP BY 1, 2, 3 ...
 			innerGroupCols := make([]string, 0, len(q.Dimensions))
-			for i, _ := range q.Dimensions {
+			for i := range q.Dimensions {
 				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 			}
 			nonTimeCols := make([]string, 0, len(selectCols)) // avoid group by time cols
@@ -1555,7 +1555,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			innerGroupCols = make([]string, 0, len(q.Dimensions)+1)
 			outterGroupCols := make([]string, 0, len(q.Dimensions))
 			innerGroupCols = append(innerGroupCols, "1")
-			for i, _ := range q.Dimensions {
+			for i := range q.Dimensions {
 				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 				outterGroupCols = append(outterGroupCols, fmt.Sprintf("%d", i+1))
 			}
@@ -1639,7 +1639,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				comparisonLimitClause += fmt.Sprintf(" LIMIT %d OFFSET %d", approximationLimit, q.Offset)
 			}
 			innerGroupCols := make([]string, 0, len(q.Dimensions))
-			for i, _ := range q.Dimensions {
+			for i := range q.Dimensions {
 				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 			}
 			nonTimeCols := make([]string, 0, len(comparisonSelectCols)) // avoid group by time cols
@@ -1698,7 +1698,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			innerGroupCols = make([]string, 0, len(q.Dimensions)+1)
 			outterGroupCols := make([]string, 0, len(q.Dimensions))
 			innerGroupCols = append(innerGroupCols, "1")
-			for i, _ := range q.Dimensions {
+			for i := range q.Dimensions {
 				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 				outterGroupCols = append(outterGroupCols, fmt.Sprintf("%d", i+1))
 			}
@@ -1796,7 +1796,7 @@ func (q *MetricsViewAggregation) calculateMeasuresMeta() error {
 			originalNames[name] = true
 		}
 	}
-	for n, _ := range expands {
+	for n := range expands {
 		if !originalNames[n] {
 			return fmt.Errorf("original measure '%s' should be in the selection list", n)
 		}
