@@ -63,6 +63,13 @@ export function invalidateResourceResponse(
   // So we need to check for deletedOn to be able to use resource.meta, especially the filePaths
   const isSoftDelete = !!res.resource?.meta?.deletedOn;
 
+  // temporary for the fix
+  if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
+    console.log(
+      `[${res.resource.meta?.reconcileStatus}] ${res.name.kind}/${res.name.name}`,
+    );
+  }
+
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
   if (isSoftDelete) {
