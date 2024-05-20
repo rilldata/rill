@@ -18,7 +18,7 @@
   export let open: boolean;
 
   let deployValidationResponse: DeployValidationResponse;
-  let deployResponse: DeployResponse;
+  let deployResponse: DeployResponse | null;
   let deployError: string;
 
   onMount(() => {
@@ -35,6 +35,10 @@
       projectName: yup.string().required("Required"),
     }),
     onSubmit: async (values) => {
+      // reset the deploy response and error
+      deployResponse = null;
+      deployError = "";
+
       try {
         deployResponse = await localServiceClient.deploy({
           rillOrg: values.orgName,
