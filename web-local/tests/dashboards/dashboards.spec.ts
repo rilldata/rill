@@ -337,7 +337,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that time dimension is now week
-    await expect(timeGrainSelector).toHaveText("by week");
+    await expect(timeGrainSelector).toHaveText("by Week");
 
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
