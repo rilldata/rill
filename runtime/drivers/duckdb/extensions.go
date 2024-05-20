@@ -4,7 +4,6 @@ import (
 	"compress/gzip"
 	"database/sql"
 	"embed"
-	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -51,7 +50,11 @@ func installExtensions() error {
 
 	// Define source and destination paths
 	embedPath := fmt.Sprintf("embed/extensions/%s/%s", duckdbVersion, platformName)
-	duckdbExtensionsPath := filepath.Join(os.Getenv("HOME"), ".duckdb", "extensions", duckdbVersion, platformName)
+	homeDir, err := os.UserHomeDir()
+	if err != nil {
+		return err
+	}
+	duckdbExtensionsPath := filepath.Join(homeDir, ".duckdb", "extensions", duckdbVersion, platformName)
 
 	// Create the destination directory if it doesn't exist
 	err = os.MkdirAll(duckdbExtensionsPath, os.ModePerm)
@@ -120,14 +123,9 @@ func uncompressEmbeddedFile(src, dest string) error {
 	}
 	defer output.Close()
 
-	for {
-		_, err = io.CopyN(output, gzipReader, 1024) // CopyN is used to prevent a warning (G110: Potential DoS vulnerability...)
-		if err != nil {
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			return err
-		}
+	_, err = io.Copy(output, gzipReader) //nolint:gosec // Source is trusted, no risk of G110: Potential DoS vulnerability
+	if err != nil {
+		return err
 	}
 
 	return nil
