@@ -69,7 +69,7 @@
         </DialogTabs.Trigger>
       {/each}
     </DialogTabs.List>
-    <div class="p-3 bg-slate-100">
+    <div class="p-3 bg-slate-100 h-[600px] overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
         <AlertDialogDataTab {formState} />
       </DialogTabs.Content>

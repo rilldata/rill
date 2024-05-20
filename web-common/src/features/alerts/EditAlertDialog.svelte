@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { Dialog, DialogOverlay } from "@rgossiaux/svelte-headlessui";
   import { createAdminServiceEditAlert } from "@rilldata/web-admin/client";
   import {
     extractAlertFormValues,
@@ -30,7 +29,6 @@
     getAlertQueryArgsFromFormValues,
   } from "./form-utils";
 
-  export let open: boolean;
   export let alertSpec: V1AlertSpec;
   export let metricsViewName: string;
 
@@ -125,12 +123,4 @@
   }
 </script>
 
-<Dialog
-  class="fixed inset-0 flex items-center justify-center overflow-auto z-50"
-  {open}
->
-  <DialogOverlay
-    class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
-  />
-  <BaseAlertForm {formState} isEditForm={true} on:close />
-</Dialog>
+<BaseAlertForm {formState} isEditForm={true} on:close />
