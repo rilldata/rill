@@ -214,7 +214,7 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class:mb-6={isAlternateChart} class="flex pl-1 items-center gap-x-1">
+  <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
       <ChartTypeSelector

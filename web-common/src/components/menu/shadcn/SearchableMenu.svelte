@@ -47,7 +47,7 @@
     >
       <Button builders={[builder]} type="text" label={ariaLabel} on:click>
         <div
-          class="flex items-center gap-x-0.5 px-1.5 text-gray-700 hover:text-inherit"
+          class="flex items-center gap-x-0.5 text-gray-700 hover:text-inherit"
         >
           <strong>{`${numShownString} ${category}`}</strong>
           <span

@@ -59,7 +59,7 @@
       <div class="mb-3" />
     {:else}
       {#key metricViewName}
-        <section class="flex relative justify-between gap-x-4 py-4 pl-4">
+        <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
           <Filters />
           <div class="absolute bottom-0 flex flex-col right-0">
             <TabBar />
