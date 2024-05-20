@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { Dialog, DialogOverlay } from "@rgossiaux/svelte-headlessui";
   import {
     createAdminServiceCreateAlert,
     createAdminServiceGetCurrentUser,
@@ -24,8 +23,6 @@
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { runtime } from "../../runtime-client/runtime-store";
   import BaseAlertForm from "./BaseAlertForm.svelte";
-
-  export let open: boolean;
 
   const user = createAdminServiceGetCurrentUser();
   const createAlert = createAdminServiceCreateAlert();
@@ -148,12 +145,4 @@
   }
 </script>
 
-<Dialog
-  class="fixed inset-0 flex items-center justify-center z-50 overflow-auto"
-  {open}
->
-  <DialogOverlay
-    class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
-  />
-  <BaseAlertForm {formState} isEditForm={false} on:close />
-</Dialog>
+<BaseAlertForm {formState} isEditForm={false} on:close />

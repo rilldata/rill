@@ -1,4 +1,5 @@
 <script lang="ts">
+  import AlertDialog from "@rilldata/web-common/components/alert-dialog/AlertDialog.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
@@ -6,6 +7,11 @@
   import { Button } from "@rilldata/web-common/components/button";
   import { BellPlusIcon } from "lucide-svelte";
   import CreateAlertDialog from "@rilldata/web-common/features/alerts/CreateAlertDialog.svelte";
+  import {
+    Dialog,
+    DialogContent,
+    DialogTrigger,
+  } from "@rilldata/web-common/components/dialog-v2/index";
 
   const {
     selectors: {
@@ -19,30 +25,56 @@
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
   let showAlertDialog = false;
+  let showCancelDialog = false;
+  function onCancel() {
+    showCancelDialog = true;
+  }
 </script>
 
 {#if hasTimeDimension}
-  <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
-    <Button
-      compact
-      disabled={$isCustomTimeRange}
-      on:click={() => (showAlertDialog = true)}
-      type="secondary"
-    >
-      <BellPlusIcon class="inline-flex" size="16px" />
-    </Button>
-    <TooltipContent slot="tooltip-content">
-      To create an alert, set a non-custom time range.
-    </TooltipContent>
-  </Tooltip>
+  <Dialog
+    bind:open={showAlertDialog}
+    closeOnEscape={false}
+    onOutsideClick={(e) => {
+      e.preventDefault();
+      onCancel();
+    }}
+  >
+    <DialogTrigger asChild let:builder>
+      <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
+        <Button
+          compact
+          disabled={$isCustomTimeRange}
+          type="secondary"
+          builders={[builder]}
+        >
+          <BellPlusIcon class="inline-flex" size="16px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          To create an alert, set a non-custom time range.
+        </TooltipContent>
+      </Tooltip>
+    </DialogTrigger>
+    <DialogContent class="p-0 m-0 w-[602px] max-w-fit">
+      <!-- Including `showAlertDialog` in the conditional ensures we tear
+           down the form state when the dialog closes -->
+      {#if showAlertDialog}
+        <CreateAlertDialog on:close={onCancel} />
+      {/if}
+    </DialogContent>
+  </Dialog>
 {/if}
 
-<!-- Including `showAlertDialog` in the conditional ensures we tear 
-    down the form state when the dialog closes -->
-{#if showAlertDialog}
-  <svelte:component
-    this={CreateAlertDialog}
-    open={showAlertDialog}
-    on:close={() => (showAlertDialog = false)}
-  />
-{/if}
+<AlertDialog
+  title="Close without saving?"
+  description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
+  confirmLabel="Close"
+  onConfirm={() => {
+    showAlertDialog = false;
+    showCancelDialog = false;
+  }}
+  cancelLabel="Keep editing"
+  bind:open={showCancelDialog}
+>
+  <div slot="trigger"></div>
+</AlertDialog>

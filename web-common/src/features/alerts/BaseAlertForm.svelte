@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DialogTitle } from "@rgossiaux/svelte-headlessui";
+  import { DialogTitle } from "@rilldata/web-common/components/dialog-v2";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
   import { createEventDispatcher } from "svelte";
   import type { createForm } from "svelte-forms-lib";
