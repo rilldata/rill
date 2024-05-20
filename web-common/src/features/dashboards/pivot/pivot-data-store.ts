@@ -96,7 +96,13 @@ export function getPivotConfig(
         timeDimension: metricsView?.data?.timeDimension || "",
       };
 
-      const enableComparison = !!timeControl.comparisonTimeStart; // TODO: Update for all scenarios
+      let enableComparison = false;
+      if (
+        timeControl.comparisonTimeStart &&
+        dashboardStore.pivot.columns.measure.length <= 5
+      ) {
+        enableComparison = true;
+      }
 
       derived(
         [
@@ -122,7 +128,7 @@ export function getPivotConfig(
             };
           }
 
-          const measureNameGroups = dashboardStore.pivot.columns.measure.map(
+          const measureNames = dashboardStore.pivot.columns.measure.flatMap(
             (m) => {
               const measureName = m.id;
               const group = [measureName];
@@ -136,8 +142,6 @@ export function getPivotConfig(
               return group;
             },
           );
-
-          const measureNames = measureNameGroups.flat();
 
           // This is temporary until we have a better way to handle time grains
           const rowDimensionNames = dashboardStore.pivot.rows.dimension.map(
