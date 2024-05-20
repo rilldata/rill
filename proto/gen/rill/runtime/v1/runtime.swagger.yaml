@@ -1170,6 +1170,9 @@ paths:
               timeRange:
                 $ref: '#/definitions/v1TimeRange'
                 title: Optional. Defaults to unbounded
+              comparisonTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Optional, if omitted than the request prepares an aggregation without a comparison
               timeStart:
                 type: string
                 format: date-time
@@ -1183,6 +1186,12 @@ paths:
                 items:
                   type: string
                 title: Optional. List of dimensions/measures. No pivot is done if ommitted
+              aliases:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
+                title: Optional
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
@@ -1205,6 +1214,8 @@ paths:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 description: Deprecated. should be removed once UI is moved to use new filters
                 title: Optional
+              exact:
+                type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -2802,7 +2813,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3913,6 +3924,38 @@ definitions:
         title: Required if BUILTIN_MEASURE_COUNT_DISTINCT
       filter:
         $ref: '#/definitions/v1Expression'
+      count:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeCount'
+      countDistinct:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeCountDistinct'
+      comparisonValue:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonValue'
+      comparisonDelta:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonDelta'
+      comparisonRatio:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
+  v1MetricsViewAggregationMeasureComputeComparisonDelta:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonRatio:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonValue:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeCount:
+    type: object
+  v1MetricsViewAggregationMeasureComputeCountDistinct:
+    type: object
+    properties:
+      dimension:
+        type: string
   v1MetricsViewAggregationRequest:
     type: object
     properties:
@@ -3942,6 +3985,9 @@ definitions:
       timeRange:
         $ref: '#/definitions/v1TimeRange'
         title: Optional. Defaults to unbounded
+      comparisonTimeRange:
+        $ref: '#/definitions/v1TimeRange'
+        title: Optional, if omitted than the request prepares an aggregation without a comparison
       timeStart:
         type: string
         format: date-time
@@ -3955,6 +4001,12 @@ definitions:
         items:
           type: string
         title: Optional. List of dimensions/measures. No pivot is done if ommitted
+      aliases:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
+        title: Optional
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
@@ -3977,6 +4029,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewFilter'
         description: Deprecated. should be removed once UI is moved to use new filters
         title: Optional
+      exact:
+        type: boolean
   v1MetricsViewAggregationResponse:
     type: object
     properties:
