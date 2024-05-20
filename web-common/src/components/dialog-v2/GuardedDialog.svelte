@@ -9,6 +9,7 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
+  import AlertCircle from "@rilldata/web-common/components/icons/AlertCircle.svelte";
   import { Dialog } from "./index";
 
   export let title: string;
@@ -20,6 +21,10 @@
   let showCancelDialog = false;
   function onCancel() {
     showCancelDialog = true;
+  }
+
+  function onClose() {
+    open = false;
   }
 
   function onConfirmCancel() {
@@ -36,11 +41,11 @@
   }}
   onOpenChange={(o) => {
     // Hack to intercept cancel from clicking X or pressing escape
-    if (!o) onCancel();
+    if (!o && open) onCancel();
     setTimeout(() => (open = true));
   }}
 >
-  <slot {onCancel} />
+  <slot {onCancel} {onClose} />
 </Dialog>
 
 <AlertDialog bind:open={showCancelDialog}>
@@ -49,8 +54,11 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle>{title}</AlertDialogTitle>
-      <AlertDialogDescription>
+      <div class="flex flex-row items-center gap-x-2">
+        <AlertCircle size="20px" className="text-yellow-500" />
+        <AlertDialogTitle>{title}</AlertDialogTitle>
+      </div>
+      <AlertDialogDescription class="pl-7">
         {description}
       </AlertDialogDescription>
     </AlertDialogHeader>

@@ -34,6 +34,7 @@
     cancelLabel="Keep editing"
     bind:open
     let:onCancel
+    let:onClose
   >
     <DialogTrigger asChild let:builder>
       <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
@@ -53,7 +54,7 @@
     <DialogContent class="p-0 m-0 w-[602px] max-w-fit">
       <!-- Adding an if with `open` ensures we tear down the form state when the dialog closes -->
       {#if open}
-        <CreateAlertForm on:close={onCancel} />
+        <CreateAlertForm on:cancel={onCancel} on:close={onClose} />
       {/if}
     </DialogContent>
   </GuardedDialog>

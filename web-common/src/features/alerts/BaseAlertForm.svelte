@@ -36,7 +36,7 @@
   let currentTabIndex = 0;
 
   function handleCancel() {
-    dispatch("close");
+    dispatch("cancel");
   }
 
   function handleBack() {
