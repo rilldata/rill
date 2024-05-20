@@ -129,7 +129,7 @@
           class="flex items-center gap-x-0.5 px-1.5 text-gray-700 hover:text-inherit"
         >
           <div>
-            by <span class="font-bold">{activeTimeGrainLabel}</span>
+            by <span class="font-bold">{capitalizedLabel}</span>
           </div>
           <IconSpaceFixer pullRight>
             <div class="transition-transform" class:-rotate-180={open}>
