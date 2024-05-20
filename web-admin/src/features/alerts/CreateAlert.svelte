@@ -1,5 +1,4 @@
 <script lang="ts">
-  import AlertDialog from "@rilldata/web-common/components/alert-dialog/AlertDialog.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
@@ -8,10 +7,10 @@
   import { BellPlusIcon } from "lucide-svelte";
   import CreateAlertDialog from "@rilldata/web-common/features/alerts/CreateAlertDialog.svelte";
   import {
-    Dialog,
     DialogContent,
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog-v2/index";
+  import GuardedDialog from "@rilldata/web-common/components/dialog-v2/GuardedDialog.svelte";
 
   const {
     selectors: {
@@ -24,21 +23,17 @@
   $: metricsView = useMetricsView($runtime?.instanceId, $metricsViewName);
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
-  let showAlertDialog = false;
-  let showCancelDialog = false;
-  function onCancel() {
-    showCancelDialog = true;
-  }
+  let open = false;
 </script>
 
 {#if hasTimeDimension}
-  <Dialog
-    bind:open={showAlertDialog}
-    closeOnEscape={false}
-    onOutsideClick={(e) => {
-      e.preventDefault();
-      onCancel();
-    }}
+  <GuardedDialog
+    title="Close without saving?"
+    description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
+    confirmLabel="Close"
+    cancelLabel="Keep editing"
+    bind:open
+    let:onCancel
   >
     <DialogTrigger asChild let:builder>
       <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
@@ -58,23 +53,9 @@
     <DialogContent class="p-0 m-0 w-[602px] max-w-fit">
       <!-- Including `showAlertDialog` in the conditional ensures we tear
            down the form state when the dialog closes -->
-      {#if showAlertDialog}
+      {#if open}
         <CreateAlertDialog on:close={onCancel} />
       {/if}
     </DialogContent>
-  </Dialog>
+  </GuardedDialog>
 {/if}
-
-<AlertDialog
-  title="Close without saving?"
-  description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
-  confirmLabel="Close"
-  onConfirm={() => {
-    showAlertDialog = false;
-    showCancelDialog = false;
-  }}
-  cancelLabel="Keep editing"
-  bind:open={showCancelDialog}
->
-  <div slot="trigger"></div>
-</AlertDialog>
