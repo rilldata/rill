@@ -3,6 +3,7 @@ package runtime_test
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -633,6 +634,36 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
 	testruntime.RequireOLAPTableCount(t, rt, id, "bar2", 1)
 	testruntime.RequireOLAPTableCount(t, rt, id, "bar3", 2)
+}
+
+func TestRenameReconciling(t *testing.T) {
+	adbidsPath, err := filepath.Abs("testruntime/testdata/ad_bids/data/AdBids.csv.gz")
+	require.NoError(t, err)
+
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/sources/foo.yaml": `
+connector: local_file
+path: ` + adbidsPath,
+	})
+
+	// Trigger a reconcile, but don't wait for it to complete
+	ctrl, err := rt.Controller(context.Background(), id)
+	require.NoError(t, err)
+	err = ctrl.Reconcile(context.Background(), runtime.GlobalProjectParserName)
+	require.NoError(t, err)
+
+	// Imperfect way to wait until the reconcile is in progress, but not completed (AdBids seems to take about 100ms to ingest).
+	// This seems good enough in practice, and if there's a bug, it will at least identify it some of the time!
+	time.Sleep(5 * time.Millisecond)
+
+	// Rename the resource while the reconcile is still running
+	testruntime.RenameFile(t, rt, id, "/sources/foo.yaml", "/sources/bar.yaml")
+
+	// Wait for it to complete and verify the output is stable
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	testruntime.RequireOLAPTable(t, rt, id, "bar")
 }
 
 func TestInterdependence(t *testing.T) {
