@@ -5,7 +5,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { Button } from "@rilldata/web-common/components/button";
   import { BellPlusIcon } from "lucide-svelte";
-  import CreateAlertDialog from "@rilldata/web-common/features/alerts/CreateAlertDialog.svelte";
+  import CreateAlertForm from "@rilldata/web-common/features/alerts/CreateAlertForm.svelte";
   import {
     DialogContent,
     DialogTrigger,
@@ -51,10 +51,9 @@
       </Tooltip>
     </DialogTrigger>
     <DialogContent class="p-0 m-0 w-[602px] max-w-fit">
-      <!-- Including `showAlertDialog` in the conditional ensures we tear
-           down the form state when the dialog closes -->
+      <!-- Adding an if with `open` ensures we tear down the form state when the dialog closes -->
       {#if open}
-        <CreateAlertDialog on:close={onCancel} />
+        <CreateAlertForm on:close={onCancel} />
       {/if}
     </DialogContent>
   </GuardedDialog>

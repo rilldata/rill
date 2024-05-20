@@ -4,7 +4,7 @@
     DialogTrigger,
   } from "@rilldata/web-common/components/dialog-v2";
   import GuardedDialog from "@rilldata/web-common/components/dialog-v2/GuardedDialog.svelte";
-  import EditAlertDialog from "@rilldata/web-common/features/alerts/EditAlertDialog.svelte";
+  import EditAlertForm from "@rilldata/web-common/features/alerts/EditAlertForm.svelte";
   import type { V1AlertSpec } from "@rilldata/web-common/runtime-client";
   import Button from "web-common/src/components/button/Button.svelte";
 
@@ -23,6 +23,6 @@
     <Button type="secondary" builders={[builder]}>Edit</Button>
   </DialogTrigger>
   <DialogContent class="p-0 m-0 w-[602px] max-w-fit">
-    <EditAlertDialog {alertSpec} on:close={onCancel} {metricsViewName} />
+    <EditAlertForm {alertSpec} on:close={onCancel} {metricsViewName} />
   </DialogContent>
 </GuardedDialog>

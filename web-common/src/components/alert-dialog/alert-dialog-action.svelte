@@ -4,7 +4,7 @@
   import { cn } from "@rilldata/web-common/lib/shadcn";
 
   type $$Props = AlertDialogPrimitive.ActionProps;
-  type $$Events = AlertDialogPrimitive.ActionEvents;
+  // type $$Events = AlertDialogPrimitive.ActionEvents;
 
   let className: $$Props["class"] = undefined;
   export { className as class };
