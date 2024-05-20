@@ -35,13 +35,13 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
-// DropTable implements drivers.OLAPStore.
-func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
+// InsertTableAsSelect implements drivers.OLAPStore.
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
 	return fmt.Errorf("druid: data transformation not yet supported")
 }
 
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
+// DropTable implements drivers.OLAPStore.
+func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
 	return fmt.Errorf("druid: data transformation not yet supported")
 }
 

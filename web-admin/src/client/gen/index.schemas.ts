@@ -442,6 +442,7 @@ export interface V1ReportOptions {
   title?: string;
   refreshCron?: string;
   refreshTimeZone?: string;
+  intervalDuration?: string;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
