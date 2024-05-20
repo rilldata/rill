@@ -12,10 +12,7 @@ web-admin/src/features/errors/error-utils.ts: error TS2322
 web-admin/src/features/help/initPylonChat.ts: error TS2322
 web-admin/src/features/help/initPylonWidget.ts: error TS18047
 web-admin/src/features/projects/selectors.ts: error TS18048
-web-admin/src/features/scheduled-reports/get-dashboard-state-for-report.ts: error TS18048
-web-admin/src/features/scheduled-reports/get-dashboard-state-for-report.ts: error TS2322
-web-admin/src/features/scheduled-reports/get-dashboard-state-for-report.ts: error TS2345
-web-admin/src/features/scheduled-reports/get-dashboard-state-for-report.ts: error TS2769
+web-admin/src/features/dashboards/query-mappers/mapQueryToDashboard.ts: error TS2322
 web-admin/src/features/scheduled-reports/selectors.ts: error TS18048
 web-admin/src/features/scheduled-reports/selectors.ts: error TS2345
 web-admin/src/features/view-as-user/clearViewedAsUser.ts: error TS18047

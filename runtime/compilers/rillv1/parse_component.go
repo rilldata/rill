@@ -17,13 +17,20 @@ var vegaLiteSpec string
 
 var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema/vega-lite/v5.json", vegaLiteSpec)
 
+//go:embed data/component-template-v1.json
+var componentTemplateSpec string
+
+var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
+
 type ComponentYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string           `yaml:"title"`
+	Subtitle   string           `yaml:"subtitle"`
 	Data       *DataYAML        `yaml:"data"`
 	VegaLite   *string          `yaml:"vega_lite"`
 	Markdown   *string          `yaml:"markdown"`
 	Image      *string          `yaml:"image"`
+	Template   map[string]any   `yaml:"template"`
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -104,6 +111,16 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		renderer = "image"
 		rendererProps = must(structpb.NewStruct(map[string]any{"url": *tmp.Image}))
 	}
+	if len(tmp.Template) > 0 {
+		n++
+
+		if err := componentTemplateSchema.Validate(tmp.Template); err != nil {
+			return nil, nil, fmt.Errorf(`failed to validate "template": %w`, err)
+		}
+
+		renderer = "template"
+		rendererProps = must(structpb.NewStruct(tmp.Template))
+	}
 
 	// Check there is exactly one renderer
 	if n == 0 {
@@ -116,6 +133,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	// Create the component spec
 	spec := &runtimev1.ComponentSpec{
 		Title:              tmp.Title,
+		Subtitle:           tmp.Subtitle,
 		Resolver:           resolver,
 		ResolverProperties: resolverProps,
 		Renderer:           renderer,

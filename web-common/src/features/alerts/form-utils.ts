@@ -4,11 +4,8 @@ import {
   IsCompareMeasureFilterOperation,
   MeasureFilterOperation,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-import {
-  createAndExpression,
-  sanitiseExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import {
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type {
   V1Expression,
   V1MetricsViewAggregationRequest,
   V1Operation,
@@ -79,14 +76,14 @@ export function getAlertQueryArgsFromFormValues(
       ? [{ name: formValues.splitByDimension }]
       : [],
     where: sanitiseExpression(formValues.whereFilter, undefined),
-    having: sanitiseExpression(
-      undefined,
-      createAndExpression(
-        formValues.criteria
+    having: sanitiseExpression(undefined, {
+      cond: {
+        op: formValues.criteriaOperation,
+        exprs: formValues.criteria
           .map(mapAlertCriteriaToExpression)
           .filter((e) => !!e) as V1Expression[],
-      ),
-    ),
+      },
+    }),
     timeRange: {
       isoDuration: formValues.timeRange.isoDuration,
     },

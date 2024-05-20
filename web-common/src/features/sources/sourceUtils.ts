@@ -1,8 +1,6 @@
-import {
-  extractFileExtension,
-  sanitizeEntityName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
+import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import { sanitizeEntityName } from "../entity-management/name-utils";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,

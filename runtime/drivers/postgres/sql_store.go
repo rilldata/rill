@@ -95,7 +95,7 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 			return nil, drivers.ErrIteratorDone
 		}
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("no results found for the query")
+			return nil, drivers.ErrNoRows
 		}
 		return nil, err
 	}

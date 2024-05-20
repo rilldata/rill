@@ -2,13 +2,9 @@ package local
 
 import (
 	"context"
-	"crypto/rand"
 	"crypto/tls"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"os"
 	"path"
@@ -18,13 +14,10 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
-	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/pkce"
-	"github.com/rilldata/rill/cli/pkg/update"
-	"github.com/rilldata/rill/cli/pkg/web"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -348,8 +341,8 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		a.Logger.Warnf("error finding install ID: %v", err)
 	}
 
-	// Build local info for frontend
-	inf := &localInfo{
+	// Build local metadata
+	metadata := &localMetadata{
 		InstanceID:       a.Instance.ID,
 		GRPCPort:         grpcPort,
 		InstallID:        installID,
@@ -363,16 +356,23 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		Readonly:         readonly,
 	}
 
-	// Create server logger
-	serverLogger := a.BaseLogger
-	// It only logs error messages when !verbose to prevent lots of req/res info messages.
-	if !a.Verbose {
-		serverLogger = a.BaseLogger.WithOptions(zap.IncreaseLevel(zap.ErrorLevel))
+	// Create the local server handler
+	localServer := &Server{
+		logger:   a.BaseLogger,
+		app:      a,
+		metadata: metadata,
 	}
 
 	// Prepare errgroup and context with graceful shutdown
 	gctx := graceful.WithCancelOnTerminate(a.Context)
 	group, ctx := errgroup.WithContext(gctx)
+
+	// Create server logger for the runtime
+	runtimeServerLogger := a.BaseLogger
+	if !a.Verbose {
+		// It only logs error messages when !verbose to prevent lots of req/res info messages.
+		runtimeServerLogger = a.BaseLogger.WithOptions(zap.IncreaseLevel(zap.ErrorLevel))
+	}
 
 	// Create a runtime server
 	opts := &runtimeserver.Options{
@@ -383,7 +383,7 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 		AllowedOrigins:  []string{"*"},
 		ServePrometheus: true,
 	}
-	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, serverLogger, ratelimit.NewNoop(), a.activity)
+	runtimeServer, err := runtimeserver.NewServer(ctx, opts, a.Runtime, runtimeServerLogger, ratelimit.NewNoop(), a.activity)
 	if err != nil {
 		return err
 	}
@@ -399,15 +399,8 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	// Start the local HTTP server
 	group.Go(func() error {
 		return runtimeServer.ServeHTTP(ctx, func(mux *http.ServeMux) {
-			// Inject local-only endpoints on the server for the local UI and local backend endpoints
-			if enableUI {
-				mux.Handle("/", web.StaticHandler())
-			}
-			mux.Handle("/local/config", a.infoHandler(inf))
-			mux.Handle("/local/version", a.versionHandler())
-			mux.Handle("/local/track", a.trackingHandler())
-			mux.Handle("/auth", a.initiateAuthFlow(httpPort, secure))
-			mux.Handle("/auth/callback", a.handleAuthCallback())
+			// Inject local-only endpoints on the runtime server
+			localServer.RegisterHandlers(mux, httpPort, secure, enableUI)
 		})
 	})
 
@@ -470,99 +463,6 @@ func (a *App) pollServer(ctx context.Context, httpPort int, openOnHealthy, secur
 	}
 }
 
-type localInfo struct {
-	InstanceID       string `json:"instance_id"`
-	GRPCPort         int    `json:"grpc_port"`
-	InstallID        string `json:"install_id"`
-	UserID           string `json:"user_id"`
-	ProjectPath      string `json:"project_path"`
-	Version          string `json:"version"`
-	BuildCommit      string `json:"build_commit"`
-	BuildTime        string `json:"build_time"`
-	IsDev            bool   `json:"is_dev"`
-	AnalyticsEnabled bool   `json:"analytics_enabled"`
-	Readonly         bool   `json:"readonly"`
-}
-
-// infoHandler servers the local info struct.
-func (a *App) infoHandler(info *localInfo) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		data, err := json.Marshal(info)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.Header().Add("Content-Type", "application/json")
-		_, err = w.Write(data)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
-			return
-		}
-	})
-}
-
-// versionHandler servers the version struct.
-func (a *App) versionHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Get the latest version available
-		latestVersion, err := update.LatestVersion(r.Context())
-		if err != nil {
-			a.Logger.Warnf("error finding latest version: %v", err)
-		}
-
-		inf := &versionInfo{
-			CurrentVersion: a.Version.Number,
-			LatestVersion:  latestVersion,
-		}
-
-		data, err := json.Marshal(inf)
-		if err != nil {
-			w.WriteHeader(http.StatusBadRequest)
-			return
-		}
-		w.Header().Add("Content-Type", "application/json")
-		_, err = w.Write(data)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to write response data: %s", err), http.StatusInternalServerError)
-			return
-		}
-	})
-}
-
-type versionInfo struct {
-	CurrentVersion string `json:"current_version"`
-	LatestVersion  string `json:"latest_version"`
-}
-
-// trackingHandler proxies events to intake.rilldata.io.
-func (a *App) trackingHandler() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Read entire body up front (since it may be closed before the request is sent in the goroutine below)
-		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			a.BaseLogger.Info("failed to read telemetry request", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Parse the body as JSON
-		var event map[string]any
-		err = json.Unmarshal(body, &event)
-		if err != nil {
-			a.BaseLogger.Info("failed to parse telemetry request", zap.Error(err))
-			w.WriteHeader(http.StatusOK)
-			return
-		}
-
-		// Pass as raw event to the telemetry client
-		err = a.activity.RecordRaw(event)
-		if err != nil {
-			a.BaseLogger.Info("failed to proxy telemetry event from UI", zap.Error(err))
-		}
-		w.WriteHeader(http.StatusOK)
-	})
-}
-
 // emitStartEvent sends a telemetry event with information about the project' state.
 // It is not a blocking operation (events are flushed in the background).
 func (a *App) emitStartEvent(ctx context.Context) error {
@@ -589,86 +489,6 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 	a.activity.RecordBehavioralLegacy(activity.BehavioralEventAppStart, attribute.StringSlice("connectors", connectorNames), attribute.String("olap_connector", a.Instance.OLAPConnector))
 
 	return nil
-}
-
-// initiateAuthFlow starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
-func (a *App) initiateAuthFlow(httpPort int, secure bool) http.Handler {
-	scheme := "http"
-	if secure {
-		scheme = "https"
-	}
-	redirectURL := fmt.Sprintf("%s://localhost:%d/auth/callback", scheme, httpPort)
-
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// generate random state
-		b := make([]byte, 32)
-		_, err := rand.Read(b)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to generate state: %s", err), http.StatusInternalServerError)
-			return
-		}
-		state := base64.URLEncoding.EncodeToString(b)
-
-		// check the request for redirect query param, we will use this to redirect back to this after auth
-		origin := r.URL.Query().Get("redirect")
-		if origin == "" {
-			origin = "/"
-		}
-
-		authenticator, err := pkce.NewAuthenticator(a.adminURL, redirectURL, database.AuthClientIDRillWebLocal, origin)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("failed to generate pkce authenticator: %s", err), http.StatusInternalServerError)
-			return
-		}
-		a.pkceAuthenticators[state] = authenticator
-		authURL := authenticator.GetAuthURL(state)
-		http.Redirect(w, r, authURL, http.StatusFound)
-	})
-}
-
-// handleAuthCallback handles the OAuth2 PKCE callback to exchange the authorization code for a rill access token.
-func (a *App) handleAuthCallback() http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		code := r.URL.Query().Get("code")
-		if code == "" {
-			http.Error(w, "missing code", http.StatusBadRequest)
-			return
-		}
-		state := r.URL.Query().Get("state")
-		if code == "" {
-			http.Error(w, "missing state", http.StatusBadRequest)
-			return
-		}
-
-		authenticator, ok := a.pkceAuthenticators[state]
-		if !ok {
-			http.Error(w, "invalid state", http.StatusBadRequest)
-			return
-		}
-
-		// remove authenticator from map
-		delete(a.pkceAuthenticators, state)
-
-		if authenticator == nil {
-			http.Error(w, "failed to get authenticator", http.StatusInternalServerError)
-			return
-		}
-
-		// Exchange the code for an access token
-		token, err := authenticator.ExchangeCodeForToken(code)
-		if err != nil {
-			http.Error(w, "failed to exchange code for token", http.StatusInternalServerError)
-			return
-		}
-		// save token and redirect back to url provided by caller when initiating auth flow
-		err = dotrill.SetAccessToken(token)
-		if err != nil {
-			http.Error(w, "failed to save access token", http.StatusInternalServerError)
-			return
-		}
-		a.ch.AdminTokenDefault = token
-		http.Redirect(w, r, authenticator.OriginURL, http.StatusFound)
-	})
 }
 
 // IsProjectInit checks if the project is initialized by checking if rill.yaml exists in the project directory.

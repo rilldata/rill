@@ -1531,6 +1531,7 @@ message ReportOptions {
   string title = 1;
   string refresh_cron = 2;
   string refresh_time_zone = 9;
+  string interval_duration = 13;
   string query_name = 3;
   string query_args_json = 4;
   uint64 export_limit = 5;

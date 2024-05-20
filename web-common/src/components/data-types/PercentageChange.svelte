@@ -1,7 +1,7 @@
 <script lang="ts">
+  import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import Base from "./Base.svelte";
   import { PERC_DIFF, isPercDiff } from "./type-utils";
-  import type { NumberParts } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   export let isNull = false;
   export let inTable = false;
   export let dark = false;
@@ -62,7 +62,7 @@
 >
   <slot name="value">
     {#if isNoData}
-      <span class="opacity-50 italic" style:font-size=".925em">no data</span>
+      <span class="text-gray-400">-</span>
     {:else if value !== null}
       <span class:text-red-500={diffIsNegative}>
         {approxSign}{negSign}{intValue}{suffix}<span class="opacity-50">%</span>

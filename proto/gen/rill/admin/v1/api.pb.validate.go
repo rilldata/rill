@@ -22845,6 +22845,8 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for RefreshTimeZone
 
+	// no validation rules for IntervalDuration
+
 	// no validation rules for QueryName
 
 	// no validation rules for QueryArgsJson

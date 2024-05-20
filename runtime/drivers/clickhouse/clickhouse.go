@@ -49,6 +49,8 @@ type driver struct{}
 type configProperties struct {
 	// DSN is the connection string
 	DSN string `mapstructure:"dsn"`
+	// EnableCache controls whether to enable cache for Clickhouse queries.
+	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 }
@@ -201,6 +203,19 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 // AsObjectStore implements drivers.Connection.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
+}
+
+// AsModelExecutor implements drivers.Handle.
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.InputHandle == c && opts.OutputHandle == c {
+		return &selfToSelfExecutor{c, opts}, true
+	}
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	return c, true
 }
 
 // AsTransporter implements drivers.Connection.
