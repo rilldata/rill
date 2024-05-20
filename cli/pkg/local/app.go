@@ -23,7 +23,6 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/debugserver"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/graceful"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -405,9 +404,9 @@ func (a *App) Serve(httpPort, grpcPort int, enableUI, openBrowser, readonly bool
 	})
 
 	// Start debug server on port 6060
-	if a.Debug {
-		group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
-	}
+	// if a.Debug {
+	// 	group.Go(func() error { return debugserver.ServeHTTP(ctx, 6060) })
+	// }
 
 	// Open the browser when health check succeeds
 	go a.pollServer(ctx, httpPort, enableUI && openBrowser, secure)
