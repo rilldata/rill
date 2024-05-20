@@ -425,6 +425,7 @@ message ComponentSpec {
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
   bool defined_in_dashboard = 6;
+  string subtitle = 7;
 }
 
 message ComponentState {}

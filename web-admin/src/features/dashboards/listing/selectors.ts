@@ -180,9 +180,8 @@ export function listenAndInvalidateDashboards(
         );
         if (prevStateUpdatedOn.getTime() < stateUpdatedOn.getTime()) {
           // invalidate if it was updated
-          refreshResource(queryClient, instanceId, dashboardResource).then(() =>
-            invalidateMetricsViewData(queryClient, instanceId, false),
-          );
+          refreshResource(queryClient, instanceId, dashboardResource);
+          void invalidateMetricsViewData(queryClient, instanceId, false);
           dashboardChanged = true;
         }
       }

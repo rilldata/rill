@@ -2,7 +2,7 @@ import { expect } from "@playwright/test";
 import {
   extractFileName,
   splitFolderAndName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import path from "node:path";
 import type { Page } from "playwright";

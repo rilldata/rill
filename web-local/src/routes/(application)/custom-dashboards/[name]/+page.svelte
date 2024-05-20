@@ -14,11 +14,11 @@
     FileArtifact,
     fileArtifacts,
   } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
-  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import {
     WorkspaceContainer,
@@ -38,9 +38,9 @@
 
   const updateFile = createRuntimeServicePutFile({
     mutation: {
-      onMutate({ instanceId, data }) {
-        const key = getRuntimeServiceGetFileQueryKey(instanceId, data);
-        queryClient.setQueryData(key, data);
+      onMutate({ instanceId, data: { path, blob } }) {
+        const key = getRuntimeServiceGetFileQueryKey(instanceId, { path });
+        queryClient.setQueryData(key, { blob });
       },
     },
   });
@@ -186,7 +186,7 @@
 </script>
 
 <svelte:head>
-  <title>Rill Developer | {customDashboardName}</title>
+  <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
 <WorkspaceContainer

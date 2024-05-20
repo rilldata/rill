@@ -14,6 +14,8 @@
 
   export let filePath: string;
 
+  const { ai } = featureFlags;
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -51,8 +53,11 @@
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard with AI
-    <WandIcon class="w-3 h-3" />
+    Generate dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
   </div>
   <svelte:fragment slot="description">
     {#if $modelHasError}
@@ -74,8 +79,11 @@
   >
     <Explore slot="icon" />
     <div class="flex gap-x-2 items-center">
-      Generate chart with AI
-      <WandIcon class="w-3 h-3" />
+      Generate Chart
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
     </div>
     <svelte:fragment slot="description">
       {#if $modelHasError}

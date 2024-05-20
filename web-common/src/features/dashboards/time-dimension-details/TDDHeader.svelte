@@ -42,7 +42,7 @@
   export let isRowsEmpty = false;
 
   const dispatch = createEventDispatcher();
-  const { adminServer } = featureFlags;
+  const { adminServer, exports } = featureFlags;
 
   const {
     selectors: {
@@ -251,8 +251,12 @@
         </TooltipContent>
       </Tooltip>
 
-      <TDDExportButton {metricViewName} includeScheduledReport={$adminServer} />
-
+      {#if $exports}
+        <TDDExportButton
+          {metricViewName}
+          includeScheduledReport={$adminServer}
+        />
+      {/if}
       <Button
         compact
         type="text"

@@ -1,29 +1,30 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import {
-    EntityStatus,
-    EntityType,
-  } from "@rilldata/web-common/features/entity-management/types";
-  import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { CATALOG_ENTRY_NOT_FOUND } from "@rilldata/web-local/lib/errors/messages";
-  import { error } from "@sveltejs/kit";
-  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
-  import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
+  import {
+    EntityStatus,
+    EntityType,
+  } from "@rilldata/web-common/features/entity-management/types";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
+  import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { CATALOG_ENTRY_NOT_FOUND } from "@rilldata/web-local/lib/errors/messages";
+  import { error } from "@sveltejs/kit";
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
@@ -82,10 +83,12 @@
   );
 
   $: ({ isFetching: chartDataFetching, data: chartData } = $chartDataQuery);
+
+  $: [, fileName] = splitFolderAndName(filePath);
 </script>
 
 <svelte:head>
-  <title>Rill Developer | {chartName}</title>
+  <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
 {#if $fileQuery.data && yaml !== undefined}

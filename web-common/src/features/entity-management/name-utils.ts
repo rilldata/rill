@@ -1,5 +1,7 @@
 export const VALID_NAME_PATTERN = /^[^<>:"/\\|?*]+$/;
 
+export const INVALID_CHARS = /[^a-zA-Z_\d]/g;
+
 export const INVALID_NAME_MESSAGE =
   'Filename cannot contain special characters like /, <, >, :, ", \\, |, ?, or *. Please choose a different name.';
 
@@ -36,4 +38,8 @@ export function isDuplicateName(
 ) {
   if (name.toLowerCase() === fromName.toLowerCase()) return false;
   return names.findIndex((n) => n?.toLowerCase() === name.toLowerCase()) >= 0;
+}
+
+export function sanitizeEntityName(entityName: string): string {
+  return entityName.replace(INVALID_CHARS, "_");
 }
