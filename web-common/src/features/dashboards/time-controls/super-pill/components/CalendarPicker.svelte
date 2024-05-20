@@ -6,6 +6,7 @@
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import { DateTime } from "luxon";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   export const open = writable(false);
 
@@ -109,7 +110,6 @@
       use:builder.action
       {...builder}
       aria-label="Select a custom time range"
-      class="flex-none flex items-center justify-center pb-[1.5px] hover:bg-gray-200"
     >
       <CalendarIcon size="16px" />
     </button>
@@ -203,11 +203,18 @@
     outline: none;
     border-color: #007bff;
   }
+
   label {
     @apply font-semibold flex gap-x-1;
   }
+
   input.error.active {
     @apply border-destructive text-destructive;
+  }
+
+  button {
+    /* this resolves an issue in safari */
+    @apply transform;
   }
 
   /* label.error {

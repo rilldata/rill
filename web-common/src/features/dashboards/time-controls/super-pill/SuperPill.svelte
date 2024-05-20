@@ -238,7 +238,20 @@
 </script>
 
 <div class="wrapper">
-  <Elements.Nudge canPanLeft={$canPanLeft} canPanRight={$canPanRight} {onPan} />
+  <Elements.Nudge
+    canPanLeft={$canPanLeft}
+    canPanRight={$canPanRight}
+    {onPan}
+    direction="left"
+  />
+  <Elements.Nudge
+    canPanLeft={$canPanLeft}
+    canPanRight={$canPanRight}
+    {onPan}
+    direction="right"
+  />
+  <!-- TO DO -->
+  <!-- <Elements.Zoom /> -->
   <Elements.RangePicker
     {ranges}
     {showDefaultItem}
@@ -263,8 +276,6 @@
     />
   {/if}
 
-  <!-- TO DO -->
-  <!-- <Elements.Zoom /> -->
   {#if availableTimeZones.length}
     <Elements.Zone
       watermark={allTimeRange?.end ?? new Date()}
@@ -289,26 +300,31 @@
   .wrapper {
     @apply flex w-fit;
     @apply h-7 rounded-full;
-    @apply border overflow-hidden;
-  }
-
-  :global(.wrapper > button:not(:last-child)) {
-    @apply border-r;
+    @apply overflow-hidden;
   }
 
   :global(.wrapper > button) {
-    @apply px-2 flex items-center justify-center text-center bg-white;
+    @apply border;
+  }
+
+  :global(.wrapper > button:not(:first-child)) {
+    @apply -ml-[1px];
+  }
+
+  :global(.wrapper > button) {
+    @apply border;
+    @apply px-2 flex items-center justify-center bg-white;
   }
 
   :global(.wrapper > button:first-child) {
-    @apply pl-2.5;
+    @apply pl-2.5 rounded-l-full;
   }
   :global(.wrapper > button:last-child) {
-    @apply pr-2.5;
+    @apply pr-2.5 rounded-r-full;
   }
 
-  :global(.wrapper > button:hover) {
-    @apply bg-gray-50 cursor-pointer;
+  :global(.wrapper > button:hover:not(:disabled)) {
+    @apply bg-gray-50 cursor-pointer border-gray-400 z-50;
   }
 
   :global(.wrapper > [data-state="open"]) {
