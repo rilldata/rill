@@ -1247,8 +1247,9 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	}
 
 	whereBuilder := &ExpressionBuilder{
-		mv:      mv,
-		dialect: dialect,
+		mv:       mv,
+		dialect:  dialect,
+		measures: q.Measures,
 	}
 	whereClause, whereClauseArgs, err := whereBuilder.buildExpression(q.Where)
 	if err != nil {
@@ -1286,8 +1287,9 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	var havingClauseArgs []any
 	if q.Having != nil {
 		havingBuilder := &ExpressionBuilder{
-			mv:      mv,
-			dialect: dialect,
+			mv:       mv,
+			dialect:  dialect,
+			measures: q.Measures,
 		}
 		havingClause, havingClauseArgs, err = havingBuilder.buildExpression(q.Having)
 		if err != nil {
