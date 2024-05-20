@@ -10,6 +10,8 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
+  import { Interval } from "luxon";
 
   export let metricViewName: string;
   export let showComparison = false;
@@ -22,6 +24,17 @@
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
   } = StateManagers;
+
+  $: ({ selectedScrubRange } = $dashboardStore);
+
+  $: selectedSubRange =
+    selectedScrubRange?.start && selectedScrubRange?.end
+      ? getOrderedStartEnd(selectedScrubRange.start, selectedScrubRange.end)
+      : null;
+
+  $: subInterval = selectedSubRange
+    ? Interval.fromDateTimes(selectedSubRange.start, selectedSubRange.end)
+    : null;
 
   function onKeyDown(e: KeyboardEvent) {
     const targetTagName = (e.target as HTMLElement).tagName;
@@ -90,12 +103,16 @@
   }
 </script>
 
-{#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
+{#if $dashboardStore?.selectedScrubRange?.end}
   <div class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2">
     <Button compact type="highlighted" on:click={() => zoomScrub()}>
       <div class="flex items-center gap-x-2">
-        <Zoom size="16px" />
-        Zoom
+        <span class="flex-none">
+          <Zoom size="16px" />
+        </span>
+        {#if subInterval?.isValid}
+          <RangeDisplay interval={subInterval} />
+        {/if}
         <span class="font-semibold">(Z)</span>
       </div>
     </Button>
