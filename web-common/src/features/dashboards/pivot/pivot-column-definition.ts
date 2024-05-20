@@ -159,20 +159,9 @@ function formatRowDimensionValue(
   return value;
 }
 
-/**
- * Create column definitions object for pivot table
- * as required by Tanstack Table
- */
-export function getColumnDefForPivot(
-  config: PivotDataStoreConfig,
-  columnDimensionAxes: Record<string, string[]> | undefined,
-  totals: PivotDataRow,
-) {
-  const IsNested = true;
-
-  const { measureNames, rowDimensionNames, colDimensionNames } = config;
-
-  const measures = measureNames.map((m) => {
+export function getMeasureColumnProps(config: PivotDataStoreConfig) {
+  const { measureNames } = config;
+  return measureNames.map((m) => {
     let measureName = m;
     let label;
     if (m.endsWith(COMPARISON_DELTA)) {
@@ -196,8 +185,13 @@ export function getColumnDefForPivot(
       name: m,
     };
   });
+}
 
-  const rowDimensions = rowDimensionNames.map((d) => {
+function getDimensionColumnProps(
+  dimensionNames: string[],
+  config: PivotDataStoreConfig,
+) {
+  return dimensionNames.map((d) => {
     let label =
       config.allDimensions.find(
         (dimension) => dimension.name === d || dimension.column === d,
@@ -212,21 +206,24 @@ export function getColumnDefForPivot(
       name: d,
     };
   });
-  const colDimensions = colDimensionNames.map((d) => {
-    let label =
-      config.allDimensions.find(
-        (dimension) => dimension.name === d || dimension.column === d,
-      )?.label || d;
-    if (isTimeDimension(d, config.time.timeDimension)) {
-      const timeGrain = getTimeGrainFromDimension(d);
-      const grainLabel = TIME_GRAIN[timeGrain]?.label || d;
-      label = `Time ${grainLabel}`;
-    }
-    return {
-      label,
-      name: d,
-    };
-  });
+}
+
+/**
+ * Create column definitions object for pivot table
+ * as required by Tanstack Table
+ */
+export function getColumnDefForPivot(
+  config: PivotDataStoreConfig,
+  columnDimensionAxes: Record<string, string[]> | undefined,
+  totals: PivotDataRow,
+) {
+  const IsNested = true;
+
+  const { rowDimensionNames, colDimensionNames } = config;
+
+  const measures = getMeasureColumnProps(config);
+  const rowDimensions = getDimensionColumnProps(rowDimensionNames, config);
+  const colDimensions = getDimensionColumnProps(colDimensionNames, config);
 
   let rowDimensionsForColumnDef = rowDimensions;
   let nestedLabel: string;
