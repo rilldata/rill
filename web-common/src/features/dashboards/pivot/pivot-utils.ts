@@ -12,15 +12,18 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
+  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
-import type {
-  PivotDataRow,
-  PivotDataStoreConfig,
-  PivotTimeConfig,
-  TimeFilters,
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  type PivotDataRow,
+  type PivotDataStoreConfig,
+  type PivotTimeConfig,
+  type TimeFilters,
 } from "./types";
 
 /**
@@ -187,7 +190,6 @@ export function getFilterForPivotTable(
  */
 export function getAccessorForCell(
   colDimensionNames: string[],
-  timeDimension: string,
   colValuesIndexMaps: Map<string, number>[],
   numMeasures: number,
   cell: { [key: string]: string | number },
@@ -395,4 +397,28 @@ export function getFilterForMeasuresTotalsAxesQuery(
   const mergedFilters = mergeFilters(config.whereFilter, rowFilters ?? {});
 
   return mergedFilters;
+}
+
+export function prepareMeasureForComparison(
+  measures: V1MetricsViewAggregationMeasure[],
+): V1MetricsViewAggregationMeasure[] {
+  return measures.map((measure) => {
+    if (measure.name?.endsWith(COMPARISON_PERCENT)) {
+      return {
+        ...measure,
+        comparisonRatio: {
+          measure: measure.name.replace(COMPARISON_PERCENT, ""),
+        },
+      };
+    } else if (measure.name?.endsWith(COMPARISON_DELTA)) {
+      return {
+        ...measure,
+        comparisonDelta: {
+          measure: measure.name.replace(COMPARISON_DELTA, ""),
+        },
+      };
+    }
+
+    return measure;
+  });
 }

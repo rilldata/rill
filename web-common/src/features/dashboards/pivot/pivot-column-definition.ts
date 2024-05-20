@@ -15,10 +15,12 @@ import {
   getTimeGrainFromDimension,
   isTimeDimension,
 } from "./pivot-utils";
-import type {
-  PivotDataRow,
-  PivotDataStoreConfig,
-  PivotTimeConfig,
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  type PivotDataRow,
+  type PivotDataStoreConfig,
+  type PivotTimeConfig,
 } from "./types";
 
 function sanitizeHeaderValue(value: unknown): string {
@@ -56,7 +58,6 @@ function createColumnDefinitionForDimensions(
     if (level === levels) {
       const accessors = getAccessorForCell(
         dimensionNames,
-        config.time.timeDimension,
         colValuesIndexMaps,
         leafData.length,
         colValuePair,
@@ -172,14 +173,25 @@ export function getColumnDefForPivot(
   const { measureNames, rowDimensionNames, colDimensionNames } = config;
 
   const measures = measureNames.map((m) => {
-    const measure = config.allMeasures.find((measure) => measure.name === m);
+    let measureName = m;
+    let label;
+    if (m.endsWith(COMPARISON_DELTA)) {
+      label = "Δ";
+      measureName = m.replace(COMPARISON_DELTA, "");
+    } else if (m.endsWith(COMPARISON_PERCENT)) {
+      label = "Δ %";
+      measureName = m.replace(COMPARISON_PERCENT, "");
+    }
+    const measure = config.allMeasures.find(
+      (measure) => measure.name === measureName,
+    );
 
     if (!measure) {
       throw new Error(`Measure ${m} not found in config.allMeasures`);
     }
 
     return {
-      label: measure?.label || m,
+      label: label || measure?.label || measureName,
       formatter: createMeasureValueFormatter<null | undefined>(measure),
       name: m,
     };

@@ -13,6 +13,10 @@ import type {
 } from "@tanstack/svelte-table";
 import type { Readable } from "svelte/motion";
 
+export const COMPARISON_VALUE = "__comparison_value";
+export const COMPARISON_DELTA = "__comparison_delta";
+export const COMPARISON_PERCENT = "__comparison_percent";
+
 export interface PivotDataState {
   isFetching: boolean;
   data: PivotDataRow[];
@@ -80,6 +84,7 @@ export interface PivotDataStoreConfig {
   measureFilter: ResolvedMeasureFilter;
   pivot: PivotState;
   time: PivotTimeConfig;
+  enableComparison: boolean;
 }
 
 export interface PivotAxesData {

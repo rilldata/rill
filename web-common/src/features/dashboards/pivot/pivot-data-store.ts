@@ -45,6 +45,8 @@ import {
   isTimeDimension,
 } from "./pivot-utils";
 import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
   PivotChipType,
   type PivotDataRow,
   type PivotDataStore,
@@ -76,6 +78,7 @@ export function getPivotConfig(
           measureFilter: { ready: true, filter: undefined },
           pivot: dashboardStore.pivot,
           time: {} as PivotTimeConfig,
+          enableComparison: false,
         });
         return;
       }
@@ -92,6 +95,9 @@ export function getPivotConfig(
         timeZone: dashboardStore?.selectedTimezone || "UTC",
         timeDimension: metricsView?.data?.timeDimension || "",
       };
+
+      const enableComparison = !!timeControl.comparisonTimeStart; // TODO: Update for all scenarios
+
       derived(
         [
           prepareMeasureFilterResolutions(
@@ -111,13 +117,27 @@ export function getPivotConfig(
               whereFilter: dashboardStore.whereFilter,
               measureFilter: measureFilterResolution,
               pivot: dashboardStore.pivot,
+              enableComparison,
               time,
             };
           }
 
-          const measureNames = dashboardStore.pivot.columns.measure.map(
-            (m) => m.id,
+          const measureNameGroups = dashboardStore.pivot.columns.measure.map(
+            (m) => {
+              const measureName = m.id;
+              const group = [measureName];
+
+              if (enableComparison) {
+                group.push(
+                  `${measureName}${COMPARISON_DELTA}`,
+                  `${measureName}${COMPARISON_PERCENT}`,
+                );
+              }
+              return group;
+            },
           );
+
+          const measureNames = measureNameGroups.flat();
 
           // This is temporary until we have a better way to handle time grains
           const rowDimensionNames = dashboardStore.pivot.rows.dimension.map(
@@ -147,6 +167,7 @@ export function getPivotConfig(
             whereFilter: dashboardStore.whereFilter,
             measureFilter: measureFilterResolution,
             pivot: dashboardStore.pivot,
+            enableComparison,
             time,
           };
         },

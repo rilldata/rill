@@ -23,8 +23,14 @@ import {
   getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
   isTimeDimension,
+  prepareMeasureForComparison,
 } from "./pivot-utils";
-import type { PivotAxesData, PivotDataStoreConfig } from "./types";
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  type PivotAxesData,
+  type PivotDataStoreConfig,
+} from "./types";
 
 /**
  * Wrapper function for Aggregate Query API
@@ -49,6 +55,27 @@ export function createPivotAggregationRowQuery(
     ];
   }
 
+  // Probably a API bug where comparison API does not work when
+  // this is no dimension
+  if (!dimensions.length) {
+    measures = measures.filter(
+      (m) =>
+        !m.name?.endsWith(COMPARISON_PERCENT) &&
+        !m.name?.endsWith(COMPARISON_DELTA),
+    );
+  }
+
+  let hasComparison = false;
+  if (
+    measures.some(
+      (m) =>
+        m.name?.endsWith(COMPARISON_PERCENT) ||
+        m.name?.endsWith(COMPARISON_DELTA),
+    )
+  ) {
+    hasComparison = true;
+  }
+
   return derived(
     [ctx.runtime, ctx.metricsViewName, useTimeControlStore(ctx)],
     ([runtime, metricViewName, timeControls], set) =>
@@ -56,13 +83,19 @@ export function createPivotAggregationRowQuery(
         runtime.instanceId,
         metricViewName,
         {
-          measures,
+          measures: prepareMeasureForComparison(measures),
           dimensions,
           where: sanitiseExpression(whereFilter, measureFilter?.filter),
           timeRange: {
             start: timeRange?.start ? timeRange.start : timeControls.timeStart,
             end: timeRange?.end ? timeRange.end : timeControls.timeEnd,
           },
+          comparisonTimeRange: hasComparison
+            ? {
+                start: timeControls.comparisonTimeStart,
+                end: timeControls.comparisonTimeEnd,
+              }
+            : undefined,
           sort,
           limit,
           offset,
