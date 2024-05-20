@@ -1,12 +1,11 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  V1ResourceEvent,
-  V1WatchResourcesResponse,
-} from "@rilldata/web-common/runtime-client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ReconcileStatus,
   V1Resource,
+  V1ResourceEvent,
+  V1WatchResourcesResponse,
   getConnectorServiceOLAPListTablesQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
@@ -21,7 +20,6 @@ import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matc
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
 export const MainResourceKinds: {
   [kind in ResourceKind]?: true;
@@ -64,6 +62,13 @@ export function invalidateResourceResponse(
   // We then get an event with DELETE after reconcile ends, but without a resource object.
   // So we need to check for deletedOn to be able to use resource.meta, especially the filePaths
   const isSoftDelete = !!res.resource?.meta?.deletedOn;
+
+  // temporary for the fix
+  if (import.meta.env.VITE_PLAYWRIGHT_TEST) {
+    console.log(
+      `[${res.resource.meta?.reconcileStatus}] ${res.name.kind}/${res.name.name}`,
+    );
+  }
 
   // invalidations will wait until the re-fetched query is completed
   // so, we should not `await` here
@@ -159,7 +164,7 @@ function invalidateRemovedResource(
   resource: V1Resource,
 ) {
   const name = resource.meta?.name?.name ?? "";
-  queryClient.removeQueries(
+  void queryClient.refetchQueries(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": name,
       "name.kind": resource.meta?.name?.kind,
@@ -211,11 +216,14 @@ export function refreshResource(
   instanceId: string,
   res: V1Resource,
 ) {
-  return queryClient.resetQueries(
+  return queryClient.setQueryData(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": res.meta?.name?.name,
       "name.kind": res.meta?.name?.kind,
     }),
+    {
+      resource: res,
+    },
   );
 }
 
