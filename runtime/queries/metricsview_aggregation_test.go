@@ -2521,7 +2521,7 @@ func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
 
 	}
 	rows := q.Result.Data
-	require.Equal(t, 8, len(rows))
+	require.Equal(t, 1, len(rows))
 
 	i = 0
 	require.Equal(t, "463.00,464.00,3.20,3.20", fieldsToString2digits(rows[i], "measure_0", "measure_0__p", "measure_1", "m1"))
