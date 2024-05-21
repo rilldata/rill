@@ -62,22 +62,22 @@
     class="w-64 max-h-96 overflow-scroll right-2"
     sideOffset={32}
   >
-    <div class="flex flex-col">
+    <div class="flex flex-col divide-y divide-slate-200">
       {#if $results.completed && responses.length === 0}
         <div class="ui-copy-disabled text-center p-2 w-full">no results</div>
       {:else}
-        <div class="flex flex-row items-center gap-x-2 px-2">
-          <Progress value={$results.progress} max={100} class="h-1" />
-          <div class="text-gray-500 text-[11px]">{$results.progress}%</div>
-        </div>
-        <DropdownMenuSeparator />
+        {#if $results.progress < 100}
+          <div class="flex flex-row items-center gap-x-2 px-2">
+            <Progress value={$results.progress} max={100} class="h-1" />
+            <div class="text-gray-500 text-[11px]">{$results.progress}%</div>
+          </div>
+        {/if}
         {#each responses as { dimension, values } (dimension)}
           <GlobalDimensionSearchResult
             {dimension}
             {values}
             onSelect={onItemSelect}
           />
-          <DropdownMenuSeparator />
         {/each}
       {/if}
     </div>

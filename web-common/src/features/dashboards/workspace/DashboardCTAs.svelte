@@ -58,6 +58,7 @@
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
+  <GlobalDimensionSearch metricsViewName={metricViewName} />
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
@@ -84,8 +85,6 @@
     </Tooltip>
   {/if}
 </div>
-
-<GlobalDimensionSearch metricsViewName={metricViewName} />
 
 <DeployDashboardCta
   on:close={() => (showDeployDashboardModal = false)}

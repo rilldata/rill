@@ -86,7 +86,7 @@ export class StreamingQueryBatch {
 
     const seen = new Set<number>();
     for await (const { result } of stream) {
-      if (result.index === undefined || !queries[result.index]) continue;
+      if (result?.index === undefined || !queries[result.index]) continue;
       // index matches the request order. check batch_query.go
       seen.add(result.index);
       const entry = queries[result.index];
