@@ -47,7 +47,7 @@ func New(adminHost, bearerToken, userAgent string) (*Client, error) {
 		opts = append(opts, grpc.WithPerRPCCredentials(bearerAuth{token: bearerToken, secure: secure}))
 	}
 
-	conn, err := grpc.Dial(uri.Host, opts...)
+	conn, err := grpc.NewClient(uri.Host, opts...)
 	if err != nil {
 		return nil, err
 	}
