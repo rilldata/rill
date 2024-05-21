@@ -96,4 +96,19 @@ export const AllMeasureFilterOptions = [
     label: "Does Not Equals",
     shortLabel: "!=",
   },
+  {
+    value: MeasureFilterOperation.IncreasesBy,
+    label: "Increases By",
+    shortLabel: "inc by",
+  },
+  {
+    value: MeasureFilterOperation.DecreasesBy,
+    label: "Decreases By",
+    shortLabel: "dec by",
+  },
+  {
+    value: MeasureFilterOperation.ChangesBy,
+    label: "Changes By",
+    shortLabel: "changes by",
+  },
 ];

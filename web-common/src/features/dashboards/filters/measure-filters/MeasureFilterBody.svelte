@@ -26,6 +26,11 @@
       case MeasureFilterOperation.GreaterThanOrEquals:
       case MeasureFilterOperation.LessThan:
       case MeasureFilterOperation.LessThanOrEquals:
+      case MeasureFilterOperation.Equals:
+      case MeasureFilterOperation.NotEquals:
+      case MeasureFilterOperation.IncreasesBy:
+      case MeasureFilterOperation.DecreasesBy:
+      case MeasureFilterOperation.ChangesBy:
         shortLabel =
           AllMeasureFilterOptions.find(
             (o) =>
