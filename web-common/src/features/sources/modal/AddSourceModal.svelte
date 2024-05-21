@@ -152,11 +152,14 @@
 
 {#if step >= 1 || $duplicateSourceName}
   <!-- This precise width fits exactly 3 connectors per line  -->
-  <Dialog open on:close={onCancelDialog} widthOverride="w-[560px]">
+  <Dialog
+    open
+    on:close={onCancelDialog}
+    widthOverride="w-[560px]"
+    titleMarginBottomOverride={step === 1 ? "mb-0" : "mb-2"}
+  >
     <div slot="title">
-      {#if step === 1}
-        Add data
-      {:else}
+      {#if step === 2}
         <h2 class="flex gap-x-1 items-center">
           <span>
             {#if $duplicateSourceName !== null}
@@ -177,7 +180,7 @@
         {#if $connectors.data && $connectors.data?.connectors}
           <!-- Direct sources -->
           <section>
-            <h3>Sources</h3>
+            <h2>Add a source</h2>
             <div class="connector-grid">
               {#each $connectors.data.connectors.filter((c) => !c.implementsOlap) as connector}
                 {#if connector.name}
@@ -195,7 +198,7 @@
 
           <!-- OLAP connectors -->
           <section>
-            <h3>OLAP engines</h3>
+            <h2>Connect an OLAP engine</h2>
             <div class="connector-grid">
               {#each $connectors.data.connectors.filter((c) => c.implementsOlap) as connector}
                 {#if connector.name}
@@ -243,8 +246,8 @@
 {/if}
 
 <style lang="postcss">
-  h3 {
-    @apply text-lg font-medium;
+  h2 {
+    @apply text-gray-900 font-semibold text-base mb-2;
   }
 
   .connector-grid {
