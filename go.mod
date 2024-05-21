@@ -334,6 +334,9 @@ require (
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
 
+// Workaround for https://github.com/marcboeker/go-duckdb/issues/215
+replace github.com/marcboeker/go-duckdb v1.6.4 => github.com/rilldata/go-duckdb v0.0.0-20240521113010-0a4610c39d2c
+
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a
 
