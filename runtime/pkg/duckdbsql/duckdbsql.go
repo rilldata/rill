@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/marcboeker/go-duckdb"
+	"github.com/rilldata/rill/runtime/drivers/duckdb/extensions"
 )
 
 // queryString runs a DuckDB query and returns the result as a scalar string
@@ -36,6 +37,12 @@ var (
 
 // query runs a DuckDB query
 func query(qry string, args ...any) (*databasesql.Rows, error) {
+	// Lazily install DuckDB extensions
+	err := extensions.InstallExtensionsOnce()
+	if err != nil {
+		return nil, err
+	}
+
 	// Lazily initialize db global as an in-memory DuckDB connection
 	dbOnce.Do(func() {
 		// Using NewConnector since DuckDB requires extensions to be loaded separately on each connection

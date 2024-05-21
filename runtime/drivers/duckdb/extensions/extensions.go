@@ -1,4 +1,4 @@
-package duckdb
+package extensions
 
 import (
 	"compress/gzip"
@@ -7,26 +7,29 @@ import (
 	"fmt"
 	"io"
 	"io/fs"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 )
 
-// Since DuckDB is called from multiple packages, the extensions are installed in the init function
-func init() {
-	err := installExtensions()
-	if err != nil {
-		// If extensions cannot be installed, log the error and continue as the extensions can be downloaded
-		// Should it be fatal in order to notice the issue prior to a release?
-		log.Printf("Error preparing DuckDB extensions: %v", err)
-	}
+var (
+	// once is used to ensure that DuckDB extensions are installed only once
+	once sync.Once
+	//go:embed embed/*
+	embeddedFiles embed.FS
+)
+
+// InstallExtensionsOnce lazily copies embedded DuckDB extensions to DuckDB's extensions directory to avoid downloading them
+func InstallExtensionsOnce() error {
+	var err error
+	once.Do(func() {
+		err = installExtensions()
+	})
+	return err
 }
 
-//go:embed embed/extensions/*
-var embeddedFiles embed.FS
-
-// installExtensions copies embedded DuckDB extensions to DuckDB's extensions directory to avoid downloading them
+// installExtensions is the actual function that performs the installation logic
 func installExtensions() error {
 	// Connect to DuckDB and get the version
 	db, err := sql.Open("duckdb", "")
@@ -49,7 +52,7 @@ func installExtensions() error {
 	}
 
 	// Define source and destination paths
-	embedPath := fmt.Sprintf("embed/extensions/%s/%s", duckdbVersion, platformName)
+	embedPath := fmt.Sprintf("embed/%s/%s", duckdbVersion, platformName)
 	homeDir, err := os.UserHomeDir()
 	if err != nil {
 		return err

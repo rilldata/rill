@@ -20,6 +20,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb/extensions"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -90,6 +91,12 @@ type Driver struct {
 func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("duckdb driver can't be shared")
+	}
+
+	// Lazily install DuckDB extensions
+	err := extensions.InstallExtensionsOnce()
+	if err != nil {
+		return nil, err
 	}
 
 	cfg, err := newConfig(cfgMap)

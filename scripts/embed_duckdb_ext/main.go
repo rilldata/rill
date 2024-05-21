@@ -19,7 +19,7 @@ var extensions = []string{"json", "icu", "parquet", "httpfs", "sqlite_scanner", 
 var platforms = []string{"linux_amd64", "osx_amd64", "osx_arm64"}
 
 // Embed directory to store the extensions
-var embedDirRoot = "runtime/drivers/duckdb/embed/extensions/"
+var embedDirRoot = "runtime/drivers/duckdb/extensions/embed/"
 
 // main downloads and embeds the necessary DuckDB extensions for the current DuckDB version and pre-defined platforms
 // https://duckdb.org/docs/extensions/working_with_extensions.html
