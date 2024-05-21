@@ -93,10 +93,9 @@ func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Clie
 		return nil, errors.New("duckdb driver can't be shared")
 	}
 
-	// Lazily install DuckDB extensions
 	err := extensions.InstallExtensionsOnce()
 	if err != nil {
-		return nil, err
+		logger.Warn("failed to install embedded DuckDB extensions, let DuckDB download them", zap.Error(err))
 	}
 
 	cfg, err := newConfig(cfgMap)

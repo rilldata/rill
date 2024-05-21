@@ -20,16 +20,43 @@ var (
 	embeddedFiles embed.FS
 )
 
-// InstallExtensionsOnce lazily copies embedded DuckDB extensions to DuckDB's extensions directory to avoid downloading them
+// InstallExtensionsOnce installs the embedded DuckDB extensions once
 func InstallExtensionsOnce() error {
-	var err error
+	var installErr error
 	once.Do(func() {
-		err = installExtensions()
+		// Check if no extensions are embedded (for any versions and platform)
+		// This is likely a development run or tests, return no error
+		if noExtensions, err := noEmbeddedExtensions(); err != nil {
+			installErr = err
+			return
+		} else if noExtensions {
+			return
+		}
+		// Install embedded extensions
+		installErr = installExtensions()
 	})
-	return err
+	return installErr
 }
 
-// installExtensions is the actual function that performs the installation logic
+// noEmbeddedExtensions checks if extensions are not embedded
+func noEmbeddedExtensions() (bool, error) {
+	empty := true
+
+	err := fs.WalkDir(embeddedFiles, ".", func(path string, d fs.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+		if d.IsDir() && path != "." {
+			empty = false
+			return fs.SkipDir
+		}
+		return nil
+	})
+
+	return empty, err
+}
+
+// installExtensions installs the embedded DuckDB extensions
 func installExtensions() error {
 	// Connect to DuckDB and get the version
 	db, err := sql.Open("duckdb", "")

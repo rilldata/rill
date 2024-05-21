@@ -4,6 +4,7 @@ import (
 	"context"
 	databasesql "database/sql"
 	"database/sql/driver"
+	"fmt"
 	"sync"
 
 	"github.com/marcboeker/go-duckdb"
@@ -37,10 +38,9 @@ var (
 
 // query runs a DuckDB query
 func query(qry string, args ...any) (*databasesql.Rows, error) {
-	// Lazily install DuckDB extensions
 	err := extensions.InstallExtensionsOnce()
 	if err != nil {
-		return nil, err
+		fmt.Printf("failed to install embedded DuckDB extensions, let DuckDB download them: %v\n", err)
 	}
 
 	// Lazily initialize db global as an in-memory DuckDB connection
