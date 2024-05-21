@@ -157,6 +157,20 @@ const TestCases: [
     createBinaryExpression("imp__delta_rel", V1Operation.OPERATION_LT, -0.1),
   ],
   [
+    "changes by absolute",
+    {
+      value1: "10",
+      value2: "",
+      measure: "imp",
+      operation: MeasureFilterOperation.ChangesBy,
+      comparison: MeasureFilterComparisonType.AbsoluteComparison,
+    },
+    createOrExpression([
+      createBinaryExpression("imp__delta_abs", V1Operation.OPERATION_LT, -10),
+      createBinaryExpression("imp__delta_abs", V1Operation.OPERATION_GT, 10),
+    ]),
+  ],
+  [
     "changes by percent",
     {
       value1: "10",

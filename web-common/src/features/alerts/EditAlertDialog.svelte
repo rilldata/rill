@@ -123,6 +123,8 @@
       $form[fk] = formValues[fk];
     }
   }
+
+  $: console.log($form);
 </script>
 
 <Dialog

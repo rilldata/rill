@@ -154,6 +154,7 @@
       metricsViewName={$dashboardName.data}
       filters={metricsViewAggregationRequest?.where}
       timeRange={metricsViewAggregationRequest?.timeRange}
+      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />
 
     <!-- Criteria -->

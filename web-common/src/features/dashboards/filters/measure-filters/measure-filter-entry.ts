@@ -47,8 +47,11 @@ export function mapExprToMeasureFilter(
       field = expr.cond.exprs?.[0].cond?.exprs?.[0].ident ?? "";
       if (HasSuffixRegex.test(field)) {
         // handle ChangeBy
-        value1 =
-          (expr.cond.exprs?.[1].cond?.exprs?.[1].val as number) * 100 ?? 0;
+        value1 = (expr.cond.exprs?.[1].cond?.exprs?.[1].val as number) ?? 0;
+        if (field.endsWith(DeltaRelativeSuffix)) {
+          // convert decimal to percent
+          value1 *= 100;
+        }
         operation = MeasureFilterOperation.ChangesBy;
         break;
       }

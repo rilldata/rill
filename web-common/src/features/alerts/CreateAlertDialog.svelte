@@ -105,13 +105,12 @@
       // Also, in the future, they might even be editable.
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
-      // TODO: get metrics view spec
       timeRange: timeRange
         ? {
             ...timeRange,
             end: timeControls.timeEnd,
           }
-        : undefined, // TODO: set defaults
+        : undefined,
       comparisonTimeRange: comparisonTimeRange
         ? {
             ...comparisonTimeRange,
@@ -176,7 +175,6 @@
   $: if (timeControls.comparisonTimeEnd && $form["comparisonTimeRange"]) {
     $form["comparisonTimeRange"].end = timeControls.comparisonTimeEnd;
   }
-  $: console.log(timeControls);
 </script>
 
 <Dialog

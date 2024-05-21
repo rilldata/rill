@@ -18,6 +18,7 @@ export type AlertFormValuesSubset = Pick<
   | "metricsViewName"
   | "whereFilter"
   | "timeRange"
+  | "comparisonTimeRange"
   | "measure"
   | "splitByDimension"
   | "criteria"
@@ -42,6 +43,15 @@ export function extractAlertFormValues(
     timeRange.end = allTimeRange.timeRangeSummary?.max;
   }
 
+  const comparisonTimeRange = queryArgs.comparisonTimeRange;
+  if (
+    comparisonTimeRange &&
+    !comparisonTimeRange.end &&
+    allTimeRange.timeRangeSummary?.max
+  ) {
+    comparisonTimeRange.end = allTimeRange.timeRangeSummary?.max;
+  }
+
   return {
     measure: measures[0]?.name ?? "",
     splitByDimension: dimensions[0]?.name ?? "",
@@ -54,6 +64,7 @@ export function extractAlertFormValues(
     metricsViewName: queryArgs.metricsView as string,
     whereFilter: queryArgs.where ?? createAndExpression([]),
     timeRange,
+    comparisonTimeRange,
   };
 }
 
