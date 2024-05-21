@@ -43,6 +43,40 @@ type ResolvedMetricsViewSecurity struct {
 	ExcludeAll bool
 }
 
+func (r *ResolvedMetricsViewSecurity) CanAccessField(field string) bool {
+	if r == nil {
+		return true
+	}
+
+	if !r.Access {
+		return false
+	}
+
+	if r.ExcludeAll {
+		return false
+	}
+
+	if len(r.Include) > 0 {
+		for _, include := range r.Include {
+			if include == field {
+				return true
+			}
+		}
+		return false
+	}
+
+	if len(r.Exclude) > 0 {
+		for _, exclude := range r.Exclude {
+			if exclude == field {
+				return false
+			}
+		}
+		return true
+	}
+
+	return true
+}
+
 func computeCacheKey(instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time, attributes map[string]any) (string, error) {
 	hash := md5.New()
 	_, err := hash.Write([]byte(instanceID))
