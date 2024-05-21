@@ -2,6 +2,7 @@ package graceful
 
 import (
 	"context"
+	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net"
@@ -12,7 +13,7 @@ import (
 )
 
 // ServePostgres serves a Postgres server and performs a graceful shutdown if/when ctx is cancelled.
-func ServePostgres(ctx context.Context, queryHandler func(ctx context.Context, query string) (wire.PreparedStatements, error), authHandler func(ctx context.Context, username, password string) (context.Context, bool, error), port int, logger *zap.Logger) error {
+func ServePostgres(ctx context.Context, queryHandler func(ctx context.Context, query string) (wire.PreparedStatements, error), authHandler func(ctx context.Context, username, password string) (context.Context, bool, error), port int, useTLS bool, logger *zap.Logger) error {
 	// Calling net.Listen("tcp", ...) will succeed if the port is blocked on IPv4 but not on IPv6.
 	// This workaround ensures we get the port on IPv4 (and most likely also on IPv6).
 	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", port))
@@ -27,8 +28,22 @@ func ServePostgres(ctx context.Context, queryHandler func(ctx context.Context, q
 		return err
 	}
 
+	// cert, err := tls.LoadX509KeyPair("/Users/kanshul/server.crt", "/Users/kanshul/server.key")
+	// if err != nil {
+	// 	log.Fatalf("Failed to load X509 key pair: %v", err)
+	// }
+
 	opts := []wire.OptionFn{
+		wire.Version("10"),
 		wire.Logger(slog.New(discard)),
+		wire.GlobalParameters(wire.Parameters{"standard_conforming_strings": "on"}),
+	}
+	if useTLS {
+		cert, err := tls.LoadX509KeyPair("/Users/kanshul/server.crt", "/Users/kanshul/server.key")
+		if err != nil {
+			return err
+		}
+		opts = append(opts, wire.Certificates([]tls.Certificate{cert}))
 	}
 	if authHandler != nil {
 		opts = append(opts, wire.SessionAuthStrategy(wire.ClearTextPassword(authHandler)))

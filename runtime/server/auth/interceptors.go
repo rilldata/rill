@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -98,6 +99,11 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 
 func PostgresAuthHandler(aud *Audience) func(ctx context.Context, username, password string) (context.Context, bool, error) {
 	return func(ctx context.Context, username, password string) (context.Context, bool, error) {
+		var err error
+		password, err = url.QueryUnescape(password)
+		if err != nil {
+			return nil, false, err
+		}
 		ctxWithClaim, err := parseClaims(ctx, aud, password)
 		if err != nil {
 			return ctx, false, fmt.Errorf("authentication failed: %w", err)

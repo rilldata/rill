@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
+	"os"
+	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	wire "github.com/jeroenrinzema/psql-wire"
@@ -15,46 +17,56 @@ import (
 	"go.uber.org/zap"
 )
 
-func QueryHandler(s *Server) func(ctx context.Context, query string) (wire.PreparedStatements, error) {
-	return func(ctx context.Context, query string) (wire.PreparedStatements, error) {
-		clientParams := wire.ClientParameters(ctx)
-		instanceID := clientParams[wire.ParamDatabase]
+func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
+	clientParams := wire.ClientParameters(ctx)
+	instanceID := clientParams[wire.ParamDatabase]
+	var api *runtimev1.API
+	var err error
+
+	if strings.Contains(query, "pg_attribute") || strings.Contains(query, "pg_catalog") || strings.Contains(query, "pg_type") || strings.Contains(query, "pg_namespace") || !strings.Contains(strings.ToUpper(query), "FROM") {
+		api, err = s.runtime.APIForName(ctx, instanceID, "pg-catalog-sql")
+	} else {
 		// todo how to handle normal SQL ?
-		api, err := s.runtime.APIForName(ctx, instanceID, "metrics-sql")
-		if err != nil {
-			return nil, err
-		}
-
-		// Resolve the API to JSON data
-		res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
-			InstanceID:                instanceID,
-			Resolver:                  api.Spec.Resolver,
-			ResolverProperties:        api.Spec.ResolverProperties.AsMap(),
-			Args:                      map[string]any{"sql": query, "priority": 1},
-			UserAttributes:            nil,
-			ResolveInteractiveOptions: &runtime.ResolverInteractiveOptions{Format: runtime.GOOBJECTS},
-		})
-		if err != nil {
-			return nil, err
-		}
-
-		handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-			if len(res.Rows) == 0 {
-				return writer.Empty()
-			}
-			for i := 0; i < len(res.Rows); i++ {
-				if err := convert(res.Rows[i], res.Schema); err != nil {
-					return fmt.Errorf("data conversion failed")
-				}
-				if err := writer.Row(res.Rows[i]); err != nil {
-					s.logger.Warn("failed to write row", zap.Error(err))
-					return err
-				}
-			}
-			return writer.Complete("OK")
-		}
-		return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(convertSchema(res.Schema)))), nil
+		api, err = s.runtime.APIForName(ctx, instanceID, "metrics-sql")
 	}
+	if err != nil {
+		return nil, err
+	}
+
+	tmpDir, err := os.MkdirTemp("", "pg_catalog")
+	if err != nil {
+		return nil, err
+	}
+	defer os.RemoveAll(tmpDir)
+
+	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:                instanceID,
+		Resolver:                  api.Spec.Resolver,
+		ResolverProperties:        api.Spec.ResolverProperties.AsMap(),
+		Args:                      map[string]any{"sql": query, "priority": 1, "temp_dir": tmpDir},
+		UserAttributes:            nil, // todo add user attributes
+		ResolveInteractiveOptions: &runtime.ResolverInteractiveOptions{Format: runtime.GOOBJECTS},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+		// if len(res.Rows) == 0 {
+		// 	return writer.Empty()
+		// }
+		for i := 0; i < len(res.Rows); i++ {
+			if err := convert(res.Rows[i], res.Schema); err != nil {
+				return fmt.Errorf("data conversion failed")
+			}
+			if err := writer.Row(res.Rows[i]); err != nil {
+				s.logger.Warn("failed to write row", zap.Error(err))
+				return err
+			}
+		}
+		return writer.Complete("OK")
+	}
+	return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(convertSchema(res.Schema)))), nil
 }
 
 func convert(row []any, schema *runtimev1.StructType) error {

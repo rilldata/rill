@@ -42,7 +42,7 @@ require (
 	github.com/go-logr/zapr v1.2.4
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
-	github.com/go-sql-driver/mysql v1.7.1
+	github.com/go-sql-driver/mysql v1.8.1
 	github.com/gocarina/gocsv v0.0.0-20231116093920-b87c2d0e983a
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/google/go-github/v50 v50.2.0
@@ -54,17 +54,17 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/golang-lru v0.6.0
-	github.com/jackc/pgconn v1.14.0
-	github.com/jackc/pgtype v1.12.0
-	github.com/jackc/pgx/v4 v4.17.2
+	github.com/jackc/pgconn v1.14.3
+	github.com/jackc/pgtype v1.14.3
+	github.com/jackc/pgx/v4 v4.18.2
 	github.com/jackc/pgx/v5 v5.5.5
 	github.com/jeroenrinzema/psql-wire v0.11.1
-	github.com/jmoiron/sqlx v1.3.5
+	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
 	github.com/lib/pq v1.10.9
-	github.com/marcboeker/go-duckdb v1.6.2
+	github.com/marcboeker/go-duckdb v1.6.4
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
@@ -101,9 +101,9 @@ require (
 	gocloud.dev v0.36.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
 	golang.org/x/oauth2 v0.14.0
-	golang.org/x/sync v0.5.0
-	golang.org/x/sys v0.18.0
-	golang.org/x/text v0.14.0
+	golang.org/x/sync v0.7.0
+	golang.org/x/sys v0.20.0
+	golang.org/x/text v0.15.0
 	google.golang.org/api v0.151.0
 	google.golang.org/genproto/googleapis/api v0.0.0-20231212172506-995d672761c0
 	google.golang.org/grpc v1.60.1
@@ -153,6 +153,7 @@ require (
 )
 
 require (
+	filippo.io/edwards25519 v1.1.0 // indirect
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
 	github.com/ForceCLI/config v0.0.0-20230217143549-9149d42a3c99 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
@@ -220,7 +221,7 @@ require (
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gomodule/redigo v1.8.9 // indirect
-	github.com/google/flatbuffers v23.5.26+incompatible // indirect
+	github.com/google/flatbuffers v24.3.25+incompatible // indirect
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/google/go-github/v52 v52.0.0 // indirect
@@ -238,7 +239,7 @@ require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
+	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -248,8 +249,8 @@ require (
 	github.com/kballard/go-shellquote v0.0.0-20180428030007-95032a82bc51 // indirect
 	github.com/kevinburke/ssh_config v1.2.0 // indirect
 	github.com/klauspost/asmfmt v1.3.2 // indirect
-	github.com/klauspost/compress v1.17.1 // indirect
-	github.com/klauspost/cpuid/v2 v2.2.5 // indirect
+	github.com/klauspost/compress v1.17.8 // indirect
+	github.com/klauspost/cpuid/v2 v2.2.7 // indirect
 	github.com/leodido/go-urn v1.2.4 // indirect
 	github.com/lufia/plan9stats v0.0.0-20230326075908-cb1d2100619a // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
@@ -275,7 +276,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/paulmach/orb v0.10.0 // indirect
-	github.com/pierrec/lz4/v4 v4.1.18 // indirect
+	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pingcap/errors v0.11.5-0.20221009092201-b66cddb77c32 // indirect
 	github.com/pingcap/failpoint v0.0.0-20220801062533-2eaa32854a6c // indirect
 	github.com/pingcap/log v1.1.1-0.20230317032135-a0d097d16e22 // indirect
@@ -308,12 +309,12 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.21.0 // indirect
-	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/net v0.22.0 // indirect
-	golang.org/x/term v0.18.0 // indirect
+	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/mod v0.17.0 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/term v0.20.0 // indirect
 	golang.org/x/time v0.4.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/tools v0.21.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect
@@ -346,3 +347,5 @@ replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testco
 replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
 
 exclude modernc.org/sqlite v1.18.1
+
+replace github.com/jeroenrinzema/psql-wire v0.11.1 => /Users/kanshul/Documents/projects/external/psql-wire

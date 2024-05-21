@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgtype"
 	wire "github.com/jeroenrinzema/psql-wire"
 	"github.com/lib/pq/oid"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -16,8 +17,52 @@ import (
 )
 
 func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
+	s.logger.Info("query", zap.String("query", query))
+
+	if strings.HasPrefix(strings.ToUpper(query), "SHOW TRANSACTION ISOLATION LEVEL") {
+		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+			if err := writer.Row([]any{"read committed"}); err != nil {
+				return err
+			}
+			return writer.Complete("OK")
+		}, wire.WithColumns(wire.Columns{wire.Column{Name: "transaction_isolation", Oid: pgtype.VarcharOID}}))), nil
+	}
+
+	if strings.HasPrefix(strings.ToUpper(query), "SET") {
+		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+			return writer.Complete(query)
+		}, wire.WithColumns(nil))), nil
+	}
+
+	if strings.HasPrefix(strings.ToUpper(query), "BEGIN") || strings.HasPrefix(strings.ToUpper(query), "COMMIT") || strings.HasPrefix(strings.ToUpper(query), "ROLLBACK") {
+		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+			return writer.Complete(strings.ToUpper(strings.Trim(query, ";")))
+		}, wire.WithColumns(nil))), nil
+	}
+
+	if strings.HasPrefix(strings.ToUpper(query), "SHOW TIMEZONE") {
+		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+			if err := writer.Row([]any{"Etc/UTC"}); err != nil {
+				return err
+			}
+			return writer.Complete("OK")
+		}, wire.WithColumns(wire.Columns{wire.Column{Name: "TimeZone", Oid: pgtype.VarcharOID}}))), nil
+	}
+
+	if strings.Trim(query, " ") == "" {
+		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+			return writer.Empty()
+		})), nil
+	}
+
 	clientParams := wire.ClientParameters(ctx)
-	tokens := strings.Split(clientParams[wire.ParamDatabase], "/")
+	// many clients will need to encode / to pass in postgres dsn
+	db, err := url.QueryUnescape(clientParams[wire.ParamDatabase])
+	if err != nil {
+		return nil, err
+	}
+
+	tokens := strings.Split(db, "/")
 	if len(tokens) != 2 { // todo handle slash in org and project name
 		return nil, fmt.Errorf("invalid org or project")
 	}
@@ -44,6 +89,10 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	case auth.OwnerTypeAnon:
 		// If the client is not authenticated with the admin service, we just proxy the contents of the password to the runtime (if any).
 		password := ctx.Value(auth.PasswordKey{}).(string)
+		password, err = url.QueryUnescape(password)
+		if err != nil {
+			return nil, err
+		}
 		if len(password) >= 6 && strings.EqualFold(password[0:6], "bearer") {
 			jwt = strings.TrimSpace(password[6:])
 		}
@@ -118,7 +167,7 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 
 	rows, err := conn.Query(ctx, query) // query to underlying host
 	if err != nil {
-		conn.Close(context.Background())
+		s.logger.Error("error in query", zap.Error(err))
 		return nil, err
 	}
 	defer rows.Close()
@@ -156,9 +205,6 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	}
 
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-		if len(data) == 0 {
-			return writer.Empty()
-		}
 		for i := 0; i < len(data); i++ {
 			writer.Row(data[i])
 		}

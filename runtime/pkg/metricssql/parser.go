@@ -26,6 +26,7 @@ var supportedFuncs = map[string]any{
 	"date_sub":     nil,
 	"now":          nil,
 	"current_date": nil,
+	"count":        nil,
 }
 
 type Compiler struct {

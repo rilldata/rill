@@ -193,7 +193,7 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 // ServePostgres Starts the postrges server.
 func (s *Server) ServePostgres(ctx context.Context) error {
 	authHandler := s.authenticator.PostgresAuthHandler()
-	return graceful.ServePostgres(ctx, s.QueryHandler, authHandler, s.opts.PostgresPort, s.logger)
+	return graceful.ServePostgres(ctx, s.QueryHandler, authHandler, s.opts.PostgresPort, false, s.logger)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
