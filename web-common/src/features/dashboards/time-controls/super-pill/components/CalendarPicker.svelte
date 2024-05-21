@@ -6,7 +6,6 @@
   import Calendar from "@rilldata/web-common/components/date-picker/Calendar.svelte";
   import { DateTime } from "luxon";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
 
   export const open = writable(false);
 
