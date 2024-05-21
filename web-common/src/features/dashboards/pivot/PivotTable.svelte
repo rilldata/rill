@@ -24,6 +24,9 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { clamp } from "@rilldata/web-common/lib/clamp";
+  import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { modifiedClick } from "@rilldata/web-common/lib/actions/modified-click";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -231,6 +234,58 @@
 
     percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
   }
+
+  let showTooltip = false;
+  let hoverPosition: DOMRect;
+  let hovering: HoveringData | null = null;
+  let timer: ReturnType<typeof setTimeout>;
+
+  type HoveringData = {
+    value: string | number | null;
+  };
+
+  function handleHover(
+    e: MouseEvent & {
+      currentTarget: EventTarget & HTMLElement;
+    },
+  ) {
+    hoverPosition = e.currentTarget.getBoundingClientRect();
+
+    const value = e.currentTarget.dataset.value;
+
+    if (value === undefined) return;
+
+    hovering = {
+      value,
+    };
+
+    timer = setTimeout(() => {
+      showTooltip = true;
+    }, 250);
+  }
+
+  function handleLeave() {
+    clearTimeout(timer);
+    showTooltip = false;
+    hovering = null;
+  }
+
+  async function handleClick(e: MouseEvent) {
+    if (!isElement(e.target)) return;
+
+    const value = e.target.dataset.value;
+
+    if (value === undefined) return;
+
+    await navigator.clipboard.writeText(value);
+    eventBus.emit("notification", {
+      message: `copied value "${value}" to clipboard`,
+    });
+  }
+
+  function isElement(target: EventTarget | null): target is HTMLElement {
+    return target instanceof HTMLElement;
+  }
 </script>
 
 <div
@@ -242,7 +297,11 @@
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
-  <table style:width="{totalLength}px">
+  <table
+    style:width="{totalLength}px"
+    use:modifiedClick={{ shift: [handleClick, "click"] }}
+    role="presentation"
+  >
     {#if firstColumnName && firstColumnWidth}
       <colgroup>
         <col
@@ -332,8 +391,11 @@
             <td
               class="ui-copy-number"
               class:border-r={i % measureCount === 0 && i}
+              on:mouseenter={handleHover}
+              on:mouseleave={handleLeave}
+              data-value={cell.getValue()}
             >
-              <div class="cell">
+              <div class="cell pointer-events-none" role="presentation">
                 {#if result?.component && result?.props}
                   <svelte:component
                     this={result.component}
@@ -359,6 +421,10 @@
     </tbody>
   </table>
 </div>
+
+{#if showTooltip && hovering}
+  <VirtualTooltip sortable={true} {hovering} {hoverPosition} pinned={false} />
+{/if}
 
 <style lang="postcss">
   * {
