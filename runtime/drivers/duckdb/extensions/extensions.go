@@ -46,7 +46,7 @@ func noEmbeddedExtensions() (bool, error) {
 		if err != nil {
 			return err
 		}
-		if d.IsDir() && path != "." {
+		if d.IsDir() && path != "embed" && path != "." {
 			empty = false
 			return fs.SkipDir
 		}
