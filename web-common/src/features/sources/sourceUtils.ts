@@ -5,12 +5,25 @@ import { sanitizeEntityName } from "../entity-management/name-utils";
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string,
+  implementsOlap?: boolean,
 ) {
-  const topOfFile = `# Source YAML
+  // Add instructions to the top of the file
+  let topOfFile: string;
+  if (implementsOlap) {
+    // Connector YAML
+    topOfFile = `# Connector YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
+  
+type: connector`;
+  } else {
+    // Source YAML
+    topOfFile = `# Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
-
+  
 type: source`;
+  }
 
+  // Convert applicable connectors to duckdb
   switch (connectorName) {
     case "s3":
     case "gcs":
@@ -39,11 +52,13 @@ type: source`;
     }
   }
 
+  // Compile key value pairs
   const compiledKeyValues = Object.entries(values)
     .filter(([key]) => key !== "sourceName")
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 
+  // Return the compiled YAML
   return `${topOfFile}\n\nconnector: "${connectorName}"\n` + compiledKeyValues;
 }
 

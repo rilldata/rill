@@ -229,7 +229,7 @@
             className="text-gray-900"
             size="16px"
           />
-          Source
+          Data
         </DropdownMenu.Item>
         <DropdownMenu.Item
           aria-label="Add Model"

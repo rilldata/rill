@@ -9,6 +9,7 @@ import {
 } from "../../../metrics/service/BehaviourEventTypes";
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
+  V1ConnectorDriver,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
@@ -30,7 +31,7 @@ export interface RemoteSourceFormValues {
 
 export async function submitRemoteSourceForm(
   queryClient: QueryClient,
-  connectorName: string,
+  connector: V1ConnectorDriver,
   values: RemoteSourceFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
@@ -70,17 +71,27 @@ export async function submitRemoteSourceForm(
       }
     }),
   );
-  const yaml = compileCreateSourceYAML(formValues, connectorName);
+  const yaml = compileCreateSourceYAML(
+    formValues,
+    connector.name as string,
+    connector.implementsOlap,
+  );
 
   // Attempt to create & import the source
   await runtimeServicePutFile(instanceId, {
-    path: getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+    path: getFileAPIPathFromNameAndType(
+      values.sourceName,
+      connector.implementsOlap ? EntityType.Connector : EntityType.Table,
+    ),
     blob: yaml,
     create: true,
     createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
   });
-  await checkSourceImported(
-    queryClient,
-    getFilePathFromNameAndType(values.sourceName, EntityType.Table),
-  );
+
+  if (!connector.implementsOlap) {
+    await checkSourceImported(
+      queryClient,
+      getFilePathFromNameAndType(values.sourceName, EntityType.Table),
+    );
+  }
 }

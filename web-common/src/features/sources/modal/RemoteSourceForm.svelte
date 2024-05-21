@@ -34,11 +34,10 @@
       onSubmit: async (values) => {
         overlay.set({ title: `Importing ${values.sourceName}` });
         try {
-          // the following error provides type narrowing for `connector.name`
-          if (connector.name === undefined)
-            throw new Error("connector name is undefined");
-          await submitRemoteSourceForm(queryClient, connector.name, values);
-          await goto(`/files/sources/${values.sourceName}.yaml`);
+          await submitRemoteSourceForm(queryClient, connector, values);
+          await goto(
+            `/files/${connector.implementsOlap ? "connectors" : "sources"}/${values.sourceName}.yaml`,
+          );
           dispatch("close");
         } catch (e) {
           rpcError = e?.response?.data;
@@ -52,9 +51,13 @@
     ...(connector.sourceProperties?.slice(0, 1) ?? []),
     {
       key: "sourceName",
-      displayName: "Source name",
-      description: "The name of the source",
-      placeholder: "my_new_source",
+      displayName: connector.implementsOlap ? "Connector name" : "Source name",
+      description: connector.implementsOlap
+        ? "The name of the connector"
+        : "The name of the source",
+      placeholder: connector.implementsOlap
+        ? "my_new_connector"
+        : "my_new_source",
       type: ConnectorDriverPropertyType.TYPE_STRING,
       required: true,
     },
@@ -141,7 +144,7 @@
       submitForm
       type="primary"
     >
-      Add source
+      Add data
     </Button>
   </div>
 </div>
