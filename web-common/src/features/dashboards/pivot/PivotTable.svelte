@@ -37,7 +37,7 @@
   const MAX_INIT_COL_WIDTH = 400;
   const MIN_MEASURE_WIDTH = 60;
   const MAX_MEAUSRE_WIDTH = 300;
-  const INIT_MEASURE_WIDTH = 90;
+  const INIT_MEASURE_WIDTH = 60;
 
   export let pivotDataStore: PivotDataStore;
 
