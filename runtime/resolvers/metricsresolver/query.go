@@ -48,6 +48,32 @@ type MeasureCompute struct {
 	ComparisonRatio *string `mapstructure:"comparison_ratio"`
 }
 
+func (m *MeasureCompute) Validate() error {
+	n := 0
+	if m.Count {
+		n++
+	}
+	if m.CountDistinct != nil {
+		n++
+	}
+	if m.ComparisonValue != nil {
+		n++
+	}
+	if m.ComparisonDelta != nil {
+		n++
+	}
+	if m.ComparisonRatio != nil {
+		n++
+	}
+	if n == 0 {
+		return fmt.Errorf(`must specify a compute operation`)
+	}
+	if n > 1 {
+		return fmt.Errorf("must specify only one compute operation")
+	}
+	return nil
+}
+
 type Sort struct {
 	Name string `mapstructure:"name"`
 	Desc bool   `mapstructure:"desc"`
