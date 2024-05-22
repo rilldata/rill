@@ -264,9 +264,12 @@ export function getColumnDefForPivot(
       cell: (info) => {
         const measureValue = info.getValue() as number | null | undefined;
         if (m.type === "comparison_percent") {
-          if (measureValue == null) return cellComponent(PivotMeasureCell, {});
           return cellComponent(PercentageChange, {
-            value: formatMeasurePercentageDifference(measureValue),
+            isNull: measureValue == null,
+            value:
+              measureValue !== null && measureValue !== undefined
+                ? formatMeasurePercentageDifference(measureValue)
+                : null,
             inTable: true,
           });
         }
