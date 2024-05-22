@@ -1,4 +1,6 @@
+import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
 import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
 import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
 import {
   addZoneOffset,
@@ -18,6 +20,7 @@ import {
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  MeasureType,
   type PivotDataRow,
   type PivotDataStoreConfig,
   type PivotTimeConfig,
@@ -164,11 +167,14 @@ export function getMeasureColumnProps(config: PivotDataStoreConfig) {
   return measureNames.map((m) => {
     let measureName = m;
     let label;
+    let type: MeasureType = "measure";
     if (m.endsWith(COMPARISON_DELTA)) {
       label = "Δ";
+      type = "comparison_delta";
       measureName = m.replace(COMPARISON_DELTA, "");
     } else if (m.endsWith(COMPARISON_PERCENT)) {
       label = "Δ %";
+      type = "comparison_percent";
       measureName = m.replace(COMPARISON_PERCENT, "");
     }
     const measure = config.allMeasures.find(
@@ -183,6 +189,7 @@ export function getMeasureColumnProps(config: PivotDataStoreConfig) {
       label: label || measure?.label || measureName,
       formatter: createMeasureValueFormatter<null | undefined>(measure),
       name: m,
+      type,
     };
   });
 }
@@ -255,7 +262,15 @@ export function getColumnDefForPivot(
       accessorKey: m.name,
       header: m.label || m.name,
       cell: (info) => {
-        const value = m.formatter(info.getValue() as number | null | undefined);
+        const measureValue = info.getValue() as number | null | undefined;
+        if (m.type === "comparison_percent") {
+          if (measureValue == null) return cellComponent(PivotMeasureCell, {});
+          return cellComponent(PercentageChange, {
+            value: formatMeasurePercentageDifference(measureValue),
+            inTable: true,
+          });
+        }
+        const value = m.formatter(measureValue);
 
         if (value == null) return cellComponent(PivotMeasureCell, {});
         return value;

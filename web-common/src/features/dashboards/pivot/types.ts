@@ -148,3 +148,5 @@ export enum PivotChipType {
   Measure = "measure",
   Dimension = "dimension",
 }
+
+export type MeasureType = "measure" | "comparison_delta" | "comparison_percent";
