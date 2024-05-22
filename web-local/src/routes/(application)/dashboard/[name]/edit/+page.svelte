@@ -24,6 +24,7 @@
   import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/tables/selectors";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -62,6 +63,9 @@
 
   $: name = fileArtifact?.name;
   $: metricViewName = $name?.name ?? "";
+  $: pathname = $page.url.pathname;
+  $: workspace = workspaces.get(pathname);
+  $: autoSave = workspace.editor.autoSave;
 
   $: instanceId = $runtime.instanceId;
   $: initLocalUserPreferenceStore(metricViewName);
@@ -156,6 +160,7 @@
     </WorkspaceHeader>
 
     <MetricsEditor
+      bind:autoSave={$autoSave}
       {fileArtifact}
       slot="body"
       {filePath}

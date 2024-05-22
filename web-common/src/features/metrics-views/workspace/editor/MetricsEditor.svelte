@@ -17,6 +17,7 @@
   export let metricViewName: string;
   export let allErrors: V1ParseError[];
   export let fileArtifact: FileArtifact;
+  export let autoSave: boolean;
 
   $: ({ remoteContent } = fileArtifact);
 
@@ -39,6 +40,7 @@
 
 <MetricsEditorContainer error={$remoteContent ? mainError : undefined}>
   <Editor
+    bind:autoSave
     bind:editor
     onSave={(content) => {
       if (!content?.length) {

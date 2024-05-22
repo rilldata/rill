@@ -60,13 +60,6 @@
     editor?.destroy();
   });
 
-  function updateEditorExtensions(newExtensions: Extension[]) {
-    editor?.dispatch({
-      effects: extensionCompartment.reconfigure(newExtensions),
-      scrollIntoView: true,
-    });
-  }
-
   $: if (editor) updateEditorExtensions(extensions);
 
   // Update the editor content when the remote content changes
@@ -99,6 +92,15 @@
 
   $: if (fileArtifact) editor?.contentDOM.blur();
 
+  $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
+
+  function updateEditorExtensions(newExtensions: Extension[]) {
+    editor?.dispatch({
+      effects: extensionCompartment.reconfigure(newExtensions),
+      scrollIntoView: true,
+    });
+  }
+
   async function handleKeydown(e: KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
       e.preventDefault();
@@ -110,8 +112,6 @@
     await saveLocalContent();
     onSave($localContent);
   }
-
-  $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
   function revertContent() {
     editor?.dispatch({

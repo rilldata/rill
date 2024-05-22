@@ -105,7 +105,7 @@ export class FileArtifact {
 
   public updateRemoteContent(content: string) {
     this.remoteContent.set(content);
-    this.hasUnsavedChanges.set(content !== get(this.localContent));
+    this.hasUnsavedChanges.set(get(this.localContent) !== content);
   }
 
   public updateAll(resource: V1Resource) {
@@ -208,7 +208,9 @@ export class FileArtifact {
   public updateLocalContent = (content: string) => {
     this.localContent.set(content);
 
-    this.hasUnsavedChanges.set(content !== get(this.remoteContent));
+    if (!get(this.hasUnsavedChanges)) {
+      this.hasUnsavedChanges.set(get(this.remoteContent) !== content);
+    }
   };
 
   public revert = () => {
@@ -234,6 +236,8 @@ export class FileArtifact {
       path: this.path,
       blob: get(this.localContent),
     }).catch(console.error);
+
+    this.hasUnsavedChanges.set(false);
   };
 
   public getEntityName() {
