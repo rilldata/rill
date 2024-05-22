@@ -32,6 +32,7 @@ import {
  */
 export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const {
+    time,
     colDimensionNames,
     rowDimensionNames,
     measureNames,
@@ -41,6 +42,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   } = config;
 
   const { sorting } = pivot;
+  const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
   const measureFilterKey = JSON.stringify(measureFilter);
@@ -48,7 +50,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${sortingKey}_${filterKey}_${measureFilterKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${measureFilterKey}`;
 }
 
 /**
