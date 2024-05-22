@@ -1,12 +1,7 @@
 <script lang="ts">
-  import type { Extension, SelectionRange } from "@codemirror/state";
-  import {
-    EditorState,
-    Compartment,
-    StateField,
-    StateEffect,
-  } from "@codemirror/state";
-  import { Decoration, DecorationSet, EditorView } from "@codemirror/view";
+  import type { Extension } from "@codemirror/state";
+  import { EditorState, Compartment } from "@codemirror/state";
+  import { EditorView } from "@codemirror/view";
   import { onMount, onDestroy } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifacts";
@@ -14,62 +9,8 @@
   import Dialog from "@rilldata/web-common/components/modal/dialog/Dialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import DialogFooter from "@rilldata/web-common/components/modal/dialog/DialogFooter.svelte";
-  //   import {
-  //   LineStatus,
-  //   lineStatusesStateField,
-  //   updateLineStatuses as updateLineStatusesEffect,
-  // } from "./state";
-  import { linter, Diagnostic } from "@codemirror/lint";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import type { Reference } from "../models/utils/get-table-references";
-
-  const highlightField = StateField.define<DecorationSet>({
-    create() {
-      return Decoration.none;
-    },
-    update(underlines, tr) {
-      underlines = underlines.map(tr.changes);
-      underlines = underlines.update({
-        filter: () => false,
-      });
-
-      for (let e of tr.effects)
-        if (e.is(addHighlight)) {
-          underlines = underlines.update({
-            add: [highlightMark.range(e.value.from, e.value.to)],
-          });
-        }
-      return underlines;
-    },
-    provide: (f) => EditorView.decorations.from(f),
-  });
-
-  const addHighlight = StateEffect.define<{ from: number; to: number }>({
-    map: ({ from, to }, change) => ({
-      from: change.mapPos(from),
-      to: change.mapPos(to),
-    }),
-  });
-  const highlightMark = Decoration.mark({ class: "cm-underline" });
-
-  export function underlineSelection(refs: Reference[]) {
-    const selections = refs.map((ref) => {
-      return {
-        from: ref.referenceIndex,
-        to: ref.referenceIndex + ref.reference.length,
-      };
-    });
-
-    const effects: StateEffect<unknown>[] = selections.map(({ from, to }) =>
-      addHighlight.of({ from, to }),
-    );
-
-    if (!editor?.state.field(highlightField, false))
-      effects.push(StateEffect.appendConfig.of([highlightField]));
-    editor?.dispatch({ effects });
-  }
-
-  eventBus.on("highlightSelection", underlineSelection);
+  import { underlineSelection } from "./highlight-field";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -79,9 +20,13 @@
   export let editor: EditorView | null = null;
   export let debounceSave: () => void;
 
+  const extensionCompartment = new Compartment();
+
   let parent: HTMLElement;
   let showWarning = false;
   let saving = false;
+
+  let unsubscribers: Array<() => void> = [];
 
   $: ({
     updateLocalContent,
@@ -90,16 +35,11 @@
     remoteContent,
     revert,
     onRemoteContentChange,
+    onLocalContentChange,
   } = fileArtifact);
-
-  const extensionCompartment = new Compartment();
-
-  let unsubscribe: () => void;
 
   onMount(async () => {
     await fileArtifact.ready;
-
-    console.log("MOUNTED");
 
     // Check if the file artifact has a local content
     // If it does, we want to use that as the initial content
@@ -110,7 +50,6 @@
         extensions: [
           baseExtensions(),
           extensionCompartment.of([]),
-          highlightField,
           EditorView.updateListener.of(({ docChanged, state: { doc } }) => {
             if (editor?.hasFocus && docChanged) {
               updateLocalContent(doc.toString());
@@ -123,69 +62,48 @@
       parent,
     });
 
-    unsubscribe = onRemoteContentChange((newRemoteContent) => {
-      if (editor && !editor.hasFocus && newRemoteContent !== null) {
-        if (get(localContent) === null) {
-          updateEditorContent(newRemoteContent);
-        } else {
-          showWarning = true;
+    const unsubscribeRemoteContent = onRemoteContentChange(
+      (newRemoteContent) => {
+        if (editor && !editor.hasFocus && newRemoteContent !== null) {
+          if (!get(localContent)) {
+            updateEditorContent(newRemoteContent);
+          } else {
+            showWarning = true;
+          }
         }
-      }
+      },
+    );
 
-      // const transaction = updateLineStatusesEffect.of({
-      //   lineStatuses: lineStatuses,
-      // });
+    const unsub = onLocalContentChange((content) => {
+      if (content === null && $remoteContent !== null) {
+        updateEditorContent($remoteContent);
+      } else if (
+        forceLocalUpdates &&
+        content !== null &&
+        editor &&
+        !editor.hasFocus
+      )
+        updateEditorContent(content);
+    });
+    unsubscribers.push(unsub);
 
-      // view.dispatch({
-      //   effects: [transaction],
-      // });
+    const unsubscribeHighlighter = eventBus.on("highlightSelection", (refs) => {
+      if (editor) underlineSelection(editor, refs);
     });
 
-    // remoteContent.subscribe((newRemoteContent) => {
-    //   if (editor && !editor.hasFocus && newRemoteContent !== null) {
-    //     if (get(localContent) === null) {
-    //       updateEditorContent(newRemoteContent);
-    //     } else {
-    //       showWarning = true;
-    //     }
-    //   }
-    // });
+    unsubscribers.push(unsubscribeHighlighter);
+    unsubscribers.push(unsubscribeRemoteContent);
   });
 
   onDestroy(() => {
     editor?.destroy();
-    unsubscribe();
+    unsubscribers.forEach((unsub) => unsub());
   });
 
   $: if (editor) updateEditorExtensions(extensions);
-
-  // WHEN REMOTE CONTENT CHANGES
-  // If there are no local changes, update the editor with the remote content
-  // If there are local changes, show a warning dialog
-  // $: if (editor && !editor.hasFocus && $remoteContent !== null) {
-  //   if (get(localContent) === null) {
-  //     updateEditorContent($remoteContent);
-  //   } else {
-  //     showWarning = true;
-  //   }
-  // }
-
-  // WHEN LOCAL CONTENT CHANGES
-  // If the editor doesn't have focus and local updates are forced
-  // Update the editor with the local content
-  $: if (
-    forceLocalUpdates &&
-    editor &&
-    !editor.hasFocus &&
-    $localContent !== null
-  ) {
-    updateEditorContent($localContent);
-  }
-
   $: if (fileArtifact) editor?.contentDOM.blur();
 
   function updateEditorExtensions(newExtensions: Extension[]) {
-    console.log("extensions");
     editor?.dispatch({
       effects: extensionCompartment.reconfigure(newExtensions),
       scrollIntoView: true,
@@ -193,7 +111,6 @@
   }
 
   function updateEditorContent(newContent: string) {
-    console.log("update");
     editor?.dispatch({
       changes: {
         from: 0,

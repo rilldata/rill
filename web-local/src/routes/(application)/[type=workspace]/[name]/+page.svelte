@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import type { SelectionRange } from "@codemirror/state";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -52,8 +51,8 @@
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
-  import { getContext, onMount } from "svelte";
-  import { get, type Writable } from "svelte/store";
+  import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import { fade, slide } from "svelte/transition";
 
   export let data: { fileArtifact?: FileArtifact } = {};
@@ -148,7 +147,6 @@
     }
 
     if (type === "source") {
-      console.log("Saving source");
       await checkSourceImported(queryClient, filePath);
       overlay.set(null);
     }

@@ -71,6 +71,7 @@ export class FileArtifact {
   public fileQuery: Readable<QueryObserverResult<V1GetFileResponse, HTTPError>>;
   public ready: Promise<boolean>;
   private remoteCallbacks = new Set<(content: string) => void>();
+  private localCallbacks = new Set<(content: string | null) => void>();
 
   constructor(filePath: string) {
     this.path = filePath;
@@ -106,26 +107,34 @@ export class FileArtifact {
           });
   }
 
-  private updateRemoteContent(content: string, alert = true) {
-    console.log("update remote", this.path);
+  public updateRemoteContent = (content: string, alert = true) => {
     this.remoteContent.set(content);
-    console.log({ alert, content });
     if (alert) {
       for (const callback of this.remoteCallbacks) {
         callback(content);
       }
     }
-    // this.hasUnsavedChanges.set(get(this.localContent) !== content);
-  }
+  };
+
+  public updateLocalContent = (content: string | null, alert = false) => {
+    this.localContent.set(content);
+    if (alert) {
+      for (const callback of this.localCallbacks) {
+        callback(content);
+      }
+    }
+  };
 
   public onRemoteContentChange = (callback: (content: string) => void) => {
     this.remoteCallbacks.add(callback);
     return () => this.remoteCallbacks.delete(callback);
   };
 
-  public updateLocalContent = (content: string | null) => {
-    console.log("update local", this.path);
-    this.localContent.set(content);
+  public onLocalContentChange = (
+    callback: (content: string | null) => void,
+  ) => {
+    this.localCallbacks.add(callback);
+    return () => this.localCallbacks.delete(callback);
   };
 
   public updateAll(resource: V1Resource) {
@@ -226,7 +235,7 @@ export class FileArtifact {
   }
 
   public revert = () => {
-    this.updateLocalContent(null);
+    this.updateLocalContent(null, true);
   };
 
   public saveLocalContent = async () => {
@@ -250,8 +259,6 @@ export class FileArtifact {
     }).catch(console.error);
 
     this.localContent.set(null);
-
-    // this.hasUnsavedChanges.set(false);
   };
 
   public getEntityName() {
@@ -317,7 +324,7 @@ export class FileArtifacts {
   }
 
   async fileUpdated(filePath: string) {
-    // this.artifacts[filePath] ??= new FileArtifact(filePath);
+    this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
@@ -325,7 +332,6 @@ export class FileArtifacts {
     );
     const newName = parseKindAndNameFromFile(filePath, fileContents);
     if (newName) this.artifacts[filePath].name.set(newName);
-    console.log("FILE UPDATED");
     this.artifacts[filePath].updateRemoteContent(fileContents);
   }
 
@@ -362,21 +368,29 @@ export class FileArtifacts {
 
   updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      // this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateAll(resource);
     });
   }
 
+  async saveAll() {
+    await Promise.all(
+      Object.entries(this.artifacts).map(([_, artifact]) =>
+        artifact.saveLocalContent(),
+      ),
+    );
+  }
+
   updateReconciling(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      // this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
   updateLastUpdated(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      // this.artifacts[filePath] ??= new FileArtifact(filePath);
+      this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
   }

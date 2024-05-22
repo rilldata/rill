@@ -22,6 +22,7 @@
   import { eventBus } from "../../lib/event-bus/event-bus";
   import NavDirectory from "./NavDirectory.svelte";
   import { findDirectory, transformFileList } from "./transform-file-list";
+  import { fileArtifacts } from "../entity-management/file-artifacts";
 
   $: instanceId = $runtime.instanceId;
   $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
@@ -53,6 +54,8 @@
       },
     },
   });
+
+  $: ({ data: fileTree } = $getFileTree);
 
   let showRenameModelModal = false;
   let renameFilePath: string;
@@ -137,10 +140,10 @@
     }
   }
 
-  function saveAll(e: KeyboardEvent) {
-    if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
+  async function saveAll(e: KeyboardEvent) {
+    if (e.code === "KeyS" && e.metaKey && e.altKey) {
       e.preventDefault();
-      // eventBus.emit("save-all");
+      await fileArtifacts.saveAll();
     }
   }
 </script>
@@ -154,9 +157,9 @@
 <div class="flex flex-col items-start gap-y-2">
   <!-- File tree -->
   <ul class="flex flex-col w-full items-start justify-start overflow-auto">
-    {#if $getFileTree.data}
+    {#if fileTree}
       <NavDirectory
-        directory={$getFileTree.data}
+        directory={fileTree}
         {onRename}
         {onDelete}
         {onGenerateChart}

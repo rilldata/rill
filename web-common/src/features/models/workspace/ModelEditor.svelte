@@ -90,10 +90,12 @@
     defaultTable?: string,
   ) {
     if (editor) {
-      editor.dispatch({
-        effects: autocompleteCompartment.reconfigure(
-          makeAutocompleteConfig(schema, defaultTable),
-        ),
+      queueMicrotask(() => {
+        editor.dispatch({
+          effects: autocompleteCompartment.reconfigure(
+            makeAutocompleteConfig(schema, defaultTable),
+          ),
+        });
       });
     }
   }

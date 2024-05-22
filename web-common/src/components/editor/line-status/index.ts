@@ -13,17 +13,15 @@ import {
  * bindable prop and which tends to be accessible from edit events dispatched via
  * the dispatch-events extension in the editor component directory.
  */
-export async function setLineStatuses(
-  lineStatuses: LineStatus[],
-  view: EditorView,
-) {
-  await new Promise((resolve) => setTimeout(resolve, 1000));
+export function setLineStatuses(lineStatuses: LineStatus[], view: EditorView) {
   const transaction = updateLineStatusesEffect.of({
     lineStatuses: lineStatuses,
   });
 
-  view.dispatch({
-    effects: [transaction],
+  queueMicrotask(() => {
+    view.dispatch({
+      effects: [transaction],
+    });
   });
 }
 

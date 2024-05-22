@@ -46,12 +46,14 @@
      * a debounce annotation here to tell the MetricsWorkspace
      * not to debounce this update.
      */
-    view?.dispatch({
-      changes: {
-        from: 0,
-        to: view.state.doc.length,
-        insert: yaml,
-      },
+    queueMicrotask(() => {
+      view?.dispatch({
+        changes: {
+          from: 0,
+          to: view.state.doc.length,
+          insert: yaml,
+        },
+      });
     });
   }
 </script>

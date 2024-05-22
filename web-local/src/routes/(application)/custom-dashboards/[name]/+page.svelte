@@ -48,7 +48,6 @@
   let editorPercentage = 0.5;
   let chartEditorPercentage = 0.4;
   let selectedChartName: string | null = null;
-  // let localContent: string;
   let spec: V1DashboardSpec = {
     columns: 20,
     gap: 4,
@@ -131,7 +130,7 @@
     node.set("x", e.detail.position[0]);
     node.set("y", e.detail.position[1]);
 
-    updateLocalContent(parsedDocument.toString());
+    updateLocalContent(parsedDocument.toString(), true);
 
     if ($autoSave) await updateChartFile();
   }
@@ -154,7 +153,7 @@
       items.add(newChart);
     }
 
-    updateLocalContent(parsedDocument.toString());
+    updateLocalContent(parsedDocument.toString(), true);
 
     if ($autoSave) await updateChartFile();
   }

@@ -54,7 +54,7 @@ test.describe("Metrics editor", () => {
       timeout: 10000,
     });
 
-    // go to teh dashboard and make sure the metrics and dimensions are there.
+    // go to the dashboard and make sure the metrics and dimensions are there.
 
     await page.getByRole("button", { name: "Preview" }).click();
 
