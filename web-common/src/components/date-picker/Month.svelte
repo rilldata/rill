@@ -1,10 +1,7 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
   import type { DateTime, Interval } from "luxon";
   import { ChevronLeft } from "lucide-svelte";
   import ChevronRight from "@rilldata/web-common/components/icons/ChevronRight.svelte";
-
-  const dispatch = createEventDispatcher();
 
   export let startDay: DateTime<true>;
   export let startOfWeek = 0;
@@ -14,6 +11,8 @@
   export let visibleIndex: number;
   export let potentialEnd: DateTime | undefined;
   export let potentialStart: DateTime | undefined;
+  export let onPan: (direction: 1 | -1) => void;
+  export let onSelectDay: (date: DateTime<true>) => void;
 
   $: firstDay = startDay.startOf("month").weekday % 7;
 
@@ -48,7 +47,7 @@
     <button
       class:hide={visibleIndex !== 0}
       on:click={() => {
-        dispatch("previous");
+        onPan(-1);
       }}
     >
       <ChevronLeft size="14px" />
@@ -62,7 +61,7 @@
     <button
       class:hide={visibleIndex !== visibleMonths - 1}
       on:click={() => {
-        dispatch("next");
+        onPan(1);
       }}
     >
       <ChevronRight size="14px" />
@@ -90,7 +89,7 @@
       <button
         class="day font-medium"
         on:click={() => {
-          dispatch("select-day", date);
+          onSelectDay(date);
           resetPotentialDates();
         }}
         on:mouseenter={() => {

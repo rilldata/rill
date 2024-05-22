@@ -47,8 +47,7 @@
   let startInput: HTMLInputElement;
   let endInput: HTMLInputElement;
   let displayError = false;
-
-  let firstVisibleMonth: DateTime<true>;
+  let firstVisibleMonth: DateTime<true> = interval.start;
 
   function validateInput(
     e: FocusEvent & {
@@ -103,7 +102,14 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open={$open}>
+<DropdownMenu.Root
+  bind:open={$open}
+  onOpenChange={(open) => {
+    if (open) {
+      firstVisibleMonth = interval.start;
+    }
+  }}
+>
   <DropdownMenu.Trigger asChild let:builder>
     <button
       use:builder.action
@@ -125,9 +131,14 @@
           id="start-date"
           aria-label="Start date"
           type="text"
-          bind:this={startInput}
           class:active={selectingStart}
           class:error={displayError}
+          value={interval?.start?.toLocaleString({
+            month: "long",
+            day: "2-digit",
+            year: "numeric",
+          })}
+          bind:this={startInput}
           on:click={() => {
             selectingStart = true;
           }}
@@ -137,11 +148,6 @@
             }
           }}
           on:blur={validateInput}
-          value={interval?.start?.toLocaleString({
-            month: "long",
-            day: "2-digit",
-            year: "numeric",
-          })}
         />
 
         <!-- <input type="text" value={interval.start.toFormat("hh:mm a")} /> -->
@@ -154,10 +160,15 @@
           id="end-date"
           aria-label="End date"
           type="text"
-          bind:this={endInput}
-          on:blur={validateInput}
           class:active={!selectingStart}
           class:error={displayError}
+          value={interval?.end?.toLocaleString({
+            month: "long",
+            day: "2-digit",
+            year: "numeric",
+          })}
+          bind:this={endInput}
+          on:blur={validateInput}
           on:click={() => {
             selectingStart = false;
           }}
@@ -166,11 +177,6 @@
               e.currentTarget.blur();
             }
           }}
-          value={interval?.end?.toLocaleString({
-            month: "long",
-            day: "2-digit",
-            year: "numeric",
-          })}
         />
         <!-- <input type="text" value={interval?.end?.toFormat("hh:mm a")} /> -->
       </div>
@@ -180,7 +186,11 @@
         fit
         compact
         on:click={() => {
-          applyRange(interval);
+          const mapped = interval.mapEndpoints((dt) => dt.startOf("day"));
+          if (mapped.isValid) {
+            applyRange(mapped);
+          }
+
           open.set(false);
         }}
       >

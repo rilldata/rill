@@ -267,10 +267,8 @@
       applyRange={(interval) => {
         selectRange({
           name: TimeRangePreset.CUSTOM,
-          start: interval.start
-            .set({ hour: 0, minute: 0, second: 0 })
-            .toJSDate(),
-          end: interval.end.set({ hour: 0, minute: 0, second: 0 }).toJSDate(),
+          start: interval.start.toJSDate(),
+          end: interval.end.toJSDate(),
         });
       }}
     />

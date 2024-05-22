@@ -11,29 +11,21 @@
   let potentialEnd: DateTime | undefined;
   let potentialStart: DateTime | undefined;
 
-  $: months = Array.from({ length: visibleMonths }, (_, i) =>
-    firstVisibleMonth.plus({ month: i }).set({ day: 1 }),
-  );
-
-  function handleDecrementMonth() {
-    firstVisibleMonth = firstVisibleMonth.plus({ month: -1 });
+  function handlePan(direction: -1 | 1) {
+    firstVisibleMonth = firstVisibleMonth.plus({ month: direction });
   }
 
-  function handleIncrementMonth() {
-    firstVisibleMonth = firstVisibleMonth.plus({ month: 1 });
-  }
-
-  function handleSelectDay(e: CustomEvent<DateTime>) {
+  function handleSelectDay(date: DateTime<true>) {
     const newInterval = interval.set({
-      [selectingStart ? "start" : "end"]: e.detail,
+      [selectingStart ? "start" : "end"]: date,
     });
 
     if (newInterval.isValid) {
       interval = newInterval;
     } else {
       interval = Interval.fromDateTimes(
-        e.detail,
-        e.detail.plus({ day: 1 }),
+        date,
+        date.plus({ day: 1 }),
       ) as Interval<true>;
     }
     selectingStart = !selectingStart;
@@ -41,18 +33,20 @@
 </script>
 
 <div class="flex gap-x-3 p-2 w-full">
-  {#each months as month, i (month)}
+  {#each { length: visibleMonths } as month, i (month)}
     <Month
       {interval}
-      startDay={month}
+      startDay={firstVisibleMonth
+        .plus({ month: i })
+        .set({ day: 1 })
+        .startOf("day")}
       {selectingStart}
       {visibleMonths}
       visibleIndex={i}
       bind:potentialStart
       bind:potentialEnd
-      on:select-day={handleSelectDay}
-      on:previous={handleDecrementMonth}
-      on:next={handleIncrementMonth}
+      onSelectDay={handleSelectDay}
+      onPan={handlePan}
     />
   {/each}
 </div>
