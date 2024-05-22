@@ -23,7 +23,7 @@
 {#if connector && connector.name}
   <div class="wrapper">
     {#if error}
-      <span class="message">Error loading tables</span>
+      <span class="message">Error: {error.response.data.message}</span>
     {:else if isLoading}
       <span class="message">Loading tables...</span>
     {:else if typedTables}
