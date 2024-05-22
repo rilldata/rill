@@ -12,7 +12,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { SortType } from "../proto-state/derived-types";
@@ -46,7 +46,7 @@
     },
   } = stateManagers;
 
-  const { adminServer } = featureFlags;
+  const { adminServer, exports } = featureFlags;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
@@ -86,6 +86,10 @@
   function toggleFilterMode() {
     toggleDimensionFilterMode(dimensionName);
   }
+
+  onDestroy(() => {
+    clearDimensionTableSearchString();
+  });
 </script>
 
 <div class="flex justify-between items-center p-1 pr-5">
@@ -151,6 +155,8 @@
       </TooltipContent>
     </Tooltip>
 
-    <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+    {#if $exports}
+      <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+    {/if}
   </div>
 </div>

@@ -8,9 +8,12 @@
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import {
+    extractFileExtension,
+    splitFolderAndName,
+  } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
-  import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
@@ -26,6 +29,7 @@
 
   $: filePath = addLeadingSlash($page.params.file);
   $: fileExtension = extractFileExtension(filePath);
+  $: [, fileName] = splitFolderAndName(filePath);
   $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
 
   $: fileQuery = createRuntimeServiceGetFile(
@@ -81,6 +85,10 @@
     directoryState.expand(directory);
   }
 </script>
+
+<svelte:head>
+  <title>Rill Developer | {fileName}</title>
+</svelte:head>
 
 {#if fileTypeUnsupported}
   <WorkspaceError message="Unsupported file type." />

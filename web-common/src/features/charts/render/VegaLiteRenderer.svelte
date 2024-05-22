@@ -25,7 +25,7 @@
   let contentRect = new DOMRect(0, 0, 0, 0);
 
   $: width = contentRect.width;
-  $: height = contentRect.height * 0.9 - 100;
+  $: height = contentRect.height * 0.95 - 80;
 
   $: if (viewVL && tooltipFormatter) {
     const handler = new VegaLiteTooltipHandler(tooltipFormatter);
@@ -51,7 +51,8 @@
 <div
   bind:contentRect
   class:bg-white={customDashboard}
-  class:p-4={customDashboard}
+  class:px-8={customDashboard}
+  class:pb-2={customDashboard}
   class="overflow-hidden size-full flex flex-col items-center justify-center"
 >
   {#if error}

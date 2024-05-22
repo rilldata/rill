@@ -1,11 +1,12 @@
 import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
+import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   fetchFileContent,
   fetchMainEntityFiles,
 } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
-  fetchResources,
   ResourceKind,
+  fetchResources,
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -15,8 +16,8 @@ import {
 } from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  type V1ParseError,
   V1ReconcileStatus,
+  type V1ParseError,
   type V1Resource,
   type V1ResourceName,
   getRuntimeServiceGetFileQueryKey,
@@ -25,7 +26,13 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
-import { derived, get, type Readable, writable, Writable } from "svelte/store";
+import {
+  derived,
+  get,
+  type Readable,
+  writable,
+  type Writable,
+} from "svelte/store";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 

@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   assertLeaderboards,
@@ -7,7 +8,6 @@ import {
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
   metricsViewRequestFilterMatcher,
-  updateAndWaitForDashboard,
   waitForComparisonTopLists,
   waitForTimeSeries,
   type RequestMatcher,
@@ -88,6 +88,7 @@ test.describe("dashboard", () => {
     //     `Uncaught exception: "${exception.message}"\n${exception.stack}`
     //   );
     // });
+    const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
     await createDashboardFromModel(page, "/models/AdBids_model.sql");
@@ -298,7 +299,7 @@ test.describe("dashboard", () => {
         description: ""
 
         `;
-    await updateAndWaitForDashboard(page, changeDisplayNameDoc);
+    await watcher.updateAndWaitForDashboard(changeDisplayNameDoc);
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -343,7 +344,7 @@ test.describe("dashboard", () => {
         description: ""
 
         `;
-    await updateAndWaitForDashboard(page, addBackTimestampColumnDoc);
+    await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
 
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
