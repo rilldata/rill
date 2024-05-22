@@ -824,15 +824,17 @@ func (m *DeployValidationResponse) validate(all bool) error {
 
 	// no validation rules for IsGithubConnected
 
-	// no validation rules for IsRepoAccessGranted
-
 	// no validation rules for GitGrantAccessUrl
 
 	// no validation rules for GitUserName
 
+	// no validation rules for UserAppPermission
+
 	// no validation rules for IsGitRepo
 
 	// no validation rules for GitRemoteFound
+
+	// no validation rules for IsRepoAccessGranted
 
 	// no validation rules for GitUrl
 

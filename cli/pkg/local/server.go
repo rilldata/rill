@@ -112,10 +112,12 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			IsRepoAccessGranted:        false,
 			GitGrantAccessUrl:          "",
 			GitUserName:                "",
+			UserAppPermission:          "",
 			GitUserOrgs:                nil,
 			IsGitRepo:                  false,
+			GitRemoteFound:             false,
 			GitUrl:                     "",
-			UncommittedChanges:         localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNKNOWN,
+			UncommittedChanges:         localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNSPECIFIED,
 			RillOrgExistsAsGitUserName: false,
 			RillUserOrgs:               nil,
 			LocalProjectName:           localProjectName,
@@ -138,13 +140,15 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return connect.NewResponse(&localv1.DeployValidationResponse{
 			IsAuthenticated:            true,
 			IsGithubConnected:          false,
-			IsRepoAccessGranted:        false,
 			GitGrantAccessUrl:          res.GrantAccessUrl,
 			GitUserName:                "",
+			UserAppPermission:          "",
 			GitUserOrgs:                nil,
 			IsGitRepo:                  false,
+			GitRemoteFound:             false,
+			IsRepoAccessGranted:        false,
 			GitUrl:                     "",
-			UncommittedChanges:         localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNKNOWN,
+			UncommittedChanges:         localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNSPECIFIED,
 			RillOrgExistsAsGitUserName: false,
 			RillUserOrgs:               nil,
 			LocalProjectName:           localProjectName,
@@ -167,6 +171,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 
 	isGitRepo := true
 	gitRemoteFound := true
+	repoAccess := false
 	// check if project is a git repo
 	remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 	if err != nil {
@@ -179,13 +184,11 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		}
 	}
 
-	uncommitedChanges := localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNKNOWN
+	uncommitedChanges := localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNSPECIFIED
 	if isGitRepo && gitRemoteFound {
 		// check if there are uncommitted changes
-		syncStatus, err := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
-		if err != nil {
-			uncommitedChanges = localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNKNOWN
-		}
+		// ignore errors since check is best effort and can fail in multiple cases
+		syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
 		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
 			uncommitedChanges = localv1.UncommittedChanges_UNCOMMITTED_CHANGES_YES
 		} else {
@@ -199,17 +202,20 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		if err != nil {
 			return nil, err
 		}
+		repoAccess = repoStatus.HasAccess
 		if !repoStatus.HasAccess {
 			// we should have access to the repo before deploying
 			return connect.NewResponse(&localv1.DeployValidationResponse{
 				IsAuthenticated:            true,
 				IsGithubConnected:          true,
-				IsRepoAccessGranted:        false,
 				GitGrantAccessUrl:          repoStatus.GrantAccessUrl,
-				GitUserName:                "",
-				GitUserOrgs:                nil,
-				IsGitRepo:                  false,
-				GitUrl:                     "",
+				GitUserName:                gitStatus.Account,
+				UserAppPermission:          gitStatus.UserInstallationPermission,
+				GitUserOrgs:                gitStatus.Organizations,
+				IsGitRepo:                  true,
+				GitRemoteFound:             true,
+				IsRepoAccessGranted:        repoAccess,
+				GitUrl:                     ghURL,
 				UncommittedChanges:         uncommitedChanges,
 				RillOrgExistsAsGitUserName: false,
 				RillUserOrgs:               nil,
@@ -252,12 +258,13 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	return connect.NewResponse(&localv1.DeployValidationResponse{
 		IsAuthenticated:            true,
 		IsGithubConnected:          true,
-		IsRepoAccessGranted:        true,
 		GitGrantAccessUrl:          gitStatus.GrantAccessUrl,
 		GitUserName:                gitStatus.Account,
+		UserAppPermission:          gitStatus.UserInstallationPermission,
 		GitUserOrgs:                gitStatus.Organizations,
 		IsGitRepo:                  isGitRepo,
 		GitRemoteFound:             gitRemoteFound,
+		IsRepoAccessGranted:        repoAccess,
 		GitUrl:                     ghURL,
 		UncommittedChanges:         uncommitedChanges,
 		RillOrgExistsAsGitUserName: rillOrgExistsAsGitUserName,
@@ -302,7 +309,13 @@ func (s *Server) PushToGit(ctx context.Context, r *connect.Request[localv1.PushT
 	}
 
 	// if r.Msg.Org is empty, gitOrg will be "" which is equivalent to using default got org which is same as git username
-	gitOrg := r.Msg.Org
+	var gitOrg string
+	if r.Msg.Org == "" || r.Msg.Org == gitStatus.Account {
+		gitOrg = ""
+	} else {
+		gitOrg = r.Msg.Org
+	}
+
 	repoName := filepath.Base(s.app.ProjectPath)
 	if r.Msg.Repo != "" {
 		repoName = r.Msg.Repo

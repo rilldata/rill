@@ -11,9 +11,9 @@ import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
  */
 export enum UncommittedChanges {
   /**
-   * @generated from enum value: UNCOMMITTED_CHANGES_UNKNOWN = 0;
+   * @generated from enum value: UNCOMMITTED_CHANGES_UNSPECIFIED = 0;
    */
-  UNKNOWN = 0,
+  UNSPECIFIED = 0,
 
   /**
    * @generated from enum value: UNCOMMITTED_CHANGES_YES = 1;
@@ -27,7 +27,7 @@ export enum UncommittedChanges {
 }
 // Retrieve enum metadata with: proto3.getEnumType(UncommittedChanges)
 proto3.util.setEnumType(UncommittedChanges, "rill.local.v1.UncommittedChanges", [
-  { no: 0, name: "UNCOMMITTED_CHANGES_UNKNOWN" },
+  { no: 0, name: "UNCOMMITTED_CHANGES_UNSPECIFIED" },
   { no: 1, name: "UNCOMMITTED_CHANGES_YES" },
   { no: 2, name: "UNCOMMITTED_CHANGES_NO" },
 ]);
@@ -352,23 +352,21 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   isGithubConnected = false;
 
   /**
-   * if true below fields are relevant after git repo access granted
-   *
-   * @generated from field: bool is_repo_access_granted = 3;
-   */
-  isRepoAccessGranted = false;
-
-  /**
    * redirect to this if is_github_connected or is_repo_access_granted is false
    *
-   * @generated from field: string git_grant_access_url = 4;
+   * @generated from field: string git_grant_access_url = 3;
    */
   gitGrantAccessUrl = "";
 
   /**
-   * @generated from field: string git_user_name = 5;
+   * @generated from field: string git_user_name = 4;
    */
   gitUserName = "";
+
+  /**
+   * @generated from field: string user_app_permission = 5;
+   */
+  userAppPermission = "";
 
   /**
    * @generated from field: repeated string git_user_orgs = 6;
@@ -388,38 +386,45 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   gitRemoteFound = false;
 
   /**
+   * relevant only when is_git_repo is true and remote found, if false redirect to git_grant_access_url
+   *
+   * @generated from field: bool is_repo_access_granted = 9;
+   */
+  isRepoAccessGranted = false;
+
+  /**
    * only applicable when is_git_repo is true and remote found
    *
-   * @generated from field: string git_url = 9;
+   * @generated from field: string git_url = 10;
    */
   gitUrl = "";
 
   /**
    * only applicable when is_git_repo is true and remote found
    *
-   * @generated from field: rill.local.v1.UncommittedChanges uncommitted_changes = 10;
+   * @generated from field: rill.local.v1.UncommittedChanges uncommitted_changes = 11;
    */
-  uncommittedChanges = UncommittedChanges.UNKNOWN;
+  uncommittedChanges = UncommittedChanges.UNSPECIFIED;
 
   /**
    * only applicable when user does not have any orgs
    *
-   * @generated from field: bool rill_org_exists_as_git_user_name = 11;
+   * @generated from field: bool rill_org_exists_as_git_user_name = 12;
    */
   rillOrgExistsAsGitUserName = false;
 
   /**
-   * @generated from field: repeated string rill_user_orgs = 12;
+   * @generated from field: repeated string rill_user_orgs = 13;
    */
   rillUserOrgs: string[] = [];
 
   /**
-   * @generated from field: string local_project_name = 13;
+   * @generated from field: string local_project_name = 14;
    */
   localProjectName = "";
 
   /**
-   * @generated from field: repeated rill.local.v1.OrganizationWithApp organizations_with_app = 14;
+   * @generated from field: repeated rill.local.v1.OrganizationWithApp organizations_with_app = 15;
    */
   organizationsWithApp: OrganizationWithApp[] = [];
 
@@ -433,18 +438,19 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "is_authenticated", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "is_github_connected", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "is_repo_access_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "git_grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "git_user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "git_grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "git_user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "user_app_permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 6, name: "git_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 7, name: "is_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "git_remote_found", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 9, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "uncommitted_changes", kind: "enum", T: proto3.getEnumType(UncommittedChanges) },
-    { no: 11, name: "rill_org_exists_as_git_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 12, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 13, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
+    { no: 9, name: "is_repo_access_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "uncommitted_changes", kind: "enum", T: proto3.getEnumType(UncommittedChanges) },
+    { no: 12, name: "rill_org_exists_as_git_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 14, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 15, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployValidationResponse {
