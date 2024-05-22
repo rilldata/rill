@@ -143,10 +143,32 @@ message MetricsViewSpec {
     string description = 4;
     bool unnest = 5;
   }
+  // Selector for a dimension, optionally truncated to a time grain
+  message DimensionSelector {
+    string name = 1;
+    TimeGrain time_grain = 2;
+  }
+  // Type of measure query to generate
+  enum MeasureType {
+    MEASURE_TYPE_UNSPECIFIED = 0;
+    MEASURE_TYPE_SIMPLE = 1;
+    MEASURE_TYPE_DERIVED = 2;
+    MEASURE_TYPE_TIME_COMPARISON = 3;
+  }
+  // Window to apply to the measure calculation
+  message MeasureWindow {
+    bool partition = 1;
+    string frame_expression = 2;
+  }
   // Measures are aggregated computed values
   message MeasureV2 {
     string name = 1;
     string expression = 2;
+    MeasureType type = 8;
+    MeasureWindow window = 9;
+    repeated DimensionSelector per_dimensions = 10;
+    repeated DimensionSelector required_dimensions = 11;
+    repeated string referenced_measures = 12;
     string label = 3;
     string description = 4;
     string format_preset = 5;

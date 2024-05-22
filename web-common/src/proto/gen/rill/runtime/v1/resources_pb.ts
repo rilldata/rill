@@ -1158,6 +1158,40 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
 }
 
 /**
+ * Type of measure query to generate
+ *
+ * @generated from enum rill.runtime.v1.MetricsViewSpec.MeasureType
+ */
+export enum MetricsViewSpec_MeasureType {
+  /**
+   * @generated from enum value: MEASURE_TYPE_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: MEASURE_TYPE_SIMPLE = 1;
+   */
+  SIMPLE = 1,
+
+  /**
+   * @generated from enum value: MEASURE_TYPE_DERIVED = 2;
+   */
+  DERIVED = 2,
+
+  /**
+   * @generated from enum value: MEASURE_TYPE_TIME_COMPARISON = 3;
+   */
+  TIME_COMPARISON = 3,
+}
+// Retrieve enum metadata with: proto3.getEnumType(MetricsViewSpec_MeasureType)
+proto3.util.setEnumType(MetricsViewSpec_MeasureType, "rill.runtime.v1.MetricsViewSpec.MeasureType", [
+  { no: 0, name: "MEASURE_TYPE_UNSPECIFIED" },
+  { no: 1, name: "MEASURE_TYPE_SIMPLE" },
+  { no: 2, name: "MEASURE_TYPE_DERIVED" },
+  { no: 3, name: "MEASURE_TYPE_TIME_COMPARISON" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.MetricsViewSpec.ComparisonMode
  */
 export enum MetricsViewSpec_ComparisonMode {
@@ -1259,6 +1293,96 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
 }
 
 /**
+ * Selector for a dimension, optionally truncated to a time grain
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.DimensionSelector
+ */
+export class MetricsViewSpec_DimensionSelector extends Message<MetricsViewSpec_DimensionSelector> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.TimeGrain time_grain = 2;
+   */
+  timeGrain = TimeGrain.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<MetricsViewSpec_DimensionSelector>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.DimensionSelector";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionSelector {
+    return new MetricsViewSpec_DimensionSelector().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_DimensionSelector {
+    return new MetricsViewSpec_DimensionSelector().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_DimensionSelector {
+    return new MetricsViewSpec_DimensionSelector().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_DimensionSelector | PlainMessage<MetricsViewSpec_DimensionSelector> | undefined, b: MetricsViewSpec_DimensionSelector | PlainMessage<MetricsViewSpec_DimensionSelector> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_DimensionSelector, a, b);
+  }
+}
+
+/**
+ * Window to apply to the measure calculation
+ *
+ * @generated from message rill.runtime.v1.MetricsViewSpec.MeasureWindow
+ */
+export class MetricsViewSpec_MeasureWindow extends Message<MetricsViewSpec_MeasureWindow> {
+  /**
+   * @generated from field: bool partition = 1;
+   */
+  partition = false;
+
+  /**
+   * @generated from field: string frame_expression = 2;
+   */
+  frameExpression = "";
+
+  constructor(data?: PartialMessage<MetricsViewSpec_MeasureWindow>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.MeasureWindow";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "partition", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "frame_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_MeasureWindow {
+    return new MetricsViewSpec_MeasureWindow().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_MeasureWindow {
+    return new MetricsViewSpec_MeasureWindow().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_MeasureWindow {
+    return new MetricsViewSpec_MeasureWindow().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MetricsViewSpec_MeasureWindow | PlainMessage<MetricsViewSpec_MeasureWindow> | undefined, b: MetricsViewSpec_MeasureWindow | PlainMessage<MetricsViewSpec_MeasureWindow> | undefined): boolean {
+    return proto3.util.equals(MetricsViewSpec_MeasureWindow, a, b);
+  }
+}
+
+/**
  * Measures are aggregated computed values
  *
  * @generated from message rill.runtime.v1.MetricsViewSpec.MeasureV2
@@ -1273,6 +1397,31 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
    * @generated from field: string expression = 2;
    */
   expression = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.MeasureType type = 8;
+   */
+  type = MetricsViewSpec_MeasureType.UNSPECIFIED;
+
+  /**
+   * @generated from field: rill.runtime.v1.MetricsViewSpec.MeasureWindow window = 9;
+   */
+  window?: MetricsViewSpec_MeasureWindow;
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionSelector per_dimensions = 10;
+   */
+  perDimensions: MetricsViewSpec_DimensionSelector[] = [];
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionSelector required_dimensions = 11;
+   */
+  requiredDimensions: MetricsViewSpec_DimensionSelector[] = [];
+
+  /**
+   * @generated from field: repeated string referenced_measures = 12;
+   */
+  referencedMeasures: string[] = [];
 
   /**
    * @generated from field: string label = 3;
@@ -1309,6 +1458,11 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "type", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_MeasureType) },
+    { no: 9, name: "window", kind: "message", T: MetricsViewSpec_MeasureWindow },
+    { no: 10, name: "per_dimensions", kind: "message", T: MetricsViewSpec_DimensionSelector, repeated: true },
+    { no: 11, name: "required_dimensions", kind: "message", T: MetricsViewSpec_DimensionSelector, repeated: true },
+    { no: 12, name: "referenced_measures", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "format_preset", kind: "scalar", T: 9 /* ScalarType.STRING */ },

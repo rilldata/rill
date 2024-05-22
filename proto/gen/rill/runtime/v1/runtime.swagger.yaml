@@ -2638,6 +2638,14 @@ definitions:
       - COMPARISON_MODE_TIME
       - COMPARISON_MODE_DIMENSION
     default: COMPARISON_MODE_UNSPECIFIED
+  MetricsViewSpecDimensionSelector:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+    title: Selector for a dimension, optionally truncated to a time grain
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2654,6 +2662,15 @@ definitions:
       unnest:
         type: boolean
     title: Dimensions are columns to filter and group by
+  MetricsViewSpecMeasureType:
+    type: string
+    enum:
+      - MEASURE_TYPE_UNSPECIFIED
+      - MEASURE_TYPE_SIMPLE
+      - MEASURE_TYPE_DERIVED
+      - MEASURE_TYPE_TIME_COMPARISON
+    default: MEASURE_TYPE_UNSPECIFIED
+    title: Type of measure query to generate
   MetricsViewSpecMeasureV2:
     type: object
     properties:
@@ -2661,6 +2678,24 @@ definitions:
         type: string
       expression:
         type: string
+      type:
+        $ref: '#/definitions/MetricsViewSpecMeasureType'
+      window:
+        $ref: '#/definitions/MetricsViewSpecMeasureWindow'
+      perDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+      requiredDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+      referencedMeasures:
+        type: array
+        items:
+          type: string
       label:
         type: string
       description:
@@ -2672,6 +2707,14 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewSpecMeasureWindow:
+    type: object
+    properties:
+      partition:
+        type: boolean
+      frameExpression:
+        type: string
+    title: Window to apply to the measure calculation
   MetricsViewSpecSecurityV2:
     type: object
     properties:

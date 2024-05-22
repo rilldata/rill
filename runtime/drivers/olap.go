@@ -227,8 +227,13 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	return d.EscapeIdentifier(dimension.Name)
 }
 
-func tempName(prefix string) string {
-	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
+func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
+	switch d {
+	case DialectDruid:
+		return fmt.Sprintf("SAFE_DIVIDE(%s, %s)", numExpr, denExpr)
+	default:
+		return fmt.Sprintf("CAST((%s) AS DOUBLE)/%s", numExpr, denExpr)
+	}
 }
 
 func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
@@ -363,4 +368,8 @@ func druidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
 		return "P1Y"
 	}
 	panic(fmt.Errorf("invalid time grain enum value %d", int(grain)))
+}
+
+func tempName(prefix string) string {
+	return prefix + strings.ReplaceAll(uuid.New().String(), "-", "")
 }
