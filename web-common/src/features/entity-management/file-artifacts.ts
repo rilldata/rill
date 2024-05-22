@@ -1,5 +1,8 @@
 import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
-import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import {
+  extractFileName,
+  extractFileExtension,
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   fetchFileContent,
   fetchMainEntityFiles,
@@ -10,10 +13,6 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  extractFileExtension,
-  extractFileName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ReconcileStatus,
