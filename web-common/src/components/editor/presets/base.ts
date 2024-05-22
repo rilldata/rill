@@ -1,37 +1,11 @@
-import {
-  acceptCompletion,
-  closeBrackets,
-  closeBracketsKeymap,
-  completionKeymap,
-} from "@codemirror/autocomplete";
-import {
-  defaultKeymap,
-  history,
-  historyKeymap,
-  indentWithTab,
-  insertNewline,
-} from "@codemirror/commands";
-import {
-  bracketMatching,
-  defaultHighlightStyle,
-  indentOnInput,
-  syntaxHighlighting,
-} from "@codemirror/language";
-import { lintKeymap } from "@codemirror/lint";
-import { highlightSelectionMatches, searchKeymap } from "@codemirror/search";
+import { acceptCompletion } from "@codemirror/autocomplete";
+import { indentWithTab, insertNewline } from "@codemirror/commands";
 import { EditorState, Prec } from "@codemirror/state";
-import {
-  drawSelection,
-  dropCursor,
-  highlightActiveLine,
-  highlightActiveLineGutter,
-  highlightSpecialChars,
-  keymap,
-  rectangularSelection,
-} from "@codemirror/view";
-import { indentGuide } from "../indent-guide";
+import { keymap } from "@codemirror/view";
 import { lineStatus } from "../line-status";
 import { editorTheme } from "../theme";
+import { basicSetup } from "codemirror";
+import { indentationMarkers } from "@replit/codemirror-indentation-markers";
 
 /** the base extension adds
  * - a theme
@@ -42,31 +16,11 @@ import { editorTheme } from "../theme";
  * This is the extension you should use for most editors.
  */
 export const base = () => [
+  basicSetup,
   editorTheme(),
-  lineStatus(),
-  indentGuide(),
-  highlightActiveLineGutter(),
-  highlightSpecialChars(),
-  history(),
-  drawSelection(),
-  dropCursor(),
-  EditorState.allowMultipleSelections.of(true),
-  indentOnInput(),
-  syntaxHighlighting(defaultHighlightStyle, { fallback: true }),
-  bracketMatching(),
-  closeBrackets(),
-  rectangularSelection(),
-  highlightActiveLine(),
-  highlightSelectionMatches(),
-  keymap.of([
-    ...closeBracketsKeymap,
-    ...defaultKeymap,
-    ...searchKeymap,
-    ...historyKeymap,
-    ...completionKeymap,
-    ...lintKeymap,
-    indentWithTab,
-  ]),
+  // lineStatus(),
+  indentationMarkers(),
+
   Prec.high(
     keymap.of([
       {

@@ -112,7 +112,7 @@
     if (newRoute) await goto(newRoute);
   }
 
-  $: ({ updateLocalContent, localContent } = fileArtifact);
+  $: ({ updateLocalContent, localContent, remoteContent } = fileArtifact);
 
   async function handlePreviewUpdate(
     e: CustomEvent<{
@@ -121,7 +121,7 @@
       dimensions: Vector;
     }>,
   ) {
-    const parsedDocument = parseDocument($localContent);
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
     const sequence = parsedDocument.get("items");
 
     const node = sequence.get(e.detail.index);
@@ -144,7 +144,7 @@
       x: 0,
       y: 0,
     };
-    const parsedDocument = parseDocument($localContent);
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
     const items = parsedDocument.get("items");
 

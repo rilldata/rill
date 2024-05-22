@@ -12,94 +12,98 @@
   import { debounce } from "../../lib/create-debouncer";
   import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
   import { FileArtifact } from "../entity-management/file-artifacts";
+  import Codespace from "./Codespace.svelte";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
   export let autoSave: boolean = true;
   export let disableAutoSave: boolean = false;
-  export let editor: EditorView | undefined = undefined;
+  export let editor: EditorView | null = null;
   export let forceLocalUpdates: boolean = false;
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
 
-  let parent: HTMLElement;
+  // let parent: HTMLElement;
 
   $: ({
     hasUnsavedChanges,
     saveLocalContent,
-    updateLocalContent,
+
     revert,
     localContent,
-    remoteContent,
   } = fileArtifact);
 
-  const extensionCompartment = new Compartment();
+  // const extensionCompartment = new Compartment();
 
-  onMount(async () => {
-    await fileArtifact.ready;
-    editor = new EditorView({
-      state: EditorState.create({
-        doc: $localContent ?? undefined,
-        extensions: [
-          baseExtensions(),
-          extensionCompartment.of([]),
-          EditorView.updateListener.of(({ docChanged, state: { doc } }) => {
-            if (editor?.hasFocus && docChanged) {
-              updateLocalContent(doc.toString());
+  // onMount(async () => {
+  //   await fileArtifact.ready;
+  //   editor = new EditorView({
+  //     state: EditorState.create({
+  //       doc: $localContent ?? undefined,
+  //       extensions: [
+  //         baseExtensions(),
+  //         extensionCompartment.of([]),
+  //         EditorView.updateListener.of(( p{ docChanged, state: { doc } }) => {
+  //           if (editor?.hasFocus && docChanged) {
+  //             updateLocalContent(doc.toString());
 
-              if (!disableAutoSave && autoSave) debounceSave();
-            }
-          }),
-        ],
-      }),
-      parent,
-    });
-  });
+  //             if (!disableAutoSave && autoSave) debounceSave();
+  //           }
+  //         }),
+  //       ],
+  //     }),
+  //     parent,
+  //   });
+  // });
 
-  onDestroy(() => {
-    editor?.destroy();
-  });
+  // onDestroy(() => {
+  //   editor?.destroy();
+  // });
 
-  $: if (editor) updateEditorExtensions(extensions);
+  // $: if (editor) updateEditorExtensions(extensions);
 
   // Update the editor content when the remote content changes
   // So long as the editor doesn't have focus
-  $: if (editor && !editor?.hasFocus) {
-    editor.dispatch({
-      changes: {
-        from: 0,
-        to: editor.state.doc.length,
-        insert: $remoteContent,
-        newLength: $remoteContent?.length,
-      },
-      selection: editor.state.selection,
-    });
+  // $: if (editor && !editor?.hasFocus) {
+  //   console.log("remote");
+  //   editor.dispatch({
+  //     changes: {
+  //       from: 0,
+  //       to: editor.state.doc.length,
+  //       insert: $remoteContent,
+  //       newLength: $remoteContent?.length,
+  //     },
+  //     selection: editor.state.selection,
+  //   });
 
-    updateLocalContent($remoteContent);
-  }
+  //   updateLocalContent($remoteContent);
+  // }
 
-  $: if (forceLocalUpdates && editor && !editor?.hasFocus) {
-    editor.dispatch({
-      changes: {
-        from: 0,
-        to: editor.state.doc.length,
-        insert: $localContent,
-        newLength: $localContent?.length,
-      },
-      selection: editor.state.selection,
-    });
-  }
+  // $: console.log($localContent);
 
-  $: if (fileArtifact) editor?.contentDOM.blur();
+  // $: if (forceLocalUpdates && editor && !editor.hasFocus) {
+  //   console.log("local");
+  //   editor.dispatch({
+  //     changes: {
+  //       from: 0,
+  //       to: editor.state.doc.length,
+  //       insert: $localContent,
+  //       newLength: $localContent?.length,
+  //     },
+  //     selection: editor.state.selection,
+  //   });
+  // }
+
+  // $: if (fileArtifact) editor?.contentDOM.blur();
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
-  function updateEditorExtensions(newExtensions: Extension[]) {
-    editor?.dispatch({
-      effects: extensionCompartment.reconfigure(newExtensions),
-      scrollIntoView: true,
-    });
-  }
+  // function updateEditorExtensions(newExtensions: Extension[]) {
+  //   editor?.dispatch({
+  //     effects: extensionCompartment.reconfigure(newExtensions),
+  //     scrollIntoView: true,
+  //   });
+  // }
 
   async function handleKeydown(e: KeyboardEvent) {
     if (e.key === "s" && (e.ctrlKey || e.metaKey)) {
@@ -109,19 +113,27 @@
   }
 
   async function save() {
+    const local = $localContent;
+    if (local === null) return;
     await saveLocalContent();
-    onSave($localContent);
+    onSave(local);
   }
 
   function revertContent() {
-    editor?.dispatch({
-      changes: {
-        from: 0,
-        to: editor.state.doc.length,
-        insert: $remoteContent,
-      },
-    });
+    // Revert fileArtifact to remote content
     revert();
+
+    // Revert editor to remote content
+    // editor?.dispatch({
+    //   changes: {
+    //     from: 0,
+    //     to: editor.state.doc.length,
+    //     insert: $remoteContent,
+    //     newLength: $remoteContent.length,
+    //   },
+    // });
+
+    // Call onRevert callback
     onRevert();
   }
 </script>
@@ -130,19 +142,17 @@
 
 <section>
   <div class="editor-container">
-    <div
-      bind:this={parent}
-      class="size-full"
-      on:click={() => {
-        /** give the editor focus no matter where we click */
-        if (!editor?.hasFocus) editor?.focus();
-      }}
-      on:keydown={() => {
-        /** no op for now */
-      }}
-      role="textbox"
-      tabindex="0"
-    />
+    {#key fileArtifact}
+      <Codespace
+        {extensions}
+        {debounceSave}
+        {forceLocalUpdates}
+        {fileArtifact}
+        {autoSave}
+        {disableAutoSave}
+        bind:editor
+      />
+    {/key}
   </div>
 
   <footer>

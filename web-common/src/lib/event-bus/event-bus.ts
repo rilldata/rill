@@ -1,4 +1,5 @@
 import { NotificationMessage } from "./events";
+import type { Reference } from "@rilldata/web-common/features/models/utils/get-table-references";
 
 class EventBus {
   private listeners: EventMap = new Map();
@@ -34,6 +35,7 @@ export const eventBus = new EventBus();
 
 interface Events {
   notification: NotificationMessage;
+  highlightSelection: Reference[];
 }
 
 type T = keyof Events;

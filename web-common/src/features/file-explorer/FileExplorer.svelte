@@ -136,11 +136,19 @@
       }
     }
   }
+
+  function saveAll(e: KeyboardEvent) {
+    if (e.key === "s" && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      // eventBus.emit("save-all");
+    }
+  }
 </script>
 
 <svelte:window
   on:mousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
   on:mouseup={(e) => navEntryDragDropStore.onMouseUp(e, handleDropSuccess)}
+  on:keydown={saveAll}
 />
 
 <div class="flex flex-col items-start gap-y-2">

@@ -17,7 +17,6 @@
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import type { QueryHighlightState } from "@rilldata/web-common/features/models/query-highlight-store";
   import ModelEditor from "@rilldata/web-common/features/models/workspace/ModelEditor.svelte";
   import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
   import { createModelFromSource } from "@rilldata/web-common/features/sources/createModel";
@@ -82,10 +81,6 @@
   }
   $: [, fileName] = splitFolderAndName(filePath);
 
-  const queryHighlight = getContext<Writable<QueryHighlightState>>(
-    "rill:app:query-highlight",
-  );
-
   const { readOnly } = featureFlags;
 
   let fileNotFound = false;
@@ -141,11 +136,6 @@
     isLocalFileConnectorQuery = useIsLocalFileConnector(instanceId, filePath);
   }
   $: isLocalFileConnector = !!$isLocalFileConnectorQuery?.data;
-
-  $: selections = $queryHighlight?.map((selection) => ({
-    from: selection?.referenceIndex,
-    to: selection?.referenceIndex + selection?.reference?.length,
-  })) as SelectionRange[];
 
   async function save() {
     if (type === "source") {
@@ -289,7 +279,6 @@
           {:else}
             <ModelEditor
               {fileArtifact}
-              {selections}
               bind:autoSave={$autoSave}
               onSave={save}
             />

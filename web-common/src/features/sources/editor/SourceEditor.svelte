@@ -11,7 +11,7 @@
   export let fileArtifact: FileArtifact;
   export let onSave: () => void = () => {};
 
-  $: ({ remoteContent } = fileArtifact);
+  $: ({ remoteContent, localContent } = fileArtifact);
 
   let editor: EditorView;
 
@@ -23,7 +23,10 @@
 
   //  Handle errors
   $: if (editor)
-    setLineStatuses(mapParseErrorsToLines(allErrors, $remoteContent), editor);
+    setLineStatuses(
+      mapParseErrorsToLines(allErrors, $localContent ?? $remoteContent ?? ""),
+      editor,
+    );
 </script>
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">

@@ -30,7 +30,10 @@
   $: placeholderElements = createPlaceholder(filePath, metricViewName);
   $: if (editor) placeholderElements.component.setEditorView(editor);
 
-  $: lineBasedRuntimeErrors = mapParseErrorsToLines(allErrors, $remoteContent);
+  $: lineBasedRuntimeErrors = mapParseErrorsToLines(
+    allErrors,
+    $remoteContent ?? "",
+  );
   /** display the main error (the first in this array) at the bottom */
   $: mainError = lineBasedRuntimeErrors?.at(0);
 

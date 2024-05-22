@@ -62,12 +62,15 @@ export class FileArtifact {
 
   public deleted = false;
 
-  public localContent: Writable<string> = writable("");
-  public remoteContent: Writable<string> = writable("");
-  public hasUnsavedChanges = writable<boolean>(false);
+  public localContent: Writable<string | null> = writable(null);
+  public remoteContent: Writable<string | null> = writable(null);
+  public hasUnsavedChanges = derived(this.localContent, (localContent) => {
+    return localContent !== null;
+  });
   public fileExtension: string;
   public fileQuery: Readable<QueryObserverResult<V1GetFileResponse, HTTPError>>;
   public ready: Promise<boolean>;
+  private remoteCallbacks = new Set<(content: string) => void>();
 
   constructor(filePath: string) {
     this.path = filePath;
@@ -81,6 +84,7 @@ export class FileArtifact {
       path: filePath,
     });
 
+    // Initial data fetch
     this.ready = fileTypeUnsupported
       ? Promise.resolve(false)
       : queryClient
@@ -93,8 +97,7 @@ export class FileArtifact {
           })
           .then(({ blob }) => {
             if (blob === undefined) return false;
-            this.remoteContent.set(blob);
-            this.localContent.set(blob);
+            this.updateRemoteContent(blob, false);
             return true;
           })
           .catch((e) => {
@@ -103,10 +106,27 @@ export class FileArtifact {
           });
   }
 
-  public updateRemoteContent(content: string) {
+  private updateRemoteContent(content: string, alert = true) {
+    console.log("update remote", this.path);
     this.remoteContent.set(content);
-    this.hasUnsavedChanges.set(get(this.localContent) !== content);
+    console.log({ alert, content });
+    if (alert) {
+      for (const callback of this.remoteCallbacks) {
+        callback(content);
+      }
+    }
+    // this.hasUnsavedChanges.set(get(this.localContent) !== content);
   }
+
+  public onRemoteContentChange = (callback: (content: string) => void) => {
+    this.remoteCallbacks.add(callback);
+    return () => this.remoteCallbacks.delete(callback);
+  };
+
+  public updateLocalContent = (content: string | null) => {
+    console.log("update local", this.path);
+    this.localContent.set(content);
+  };
 
   public updateAll(resource: V1Resource) {
     this.updateNameIfChanged(resource);
@@ -205,21 +225,13 @@ export class FileArtifact {
     );
   }
 
-  public updateLocalContent = (content: string) => {
-    this.localContent.set(content);
-
-    if (!get(this.hasUnsavedChanges)) {
-      this.hasUnsavedChanges.set(get(this.remoteContent) !== content);
-    }
-  };
-
   public revert = () => {
-    this.updateLocalContent(get(this.remoteContent));
-    this.hasUnsavedChanges.set(false);
+    this.updateLocalContent(null);
   };
 
   public saveLocalContent = async () => {
-    if (!this.localContent) return;
+    const local = get(this.localContent);
+    if (local === null) return;
 
     const blob = get(this.localContent);
 
@@ -234,10 +246,12 @@ export class FileArtifact {
 
     await runtimeServicePutFile(instanceId, {
       path: this.path,
-      blob: get(this.localContent),
+      blob: local,
     }).catch(console.error);
 
-    this.hasUnsavedChanges.set(false);
+    this.localContent.set(null);
+
+    // this.hasUnsavedChanges.set(false);
   };
 
   public getEntityName() {
@@ -311,6 +325,7 @@ export class FileArtifacts {
     );
     const newName = parseKindAndNameFromFile(filePath, fileContents);
     if (newName) this.artifacts[filePath].name.set(newName);
+    console.log("FILE UPDATED");
     this.artifacts[filePath].updateRemoteContent(fileContents);
   }
 

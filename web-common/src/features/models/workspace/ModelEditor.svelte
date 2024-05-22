@@ -5,9 +5,8 @@
     schemaCompletionSource,
     sql,
   } from "@codemirror/lang-sql";
-  import type { SelectionRange } from "@codemirror/state";
-  import { Compartment, StateEffect, StateField } from "@codemirror/state";
-  import { Decoration, DecorationSet, EditorView } from "@codemirror/view";
+  import { Compartment } from "@codemirror/state";
+  import { EditorView } from "@codemirror/view";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { DuckDBSQL } from "../../../components/editor/presets/duckDBDialect";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -18,7 +17,6 @@
 
   const schema: { [table: string]: string[] } = {};
 
-  export let selections: SelectionRange[] = [];
   export let autoSave = true;
   export let fileArtifact: FileArtifact;
   export let onSave: (content: string) => void = () => {};
@@ -52,9 +50,8 @@
     }
   }
 
-  $: defaultTable = getTableNameFromFromClause($remoteContent, schema);
+  $: defaultTable = getTableNameFromFromClause($remoteContent ?? "", schema);
   $: updateAutocompleteSources(schema, defaultTable);
-  $: underlineSelection(selections || []);
 
   function getTableNameFromFromClause(
     sql: string,
@@ -88,34 +85,6 @@
     });
   }
 
-  // UNDERLINES
-
-  const addUnderline = StateEffect.define<{
-    from: number;
-    to: number;
-  }>();
-  const underlineMark = Decoration.mark({ class: "cm-underline" });
-  const underlineField = StateField.define<DecorationSet>({
-    create() {
-      return Decoration.none;
-    },
-    update(underlines, tr) {
-      underlines = underlines.map(tr.changes);
-      underlines = underlines.update({
-        filter: () => false,
-      });
-
-      for (let e of tr.effects)
-        if (e.is(addUnderline)) {
-          underlines = underlines.update({
-            add: [underlineMark.range(e.value.from, e.value.to)],
-          });
-        }
-      return underlines;
-    },
-    provide: (f) => EditorView.decorations.from(f),
-  });
-
   function updateAutocompleteSources(
     schema: { [table: string]: string[] },
     defaultTable?: string,
@@ -126,20 +95,6 @@
           makeAutocompleteConfig(schema, defaultTable),
         ),
       });
-    }
-  }
-
-  // FIXME: resolve type issues incurred when we type selections as SelectionRange[]
-  function underlineSelection(selections: any) {
-    if (editor) {
-      const effects = selections.map(({ from, to }) =>
-        addUnderline.of({ from, to }),
-      );
-
-      if (!editor.state.field(underlineField, false))
-        effects.push(StateEffect.appendConfig.of([underlineField]));
-      editor.dispatch({ effects });
-      return true;
     }
   }
 </script>
