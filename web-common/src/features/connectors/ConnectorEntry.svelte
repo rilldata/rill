@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { Tag } from "../../components/tag";
   import {
     V1AnalyzedConnector,
     createRuntimeServiceGetInstance,
@@ -19,25 +20,29 @@
   $: isOlapConnector = olapConnector === connector.name;
 </script>
 
-<li>
-  <button on:click={() => (showTables = !showTables)}>
-    <div class="flex-none">
-      {#if connector.driver?.name}
-        <svelte:component
-          this={connectorIconMapping[connector.driver.name]}
-          size="14px"
-        />
+<!-- Only show the OLAP connector, for now -->
+{#if isOlapConnector}
+  <li>
+    <button on:click={() => (showTables = !showTables)}>
+      <div class="flex-none">
+        {#if connector.driver?.name}
+          <svelte:component
+            this={connectorIconMapping[connector.driver.name]}
+            size="14px"
+          />
+        {/if}
+      </div>
+      <h4>{connector?.name}</h4>
+      <div class="flex-grow" />
+      {#if isOlapConnector}
+        <Tag height={16}>OLAP</Tag>
       {/if}
-    </div>
-    <h4>{connector?.name}</h4>
-    {#if isOlapConnector}
-      <span class="text-xs text-gray-400"> (OLAP)</span>
+    </button>
+    {#if showTables}
+      <TableExplorer {instanceId} {connector} />
     {/if}
-  </button>
-  {#if showTables}
-    <TableExplorer {instanceId} {connector} />
-  {/if}
-</li>
+  </li>
+{/if}
 
 <style lang="postcss">
   li {
@@ -46,7 +51,7 @@
 
   button {
     @apply flex gap-x-1 items-center;
-    @apply w-full pl-2 py-2;
+    @apply w-full p-2;
   }
 
   button:hover {
