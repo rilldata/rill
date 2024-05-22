@@ -8,10 +8,8 @@
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
 
-  let showTables = true;
-
   $: tablesQuery = useTables(instanceId, connector?.name);
-  $: ({ data, error } = $tablesQuery);
+  $: ({ data, error, isLoading } = $tablesQuery);
   $: typedTables = data?.tables as
     | {
         name: string;
@@ -24,26 +22,26 @@
 
 {#if connector && connector.name}
   <div class="wrapper">
-    {#if showTables}
-      {#if error}
-        <span class="message">Error loading tables</span>
-      {:else if typedTables}
-        {#if typedTables.length === 0}
-          <span class="message">No tables found</span>
-        {:else}
-          <ol transition:slide={{ duration }}>
-            {#each typedTables as tableInfo (tableInfo)}
-              <TableEntry
-                connectorInstanceId={instanceId}
-                connector={connector.name}
-                database={tableInfo.database}
-                databaseSchema={tableInfo.databaseSchema}
-                table={tableInfo.name}
-                hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes}
-              />
-            {/each}
-          </ol>
-        {/if}
+    {#if error}
+      <span class="message">Error loading tables</span>
+    {:else if isLoading}
+      <span class="message">Loading tables...</span>
+    {:else if typedTables}
+      {#if typedTables.length === 0}
+        <span class="message">No tables found</span>
+      {:else}
+        <ol transition:slide={{ duration }}>
+          {#each typedTables as tableInfo (tableInfo)}
+            <TableEntry
+              connectorInstanceId={instanceId}
+              connector={connector.name}
+              database={tableInfo.database}
+              databaseSchema={tableInfo.databaseSchema}
+              table={tableInfo.name}
+              hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes}
+            />
+          {/each}
+        </ol>
       {/if}
     {/if}
   </div>
