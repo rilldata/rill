@@ -10,6 +10,8 @@ import (
 
 var ErrIteratorDone = errors.New("empty iterator")
 
+var ErrNoRows = errors.New("no rows found for the query")
+
 // SQLStore is implemented by drivers capable of running sql queries and generating an iterator to consume results.
 // In future the results can be produced in other formats like arrow as well.
 // May be call it DataWarehouse to differentiate from OLAP or postgres?

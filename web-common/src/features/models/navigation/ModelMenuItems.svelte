@@ -14,6 +14,8 @@
 
   export let filePath: string;
 
+  const { ai } = featureFlags;
+
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
   const queryClient = useQueryClient();
@@ -26,12 +28,12 @@
     $runtime.instanceId,
   );
   $: modelQuery = fileArtifact.getResource(queryClient, $runtime.instanceId);
-  $: connector = $modelQuery.data?.model?.spec?.connector;
+  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $modelHasError || !modelIsIdle;
-  $: tableName = $modelQuery.data?.model?.state?.table ?? "";
+  $: tableName = $modelQuery.data?.model?.state?.resultTable ?? "";
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
@@ -51,8 +53,11 @@
 >
   <Explore slot="icon" />
   <div class="flex gap-x-2 items-center">
-    Generate dashboard with AI
-    <WandIcon class="w-3 h-3" />
+    Generate dashboard
+    {#if $ai}
+      with AI
+      <WandIcon class="w-3 h-3" />
+    {/if}
   </div>
   <svelte:fragment slot="description">
     {#if $modelHasError}
@@ -67,15 +72,18 @@
     disabled={disableCreateDashboard}
     on:click={() => {
       dispatch("generate-chart", {
-        table: $modelQuery.data?.model?.state?.table,
-        connector: $modelQuery.data?.model?.state?.connector,
+        table: $modelQuery.data?.model?.state?.resultTable,
+        connector: $modelQuery.data?.model?.state?.resultConnector,
       });
     }}
   >
     <Explore slot="icon" />
     <div class="flex gap-x-2 items-center">
-      Generate chart with AI
-      <WandIcon class="w-3 h-3" />
+      Generate Chart
+      {#if $ai}
+        with AI
+        <WandIcon class="w-3 h-3" />
+      {/if}
     </div>
     <svelte:fragment slot="description">
       {#if $modelHasError}

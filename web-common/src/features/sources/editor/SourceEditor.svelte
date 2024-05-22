@@ -1,32 +1,32 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
-  import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { setLineStatuses } from "../../../components/editor/line-status";
   import { mapParseErrorsToLines } from "../../metrics-views/errors";
+  import Editor from "../../editor/Editor.svelte";
+  import { FileExtensionToEditorExtension } from "../../editor/getExtensionsForFile";
 
   const dispatch = createEventDispatcher();
 
   export let blob: string;
-  export let latest: string;
+  export let localContent: string | null;
   export let hasUnsavedChanges: boolean;
   export let allErrors: V1ParseError[];
   export let filePath: string;
 
-  let view: EditorView;
+  let editor: EditorView;
 
-  $: latest = blob;
-
-  function handleUpdate(e: CustomEvent<{ content: string }>) {
-    latest = e.detail.content;
+  function handleUpdate() {
+    dispatch("save");
 
     // Clear line errors (it's confusing when they're outdated)
-    setLineStatuses([], view);
+    setLineStatuses([], editor);
   }
 
   //  Handle errors
-  $: if (view) setLineStatuses(mapParseErrorsToLines(allErrors, blob), view);
+  $: if (editor)
+    setLineStatuses(mapParseErrorsToLines(allErrors, blob), editor);
 
   function handleModSave(event: KeyboardEvent) {
     // Check if a Modifier Key + S is pressed
@@ -43,9 +43,14 @@
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">
   <div class="grow flex bg-white overflow-y-auto rounded">
-    <YAMLEditor
-      content={latest}
-      bind:view
+    <Editor
+      extensions={FileExtensionToEditorExtension[".yaml"]}
+      remoteContent={blob}
+      {hasUnsavedChanges}
+      bind:localContent
+      bind:editor
+      autoSave={false}
+      disableAutoSave={true}
       on:save={handleUpdate}
       key={filePath}
     />

@@ -7,7 +7,7 @@
   import { isEmptyPos, range } from "./util";
 
   const LOADING_CELL = `<div load class="loading-cell h-4 bg-gray-50 rounded" style="width: 100%; min-width: 32px;"/>`;
-  const NULL_CELL = `<div style="font-size:0.925em" class="null-cell opacity-50 italic ">no data</div>`;
+  const NULL_CELL = `<div class="null-cell text-gray-400">-</div>`;
 
   export let getColumnHeaderData: (pos: PivotPos) => any = () => [];
   export let getRowHeaderData: (pos: PivotPos) => any = () => [];

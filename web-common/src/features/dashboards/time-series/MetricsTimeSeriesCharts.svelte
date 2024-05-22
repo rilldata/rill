@@ -214,7 +214,9 @@
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
       <ChartTypeSelector
-        hasComparison={Boolean(showComparison || dimensionData.length)}
+        hasComparison={Boolean(
+          showComparison || includedValuesForDimension.length,
+        )}
         {metricViewName}
         chartType={tddChartType}
       />

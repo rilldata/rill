@@ -11,13 +11,16 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel } from "../selectors";
+  import { featureFlags } from "../../feature-flags";
 
   export let modelName: string;
   export let hasError = false;
   export let collapse = false;
 
+  const { ai } = featureFlags;
+
   $: modelQuery = useModel($runtime.instanceId, modelName);
-  $: connector = $modelQuery.data?.model?.spec?.connector;
+  $: connector = $modelQuery.data?.model?.spec?.outputConnector;
   $: modelIsIdle =
     $modelQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
@@ -44,7 +47,10 @@
       <Add />
     </IconSpaceFixer>
     <ResponsiveButtonText {collapse}>
-      Generate dashboard with AI
+      Generate dashboard
+      {#if $ai}
+        with AI
+      {/if}
     </ResponsiveButtonText>
   </Button>
   <TooltipContent slot="tooltip-content">
