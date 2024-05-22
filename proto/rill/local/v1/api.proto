@@ -57,18 +57,35 @@ message DeployValidationRequest {}
 message DeployValidationResponse {
   bool is_authenticated = 1; // if true below fields are relevant after login
   bool is_github_connected = 2; // if true below fields are relevant after git install
-  string git_grant_access_url = 3; // redirect to this if 2 is false
-  string git_user_name = 4;
-  repeated string git_user_orgs = 5;
-  bool is_git_repo = 6;
-  string git_url = 7; // only applicable when is_git_repo is true
-  bool uncommitted_changes = 8; // only applicable when is_git_repo is true
-  bool rill_org_exists_as_git_user_name = 9; // only applicable when user does not have any orgs
-  repeated string rill_user_orgs = 10;
-  string local_project_name = 11;
+  bool is_repo_access_granted = 3; // if true below fields are relevant after git repo access granted
+  string git_grant_access_url = 4; // redirect to this if is_github_connected or is_repo_access_granted is false
+  string git_user_name = 5;
+  repeated string git_user_orgs = 6;
+  bool is_git_repo = 7;
+  bool git_remote_found = 8; // only applicable when is_git_repo is true
+  string git_url = 9; // only applicable when is_git_repo is true and remote found
+  UncommittedChanges uncommitted_changes = 10; // only applicable when is_git_repo is true and remote found
+  bool rill_org_exists_as_git_user_name = 11; // only applicable when user does not have any orgs
+  repeated string rill_user_orgs = 12;
+  string local_project_name = 13;
+  repeated OrganizationWithApp organizations_with_app = 14;
 }
 
-message PushToGitRequest {}
+enum UncommittedChanges {
+  UNCOMMITTED_CHANGES_UNKNOWN = 0;
+  UNCOMMITTED_CHANGES_YES = 1;
+  UNCOMMITTED_CHANGES_NO = 2;
+}
+
+message OrganizationWithApp {
+  string org = 1;
+  string permission = 2;
+}
+
+message PushToGitRequest {
+  string org = 1;
+  string repo = 2;
+}
 
 message PushToGitResponse {
   string git_url = 1;
@@ -83,4 +100,5 @@ message DeployResponse {
   string deploy_id = 1;
   string org = 2;
   string project = 3;
+  string frontend_url = 4;
 }

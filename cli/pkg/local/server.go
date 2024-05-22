@@ -109,15 +109,17 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return connect.NewResponse(&localv1.DeployValidationResponse{
 			IsAuthenticated:            false,
 			IsGithubConnected:          false,
+			IsRepoAccessGranted:        false,
 			GitGrantAccessUrl:          "",
 			GitUserName:                "",
 			GitUserOrgs:                nil,
 			IsGitRepo:                  false,
 			GitUrl:                     "",
-			UncommittedChanges:         false,
+			UncommittedChanges:         localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNKNOWN,
 			RillOrgExistsAsGitUserName: false,
 			RillUserOrgs:               nil,
 			LocalProjectName:           localProjectName,
+			OrganizationsWithApp:       nil,
 		}), nil
 	}
 	// Get admin client
@@ -136,15 +138,17 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return connect.NewResponse(&localv1.DeployValidationResponse{
 			IsAuthenticated:            true,
 			IsGithubConnected:          false,
+			IsRepoAccessGranted:        false,
 			GitGrantAccessUrl:          res.GrantAccessUrl,
 			GitUserName:                "",
 			GitUserOrgs:                nil,
 			IsGitRepo:                  false,
 			GitUrl:                     "",
-			UncommittedChanges:         false,
+			UncommittedChanges:         localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNKNOWN,
 			RillOrgExistsAsGitUserName: false,
 			RillUserOrgs:               nil,
 			LocalProjectName:           localProjectName,
+			OrganizationsWithApp:       nil,
 		}), nil
 	}
 
@@ -153,24 +157,65 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return nil, err
 	}
 
+	var userOrgsWithApp []*localv1.OrganizationWithApp
+	for _, org := range gitStatus.OrganizationsWithApp {
+		userOrgsWithApp = append(userOrgsWithApp, &localv1.OrganizationWithApp{
+			Org:        org.Org,
+			Permission: org.Permission,
+		})
+	}
+
 	isGitRepo := true
+	gitRemoteFound := true
 	// check if project is a git repo
 	remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 	if err != nil {
 		if errors.Is(err, git.ErrRepositoryNotExists) {
 			isGitRepo = false
+		} else if errors.Is(err, gitutil.ErrGitRemoteNotFound) {
+			gitRemoteFound = false
 		} else {
 			return nil, err
 		}
 	}
 
-	uncommitedChanges := false
-	if isGitRepo {
+	uncommitedChanges := localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNKNOWN
+	if isGitRepo && gitRemoteFound {
 		// check if there are uncommitted changes
-		// ignore errors since check is best effort and can fail in multiple cases
-		syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
+		syncStatus, err := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
+		if err != nil {
+			uncommitedChanges = localv1.UncommittedChanges_UNCOMMITTED_CHANGES_UNKNOWN
+		}
 		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
-			uncommitedChanges = true
+			uncommitedChanges = localv1.UncommittedChanges_UNCOMMITTED_CHANGES_YES
+		} else {
+			uncommitedChanges = localv1.UncommittedChanges_UNCOMMITTED_CHANGES_NO
+		}
+
+		// check git repo status, if we have access
+		repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+			GithubUrl: ghURL,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if !repoStatus.HasAccess {
+			// we should have access to the repo before deploying
+			return connect.NewResponse(&localv1.DeployValidationResponse{
+				IsAuthenticated:            true,
+				IsGithubConnected:          true,
+				IsRepoAccessGranted:        false,
+				GitGrantAccessUrl:          repoStatus.GrantAccessUrl,
+				GitUserName:                "",
+				GitUserOrgs:                nil,
+				IsGitRepo:                  false,
+				GitUrl:                     "",
+				UncommittedChanges:         uncommitedChanges,
+				RillOrgExistsAsGitUserName: false,
+				RillUserOrgs:               nil,
+				LocalProjectName:           localProjectName,
+				OrganizationsWithApp:       userOrgsWithApp,
+			}), nil
 		}
 	}
 
@@ -202,18 +247,23 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		}
 	}
 
+	// TODO check if any project exists with name localProjectName in any of the users rill org
+
 	return connect.NewResponse(&localv1.DeployValidationResponse{
 		IsAuthenticated:            true,
 		IsGithubConnected:          true,
-		GitGrantAccessUrl:          "",
+		IsRepoAccessGranted:        true,
+		GitGrantAccessUrl:          gitStatus.GrantAccessUrl,
 		GitUserName:                gitStatus.Account,
 		GitUserOrgs:                gitStatus.Organizations,
 		IsGitRepo:                  isGitRepo,
+		GitRemoteFound:             gitRemoteFound,
 		GitUrl:                     ghURL,
 		UncommittedChanges:         uncommitedChanges,
 		RillOrgExistsAsGitUserName: rillOrgExistsAsGitUserName,
 		RillUserOrgs:               userOrgs,
 		LocalProjectName:           localProjectName,
+		OrganizationsWithApp:       userOrgsWithApp,
 	}), nil
 }
 
@@ -228,29 +278,40 @@ func (s *Server) PushToGit(ctx context.Context, r *connect.Request[localv1.PushT
 		return nil, err
 	}
 
-	// check if project is a git repo
+	initGit := false
+	// check if project has a git repo
 	remote, _, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 	if err != nil {
-		if !errors.Is(err, git.ErrRepositoryNotExists) {
+		if errors.Is(err, git.ErrRepositoryNotExists) {
+			initGit = true
+		} else if !errors.Is(err, gitutil.ErrGitRemoteNotFound) {
 			return nil, err
 		}
 	}
 	if remote != nil {
-		return nil, errors.New("git repository is already initialized")
+		return nil, errors.New("git repository is already initialized with a remote")
 	}
 
 	gitStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 	if err != nil {
 		return nil, err
 	}
+	if !gitStatus.HasAccess {
+		// generally this should not happen as IsGithubConnected should be true before pushing to git
+		return nil, fmt.Errorf("rill git app should be installed by user before pushing by visiting %s", gitStatus.GrantAccessUrl)
+	}
 
-	// TODO should we take repoName and org as args ?
+	// if r.Msg.Org is empty, gitOrg will be "" which is equivalent to using default got org which is same as git username
+	gitOrg := r.Msg.Org
 	repoName := filepath.Base(s.app.ProjectPath)
+	if r.Msg.Repo != "" {
+		repoName = r.Msg.Repo
+	}
 	githubClient := github.NewTokenClient(ctx, gitStatus.AccessToken)
 	defaultBranch := "main"
 
-	// push to git,
-	githubRepo, _, err := githubClient.Repositories.Create(ctx, "", &github.Repository{Name: &repoName, DefaultBranch: &defaultBranch})
+	// create remote repo
+	githubRepo, _, err := githubClient.Repositories.Create(ctx, gitOrg, &github.Repository{Name: &repoName, DefaultBranch: &defaultBranch})
 	if err != nil {
 		if !strings.Contains(err.Error(), "name already exists") {
 			// TODO should we retry with new name, append a number to repoName like -1, -2 etc
@@ -259,15 +320,23 @@ func (s *Server) PushToGit(ctx context.Context, r *connect.Request[localv1.PushT
 		return nil, err
 	}
 
+	var repo *git.Repository
 	// init git repo
-	repo, err := git.PlainInitWithOptions(s.app.ProjectPath, &git.PlainInitOptions{
-		InitOptions: git.InitOptions{
-			DefaultBranch: plumbing.NewBranchReferenceName("main"),
-		},
-		Bare: false,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to init git repo: %w", err)
+	if initGit {
+		repo, err = git.PlainInitWithOptions(s.app.ProjectPath, &git.PlainInitOptions{
+			InitOptions: git.InitOptions{
+				DefaultBranch: plumbing.NewBranchReferenceName("main"),
+			},
+			Bare: false,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to init git repo: %w", err)
+		}
+	} else {
+		repo, err = git.PlainOpen(s.app.ProjectPath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to open git repo: %w", err)
+		}
 	}
 
 	wt, err := repo.Worktree()
@@ -330,12 +399,16 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 		return nil, errors.New("project has uncommitted changes")
 	}
 
-	// Get github user status
+	// Get github repo status
 	repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
 		GithubUrl: ghURL,
 	})
 	if err != nil {
 		return nil, err
+	}
+	if !repoStatus.HasAccess {
+		// generally this should not happen as IsRepoAccessGranted should be true before deploying
+		return nil, fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
 	}
 
 	// check if rill org exists
@@ -378,9 +451,10 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 	}
 
 	return connect.NewResponse(&localv1.DeployResponse{
-		DeployId: projResp.Project.ProdDeploymentId,
-		Org:      projResp.Project.OrgName,
-		Project:  projResp.Project.Name,
+		DeployId:    projResp.Project.ProdDeploymentId,
+		Org:         projResp.Project.OrgName,
+		Project:     projResp.Project.Name,
+		FrontendUrl: projResp.Project.FrontendUrl,
 	}), nil
 }
 

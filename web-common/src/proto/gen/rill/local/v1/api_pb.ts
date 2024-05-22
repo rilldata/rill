@@ -7,6 +7,32 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
 
 /**
+ * @generated from enum rill.local.v1.UncommittedChanges
+ */
+export enum UncommittedChanges {
+  /**
+   * @generated from enum value: UNCOMMITTED_CHANGES_UNKNOWN = 0;
+   */
+  UNKNOWN = 0,
+
+  /**
+   * @generated from enum value: UNCOMMITTED_CHANGES_YES = 1;
+   */
+  YES = 1,
+
+  /**
+   * @generated from enum value: UNCOMMITTED_CHANGES_NO = 2;
+   */
+  NO = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(UncommittedChanges)
+proto3.util.setEnumType(UncommittedChanges, "rill.local.v1.UncommittedChanges", [
+  { no: 0, name: "UNCOMMITTED_CHANGES_UNKNOWN" },
+  { no: 1, name: "UNCOMMITTED_CHANGES_YES" },
+  { no: 2, name: "UNCOMMITTED_CHANGES_NO" },
+]);
+
+/**
  * @generated from message rill.local.v1.PingRequest
  */
 export class PingRequest extends Message<PingRequest> {
@@ -326,57 +352,76 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   isGithubConnected = false;
 
   /**
-   * redirect to this if 2 is false
+   * if true below fields are relevant after git repo access granted
    *
-   * @generated from field: string git_grant_access_url = 3;
+   * @generated from field: bool is_repo_access_granted = 3;
+   */
+  isRepoAccessGranted = false;
+
+  /**
+   * redirect to this if is_github_connected or is_repo_access_granted is false
+   *
+   * @generated from field: string git_grant_access_url = 4;
    */
   gitGrantAccessUrl = "";
 
   /**
-   * @generated from field: string git_user_name = 4;
+   * @generated from field: string git_user_name = 5;
    */
   gitUserName = "";
 
   /**
-   * @generated from field: repeated string git_user_orgs = 5;
+   * @generated from field: repeated string git_user_orgs = 6;
    */
   gitUserOrgs: string[] = [];
 
   /**
-   * @generated from field: bool is_git_repo = 6;
+   * @generated from field: bool is_git_repo = 7;
    */
   isGitRepo = false;
 
   /**
    * only applicable when is_git_repo is true
    *
-   * @generated from field: string git_url = 7;
+   * @generated from field: bool git_remote_found = 8;
+   */
+  gitRemoteFound = false;
+
+  /**
+   * only applicable when is_git_repo is true and remote found
+   *
+   * @generated from field: string git_url = 9;
    */
   gitUrl = "";
 
   /**
-   * only applicable when is_git_repo is true
+   * only applicable when is_git_repo is true and remote found
    *
-   * @generated from field: bool uncommitted_changes = 8;
+   * @generated from field: rill.local.v1.UncommittedChanges uncommitted_changes = 10;
    */
-  uncommittedChanges = false;
+  uncommittedChanges = UncommittedChanges.UNKNOWN;
 
   /**
    * only applicable when user does not have any orgs
    *
-   * @generated from field: bool rill_org_exists_as_git_user_name = 9;
+   * @generated from field: bool rill_org_exists_as_git_user_name = 11;
    */
   rillOrgExistsAsGitUserName = false;
 
   /**
-   * @generated from field: repeated string rill_user_orgs = 10;
+   * @generated from field: repeated string rill_user_orgs = 12;
    */
   rillUserOrgs: string[] = [];
 
   /**
-   * @generated from field: string local_project_name = 11;
+   * @generated from field: string local_project_name = 13;
    */
   localProjectName = "";
+
+  /**
+   * @generated from field: repeated rill.local.v1.OrganizationWithApp organizations_with_app = 14;
+   */
+  organizationsWithApp: OrganizationWithApp[] = [];
 
   constructor(data?: PartialMessage<DeployValidationResponse>) {
     super();
@@ -388,15 +433,18 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "is_authenticated", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "is_github_connected", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "git_grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "git_user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "git_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "is_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "uncommitted_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 9, name: "rill_org_exists_as_git_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 10, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "is_repo_access_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "git_grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "git_user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "git_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "is_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "git_remote_found", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "uncommitted_changes", kind: "enum", T: proto3.getEnumType(UncommittedChanges) },
+    { no: 11, name: "rill_org_exists_as_git_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 12, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 13, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployValidationResponse {
@@ -417,9 +465,62 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
 }
 
 /**
+ * @generated from message rill.local.v1.OrganizationWithApp
+ */
+export class OrganizationWithApp extends Message<OrganizationWithApp> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string permission = 2;
+   */
+  permission = "";
+
+  constructor(data?: PartialMessage<OrganizationWithApp>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.OrganizationWithApp";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationWithApp {
+    return new OrganizationWithApp().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OrganizationWithApp {
+    return new OrganizationWithApp().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OrganizationWithApp {
+    return new OrganizationWithApp().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: OrganizationWithApp | PlainMessage<OrganizationWithApp> | undefined, b: OrganizationWithApp | PlainMessage<OrganizationWithApp> | undefined): boolean {
+    return proto3.util.equals(OrganizationWithApp, a, b);
+  }
+}
+
+/**
  * @generated from message rill.local.v1.PushToGitRequest
  */
 export class PushToGitRequest extends Message<PushToGitRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string repo = 2;
+   */
+  repo = "";
+
   constructor(data?: PartialMessage<PushToGitRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -428,6 +529,8 @@ export class PushToGitRequest extends Message<PushToGitRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.local.v1.PushToGitRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "repo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushToGitRequest {
@@ -550,6 +653,11 @@ export class DeployResponse extends Message<DeployResponse> {
    */
   project = "";
 
+  /**
+   * @generated from field: string frontend_url = 4;
+   */
+  frontendUrl = "";
+
   constructor(data?: PartialMessage<DeployResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -561,6 +669,7 @@ export class DeployResponse extends Message<DeployResponse> {
     { no: 1, name: "deploy_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployResponse {

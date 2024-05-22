@@ -1127,6 +1127,13 @@ message GetGithubUserStatusResponse {
   string access_token = 3;
   string account = 4;
   repeated string organizations = 5;
+  string user_installation_permission = 6;
+  repeated OrganizationWithApp organizations_with_app = 7;
+}
+
+message OrganizationWithApp {
+  string org = 1;
+  string permission = 2;
 }
 
 message GetGitCredentialsRequest {

@@ -5141,6 +5141,16 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
    */
   organizations: string[] = [];
 
+  /**
+   * @generated from field: string user_installation_permission = 6;
+   */
+  userInstallationPermission = "";
+
+  /**
+   * @generated from field: repeated rill.admin.v1.OrganizationWithApp organizations_with_app = 7;
+   */
+  organizationsWithApp: OrganizationWithApp[] = [];
+
   constructor(data?: PartialMessage<GetGithubUserStatusResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5154,6 +5164,8 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
     { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "organizations", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "user_installation_permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubUserStatusResponse {
@@ -5170,6 +5182,49 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
 
   static equals(a: GetGithubUserStatusResponse | PlainMessage<GetGithubUserStatusResponse> | undefined, b: GetGithubUserStatusResponse | PlainMessage<GetGithubUserStatusResponse> | undefined): boolean {
     return proto3.util.equals(GetGithubUserStatusResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.OrganizationWithApp
+ */
+export class OrganizationWithApp extends Message<OrganizationWithApp> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string permission = 2;
+   */
+  permission = "";
+
+  constructor(data?: PartialMessage<OrganizationWithApp>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.OrganizationWithApp";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationWithApp {
+    return new OrganizationWithApp().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OrganizationWithApp {
+    return new OrganizationWithApp().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OrganizationWithApp {
+    return new OrganizationWithApp().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: OrganizationWithApp | PlainMessage<OrganizationWithApp> | undefined, b: OrganizationWithApp | PlainMessage<OrganizationWithApp> | undefined): boolean {
+    return proto3.util.equals(OrganizationWithApp, a, b);
   }
 }
 

@@ -2604,6 +2604,13 @@ definitions:
         type: array
         items:
           type: string
+      userInstallationPermission:
+        type: string
+      organizationsWithApp:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1OrganizationWithApp'
   v1GetIFrameResponse:
     type: object
     properties:
@@ -2865,6 +2872,13 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
+  v1OrganizationWithApp:
+    type: object
+    properties:
+      org:
+        type: string
+      permission:
+        type: string
   v1PingResponse:
     type: object
     properties:

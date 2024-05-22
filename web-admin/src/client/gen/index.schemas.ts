@@ -537,6 +537,11 @@ export interface V1PingResponse {
   time?: string;
 }
 
+export interface V1OrganizationWithApp {
+  org?: string;
+  permission?: string;
+}
+
 export interface V1OrganizationQuotas {
   projects?: number;
   deployments?: number;
@@ -692,6 +697,8 @@ export interface V1GetGithubUserStatusResponse {
   accessToken?: string;
   account?: string;
   organizations?: string[];
+  userInstallationPermission?: string;
+  organizationsWithApp?: V1OrganizationWithApp[];
 }
 
 export interface V1GetGithubRepoStatusResponse {

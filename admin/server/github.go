@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
@@ -88,7 +89,17 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 
 	installation, _, err := s.admin.Github.AppClient().Apps.FindUserInstallation(ctx, user.GithubUsername)
 	if err != nil {
+		// TODO if we get 404 here, it means user installed app on a different org not personal account, we can navigate user to install the app
 		return nil, fmt.Errorf("failed to get user installation: %w", err)
+	}
+
+	userInstallationPermission := "read"
+	if installation.Permissions != nil && installation.Permissions.Administration != nil && installation.Permissions.Contents != nil {
+		if strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
+			userInstallationPermission = "write"
+		}
+	} else {
+		return nil, status.Errorf(codes.Internal, "failed to get user installation permissions for user %s", user.GithubUsername)
 	}
 
 	gitClient, err := s.admin.Github.InstallationClient(*installation.ID)
@@ -96,22 +107,45 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		return nil, fmt.Errorf("failed to get installation client: %w", err)
 	}
 
+	// TODO check why its not listing all my orgs
 	orgs, _, err := gitClient.Organizations.List(ctx, user.GithubUsername, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
 	}
 
 	var orgNames []string
+	var orgWithApp []*adminv1.OrganizationWithApp
 	for _, org := range orgs {
 		orgNames = append(orgNames, org.GetLogin())
+		i, _, err := s.admin.Github.AppClient().Apps.FindOrganizationInstallation(ctx, org.GetLogin())
+		if err != nil {
+			if strings.Contains(err.Error(), "404") {
+				continue
+			}
+			return nil, status.Errorf(codes.Internal, "failed to get organization installation: %s", err.Error())
+		}
+		permission := "read"
+		if i.Permissions != nil && i.Permissions.Administration != nil && i.Permissions.Contents != nil {
+			if strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
+				permission = "write"
+			}
+		} else {
+			return nil, status.Errorf(codes.Internal, "failed to get organization permissions for org %s", org.GetLogin())
+		}
+		orgWithApp = append(orgWithApp, &adminv1.OrganizationWithApp{
+			Org:        org.GetLogin(),
+			Permission: permission,
+		})
 	}
 
 	return &adminv1.GetGithubUserStatusResponse{
-		HasAccess:      true,
-		GrantAccessUrl: "",
-		AccessToken:    token,
-		Account:        user.GithubUsername,
-		Organizations:  orgNames,
+		HasAccess:                  true,
+		GrantAccessUrl:             s.urls.githubConnect,
+		AccessToken:                token,
+		Account:                    user.GithubUsername,
+		Organizations:              orgNames,
+		UserInstallationPermission: userInstallationPermission,
+		OrganizationsWithApp:       orgWithApp,
 	}, nil
 }
 
