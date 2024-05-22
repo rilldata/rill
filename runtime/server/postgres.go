@@ -52,9 +52,6 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	}
 
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-		// if len(res.Rows) == 0 {
-		// 	return writer.Empty()
-		// }
 		for i := 0; i < len(res.Rows); i++ {
 			if err := convert(res.Rows[i], res.Schema); err != nil {
 				return fmt.Errorf("data conversion failed")
@@ -168,7 +165,7 @@ func columnForType(field *runtimev1.StructType_Field) wire.Column {
 		col.Oid = pgtype.ByteaOID
 		col.Width = -1
 	case runtimev1.Type_CODE_DECIMAL:
-		col.Oid = pgtype.NumericArrayOID
+		col.Oid = pgtype.NumericOID
 		col.Width = -1
 	case runtimev1.Type_CODE_JSON:
 		col.Oid = pgtype.JSONOID

@@ -24,6 +24,7 @@ var supportedFuncs = map[string]any{
 	"date_trunc":   nil,
 	"date_add":     nil,
 	"date_sub":     nil,
+	"to_timestamp": nil,
 	"now":          nil,
 	"current_date": nil,
 	"count":        nil,
@@ -141,9 +142,12 @@ func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectS
 		sb.WriteString(" WHERE ")
 		sb.WriteString(where.expr)
 	}
-	if node.GroupBy != nil {
-		return "", fmt.Errorf("metrics sql: Explicit group by clause is not supported. Group by clause is implicitly added when both measure and dimensions are selected. The implicit group by includes all selected dimensions")
-	}
+	// todo: BI tool send a group by clause in all cases
+	// add a validation for group by clause 
+	//
+	// if node.GroupBy != nil {
+	// 	return "", fmt.Errorf("metrics sql: Explicit group by clause is not supported. Group by clause is implicitly added when both measure and dimensions are selected. The implicit group by includes all selected dimensions")
+	// }
 	if groupByClause != "" {
 		sb.WriteString(" GROUP BY ")
 		sb.WriteString(groupByClause)

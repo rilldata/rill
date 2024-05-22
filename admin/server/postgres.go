@@ -18,6 +18,11 @@ import (
 
 func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
 	s.logger.Info("query", zap.String("query", query))
+	if strings.Trim(query, " ") == "" {
+		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+			return writer.Empty()
+		})), nil
+	}
 
 	if strings.HasPrefix(strings.ToUpper(query), "SHOW TRANSACTION ISOLATION LEVEL") {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
@@ -47,12 +52,6 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 			}
 			return writer.Complete("OK")
 		}, wire.WithColumns(wire.Columns{wire.Column{Name: "TimeZone", Oid: pgtype.VarcharOID}}))), nil
-	}
-
-	if strings.Trim(query, " ") == "" {
-		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-			return writer.Empty()
-		})), nil
 	}
 
 	clientParams := wire.ClientParameters(ctx)

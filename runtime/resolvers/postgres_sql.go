@@ -29,7 +29,7 @@ import (
 var errForbidden = errors.New("access to metrics view is forbidden")
 
 func init() {
-	runtime.RegisterResolverInitializer("builtin_pg_catalog_sql", newBuiltinInformationSchemaSQL)
+	runtime.RegisterResolverInitializer("builtin_pg_catalog_sql", newBuiltinPostgresSQL)
 	runtime.RegisterBuiltinAPI("pg-catalog-sql", "builtin_pg_catalog_sql", nil)
 }
 
@@ -39,20 +39,32 @@ type args struct {
 	DataDir  string `mapstructure:"temp_dir"`
 }
 
-var extraCharRe = regexp.MustCompile(`[\n\t\r]`)
-
-// newBuiltinMetricsSQL is the resolver for the built-in /metrics-sql API.
-// It executes a metrics SQL query provided dynamically through the args.
-// It errors if the user identified by the attributes is not an admin.
-func newBuiltinInformationSchemaSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
+// newBuiltinPostgresSQL is the resolver for queries that are required for supporting postgres protocol
+// It is supposed to be used internally only
+func newBuiltinPostgresSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	// Decode the args
 	args := &args{}
 	if err := mapstructure.Decode(opts.Args, args); err != nil {
 		return nil, err
 	}
 
-	args.SQL = extraCharRe.ReplaceAllString(args.SQL, "\n")
-	resolver, ok := parse(args.SQL)
+	// hacks for working with superset
+	// replaces part of queries that are not supported in duckDB
+	args.SQL = strings.ReplaceAll(args.SQL, "ix.indrelid = c.conrelid and\n                                ix.indexrelid = c.conindid and\n                                c.contype in ('p', 'u', 'x')", "ix.indrelid = c.conrelid")
+	args.SQL = strings.ReplaceAll(args.SQL, "t.oid = a.attrelid and a.attnum = ANY(ix.indkey)", "t.oid = a.attrelid")
+	args.SQL = strings.ReplaceAll(args.SQL, "pg_get_constraintdef(cons.oid)", "pg_get_constraintdef(cons.oid, false)")
+	// duckdb reports type hugeint postgres supports bigint
+	args.SQL = strings.ReplaceAll(args.SQL, "pg_catalog.format_type(a.atttypid, a.atttypmod)", "CASE WHEN pg_catalog.format_type(a.atttypid, a.atttypmod) == 'hugeint' THEN 'bigint' ELSE pg_catalog.format_type(a.atttypid, a.atttypmod) END")
+	if args.SQL == "SELECT nspname FROM pg_namespace WHERE nspname NOT LIKE 'pg_%' ORDER BY nspname" {
+		args.SQL = "SELECT nspname FROM pg_namespace WHERE nspname NOT IN ('pg_catalog', 'information_schema', 'main') ORDER BY nspname"
+	}
+
+	// hacks for working with metabase
+	args.SQL = strings.ReplaceAll(args.SQL, "t.schemaname <> 'information_schema'", "t.schemaname <> 'information_schema' AND t.schemaname <> 'pg_catalog' AND t.schemaname <> 'main'")
+	args.SQL = strings.ReplaceAll(args.SQL, "(information_schema._pg_expandarray(i.indkey)).n", "generate_subscripts(i.indkey, 1)")
+
+	// check if its a non catalog query like `SHOW variable` or `select 1`
+	resolver, ok := resolveNonCatalog(args.SQL)
 	if ok {
 		return resolver, nil
 	}
@@ -67,6 +79,8 @@ func newBuiltinInformationSchemaSQL(ctx context.Context, opts *runtime.ResolverO
 		return nil, err
 	}
 
+	// We create a db in temporary location, attach it to main db, update catalog with metric_view resources
+	// detach the temp db and use it to run queries
 	dbDir := filepath.Join(args.DataDir, strconv.FormatInt(time.Now().UnixMilli(), 10))
 	if err := os.Mkdir(dbDir, fs.ModePerm); err != nil {
 		return nil, err
@@ -95,7 +109,6 @@ func newBuiltinInformationSchemaSQL(ctx context.Context, opts *runtime.ResolverO
 		}
 	}
 
-	// init the duckdb
 	handle, err := drivers.Open("duckdb", opts.InstanceID, map[string]any{"path": dbPath}, activity.NewNoopClient(), zap.NewNop())
 	if err != nil {
 		return nil, err
@@ -104,6 +117,9 @@ func newBuiltinInformationSchemaSQL(ctx context.Context, opts *runtime.ResolverO
 	olap, ok := handle.AsOLAP(opts.InstanceID)
 	if !ok {
 		return nil, fmt.Errorf("developer error : handle is not an OLAP driver")
+	}
+	if err := olap.Exec(ctx, &drivers.Statement{Query: "USE catalog.public"}); err != nil {
+		return nil, err
 	}
 
 	if err := populateCatalogTables(ctx, olap); err != nil {
@@ -124,6 +140,8 @@ func populate(ctx context.Context, opts *runtime.ResolverOptions, connector, que
 	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB {
+		// other OLAP engines can be supported with a schema translation layer from engine -> duckDB
+		// and creating table with DDL statements
 		return fmt.Errorf("only duckdb is supported")
 	}
 
@@ -132,17 +150,23 @@ func populate(ctx context.Context, opts *runtime.ResolverOptions, connector, que
 			return err
 		}
 
+		// postgres's default schema is public
+		if err := olap.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("CREATE SCHEMA IF NOT EXISTS %s.public", dbName)}); err != nil {
+			return err
+		}
+
 		defer func() {
 			_ = olap.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s", dbName)})
 		}()
 
-		qry := fmt.Sprintf("CREATE TABLE %s.%s AS SELECT * FROM (%s) LIMIT 0", dbName, olap.Dialect().EscapeIdentifier(mvName), query)
+		qry := fmt.Sprintf("CREATE TABLE %s.public.%s AS SELECT * FROM (%s) LIMIT 0", dbName, olap.Dialect().EscapeIdentifier(mvName), query)
 		return olap.Exec(ctx, &drivers.Statement{Query: qry})
 	})
 	return err
 }
 
 func populateCatalogTables(ctx context.Context, olap drivers.OLAPStore) error {
+	// create missing catalog tables
 	return olap.Exec(ctx, &drivers.Statement{
 		Query: "CREATE TABLE catalog.pg_catalog.pg_matviews(schemaname VARCHAR, matviewname VARCHAR, matviewowner VARCHAR, tablespace VARCHAR, hasindexes BOOLEAN, ispopulated BOOLEAN, definition VARCHAR)",
 	})
@@ -310,6 +334,7 @@ var (
 	indexRe           *regexp.Regexp = regexp.MustCompile(`(?:pg_catalog\.)?pg_get_indexdef\([^)]*\)`)
 	identifyOptionsRe *regexp.Regexp = regexp.MustCompile(`(?is)\(SELECT\s+json_build_object\([^)]*\)\s*FROM[^)]*\)\s+as\s+identity_options`)
 	serialSequenceRe  *regexp.Regexp = regexp.MustCompile(`pg_catalog\.pg_get_serial_sequence\([^\)]*\)`)
+	extraCharRe       *regexp.Regexp = regexp.MustCompile(`[\n\t\r]`)
 )
 
 func rewriteSQL(input string) string {
@@ -328,7 +353,7 @@ var (
 	showVarRe *regexp.Regexp = regexp.MustCompile(`(?i)SHOW\s+(.+)`)
 )
 
-func parse(sql string) (runtime.Resolver, bool) {
+func resolveNonCatalog(sql string) (runtime.Resolver, bool) {
 	sql = strings.TrimSuffix(sql, ";")
 	matches := showVarRe.FindStringSubmatch(sql)
 	if len(matches) <= 1 {
