@@ -28,7 +28,7 @@
         {#if connector.driver?.name}
           <svelte:component
             this={connectorIconMapping[connector.driver.name]}
-            size="14px"
+            size="16px"
           />
         {/if}
       </div>
