@@ -25,6 +25,8 @@ builds:
       - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+    hooks:
+      pre: go run scripts/embed_duckdb_ext/main.go -platform=osx_amd64
 
   - id: darwin_arm64
     main: ./cli/main.go
@@ -42,6 +44,8 @@ builds:
       - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+    hooks:
+      pre: go run scripts/embed_duckdb_ext/main.go -platform=osx_arm64
 
   - id: linux
     main: ./cli/main.go
@@ -61,6 +65,8 @@ builds:
       - "-mod=readonly"
     ldflags:
       - -s -w -X main.Version={{.Version}} -X main.Commit={{.ShortCommit}} -X main.BuildDate={{.Date}}
+    hooks:
+      pre: go run scripts/embed_duckdb_ext/main.go -platform=linux_amd64
 
 blobs:
   - provider: gs
