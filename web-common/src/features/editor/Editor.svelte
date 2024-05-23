@@ -36,8 +36,8 @@
   async function save() {
     const local = $localContent;
     if (local === null) return;
-    await saveLocalContent();
     onSave(local);
+    await saveLocalContent();
   }
 
   function revertContent() {

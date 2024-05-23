@@ -47,13 +47,14 @@
     bind:autoSave
     bind:editor
     onSave={(content) => {
-      if (!content?.length) {
-        setLineStatuses([], editor);
-      }
       // Remove the explorer entity so that everything is reset to defaults next time user navigates to it
       metricsExplorerStore.remove(metricViewName);
       // Reset local persisted dashboard state for the metrics view
       createPersistentDashboardStore(metricViewName).reset();
+
+      if (!content?.length) {
+        setLineStatuses([], editor);
+      }
     }}
     {fileArtifact}
     extensions={[
