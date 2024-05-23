@@ -2,7 +2,6 @@ package main
 
 import (
 	"database/sql"
-	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -25,16 +24,6 @@ var embedDirRoot = "runtime/drivers/duckdb/extensions/embed/"
 // main downloads and embeds the necessary DuckDB extensions for the current DuckDB version and pre-defined platforms
 // https://duckdb.org/docs/extensions/working_with_extensions.html
 func main() {
-	// Parse command-line arguments
-	platformFlag := flag.String("platform", "", "Specify the platform to download extensions for (e.g., linux_amd64). If not provided, downloads extensions for all platforms.")
-	flag.Parse()
-
-	// Pre-clean: Remove all existing directories from embedDirRoot
-	err := removeAllDirectories(embedDirRoot)
-	if err != nil {
-		log.Fatalf("Failed to remove existing directories in %s: %v", embedDirRoot, err)
-	}
-
 	// Connect to DuckDB and get the version
 	db, err := sql.Open("duckdb", "")
 	if err != nil {
@@ -54,16 +43,9 @@ func main() {
 		log.Fatalf("Failed to close DuckDB connection: %v", err)
 	}
 
-	// Determine the platforms to process
-	var platformsToProcess []string
-	if *platformFlag != "" {
-		platformsToProcess = []string{*platformFlag}
-	} else {
-		platformsToProcess = platforms
-	}
-
 	// Download each extension for each platform
-	for _, platform := range platformsToProcess {
+	// This might be done in parallel but download time will be almost the same
+	for _, platform := range platforms {
 		destDir := fmt.Sprintf(embedDirRoot+"%s/%s", duckdbVersion, platform)
 		err := os.MkdirAll(destDir, os.ModePerm)
 		if err != nil && !os.IsExist(err) {
@@ -86,27 +68,6 @@ func main() {
 	}
 
 	log.Println("All necessary DuckDB extensions have been processed.")
-}
-
-// removeAllDirectories removes all directories under the specified root directory
-func removeAllDirectories(root string) error {
-	entries, err := os.ReadDir(root)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return nil // Directory does not exist, nothing to remove
-		}
-		return err
-	}
-
-	for _, entry := range entries {
-		if entry.IsDir() {
-			err := os.RemoveAll(filepath.Join(root, entry.Name()))
-			if err != nil {
-				return err
-			}
-		}
-	}
-	return nil
 }
 
 // downloadFile downloads a file from a URL and saves it to a destination path
