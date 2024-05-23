@@ -1,5 +1,8 @@
 import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
-import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import {
+  extractFileName,
+  extractFileExtension,
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   fetchFileContent,
   fetchMainEntityFiles,
@@ -16,10 +19,23 @@ import {
   type V1ParseError,
   type V1Resource,
   type V1ResourceName,
+  getRuntimeServiceGetFileQueryKey,
+  V1GetFileResponse,
+  runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, get, writable, type Readable } from "svelte/store";
+import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
+import {
+  derived,
+  get,
+  type Readable,
+  writable,
+  type Writable,
+} from "svelte/store";
+import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
+import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+
+const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
   public readonly path: string;
@@ -46,11 +62,107 @@ export class FileArtifact {
 
   public deleted = false;
 
-  public constructor(filePath: string) {
+  public localContent: Writable<string | null> = writable(null);
+  public remoteContent: Writable<string | null> = writable(null);
+  public hasUnsavedChanges = derived(this.localContent, (localContent) => {
+    return localContent !== null;
+  });
+  public fileExtension: string;
+  public fileQuery: Readable<QueryObserverResult<V1GetFileResponse, HTTPError>>;
+  public ready: Promise<boolean>;
+  private remoteCallbacks = new Set<(content: string) => void>();
+  private localCallbacks = new Set<(content: string | null) => void>();
+
+  constructor(filePath: string) {
     this.path = filePath;
+
+    this.fileExtension = extractFileExtension(filePath);
+    const fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
+      this.fileExtension,
+    );
+
+    const queryKey = getRuntimeServiceGetFileQueryKey(get(runtime).instanceId, {
+      path: filePath,
+    });
+
+    // Initial data fetch
+    this.ready = fileTypeUnsupported
+      ? Promise.resolve(false)
+      : queryClient
+          .fetchQuery({
+            queryKey,
+            queryFn: () =>
+              runtimeServiceGetFile(get(runtime).instanceId, {
+                path: filePath,
+              }),
+          })
+          .then(({ blob }) => {
+            if (blob === undefined) return false;
+            this.updateRemoteContent(blob, false);
+            return true;
+          })
+          .catch((e) => {
+            console.error(e);
+            return false;
+          });
   }
 
-  // actions
+  public updateRemoteContent = (content: string, alert = true) => {
+    this.remoteContent.set(content);
+    if (alert) {
+      for (const callback of this.remoteCallbacks) {
+        callback(content);
+      }
+    }
+  };
+
+  public updateLocalContent = (content: string | null, alert = false) => {
+    this.localContent.set(content);
+    if (alert) {
+      for (const callback of this.localCallbacks) {
+        callback(content);
+      }
+    }
+  };
+
+  public onRemoteContentChange = (callback: (content: string) => void) => {
+    this.remoteCallbacks.add(callback);
+    return () => this.remoteCallbacks.delete(callback);
+  };
+
+  public onLocalContentChange = (
+    callback: (content: string | null) => void,
+  ) => {
+    this.localCallbacks.add(callback);
+    return () => this.localCallbacks.delete(callback);
+  };
+
+  public revert = () => {
+    this.updateLocalContent(null, true);
+  };
+
+  public saveLocalContent = async () => {
+    const local = get(this.localContent);
+    if (local === null) return;
+
+    const blob = get(this.localContent);
+
+    const instanceId = get(runtime).instanceId;
+    const key = getRuntimeServiceGetFileQueryKey(instanceId, {
+      path: this.path,
+    });
+
+    queryClient.setQueryData(key, {
+      blob,
+    });
+
+    await runtimeServicePutFile(instanceId, {
+      path: this.path,
+      blob: local,
+    }).catch(console.error);
+
+    this.localContent.set(null);
+  };
 
   public updateAll(resource: V1Resource) {
     this.updateNameIfChanged(resource);
@@ -81,8 +193,6 @@ export class FileArtifact {
     this.reconciling.set(false);
   }
 
-  // selectors
-
   public getResource(queryClient: QueryClient, instanceId: string) {
     return derived(this.name, (name, set) =>
       useResource(
@@ -95,10 +205,10 @@ export class FileArtifact {
     ) as ReturnType<typeof useResource<V1Resource>>;
   }
 
-  public getAllErrors(
+  public getAllErrors = (
     queryClient: QueryClient,
     instanceId: string,
-  ): Readable<V1ParseError[]> {
+  ): Readable<V1ParseError[]> => {
     const store = derived(
       [
         this.name,
@@ -142,7 +252,7 @@ export class FileArtifact {
       [],
     );
     return store;
-  }
+  };
 
   public getHasErrors(queryClient: QueryClient, instanceId: string) {
     return derived(
@@ -197,6 +307,7 @@ export class FileArtifacts {
     const missingFiles = files.filter(
       (f) => !this.artifacts[f] || !get(this.artifacts[f].name)?.kind,
     );
+
     await Promise.all(
       missingFiles.map((filePath) =>
         fetchFileContent(queryClient, instanceId, filePath).then(
@@ -213,8 +324,6 @@ export class FileArtifacts {
   }
 
   public async fileUpdated(filePath: string) {
-    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
-      return;
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
@@ -223,6 +332,7 @@ export class FileArtifacts {
     );
     const newName = parseKindAndNameFromFile(filePath, fileContents);
     if (newName) this.artifacts[filePath].name.set(newName);
+    this.artifacts[filePath].updateRemoteContent(fileContents);
   }
 
   /**
@@ -349,6 +459,14 @@ export class FileArtifacts {
     return Object.values(this.artifacts)
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");
+  }
+
+  public async saveAll() {
+    await Promise.all(
+      Object.entries(this.artifacts).map(([_, artifact]) =>
+        artifact.saveLocalContent(),
+      ),
+    );
   }
 }
 
