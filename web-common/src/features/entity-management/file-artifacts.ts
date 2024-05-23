@@ -38,11 +38,11 @@ import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
-  readonly path: string;
+  public readonly path: string;
 
-  readonly name = writable<V1ResourceName | undefined>(undefined);
+  public readonly name = writable<V1ResourceName | undefined>(undefined);
 
-  readonly reconciling = writable<boolean>(false);
+  public readonly reconciling = writable<boolean>(false);
 
   /**
    * Used to check if a file has finished renaming.
@@ -135,6 +135,33 @@ export class FileArtifact {
   ) => {
     this.localCallbacks.add(callback);
     return () => this.localCallbacks.delete(callback);
+  };
+
+  public revert = () => {
+    this.updateLocalContent(null, true);
+  };
+
+  public saveLocalContent = async () => {
+    const local = get(this.localContent);
+    if (local === null) return;
+
+    const blob = get(this.localContent);
+
+    const instanceId = get(runtime).instanceId;
+    const key = getRuntimeServiceGetFileQueryKey(instanceId, {
+      path: this.path,
+    });
+
+    queryClient.setQueryData(key, {
+      blob,
+    });
+
+    await runtimeServicePutFile(instanceId, {
+      path: this.path,
+      blob: local,
+    }).catch(console.error);
+
+    this.localContent.set(null);
   };
 
   public updateAll(resource: V1Resource) {
@@ -234,33 +261,6 @@ export class FileArtifact {
     );
   }
 
-  public revert = () => {
-    this.updateLocalContent(null, true);
-  };
-
-  public saveLocalContent = async () => {
-    const local = get(this.localContent);
-    if (local === null) return;
-
-    const blob = get(this.localContent);
-
-    const instanceId = get(runtime).instanceId;
-    const key = getRuntimeServiceGetFileQueryKey(instanceId, {
-      path: this.path,
-    });
-
-    queryClient.setQueryData(key, {
-      blob,
-    });
-
-    await runtimeServicePutFile(instanceId, {
-      path: this.path,
-      blob: local,
-    }).catch(console.error);
-
-    this.localContent.set(null);
-  };
-
   public getEntityName() {
     return get(this.name)?.name ?? extractFileName(this.path);
   }
@@ -289,7 +289,7 @@ export class FileArtifacts {
 
   // Actions
 
-  async init(queryClient: QueryClient, instanceId: string) {
+  public async init(queryClient: QueryClient, instanceId: string) {
     const resources = await fetchResources(queryClient, instanceId);
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
@@ -323,7 +323,7 @@ export class FileArtifacts {
     );
   }
 
-  async fileUpdated(filePath: string) {
+  public async fileUpdated(filePath: string) {
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
@@ -338,7 +338,7 @@ export class FileArtifacts {
   /**
    * This is called when an artifact is deleted.
    */
-  fileDeleted(filePath: string) {
+  public fileDeleted(filePath: string) {
     // 2-way delete to handle race condition with delete from file and resource watchers
     // TODO: avoid this if `name` is undefined - event from resource will not be present
     if (this.artifacts[filePath]?.deleted) {
@@ -350,7 +350,7 @@ export class FileArtifacts {
     }
   }
 
-  resourceDeleted(name: V1ResourceName) {
+  public resourceDeleted(name: V1ResourceName) {
     const artifact = this.findFileArtifact(
       (name.kind ?? "") as ResourceKind,
       name.name ?? "",
@@ -366,36 +366,28 @@ export class FileArtifacts {
     }
   }
 
-  updateArtifacts(resource: V1Resource) {
+  public updateArtifacts(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateAll(resource);
     });
   }
 
-  async saveAll() {
-    await Promise.all(
-      Object.entries(this.artifacts).map(([_, artifact]) =>
-        artifact.saveLocalContent(),
-      ),
-    );
-  }
-
-  updateReconciling(resource: V1Resource) {
+  public updateReconciling(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateReconciling(resource);
     });
   }
 
-  updateLastUpdated(resource: V1Resource) {
+  public updateLastUpdated(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath] ??= new FileArtifact(filePath);
       this.artifacts[filePath].updateLastUpdated(resource);
     });
   }
 
-  tableStatusChanged(resource: V1Resource) {
+  public tableStatusChanged(resource: V1Resource) {
     const hadTable =
       resource.meta?.filePaths?.some((filePath) => {
         return this.artifacts[filePath].hasTable;
@@ -404,7 +396,7 @@ export class FileArtifacts {
     return hadTable !== hasTable;
   }
 
-  wasRenaming(resource: V1Resource) {
+  public wasRenaming(resource: V1Resource) {
     const finishedRename = !resource.meta?.renamedFrom;
     return (
       resource.meta?.filePaths?.some((filePath) => {
@@ -416,7 +408,7 @@ export class FileArtifacts {
   /**
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
-  softDeleteResource(resource: V1Resource) {
+  public softDeleteResource(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
       this.artifacts[filePath]?.softDeleteResource();
     });
@@ -424,12 +416,12 @@ export class FileArtifacts {
 
   // Selectors
 
-  getFileArtifact(filePath: string) {
+  public getFileArtifact(filePath: string) {
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     return this.artifacts[filePath];
   }
 
-  findFileArtifact(resKind: ResourceKind, resName: string) {
+  public findFileArtifact(resKind: ResourceKind, resName: string) {
     for (const filePath in this.artifacts) {
       const name = get(this.artifacts[filePath].name);
       if (name?.kind === resKind && name?.name === resName) {
@@ -442,7 +434,7 @@ export class FileArtifacts {
   /**
    * Best effort list of all reconciling resources.
    */
-  getReconcilingResourceNames() {
+  public getReconcilingResourceNames() {
     const artifacts = Object.values(this.artifacts);
     return derived(
       artifacts.map((a) => a.reconciling),
@@ -463,10 +455,18 @@ export class FileArtifacts {
    * This can be expensive if the project gets large.
    * If we ever need this reactively then we should look into caching this list.
    */
-  getNamesForKind(kind: ResourceKind): string[] {
+  public getNamesForKind(kind: ResourceKind): string[] {
     return Object.values(this.artifacts)
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");
+  }
+
+  public async saveAll() {
+    await Promise.all(
+      Object.entries(this.artifacts).map(([_, artifact]) =>
+        artifact.saveLocalContent(),
+      ),
+    );
   }
 }
 
