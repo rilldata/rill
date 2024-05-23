@@ -10,7 +10,6 @@ import {
   metricsViewRequestFilterMatcher,
   waitForComparisonTopLists,
   waitForTimeSeries,
-  waitForTopLists,
   type RequestMatcher,
 } from "../utils/dashboardHelpers";
 import {
