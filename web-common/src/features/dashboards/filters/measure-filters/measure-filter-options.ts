@@ -99,12 +99,12 @@ export const AllMeasureFilterOptions = [
   {
     value: MeasureFilterOperation.IncreasesBy,
     label: "Increases By",
-    shortLabel: "inc by",
+    shortLabel: "increases by",
   },
   {
     value: MeasureFilterOperation.DecreasesBy,
     label: "Decreases By",
-    shortLabel: "dec by",
+    shortLabel: "decreases by",
   },
   {
     value: MeasureFilterOperation.ChangesBy,

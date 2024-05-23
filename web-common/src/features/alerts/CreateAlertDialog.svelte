@@ -64,7 +64,7 @@
   const comparisonTimeRange = mapComparisonTimeRange(
     $dashboardStore,
     timeControls,
-    mapTimeRange(timeControls, {}),
+    timeRange,
   );
 
   const formState = createForm<AlertFormValues>({

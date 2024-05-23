@@ -40,6 +40,8 @@ export function extractAlertFormValues(
     isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
   };
   if (!timeRange.end && allTimeRange.timeRangeSummary?.max) {
+    // alerts only have duration optionally offset, end is added during execution by reconciler
+    // so, we add end here to get a valid query
     timeRange.end = allTimeRange.timeRangeSummary?.max;
   }
 
@@ -49,6 +51,8 @@ export function extractAlertFormValues(
     !comparisonTimeRange.end &&
     allTimeRange.timeRangeSummary?.max
   ) {
+    // alerts only have duration and offset, end is added during execution by reconciler
+    // so, we add end here to get a valid query
     comparisonTimeRange.end = allTimeRange.timeRangeSummary?.max;
   }
 

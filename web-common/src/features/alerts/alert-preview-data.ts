@@ -55,9 +55,8 @@ function getAlertPreviewQueryRequest(
   if (req.timeRange) {
     req.timeRange.end = formValues.timeRange.end;
   }
-  // TODO: We do not have types since API changes are not merged yet. Remove once that is merged.
-  if ((req as any).comparisonTimeRange && formValues.comparisonTimeRange) {
-    (req as any).comparisonTimeRange.end = formValues.comparisonTimeRange.end;
+  if (req.comparisonTimeRange && formValues.comparisonTimeRange) {
+    req.comparisonTimeRange.end = formValues.comparisonTimeRange.end;
   }
   return req;
 }

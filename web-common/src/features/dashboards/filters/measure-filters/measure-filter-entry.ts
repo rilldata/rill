@@ -27,8 +27,9 @@ export type MeasureFilterEntry = {
   value2: string;
 };
 
-const DeltaAbsoluteSuffix = "__delta_abs";
-const DeltaRelativeSuffix = "__delta_rel";
+export const ComparisonDeltaPreviousSuffix = "__prev";
+export const ComparisonDeltaAbsoluteSuffix = "__delta_abs";
+export const ComparisonDeltaRelativeSuffix = "__delta_rel";
 const HasSuffixRegex = /__delta_(rel|abs)/;
 
 export function mapExprToMeasureFilter(
@@ -48,7 +49,7 @@ export function mapExprToMeasureFilter(
       if (HasSuffixRegex.test(field)) {
         // handle ChangeBy
         value1 = (expr.cond.exprs?.[1].cond?.exprs?.[1].val as number) ?? 0;
-        if (field.endsWith(DeltaRelativeSuffix)) {
+        if (field.endsWith(ComparisonDeltaRelativeSuffix)) {
           // convert decimal to percent
           value1 *= 100;
         }
@@ -75,7 +76,7 @@ export function mapExprToMeasureFilter(
     case V1Operation.OPERATION_LTE:
       field = expr.cond.exprs?.[0].ident ?? "";
       value1 = Math.abs((expr.cond.exprs?.[1].val as number) ?? 0);
-      if (field.endsWith(DeltaRelativeSuffix)) {
+      if (field.endsWith(ComparisonDeltaRelativeSuffix)) {
         // convert decimal to percent
         value1 *= 100;
       }
@@ -87,9 +88,9 @@ export function mapExprToMeasureFilter(
       break;
   }
 
-  if (field.endsWith(DeltaAbsoluteSuffix)) {
+  if (field.endsWith(ComparisonDeltaAbsoluteSuffix)) {
     comparison = MeasureFilterComparisonType.AbsoluteComparison;
-  } else if (field.endsWith(DeltaRelativeSuffix)) {
+  } else if (field.endsWith(ComparisonDeltaRelativeSuffix)) {
     comparison = MeasureFilterComparisonType.PercentageComparison;
   }
 
@@ -119,8 +120,8 @@ export function mapMeasureFilterToExpr(
   const comparisonSuffix =
     measureFilter.comparison ===
     MeasureFilterComparisonType.PercentageComparison
-      ? DeltaRelativeSuffix
-      : DeltaAbsoluteSuffix;
+      ? ComparisonDeltaRelativeSuffix
+      : ComparisonDeltaAbsoluteSuffix;
 
   switch (measureFilter.operation) {
     case MeasureFilterOperation.Equals:

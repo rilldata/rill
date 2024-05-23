@@ -1,6 +1,11 @@
 import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
 import { CompareWith } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
 import {
+  ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaPreviousSuffix,
+  ComparisonDeltaRelativeSuffix,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import {
   IsCompareMeasureFilterOperation,
   MeasureFilterOperation,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
@@ -58,15 +63,15 @@ export function getAlertQueryArgsFromFormValues(
       ...(addComparison
         ? [
             {
-              name: formValues.measure + "__prev",
+              name: formValues.measure + ComparisonDeltaPreviousSuffix,
               comparisonValue: { measure: formValues.measure },
             },
             {
-              name: formValues.measure + "__delta_abs",
+              name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
               comparisonDelta: { measure: formValues.measure },
             },
             {
-              name: formValues.measure + "__delta_rel",
+              name: formValues.measure + ComparisonDeltaRelativeSuffix,
               comparisonRatio: { measure: formValues.measure },
             },
           ]
@@ -86,6 +91,8 @@ export function getAlertQueryArgsFromFormValues(
     }),
     timeRange: {
       isoDuration: formValues.timeRange.isoDuration,
+      timeZone: formValues.timeRange.timeZone,
+      roundToGrain: formValues.timeRange.roundToGrain,
     },
     sort: [
       {
@@ -96,13 +103,11 @@ export function getAlertQueryArgsFromFormValues(
     ...(addComparison
       ? {
           comparisonTimeRange: {
-            // Use time range to add duration and offset in case comparison is not enabled
-            isoDuration:
-              formValues.comparisonTimeRange?.isoDuration ??
-              formValues.timeRange.isoDuration,
-            isoOffset:
-              formValues.comparisonTimeRange?.isoOffset ??
-              formValues.timeRange.isoDuration,
+            // addComparison already includes null check for comparisonTimeRange
+            isoDuration: (formValues.comparisonTimeRange as V1TimeRange)
+              .isoDuration,
+            isoOffset: (formValues.comparisonTimeRange as V1TimeRange)
+              .isoOffset,
           },
         }
       : {}),
