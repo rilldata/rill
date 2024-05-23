@@ -1,5 +1,5 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-import { throttledRefreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
+import { refreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
@@ -102,7 +102,7 @@ export class WatchResourcesClient {
 
       case V1ReconcileStatus.RECONCILE_STATUS_PENDING:
       case V1ReconcileStatus.RECONCILE_STATUS_RUNNING:
-        void throttledRefreshResource(queryClient, instanceId, res);
+        void refreshResource(queryClient, instanceId, res);
         fileArtifacts.updateReconciling(res);
         return true;
     }
@@ -112,7 +112,7 @@ export class WatchResourcesClient {
 
   private invalidateResource(instanceId: string, resource: V1Resource) {
     if (!resource.meta) return;
-    void throttledRefreshResource(queryClient, instanceId, resource);
+    void refreshResource(queryClient, instanceId, resource);
 
     const lastStateUpdatedOn = fileArtifacts.getFileArtifact(
       resource.meta?.filePaths?.[0] ?? "",
@@ -142,7 +142,7 @@ export class WatchResourcesClient {
           instanceId: get(runtime).instanceId,
           connector:
             resource.source?.spec?.sinkConnector ??
-            resource.model?.spec?.connector ??
+            resource.model?.spec?.outputConnector ??
             "",
         }),
       );
@@ -156,7 +156,8 @@ export class WatchResourcesClient {
     switch (resource.meta.name?.kind) {
       case ResourceKind.Source:
       case ResourceKind.Model:
-        table = resource.source?.state?.table ?? resource.model?.state?.table;
+        table =
+          resource.source?.state?.table ?? resource.model?.state?.resultTable;
         if (table && resource.meta.name?.name === table)
           // make sure table is populated
           return invalidateProfilingQueries(queryClient, name, failed);
@@ -221,7 +222,7 @@ export class WatchResourcesClient {
     }
 
     const newTable =
-      resource.model?.state?.table ?? resource.source?.state?.table ?? "";
+      resource.model?.state?.resultTable ?? resource.source?.state?.table ?? "";
     return resource.meta?.filePaths?.some(
       (f) => this.tables.get(f) !== newTable,
     );
@@ -238,7 +239,7 @@ export class WatchResourcesClient {
     }
 
     const newTable =
-      resource.model?.state?.table ?? resource.source?.state?.table ?? "";
+      resource.model?.state?.resultTable ?? resource.source?.state?.table ?? "";
     resource.meta?.filePaths?.forEach((filePath) => {
       this.tables.set(filePath, newTable);
     });

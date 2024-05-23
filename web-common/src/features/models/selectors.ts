@@ -15,7 +15,7 @@ export function useModels(instanceId: string) {
   return useClientFilteredResources(
     instanceId,
     ResourceKind.Model,
-    (res) => res.meta?.name?.name === res.model?.state?.table,
+    (res) => res.meta?.name?.name === res.model?.state?.resultTable,
   );
 }
 

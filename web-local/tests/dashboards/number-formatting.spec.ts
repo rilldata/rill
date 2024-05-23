@@ -3,7 +3,6 @@ import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import {
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
-  updateAndWaitForDashboard,
 } from "../utils/dashboardHelpers";
 import { expect } from "@playwright/test";
 import { test } from "../utils/test";

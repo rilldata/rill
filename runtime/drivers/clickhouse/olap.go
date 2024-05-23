@@ -215,6 +215,11 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	})
 }
 
+// InsertTableAsSelect implements drivers.OLAPStore.
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+	return fmt.Errorf("clickhouse: data transformation not yet supported")
+}
+
 // DropTable implements drivers.OLAPStore.
 func (c *connection) DropTable(ctx context.Context, name string, view bool) error {
 	var typ string
@@ -227,11 +232,6 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 		Query:    fmt.Sprintf("DROP %s %s", typ, safeSQLName(name)),
 		Priority: 100,
 	})
-}
-
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
-	return fmt.Errorf("clickhouse: data transformation not yet supported")
 }
 
 // RenameTable implements drivers.OLAPStore.

@@ -34,10 +34,13 @@ export function refreshResource(
   instanceId: string,
   res: V1Resource,
 ) {
-  return queryClient.resetQueries(
+  return queryClient.setQueryData(
     getRuntimeServiceGetResourceQueryKey(instanceId, {
       "name.name": res.meta?.name?.name,
       "name.kind": res.meta?.name?.kind,
     }),
+    {
+      resource: res,
+    },
   );
 }

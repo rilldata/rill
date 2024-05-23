@@ -1,15 +1,15 @@
 import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
+import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   fetchFileContent,
   fetchMainEntityFiles,
 } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
-  fetchResources,
   ResourceKind,
+  fetchResources,
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetResourceQueryKey,
@@ -20,7 +20,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, get, type Readable, writable } from "svelte/store";
+import { derived, get, writable, type Readable } from "svelte/store";
 
 export class FileArtifact {
   public readonly path: string;
