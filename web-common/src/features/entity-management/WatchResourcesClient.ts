@@ -87,8 +87,10 @@ export class WatchResourcesClient {
 
     // only re-fetch list queries for kinds in `MainResources`
     if (!MainResourceKinds[res.name.kind]) return;
+    void queryClient.refetchQueries(
+      getRuntimeServiceListResourcesQueryKey(instanceId, undefined),
+    );
     return queryClient.refetchQueries(
-      // we only use individual kind's queries
       getRuntimeServiceListResourcesQueryKey(instanceId, {
         kind: res.name.kind,
       }),

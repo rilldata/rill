@@ -30,9 +30,6 @@ export async function fetchWrapper({
 
   headers ??= { "Content-Type": "application/json" };
 
-  if (url.endsWith("default/resource")) {
-    console.log("send", url, params);
-  }
   url = encodeURI(url);
 
   if (params) {
