@@ -6,15 +6,17 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"time"
 
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgtype"
+	"github.com/jackc/pgx/v5/pgxpool"
 	wire "github.com/jeroenrinzema/psql-wire"
 	"github.com/lib/pq/oid"
 	"github.com/rilldata/rill/admin/server/auth"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 )
+
+var runtimePool map[string]*pgxpool.Pool = make(map[string]*pgxpool.Pool)
 
 func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
 	s.logger.Info("query", zap.String("query", query))
@@ -24,45 +26,23 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 		})), nil
 	}
 
-	if strings.HasPrefix(strings.ToUpper(query), "SHOW TRANSACTION ISOLATION LEVEL") {
+	upperQuery := strings.ToUpper(query)
+	if strings.HasPrefix(upperQuery, "SET") {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-			if err := writer.Row([]any{"read committed"}); err != nil {
-				return err
-			}
-			return writer.Complete("OK")
-		}, wire.WithColumns(wire.Columns{wire.Column{Name: "transaction_isolation", Oid: pgtype.VarcharOID}}))), nil
-	}
-
-	if strings.HasPrefix(strings.ToUpper(query), "SET") {
-		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-			return writer.Complete(query)
+			return writer.Complete("SET")
 		}, wire.WithColumns(nil))), nil
 	}
 
-	if strings.HasPrefix(strings.ToUpper(query), "BEGIN") || strings.HasPrefix(strings.ToUpper(query), "COMMIT") || strings.HasPrefix(strings.ToUpper(query), "ROLLBACK") {
+	if strings.HasPrefix(upperQuery, "BEGIN") || strings.HasPrefix(upperQuery, "COMMIT") || strings.HasPrefix(upperQuery, "ROLLBACK") {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-			return writer.Complete(strings.ToUpper(strings.Trim(query, ";")))
+			return writer.Complete(strings.Trim(upperQuery, ";"))
 		}, wire.WithColumns(nil))), nil
-	}
-
-	if strings.HasPrefix(strings.ToUpper(query), "SHOW TIMEZONE") {
-		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-			if err := writer.Row([]any{"Etc/UTC"}); err != nil {
-				return err
-			}
-			return writer.Complete("OK")
-		}, wire.WithColumns(wire.Columns{wire.Column{Name: "TimeZone", Oid: pgtype.VarcharOID}}))), nil
 	}
 
 	clientParams := wire.ClientParameters(ctx)
-	// many clients will need to encode / to pass in postgres dsn
-	db, err := url.QueryUnescape(clientParams[wire.ParamDatabase])
-	if err != nil {
-		return nil, err
-	}
-
-	tokens := strings.Split(db, "/")
-	if len(tokens) != 2 { // todo handle slash in org and project name
+	// database is org.password
+	tokens := strings.Split(clientParams[wire.ParamDatabase], ".")
+	if len(tokens) != 2 {
 		return nil, fmt.Errorf("invalid org or project")
 	}
 	org := tokens[0]
@@ -88,10 +68,6 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	case auth.OwnerTypeAnon:
 		// If the client is not authenticated with the admin service, we just proxy the contents of the password to the runtime (if any).
 		password := ctx.Value(auth.PasswordKey{}).(string)
-		password, err = url.QueryUnescape(password)
-		if err != nil {
-			return nil, err
-		}
 		if len(password) >= 6 && strings.EqualFold(password[0:6], "bearer") {
 			jwt = strings.TrimSpace(password[6:])
 		}
@@ -137,36 +113,24 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	// Track usage of the deployment
 	s.admin.Used.Deployment(depl.ID)
 
-	// Determine runtime host and port
-	// NOTE: In production, the runtime pgx server runs on 5432 port.
-	// But in development, the port is 15432.
-	runtimeHost := depl.RuntimeHost
 	port := 15432
-	if strings.HasPrefix(runtimeHost, "http://localhost:") {
-		port = 15432
-	}
-
-	hostURL, err := url.Parse(runtimeHost)
+	hostURL, err := url.Parse(depl.RuntimeHost)
 	if err != nil {
 		return nil, err
 	}
 	hostURL.Scheme = "postgres"
 	hostURL.Host = hostURL.Hostname() + ":" + strconv.FormatInt(int64(port), 10)
-	hostURL.User = url.UserPassword("postgres", fmt.Sprintf("Bearer %v", jwt))
+	hostURL.User = url.UserPassword("postgres", fmt.Sprintf("Bearer %s", jwt))
 	hostURL.Path = depl.RuntimeInstanceID
-
-	dsn := hostURL.String()
-
-	// todo this establishes a new connection for every query. Fix this.
-	conn, err := pgx.Connect(ctx, dsn)
+	conn, err := connectionPool(ctx, hostURL.String())
 	if err != nil {
+		s.logger.Info("error in get connection pool", zap.Error(err))
 		return nil, err
 	}
-	defer conn.Close(context.Background())
 
 	rows, err := conn.Query(ctx, query) // query to underlying host
 	if err != nil {
-		s.logger.Error("error in query", zap.Error(err))
+		s.logger.Info("error in query", zap.Error(err))
 		return nil, err
 	}
 	defer rows.Close()
@@ -193,21 +157,43 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	for rows.Next() {
 		d, err := rows.Values()
 		if err != nil {
-			s.logger.Warn("error in fetching next row", zap.Error(err))
+			s.logger.Info("error in fetching next row", zap.Error(err))
 			return nil, err
 		}
 		data = append(data, d)
 	}
 	if rows.Err() != nil {
-		s.logger.Warn("error in fetching rows", zap.Error(err))
+		s.logger.Info("error in fetching rows", zap.Error(err))
 		return nil, err
 	}
 
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+		s.logger.Info("admin server data", zap.Any("data", data))
 		for i := 0; i < len(data); i++ {
 			writer.Row(data[i])
 		}
 		return writer.Complete("OK")
 	}
 	return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(cols))), nil
+}
+
+func connectionPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
+	runtimePool, ok := runtimePool[dsn]
+	if ok {
+		return runtimePool, nil
+	}
+
+	config, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse dsn: %w", err)
+	}
+
+	// Runtime JWts are valid for 30 minutes only
+	config.MaxConnLifetime = time.Minute * 29
+	// since runtimes get restarted more often than actual DB servers. Consider if this should be reduced to even less time
+	// also consider if we should add some health check on connection acquisition
+	config.HealthCheckPeriod = time.Minute
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
+	return pool, err
 }

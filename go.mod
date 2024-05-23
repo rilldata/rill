@@ -349,5 +349,3 @@ replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testco
 replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
 
 exclude modernc.org/sqlite v1.18.1
-
-replace github.com/jeroenrinzema/psql-wire v0.11.1 => /Users/kanshul/Documents/projects/external/psql-wire

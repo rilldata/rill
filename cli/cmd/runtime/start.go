@@ -61,7 +61,7 @@ type Config struct {
 	HTTPPort                int                    `default:"8080" split_words:"true"`
 	GRPCPort                int                    `default:"9090" split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
-	PostgresPort            int                    `default:"5432" split_words:"true"`
+	PostgresPort            int                    `default:"15432" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
@@ -244,6 +244,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AuthEnable:      conf.AuthEnable,
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
+				DataDir:         conf.DataDir,
 			}
 			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
 			if err != nil {

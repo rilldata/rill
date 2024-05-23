@@ -50,6 +50,7 @@ type Options struct {
 	AuthAudienceURL string
 	TLSCertPath     string
 	TLSKeyPath      string
+	DataDir         string
 }
 
 type Server struct {

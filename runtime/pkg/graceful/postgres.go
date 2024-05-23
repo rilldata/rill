@@ -2,7 +2,6 @@ package graceful
 
 import (
 	"context"
-	"crypto/tls"
 	"fmt"
 	"log/slog"
 	"net"
@@ -23,27 +22,15 @@ func ServePostgres(ctx context.Context, queryHandler func(ctx context.Context, q
 	}
 	if err != nil {
 		if strings.Contains(err.Error(), "address already in use") {
-			return fmt.Errorf("grpc port %d is in use by another process. Either kill that process or pass `--port-grpc PORT` to run Rill on another port", port)
+			return fmt.Errorf("postgres port %d is in use by another process. Either kill that process or pass `--port-postgres PORT` to run Rill on another port", port)
 		}
 		return err
 	}
 
-	// cert, err := tls.LoadX509KeyPair("/Users/kanshul/server.crt", "/Users/kanshul/server.key")
-	// if err != nil {
-	// 	log.Fatalf("Failed to load X509 key pair: %v", err)
-	// }
-
 	opts := []wire.OptionFn{
-		wire.Version("10"),
+		wire.Version("15.2"),
 		wire.Logger(slog.New(discard)),
 		wire.GlobalParameters(wire.Parameters{"standard_conforming_strings": "on"}),
-	}
-	if useTLS {
-		cert, err := tls.LoadX509KeyPair("/Users/kanshul/server.crt", "/Users/kanshul/server.key")
-		if err != nil {
-			return err
-		}
-		opts = append(opts, wire.Certificates([]tls.Certificate{cert}))
 	}
 	if authHandler != nil {
 		opts = append(opts, wire.SessionAuthStrategy(wire.ClearTextPassword(authHandler)))

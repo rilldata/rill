@@ -62,7 +62,7 @@ func newBuiltinPostgresSQL(ctx context.Context, opts *runtime.ResolverOptions) (
 	// hacks for working with metabase
 	args.SQL = strings.ReplaceAll(args.SQL, "t.schemaname <> 'information_schema'", "t.schemaname <> 'information_schema' AND t.schemaname <> 'pg_catalog' AND t.schemaname <> 'main'")
 	args.SQL = strings.ReplaceAll(args.SQL, "(information_schema._pg_expandarray(i.indkey)).n", "generate_subscripts(i.indkey, 1)")
-
+	args.SQL = extraCharRe.ReplaceAllString(args.SQL, "\n")
 	// check if its a non catalog query like `SHOW variable` or `select 1`
 	resolver, ok := resolveNonCatalog(args.SQL)
 	if ok {
@@ -390,7 +390,7 @@ func (p *postgresSQLResolver) ResolveExport(ctx context.Context, w io.Writer, op
 func (p *postgresSQLResolver) ResolveInteractive(ctx context.Context, opts *runtime.ResolverInteractiveOptions) (*runtime.ResolverResult, error) {
 	fields := make([]*runtimev1.StructType_Field, 1)
 	fields[0] = &runtimev1.StructType_Field{
-		Name: p.variable,
+		Name: name(p.variable),
 		Type: &runtimev1.Type{Code: runtimev1.Type_CODE_STRING, Nullable: false},
 	}
 
@@ -409,12 +409,23 @@ func (p *postgresSQLResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
+func name(variable string) string {
+	switch strings.ToLower(variable) {
+	case "transaction isolation level":
+		return "transaction_isolation"
+	default:
+		return variable
+	}
+}
+
 func value(variable string) string {
 	switch strings.ToLower(variable) {
-	case "standard_conforming_string":
+	case "standard_conforming_string", "standard_conforming_strings":
 		return "on"
 	case "transaction isolation level":
 		return "read committed"
+	case "timezone":
+		return "Etc/UTC"
 	default:
 		return "tbd"
 	}

@@ -40,6 +40,7 @@ type Resolver interface {
 type ResolverResult struct {
 	// Data is a JSON encoded array of objects.
 	Data []byte
+	// Rows is deserialized array of objects. If Rows is set Data will be unset and vice versa.
 	Rows [][]any
 	// Schema is the schema for the Data
 	Schema *runtimev1.StructType

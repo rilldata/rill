@@ -48,7 +48,7 @@ type Config struct {
 	TracesExporter           observability.Exporter `default:"" split_words:"true"`
 	HTTPPort                 int                    `default:"8080" split_words:"true"`
 	GRPCPort                 int                    `default:"9090" split_words:"true"`
-	PostgresPort             int                    `default:"5432" split_words:"true"`
+	PostgresPort             int                    `default:"25432" split_words:"true"`
 	DebugPort                int                    `split_words:"true"`
 	ExternalURL              string                 `default:"http://localhost:8080" split_words:"true"`
 	ExternalGRPCURL          string                 `envconfig:"external_grpc_url"`

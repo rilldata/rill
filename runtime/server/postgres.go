@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"math/big"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/jackc/pgx/v5/pgtype"
@@ -13,8 +14,8 @@ import (
 	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/shopspring/decimal"
-	"go.uber.org/zap"
 )
 
 func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
@@ -33,7 +34,7 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 		return nil, err
 	}
 
-	tmpDir, err := os.MkdirTemp("", "pg_catalog")
+	tmpDir, err := os.MkdirTemp(filepath.Join(s.opts.DataDir, instanceID, "tmp"), "pg_catalog")
 	if err != nil {
 		return nil, err
 	}
@@ -44,7 +45,7 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 		Resolver:                  api.Spec.Resolver,
 		ResolverProperties:        api.Spec.ResolverProperties.AsMap(),
 		Args:                      map[string]any{"sql": query, "priority": 1, "temp_dir": tmpDir},
-		UserAttributes:            nil, // todo add user attributes
+		UserAttributes:            auth.GetClaims(ctx).Attributes(),
 		ResolveInteractiveOptions: &runtime.ResolverInteractiveOptions{Format: runtime.GOOBJECTS},
 	})
 	if err != nil {
@@ -54,11 +55,10 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 		for i := 0; i < len(res.Rows); i++ {
 			if err := convert(res.Rows[i], res.Schema); err != nil {
-				return fmt.Errorf("data conversion failed")
+				return fmt.Errorf("data conversion failed with error: %w", err)
 			}
 			if err := writer.Row(res.Rows[i]); err != nil {
-				s.logger.Warn("failed to write row", zap.Error(err))
-				return err
+				return fmt.Errorf("failed to write row: %w", err)
 			}
 		}
 		return writer.Complete("OK")

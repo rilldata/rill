@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
@@ -80,11 +79,9 @@ type PasswordKey struct{}
 
 func (a *Authenticator) PostgresAuthHandler() func(ctx context.Context, username, password string) (context.Context, bool, error) {
 	return func(ctx context.Context, username, password string) (context.Context, bool, error) {
-		var err error
-		password, err = url.QueryUnescape(password)
-		if err != nil {
-			return nil, false, err
-		}
+		// Clients do not pass Bearer to avoid encoding the password
+		// The default token type is Bearer. In case of different token type, the type will be passed in postgres additional properties
+		password = fmt.Sprintf("bearer %s", password)
 		ctx = context.WithValue(ctx, PasswordKey{}, password)
 		newCtx, err := a.parseClaimsFromBearer(ctx, password)
 		if err != nil {
