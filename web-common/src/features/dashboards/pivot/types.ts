@@ -37,6 +37,7 @@ export interface PivotState {
   sorting: SortingState;
   columnPage: number;
   rowPage: number;
+  enableComparison: boolean;
   rowJoinType: PivotRowJoinType;
 }
 

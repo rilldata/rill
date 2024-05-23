@@ -20,6 +20,7 @@ import { mergeFilters } from "./pivot-merge-filters";
 import {
   COMPARISON_DELTA,
   COMPARISON_PERCENT,
+  PivotState,
   type PivotDataRow,
   type PivotDataStoreConfig,
   type PivotTimeConfig,
@@ -38,6 +39,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     measureNames,
     whereFilter,
     measureFilter,
+    enableComparison,
     pivot,
   } = config;
 
@@ -50,7 +52,7 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${measureFilterKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${measureFilterKey}_${enableComparison}`;
 }
 
 /**
@@ -423,4 +425,27 @@ export function prepareMeasureForComparison(
 
     return measure;
   });
+}
+
+export function canEnablePivotComparison(
+  pivotState: PivotState,
+  comparisonStart: string | Date | undefined,
+) {
+  // Disable if more than 5 measures
+  if (pivotState.columns.measure.length >= 5) {
+    return false;
+  }
+  // Disable if time dimension is present in columns or rows
+  if (pivotState.columns.dimension.some((d) => d.type === "time")) {
+    return false;
+  }
+  if (pivotState.rows.dimension.some((d) => d.type === "time")) {
+    return false;
+  }
+  // Disable if time comparison is not present
+  if (!comparisonStart) {
+    return false;
+  }
+
+  return true;
 }

@@ -36,6 +36,7 @@ import {
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
+  canEnablePivotComparison,
   getFilterForPivotTable,
   getPivotConfigKey,
   getSortForAccessor,
@@ -96,13 +97,11 @@ export function getPivotConfig(
         timeDimension: metricsView?.data?.timeDimension || "",
       };
 
-      let enableComparison = false;
-      if (
-        timeControl.comparisonTimeStart &&
-        dashboardStore.pivot.columns.measure.length <= 5
-      ) {
-        enableComparison = true;
-      }
+      let enableComparison =
+        canEnablePivotComparison(
+          dashboardStore.pivot,
+          timeControl.comparisonTimeStart,
+        ) && dashboardStore.pivot.enableComparison;
 
       derived(
         [
