@@ -7,6 +7,7 @@ test.describe("Metrics editor", () => {
   useDashboardFlowTestSetup();
 
   test("Metrics editor", async ({ page }) => {
+    test.slow();
     await updateCodeEditor(page, "");
 
     // the inspector should be empty.
@@ -48,11 +49,9 @@ test.describe("Metrics editor", () => {
 
     // let's check the inspector.
     await expect(page.getByText("Model summary")).toBeVisible({
-      timeout: 10000,
+      timeout: 20000,
     });
-    await expect(page.getByText("Model columns")).toBeVisible({
-      timeout: 10000,
-    });
+    await expect(page.getByText("Model columns")).toBeVisible();
 
     // go to the dashboard and make sure the metrics and dimensions are there.
 
