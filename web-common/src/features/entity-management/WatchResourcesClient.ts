@@ -113,9 +113,10 @@ export class WatchResourcesClient {
   private invalidateResource(instanceId: string, resource: V1Resource) {
     if (!resource.meta) return;
     void refreshResource(queryClient, instanceId, resource);
+    if (!resource.meta?.filePaths?.[0]) return;
 
     const lastStateUpdatedOn = fileArtifacts.getFileArtifact(
-      resource.meta?.filePaths?.[0] ?? "",
+      resource.meta?.filePaths?.[0],
     ).lastStateUpdatedOn;
     if (
       resource.meta.reconcileStatus !==
