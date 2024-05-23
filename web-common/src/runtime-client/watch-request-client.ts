@@ -10,7 +10,9 @@ import { runtime } from "./runtime-store";
 import { asyncWait } from "../lib/waitUtils";
 
 const MAX_RETRIES = 5;
-const INITIAL_DELAY = 1000;
+const BACKOFF_DELAY = 1000;
+const RETRY_COUNT_DELAY = 500;
+const RECONNECT_CALLBACK_DELAY = 150;
 
 type WatchResponse =
   | V1WatchFilesResponse
@@ -80,12 +82,11 @@ export class WatchRequestClient<Res extends WatchResponse> {
     // The stream was not cancelled, so don't reconnect
     if (this.controller && !this.controller.signal.aborted) return;
 
-    if (this.retryAttempts >= MAX_RETRIES) {
+    if (this.retryAttempts >= MAX_RETRIES)
       throw new Error("Max retries exceeded");
-    }
 
     if (this.retryAttempts > 0) {
-      const delay = INITIAL_DELAY * 2 ** this.retryAttempts;
+      const delay = BACKOFF_DELAY * 2 ** this.retryAttempts;
       await asyncWait(delay);
     }
 
@@ -102,19 +103,14 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.stream = this.getFetchStream(this.url, this.controller);
 
     try {
-      // If we've successfully connected for 500ms
-      // Then the stream is considered stable
-      // and we can reset the retry attempts
       this.retryTimeout = setTimeout(() => {
         this.retryAttempts = 0;
-      }, 500);
+      }, RETRY_COUNT_DELAY);
 
-      // If we've successfully connected for 150ms
-      // Fire the reconnect callbacks
       if (reconnect) {
         this.reconnectTimeout = setTimeout(() => {
           this.listeners.get("reconnect")?.forEach((cb) => void cb());
-        }, 150);
+        }, RECONNECT_CALLBACK_DELAY);
       }
 
       for await (const res of this.stream) {
@@ -125,9 +121,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
           this.listeners.get("response")?.forEach((cb) => void cb(res.result));
       }
     } catch (err) {
-      // The stream failed
-      // If it failed within 500ms, we'll consider that an unstable connection
-      // And we'll avoid resetting the retry attempts
       clearTimeout(this.retryTimeout);
 
       if (this.controller) this.cancel();
