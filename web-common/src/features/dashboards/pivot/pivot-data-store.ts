@@ -98,7 +98,7 @@ export function getPivotConfig(
         timeDimension: metricsView?.data?.timeDimension || "",
       };
 
-      let enableComparison =
+      const enableComparison =
         canEnablePivotComparison(
           dashboardStore.pivot,
           timeControl.comparisonTimeStart,
