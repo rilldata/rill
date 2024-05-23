@@ -79,6 +79,7 @@ export function getPivotConfig(
           measureFilter: { ready: true, filter: undefined },
           pivot: dashboardStore.pivot,
           time: {} as PivotTimeConfig,
+          comparisonTime: undefined,
           enableComparison: false,
         });
         return;
@@ -103,6 +104,14 @@ export function getPivotConfig(
           timeControl.comparisonTimeStart,
         ) && dashboardStore.pivot.enableComparison;
 
+      let comparisonTime: TimeRangeString | undefined = undefined;
+      if (enableComparison) {
+        comparisonTime = {
+          start: timeControl.comparisonTimeStart,
+          end: timeControl.comparisonTimeEnd,
+        };
+      }
+
       derived(
         [
           prepareMeasureFilterResolutions(
@@ -123,6 +132,7 @@ export function getPivotConfig(
               measureFilter: measureFilterResolution,
               pivot: dashboardStore.pivot,
               enableComparison,
+              comparisonTime,
               time,
             };
           }
@@ -171,6 +181,7 @@ export function getPivotConfig(
             measureFilter: measureFilterResolution,
             pivot: dashboardStore.pivot,
             enableComparison,
+            comparisonTime,
             time,
           };
         },

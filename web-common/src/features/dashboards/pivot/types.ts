@@ -1,4 +1,5 @@
 import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -86,6 +87,7 @@ export interface PivotDataStoreConfig {
   pivot: PivotState;
   time: PivotTimeConfig;
   enableComparison: boolean;
+  comparisonTime: TimeRangeString | undefined;
 }
 
 export interface PivotAxesData {
