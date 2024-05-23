@@ -257,15 +257,18 @@ export type QueryServiceMetricsViewAggregationBody = {
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewAggregationSort[];
   timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
   limit?: string;
   offset?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  exact?: boolean;
 };
 
 export type QueryServiceExportBody = {
@@ -781,11 +784,6 @@ export interface V1Report {
   state?: V1ReportState;
 }
 
-export interface V1RefreshTrigger {
-  spec?: V1RefreshTriggerSpec;
-  state?: V1RefreshTriggerState;
-}
-
 export interface V1Resource {
   meta?: V1ResourceMeta;
   projectParser?: V1ProjectParser;
@@ -814,6 +812,11 @@ export interface V1RefreshTriggerState {
 
 export interface V1RefreshTriggerSpec {
   onlyNames?: V1ResourceName[];
+}
+
+export interface V1RefreshTrigger {
+  spec?: V1RefreshTriggerSpec;
+  state?: V1RefreshTriggerState;
 }
 
 export type V1ReconcileStatus =
@@ -1086,28 +1089,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
-}
-
 export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1167,6 +1148,23 @@ It's set to true if the metrics view is based on an externally managed table. */
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewSchemaResponse {
@@ -1289,6 +1287,11 @@ export interface V1MetricsViewColumn {
   nullable?: boolean;
 }
 
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
+}
+
 export interface V1MetricsViewAggregationSort {
   name?: string;
   desc?: boolean;
@@ -1301,20 +1304,6 @@ export interface V1MetricsViewAggregationResponse {
   data?: V1MetricsViewAggregationResponseDataItem[];
 }
 
-export interface V1MetricsViewAggregationMeasure {
-  name?: string;
-  builtinMeasure?: V1BuiltinMeasure;
-  builtinMeasureArgs?: unknown[];
-  filter?: V1Expression;
-}
-
-export interface V1MetricsViewAggregationDimension {
-  name?: string;
-  timeGrain?: V1TimeGrain;
-  timeZone?: string;
-  alias?: string;
-}
-
 export interface V1MetricsViewAggregationRequest {
   instanceId?: string;
   metricsView?: string;
@@ -1322,15 +1311,57 @@ export interface V1MetricsViewAggregationRequest {
   measures?: V1MetricsViewAggregationMeasure[];
   sort?: V1MetricsViewAggregationSort[];
   timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
   timeStart?: string;
   timeEnd?: string;
   pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
   limit?: string;
   offset?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
+  exact?: boolean;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
+  dimension?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeCount {
+  [key: string]: any;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeComparisonValue {
+  measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeComparisonRatio {
+  measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasureComputeComparisonDelta {
+  measure?: string;
+}
+
+export interface V1MetricsViewAggregationMeasure {
+  name?: string;
+  builtinMeasure?: V1BuiltinMeasure;
+  builtinMeasureArgs?: unknown[];
+  filter?: V1Expression;
+  count?: V1MetricsViewAggregationMeasureComputeCount;
+  countDistinct?: V1MetricsViewAggregationMeasureComputeCountDistinct;
+  comparisonValue?: V1MetricsViewAggregationMeasureComputeComparisonValue;
+  comparisonDelta?: V1MetricsViewAggregationMeasureComputeComparisonDelta;
+  comparisonRatio?: V1MetricsViewAggregationMeasureComputeComparisonRatio;
+}
+
+export interface V1MetricsViewAggregationDimension {
+  name?: string;
+  timeGrain?: V1TimeGrain;
+  timeZone?: string;
+  alias?: string;
 }
 
 export interface V1MapType {
@@ -2007,7 +2038,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

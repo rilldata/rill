@@ -1,12 +1,12 @@
-import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { renameFileArtifact } from "@rilldata/web-common/features/entity-management/actions";
 import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
+import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   INVALID_NAME_MESSAGE,
   isDuplicateName,
   VALID_NAME_PATTERN,
 } from "@rilldata/web-common/features/entity-management/name-utils";
-import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
 export async function handleEntityRename(
   instanceId: string,

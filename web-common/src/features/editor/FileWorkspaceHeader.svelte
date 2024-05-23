@@ -1,8 +1,8 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { useFileNamesInDirectory } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { WorkspaceHeader } from "../../layout/workspace";
   import { PROTECTED_FILES } from "../file-explorer/protected-paths";
