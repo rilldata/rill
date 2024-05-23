@@ -38,7 +38,6 @@
   $: gridCell = defaults.DASHBOARD_WIDTH / (columns ?? defaults.COLUMN_COUNT);
   $: radius = gridCell * defaults.COMPONENT_RADIUS;
   $: gridVector = [gridCell, gridCell] as Vector;
-  $: items, console.log(items);
   $: mouseDelta = vector.divide(vector.subtract(mousePosition, startMouse), [
     scale,
     scale,
