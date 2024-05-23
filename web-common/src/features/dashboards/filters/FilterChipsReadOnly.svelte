@@ -21,7 +21,7 @@ The main feature-set component for dashboard filters
   export let filters: V1Expression | undefined;
   export let dimensionThresholdFilters: DimensionThresholdFilter[];
   export let timeRange: V1TimeRange | undefined;
-  export let comparisonTimeRange: V1TimeRange | undefined;
+  export let comparisonTimeRange: V1TimeRange | undefined = undefined;
 
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
 

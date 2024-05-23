@@ -158,10 +158,7 @@
     />
 
     <!-- Criteria -->
-    <AlertFilterCriteria
-      metricsViewName={$dashboardName.data}
-      filters={metricsViewAggregationRequest?.having}
-    />
+    <AlertFilterCriteria filters={metricsViewAggregationRequest?.having} />
 
     <!-- Slack notification -->
     {#if slackNotifier}
