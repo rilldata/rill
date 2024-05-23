@@ -2,6 +2,7 @@ package metricsresolver
 
 import (
 	"fmt"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -85,6 +86,10 @@ type TimeRange struct {
 	IsoDuration  string    `mapstructure:"iso_duration"`
 	IsoOffset    string    `mapstructure:"iso_offset"`
 	RoundToGrain TimeGrain `mapstructure:"round_to_grain"`
+
+	// Resolved in pre-processing
+	StartTime *time.Time `mapstructure:"-"`
+	EndTime   *time.Time `mapstructure:"-"`
 }
 
 type Expression struct {
@@ -172,6 +177,33 @@ func (t TimeGrain) ToProto() runtimev1.TimeGrain {
 		return runtimev1.TimeGrain_TIME_GRAIN_QUARTER
 	case TimeGrainYear:
 		return runtimev1.TimeGrain_TIME_GRAIN_YEAR
+	default:
+		panic(fmt.Errorf("invalid time grain %q", t))
+	}
+}
+
+func TimeGrainFromProto(t runtimev1.TimeGrain) TimeGrain {
+	switch t {
+	case runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED:
+		return TimeGrainUnspecified
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return TimeGrainMillisecond
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return TimeGrainSecond
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return TimeGrainMinute
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return TimeGrainHour
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return TimeGrainDay
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return TimeGrainWeek
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return TimeGrainMonth
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return TimeGrainQuarter
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return TimeGrainYear
 	default:
 		panic(fmt.Errorf("invalid time grain %q", t))
 	}

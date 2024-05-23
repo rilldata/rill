@@ -1,112 +1,151 @@
 package metricsresolver
 
 import (
-	"context"
+	"errors"
 	"fmt"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/queries"
 )
 
-func (r *Resolver) BuildAST(ctx context.Context) (*AST, error) {
-	d := r.olap.Dialect()
-	ast := newAST(d)
+type AST struct {
+	Root                *MetricsSelect
+	UnderlyingSelect    *RawSelect
+	BaseTimeWhere       *WhereExpr
+	ComparisonTimeWhere *WhereExpr
+	// OrderByExprs        []string
+	// HavingWhere         *WhereExpr
 
-	// Set the base table and filter
-	ast.SetRawSelect(r.metricsView.Database, r.metricsView.DatabaseSchema, r.metricsView.Table, r.security.RowFilter, r.query.Where)
+	metricsView    *runtimev1.MetricsViewSpec
+	security       *runtime.ResolvedMetricsViewSecurity
+	query          *Query
+	dialect        drivers.Dialect
+	nextIdentifier int
+	dimFields      []SelectField
+}
 
-	// Set the base time range (if any)
-	col, start, end, ok, err := r.ResolveTimeRange(ctx, r.query.TimeRange)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve time range: %w", err)
+type RawSelect struct {
+	Alias    string
+	FromExpr string
+	Where    WhereExpr
+}
+
+type MetricsSelect struct {
+	Alias              string
+	DimFields          []SelectField
+	MeasureFields      []SelectField
+	Group              bool
+	FromUnderlying     bool
+	FromSelect         *MetricsSelect
+	LeftJoinSelects    []*MetricsSelect
+	ComparisonSelect   *MetricsSelect
+	ComparisonJoinType string
+}
+
+type SelectField struct {
+	Name   string
+	Label  string
+	Expr   string
+	Unnest bool // Note on unnest: Adds a lateral unnest. Might be faster to apply after WHERE, unless Druid. Note: WhereExpr uses different operators, doesn't rely on unnested table.
+}
+
+type WhereExpr struct {
+	Expr string
+	Args []any
+}
+
+type OrderByField struct {
+	Name string
+	Expr string
+	Desc bool
+}
+
+func buildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
+	// Init
+	ast := &AST{
+		metricsView: mv,
+		security:    sec,
+		query:       qry,
+		dialect:     dialect,
 	}
-	if ok {
-		ast.SetBaseTimeRange(col, start, end)
+
+	// Set the underlying table and filter
+	ast.setUnderlyingSelect(mv.Database, mv.DatabaseSchema, mv.Table, sec.RowFilter, "", nil) // TODO: qry.Where
+
+	// Set the time ranges
+	if ast.query.TimeRange != nil {
+		ast.setBaseTimeRange(ast.metricsView.TimeDimension, ast.query.TimeRange.StartTime, ast.query.TimeRange.EndTime)
+	}
+	if ast.query.ComparisonTimeRange != nil {
+		ast.setComparisonTimeRange(ast.metricsView.TimeDimension, ast.query.ComparisonTimeRange.StartTime, ast.query.ComparisonTimeRange.EndTime)
 	}
 
-	// Set the comparison time range (if any)
-	col, start, end, ok, err = r.ResolveTimeRange(ctx, r.query.ComparisonTimeRange)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve comparison time range: %w", err)
-	}
-	if ok {
-		ast.SetComparisonTimeRange(col, start, end)
-	}
-
-	// Add each output dimension
-	for _, qd := range r.query.Dimensions {
-		// Handle if "compute.time_floor" is configured
-		if qd.Compute != nil {
-			if qd.Compute.TimeFloor == nil {
-				return nil, fmt.Errorf(`unsupported "compute" for dimension %q`, qd.Name)
-			}
-
-			if !qd.Compute.TimeFloor.Grain.Valid() {
-				return nil, fmt.Errorf(`invalid "grain" for dimension %q`, qd.Name)
-			}
-
-			dim, err := r.lookupDimension(qd.Compute.TimeFloor.Dimension)
-			if err != nil {
-				return nil, err
-			}
-
-			var tz string
-			if r.query.TimeZone != nil {
-				tz = *r.query.TimeZone
-			}
-
-			grain := qd.Compute.TimeFloor.Grain.ToProto()
-			expr, err := d.DateTruncExpr(dim, grain, tz, int(r.metricsView.FirstDayOfWeek), int(r.metricsView.FirstMonthOfYear))
-			if err != nil {
-				return nil, fmt.Errorf(`failed to compute time floor for dimension %q: %w`, qd.Name, err)
-			}
-
-			ast.AddDimensionField(qd.Name, "", expr, dim.Unnest)
-			continue
-		}
-
-		// Handle regular dimension
-		dim, err := r.lookupDimension(qd.Name)
+	// Build dimensions for underlying
+	dimFields := make([]SelectField, 0, len(ast.query.Dimensions))
+	for _, qd := range ast.query.Dimensions {
+		dim, err := ast.resolveDimension(qd, true)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("invalid dimension %q: %w", qd.Name, err)
 		}
 
-		expr := dim.Expression
-		if expr == "" {
-			expr = d.EscapeIdentifier(dim.Column)
-		}
-
-		ast.AddDimensionField(qd.Name, dim.Label, expr, dim.Unnest)
+		dimFields = append(dimFields, SelectField{
+			Name:   dim.Name,
+			Label:  dim.Label,
+			Expr:   ast.dialect.MetricsViewDimensionExpression(dim),
+			Unnest: dim.Unnest,
+		})
 	}
+
+	// Add dimensions to the root select and cache it in the AST (for later use in case we need to add JOINs against the underlying)
+	ast.Root.DimFields = dimFields
+	ast.dimFields = dimFields
 
 	// Add each output measure
-	for _, qm := range r.query.Measures {
-		_, err := r.resolveMeasure(qm, d)
+	for _, qm := range ast.query.Measures {
+		m, err := ast.resolveMeasure(qm, true)
 		if err != nil {
 			return nil, fmt.Errorf("invalid measure %q: %w", qm.Name, err)
 		}
 
-		// TODO: Add
+		// TODO: Move down to addMeasureField
+		err = ast.checkRequiredDimensionsPresent(m)
+		if err != nil {
+			return nil, fmt.Errorf("can't query measure %q: %w", qm.Name, err)
+		}
+
+		err = ast.addMeasureField(ast.Root, m)
+		if err != nil {
+			return nil, fmt.Errorf("can't query measure %q: %w", qm.Name, err)
+		}
 	}
+
+	// TODO:
+	// Sort (implication: comparison join type)
+	// Having
+	// Limit
+	// Offset
 
 	return ast, nil
 }
 
-func (r *Resolver) lookupDimension(name string) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
-	if name == r.metricsView.TimeDimension {
+func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
+	if name == a.metricsView.TimeDimension {
 		return &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:   name,
 			Column: name,
 		}, nil
 	}
 
-	if !r.security.CanAccessField(name) {
-		return nil, queries.ErrForbidden // TODO: Change type
+	if visible {
+		if !a.security.CanAccessField(name) {
+			return nil, queries.ErrForbidden // TODO: Change type
+		}
 	}
 
-	for _, dim := range r.metricsView.Dimensions {
+	for _, dim := range a.metricsView.Dimensions {
 		if dim.Name == name {
 			return dim, nil
 		}
@@ -115,12 +154,14 @@ func (r *Resolver) lookupDimension(name string) (*runtimev1.MetricsViewSpec_Dime
 	return nil, fmt.Errorf("dimension %q not found", name)
 }
 
-func (r *Resolver) lookupMeasure(name string) (*runtimev1.MetricsViewSpec_MeasureV2, error) {
-	if !r.security.CanAccessField(name) {
-		return nil, queries.ErrForbidden // TODO: Change type
+func (a *AST) lookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSpec_MeasureV2, error) {
+	if visible {
+		if !a.security.CanAccessField(name) {
+			return nil, queries.ErrForbidden // TODO: Change type
+		}
 	}
 
-	for _, m := range r.metricsView.Measures {
+	for _, m := range a.metricsView.Measures {
 		if m.Name == name {
 			return m, nil
 		}
@@ -129,13 +170,85 @@ func (r *Resolver) lookupMeasure(name string) (*runtimev1.MetricsViewSpec_Measur
 	return nil, fmt.Errorf("measure %q not found", name)
 }
 
-func (r *Resolver) resolveMeasure(qm Measure, d drivers.Dialect) (*runtimev1.MetricsViewSpec_MeasureV2, error) {
+func (a *AST) checkNameForComputedField(name string) error {
+	if name == a.metricsView.TimeDimension {
+		return errors.New("name for computed field collides with the time dimension name")
+	}
+
+	for _, d := range a.metricsView.Dimensions {
+		if d.Name == name {
+			return errors.New("name for computed field collides with an existing dimension name")
+		}
+	}
+
+	for _, m := range a.metricsView.Measures {
+		if m.Name == name {
+			return errors.New("name for computed field collides with an existing measure name")
+		}
+	}
+
+	return nil
+}
+
+func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
+	// Handle regular dimension
+	if qd.Compute == nil {
+		return a.lookupDimension(qd.Name, visible)
+	}
+
+	// Handle computed dimension. This means "compute.time_floor" must be configured.
+
+	if qd.Compute.TimeFloor == nil {
+		return nil, fmt.Errorf(`unsupported "compute"`)
+	}
+
+	if !qd.Compute.TimeFloor.Grain.Valid() {
+		return nil, fmt.Errorf(`invalid "grain"`)
+	}
+
+	dim, err := a.lookupDimension(qd.Compute.TimeFloor.Dimension, visible)
+	if err != nil {
+		return nil, err
+	}
+
+	if qd.Name != qd.Compute.TimeFloor.Dimension {
+		err := a.checkNameForComputedField(qd.Name)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	var tz string
+	if a.query.TimeZone != nil {
+		tz = *a.query.TimeZone
+	}
+
+	grain := qd.Compute.TimeFloor.Grain.ToProto()
+	expr, err := a.dialect.DateTruncExpr(dim, grain, tz, int(a.metricsView.FirstDayOfWeek), int(a.metricsView.FirstMonthOfYear))
+	if err != nil {
+		return nil, fmt.Errorf(`failed to compute time floor: %w`, err)
+	}
+
+	return &runtimev1.MetricsViewSpec_DimensionV2{
+		Name:       qd.Name,
+		Expression: expr,
+		Label:      dim.Label,
+		Unnest:     dim.Unnest,
+	}, nil
+}
+
+func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSpec_MeasureV2, error) {
 	if qm.Compute == nil {
-		return r.lookupMeasure(qm.Name)
+		return a.lookupMeasure(qm.Name, visible)
 	}
 
 	if err := qm.Compute.Validate(); err != nil {
-		return nil, fmt.Errorf(`invalid "compute": %w`, qm.Name, err)
+		return nil, fmt.Errorf(`invalid "compute": %w`, err)
+	}
+
+	err := a.checkNameForComputedField(qm.Name)
+	if err != nil {
+		return nil, err
 	}
 
 	if qm.Compute.Count {
@@ -147,14 +260,14 @@ func (r *Resolver) resolveMeasure(qm Measure, d drivers.Dialect) (*runtimev1.Met
 	}
 
 	if qm.Compute.CountDistinct != nil {
-		dim, err := r.lookupDimension(*qm.Compute.CountDistinct)
+		dim, err := a.lookupDimension(*qm.Compute.CountDistinct, visible)
 		if err != nil {
 			return nil, err
 		}
 
 		expr := dim.Expression
 		if expr == "" {
-			expr = d.EscapeIdentifier(dim.Column)
+			expr = a.dialect.EscapeIdentifier(dim.Column)
 		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
@@ -165,14 +278,14 @@ func (r *Resolver) resolveMeasure(qm Measure, d drivers.Dialect) (*runtimev1.Met
 	}
 
 	if qm.Compute.ComparisonValue != nil {
-		m, err := r.lookupMeasure(*qm.Compute.ComparisonValue)
+		m, err := a.lookupMeasure(*qm.Compute.ComparisonValue, visible)
 		if err != nil {
 			return nil, err
 		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("comparison.%s", d.EscapeIdentifier(m.Name)),
+			Expression:         fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{*qm.Compute.ComparisonValue},
 			Label:              fmt.Sprintf("%s (prev)", m.Label),
@@ -180,14 +293,14 @@ func (r *Resolver) resolveMeasure(qm Measure, d drivers.Dialect) (*runtimev1.Met
 	}
 
 	if qm.Compute.ComparisonDelta != nil {
-		m, err := r.lookupMeasure(*qm.Compute.ComparisonDelta)
+		m, err := a.lookupMeasure(*qm.Compute.ComparisonDelta, visible)
 		if err != nil {
 			return nil, err
 		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
-			Expression:         fmt.Sprintf("base.%s - comparison.%s", d.EscapeIdentifier(m.Name), d.EscapeIdentifier(m.Name)),
+			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{*qm.Compute.ComparisonDelta},
 			Label:              fmt.Sprintf("%s (Δ)", m.Label),
@@ -195,108 +308,296 @@ func (r *Resolver) resolveMeasure(qm Measure, d drivers.Dialect) (*runtimev1.Met
 	}
 
 	if qm.Compute.ComparisonRatio != nil {
-		m, err := r.lookupMeasure(*qm.Compute.ComparisonRatio)
+		m, err := a.lookupMeasure(*qm.Compute.ComparisonRatio, visible)
 		if err != nil {
 			return nil, err
 		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
-			Expression:         d.SafeDivideExpression(fmt.Sprintf("base.%s", d.EscapeIdentifier(m.Name)), fmt.Sprintf("base.%s", d.EscapeIdentifier(m.Name))),
+			Expression:         a.dialect.SafeDivideExpression(fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name)), fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name))),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{*qm.Compute.ComparisonDelta},
-			Label:              fmt.Sprintf("%s (Δ%)", m.Label),
+			Label:              fmt.Sprintf("%s (Δ%%)", m.Label),
 		}, nil
 	}
 
 	return nil, fmt.Errorf(`unhandled compute operation`)
 }
 
-type AST struct {
-	RawSelect        *SimpleSelect
-	BaseSelect       *SimpleSelect
-	ComparisonSelect *SimpleSelect
-	DimensionFields  []SelectField
-	MeasureFields    []SelectField
+func (a *AST) checkRequiredDimensionsPresent(m *runtimev1.MetricsViewSpec_MeasureV2) error {
+	for _, rd := range m.RequiredDimensions {
+		var found bool
+		for _, qd := range a.query.Dimensions {
+			if rd.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				if qd.Compute != nil {
+					continue
+				}
+			} else {
+				if qd.Compute == nil || qd.Compute.TimeFloor == nil {
+					continue
+				}
 
-	dialect   drivers.Dialect
-	nextIdent int
-}
+				if TimeGrainFromProto(rd.TimeGrain) != qd.Compute.TimeFloor.Grain {
+					continue
+				}
+			}
 
-type SimpleSelect struct {
-	Alias     string
-	FromRaw   string
-	WhereRaw  string
-	WhereExpr *Expression
-	Args      []any
-}
+			if rd.Name == qd.Name {
+				found = true
+				break
+			}
+		}
 
-type SelectField struct {
-	Alias  string
-	Label  string
-	Expr   string
-	Unnest bool
-}
-
-func newAST(dialect drivers.Dialect) *AST {
-	return &AST{dialect: dialect}
-}
-
-func (a *AST) SetRawSelect(db, schema, table, rowFilter string, where *Expression) {
-	a.RawSelect = &SimpleSelect{
-		Alias:     a.generateIdentifier(),
-		FromRaw:   a.dialect.EscapeTable(db, schema, table),
-		WhereRaw:  rowFilter,
-		WhereExpr: where,
+		if !found {
+			if rd.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				return fmt.Errorf("missing required dimension %q at %q granularity", rd.Name, TimeGrainFromProto(rd.TimeGrain))
+			}
+			return fmt.Errorf("missing required dimension %q", rd.Name)
+		}
 	}
-	a.BaseSelect = a.RawSelect
+
+	return nil
 }
 
-func (a *AST) SetBaseTimeRange(timeCol string, start, end *time.Time) {
-	where, args, ok := a.timeRangeWhereClause(timeCol, start, end)
+func (a *AST) setUnderlyingSelect(db, schema, table, rowFilter, whereExpr string, whereArgs []any) {
+	if rowFilter != "" {
+		if whereExpr == "" {
+			whereExpr = rowFilter
+		} else {
+			whereExpr = fmt.Sprintf("(%s) AND (%s)", rowFilter, whereExpr)
+		}
+	}
+
+	a.UnderlyingSelect = &RawSelect{
+		Alias:    a.generateIdentifier(),
+		FromExpr: a.dialect.EscapeTable(db, schema, table),
+		Where: WhereExpr{
+			Expr: whereExpr,
+			Args: whereArgs,
+		},
+	}
+
+	a.Root = &MetricsSelect{
+		Alias:          a.generateIdentifier(),
+		Group:          true,
+		FromUnderlying: true,
+	}
+}
+
+func (a *AST) setBaseTimeRange(timeCol string, start, end *time.Time) {
+	expr, args, ok := a.expressionForTimeRange(timeCol, start, end)
 	if !ok {
 		return
 	}
 
-	a.BaseSelect = &SimpleSelect{
-		Alias:    a.generateIdentifier(),
-		FromRaw:  a.dialect.EscapeIdentifier(a.RawSelect.Alias),
-		WhereRaw: where,
-		Args:     args,
+	a.BaseTimeWhere = &WhereExpr{
+		Expr: expr,
+		Args: args,
 	}
 }
 
-func (a *AST) SetComparisonTimeRange(timeCol string, start, end *time.Time) {
-	where, args, ok := a.timeRangeWhereClause(timeCol, start, end)
+func (a *AST) setComparisonTimeRange(timeCol string, start, end *time.Time) {
+	expr, args, ok := a.expressionForTimeRange(timeCol, start, end)
 	if !ok {
 		return
 	}
 
-	a.ComparisonSelect = &SimpleSelect{
-		Alias:    a.generateIdentifier(),
-		FromRaw:  a.dialect.EscapeIdentifier(a.RawSelect.Alias),
-		WhereRaw: where,
-		Args:     args,
+	a.ComparisonTimeWhere = &WhereExpr{
+		Expr: expr,
+		Args: args,
 	}
 }
 
-// Note on unnest: Adds a lateral unnest. Might be faster to apply after WHERE, unless Druid. Note: WhereExpr uses different operators, doesn't rely on unnested table.
-func (a *AST) AddDimensionField(alias, label, expr string, unnest bool) {
-	a.DimensionFields = append(a.DimensionFields, SelectField{
-		Alias:  alias,
-		Label:  label,
-		Expr:   expr,
-		Unnest: unnest,
+func (a *AST) addMeasureField(s *MetricsSelect, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+	if a.hasMeasure(s, m.Name) {
+		return nil
+	}
+
+	switch m.Type {
+	case runtimev1.MetricsViewSpec_MEASURE_TYPE_UNSPECIFIED, runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE:
+		return a.addSimpleMeasure(s, m)
+	case runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED:
+		return a.addDerivedMeasure(s, m)
+	case runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON:
+		return a.addTimeComparisonMeasure(s, m)
+	default:
+		panic("unhandled measure type")
+	}
+}
+
+func (a *AST) hasMeasure(s *MetricsSelect, name string) bool {
+	for _, f := range s.MeasureFields {
+		if f.Name == name {
+			return true
+		}
+	}
+	return false
+}
+
+// we know the measure is not in s, but might be in a subselect
+func (a *AST) addSimpleMeasure(s *MetricsSelect, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+	if s.FromUnderlying {
+		s.MeasureFields = append(s.MeasureFields, SelectField{
+			Name:  m.Name,
+			Label: m.Label,
+			Expr:  a.expressionForMeasure(m),
+		})
+
+		return nil
+	}
+
+	if !a.hasMeasure(s.FromSelect, m.Name) { // Check because could have been added as a ref
+		err := a.addSimpleMeasure(s.FromSelect, m)
+		if err != nil {
+			return err
+		}
+	}
+
+	expr := a.expressionForMember(s.FromSelect.Alias, m.Name)
+	if s.Group {
+		expr = a.expressionForAnyInGroup(expr)
+	}
+
+	s.MeasureFields = append(s.MeasureFields, SelectField{
+		Name:  m.Name,
+		Label: m.Label,
+		Expr:  expr,
 	})
+
+	return nil
 }
 
-func (a *AST) generateIdentifier() string {
-	tmp := fmt.Sprintf("t%d", a.nextIdent)
-	a.nextIdent++
-	return tmp
+func (a *AST) addDerivedMeasure(s *MetricsSelect, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+	// TODO: Recurse if comparison?
+
+	if len(m.PerDimensions) > 0 {
+		return a.addDerivedMeasureWithPer(s, m)
+	}
+
+	err := a.addReferencedMeasuresToScope(s, m.ReferencedMeasures)
+	if err != nil {
+		return err
+	}
+
+	// NOTE: Invariants ensure there's no ambiguity for the referenced names.
+	// Only case of ambiguity should be for comparisons, where we require users to use base.xxx and comparison.xxx.
+
+	expr := a.expressionForMeasure(m)
+	if s.Group {
+		// TODO: Risk of expr containing a window (can't be wrapped by ANY_VALUE).
+		// Fix by wrapping with a non-grouped.
+		expr = a.expressionForAnyInGroup(expr)
+	}
+
+	s.MeasureFields = append(s.MeasureFields, SelectField{
+		Name:  m.Name,
+		Label: m.Label,
+		Expr:  expr,
+	})
+
+	return nil
 }
 
-func (a *AST) timeRangeWhereClause(timeCol string, start, end *time.Time) (string, []any, bool) {
+func (a *AST) addDerivedMeasureWithPer(_ *MetricsSelect, _ *runtimev1.MetricsViewSpec_MeasureV2) error {
+	return fmt.Errorf("support for \"per\" not implemented")
+}
+
+func (a *AST) addTimeComparisonMeasure(s *MetricsSelect, m *runtimev1.MetricsViewSpec_MeasureV2) error {
+	if s.ComparisonSelect == nil {
+		a.wrapSelect(s, "base")
+		s.ComparisonSelect = &MetricsSelect{
+			Alias:          "comparison",
+			DimFields:      a.dimFields,
+			Group:          true,
+			FromUnderlying: true,
+		}
+	}
+
+	err := a.addReferencedMeasuresToScope(s, m.ReferencedMeasures)
+	if err != nil {
+		return err
+	}
+
+	expr := a.expressionForMeasure(m)
+	if s.Group {
+		// TODO: You know the thing
+		expr = a.expressionForAnyInGroup(expr)
+	}
+
+	s.MeasureFields = append(s.MeasureFields, SelectField{
+		Name:  m.Name,
+		Label: m.Label,
+		Expr:  expr,
+	})
+
+	return nil
+}
+
+// We rely on the name being unique to the measure (so can't mean something else)
+func (a *AST) addReferencedMeasuresToScope(s *MetricsSelect, referencedMeasures []string) error {
+	if len(referencedMeasures) == 0 {
+		return nil
+	}
+
+	if s.FromUnderlying {
+		a.wrapSelect(s, a.generateIdentifier())
+	}
+
+	for _, rm := range referencedMeasures {
+		m, err := a.lookupMeasure(rm, false)
+		if err != nil {
+			return err
+		}
+
+		switch m.Type {
+		case runtimev1.MetricsViewSpec_MEASURE_TYPE_UNSPECIFIED, runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE:
+			// Keep going
+		default:
+			return fmt.Errorf("referenced measure %q is not simple", rm)
+		}
+
+		err = a.addMeasureField(s.FromSelect, m)
+		if err != nil {
+			return err
+		}
+
+		if s.ComparisonSelect != nil {
+			err = a.addMeasureField(s.ComparisonSelect, m)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return nil
+}
+
+func (a *AST) wrapSelect(s *MetricsSelect, innerAlias string) {
+	cpy := *s
+	cpy.Alias = innerAlias
+
+	s.DimFields = make([]SelectField, 0, len(cpy.DimFields))
+	for _, f := range cpy.DimFields {
+		f.Expr = a.expressionForMember(cpy.Alias, f.Name)
+		s.DimFields = append(s.DimFields, f)
+	}
+
+	s.MeasureFields = make([]SelectField, 0, len(cpy.MeasureFields))
+	for _, f := range cpy.MeasureFields {
+		f.Expr = a.expressionForMember(cpy.Alias, f.Name)
+		s.MeasureFields = append(s.MeasureFields, f)
+	}
+
+	s.Group = false
+	s.FromUnderlying = false
+	s.FromSelect = &cpy
+	s.LeftJoinSelects = nil
+	s.ComparisonSelect = nil
+	s.ComparisonJoinType = ""
+}
+
+func (a *AST) expressionForTimeRange(timeCol string, start, end *time.Time) (string, []any, bool) {
 	var where string
 	var args []any
 	if start != nil && end != nil {
@@ -313,4 +614,30 @@ func (a *AST) timeRangeWhereClause(timeCol string, start, end *time.Time) (strin
 		return "", nil, false
 	}
 	return where, args, true
+}
+
+func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2) string {
+	if m.Window != nil {
+		return m.Expression
+	}
+
+	// incorporate required dimensions. maybe dims?
+
+	// TODO:
+	return ""
+}
+
+// not escaping tbl because only used for generated aliases
+func (a *AST) expressionForMember(tbl, name string) string {
+	return fmt.Sprintf("%s.%s", tbl, a.dialect.EscapeIdentifier(name))
+}
+
+func (a *AST) expressionForAnyInGroup(expr string) string {
+	return fmt.Sprintf("ANY_VALUE(%s)", expr)
+}
+
+func (a *AST) generateIdentifier() string {
+	tmp := fmt.Sprintf("t%d", a.nextIdentifier)
+	a.nextIdentifier++
+	return tmp
 }
