@@ -101,16 +101,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		renderer = "vega_lite"
 		rendererProps = must(structpb.NewStruct(map[string]any{"spec": *tmp.VegaLite}))
 	}
-	if tmp.Markdown != nil {
-		n++
-		renderer = "markdown"
-		rendererProps = must(structpb.NewStruct(map[string]any{"content": *tmp.Markdown}))
-	}
-	if tmp.Image != nil {
-		n++
-		renderer = "image"
-		rendererProps = must(structpb.NewStruct(map[string]any{"url": *tmp.Image}))
-	}
 	if len(tmp.Template) > 0 {
 		n++
 
@@ -124,10 +114,10 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 
 	// Check there is exactly one renderer
 	if n == 0 {
-		return nil, nil, errors.New(`missing renderer configuration (set one of vega_lite, markdown, image)`)
+		return nil, nil, errors.New(`missing renderer configuration (set one of vega_lite, template)`)
 	}
 	if n > 1 {
-		return nil, nil, errors.New(`multiple renderers are not allowed (set only one of vega_lite, markdown, image)`)
+		return nil, nil, errors.New(`multiple renderers are not allowed (set only one of vega_lite, template)`)
 	}
 
 	// Create the component spec

@@ -2,9 +2,9 @@
   import DOMPurify from "dompurify";
   import { marked } from "marked";
 
-  export let markdown: string;
-  export let fontSize: number;
+  export let markdown: string = "";
   export let editing = false;
+  export let css = {};
   export let onChange:
     | undefined
     | ((
@@ -12,11 +12,15 @@
           currentTarget: EventTarget & HTMLInputElement;
         },
       ) => void) = undefined;
+
+  $: styleString = Object.entries(css)
+    .map(([k, v]) => `${k}:${v}`)
+    .join(";");
 </script>
 
 <div
   class="markdown size-full items-center flex justify-center"
-  style:font-size="{fontSize}px"
+  style={styleString}
 >
   {#if editing}
     <input

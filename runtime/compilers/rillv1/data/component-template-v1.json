@@ -39,6 +39,24 @@
                 "x",
                 "y"
             ]
+        },
+        {
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "const": "markdown"
+                },
+                "contents": {
+                    "type": "string"
+                },
+                "css": {
+                    "type": "object"
+                }
+            },
+            "required": [
+                "name",
+                "contents"
+            ]
         }
-    ]    
+    ]
 }

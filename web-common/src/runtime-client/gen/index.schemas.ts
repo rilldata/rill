@@ -1598,7 +1598,6 @@ export interface V1DashboardItem {
   y?: number;
   width?: number;
   height?: number;
-  fontSize?: number;
 }
 
 export interface V1DashboardSpec {

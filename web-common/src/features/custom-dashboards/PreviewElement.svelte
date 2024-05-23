@@ -28,7 +28,6 @@
   let localZIndex = 0;
 
   $: componentName = component?.component;
-
   $: finalLeft = width < 0 ? left + width : left;
   $: finalTop = height < 0 ? top + height : top;
   $: finalWidth = Math.abs(width);
@@ -67,7 +66,6 @@
         {radius}
         {scale}
         {selected}
-        fontSize={component.fontSize}
         builders={[builder]}
         height={finalHeight}
         left={finalLeft}
@@ -79,6 +77,7 @@
       />
     </ContextMenu.Trigger>
 
+    <!--  TODO: Disable for inline components. Move logic higher up -->
     <ContextMenu.Content class="z-[100]">
       <ContextMenu.Item>Copy</ContextMenu.Item>
       <ContextMenu.Item>Delete</ContextMenu.Item>

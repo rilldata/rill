@@ -33,7 +33,6 @@
   export let chartView = false;
   export let componentName: string;
   export let instanceId: string;
-  export let fontSize: number = 20;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -42,7 +41,6 @@
   );
 
   $: ({ data: componentResource } = $resourceQuery);
-
   $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
     componentResource?.component?.spec ?? {});
 
@@ -109,8 +107,12 @@
           chartName={componentName}
           {resolverProperties}
         />
-      {:else if renderer === "markdown" && rendererProperties?.content}
-        <Markdown markdown={rendererProperties.content} {fontSize} />
+        <!-- TODO: Don't check for property names and rely on validation -->
+      {:else if renderer === "template" && rendererProperties?.name === "markdown"}
+        <Markdown
+          markdown={rendererProperties.contents}
+          css={rendererProperties.css}
+        />
       {/if}
     </div>
   </div>
