@@ -145,4 +145,4 @@
   }
 </script>
 
-<BaseAlertForm {formState} isEditForm={false} on:cancel />
+<BaseAlertForm {formState} isEditForm={false} on:cancel on:close />

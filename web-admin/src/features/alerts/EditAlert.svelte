@@ -23,7 +23,7 @@
   <DialogTrigger asChild let:builder>
     <Button type="secondary" builders={[builder]}>Edit</Button>
   </DialogTrigger>
-  <DialogContent class="p-0 m-0 w-[602px] max-w-fit">
+  <DialogContent class="p-0 m-0 w-[602px] max-w-fit" noClose>
     <EditAlertForm
       {alertSpec}
       on:cancel={onCancel}

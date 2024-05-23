@@ -1,6 +1,8 @@
 <script lang="ts">
   import { DialogTitle } from "@rilldata/web-common/components/dialog-v2";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
+  import { getTouched } from "@rilldata/web-common/features/alerts/utils";
+  import { X } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import type { createForm } from "svelte-forms-lib";
   import Button from "../../components/button/Button.svelte";
@@ -21,7 +23,8 @@
   const formId = isEditForm ? "edit-alert-form" : "create-alert-form";
   const dialogTitle = isEditForm ? "Edit Alert" : "Create Alert";
 
-  const { form, errors, handleSubmit, validateField, isSubmitting } = formState;
+  const { form, errors, handleSubmit, validateField, isSubmitting, touched } =
+    formState;
 
   const tabs = ["Data", "Criteria", "Delivery"];
 
@@ -36,7 +39,11 @@
   let currentTabIndex = 0;
 
   function handleCancel() {
-    dispatch("cancel");
+    if (getTouched($touched)) {
+      dispatch("cancel");
+    } else {
+      dispatch("close");
+    }
   }
 
   function handleBack() {
@@ -54,12 +61,17 @@
 
 <!-- 602px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
 <form
-  class="transform bg-white rounded-md border border-slate-300 flex flex-col shadow-lg w-[602px]"
+  class="transform bg-white rounded-md flex flex-col w-[602px]"
   id={formId}
   on:submit|preventDefault={handleSubmit}
 >
-  <DialogTitle class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7">
-    {dialogTitle}
+  <DialogTitle
+    class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7 flex flex-row items-center justify-between"
+  >
+    <div>{dialogTitle}</div>
+    <Button type="link" noStroke compact on:click={handleCancel}>
+      <X strokeWidth={3} size={16} class="text-black" />
+    </Button>
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>
     <DialogTabs.List class="border-t border-gray-200">

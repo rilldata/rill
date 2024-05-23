@@ -123,4 +123,4 @@
   }
 </script>
 
-<BaseAlertForm {formState} isEditForm={true} on:cancel />
+<BaseAlertForm {formState} isEditForm={true} on:cancel on:close />

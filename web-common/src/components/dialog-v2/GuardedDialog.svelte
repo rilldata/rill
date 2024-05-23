@@ -33,6 +33,8 @@
   }
 </script>
 
+<!-- Dialog with confirm on cancel need a strong intent. Hence we are setting closeOnOutsideClick to false
+     If we ever need this to change we should add that as a parameter to this component -->
 <Dialog
   bind:open
   onOutsideClick={(e) => {
@@ -44,6 +46,7 @@
     if (!o && open) onCancel();
     setTimeout(() => (open = true));
   }}
+  closeOnOutsideClick={false}
 >
   <slot {onCancel} {onClose} />
 </Dialog>
