@@ -97,7 +97,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	} else {
 		isUserAppInstalled = true
 		userInstallationPermission = "read"
-		// our older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
+		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
 		if installation.Permissions != nil && installation.Permissions.Contents != nil {
 			if installation.Permissions.Administration != nil && strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
 				userInstallationPermission = "write"
@@ -113,7 +113,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
 	}
-	// List all the private organizations for the authenticated user
+	// List all the public organizations for the authenticated user
 	publicOrgs, _, err := client.Organizations.List(ctx, user.GithubUsername, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
@@ -140,7 +140,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 			return nil, status.Errorf(codes.Internal, "failed to get organization installation: %s", err.Error())
 		}
 		permission := "read"
-		// our older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
+		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
 		if i.Permissions != nil && i.Permissions.Contents != nil {
 			if i.Permissions.Administration != nil && strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
 				permission = "write"
