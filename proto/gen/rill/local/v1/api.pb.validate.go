@@ -828,6 +828,8 @@ func (m *DeployValidationResponse) validate(all bool) error {
 
 	// no validation rules for GitUserName
 
+	// no validation rules for IsUserAppInstalled
+
 	// no validation rules for UserAppPermission
 
 	// no validation rules for IsGitRepo

@@ -87,35 +87,50 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
+	isUserAppInstalled := false
+	userInstallationPermission := ""
 	installation, _, err := s.admin.Github.AppClient().Apps.FindUserInstallation(ctx, user.GithubUsername)
 	if err != nil {
-		// TODO if we get 404 here, it means user installed app on a different org not personal account, we can navigate user to install the app
-		return nil, fmt.Errorf("failed to get user installation: %w", err)
-	}
-
-	userInstallationPermission := "read"
-	if installation.Permissions != nil && installation.Permissions.Administration != nil && installation.Permissions.Contents != nil {
-		if strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
-			userInstallationPermission = "write"
+		if !strings.Contains(err.Error(), "404") {
+			return nil, fmt.Errorf("failed to get user installation: %w", err)
 		}
 	} else {
-		return nil, status.Errorf(codes.Internal, "failed to get user installation permissions for user %s", user.GithubUsername)
+		isUserAppInstalled = true
+		userInstallationPermission = "read"
+		// our older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
+		if installation.Permissions != nil && installation.Permissions.Contents != nil {
+			if installation.Permissions.Administration != nil && strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
+				userInstallationPermission = "write"
+			}
+		} else {
+			return nil, status.Errorf(codes.Internal, "failed to get user installation permissions for user %s", user.GithubUsername)
+		}
 	}
 
-	gitClient, err := s.admin.Github.InstallationClient(*installation.ID)
+	client := github.NewTokenClient(ctx, token)
+	// List all the private organizations for the authenticated user
+	orgs, _, err := client.Organizations.List(ctx, "", nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to get installation client: %w", err)
+		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
 	}
-
-	// TODO check why its not listing all my orgs
-	orgs, _, err := gitClient.Organizations.List(ctx, user.GithubUsername, nil)
+	// List all the private organizations for the authenticated user
+	publicOrgs, _, err := client.Organizations.List(ctx, user.GithubUsername, nil)
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to get user organizations: %s", err.Error())
 	}
 
+	orgs = append(orgs, publicOrgs...)
+	seen := make(map[string]bool)
+
 	var orgNames []string
 	var orgWithApp []*adminv1.OrganizationWithApp
 	for _, org := range orgs {
+		// dedupe orgs
+		if seen[org.GetLogin()] {
+			continue
+		}
+		seen[org.GetLogin()] = true
+
 		orgNames = append(orgNames, org.GetLogin())
 		i, _, err := s.admin.Github.AppClient().Apps.FindOrganizationInstallation(ctx, org.GetLogin())
 		if err != nil {
@@ -125,8 +140,9 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 			return nil, status.Errorf(codes.Internal, "failed to get organization installation: %s", err.Error())
 		}
 		permission := "read"
-		if i.Permissions != nil && i.Permissions.Administration != nil && i.Permissions.Contents != nil {
-			if strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
+		// our older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
+		if i.Permissions != nil && i.Permissions.Contents != nil {
+			if i.Permissions.Administration != nil && strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
 				permission = "write"
 			}
 		} else {
@@ -144,6 +160,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		AccessToken:                token,
 		Account:                    user.GithubUsername,
 		Organizations:              orgNames,
+		IsUserAppInstalled:         isUserAppInstalled,
 		UserInstallationPermission: userInstallationPermission,
 		OrganizationsWithApp:       orgWithApp,
 	}, nil

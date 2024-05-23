@@ -112,6 +112,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			IsRepoAccessGranted:        false,
 			GitGrantAccessUrl:          "",
 			GitUserName:                "",
+			IsUserAppInstalled:         false,
 			UserAppPermission:          "",
 			GitUserOrgs:                nil,
 			IsGitRepo:                  false,
@@ -130,18 +131,19 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return nil, err
 	}
 
-	res, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 	if err != nil {
 		return nil, err
 	}
 
-	if !res.HasAccess {
+	if !userStatus.HasAccess {
 		// user should have git app installed before deploying, so redirect to grant access url
 		return connect.NewResponse(&localv1.DeployValidationResponse{
 			IsAuthenticated:            true,
 			IsGithubConnected:          false,
-			GitGrantAccessUrl:          res.GrantAccessUrl,
+			GitGrantAccessUrl:          userStatus.GrantAccessUrl,
 			GitUserName:                "",
+			IsUserAppInstalled:         false,
 			UserAppPermission:          "",
 			GitUserOrgs:                nil,
 			IsGitRepo:                  false,
@@ -156,13 +158,8 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		}), nil
 	}
 
-	gitStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
-	if err != nil {
-		return nil, err
-	}
-
 	var userOrgsWithApp []*localv1.OrganizationWithApp
-	for _, org := range gitStatus.OrganizationsWithApp {
+	for _, org := range userStatus.OrganizationsWithApp {
 		userOrgsWithApp = append(userOrgsWithApp, &localv1.OrganizationWithApp{
 			Org:        org.Org,
 			Permission: org.Permission,
@@ -195,7 +192,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			uncommitedChanges = localv1.UncommittedChanges_UNCOMMITTED_CHANGES_NO
 		}
 
-		// check git repo status, if we have access
+		// check git repo status, if git app installed and user is a collaborator and has authorised app on their account
 		repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
 			GithubUrl: ghURL,
 		})
@@ -209,9 +206,10 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				IsAuthenticated:            true,
 				IsGithubConnected:          true,
 				GitGrantAccessUrl:          repoStatus.GrantAccessUrl,
-				GitUserName:                gitStatus.Account,
-				UserAppPermission:          gitStatus.UserInstallationPermission,
-				GitUserOrgs:                gitStatus.Organizations,
+				GitUserName:                userStatus.Account,
+				IsUserAppInstalled:         userStatus.IsUserAppInstalled,
+				UserAppPermission:          userStatus.UserInstallationPermission,
+				GitUserOrgs:                userStatus.Organizations,
 				IsGitRepo:                  true,
 				GitRemoteFound:             true,
 				IsRepoAccessGranted:        repoAccess,
@@ -242,7 +240,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	if len(userOrgs) == 0 {
 		// check if any orgs exist as git username
 		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-			Name: gitStatus.Account,
+			Name: userStatus.Account,
 		})
 		if err != nil {
 			if !errors.Is(err, database.ErrNotFound) {
@@ -258,10 +256,11 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	return connect.NewResponse(&localv1.DeployValidationResponse{
 		IsAuthenticated:            true,
 		IsGithubConnected:          true,
-		GitGrantAccessUrl:          gitStatus.GrantAccessUrl,
-		GitUserName:                gitStatus.Account,
-		UserAppPermission:          gitStatus.UserInstallationPermission,
-		GitUserOrgs:                gitStatus.Organizations,
+		GitGrantAccessUrl:          userStatus.GrantAccessUrl,
+		GitUserName:                userStatus.Account,
+		IsUserAppInstalled:         userStatus.IsUserAppInstalled,
+		UserAppPermission:          userStatus.UserInstallationPermission,
+		GitUserOrgs:                userStatus.Organizations,
 		IsGitRepo:                  isGitRepo,
 		GitRemoteFound:             gitRemoteFound,
 		IsRepoAccessGranted:        repoAccess,
@@ -308,12 +307,31 @@ func (s *Server) PushToGit(ctx context.Context, r *connect.Request[localv1.PushT
 		return nil, fmt.Errorf("rill git app should be installed by user before pushing by visiting %s", gitStatus.GrantAccessUrl)
 	}
 
-	// if r.Msg.Org is empty, gitOrg will be "" which is equivalent to using default got org which is same as git username
+	// if r.Msg.Org is empty, gitOrg will be "" which is equivalent to using default git org which is same as git username
 	var gitOrg string
 	if r.Msg.Org == "" || r.Msg.Org == gitStatus.Account {
 		gitOrg = ""
 	} else {
 		gitOrg = r.Msg.Org
+	}
+
+	// check if we have write permission on the git account
+	// this is a safety check as DeployValidation should take care of this
+	if gitOrg == "" {
+		if !gitStatus.IsUserAppInstalled || gitStatus.UserInstallationPermission != "write" {
+			return nil, fmt.Errorf("rill git app should be installed with write permission on user personal account by visiting %s", gitStatus.GrantAccessUrl)
+		}
+	} else {
+		valid := false
+		for _, org := range gitStatus.OrganizationsWithApp {
+			if org.Org == gitOrg && org.Permission == "write" {
+				valid = true
+				break
+			}
+		}
+		if !valid {
+			return nil, fmt.Errorf("rill git app should be installed with write permission on organization %q by visiting %s", gitOrg, gitStatus.GrantAccessUrl)
+		}
 	}
 
 	repoName := filepath.Base(s.app.ProjectPath)
@@ -394,6 +412,15 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
 	if err != nil {
 		return nil, err
+	}
+
+	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+	if err != nil {
+		return nil, err
+	}
+	if !userStatus.HasAccess {
+		// generally this should not happen as IsGithubConnected should be true before deploying
+		return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
 	}
 
 	// check if project is a git repo

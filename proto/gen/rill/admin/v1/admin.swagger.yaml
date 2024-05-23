@@ -2604,6 +2604,8 @@ definitions:
         type: array
         items:
           type: string
+      isUserAppInstalled:
+        type: boolean
       userInstallationPermission:
         type: string
       organizationsWithApp:

@@ -59,17 +59,18 @@ message DeployValidationResponse {
   bool is_github_connected = 2; // if true below fields are relevant after git install
   string git_grant_access_url = 3; // redirect to this if is_github_connected or is_repo_access_granted is false
   string git_user_name = 4;
-  string user_app_permission = 5;
-  repeated string git_user_orgs = 6;
-  bool is_git_repo = 7;
-  bool git_remote_found = 8; // only applicable when is_git_repo is true
-  bool is_repo_access_granted = 9; // relevant only when is_git_repo is true and remote found, if false redirect to git_grant_access_url
-  string git_url = 10; // only applicable when is_git_repo is true and remote found
-  UncommittedChanges uncommitted_changes = 11; // only applicable when is_git_repo is true and remote found
-  bool rill_org_exists_as_git_user_name = 12; // only applicable when user does not have any orgs
-  repeated string rill_user_orgs = 13;
-  string local_project_name = 14;
-  repeated OrganizationWithApp organizations_with_app = 15;
+  bool is_user_app_installed = 5; // if rill git app is installed on user account
+  string user_app_permission = 6;
+  repeated string git_user_orgs = 7;
+  bool is_git_repo = 8;
+  bool git_remote_found = 9; // only applicable when is_git_repo is true
+  bool is_repo_access_granted = 10; // relevant only when is_git_repo is true and remote found, if false redirect to git_grant_access_url
+  string git_url = 11; // only applicable when is_git_repo is true and remote found
+  UncommittedChanges uncommitted_changes = 12; // only applicable when is_git_repo is true and remote found
+  bool rill_org_exists_as_git_user_name = 13; // only applicable when user does not have any orgs
+  repeated string rill_user_orgs = 14;
+  string local_project_name = 15;
+  repeated OrganizationWithApp organizations_with_app = 16;
 }
 
 enum UncommittedChanges {

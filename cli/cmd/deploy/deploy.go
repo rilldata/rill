@@ -460,15 +460,39 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		return nil
 	}
 
-	repoOwner := pollRes.Account
-	if len(pollRes.Organizations) > 0 {
-		repoOwners := []string{pollRes.Account}
-		repoOwners = append(repoOwners, pollRes.Organizations...)
-		repoOwner, err = cmdutil.SelectPrompt("Select Github account", repoOwners, pollRes.Account)
+	// get orgs on which rill git app is installed with write permission
+	var candidateOrgs []string
+	if pollRes.IsUserAppInstalled && strings.EqualFold(pollRes.UserInstallationPermission, "write") {
+		candidateOrgs = append(candidateOrgs, pollRes.Account)
+	}
+	for _, o := range pollRes.OrganizationsWithApp {
+		if strings.EqualFold(o.Permission, "write") {
+			candidateOrgs = append(candidateOrgs, o.Org)
+		}
+	}
+
+	repoOwner := ""
+	if len(candidateOrgs) == 0 {
+		ch.PrintfWarn("\nRill app does not have permissions to create Github repository on any of your accounts. Visit %q to grant access.\n", pollRes.GrantAccessUrl)
+		return nil
+	} else if len(candidateOrgs) == 1 {
+		repoOwner = candidateOrgs[0]
+		ok, err = cmdutil.ConfirmPrompt(fmt.Sprintf("Rill has write access to %q Github account. Do you want to use this account?", repoOwner), "", true)
 		if err != nil {
 			return err
 		}
+		if !ok {
+			ch.PrintfWarn("\nIf you want to deploy to another Github account, Please visit %q to grant access.\n", pollRes.GrantAccessUrl)
+			return nil
+		}
+	} else {
+		repoOwner, err = cmdutil.SelectPrompt("Rill has write access to following Github accounts. Please select one", candidateOrgs, candidateOrgs[0])
+		if err != nil {
+			ch.PrintfWarn("\nIf you want to deploy to another Github account, Please visit %q to grant access.\n", pollRes.GrantAccessUrl)
+			return err
+		}
 	}
+
 	// create and verify
 	githubRepository, err := createGithubRepository(ctx, ch, pollRes, localGitPath, repoOwner)
 	if err != nil {

@@ -14779,6 +14779,8 @@ func (m *GetGithubUserStatusResponse) validate(all bool) error {
 
 	// no validation rules for Account
 
+	// no validation rules for IsUserAppInstalled
+
 	// no validation rules for UserInstallationPermission
 
 	for idx, item := range m.GetOrganizationsWithApp() {

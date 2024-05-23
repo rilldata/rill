@@ -5142,12 +5142,17 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
   organizations: string[] = [];
 
   /**
-   * @generated from field: string user_installation_permission = 6;
+   * @generated from field: bool is_user_app_installed = 6;
+   */
+  isUserAppInstalled = false;
+
+  /**
+   * @generated from field: string user_installation_permission = 7;
    */
   userInstallationPermission = "";
 
   /**
-   * @generated from field: repeated rill.admin.v1.OrganizationWithApp organizations_with_app = 7;
+   * @generated from field: repeated rill.admin.v1.OrganizationWithApp organizations_with_app = 8;
    */
   organizationsWithApp: OrganizationWithApp[] = [];
 
@@ -5164,8 +5169,9 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
     { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "organizations", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "user_installation_permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
+    { no: 6, name: "is_user_app_installed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "user_installation_permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubUserStatusResponse {

@@ -364,67 +364,74 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   gitUserName = "";
 
   /**
-   * @generated from field: string user_app_permission = 5;
+   * if rill git app is installed on user account
+   *
+   * @generated from field: bool is_user_app_installed = 5;
+   */
+  isUserAppInstalled = false;
+
+  /**
+   * @generated from field: string user_app_permission = 6;
    */
   userAppPermission = "";
 
   /**
-   * @generated from field: repeated string git_user_orgs = 6;
+   * @generated from field: repeated string git_user_orgs = 7;
    */
   gitUserOrgs: string[] = [];
 
   /**
-   * @generated from field: bool is_git_repo = 7;
+   * @generated from field: bool is_git_repo = 8;
    */
   isGitRepo = false;
 
   /**
    * only applicable when is_git_repo is true
    *
-   * @generated from field: bool git_remote_found = 8;
+   * @generated from field: bool git_remote_found = 9;
    */
   gitRemoteFound = false;
 
   /**
    * relevant only when is_git_repo is true and remote found, if false redirect to git_grant_access_url
    *
-   * @generated from field: bool is_repo_access_granted = 9;
+   * @generated from field: bool is_repo_access_granted = 10;
    */
   isRepoAccessGranted = false;
 
   /**
    * only applicable when is_git_repo is true and remote found
    *
-   * @generated from field: string git_url = 10;
+   * @generated from field: string git_url = 11;
    */
   gitUrl = "";
 
   /**
    * only applicable when is_git_repo is true and remote found
    *
-   * @generated from field: rill.local.v1.UncommittedChanges uncommitted_changes = 11;
+   * @generated from field: rill.local.v1.UncommittedChanges uncommitted_changes = 12;
    */
   uncommittedChanges = UncommittedChanges.UNSPECIFIED;
 
   /**
    * only applicable when user does not have any orgs
    *
-   * @generated from field: bool rill_org_exists_as_git_user_name = 12;
+   * @generated from field: bool rill_org_exists_as_git_user_name = 13;
    */
   rillOrgExistsAsGitUserName = false;
 
   /**
-   * @generated from field: repeated string rill_user_orgs = 13;
+   * @generated from field: repeated string rill_user_orgs = 14;
    */
   rillUserOrgs: string[] = [];
 
   /**
-   * @generated from field: string local_project_name = 14;
+   * @generated from field: string local_project_name = 15;
    */
   localProjectName = "";
 
   /**
-   * @generated from field: repeated rill.local.v1.OrganizationWithApp organizations_with_app = 15;
+   * @generated from field: repeated rill.local.v1.OrganizationWithApp organizations_with_app = 16;
    */
   organizationsWithApp: OrganizationWithApp[] = [];
 
@@ -440,17 +447,18 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
     { no: 2, name: "is_github_connected", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "git_grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "git_user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "user_app_permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "git_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 7, name: "is_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 8, name: "git_remote_found", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 9, name: "is_repo_access_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 10, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "uncommitted_changes", kind: "enum", T: proto3.getEnumType(UncommittedChanges) },
-    { no: 12, name: "rill_org_exists_as_git_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 13, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 14, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 15, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
+    { no: 5, name: "is_user_app_installed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 6, name: "user_app_permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "git_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 8, name: "is_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "git_remote_found", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "is_repo_access_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "uncommitted_changes", kind: "enum", T: proto3.getEnumType(UncommittedChanges) },
+    { no: 13, name: "rill_org_exists_as_git_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 14, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 15, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployValidationResponse {

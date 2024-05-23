@@ -697,6 +697,7 @@ export interface V1GetGithubUserStatusResponse {
   accessToken?: string;
   account?: string;
   organizations?: string[];
+  isUserAppInstalled?: boolean;
   userInstallationPermission?: string;
   organizationsWithApp?: V1OrganizationWithApp[];
 }
