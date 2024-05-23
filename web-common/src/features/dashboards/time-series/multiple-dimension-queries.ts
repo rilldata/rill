@@ -48,7 +48,7 @@ export interface DimensionDataItem {
 }
 
 interface DimensionTopList {
-  values: string[];
+  values: (string | null)[];
   filter: V1Expression;
   totals?: number[];
 }
@@ -92,7 +92,7 @@ export function getDimensionValuesForComparison(
       if (!isValidMeasureList || !dimensionName) return;
 
       // Values to be compared
-      let comparisonValues: string[] = [];
+      let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
         let dimensionValues = includedDimensionValues({
           dashboard: dashboardStore,
@@ -114,7 +114,7 @@ export function getDimensionValuesForComparison(
           comparisonValues = dimensionValues.slice(
             0,
             isInTimeDimensionView ? 11 : 7,
-          );
+          ) as (string | null)[];
         }
         return set({
           values: comparisonValues,
