@@ -118,7 +118,6 @@ web-common/src/features/sources/selectors.ts: error TS2322
 web-common/src/features/sources/selectors.ts: error TS2345
 web-common/src/features/welcome/is-project-initialized.ts: error TS18048
 web-common/src/layout/navigation/navigation-utils.ts: error TS2345
-web-common/src/lib/actions/command-click-action.ts: error TS2345
 web-common/src/lib/actions/truncate-middle-text.ts: error TS18047
 web-common/src/lib/actions/truncate-middle-text.ts: error TS2345
 web-common/src/lib/formatters.ts: error TS18046
