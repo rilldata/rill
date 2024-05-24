@@ -92,16 +92,20 @@ type TimeRange struct {
 	EndTime   *time.Time `mapstructure:"-"`
 }
 
+func (tr *TimeRange) IsZero() bool {
+	return tr.Start == "" && tr.End == "" && tr.IsoDuration == "" && tr.IsoOffset == "" && tr.RoundToGrain == TimeGrainUnspecified && tr.StartTime == nil && tr.EndTime == nil
+}
+
 type Expression struct {
 	Name      string     `mapstructure:"name"`
-	Condition *Condition `mapstructure:"condition"`
-	Value     any        `mapstructure:"value"`
+	Value     any        `mapstructure:"val"`
+	Condition *Condition `mapstructure:"cond"`
 	Subquery  *Subquery  `mapstructure:"subquery"`
 }
 
 type Condition struct {
-	Op    Operator      `mapstructure:"op"`
-	Exprs []*Expression `mapstructure:"exprs"`
+	Operator    Operator      `mapstructure:"op"`
+	Expressions []*Expression `mapstructure:"exprs"`
 }
 
 type Subquery struct {
@@ -124,12 +128,12 @@ const (
 	OperatorLte         Operator = "lte"
 	OperatorGt          Operator = "gt"
 	OperatorGte         Operator = "gte"
-	OperatorOr          Operator = "or"
-	OperatorAnd         Operator = "and"
 	OperatorIn          Operator = "in"
 	OperatorNin         Operator = "nin"
-	OperatorLike        Operator = "like"
-	OperatorNlike       Operator = "nlike"
+	OperatorIlike       Operator = "ilike"
+	OperatorNilike      Operator = "nilike"
+	OperatorOr          Operator = "or"
+	OperatorAnd         Operator = "and"
 )
 
 type TimeGrain string

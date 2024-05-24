@@ -215,6 +215,14 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
 }
 
+func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (string, bool) {
+	if d == DialectDruid || d == DialectPinot {
+		return "", false
+	}
+
+	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, colName), true
+}
+
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
 	if dimension.Expression != "" {
 		return dimension.Expression
