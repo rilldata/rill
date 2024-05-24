@@ -2,7 +2,6 @@
   import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -11,9 +10,10 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import {
-    createShiftClickAction,
+    copyToClipboard,
     isClipboardApiSupported,
-  } from "@rilldata/web-common/lib/actions/shift-click-action";
+  } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
@@ -36,8 +36,6 @@
 
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
-
-  const { shiftClickAction } = createShiftClickAction();
 
   let showMore = false;
 
@@ -79,14 +77,12 @@
     dispatch("click-column");
   }}
 >
-  <div
-    use:shiftClickAction
-    on:shift-click={async () => {
-      await navigator.clipboard.writeText(name);
-      eventBus.emit("notification", {
-        message: `copied column name "${name}" to clipboard`,
-      });
-    }}
+  <button
+    on:click={modified({
+      shift: () => {
+        copyToClipboard(name, `copied column name "${name}" to clipboard`);
+      },
+    })}
     class=" 
            flex
            justify-stretch
@@ -196,7 +192,7 @@
         </TooltipContent>
       </Tooltip>
     {/if}
-  </div>
+  </button>
 </StickyHeader>
 
 <style>
