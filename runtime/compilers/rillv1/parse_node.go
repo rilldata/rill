@@ -52,6 +52,8 @@ func (p *Parser) parseNode(node *Node) error {
 		return p.parseDashboard(node)
 	case ResourceKindAPI:
 		return p.parseAPI(node)
+	case ResourceKindConnector:
+		return p.parseConnector(node)
 	default:
 		panic(fmt.Errorf("unexpected resource type: %s", node.Kind.String()))
 	}
@@ -266,6 +268,8 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			res.Kind = ResourceKindModel
 		} else if strings.HasPrefix(paths[0], "/dashboards") {
 			res.Kind = ResourceKindMetricsView
+		} else if strings.HasPrefix(paths[0], "/connectors") {
+			res.Kind = ResourceKindConnector
 		} else if strings.HasPrefix(paths[0], "/init.sql") {
 			res.Kind = ResourceKindMigration
 		} else if sqlPath != "" {

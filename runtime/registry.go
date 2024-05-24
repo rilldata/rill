@@ -565,7 +565,12 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	if err != nil {
 		return err
 	}
-	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, dotEnv, false)
+	connectors, err := rillv1.ParseConnectors(iwc.ctx, repo, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, dotEnv, connectors, false)
 }
 
 func sizeOfDir(path string) int64 {

@@ -42,6 +42,7 @@ type Resource struct {
 	ComponentSpec   *runtimev1.ComponentSpec
 	DashboardSpec   *runtimev1.DashboardSpec
 	APISpec         *runtimev1.APISpec
+	ConnectorSpec   *runtimev1.ConnectorSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -76,6 +77,7 @@ const (
 	ResourceKindComponent
 	ResourceKindDashboard
 	ResourceKindAPI
+	ResourceKindConnector
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -220,6 +222,38 @@ func ParseDotEnv(ctx context.Context, repo drivers.RepoStore, instanceID string)
 	}
 
 	return p.DotEnv, nil
+}
+
+// ParseConnectors parses only the project's connectors defined in the connectors directory.
+func ParseConnectors(ctx context.Context, repo drivers.RepoStore, instanceID string) ([]*runtimev1.ConnectorSpec, error) {
+	files, err := repo.ListRecursive(ctx, "**/connectors/*.{yaml,yml}", true)
+	if err != nil {
+		return nil, fmt.Errorf("could not list project files: %w", err)
+	}
+
+	if len(files) == 0 {
+		return nil, nil
+	}
+
+	paths := make([]string, len(files))
+	for i, file := range files {
+		paths[i] = file.Path
+	}
+
+	p := Parser{Repo: repo, InstanceID: instanceID}
+	err = p.parsePaths(ctx, paths)
+	if err != nil {
+		return nil, err
+	}
+
+	var connectors []*runtimev1.ConnectorSpec
+	for _, r := range p.Resources {
+		if r.ConnectorSpec != nil {
+			connectors = append(connectors, r.ConnectorSpec)
+		}
+	}
+
+	return connectors, nil
 }
 
 // Parse creates a new parser and parses the entire project.
@@ -828,6 +862,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.DashboardSpec = &runtimev1.DashboardSpec{}
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
+	case ResourceKindConnector:
+		r.ConnectorSpec = &runtimev1.ConnectorSpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
@@ -952,6 +988,13 @@ func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error)
 				driver = c.Type
 				break
 			}
+		}
+	}
+
+	for _, c := range p.Resources {
+		if c.ConnectorSpec != nil && c.ConnectorSpec.Name == name {
+			driver = c.ConnectorSpec.Driver
+			break
 		}
 	}
 
