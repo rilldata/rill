@@ -7,7 +7,6 @@ type Params = Partial<Record<Modifier, Handler>>;
 export function modified(params: Params) {
   return async (e: MouseEvent) => {
     const { ctrlKey, shiftKey, metaKey } = e;
-    console.log("What");
 
     let handler: Handler | null = null;
     let modifier: Modifier | null = null;

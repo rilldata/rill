@@ -289,7 +289,6 @@
       : max([zoomedXStart, zoomedXEnd])) || xExtents[1];
 
   function shiftClick() {
-    console.log("click");
     const exportedValue = `TIMESTAMP '${removeLocalTimezoneOffset(
       nearestPoint[xAccessor],
     ).toISOString()}'`;
