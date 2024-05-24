@@ -50,10 +50,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(float64(v)), nil
 	case time.Time:
 		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
-			s := v.Format(time.DateOnly)
+			s := v.In(time.UTC).Format(time.DateOnly)
 			return structpb.NewStringValue(s), nil
 		}
-		s := v.Format(time.RFC3339Nano)
+		s := v.In(time.UTC).Format(time.RFC3339Nano)
 		return structpb.NewStringValue(s), nil
 	case float32:
 		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
@@ -147,10 +147,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(float64(*v)), nil
 	case *time.Time:
 		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
-			s := v.Format(time.DateOnly)
+			s := v.In(time.UTC).Format(time.DateOnly)
 			return structpb.NewStringValue(s), nil
 		}
-		s := v.Format(time.RFC3339Nano)
+		s := v.In(time.UTC).Format(time.RFC3339Nano)
 		return structpb.NewStringValue(s), nil
 	case *float32:
 		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
