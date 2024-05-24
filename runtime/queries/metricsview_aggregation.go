@@ -1984,7 +1984,8 @@ func (q *MetricsViewAggregation) buildTimestampExpr(mv *runtimev1.MetricsViewSpe
 		if dim.TimeZone == "" || dim.TimeZone == "UTC" || dim.TimeZone == "Etc/UTC" {
 			return fmt.Sprintf("date_trunc('%s', %s)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), nil, nil
 		}
-		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?)), ?)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
+		// The return type of date_trunc('month', ...) is Date so need another TIMESTAMP cast
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, ?))::TIMESTAMP, ?)", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone, dim.TimeZone}, nil
 	case drivers.DialectPinot:
 		// ToDateTime format truncates millis to secs because we don't support that, for example timeseries api does timestamppb.New(ts) which truncates to seconds
 		return fmt.Sprintf("ToDateTime(date_trunc('%s', %s, 'MILLISECONDS', ?), 'yyyy-MM-dd''T''HH:mm:ss''Z''')", dialect.ConvertToDateTruncSpecifier(dim.TimeGrain), col), []any{dim.TimeZone}, nil
