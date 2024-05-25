@@ -13,7 +13,6 @@
     copyToClipboard,
     isClipboardApiSupported,
   } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
@@ -73,16 +72,14 @@
   on:blur={() => {
     showMore = false;
   }}
-  on:click={() => {
+  onClick={() => {
     dispatch("click-column");
   }}
+  onShiftClick={() => {
+    copyToClipboard(name, `copied column name "${name}" to clipboard`);
+  }}
 >
-  <button
-    on:click={modified({
-      shift: () => {
-        copyToClipboard(name, `copied column name "${name}" to clipboard`);
-      },
-    })}
+  <div
     class=" 
            flex
            justify-stretch
@@ -192,7 +189,7 @@
         </TooltipContent>
       </Tooltip>
     {/if}
-  </button>
+  </div>
 </StickyHeader>
 
 <style>
