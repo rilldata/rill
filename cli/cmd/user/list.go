@@ -120,10 +120,16 @@ func listProjectInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 	if err != nil {
 		return err
 	}
+
+	if len(invites.Invites) == 0 {
+		return nil
+	}
+
 	// If page token is empty, user is running the command first time and we print separator
-	if len(invites.Invites) > 0 && pageToken == "" {
+	if pageToken == "" {
 		cmd.Println()
 	}
+
 	ch.PrintfSuccess("Pending user invites\n")
 	ch.PrintInvites(invites.Invites)
 
@@ -173,10 +179,16 @@ func listOrgInvites(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 	if err != nil {
 		return err
 	}
+
+	if len(invites.Invites) == 0 {
+		return nil
+	}
+
 	// If page token is empty, user is running the command first time and we print separator
-	if len(invites.Invites) > 0 && pageToken == "" {
+	if pageToken == "" {
 		cmd.Println()
 	}
+
 	ch.PrintfSuccess("Pending user invites\n")
 	ch.PrintInvites(invites.Invites)
 
