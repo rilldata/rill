@@ -3231,6 +3231,11 @@ export class DashboardItem extends Message<DashboardItem> {
   component = "";
 
   /**
+   * @generated from field: bool defined_in_dashboard = 8;
+   */
+  definedInDashboard = false;
+
+  /**
    * @generated from field: optional uint32 x = 2;
    */
   x?: number;
@@ -3264,6 +3269,7 @@ export class DashboardItem extends Message<DashboardItem> {
   static readonly typeName = "rill.runtime.v1.DashboardItem";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "component", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "x", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
