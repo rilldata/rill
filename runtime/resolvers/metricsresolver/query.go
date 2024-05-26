@@ -136,6 +136,14 @@ const (
 	OperatorAnd         Operator = "and"
 )
 
+func (o Operator) Valid() bool {
+	switch o {
+	case OperatorEq, OperatorNeq, OperatorLt, OperatorLte, OperatorGt, OperatorGte, OperatorIn, OperatorNin, OperatorIlike, OperatorNilike, OperatorOr, OperatorAnd:
+		return true
+	}
+	return false
+}
+
 type TimeGrain string
 
 const (

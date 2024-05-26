@@ -55,9 +55,8 @@ func (b *expressionBuilder) writeName(name string) error {
 		return err
 	}
 
-	// writeName should not be called for names requiring unnesting
 	if unnest {
-		// TODO: Can be fixed with an EXISTS subquery
+		// We currently only handle unnest for the left expression in binary conditions (see writeBinaryCondition).
 		return fmt.Errorf("cannot apply expression to dimension %q because it requires unnesting, which is not supported for expressions of this structure", name)
 	}
 
@@ -78,36 +77,41 @@ func (b *expressionBuilder) writeSubquery(_ *Subquery) error {
 
 func (b *expressionBuilder) writeCondition(cond *Condition) error {
 	switch cond.Operator {
-	case OperatorEq:
-		return b.writeBinaryCondition(cond.Expressions, " = ")
-	case OperatorNeq:
-		return b.writeBinaryCondition(cond.Expressions, " != ")
-	case OperatorLt:
-		return b.writeBinaryCondition(cond.Expressions, " < ")
-	case OperatorLte:
-		return b.writeBinaryCondition(cond.Expressions, " <= ")
-	case OperatorGt:
-		return b.writeBinaryCondition(cond.Expressions, " > ")
-	case OperatorGte:
-		return b.writeBinaryCondition(cond.Expressions, " >= ")
-	case OperatorIn:
-		return b.writeBinaryCondition(cond.Expressions, " IN ")
-	case OperatorNin:
-		return b.writeBinaryCondition(cond.Expressions, " NOT IN ")
-	case OperatorIlike:
-		return b.writeBinaryCondition(cond.Expressions, " LIKE ")
-	case OperatorNilike:
-		return b.writeBinaryCondition(cond.Expressions, " NOT LIKE ")
 	case OperatorOr:
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
 	case OperatorAnd:
 		return b.writeJoinedExpressions(cond.Expressions, " AND ")
 	default:
-		return fmt.Errorf("invalid expression operator %q", cond.Operator)
+		if !cond.Operator.Valid() {
+			return fmt.Errorf("invalid expression operator %q", cond.Operator)
+		}
+		return b.writeBinaryCondition(cond.Expressions, cond.Operator)
 	}
 }
 
-func (b *expressionBuilder) writeBinaryCondition(exprs []*Expression, joiner string) error {
+func (b *expressionBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
+	if len(exprs) == 0 {
+		return nil
+	}
+
+	b.writeByte('(')
+
+	for i, e := range exprs {
+		if i > 0 {
+			b.writeString(joiner)
+		}
+		err := b.writeExpression(e)
+		if err != nil {
+			return err
+		}
+	}
+
+	b.writeByte(')')
+
+	return nil
+}
+
+func (b *expressionBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
 	if len(exprs) != 2 {
 		return fmt.Errorf("binary condition must have exactly 2 expressions")
 	}
@@ -122,60 +126,119 @@ func (b *expressionBuilder) writeBinaryCondition(exprs []*Expression, joiner str
 		return fmt.Errorf("right expression is nil")
 	}
 
-	// TODO: Add unnest support
-	// TODO: Add advanced LIKE/IN support
+	// Check there isn't an unnest on the right side
+	if right.Name != "" {
+		_, unnest, err := b.resolveName(right.Name)
+		if err != nil {
+			return err
+		}
+		if unnest {
+			return fmt.Errorf("cannot apply expression to dimension %q because it requires unnesting, which is only supported for the left side of an operation", right.Name)
+		}
+	}
 
-	// // Special handling for when both expressions are names
-	// if left.Name != "" && right.Name != "" {
-	// }
+	// Handle unnest on the left side
+	if left.Name != "" {
+		leftExpr, unnest, err := b.resolveName(left.Name)
+		if err != nil {
+			return err
+		}
 
-	// // Special handling for when the left expression is a name
-	// if left.Name != "" {
-	// 	leftExpr, unnest, err := b.resolveName(left.Name)
-	// 	if err != nil {
-	// 		return err
-	// 	}
+		// If not unnested, write the expression as-is
+		if !unnest {
+			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
+		}
 
-	// 	if !unnest {
-	// 		b.writeParenthesizedString(leftExpr)
+		// Generate unnest join
+		unnestTableAlias := b.ast.generateIdentifier()
+		unnestFrom, ok, err := b.ast.dialect.LateralUnnest(leftExpr, unnestTableAlias, left.Name)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			// Means the DB automatically unnests, so we can treat it as a normal value
+			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
+		}
+		unnestColAlias := b.ast.expressionForMember(unnestTableAlias, left.Name)
 
-	// 	if unnest {
-	// 		alias := b.ast.generateIdentifier()
-	// 		b.ast.dialect.LateralUnnest(leftExpr, alias, left.Name)
+		// Need to move "NOT" to outside of the subquery
+		var not bool
+		switch op {
+		case OperatorNeq:
+			op = OperatorEq
+			not = true
+		case OperatorNin:
+			op = OperatorIn
+			not = true
+		case OperatorNilike:
+			op = OperatorIlike
+			not = true
+		}
 
-	// 		b.writeString("EXISTS (SELECT 1 FROM ")
-	// 		b.writeString()
-	// 	}
-	// }
+		// Output: [NOT] EXISTS (SELECT 1 FROM <unnestFrom> WHERE <unnestColAlias> <operator> <right>)
+		if not {
+			b.writeString("NOT ")
+		}
+		b.writeString("EXISTS (SELECT 1 FROM ")
+		b.writeString(unnestFrom)
+		b.writeString(" WHERE ")
+		err = b.writeBinaryConditionInner(nil, right, unnestColAlias, op)
+		if err != nil {
+			return err
+		}
+		b.writeString(")")
+		return nil
+	}
 
-	// Special handling for when the right expression is a name
+	// Handle netiher side is a name
+	return b.writeBinaryConditionInner(left, right, "", op)
+}
 
-	// EXISTS (SELECT 1 FROM LATERAL UNNEST(b) x(b) WHERE x.b = 20)
+func (b *expressionBuilder) writeBinaryConditionInner(left, right *Expression, leftOverride string, op Operator) error {
+	var joiner string
+	switch op {
+	case OperatorEq:
+		joiner = " = "
+	case OperatorNeq:
+		joiner = " != "
+	case OperatorLt:
+		joiner = " < "
+	case OperatorLte:
+		joiner = " <= "
+	case OperatorGt:
+		joiner = " > "
+	case OperatorGte:
+		joiner = " >= "
+	case OperatorIn:
+		joiner = " IN "
+	case OperatorNin:
+		joiner = " NOT IN "
+	case OperatorIlike:
+		joiner = " LIKE "
+	case OperatorNilike:
+		joiner = " NOT LIKE "
+	default:
+		return fmt.Errorf("invalid binary condition operator %q", op)
+	}
 
-	// Fallback to generic expression building
-	err := b.writeExpression(left)
-	if err != nil {
-		return err
+	if leftOverride != "" {
+		b.writeString(leftOverride)
+	} else {
+		err := b.writeExpression(left)
+		if err != nil {
+			return err
+		}
 	}
 	b.writeString(joiner)
-	err = b.writeExpression(right)
+	err := b.writeExpression(right)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (b *expressionBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
-	for i, e := range exprs {
-		if i > 0 {
-			b.writeString(joiner)
-		}
-		err := b.writeExpression(e)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+func (b *expressionBuilder) writeByte(v byte) {
+	_ = b.out.WriteByte(v)
 }
 
 func (b *expressionBuilder) writeString(s string) {
