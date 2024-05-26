@@ -13,6 +13,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/duration"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 	"github.com/rilldata/rill/runtime/queries"
 )
 
@@ -27,6 +29,9 @@ type Resolver struct {
 	priority            int
 	executionTime       *time.Time
 	interactiveRowLimit int64
+
+	// Cache of the resolved time anchor for relative time ranges
+	timeAnchor time.Time
 }
 
 type resolverProps struct {
@@ -146,88 +151,171 @@ func (r *Resolver) BuildAST(ctx context.Context) (*AST, error) {
 	return ast, nil
 }
 
-func (r *Resolver) rewriteQueryTimeRanges(_ context.Context) error {
-	// TODO: Use qry.time_zone, r.executionTime, if necessary, resolve the watermark or start/end time of the MV
-	// TODO: If resolving watermark, cache it to avoid repeat for comparison time range
-	panic("not implemented")
+// rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
+func (r *Resolver) rewriteQueryTimeRanges(ctx context.Context) error {
+	tz := time.UTC
+	if r.query.TimeZone != nil {
+		var err error
+		tz, err = time.LoadLocation(*r.query.TimeZone)
+		if err != nil {
+			return fmt.Errorf("invalid time zone %q: %w", *r.query.TimeZone, err)
+		}
+	}
+
+	err := r.resolveTimeRange(ctx, r.query.TimeRange, tz)
+	if err != nil {
+		return fmt.Errorf("failed to resolve time range: %w", err)
+	}
+
+	err = r.resolveTimeRange(ctx, r.query.ComparisonTimeRange, tz)
+	if err != nil {
+		return fmt.Errorf("failed to resolve comparison time range: %w", err)
+	}
+
+	return nil
 }
 
-// func ResolveTimeRange(tr *runtimev1.TimeRange, mv *runtimev1.MetricsViewSpec) (time.Time, time.Time, error) {
-// 	tz := time.UTC
+// resolveTimeRange resolves the given time range and populates its StartTime and EndTime properties.
+func (r *Resolver) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time.Location) error {
+	if tr == nil || tr.IsZero() {
+		return nil
+	}
 
-// 	if tr.TimeZone != "" {
-// 		var err error
-// 		tz, err = time.LoadLocation(tr.TimeZone)
-// 		if err != nil {
-// 			return time.Time{}, time.Time{}, fmt.Errorf("invalid time_range.time_zone %q: %w", tr.TimeZone, err)
-// 		}
-// 	}
+	var start time.Time
+	if tr.Start != "" {
+		t, err := time.Parse(time.RFC3339Nano, tr.Start)
+		if err != nil {
+			return fmt.Errorf("failed to parse start time %q: %w", tr.Start, err)
+		}
+		start = t
+	}
 
-// 	var start, end time.Time
-// 	if tr.Start != nil {
-// 		start = tr.Start.AsTime().In(tz)
-// 	}
-// 	if tr.End != nil {
-// 		end = tr.End.AsTime().In(tz)
-// 	}
+	var end time.Time
+	if tr.End != "" {
+		t, err := time.Parse(time.RFC3339Nano, tr.End)
+		if err != nil {
+			return fmt.Errorf("failed to parse end time %q: %w", tr.End, err)
+		}
+		end = t
+	}
 
-// 	isISO := false
+	if start.IsZero() && end.IsZero() {
+		t, err := r.resolveTimeAnchor(ctx)
+		if err != nil {
+			return err
+		}
+		end = t
+	}
 
-// 	if tr.IsoDuration != "" {
-// 		if !start.IsZero() && !end.IsZero() {
-// 			return time.Time{}, time.Time{}, fmt.Errorf("only two of time_range.{start,end,iso_duration} can be specified")
-// 		}
+	var isISO bool
+	if tr.IsoDuration != "" {
+		d, err := duration.ParseISO8601(tr.IsoDuration)
+		if err != nil {
+			return fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
+		}
 
-// 		d, err := duration.ParseISO8601(tr.IsoDuration)
-// 		if err != nil {
-// 			return time.Time{}, time.Time{}, fmt.Errorf("invalid iso_duration %q: %w", tr.IsoDuration, err)
-// 		}
+		if !start.IsZero() && !end.IsZero() {
+			return errors.New(`cannot resolve "iso_duration" for a time range with fixed "start" and "end" timestamps`)
+		} else if !start.IsZero() {
+			end = d.Add(start)
+		} else if !end.IsZero() {
+			start = d.Sub(end)
+		} else {
+			// In practice, this shouldn't happen since we resolve a time anchor dynamically if both start and end are zero.
+			return errors.New(`cannot resolve "iso_duration" for a time range without "start" and "end" timestamps`)
+		}
 
-// 		if !start.IsZero() {
-// 			end = d.Add(start)
-// 		} else if !end.IsZero() {
-// 			start = d.Sub(end)
-// 		} else {
-// 			return time.Time{}, time.Time{}, fmt.Errorf("one of time_range.{start,end} must be specified with time_range.iso_duration")
-// 		}
+		isISO = true
+	}
 
-// 		isISO = true
-// 	}
+	if tr.IsoOffset != "" {
+		d, err := duration.ParseISO8601(tr.IsoOffset)
+		if err != nil {
+			return fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
+		}
 
-// 	if tr.IsoOffset != "" {
-// 		d, err := duration.ParseISO8601(tr.IsoOffset)
-// 		if err != nil {
-// 			return time.Time{}, time.Time{}, fmt.Errorf("invalid iso_offset %q: %w", tr.IsoOffset, err)
-// 		}
+		if !start.IsZero() {
+			start = d.Sub(start)
+		}
+		if !end.IsZero() {
+			end = d.Sub(end)
+		}
 
-// 		if !start.IsZero() {
-// 			start = d.Sub(start)
-// 		}
-// 		if !end.IsZero() {
-// 			end = d.Sub(end)
-// 		}
+		isISO = true
+	}
 
-// 		isISO = true
-// 	}
+	// Only modify the start and end if ISO duration or offset was sent.
+	// This is to maintain backwards compatibility for calls from the UI.
+	if isISO {
+		fdow := int(r.metricsView.FirstDayOfWeek)
+		if fdow > 7 || fdow <= 0 {
+			fdow = 1
+		}
+		fmoy := int(r.metricsView.FirstMonthOfYear)
+		if fmoy > 12 || fmoy <= 0 {
+			fmoy = 1
+		}
+		if !tr.RoundToGrain.Valid() {
+			return fmt.Errorf("invalid time grain %q", tr.RoundToGrain)
+		}
+		if !start.IsZero() {
+			start = timeutil.TruncateTime(start, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
+		}
+		if !end.IsZero() {
+			end = timeutil.TruncateTime(end, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
+		}
+	}
 
-// 	// Only modify the start and end if ISO duration or offset was sent.
-// 	// This is to maintain backwards compatibility for calls from the UI.
-// 	if isISO {
-// 		fdow := int(mv.FirstDayOfWeek)
-// 		if mv.FirstDayOfWeek > 7 || mv.FirstDayOfWeek <= 0 {
-// 			fdow = 1
-// 		}
-// 		fmoy := int(mv.FirstMonthOfYear)
-// 		if mv.FirstMonthOfYear > 12 || mv.FirstMonthOfYear <= 0 {
-// 			fmoy = 1
-// 		}
-// 		if !start.IsZero() {
-// 			start = timeutil.TruncateTime(start, convTimeGrain(tr.RoundToGrain), tz, fdow, fmoy)
-// 		}
-// 		if !end.IsZero() {
-// 			end = timeutil.TruncateTime(end, convTimeGrain(tr.RoundToGrain), tz, fdow, fmoy)
-// 		}
-// 	}
+	if !start.IsZero() {
+		tr.StartTime = &start
+	}
+	if !end.IsZero() {
+		tr.EndTime = &end
+	}
+	return nil
+}
 
-// 	return start, end, nil
-// }
+// resolveTimeAnchor resolves a time anchor based on the metric view's watermark expression.
+// If the resolved time anchor is zero, it defaults to the current time.
+func (r *Resolver) resolveTimeAnchor(ctx context.Context) (time.Time, error) {
+	if !r.timeAnchor.IsZero() {
+		return r.timeAnchor, nil
+	}
+
+	if r.executionTime != nil {
+		return *r.executionTime, nil
+	}
+
+	var expr string
+	if r.metricsView.WatermarkExpression != "" {
+		expr = r.metricsView.WatermarkExpression
+	} else if r.metricsView.TimeDimension != "" {
+		expr = fmt.Sprintf("MAX(%s)", r.dialect.EscapeIdentifier(r.metricsView.TimeDimension))
+	} else {
+		return time.Time{}, errors.New("cannot determine time anchor for relative time range")
+	}
+
+	sql := fmt.Sprintf("SELECT %s FROM %s", expr, r.dialect.EscapeTable(r.metricsView.Database, r.metricsView.DatabaseSchema, r.metricsView.Table))
+
+	res, err := r.olap.Execute(ctx, &drivers.Statement{
+		Query:    sql,
+		Priority: r.priority,
+	})
+	if err != nil {
+		return time.Time{}, err
+	}
+
+	var t time.Time
+	for res.Next() {
+		if err := res.Scan(&t); err != nil {
+			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
+		}
+	}
+
+	if t.IsZero() {
+		return time.Now(), nil
+	}
+
+	r.timeAnchor = t
+	return t, nil
+}

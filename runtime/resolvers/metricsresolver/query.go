@@ -5,6 +5,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/timeutil"
 )
 
 type Query struct {
@@ -165,6 +166,33 @@ func (t TimeGrain) Valid() bool {
 		return true
 	}
 	return false
+}
+
+func (t TimeGrain) ToTimeutil() timeutil.TimeGrain {
+	switch t {
+	case TimeGrainUnspecified:
+		return timeutil.TimeGrainUnspecified
+	case TimeGrainMillisecond:
+		return timeutil.TimeGrainMillisecond
+	case TimeGrainSecond:
+		return timeutil.TimeGrainSecond
+	case TimeGrainMinute:
+		return timeutil.TimeGrainMinute
+	case TimeGrainHour:
+		return timeutil.TimeGrainHour
+	case TimeGrainDay:
+		return timeutil.TimeGrainDay
+	case TimeGrainWeek:
+		return timeutil.TimeGrainWeek
+	case TimeGrainMonth:
+		return timeutil.TimeGrainMonth
+	case TimeGrainQuarter:
+		return timeutil.TimeGrainQuarter
+	case TimeGrainYear:
+		return timeutil.TimeGrainYear
+	default:
+		panic(fmt.Errorf("invalid time grain %q", t))
+	}
 }
 
 func (t TimeGrain) ToProto() runtimev1.TimeGrain {
