@@ -183,6 +183,10 @@ func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 	return str
 }
 
+func (d Dialect) SupportsILike() bool {
+	return d != DialectDruid && d != DialectPinot
+}
+
 // EscapeTable returns an esacped fully qualified table name
 func (d Dialect) EscapeTable(db, schema, table string) string {
 	var sb strings.Builder

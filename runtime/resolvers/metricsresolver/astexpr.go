@@ -209,20 +209,20 @@ func (b *expressionBuilder) writeBinaryConditionInner(left, right *Expression, l
 		joiner = " > "
 	case OperatorGte:
 		joiner = " >= "
-	case OperatorIn:
-		joiner = " IN "
-	case OperatorNin:
-		joiner = " NOT IN "
 	case OperatorIlike:
-		joiner = " LIKE "
+		return b.writeILikeCondition(left, right, leftOverride, false)
 	case OperatorNilike:
-		joiner = " NOT LIKE "
+		return b.writeILikeCondition(left, right, leftOverride, true)
+	case OperatorIn:
+		return b.writeInCondition(left, right, leftOverride, false)
+	case OperatorNin:
+		return b.writeInCondition(left, right, leftOverride, true)
 	default:
 		return fmt.Errorf("invalid binary condition operator %q", op)
 	}
 
 	if leftOverride != "" {
-		b.writeString(leftOverride)
+		b.writeParenthesizedString(leftOverride)
 	} else {
 		err := b.writeExpression(left)
 		if err != nil {
@@ -234,6 +234,184 @@ func (b *expressionBuilder) writeBinaryConditionInner(left, right *Expression, l
 	if err != nil {
 		return err
 	}
+	return nil
+}
+
+func (b *expressionBuilder) writeILikeCondition(left, right *Expression, leftOverride string, not bool) error {
+	if not {
+		b.writeByte('(')
+	}
+
+	if b.ast.dialect.SupportsILike() {
+		// Output: <left> [NOT] ILIKE <right>
+
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
+		} else {
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
+		}
+
+		if not {
+			b.writeString(" NOT ILIKE ")
+		} else {
+			b.writeString(" ILIKE ")
+		}
+
+		err := b.writeExpression(right)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Output: LOWER(<left>) [NOT] LIKE LOWER(<right>)
+
+		b.writeString("LOWER(")
+		if leftOverride != "" {
+			b.writeString(leftOverride)
+		} else {
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
+		}
+		b.writeString(")")
+
+		if not {
+			b.writeString(" NOT ILIKE ")
+		} else {
+			b.writeString(" ILIKE ")
+		}
+
+		b.writeString("LOWER(")
+		err := b.writeExpression(right)
+		if err != nil {
+			return err
+		}
+		b.writeString(")")
+	}
+
+	// When you have "dim NOT ILIKE <val>", then NULL values are always excluded. We need to explicitly include it.
+	if not {
+		b.writeString(" OR ")
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
+		} else {
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
+		}
+		b.writeString(" IS NULL")
+	}
+
+	// Closes the parens opened at the start
+	if not {
+		b.writeByte(')')
+	}
+
+	return nil
+}
+
+func (b *expressionBuilder) writeInCondition(left, right *Expression, leftOverride string, not bool) error {
+	if right.Value == nil {
+		return fmt.Errorf("the right expression must be a value for an IN condition")
+	}
+	vals, ok := right.Value.([]any)
+	if !ok {
+		return fmt.Errorf("the right expression must be a list of values for an IN condition")
+	}
+
+	var hasNull bool
+	for _, v := range vals {
+		if v == nil {
+			hasNull = true
+			break
+		}
+	}
+
+	if len(vals) == 0 {
+		if not {
+			b.writeString("TRUE")
+		} else {
+			b.writeString("FALSE")
+		}
+		return nil
+	}
+
+	wrapParens := not || hasNull
+	if wrapParens {
+		b.writeByte('(')
+	}
+
+	if leftOverride != "" {
+		b.writeParenthesizedString(leftOverride)
+	} else {
+		err := b.writeExpression(left)
+		if err != nil {
+			return err
+		}
+	}
+
+	if not {
+		b.writeString(" NOT IN ")
+	} else {
+		b.writeString(" IN ")
+	}
+
+	b.writeByte('(')
+	for i := 0; i < len(vals); i++ {
+		if i == 0 {
+			b.writeString("?")
+		} else {
+			b.writeString(",?")
+		}
+	}
+	b.writeByte(')')
+	b.args = append(b.args, vals...)
+
+	if hasNull {
+		if not {
+			b.writeString(" AND ")
+		} else {
+			b.writeString(" OR ")
+		}
+
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
+		} else {
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
+		}
+
+		if not {
+			b.writeString(" IS NOT NULL")
+		} else {
+			b.writeString(" IS NULL")
+		}
+	}
+
+	// When you have "dim NOT IN (...)", then NULL values are always excluded. We need to explicitly include it.
+	if not && !hasNull {
+		b.writeString(" OR ")
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
+		} else {
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
+		}
+		b.writeString(" IS NULL")
+	}
+
+	if wrapParens {
+		b.writeByte(')')
+	}
+
 	return nil
 }
 
@@ -305,122 +483,3 @@ func (b *expressionBuilder) resolveName(name string) (expr string, unnest bool, 
 
 	return "", false, fmt.Errorf("name %q in expression is not a dimension or measure available in the current context", name)
 }
-
-// func (builder *ExpressionBuilder) buildLikeExpression(cond *runtimev1.Condition) (string, []any, error) {
-// 	if len(cond.Exprs) != 2 {
-// 		return "", nil, fmt.Errorf("like/not like expression should have exactly 2 sub expressions")
-// 	}
-
-// 	leftExpr, args, err := builder.buildExpression(cond.Exprs[0])
-// 	if err != nil {
-// 		return "", nil, err
-// 	}
-
-// 	rightExpr, subArgs, err := builder.buildExpression(cond.Exprs[1])
-// 	if err != nil {
-// 		return "", nil, err
-// 	}
-// 	args = append(args, subArgs...)
-
-// 	notKeyword := ""
-// 	if cond.Op == runtimev1.Operation_OPERATION_NLIKE {
-// 		notKeyword = "NOT"
-// 	}
-
-// 	// identify if immediate identifier has unnest
-// 	unnest := builder.identifierIsUnnest(cond.Exprs[0])
-
-// 	var clause string
-// 	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
-// 	if unnest && builder.dialect != drivers.DialectDruid && builder.dialect != drivers.DialectPinot {
-// 		clause = fmt.Sprintf("%s len(list_filter((%s), x -> x ILIKE %s)) > 0", notKeyword, leftExpr, rightExpr)
-// 	} else {
-// 		if builder.dialect == drivers.DialectDruid || builder.dialect == drivers.DialectPinot {
-// 			// Druid and Pinot does not support ILIKE
-// 			clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(CAST(%s AS VARCHAR))", leftExpr, notKeyword, rightExpr)
-// 		} else {
-// 			clause = fmt.Sprintf("(%s) %s ILIKE %s", leftExpr, notKeyword, rightExpr)
-// 		}
-// 	}
-
-// 	// When you have "dim NOT ILIKE '...'", then NULL values are always excluded.
-// 	// We need to explicitly include it.
-// 	if cond.Op == runtimev1.Operation_OPERATION_NLIKE {
-// 		clause += fmt.Sprintf(" OR (%s) IS NULL", leftExpr)
-// 	}
-
-// 	return clause, args, nil
-// }
-
-// func (builder *ExpressionBuilder) buildInExpression(cond *runtimev1.Condition) (string, []any, error) {
-// 	if len(cond.Exprs) <= 1 {
-// 		return "", nil, fmt.Errorf("in/not in expression should have at least 2 sub expressions")
-// 	}
-
-// 	leftExpr, args, err := builder.buildExpression(cond.Exprs[0])
-// 	if err != nil {
-// 		return "", nil, err
-// 	}
-
-// 	notKeyword := ""
-// 	exclude := cond.Op == runtimev1.Operation_OPERATION_NIN
-// 	if exclude {
-// 		notKeyword = "NOT"
-// 	}
-
-// 	inHasNull := false
-// 	var valClauses []string
-// 	// Add to args, skipping nulls
-// 	for _, subExpr := range cond.Exprs[1:] {
-// 		if v, isVal := subExpr.Expression.(*runtimev1.Expression_Val); isVal {
-// 			if _, isNull := v.Val.Kind.(*structpb.Value_NullValue); isNull {
-// 				inHasNull = true
-// 				continue // Handled later using "dim IS [NOT] NULL" clause
-// 			}
-// 		}
-// 		inVal, subArgs, err := builder.buildExpression(subExpr)
-// 		if err != nil {
-// 			return "", nil, err
-// 		}
-// 		args = append(args, subArgs...)
-// 		valClauses = append(valClauses, inVal)
-// 	}
-
-// 	// identify if immediate identifier has unnest
-// 	unnest := builder.identifierIsUnnest(cond.Exprs[0])
-
-// 	clauses := make([]string, 0)
-
-// 	// If there were non-null args, add a "dim [NOT] IN (...)" clause
-// 	if len(valClauses) > 0 {
-// 		questionMarks := strings.Join(valClauses, ",")
-// 		var clause string
-// 		// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
-// 		if unnest && builder.dialect != drivers.DialectDruid {
-// 			clause = fmt.Sprintf("%s list_has_any((%s), ARRAY[%s])", notKeyword, leftExpr, questionMarks)
-// 		} else {
-// 			clause = fmt.Sprintf("(%s) %s IN (%s)", leftExpr, notKeyword, questionMarks)
-// 		}
-// 		clauses = append(clauses, clause)
-// 	}
-
-// 	if inHasNull {
-// 		// Add null check
-// 		// NOTE: DuckDB doesn't handle NULL values in an "IN" expression. They must be checked with a "dim IS [NOT] NULL" clause.
-// 		clauses = append(clauses, fmt.Sprintf("(%s) IS %s NULL", leftExpr, notKeyword))
-// 	}
-// 	var condsClause string
-// 	if exclude {
-// 		condsClause = strings.Join(clauses, " AND ")
-// 	} else {
-// 		condsClause = strings.Join(clauses, " OR ")
-// 	}
-// 	if exclude && !inHasNull && len(clauses) > 0 {
-// 		// When you have "dim NOT IN (a, b, ...)", then NULL values are always excluded, even if NULL is not in the list.
-// 		// E.g. this returns zero rows: "select * from (select 1 as a union select null as a) where a not in (1)"
-// 		// We need to explicitly include it.
-// 		condsClause += fmt.Sprintf(" OR (%s) IS NULL", leftExpr)
-// 	}
-
-// 	return condsClause, args, nil
-// }
