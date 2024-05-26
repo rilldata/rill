@@ -3,6 +3,7 @@ package metricsresolver
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -515,7 +516,7 @@ func (a *AST) addSimpleMeasure(n *MetricsSelect, m *runtimev1.MetricsViewSpec_Me
 		n.MeasureFields = append(n.MeasureFields, SelectField{
 			Name:  m.Name,
 			Label: m.Label,
-			Expr:  a.expressionForMeasure(m),
+			Expr:  a.expressionForMeasure(m, n),
 		})
 
 		return nil
@@ -588,7 +589,7 @@ func (a *AST) addDerivedMeasure(n *MetricsSelect, m *runtimev1.MetricsViewSpec_M
 	}
 
 	// Add the derived measure expression to the current node.
-	expr := a.expressionForMeasure(m)
+	expr := a.expressionForMeasure(m, n)
 	if n.Group {
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
 		expr = a.expressionForAnyInGroup(expr)
@@ -636,7 +637,7 @@ func (a *AST) addTimeComparisonMeasure(n *MetricsSelect, m *runtimev1.MetricsVie
 	}
 
 	// Add the comparison measure expression to the current node.
-	expr := a.expressionForMeasure(m)
+	expr := a.expressionForMeasure(m, n)
 	if n.Group {
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
 		// TODO: Can a node with a comparison ever have Group==true?
@@ -796,15 +797,40 @@ func (a *AST) expressionForTimeRange(timeCol string, start, end *time.Time) (str
 }
 
 // expressionForMeasure builds a SQL expression for a measure, including its window if present.
-func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2) string {
+// It uses the provided n to resolve dimensions expressions for window partitions.
+func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *MetricsSelect) string {
+	// If not applying a window, just return the measure expression.
 	if m.Window != nil {
 		return m.Expression
 	}
 
-	// incorporate required dimensions. maybe dims?
+	// For windows, we currently have a very hard-coded logic:
+	// 1. If partitioning is configured, we partition by all dimensions except the time dimension.
+	// 2. If the time dimension is present in the query, we always order by time.
 
-	// TODO:
-	return ""
+	var partitionExprs []string
+	var orderExprs []string
+	for _, f := range n.DimFields {
+		if f.Name == a.metricsView.TimeDimension {
+			orderExprs = append(orderExprs, f.Expr)
+			continue
+		}
+
+		if m.Window.Partition {
+			partitionExprs = append(partitionExprs, f.Expr)
+		}
+	}
+
+	var partitionClause string
+	if len(partitionExprs) > 0 && len(orderExprs) > 0 {
+		partitionClause = fmt.Sprintf("PARTITION BY %s ORDER BY %s", strings.Join(partitionExprs, ", "), strings.Join(orderExprs, ", "))
+	} else if len(partitionExprs) > 0 {
+		partitionClause = fmt.Sprintf("PARTITION BY %s", strings.Join(partitionExprs, ", "))
+	} else if len(orderExprs) > 0 {
+		partitionClause = fmt.Sprintf("ORDER BY %s", strings.Join(orderExprs, ", "))
+	}
+
+	return fmt.Sprintf("%s OVER (%s %s)", m.Expression, partitionClause, m.Window.FrameExpression)
 }
 
 // expressionForMember builds a SQL expression for a field in a table.
