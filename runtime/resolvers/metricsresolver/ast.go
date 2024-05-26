@@ -15,7 +15,6 @@ import (
 // AST is the abstract syntax tree for a metrics SQL query.
 type AST struct {
 	Root *MetricsSelect
-	// HavingWhere         *WhereExpr
 
 	baseSelect       *PlainSelect
 	comparisonSelect *PlainSelect
@@ -30,10 +29,8 @@ type AST struct {
 
 // PlainSelect represents a "SELECT * FROM ... WHERE ..." query.
 type PlainSelect struct {
-	Alias      string
-	FromExpr   string
-	FromSelect *PlainSelect
-	Where      *WhereExpr
+	From  string
+	Where *WhereExpr
 }
 
 // MetricsSelect represents a query that computes measures by dimensions.
@@ -50,7 +47,7 @@ type MetricsSelect struct {
 	FromSelect           *MetricsSelect
 	LeftJoinSelects      []*MetricsSelect
 	JoinComparisonSelect *MetricsSelect
-	ComparisonJoinType   string
+	JoinComparisonType   string
 	Where                *WhereExpr
 	Having               *WhereExpr
 	OrderBy              []OrderByField
@@ -80,7 +77,7 @@ type OrderByField struct {
 	Desc bool
 }
 
-func buildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
+func BuildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
 	// Init
 	ast := &AST{
 		metricsView: mv,
@@ -118,16 +115,9 @@ func buildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSec
 	if err != nil {
 		return nil, err
 	}
-	underlying := &PlainSelect{
-		Alias:    ast.generateIdentifier(),
-		FromExpr: ast.dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table),
-		Where:    where,
-	}
-
-	// Build base and comparison SELECTs
-	ast.baseSelect = ast.selectWithTimeRange(underlying, ast.query.TimeRange)
-	if ast.query.ComparisonTimeRange != nil {
-		ast.comparisonSelect = ast.selectWithTimeRange(underlying, ast.query.ComparisonTimeRange)
+	ast.baseSelect = &PlainSelect{
+		From:  ast.dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table),
+		Where: where,
 	}
 
 	// Build initial root node (empty query against the base select)
@@ -137,6 +127,9 @@ func buildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSec
 		Group:     true,
 		FromPlain: ast.baseSelect,
 	}
+
+	// Add time range to the root node
+	ast.addTimeRange(ast.Root, ast.query.TimeRange)
 
 	// Incrementally add each output measure.
 	// As each measure is added, the AST is transformed to accommodate it based on its type.
@@ -175,7 +168,7 @@ func buildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSec
 		if ast.Root.Group {
 			ast.Root.Having = res
 		} else {
-			ast.Root.Where = res
+			ast.addWhere(ast.Root, res)
 		}
 	}
 
@@ -456,11 +449,10 @@ func (a *AST) buildUnderlyingWhere() (*WhereExpr, error) {
 	}, nil
 }
 
-// selectWithTimeRange returns a *new* PlainSelect with the given time range applied.
-// If the time range is empty, it returns the original PlainSelect.
-func (a *AST) selectWithTimeRange(n *PlainSelect, tr *TimeRange) *PlainSelect {
+// addTimeRange adds a time range to the given MetricsSelect's WHERE clause.
+func (a *AST) addTimeRange(n *MetricsSelect, tr *TimeRange) {
 	if tr == nil || tr.IsZero() {
-		return n
+		return
 	}
 
 	// Since resolving time ranges may require contextual info (like watermarks), the upstream caller is responsible for resolving them.
@@ -469,14 +461,19 @@ func (a *AST) selectWithTimeRange(n *PlainSelect, tr *TimeRange) *PlainSelect {
 	}
 
 	expr, args := a.expressionForTimeRange(a.metricsView.TimeDimension, tr.StartTime, tr.EndTime)
+	a.addWhere(n, &WhereExpr{
+		Expr: expr,
+		Args: args,
+	})
+}
 
-	return &PlainSelect{
-		Alias:      a.generateIdentifier(),
-		FromSelect: n,
-		Where: &WhereExpr{
-			Expr: expr,
-			Args: args,
-		},
+// addWhere adds or merges the given WHERE expression to the MetricsSelect's WHERE clause.
+func (a *AST) addWhere(n *MetricsSelect, w *WhereExpr) {
+	if n.Where == nil {
+		n.Where = w
+	} else {
+		n.Where.Expr = fmt.Sprintf("(%s) AND (%s)", n.Where.Expr, w.Expr)
+		n.Where.Args = append(n.Where.Args, w.Args...)
 	}
 }
 
@@ -626,8 +623,11 @@ func (a *AST) addTimeComparisonMeasure(n *MetricsSelect, m *runtimev1.MetricsVie
 			Alias:     "comparison",
 			DimFields: a.dimFields,
 			Group:     true,
-			FromPlain: a.comparisonSelect,
+			FromPlain: a.baseSelect,
 		}
+		n.JoinComparisonType = "OUTER"
+
+		a.addTimeRange(n.JoinComparisonSelect, a.query.ComparisonTimeRange)
 	}
 
 	// Add the referenced measures to the base and comparison SELECTs.
@@ -741,7 +741,7 @@ func (a *AST) wrapSelect(s *MetricsSelect, innerAlias string) {
 	s.FromSelect = &cpy
 	s.LeftJoinSelects = nil
 	s.JoinComparisonSelect = nil
-	s.ComparisonJoinType = ""
+	s.JoinComparisonType = ""
 
 	s.OrderBy = make([]OrderByField, 0, len(cpy.OrderBy))
 	s.OrderBy = append(s.OrderBy, cpy.OrderBy...) // Fresh copy
@@ -811,13 +811,18 @@ func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *Me
 	var partitionExprs []string
 	var orderExprs []string
 	for _, f := range n.DimFields {
+		expr := f.Expr
+		if f.Unnest {
+			expr = a.expressionForMember(f.UnnestAlias, f.Name)
+		}
+
 		if f.Name == a.metricsView.TimeDimension {
-			orderExprs = append(orderExprs, f.Expr)
+			orderExprs = append(orderExprs, expr)
 			continue
 		}
 
 		if m.Window.Partition {
-			partitionExprs = append(partitionExprs, f.Expr)
+			partitionExprs = append(partitionExprs, expr)
 		}
 	}
 
@@ -836,6 +841,9 @@ func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *Me
 // expressionForMember builds a SQL expression for a field in a table.
 // It does not escape the tbl identifier because we currently only use it for internally generated aliases.
 func (a *AST) expressionForMember(tbl, name string) string {
+	if tbl == "" {
+		return a.dialect.EscapeIdentifier(name)
+	}
 	return fmt.Sprintf("%s.%s", tbl, a.dialect.EscapeIdentifier(name))
 }
 

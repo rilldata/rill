@@ -143,7 +143,7 @@ func (r *Resolver) BuildAST(ctx context.Context) (*AST, error) {
 		return nil, err
 	}
 
-	ast, err := buildAST(r.metricsView, r.security, r.query, r.dialect)
+	ast, err := BuildAST(r.metricsView, r.security, r.query, r.dialect)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build AST: %w", err)
 	}
