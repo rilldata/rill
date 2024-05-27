@@ -53,7 +53,12 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 			return err
 		}
 	} else { // no error consume rowIterator
-		defer rowIter.Close()
+		defer func() {
+			err := rowIter.Close()
+			if err != nil {
+				s.logger.Error("error in closing row iterator", zap.Error(err))
+			}
+		}()
 		return s.transferFromRowIterator(ctx, rowIter, sinkCfg.Table, opts.Progress)
 	}
 	limitInBytes, _ := s.to.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
