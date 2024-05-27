@@ -31,18 +31,6 @@ export default class Custompicker extends Litepicker {
       if (!isNaN(maybeStartDate.valueOf())) {
         this.datePicked[0] = new DateTime(maybeStartDate);
         this.emitChanged();
-        // Only render if the blur event was not caused by clicking on a day-item
-        if (
-          !e.relatedTarget ||
-          !(
-            e.relatedTarget.classList.contains("day-item") ||
-            e.relatedTarget.classList.contains(style.buttonPreviousMonth) ||
-            e.relatedTarget.classList.contains(style.buttonNextMonth)
-          )
-        ) {
-          this.scrollToSpecificDate(this.datePicked[0]);
-          this.render();
-        }
       }
     });
 
@@ -52,18 +40,6 @@ export default class Custompicker extends Litepicker {
         this.datePicked[1] = new DateTime(maybeEndDate);
 
         this.emitChanged();
-        // Only render if the blur event was not caused by clicking on a day-item
-        if (
-          !e.relatedTarget ||
-          !(
-            e.relatedTarget.classList.contains("day-item") ||
-            e.relatedTarget.classList.contains(style.buttonPreviousMonth) ||
-            e.relatedTarget.classList.contains(style.buttonNextMonth)
-          )
-        ) {
-          this.scrollToSpecificDate(this.datePicked[1]);
-          this.render();
-        }
       }
     });
   }
@@ -72,6 +48,7 @@ export default class Custompicker extends Litepicker {
     const clonedDate = date.clone();
     clonedDate.setDate(1);
     this.calendars[0] = clonedDate.clone();
+    this.render();
   }
 
   setEditingDate(idx) {

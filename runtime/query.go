@@ -82,7 +82,7 @@ func (r *Runtime) Query(ctx context.Context, instanceID string, query Query, pri
 		if mv := res.GetMetricsView(); mv != nil {
 			olapConnector = mv.Spec.Connector
 		} else if mdl := res.GetModel(); mdl != nil {
-			olapConnector = mdl.Spec.Connector
+			olapConnector = mdl.Spec.OutputConnector
 		} else if src := res.GetSource(); src != nil {
 			olapConnector = src.Spec.SinkConnector
 		}

@@ -13,7 +13,7 @@
   export let gridCell = 0;
   export let radius = 0;
   export let contentRect = new DOMRectReadOnly(0, 0, 0, 0);
-  export let color = "bg-gray-100";
+  export let color = "bg-slate-200";
 
   let GridLinesComponent: ComponentType<GridLines>;
 

@@ -9,6 +9,7 @@
     FileArtifact,
     fileArtifacts,
   } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
     ResourceKind,
     resourceIsLoading,
@@ -23,7 +24,6 @@
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
-  import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
   import {
     refreshSource,
@@ -136,9 +136,12 @@
   $: resource = $resourceQuery.data?.[type];
   $: connector =
     type === "model"
-      ? ((resource as V1ModelV2)?.spec?.connector as string)
+      ? ((resource as V1ModelV2)?.spec?.outputConnector as string)
       : ((resource as V1SourceV2)?.spec?.sinkConnector as string);
-  $: tableName = resource?.state?.table;
+  $: tableName =
+    type === "model"
+      ? ((resource as V1ModelV2)?.state?.resultTable as string)
+      : ((resource as V1SourceV2)?.state?.table as string);
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
 
@@ -273,7 +276,7 @@
 </script>
 
 <svelte:head>
-  <title>Rill Developer | {assetName}</title>
+  <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
 {#if fileNotFound}
