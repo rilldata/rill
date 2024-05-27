@@ -46,7 +46,7 @@ func main() {
 	// Download each extension for each platform
 	// This might be done in parallel but download time will be almost the same
 	for _, platform := range platforms {
-		destDir := fmt.Sprintf(embedDirRoot+"%s/%s", duckdbVersion, platform)
+		destDir := fmt.Sprintf(embedDirRoot+"%s/%s", platform, duckdbVersion)
 		err := os.MkdirAll(destDir, os.ModePerm)
 		if err != nil && !os.IsExist(err) {
 			log.Fatalf("Failed to create destination directory %s: %v", destDir, err)
