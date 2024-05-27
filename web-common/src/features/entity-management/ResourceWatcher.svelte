@@ -1,13 +1,13 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { createWatchFilesClient } from "@rilldata/web-common/features/entity-management/watch-files-client";
-  import { createWatchResourceClient } from "@rilldata/web-common/features/entity-management/watch-resources-client";
+  import { WatchFilesClient } from "@rilldata/web-common/features/entity-management/WatchFilesClient";
+  import { WatchResourcesClient } from "@rilldata/web-common/features/entity-management/WatchResourcesClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
 
-  const fileWatcher = createWatchFilesClient();
-  const resourceWatcher = createWatchResourceClient();
+  const fileWatcher = new WatchFilesClient().client;
+  const resourceWatcher = new WatchResourcesClient().client;
 
   export let host: string;
   export let instanceId: string;
@@ -32,8 +32,8 @@
 
   function handleVisibilityChange() {
     if (document.visibilityState === "visible") {
-      fileWatcher.reconnect();
-      resourceWatcher.reconnect();
+      fileWatcher.reconnect().catch(console.error);
+      resourceWatcher.reconnect().catch(console.error);
     } else {
       fileWatcher.throttle();
       resourceWatcher.throttle();
