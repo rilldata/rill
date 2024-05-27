@@ -86,6 +86,7 @@ func newBuiltinPostgresSQL(ctx context.Context, opts *runtime.ResolverOptions) (
 		return nil, err
 	}
 	dbPath := filepath.Join(dbDir, "catalog.db")
+	// nolint:gosec // We don't need cryptographically secure random numbers
 	dbName := fmt.Sprintf("pg_catalog_db_%v", rand.Int())
 	args.SQL = rewriteSQL(args.SQL)
 	// loop over all resources and create corresponding table in duckdb so that these can be queried with information_schema
@@ -99,12 +100,12 @@ func newBuiltinPostgresSQL(ctx context.Context, opts *runtime.ResolverOptions) (
 		}
 
 		compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.UserAttributes, args.Priority)
-		sql, connector, _, err := compiler.Compile(ctx, metricSQL)
+		createTableSQL, connector, _, err := compiler.Compile(ctx, metricSQL)
 		if err != nil {
 			return nil, err
 		}
 
-		if err := populate(ctx, opts, connector, sql, dbPath, dbName, resource.Meta.Name.Name); err != nil {
+		if err := populateMetricView(ctx, opts, connector, createTableSQL, dbPath, dbName, resource.Meta.Name.Name); err != nil {
 			return nil, err
 		}
 	}
@@ -132,7 +133,7 @@ func newBuiltinPostgresSQL(ctx context.Context, opts *runtime.ResolverOptions) (
 	}, nil
 }
 
-func populate(ctx context.Context, opts *runtime.ResolverOptions, connector, query, path, dbName, mvName string) error {
+func populateMetricView(ctx context.Context, opts *runtime.ResolverOptions, connector, query, path, dbName, mvName string) error {
 	olap, release, err := opts.Runtime.OLAP(ctx, opts.InstanceID, connector)
 	if err != nil {
 		return err
@@ -312,29 +313,30 @@ func fromQueryForMetricsView(ctx context.Context, ctrl *runtime.Controller, opts
 		final = append(final, spec.TimeDimension)
 	}
 
-	var sql strings.Builder
-	sql.WriteString("SELECT ")
-	sql.WriteString(strings.Join(final, ","))
-	sql.WriteString(" FROM ")
-	sql.WriteString(dialect.EscapeIdentifier(mv.Meta.Name.Name))
+	var sqlStr strings.Builder
+	sqlStr.WriteString("SELECT ")
+	sqlStr.WriteString(strings.Join(final, ","))
+	sqlStr.WriteString(" FROM ")
+	sqlStr.WriteString(dialect.EscapeIdentifier(mv.Meta.Name.Name))
 	if security.RowFilter != "" {
-		sql.WriteString(" WHERE ")
-		sql.WriteString(security.RowFilter)
+		sqlStr.WriteString(" WHERE ")
+		sqlStr.WriteString(security.RowFilter)
 	}
-	return sql.String(), nil
+	return sqlStr.String(), nil
 }
 
 var (
-	functions         string         = "has_any_column_privilege|has_column_privilege|has_database_privilege|has_foreign_data_wrapper_privilege|has_function_privilege|has_language_privilege|has_parameter_privilege|has_schema_privilege|has_sequence_privilege|has_server_privilege|has_table_privilege|has_tablespace_privilege|has_type_privilege|pg_has_role"
-	re                *regexp.Regexp = regexp.MustCompile(fmt.Sprintf(`pg_catalog.(%s)\(([^,]+), ([^,]+), ([^)]+)\)`, functions))
-	dbRe              *regexp.Regexp = regexp.MustCompile(`pg_catalog\.(\w+)`)
-	regclassRe        *regexp.Regexp = regexp.MustCompile(`'pg_class'::regclass`)
-	versionRe         *regexp.Regexp = regexp.MustCompile(`pg_catalog\.version\(\)`)
-	pgBackendPid      *regexp.Regexp = regexp.MustCompile(`(?:pg_catalog\.)?pg_backend_pid\([^)]*\)`)
-	indexRe           *regexp.Regexp = regexp.MustCompile(`(?:pg_catalog\.)?pg_get_indexdef\([^)]*\)`)
-	identifyOptionsRe *regexp.Regexp = regexp.MustCompile(`(?is)\(SELECT\s+json_build_object\([^)]*\)\s*FROM[^)]*\)\s+as\s+identity_options`)
-	serialSequenceRe  *regexp.Regexp = regexp.MustCompile(`pg_catalog\.pg_get_serial_sequence\([^\)]*\)`)
-	extraCharRe       *regexp.Regexp = regexp.MustCompile(`[\n\t\r]`)
+	functions         = "has_any_column_privilege|has_column_privilege|has_database_privilege|has_foreign_data_wrapper_privilege|has_function_privilege|has_language_privilege|has_parameter_privilege|has_schema_privilege|has_sequence_privilege|has_server_privilege|has_table_privilege|has_tablespace_privilege|has_type_privilege|pg_has_role"
+	re                = regexp.MustCompile(fmt.Sprintf(`pg_catalog.(%s)\(([^,]+), ([^,]+), ([^)]+)\)`, functions))
+	dbRe              = regexp.MustCompile(`pg_catalog\.(\w+)`)
+	regclassRe        = regexp.MustCompile(`'pg_class'::regclass`)
+	versionRe         = regexp.MustCompile(`pg_catalog\.version\(\)`)
+	pgBackendPid      = regexp.MustCompile(`(?:pg_catalog\.)?pg_backend_pid\([^)]*\)`)
+	indexRe           = regexp.MustCompile(`(?:pg_catalog\.)?pg_get_indexdef\([^)]*\)`)
+	identifyOptionsRe = regexp.MustCompile(`(?is)\(SELECT\s+json_build_object\([^)]*\)\s*FROM[^)]*\)\s+as\s+identity_options`)
+	serialSequenceRe  = regexp.MustCompile(`pg_catalog\.pg_get_serial_sequence\([^\)]*\)`)
+	extraCharRe       = regexp.MustCompile(`[\n\t\r]`)
+	showVarRe         = regexp.MustCompile(`(?i)SHOW\s+(.+)`)
 )
 
 func rewriteSQL(input string) string {
@@ -349,13 +351,9 @@ func rewriteSQL(input string) string {
 	return result
 }
 
-var (
-	showVarRe *regexp.Regexp = regexp.MustCompile(`(?i)SHOW\s+(.+)`)
-)
-
-func resolveNonCatalog(sql string) (runtime.Resolver, bool) {
-	sql = strings.TrimSuffix(sql, ";")
-	matches := showVarRe.FindStringSubmatch(sql)
+func resolveNonCatalog(sqlStr string) (runtime.Resolver, bool) {
+	sqlStr = strings.TrimSuffix(sqlStr, ";")
+	matches := showVarRe.FindStringSubmatch(sqlStr)
 	if len(matches) <= 1 {
 		return nil, false
 	}

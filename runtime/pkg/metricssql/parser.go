@@ -143,7 +143,7 @@ func (t *transformer) transformSelectStmt(ctx context.Context, node *ast.SelectS
 		sb.WriteString(where.expr)
 	}
 	// todo: BI tool send a group by clause in all cases
-	// add a validation for group by clause 
+	// Add a validation for group by clause
 	//
 	// if node.GroupBy != nil {
 	// 	return "", fmt.Errorf("metrics sql: Explicit group by clause is not supported. Group by clause is implicitly added when both measure and dimensions are selected. The implicit group by includes all selected dimensions")

@@ -170,7 +170,9 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 		s.logger.Info("admin server data", zap.Any("data", data))
 		for i := 0; i < len(data); i++ {
-			writer.Row(data[i])
+			if err := writer.Row(data[i]); err != nil {
+				return err
+			}
 		}
 		return writer.Complete("OK")
 	}
