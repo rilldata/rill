@@ -4,7 +4,6 @@
     createAdminServiceCreateAlert,
     createAdminServiceGetCurrentUser,
   } from "@rilldata/web-admin/client";
-  import { CompareWith } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
   import {
@@ -12,7 +11,7 @@
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
-  import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+  import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import {
     mapComparisonTimeRange,
@@ -75,10 +74,8 @@
       evaluationInterval: "",
       criteria: [
         {
-          field: $dashboardStore.leaderboardMeasureName ?? "",
-          operation: MeasureFilterOperation.GreaterThan,
-          compareWith: CompareWith.Value,
-          value: "0",
+          ...getEmptyMeasureFilterEntry(),
+          measure: $dashboardStore.leaderboardMeasureName ?? "",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,

@@ -8,7 +8,7 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
-    AllMeasureFilterOptions,
+    AllMeasureFilterOperationOptions,
     MeasureFilterOperation,
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 
@@ -28,11 +28,8 @@
       case MeasureFilterOperation.LessThanOrEquals:
       case MeasureFilterOperation.Equals:
       case MeasureFilterOperation.NotEquals:
-      case MeasureFilterOperation.IncreasesBy:
-      case MeasureFilterOperation.DecreasesBy:
-      case MeasureFilterOperation.ChangesBy:
         shortLabel =
-          AllMeasureFilterOptions.find(
+          AllMeasureFilterOperationOptions.find(
             (o) =>
               // svelte-check is throwing an error here stating `filter could be undefined` so we need this
               o.value === filter?.operation ??

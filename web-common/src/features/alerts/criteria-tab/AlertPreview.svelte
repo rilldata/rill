@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
-  import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
   import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -15,7 +15,7 @@
   $: alertPreviewQuery = getAlertPreviewData(queryClient, formValues);
 
   $: isCriteriaEmpty =
-    formValues.criteria.map(mapAlertCriteriaToExpression).length === 0;
+    formValues.criteria.map(mapMeasureFilterToExpr).length === 0;
 </script>
 
 {#if $alertPreviewQuery.isFetching}

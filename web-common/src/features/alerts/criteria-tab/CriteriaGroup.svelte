@@ -2,12 +2,9 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import CriteriaForm from "@rilldata/web-common/features/alerts/criteria-tab/CriteriaForm.svelte";
-  import {
-    CompareWith,
-    CriteriaGroupOptions,
-  } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
+  import { CriteriaGroupOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
-  import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+  import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { Trash2Icon } from "lucide-svelte";
   import { createForm } from "svelte-forms-lib";
 
@@ -20,12 +17,7 @@
   }
 
   function handleAddCriteria() {
-    $form["criteria"] = $form["criteria"].concat({
-      field: "",
-      operation: MeasureFilterOperation.GreaterThan,
-      compareWith: CompareWith.Value,
-      value: "0",
-    });
+    $form["criteria"] = $form["criteria"].concat(getEmptyMeasureFilterEntry());
   }
 </script>
 

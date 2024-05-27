@@ -1,10 +1,11 @@
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
-export type MeasureFilterOption = {
-  value: MeasureFilterOperation;
-  label: string;
-  shortLabel: string;
-};
+export enum MeasureFilterType {
+  Value = "Value",
+  AbsoluteChange = "AbsoluteChange",
+  PercentChange = "PercentChange",
+  PercentOfTotal = "PercentOfTotal",
+}
 
 export enum MeasureFilterOperation {
   Equals = "OPERATION_EQ",
@@ -15,11 +16,6 @@ export enum MeasureFilterOperation {
   LessThanOrEquals = "OPERATION_LTE",
   Between = "Between",
   NotBetween = "NotBetween",
-  IncreasesBy = "IncreasesBy",
-  DecreasesBy = "DecreasesBy",
-  ChangesBy = "ChangesBy",
-  ShareOfTotalsGreaterThan = "ShareOfTotalsGreaterThan",
-  ShareOfTotalsLessThan = "ShareOfTotalsLessThan",
 }
 
 export const MeasureFilterToProtoOperation = {
@@ -38,20 +34,42 @@ for (const MeasureFilterOperation in MeasureFilterToProtoOperation) {
     MeasureFilterToProtoOperation[MeasureFilterOperation]
   ] = MeasureFilterOperation;
 }
-export const ProtoToCompareMeasureFilterOperation = {
-  [V1Operation.OPERATION_GT]: MeasureFilterOperation.IncreasesBy,
-  [V1Operation.OPERATION_GTE]: MeasureFilterOperation.IncreasesBy,
-  [V1Operation.OPERATION_LT]: MeasureFilterOperation.DecreasesBy,
-  [V1Operation.OPERATION_LTE]: MeasureFilterOperation.DecreasesBy,
-};
 
-export const IsCompareMeasureFilterOperation = {
-  [MeasureFilterOperation.IncreasesBy]: true,
-  [MeasureFilterOperation.DecreasesBy]: true,
-  [MeasureFilterOperation.ChangesBy]: true,
-};
+export const MeasureFilterBaseTypeOptions = [
+  {
+    value: MeasureFilterType.Value,
+    label: "value",
+    shortLabel: "",
+  },
+];
+export const MeasureFilterComparisonTypeOptions = [
+  ...MeasureFilterBaseTypeOptions,
+  {
+    value: MeasureFilterType.PercentChange,
+    label: "% change from",
+    shortLabel: "% change from",
+  },
+  {
+    value: MeasureFilterType.AbsoluteChange,
+    label: "change from",
+    shortLabel: "change from",
+  },
+];
+export const AllMeasureFilterTypeOptions = [
+  ...MeasureFilterComparisonTypeOptions,
+  {
+    value: MeasureFilterType.AbsoluteChange,
+    label: "% change from",
+    shortLabel: "% change from",
+  },
+  // TODO
+  // {
+  //   value: MeasureFilterType.PercentOfTotal,
+  //   label: "% of total",
+  // },
+];
 
-export const MeasureFilterOptions: MeasureFilterOption[] = [
+export const MeasureFilterOperationOptions = [
   {
     value: MeasureFilterOperation.GreaterThan,
     label: "Greater Than",
@@ -84,8 +102,8 @@ export const MeasureFilterOptions: MeasureFilterOption[] = [
   },
 ];
 // Full list with options not supported in filter pills just yet.
-export const AllMeasureFilterOptions = [
-  ...MeasureFilterOptions,
+export const AllMeasureFilterOperationOptions = [
+  ...MeasureFilterOperationOptions,
   {
     value: MeasureFilterOperation.Equals,
     label: "Equals",
@@ -95,20 +113,5 @@ export const AllMeasureFilterOptions = [
     value: MeasureFilterOperation.NotEquals,
     label: "Does Not Equals",
     shortLabel: "!=",
-  },
-  {
-    value: MeasureFilterOperation.IncreasesBy,
-    label: "Increases By",
-    shortLabel: "increases by",
-  },
-  {
-    value: MeasureFilterOperation.DecreasesBy,
-    label: "Decreases By",
-    shortLabel: "decreases by",
-  },
-  {
-    value: MeasureFilterOperation.ChangesBy,
-    label: "Changes By",
-    shortLabel: "changes by",
   },
 ];

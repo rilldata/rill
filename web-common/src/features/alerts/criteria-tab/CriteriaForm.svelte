@@ -1,13 +1,13 @@
 <script lang="ts">
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import {
-    CompareWithOptions,
-    CriteriaOperationComparisonOptions,
-    CriteriaOperationOptions,
-  } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
+  import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
   import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import {
+    MeasureFilterBaseTypeOptions,
+    MeasureFilterComparisonTypeOptions,
+  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { createForm } from "svelte-forms-lib";
@@ -39,38 +39,38 @@
     $form.comparisonTimeRange?.isoOffset;
 
   // Debounce the update of value. This avoid constant refetches
-  let value: string = $form["criteria"][index].value;
+  let value: string = $form["criteria"][index].value1;
   const valueUpdater = debounce(() => {
-    $form["criteria"][index].value = value;
+    $form["criteria"][index].value1 = value;
     void validateField("criteria");
   }, 500);
 
   $: groupErr = parseCriteriaError($errors["criteria"], index);
 </script>
 
-<div class="grid grid-cols-2 flex-wrap gap-2">
+<div class="grid grid-cols-4 gap-2">
   <Select
-    bind:value={$form["criteria"][index].field}
+    bind:value={$form["criteria"][index].measure}
     id="field"
     label=""
     options={measureOptions}
     placeholder="Measure"
   />
   <Select
+    bind:value={$form["criteria"][index].type}
+    id="type"
+    label=""
+    options={hasComparison
+      ? MeasureFilterComparisonTypeOptions
+      : MeasureFilterBaseTypeOptions}
+    placeholder="type"
+  />
+  <Select
     bind:value={$form["criteria"][index].operation}
     id="operation"
     label=""
-    options={hasComparison
-      ? CriteriaOperationComparisonOptions
-      : CriteriaOperationOptions}
+    options={CriteriaOperationOptions}
     placeholder="Operator"
-  />
-  <Select
-    bind:value={$form["criteria"][index].compareWith}
-    id="compareWith"
-    label=""
-    options={CompareWithOptions}
-    placeholder="compare with"
   />
   <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
   <InputV2

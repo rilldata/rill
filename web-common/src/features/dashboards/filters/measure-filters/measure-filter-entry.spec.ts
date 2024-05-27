@@ -1,17 +1,19 @@
 import {
   mapExprToMeasureFilter,
   mapMeasureFilterToExpr,
-  MeasureFilterComparisonType,
   MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+import {
+  MeasureFilterOperation,
+  MeasureFilterType,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import {
   createAndExpression,
   createBinaryExpression,
   createOrExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { V1Expression, V1Operation } from "@rilldata/web-common/runtime-client";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 const TestCases: [
   title: string,
@@ -21,88 +23,88 @@ const TestCases: [
   [
     "greater than",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
       operation: MeasureFilterOperation.GreaterThan,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "10",
+      value2: "",
     },
     createBinaryExpression("imp", V1Operation.OPERATION_GT, 10),
   ],
   [
     "invalid value",
     {
-      value1: "abc",
-      value2: "",
       measure: "imp",
       operation: MeasureFilterOperation.GreaterThan,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "abc",
+      value2: "",
     },
     undefined,
   ],
   [
     "greater than or equals",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
       operation: MeasureFilterOperation.GreaterThanOrEquals,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "10",
+      value2: "",
     },
     createBinaryExpression("imp", V1Operation.OPERATION_GTE, 10),
   ],
   [
     "less than",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
       operation: MeasureFilterOperation.LessThan,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "10",
+      value2: "",
     },
     createBinaryExpression("imp", V1Operation.OPERATION_LT, 10),
   ],
   [
     "less than or equals",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
       operation: MeasureFilterOperation.LessThanOrEquals,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "10",
+      value2: "",
     },
     createBinaryExpression("imp", V1Operation.OPERATION_LTE, 10),
   ],
   [
     "equals",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
       operation: MeasureFilterOperation.Equals,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "10",
+      value2: "",
     },
     createBinaryExpression("imp", V1Operation.OPERATION_EQ, 10),
   ],
   [
     "not equals",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
       operation: MeasureFilterOperation.NotEquals,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "10",
+      value2: "",
     },
     createBinaryExpression("imp", V1Operation.OPERATION_NEQ, 10),
   ],
   [
     "between",
     {
-      value1: "10",
-      value2: "20",
       measure: "imp",
       operation: MeasureFilterOperation.Between,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "10",
+      value2: "20",
     },
     createAndExpression([
       createBinaryExpression("imp", V1Operation.OPERATION_GT, 10),
@@ -112,11 +114,11 @@ const TestCases: [
   [
     "not between",
     {
-      value1: "10",
-      value2: "20",
       measure: "imp",
       operation: MeasureFilterOperation.NotBetween,
-      comparison: MeasureFilterComparisonType.None,
+      type: MeasureFilterType.Value,
+      value1: "10",
+      value2: "20",
     },
     createOrExpression([
       createBinaryExpression("imp", V1Operation.OPERATION_LTE, 10),
@@ -124,75 +126,58 @@ const TestCases: [
     ]),
   ],
   [
-    "invalid greater than",
-    {
-      value1: "10",
-      value2: "",
-      measure: "imp",
-      operation: MeasureFilterOperation.GreaterThan,
-      comparison: MeasureFilterComparisonType.PercentageComparison,
-    },
-    undefined,
-  ],
-  [
     "increases by value",
     {
+      measure: "imp",
+      operation: MeasureFilterOperation.GreaterThan,
+      type: MeasureFilterType.AbsoluteChange,
       value1: "10",
       value2: "",
-      measure: "imp",
-      operation: MeasureFilterOperation.IncreasesBy,
-      comparison: MeasureFilterComparisonType.AbsoluteComparison,
     },
     createBinaryExpression("imp__delta_abs", V1Operation.OPERATION_GT, 10),
   ],
   [
     "decreases by percent",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
-      operation: MeasureFilterOperation.DecreasesBy,
-      comparison: MeasureFilterComparisonType.PercentageComparison,
+      operation: MeasureFilterOperation.LessThan,
+      type: MeasureFilterType.PercentChange,
+      value1: "-10",
+      value2: "",
     },
     createBinaryExpression("imp__delta_rel", V1Operation.OPERATION_LT, -0.1),
   ],
   [
     "changes by absolute",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
-      operation: MeasureFilterOperation.ChangesBy,
-      comparison: MeasureFilterComparisonType.AbsoluteComparison,
+      operation: MeasureFilterOperation.Between,
+      type: MeasureFilterType.AbsoluteChange,
+      value1: "-10",
+      value2: "10",
     },
-    createOrExpression([
-      createBinaryExpression("imp__delta_abs", V1Operation.OPERATION_LT, -10),
-      createBinaryExpression("imp__delta_abs", V1Operation.OPERATION_GT, 10),
-    ]),
+    undefined,
   ],
   [
     "changes by percent",
     {
-      value1: "10",
-      value2: "",
       measure: "imp",
-      operation: MeasureFilterOperation.ChangesBy,
-      comparison: MeasureFilterComparisonType.PercentageComparison,
+      operation: MeasureFilterOperation.Between,
+      type: MeasureFilterType.PercentChange,
+      value1: "-10",
+      value2: "10",
     },
-    createOrExpression([
-      createBinaryExpression("imp__delta_rel", V1Operation.OPERATION_LT, -0.1),
-      createBinaryExpression("imp__delta_rel", V1Operation.OPERATION_GT, 0.1),
-    ]),
+    undefined,
   ],
   [
     // TODO
     "share of totals",
     {
+      measure: "imp",
+      operation: MeasureFilterOperation.LessThan,
+      type: MeasureFilterType.PercentOfTotal,
       value1: "10",
       value2: "",
-      measure: "imp",
-      operation: MeasureFilterOperation.ShareOfTotalsGreaterThan,
-      comparison: MeasureFilterComparisonType.PercentageComparison,
     },
     undefined,
   ],

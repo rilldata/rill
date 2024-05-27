@@ -1,14 +1,10 @@
-import { mapAlertCriteriaToExpression } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
-import { CompareWith } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
+  mapMeasureFilterToExpr,
+  MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
-import {
-  IsCompareMeasureFilterOperation,
-  MeasureFilterOperation,
-} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1Expression,
@@ -18,17 +14,11 @@ import type {
 } from "@rilldata/web-common/runtime-client";
 import * as yup from "yup";
 
-export type AlertCriteria = {
-  field: string;
-  operation: MeasureFilterOperation;
-  compareWith: CompareWith;
-  value: string;
-};
 export type AlertFormValues = {
   name: string;
   measure: string;
   splitByDimension: string;
-  criteria: AlertCriteria[];
+  criteria: MeasureFilterEntry[];
   criteriaOperation: V1Operation;
   evaluationInterval: string;
   snooze: string;
@@ -48,24 +38,14 @@ export type AlertFormValues = {
 export function getAlertQueryArgsFromFormValues(
   formValues: AlertFormValues,
 ): V1MetricsViewAggregationRequest {
-  const addComparison =
-    !!formValues.comparisonTimeRange &&
-    !!formValues.criteria.find(
-      (c) => c.operation in IsCompareMeasureFilterOperation,
-    );
-
   return {
     metricsView: formValues.metricsViewName,
     measures: [
       {
         name: formValues.measure,
       },
-      ...(addComparison
+      ...(formValues.comparisonTimeRange
         ? [
-            {
-              name: formValues.measure + ComparisonDeltaPreviousSuffix,
-              comparisonValue: { measure: formValues.measure },
-            },
             {
               name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
               comparisonDelta: { measure: formValues.measure },
@@ -85,7 +65,7 @@ export function getAlertQueryArgsFromFormValues(
       cond: {
         op: formValues.criteriaOperation,
         exprs: formValues.criteria
-          .map(mapAlertCriteriaToExpression)
+          .map(mapMeasureFilterToExpr)
           .filter((e) => !!e) as V1Expression[],
       },
     }),
@@ -100,14 +80,11 @@ export function getAlertQueryArgsFromFormValues(
         desc: false,
       },
     ],
-    ...(addComparison
+    ...(formValues.comparisonTimeRange
       ? {
           comparisonTimeRange: {
-            // addComparison already includes null check for comparisonTimeRange
-            isoDuration: (formValues.comparisonTimeRange as V1TimeRange)
-              .isoDuration,
-            isoOffset: (formValues.comparisonTimeRange as V1TimeRange)
-              .isoOffset,
+            isoDuration: formValues.comparisonTimeRange.isoDuration,
+            isoOffset: formValues.comparisonTimeRange.isoOffset,
           },
         }
       : {}),
@@ -119,9 +96,9 @@ export const alertFormValidationSchema = yup.object({
   measure: yup.string().required("Required"),
   criteria: yup.array().of(
     yup.object().shape({
-      field: yup.string().required("Required"),
+      measure: yup.string().required("Required"),
       operation: yup.string().required("Required"),
-      value: yup.number().required("Required"),
+      value1: yup.number().required("Required"),
     }),
   ),
   criteriaOperation: yup.string().required("Required"),
@@ -158,9 +135,9 @@ export function checkIsTabValid(
     hasRequiredFields = true;
     formValues.criteria.forEach((criteria) => {
       if (
-        criteria.field === "" ||
+        criteria.measure === "" ||
         (criteria.operation as string) === "" ||
-        criteria.value === ""
+        criteria.value1 === ""
       ) {
         hasRequiredFields = false;
       }

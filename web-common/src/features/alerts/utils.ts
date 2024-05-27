@@ -16,7 +16,6 @@ export function getLabelForFieldName(
     }
   }
 
-  console.log(fieldName, metricsViewSpec.measures);
   if (metricsViewSpec.measures) {
     for (const measure of metricsViewSpec.measures) {
       const label = measure.label ?? fieldName;

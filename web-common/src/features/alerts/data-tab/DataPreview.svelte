@@ -15,6 +15,8 @@
     ...formValues,
     criteria: [],
   });
+
+  $: console.log($alertPreviewQuery.data?.schema);
 </script>
 
 {#if $alertPreviewQuery.isFetching}

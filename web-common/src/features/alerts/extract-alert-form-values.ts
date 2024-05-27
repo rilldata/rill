@@ -1,5 +1,9 @@
-import { mapExpressionToAlertCriteria } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import {
+  getEmptyMeasureFilterEntry,
+  mapExprToMeasureFilter,
+  MeasureFilterEntry,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
@@ -60,8 +64,9 @@ export function extractAlertFormValues(
     measure: measures[0]?.name ?? "",
     splitByDimension: dimensions[0]?.name ?? "",
 
-    criteria:
-      queryArgs.having?.cond?.exprs?.map(mapExpressionToAlertCriteria) ?? [],
+    criteria: (queryArgs.having?.cond?.exprs?.map(
+      mapExprToMeasureFilter,
+    ) as MeasureFilterEntry[]) ?? [getEmptyMeasureFilterEntry()],
     criteriaOperation: queryArgs.having?.cond?.op ?? V1Operation.OPERATION_AND,
 
     // These are not part of the form, but are used to track the state of the form
