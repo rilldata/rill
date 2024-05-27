@@ -128,8 +128,9 @@ func newBuiltinPostgresSQL(ctx context.Context, opts *runtime.ResolverOptions) (
 	}
 	fmt.Printf("final SQL: %v\n", args.SQL)
 	return &catalogSQLResolver{
-		olap: olap,
-		sql:  args.SQL,
+		olap:  olap,
+		sql:   args.SQL,
+		dbDir: dbDir,
 	}, nil
 }
 
@@ -174,12 +175,13 @@ func populateCatalogTables(ctx context.Context, olap drivers.OLAPStore) error {
 }
 
 type catalogSQLResolver struct {
-	olap drivers.OLAPStore
-	sql  string
+	olap  drivers.OLAPStore
+	sql   string
+	dbDir string
 }
 
 func (r *catalogSQLResolver) Close() error {
-	return nil
+	return os.RemoveAll(r.dbDir)
 }
 
 func (r *catalogSQLResolver) Key() string {
@@ -340,13 +342,21 @@ var (
 )
 
 func rewriteSQL(input string) string {
+	// DuckDB does not support user optional argument in `functions`. We need to remove that.
 	result := re.ReplaceAllString(input, `(select pg_catalog.$1($3, $4))`)
+	// pg_get_serial_sequence not supported
 	result = serialSequenceRe.ReplaceAllString(result, "NULL")
+	// setting fixed pg_backend_pid
 	result = pgBackendPid.ReplaceAllString(result, `(SELECT 1234) AS pg_backend_pid`)
+	// pg_get_indexdef not supported
 	result = indexRe.ReplaceAllString(result, "NULL")
-	result = versionRe.ReplaceAllString(result, `(SELECT 'PostgreSQL 10.0 (Debian 10.0-1.pgdg110+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 10.2.1-6) 10.2.1 20210110, 64-bit') AS version`)
+	// postgres version
+	result = versionRe.ReplaceAllString(result, `(SELECT 'PostgreSQL 16.3 (Debian 16.3-1.pgdg120+1) on aarch64-unknown-linux-gnu, compiled by gcc (Debian 12.2.0-14) 12.2.0, 64-bit') AS version`)
+	// duckdb executes catalog queries in system schema by default. We want to execute in user database's public schema.
 	result = dbRe.ReplaceAllString(result, `catalog.pg_catalog.$1`)
+	// duckdb does not have `regclass` typecast
 	result = regclassRe.ReplaceAllString(result, `(SELECT oid FROM pg_class WHERE relname = 'pg_class')`)
+	// json_build_object is not supported. It is used in indexes for metabase so we directly set it as NULL.
 	result = identifyOptionsRe.ReplaceAllString(result, " NULL AS identity_options")
 	return result
 }

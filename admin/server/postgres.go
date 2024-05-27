@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -16,10 +17,8 @@ import (
 	"go.uber.org/zap"
 )
 
-var runtimePool map[string]*pgxpool.Pool = make(map[string]*pgxpool.Pool)
-
 func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
-	s.logger.Info("query", zap.String("query", query))
+	s.logger.Debug("query", zap.String("query", query))
 	if strings.Trim(query, " ") == "" {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 			return writer.Empty()
@@ -67,7 +66,7 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	switch claims.OwnerType() {
 	case auth.OwnerTypeAnon:
 		// If the client is not authenticated with the admin service, we just proxy the contents of the password to the runtime (if any).
-		password := ctx.Value(auth.PasswordKey{}).(string)
+		password := ctx.Value(auth.PostgresPassword{}).(string)
 		if len(password) >= 6 && strings.EqualFold(password[0:6], "bearer") {
 			jwt = strings.TrimSpace(password[6:])
 		}
@@ -113,13 +112,12 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	// Track usage of the deployment
 	s.admin.Used.Deployment(depl.ID)
 
-	port := 15432
 	hostURL, err := url.Parse(depl.RuntimeHost)
 	if err != nil {
 		return nil, err
 	}
 	hostURL.Scheme = "postgres"
-	hostURL.Host = hostURL.Hostname() + ":" + strconv.FormatInt(int64(port), 10)
+	hostURL.Host = hostURL.Hostname() + ":" + strconv.FormatInt(int64(15432), 10)
 	hostURL.User = url.UserPassword("postgres", fmt.Sprintf("Bearer %s", jwt))
 	hostURL.Path = depl.RuntimeInstanceID
 	conn, err := connectionPool(ctx, hostURL.String())
@@ -139,7 +137,6 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	var cols []wire.Column
 	fds := rows.FieldDescriptions()
 	for _, fd := range fds {
-		s.logger.Info("field", zap.String("name", fd.Name))
 		cols = append(cols, wire.Column{
 			Table: int32(fd.TableOID),
 			Name:  fd.Name,
@@ -168,7 +165,6 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	}
 
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-		s.logger.Info("admin server data", zap.Any("data", data))
 		for i := 0; i < len(data); i++ {
 			if err := writer.Row(data[i]); err != nil {
 				return err
@@ -179,10 +175,18 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(cols))), nil
 }
 
+var (
+	runtimePool map[string]*pgxpool.Pool = make(map[string]*pgxpool.Pool)
+	mu          sync.Mutex
+)
+
 func connectionPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
-	runtimePool, ok := runtimePool[dsn]
+	mu.Lock()
+	defer mu.Unlock()
+
+	pool, ok := runtimePool[dsn]
 	if ok {
-		return runtimePool, nil
+		return pool, nil
 	}
 
 	config, err := pgxpool.ParseConfig(dsn)
@@ -196,6 +200,5 @@ func connectionPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	// also consider if we should add some health check on connection acquisition
 	config.HealthCheckPeriod = time.Minute
 
-	pool, err := pgxpool.NewWithConfig(ctx, config)
-	return pool, err
+	return pgxpool.NewWithConfig(ctx, config)
 }

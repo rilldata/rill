@@ -229,7 +229,6 @@ func columnForArrayType(field *runtimev1.StructType_Field) wire.Column {
 	case runtimev1.Type_CODE_UUID:
 		col.Oid = pgtype.UUIDArrayOID
 	default:
-		// todo handle this
 		col.Oid = pgtype.UnknownOID
 	}
 	return col

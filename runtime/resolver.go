@@ -58,7 +58,7 @@ type ResolverExportOptions struct {
 
 // ResolverInteractiveOptions are the options passed to a resolver's ResolveInteractive method.
 type ResolverInteractiveOptions struct {
-	// Format is the format to export the result in. Possible values : JSON(default), OBJECTS
+	// Format is the format to export the result in. Example values : JSON(default), GOOBJECTS
 	Format InteractiveFormat
 }
 
@@ -67,7 +67,7 @@ type InteractiveFormat int32
 const (
 	UNSPECIFIED InteractiveFormat = 0
 	JSON        InteractiveFormat = 1
-	// OBJECTS is used for formats that return rows as array of go objects
+	// GOOBJECTS is used for formats that return rows as array of go objects
 	GOOBJECTS InteractiveFormat = 2
 )
 

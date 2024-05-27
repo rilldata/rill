@@ -75,14 +75,14 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 	return a.httpMiddleware(next, true)
 }
 
-type PasswordKey struct{}
+type PostgresPassword struct{}
 
 func (a *Authenticator) PostgresAuthHandler() func(ctx context.Context, username, password string) (context.Context, bool, error) {
 	return func(ctx context.Context, username, password string) (context.Context, bool, error) {
 		// Clients do not pass Bearer to avoid encoding the password
 		// The default token type is Bearer. In case of different token type, the type will be passed in postgres additional properties
 		password = fmt.Sprintf("bearer %s", password)
-		ctx = context.WithValue(ctx, PasswordKey{}, password)
+		ctx = context.WithValue(ctx, PostgresPassword{}, password)
 		newCtx, err := a.parseClaimsFromBearer(ctx, password)
 		if err != nil {
 			newCtx = context.WithValue(ctx, claimsContextKey{}, anonClaims{})

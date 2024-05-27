@@ -28,7 +28,7 @@ func ServePostgres(ctx context.Context, queryHandler func(ctx context.Context, q
 	}
 
 	opts := []wire.OptionFn{
-		wire.Version("15.2"),
+		wire.Version("16.3"),
 		wire.Logger(slog.New(discard)),
 		wire.GlobalParameters(wire.Parameters{"standard_conforming_strings": "on"}),
 	}
