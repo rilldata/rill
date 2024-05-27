@@ -229,10 +229,11 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 }
 
 type ExpressionBuilder struct {
-	mv      *runtimev1.MetricsViewSpec
-	aliases []*runtimev1.MetricsViewComparisonMeasureAlias
-	dialect drivers.Dialect
-	having  bool
+	mv       *runtimev1.MetricsViewSpec
+	aliases  []*runtimev1.MetricsViewComparisonMeasureAlias
+	dialect  drivers.Dialect
+	measures []*runtimev1.MetricsViewAggregationMeasure
+	having   bool
 }
 
 func (builder *ExpressionBuilder) columnIdentifierExpression(name string) (string, bool) {
@@ -272,6 +273,12 @@ func (builder *ExpressionBuilder) columnIdentifierExpression(name string) (strin
 			}
 
 			return mes.Expression, true
+		}
+	}
+
+	for _, m := range builder.measures {
+		if m.Name == name {
+			return safeName(name), true
 		}
 	}
 
