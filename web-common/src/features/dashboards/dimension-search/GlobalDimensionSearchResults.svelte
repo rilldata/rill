@@ -11,7 +11,6 @@
   import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuSeparator,
     DropdownMenuTrigger,
   } from "@rilldata/web-common/components/dropdown-menu";
 
@@ -63,7 +62,11 @@
     sideOffset={32}
   >
     <div class="flex flex-col divide-y divide-slate-200">
-      {#if $results.completed && responses.length === 0}
+      {#if $results.errors.length}
+        <div class="text-center p-2 w-full text-red-500">
+          Search error. Try again.
+        </div>
+      {:else if $results.completed && responses.length === 0}
         <div class="ui-copy-disabled text-center p-2 w-full">no results</div>
       {:else}
         {#if $results.progress < 100}

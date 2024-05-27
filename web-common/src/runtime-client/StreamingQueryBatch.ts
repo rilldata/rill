@@ -90,10 +90,12 @@ export class StreamingQueryBatch {
       // index matches the request order. check batch_query.go
       seen.add(result.index);
       const entry = queries[result.index];
-      if (result.result) {
+      if (result.error) {
+        entry.reject(new Error(result.error));
+      } else if (result.result) {
         entry.resolve(result.result[`${entry.type}Response`], result.index);
       } else {
-        entry.reject(new Error(result.error ?? "no response"));
+        entry.reject(new Error("unknown error"));
       }
     }
 

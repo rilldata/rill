@@ -13,7 +13,6 @@
 
   function reset() {
     searchBarOpen = false;
-    searchText = "";
   }
 
   let submittedSearchText = "";
