@@ -177,6 +177,22 @@ sql: |
 {{ configure "materialize" true }}
 SELECT * FROM {{ ref "m2" }}
 `,
+		// connector s3
+		`connectors/s3.yaml`: `
+type: connector
+region: us-east-1
+driver: s3
+dev:
+  bucket: "my-bucket-dev"
+prod:
+  bucket: "my-bucket-prod"
+`,
+		// connector postgres
+		`connectors/postgres.yaml`: `
+driver: postgres
+database: postgres
+schema: default
+`,
 	}
 
 	resources := []*Resource{
@@ -288,6 +304,31 @@ SELECT * FROM {{ ref "m2" }}
 				})),
 				OutputConnector:  "duckdb",
 				OutputProperties: must(structpb.NewStruct(map[string]any{"materialize": true})),
+			},
+		},
+		// postgres
+		{
+			Name:  ResourceName{Kind: ResourceKindConnector, Name: "postgres"},
+			Paths: []string{"/connectors/postgres.yaml"},
+			ConnectorSpec: &runtimev1.ConnectorSpec{
+				Name: "postgres",
+				Driver: "postgres",
+				Properties: map[string]string{
+					"database": "postgres",
+					"schema": "default",
+				},
+			},
+		},
+		// s3
+		{
+			Name:  ResourceName{Kind: ResourceKindConnector, Name: "s3"},
+			Paths: []string{"/connectors/s3.yaml"},
+			ConnectorSpec: &runtimev1.ConnectorSpec{
+				Name: "s3",
+				Driver: "s3",
+				Properties: map[string]string{
+					"region": "us-east-1",
+				},
 			},
 		},
 	}

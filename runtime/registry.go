@@ -565,7 +565,12 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	if err != nil {
 		return err
 	}
-	connectors, err := rillv1.ParseConnectors(iwc.ctx, repo, iwc.instanceID)
+	// TODO: remove rillv1.ParseRillYAML and rillv1.ParseDotEnv
+	instance, err := r.get(iwc.instanceID)
+	if err != nil {
+		return err
+	}
+	connectors, err := rillv1.ParseConnectors(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
 	if err != nil {
 		return err
 	}

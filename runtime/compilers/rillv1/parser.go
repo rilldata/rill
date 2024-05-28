@@ -106,6 +106,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindDashboard, nil
 	case "api":
 		return ResourceKindAPI, nil
+	case "connector":
+		return ResourceKindConnector, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}
@@ -225,23 +227,8 @@ func ParseDotEnv(ctx context.Context, repo drivers.RepoStore, instanceID string)
 }
 
 // ParseConnectors parses only the project's connectors defined in the connectors directory.
-func ParseConnectors(ctx context.Context, repo drivers.RepoStore, instanceID string) ([]*runtimev1.ConnectorSpec, error) {
-	files, err := repo.ListRecursive(ctx, "**/connectors/*.{yaml,yml}", true)
-	if err != nil {
-		return nil, fmt.Errorf("could not list project files: %w", err)
-	}
-
-	if len(files) == 0 {
-		return nil, nil
-	}
-
-	paths := make([]string, len(files))
-	for i, file := range files {
-		paths[i] = file.Path
-	}
-
-	p := Parser{Repo: repo, InstanceID: instanceID}
-	err = p.parsePaths(ctx, paths)
+func ParseConnectors(ctx context.Context, repo drivers.RepoStore, instanceID, environment, defaultOLAPConnector string) ([]*runtimev1.ConnectorSpec, error) {
+	p, err := Parse(ctx, repo, instanceID, environment, defaultOLAPConnector)
 	if err != nil {
 		return nil, err
 	}

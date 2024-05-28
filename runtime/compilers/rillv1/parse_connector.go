@@ -5,8 +5,6 @@ type ConnectorYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
 	// Driver name
 	Driver   string            `yaml:"driver"`
-	Dev      map[string]string `yaml:"dev"`
-	Prod     map[string]string `yaml:"prod"`
 	Defaults map[string]string `yaml:",inline" mapstructure:",remain"`
 }
 
@@ -20,7 +18,7 @@ func (p *Parser) parseConnector(node *Node) error {
 	}
 
 	// Insert the connector
-	r, err := p.insertResource(ResourceKindModel, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindConnector, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
 	}
@@ -30,19 +28,9 @@ func (p *Parser) parseConnector(node *Node) error {
 	if name == "" {
 		name = tmp.Driver
 	}
-	props := tmp.Defaults
-	var override map[string]string
-	if p.Environment == "prod" {
-		override = tmp.Prod
-	} else {
-		override = tmp.Dev
-	}
-	for k, v := range override {
-		props[k] = v
-	}
 
 	r.ConnectorSpec.Driver = tmp.Driver
 	r.ConnectorSpec.Name = name
-	r.ConnectorSpec.Properties = props
+	r.ConnectorSpec.Properties = tmp.Defaults
 	return nil
 }
