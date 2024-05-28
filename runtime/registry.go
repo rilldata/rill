@@ -554,28 +554,24 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	}
 	defer release()
 
-	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
-	if err != nil {
-		if errors.Is(err, rillv1.ErrRillYAMLNotFound) { // empty project
-			return nil
-		}
-		return err
-	}
-	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)
-	if err != nil {
-		return err
-	}
-	// TODO: remove rillv1.ParseRillYAML and rillv1.ParseDotEnv
 	instance, err := r.get(iwc.instanceID)
 	if err != nil {
 		return err
 	}
-	connectors, err := rillv1.ParseConnectors(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
+
+	p, err := rillv1.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
 	if err != nil {
 		return err
 	}
 
-	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, dotEnv, connectors, false)
+	var connectors []*runtimev1.ConnectorSpec
+	for _, r := range p.Resources {
+		if r.ConnectorSpec != nil {
+			connectors = append(connectors, r.ConnectorSpec)
+		}
+	}
+
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, p.RillYAML, p.DotEnv, connectors, false)
 }
 
 func sizeOfDir(path string) int64 {

@@ -311,11 +311,11 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindConnector, Name: "postgres"},
 			Paths: []string{"/connectors/postgres.yaml"},
 			ConnectorSpec: &runtimev1.ConnectorSpec{
-				Name: "postgres",
+				Name:   "postgres",
 				Driver: "postgres",
 				Properties: map[string]string{
 					"database": "postgres",
-					"schema": "default",
+					"schema":   "default",
 				},
 			},
 		},
@@ -324,7 +324,7 @@ schema: default
 			Name:  ResourceName{Kind: ResourceKindConnector, Name: "s3"},
 			Paths: []string{"/connectors/s3.yaml"},
 			ConnectorSpec: &runtimev1.ConnectorSpec{
-				Name: "s3",
+				Name:   "s3",
 				Driver: "s3",
 				Properties: map[string]string{
 					"region": "us-east-1",
