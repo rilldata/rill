@@ -2600,6 +2600,11 @@ definitions:
         type: string
       account:
         type: string
+      organizations:
+        type: array
+        items:
+          type: string
+        description: 'DEPRECATED: Use organization_installation_permissions instead.'
       userInstallationPermission:
         $ref: '#/definitions/v1GithubPermission'
       organizationInstallationPermissions:

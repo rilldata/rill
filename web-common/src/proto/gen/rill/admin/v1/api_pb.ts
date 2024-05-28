@@ -5163,12 +5163,20 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
   account = "";
 
   /**
-   * @generated from field: rill.admin.v1.GithubPermission user_installation_permission = 5;
+   * DEPRECATED: Use organization_installation_permissions instead.
+   *
+   * @generated from field: repeated string organizations = 5 [deprecated = true];
+   * @deprecated
+   */
+  organizations: string[] = [];
+
+  /**
+   * @generated from field: rill.admin.v1.GithubPermission user_installation_permission = 6;
    */
   userInstallationPermission = GithubPermission.UNSPECIFIED;
 
   /**
-   * @generated from field: map<string, rill.admin.v1.GithubPermission> organization_installation_permissions = 6;
+   * @generated from field: map<string, rill.admin.v1.GithubPermission> organization_installation_permissions = 7;
    */
   organizationInstallationPermissions: { [key: string]: GithubPermission } = {};
 
@@ -5184,8 +5192,9 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
     { no: 2, name: "grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "user_installation_permission", kind: "enum", T: proto3.getEnumType(GithubPermission) },
-    { no: 6, name: "organization_installation_permissions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "enum", T: proto3.getEnumType(GithubPermission)} },
+    { no: 5, name: "organizations", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "user_installation_permission", kind: "enum", T: proto3.getEnumType(GithubPermission) },
+    { no: 7, name: "organization_installation_permissions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "enum", T: proto3.getEnumType(GithubPermission)} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubUserStatusResponse {

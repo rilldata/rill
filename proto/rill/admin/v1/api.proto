@@ -1126,8 +1126,10 @@ message GetGithubUserStatusResponse {
   string grant_access_url = 2;
   string access_token = 3;
   string account = 4;
-  GithubPermission user_installation_permission = 5;
-  map<string, GithubPermission> organization_installation_permissions = 6;
+  // DEPRECATED: Use organization_installation_permissions instead.
+  repeated string organizations = 5 [deprecated = true];
+  GithubPermission user_installation_permission = 6;
+  map<string, GithubPermission> organization_installation_permissions = 7;
 }
 
 enum GithubPermission {

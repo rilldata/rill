@@ -118,6 +118,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	}
 
 	orgs = append(orgs, publicOrgs...)
+	allOrgs := make([]string, 0)
 
 	orgInstallationPermission := make(map[string]adminv1.GithubPermission)
 	for _, org := range orgs {
@@ -125,6 +126,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		if _, ok := orgInstallationPermission[org.GetLogin()]; ok {
 			continue
 		}
+		allOrgs = append(allOrgs, org.GetLogin())
 
 		i, _, err := s.admin.Github.AppClient().Apps.FindOrganizationInstallation(ctx, org.GetLogin())
 		if err != nil {
@@ -152,6 +154,7 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		GrantAccessUrl:                      s.urls.githubConnect,
 		AccessToken:                         token,
 		Account:                             user.GithubUsername,
+		Organizations:                       allOrgs,
 		UserInstallationPermission:          userInstallationPermission,
 		OrganizationInstallationPermissions: orgInstallationPermission,
 	}, nil
