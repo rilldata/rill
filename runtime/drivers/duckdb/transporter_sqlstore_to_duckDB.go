@@ -191,6 +191,9 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 						}
 						return err
 					}
+					if err = convert(row, schema); err != nil { // duckdb specific datatype conversion
+						return err
+					}
 
 					if err := a.AppendRow(row...); err != nil {
 						return err
@@ -222,6 +225,21 @@ func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error)
 	}
 	query += ")"
 	return query, nil
+}
+
+func convert(row []driver.Value, schema *runtimev1.StructType) error {
+	for i, v := range row {
+		if schema.Fields[i].Type.Code == runtimev1.Type_CODE_UUID {
+			val, ok := v.([16]byte)
+			if !ok {
+				return fmt.Errorf("unknown type for UUID field %s: %T", schema.Fields[i].Name, v)
+			}
+			var uuid duckdb.UUID
+			copy(uuid[:], val[:])
+			row[i] = uuid
+		}
+	}
+	return nil
 }
 
 func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {
