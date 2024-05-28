@@ -13,9 +13,8 @@
    * The graph will contain an unsmoothed series (showing noise * abnormalities) by default, and
    * a smoothed series (showing the trend) if the time series merits it.
    */
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { removeLocalTimezoneOffset } from "@rilldata/web-common/lib/time/timezone";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
@@ -39,6 +38,7 @@
   import TimestampProfileSummary from "./TimestampProfileSummary.svelte";
   import TimestampTooltipContent from "./TimestampTooltipContent.svelte";
   import ZoomWindow from "./ZoomWindow.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   const id = guidGenerator();
 
@@ -288,13 +288,21 @@
       ? $X.invert(Math.max($zoomCoords.start.x, $zoomCoords.stop.x))
       : max([zoomedXStart, zoomedXEnd])) || xExtents[1];
 
-  /**
-   * Use this shiftClickAction to copy the timestamp that is currently moused over.
-   */
-  const { shiftClickAction } = createShiftClickAction();
+  function shiftClick() {
+    const exportedValue = `TIMESTAMP '${removeLocalTimezoneOffset(
+      nearestPoint[xAccessor],
+    ).toISOString()}'`;
+    copyToClipboard(exportedValue);
+  }
 </script>
 
-<div style:max-width="{width}px">
+<div
+  role="presentation"
+  style:max-width="{width}px"
+  on:click={modified({
+    shift: shiftClick,
+  })}
+>
   <TimestampProfileSummary
     start={xExtents[0]}
     end={xExtents[1]}
@@ -309,18 +317,6 @@
       style:cursor={setCursor($isZooming, $isScrolling)}
       use:scrubAction
       use:scrollAction
-      use:shiftClickAction
-      on:shift-click={async () => {
-        const exportedValue = `TIMESTAMP '${removeLocalTimezoneOffset(
-          nearestPoint[xAccessor],
-        ).toISOString()}'`;
-        await navigator.clipboard.writeText(exportedValue);
-        setTimeout(() => {
-          eventBus.emit("notification", {
-            message: `copied ${exportedValue} to clipboard`,
-          });
-        }, 200);
-      }}
       on:scrolling={(event) => {
         if (isZoomed && zoomedXStart && zoomedXEnd) {
           // clear the tooltip shake effect zeroing timeout.

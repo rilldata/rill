@@ -26,7 +26,7 @@
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { modifiedClick } from "@rilldata/web-common/lib/actions/modified-click";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -181,6 +181,7 @@
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
+      if (hovering) hovering = null;
       const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
       scrollLeft = containerRefElement.scrollLeft;
@@ -299,7 +300,7 @@
 >
   <table
     style:width="{totalLength}px"
-    use:modifiedClick={{ shift: [handleClick, "click"] }}
+    on:click={modified({ shift: handleClick })}
     role="presentation"
   >
     {#if firstColumnName && firstColumnWidth}

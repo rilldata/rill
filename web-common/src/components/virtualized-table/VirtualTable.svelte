@@ -15,7 +15,6 @@
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type {
     V1MetricsViewColumn,
     V1MetricsViewRowsResponseDataItem,
@@ -24,6 +23,7 @@
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { initColumnWidths } from "./init-widths";
   import { clamp } from "@rilldata/web-common/lib/clamp";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import VirtualTableCell from "./VirtualTableCell.svelte";
   import VirtualTableHeaderCellContent from "./VirtualTableHeaderCellContent.svelte";
   import VirtualTableRowHeader from "./VirtualTableRowHeader.svelte";
@@ -204,7 +204,7 @@
     hovering = null;
   }
 
-  async function handleMouseDown(
+  function handleMouseDown(
     e: MouseEvent & {
       currentTarget: EventTarget & HTMLTableSectionElement;
     },
@@ -216,10 +216,8 @@
         hovering.value,
         hovering.type,
       );
-      await navigator.clipboard.writeText(exportedValue);
-      eventBus.emit("notification", {
-        message: `copied value "${exportedValue}" to clipboard`,
-      });
+
+      copyToClipboard(exportedValue);
 
       return;
     }

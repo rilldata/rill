@@ -6,7 +6,7 @@
   import Shortcut from "../tooltip/Shortcut.svelte";
   import StackingWord from "../tooltip/StackingWord.svelte";
   import FormattedDataType from "../data-types/FormattedDataType.svelte";
-  import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   type HoveringData = {
     value: string | number | null;
