@@ -2,9 +2,11 @@ package metricsresolver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"log"
 	"strconv"
 	"time"
 
@@ -34,18 +36,14 @@ type Resolver struct {
 	timeAnchor time.Time
 }
 
-type resolverProps struct {
-	*Query
-}
-
 type resolverArgs struct {
 	Priority      int        `mapstructure:"priority"`
 	ExecutionTime *time.Time `mapstructure:"execution_time"`
 }
 
 func New(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	props := &resolverProps{}
-	if err := mapstructureutil.WeakDecode(opts.Properties, props); err != nil {
+	qry := &Query{}
+	if err := mapstructureutil.WeakDecode(opts.Properties, qry); err != nil {
 		return nil, err
 	}
 
@@ -69,7 +67,7 @@ func New(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, 
 		return nil, err
 	}
 
-	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: props.MetricsView}, false)
+	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: qry.MetricsView}, false)
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +92,7 @@ func New(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, 
 	}
 
 	return &Resolver{
-		query:               props.Query,
+		query:               qry,
 		metricsView:         mv,
 		security:            security,
 		olap:                olap,
@@ -130,14 +128,6 @@ func (r *Resolver) Validate(ctx context.Context) error {
 }
 
 func (r *Resolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (r *Resolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
-	return errors.New("not implemented")
-}
-
-func (r *Resolver) BuildAST(ctx context.Context) (*AST, error) {
 	err := r.rewriteQueryTimeRanges(ctx)
 	if err != nil {
 		return nil, err
@@ -145,10 +135,60 @@ func (r *Resolver) BuildAST(ctx context.Context) (*AST, error) {
 
 	ast, err := BuildAST(r.metricsView, r.security, r.query, r.dialect)
 	if err != nil {
-		return nil, fmt.Errorf("failed to build AST: %w", err)
+		return nil, err
 	}
 
-	return ast, nil
+	sql, args, err := ast.SQL()
+	if err != nil {
+		return nil, err
+	}
+
+	log.Printf("SQL: %s", sql)
+
+	res, err := r.olap.Execute(ctx, &drivers.Statement{
+		Query:    sql,
+		Args:     args,
+		Priority: r.priority,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+
+	var out []map[string]any
+	for res.Rows.Next() {
+		if int64(len(out)) >= r.interactiveRowLimit {
+			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", r.interactiveRowLimit)
+		}
+
+		row := make(map[string]any)
+		err = res.Rows.MapScan(row)
+		if err != nil {
+			return nil, err
+		}
+		out = append(out, row)
+	}
+
+	data, err := json.Marshal(out)
+	if err != nil {
+		return nil, err
+	}
+
+	// This is a little hacky, but for now we only cache results from DuckDB queries
+	var cache bool
+	if r.olap.Dialect() == drivers.DialectDuckDB {
+		cache = true
+	}
+
+	return &runtime.ResolverResult{
+		Data:   data,
+		Schema: res.Schema,
+		Cache:  cache,
+	}, nil
+}
+
+func (r *Resolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
+	return errors.New("not implemented")
 }
 
 // rewriteQueryTimeRanges rewrites the time ranges in the query to fixed start/end timestamps.
@@ -240,15 +280,17 @@ func (r *Resolver) resolveTimeRange(ctx context.Context, tr *TimeRange, tz *time
 		if !tr.RoundToGrain.Valid() {
 			return fmt.Errorf("invalid time grain %q", tr.RoundToGrain)
 		}
-		if !tr.Start.IsZero() {
-			tr.Start = timeutil.TruncateTime(tr.Start, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
-		}
-		if !tr.End.IsZero() {
-			tr.End = timeutil.TruncateTime(tr.End, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
+		if tr.RoundToGrain != TimeGrainUnspecified {
+			if !tr.Start.IsZero() {
+				tr.Start = timeutil.TruncateTime(tr.Start, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
+			}
+			if !tr.End.IsZero() {
+				tr.End = timeutil.TruncateTime(tr.End, tr.RoundToGrain.ToTimeutil(), tz, fdow, fmoy)
+			}
 		}
 	}
 
-	// Clear all other fields
+	// Clear all other fields than Start and End
 	tr.IsoDuration = ""
 	tr.IsoOffset = ""
 	tr.RoundToGrain = TimeGrainUnspecified
@@ -285,6 +327,7 @@ func (r *Resolver) resolveTimeAnchor(ctx context.Context) (time.Time, error) {
 	if err != nil {
 		return time.Time{}, err
 	}
+	defer res.Close()
 
 	var t time.Time
 	for res.Next() {
