@@ -554,6 +554,14 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	}
 	defer release()
 
+	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
+	if err != nil {
+		if errors.Is(err, rillv1.ErrRillYAMLNotFound) { // empty project
+			return nil
+		}
+		return err
+	}
+
 	instance, err := r.get(iwc.instanceID)
 	if err != nil {
 		return err
@@ -571,7 +579,7 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 		}
 	}
 
-	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, p.RillYAML, p.DotEnv, connectors, false)
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, p.DotEnv, connectors, false)
 }
 
 func sizeOfDir(path string) int64 {
