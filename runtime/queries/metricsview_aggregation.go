@@ -1311,10 +1311,10 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 
 	baseSelectClause := strings.Join(selectCols, ", ")
 	comparisonSelectClause := strings.Join(comparisonSelectCols, ", ")
-	finalSelectClause := strings.Join(finalSelectCols, ", ")
+	finalMeasuresClause := strings.Join(finalSelectCols, ", ")
 	labelSelectClause := strings.Join(labelCols, ", ")
 	if export {
-		finalSelectClause = labelSelectClause
+		finalMeasuresClause = labelSelectClause
 	}
 
 	baseWhereClause := "1=1"
@@ -1434,12 +1434,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 			innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 		}
 
-		// these go last to decrease complexity of indexing columns
-		finalTimeDimsClause := ""
-		if len(finalComparisonTimeDims) > 0 {
-			finalTimeDimsClause = fmt.Sprintf(", %s", strings.Join(finalComparisonTimeDims, ", "))
-		}
-
 		var measureCols []string
 		for _, m := range q.Measures {
 			nm := m.Name
@@ -1536,23 +1530,23 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		sql = fmt.Sprintf(`
 			SELECT * FROM (
 				-- SELECT base.d1, ... partial.m1, ...
-				SELECT `+withPrefix("base", outerDims)+`, `+strings.Join(measureCols, ",")+`, `+strings.Join(finalComparisonTimeDimsLabels, ",")+` FROM
+				SELECT `+withPrefix("base", outerDims)+`, `+strings.Join(slices.Concat(measureCols, finalComparisonTimeDimsLabels), ",")+` FROM
 				( 
 					-- SELECT ... as t_offset, dim1 as d1, ...
-					SELECT %[1]s FROM %[3]s %[7]s WHERE %[4]s GROUP BY %[9]s `+subqueryLimitClause+`
+					SELECT %[1]s FROM %[3]s %[7]s WHERE %[4]s GROUP BY %[2]s `+subqueryLimitClause+`
 				) base
 				LEFT JOIN 
 				(
 					-- SELECT ... as t_offset, base.d1, ..., base.td1, ..., base.m1, ... , comparison.td1 as td1__previous, ...
-					SELECT %[2]s `+finalTimeDimsClause+` FROM 
+					SELECT `+strings.Join(slices.Concat(finalDims, []string{finalMeasuresClause}, finalComparisonTimeDims), ",")+` FROM 
 						(
 							-- SELECT t_offset, dim1 as d1, ... timed1 as td1, ..., avg(price) as m1, ... AND d2 = 'a' ...
-							SELECT %[1]s FROM %[3]s %[7]s WHERE (%[4]s) AND (%[6]s) GROUP BY %[9]s `+subqueryLimitClause+` 
+							SELECT %[1]s FROM %[3]s %[7]s WHERE (%[4]s) AND (%[6]s) GROUP BY %[2]s `+subqueryLimitClause+` 
 						) base
 					LEFT OUTER JOIN
 						(
 							-- SELECT t_offset, dim1 as d1, ..., timed1 as td1, ... avg(price) as m1, ... AND d2 = 'a' ...
-							SELECT `+comparisonSelectClause+` FROM %[3]s %[7]s WHERE (%[5]s) AND (%[6]s) GROUP BY %[9]s `+subqueryLimitClause+`
+							SELECT `+comparisonSelectClause+` FROM %[3]s %[7]s WHERE (%[5]s) AND (%[6]s) GROUP BY %[2]s `+subqueryLimitClause+`
 						) comparison
 					ON
 							`+strings.Join(joinConditions, " AND ")+` -- base.t_offset = comparison.t_offset AND ...
@@ -1566,15 +1560,14 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 				OFFSET %[8]d
 
 			`,
-			baseSelectClause, // 1
-			strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ","), // 2
-			escapeMetricsViewTable(dialect, mv),                                      // 3
-			baseWhereClause,                                                          // 4
-			comparisonWhereClause,                                                    // 5
-			measureFilterClause,                                                      // 6
-			strings.Join(unnestClauses, ""),                                          // 7
-			q.Offset,                                                                 // 8
-			strings.Join(innerGroupCols, ","),                                        // 9
+			baseSelectClause,                    // 1
+			strings.Join(innerGroupCols, ","),   // 2
+			escapeMetricsViewTable(dialect, mv), // 3
+			baseWhereClause,                     // 4
+			comparisonWhereClause,               // 5
+			measureFilterClause,                 // 6
+			strings.Join(unnestClauses, ""),     // 7
+			q.Offset,                            // 8
 		)
 	} else { // Druid measure filter
 		// SELECT d1, d2, d3 ... GROUP BY 1, 2, 3 ...
@@ -1645,11 +1638,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		for i := range q.Dimensions {
 			innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 			outerGroupCols = append(outerGroupCols, fmt.Sprintf("%d", i+1))
-		}
-
-		finalTimeDimsClause := ""
-		if len(finalComparisonTimeDims) > 0 {
-			finalTimeDimsClause = fmt.Sprintf(", %s", strings.Join(finalComparisonTimeDims, ", "))
 		}
 
 		whereDimClause := ""
@@ -1736,16 +1724,16 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		sql = fmt.Sprintf(`
 				SELECT * from (
 					-- SELECT d1, ..., ANY_VALUE(m1) as m1, ...
-					SELECT `+strings.Join(outerDims, ",")+", "+inFunc("ANY_VALUE", finalSimpleSelectCols)+", "+anyTimestamps(finalComparisonTimeDimsLabels)+` FROM ( -- GROUP BY doesn't see aliases in JOIN query
+					SELECT `+strings.Join(slices.Concat(outerDims, inFuncCols("ANY_VALUE", finalSimpleSelectCols), anyTimestampsCols(finalComparisonTimeDimsLabels)), ",")+` FROM ( -- GROUP BY doesn't see aliases in JOIN query
 						-- SELECT base.d1 as d1, ..., partial.m1, ...
-						SELECT `+withPrefix("base", outerDims)+", "+withPrefix("partial", finalSimpleSelectCols)+", "+withPrefix("partial", finalComparisonTimeDimsLabels)+` FROM (
+						SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withPrefixCols("partial", finalSimpleSelectCols), withPrefixCols("partial", finalComparisonTimeDimsLabels)), ",")+` FROM (
 							-- SELECT dim1 as d1, ... 
 							SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[9]s GROUP BY %[10]s %[2]s
 						) base
 						LEFT JOIN
 						(
 							-- SELECT COALESCE(base.d1, comparison.d1), ..., base.m1, ..., base.m2 ... 
-							SELECT `+strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ",")+" "+finalTimeDimsClause+` FROM 
+							SELECT `+strings.Join(slices.Concat(finalDims, []string{finalMeasuresClause}, finalComparisonTimeDims), ",")+` FROM 
 								(
 									-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
 									SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[9]s AND `+measureFilterClause+` GROUP BY %[10]s %[2]s 
@@ -1797,12 +1785,20 @@ func withPrefix(prefix string, cols []string) string {
 	return strings.Join(cs, ",")
 }
 
-func inFunc(name string, cols []string) string {
+func withPrefixCols(prefix string, cols []string) []string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = prefix + "." + c
+	}
+	return cs
+}
+
+func inFuncCols(name string, cols []string) []string {
 	cs := make([]string, len(cols))
 	for i, c := range cols {
 		cs[i] = fmt.Sprintf("%s(%s) AS %s", name, c, c)
 	}
-	return strings.Join(cs, ",")
+	return cs
 }
 
 func anyTimestamps(cols []string) string {
@@ -1811,6 +1807,14 @@ func anyTimestamps(cols []string) string {
 		cs[i] = fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(%s))) AS %s", c, c)
 	}
 	return strings.Join(cs, ",")
+}
+
+func anyTimestampsCols(cols []string) []string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(%s))) AS %s", c, c)
+	}
+	return cs
 }
 
 func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
@@ -1868,6 +1872,8 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	comparisonSelectCols = append(comparisonSelectCols, timeOffsetExpression)
 
 	joinConditions = append(joinConditions, "base.t_offset = comparison.t_offset")
+
+	// these go last to decrease complexity of indexing columns
 	var finalComparisonTimeDims []string
 	mvDimsByName := make(map[string]*runtimev1.MetricsViewSpec_DimensionV2, len(mv.Dimensions))
 	for _, d := range q.Dimensions {
