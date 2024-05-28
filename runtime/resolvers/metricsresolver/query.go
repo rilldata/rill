@@ -82,19 +82,15 @@ type Sort struct {
 }
 
 type TimeRange struct {
-	Start        string    `mapstructure:"start"`
-	End          string    `mapstructure:"end"`
+	Start        time.Time `mapstructure:"start"`
+	End          time.Time `mapstructure:"end"`
 	IsoDuration  string    `mapstructure:"iso_duration"`
 	IsoOffset    string    `mapstructure:"iso_offset"`
 	RoundToGrain TimeGrain `mapstructure:"round_to_grain"`
-
-	// Resolved in pre-processing
-	StartTime *time.Time `mapstructure:"-"`
-	EndTime   *time.Time `mapstructure:"-"`
 }
 
 func (tr *TimeRange) IsZero() bool {
-	return tr.Start == "" && tr.End == "" && tr.IsoDuration == "" && tr.IsoOffset == "" && tr.RoundToGrain == TimeGrainUnspecified && tr.StartTime == nil && tr.EndTime == nil
+	return tr.Start.IsZero() && tr.End.IsZero() && tr.IsoDuration == "" && tr.IsoOffset == "" && tr.RoundToGrain == TimeGrainUnspecified
 }
 
 type Expression struct {

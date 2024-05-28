@@ -72,6 +72,7 @@ type WhereExpr struct {
 	Args []any
 }
 
+// OrderByField represents a field in an ORDER BY clause.
 type OrderByField struct {
 	Name string
 	Desc bool
@@ -456,11 +457,11 @@ func (a *AST) addTimeRange(n *MetricsSelect, tr *TimeRange) {
 	}
 
 	// Since resolving time ranges may require contextual info (like watermarks), the upstream caller is responsible for resolving them.
-	if tr.StartTime == nil && tr.EndTime == nil {
+	if tr.Start.IsZero() && tr.End.IsZero() {
 		panic("ast received a non-empty, unresolved time range")
 	}
 
-	expr, args := a.expressionForTimeRange(a.metricsView.TimeDimension, tr.StartTime, tr.EndTime)
+	expr, args := a.expressionForTimeRange(a.metricsView.TimeDimension, tr.Start, tr.End)
 	a.addWhere(n, &WhereExpr{
 		Expr: expr,
 		Args: args,
@@ -777,19 +778,19 @@ func (a *AST) hasMeasure(n *MetricsSelect, name string) bool {
 }
 
 // expressionForTimeRange builds a SQL expression and query args for filtering by a time range.
-func (a *AST) expressionForTimeRange(timeCol string, start, end *time.Time) (string, []any) {
+func (a *AST) expressionForTimeRange(timeCol string, start, end time.Time) (string, []any) {
 	var where string
 	var args []any
-	if start != nil && end != nil {
+	if !start.IsZero() && !end.IsZero() {
 		col := a.dialect.EscapeIdentifier(timeCol)
 		where = fmt.Sprintf("%s >= ? AND %s < ?", col, col)
-		args = []any{*start, *end}
-	} else if start != nil {
+		args = []any{start, end}
+	} else if !start.IsZero() {
 		where = fmt.Sprintf("%s >= ?", a.dialect.EscapeIdentifier(timeCol))
-		args = []any{*start}
-	} else if end != nil {
+		args = []any{start}
+	} else if end.IsZero() {
 		where = fmt.Sprintf("%s < ?", a.dialect.EscapeIdentifier(timeCol))
-		args = []any{*end}
+		args = []any{end}
 	} else {
 		return "", nil
 	}
