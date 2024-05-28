@@ -6,6 +6,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
+  import { filterBasicMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import { getStateManagers } from "../state-managers/state-managers";
   import { getMeasureDisplayName } from "./getDisplayName";
 
@@ -25,7 +26,7 @@
     <SearchableFilterSelectableGroup>{
       name: "MEASURES",
       items:
-        $allMeasures
+        filterBasicMeasures($allMeasures)
           ?.map((m) => ({
             name: m.name as string,
             label: getMeasureDisplayName(m),

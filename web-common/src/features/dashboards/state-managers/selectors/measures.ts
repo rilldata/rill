@@ -1,4 +1,7 @@
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import {
+  MetricsViewSpecMeasureType,
+  MetricsViewSpecMeasureV2,
+} from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 
 export const allMeasures = ({
@@ -45,6 +48,10 @@ export const isMeasureValidPercentOfTotal = ({
     return selectedMeasure?.validPercentOfTotal ?? false;
   };
 };
+
+export const filterBasicMeasures = (
+  measures: MetricsViewSpecMeasureV2[] | undefined,
+) => measures?.filter((m) => !m.window) ?? [];
 
 export const measureSelectors = {
   /**
