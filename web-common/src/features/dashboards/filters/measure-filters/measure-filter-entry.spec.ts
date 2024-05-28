@@ -134,7 +134,7 @@ const TestCases: [
       value1: "10",
       value2: "",
     },
-    createBinaryExpression("imp__delta_abs", V1Operation.OPERATION_GT, 10),
+    createBinaryExpression("imp_delta", V1Operation.OPERATION_GT, 10),
   ],
   [
     "decreases by percent",
@@ -145,7 +145,7 @@ const TestCases: [
       value1: "-10",
       value2: "",
     },
-    createBinaryExpression("imp__delta_rel", V1Operation.OPERATION_LT, -0.1),
+    createBinaryExpression("imp_delta_perc", V1Operation.OPERATION_LT, -0.1),
   ],
   [
     "changes by absolute",

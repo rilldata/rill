@@ -28,10 +28,10 @@ export function getEmptyMeasureFilterEntry(): MeasureFilterEntry {
   };
 }
 
-export const ComparisonDeltaPreviousSuffix = "__prev";
-export const ComparisonDeltaAbsoluteSuffix = "__delta_abs";
-export const ComparisonDeltaRelativeSuffix = "__delta_rel";
-const HasSuffixRegex = /__delta_(rel|abs)/;
+export const ComparisonDeltaPreviousSuffix = "_prev";
+export const ComparisonDeltaAbsoluteSuffix = "_delta";
+export const ComparisonDeltaRelativeSuffix = "_delta_perc";
+const HasSuffixRegex = /_delta(?:_perc)?/;
 
 export function mapExprToMeasureFilter(
   expr: V1Expression | undefined,

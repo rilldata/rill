@@ -3,7 +3,7 @@ import {
   AlertFormValues,
   getAlertQueryArgsFromFormValues,
 } from "@rilldata/web-common/features/alerts/form-utils";
-import { getLabelForFieldName } from "@rilldata/web-common/features/alerts/utils";
+import { getComparisonProperties } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaPreviousSuffix,
@@ -82,10 +82,9 @@ function getAlertPreviewQueryOptions(
     select: (resp) => {
       return {
         rows: resp.data as V1MetricsViewAggregationResponseDataItem[],
-        schema:
-          resp.schema?.fields?.map((field) =>
-            getSchemaEntryForField(metricsViewSpec ?? {}, field),
-          ) ?? [],
+        schema: (resp.schema?.fields
+          ?.map((field) => getSchemaEntryForField(metricsViewSpec ?? {}, field))
+          .filter(Boolean) ?? []) as VirtualizedTableColumns[],
       };
     },
     queryClient,
@@ -95,7 +94,7 @@ function getAlertPreviewQueryOptions(
 function getSchemaEntryForField(
   metricsViewSpec: V1MetricsViewSpec,
   field: StructTypeField,
-): VirtualizedTableColumns {
+): VirtualizedTableColumns | undefined {
   if (metricsViewSpec.dimensions) {
     for (const dimension of metricsViewSpec.dimensions) {
       if (dimension.name === field.name) {
@@ -110,27 +109,27 @@ function getSchemaEntryForField(
 
   if (metricsViewSpec.measures) {
     for (const measure of metricsViewSpec.measures) {
-      let label = measure.label ?? field.name;
+      if (measure.name + ComparisonDeltaPreviousSuffix === field.name)
+        return undefined;
+
+      let label: VirtualizedTableColumns["label"] = measure.label ?? field.name;
       let format = measure.formatPreset;
-      switch (true) {
-        case measure.name === field.name:
-          break;
-        case measure.name + ComparisonDeltaPreviousSuffix === field.name:
-          label += " (prev)";
-          break;
-        case measure.name + ComparisonDeltaAbsoluteSuffix === field.name:
-          label += "(Δ)";
-          break;
-        case measure.name + ComparisonDeltaRelativeSuffix === field.name:
-          format = "percentage";
-          label += "(Δ%)";
-          break;
-        default:
-          continue;
+      let type: string = field.type?.code ?? TypeCode.CODE_STRING;
+      if (
+        measure.name + ComparisonDeltaAbsoluteSuffix === field.name ||
+        measure.name + ComparisonDeltaRelativeSuffix === field.name
+      ) {
+        const comparisonProps = getComparisonProperties(field.name, measure);
+        label = comparisonProps.component;
+        format = comparisonProps.format;
+        type = comparisonProps.type;
+      } else if (measure.name !== field.name) {
+        continue;
       }
+
       return {
         name: field.name as string,
-        type: field.type?.code ?? TypeCode.CODE_STRING,
+        type,
         label,
         format,
       };

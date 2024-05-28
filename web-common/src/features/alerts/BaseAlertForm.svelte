@@ -70,8 +70,9 @@
       currentTabIndex !== 2 ||
       $touched.name ||
       $touched.description
-    )
+    ) {
       return;
+    }
     // if the user came to the delivery tab and name/description was not changed then auto generate it
     const titleAndDesc = getTitleAndDescription($form, $metricsView.data ?? {});
     if (!titleAndDesc) return;
