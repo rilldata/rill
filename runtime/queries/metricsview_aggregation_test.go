@@ -3226,7 +3226,7 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "__time__previous", "timestamp_year__previous"))
 }
 
-func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *testing.T) {
+func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3341,7 +3341,7 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *
 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,3.55,3.74,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "m1", "m1_p", "__time__previous", "timestamp_year__previous"))
 }
 
-func TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
+func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)

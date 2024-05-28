@@ -1456,10 +1456,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		}
 	}
 
-	var extraOuterClauses []string
 	var orderClauses []string
-	var baseOrderClauses []string
-	var comparisonOrderClauses []string
 
 	for _, s := range q.Sort {
 		var outerClause, subQueryClause, extraOuterClause string
@@ -1487,42 +1484,16 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		subQueryClause += ending
 		extraOuterClause += ending
 		orderClauses = append(orderClauses, outerClause)
-		baseOrderClauses = append(baseOrderClauses, subQueryClause)
-		comparisonOrderClauses = append(comparisonOrderClauses, subQueryClause)
-		extraOuterClauses = append(extraOuterClauses, extraOuterClause)
 	}
 
 	orderByClause := ""
-	// comparisonSubQueryOrderByClause := ""
-	extraOuterOrderByClause := ""
-
 	if len(orderClauses) > 0 {
 		orderByClause = "ORDER BY " + strings.Join(orderClauses, ", ")
-		// comparisonSubQueryOrderByClause = "ORDER BY " + strings.Join(comparisonOrderClauses, ", ")
-		extraOuterOrderByClause = "ORDER BY" + strings.Join(extraOuterClauses, ",")
 	}
-
-	// limitClause := ""
-	// if q.Limit != nil && *q.Limit > 0 {
-	// 	limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
-	// }
 
 	baseLimitClause := ""
 	comparisonLimitClause := ""
 
-	// joinType := "FULL"
-	// comparisonSort := false
-	// for _, s := range q.Sort {
-	// m := measuresByFinalName[s.Name]
-	// if measuresByFinalName[s.Name] != nil {
-	// 	switch m.Compute.(type) {
-	// 	case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
-	// 		comparisonSort = true
-	// 	case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta, *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
-	// 		comparisonSort = true
-	// 	}
-	// }
-	// }
 	/*
 		Example of the SQL:
 
@@ -1582,14 +1553,11 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 
 		outerJoinConditions := make([]string, 0, len(q.Dimensions))
 		outerDims := make([]string, 0, len(q.Dimensions))
-		baseDims := make([]string, 0, len(q.Dimensions))
 		outerJoinConditions = append(outerJoinConditions, "base.t_offset IS NOT DISTINCT FROM partial.t_offset")
 		for _, d := range q.Dimensions {
 			// Handle regular dimensions
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 				dim := mvDimsByName[d.Name]
-				dimSel, _ := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim) // todo unnest
-				baseDims = append(baseDims, dimSel)
 				outerDims = append(outerDims, safeName(dim.Name))
 				var joinCondition string
 				if dialect == drivers.DialectClickHouse {
@@ -1638,6 +1606,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 			limitClause = fmt.Sprintf(" LIMIT %d", limit)
 		}
 
+		// unfiltered dims query
 		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			args = append(args, q.TimeRange.Start.AsTime())
 		}
@@ -1669,32 +1638,32 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		sql = fmt.Sprintf(`
 			SELECT * FROM (
 				-- SELECT base.d1, ... partial.m1, ...
-				SELECT %[19]s, %[20]s, %[25]s FROM
+				SELECT `+withPrefix("base", outerDims)+`, `+strings.Join(measureCols, ",")+`, `+strings.Join(finalComparisonTimeDimsLabels, ",")+` FROM
 				( 
 					-- SELECT ... as t_offset, dim1 as d1, ...
-					SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[10]s `+subqueryLimitClause+`
+					SELECT %[1]s FROM %[3]s %[7]s WHERE %[4]s GROUP BY %[9]s `+subqueryLimitClause+`
 				) base
 				LEFT JOIN 
 				(
 					-- SELECT ... as t_offset, base.d1, ..., base.td1, ..., base.m1, ... , comparison.td1 as td1__previous, ...
-					SELECT %[2]s %[18]s FROM 
+					SELECT %[2]s `+finalTimeDimsClause+` FROM 
 						(
 							-- SELECT t_offset, dim1 as d1, ... timed1 as td1, ..., avg(price) as m1, ... AND d2 = 'a' ...
-							SELECT %[1]s FROM %[3]s %[14]s WHERE (%[4]s) AND (%[24]s) GROUP BY %[10]s `+subqueryLimitClause+` 
+							SELECT %[1]s FROM %[3]s %[7]s WHERE (%[4]s) AND (%[6]s) GROUP BY %[9]s `+subqueryLimitClause+` 
 						) base
-					%[11]s JOIN
+					LEFT OUTER JOIN
 						(
 							-- SELECT t_offset, dim1 as d1, ..., timed1 as td1, ... avg(price) as m1, ... AND d2 = 'a' ...
-							SELECT %[16]s FROM %[3]s %[14]s WHERE (%[5]s) AND (%[24]s) GROUP BY %[10]s `+subqueryLimitClause+`
+							SELECT `+comparisonSelectClause+` FROM %[3]s %[7]s WHERE (%[5]s) AND (%[6]s) GROUP BY %[9]s `+subqueryLimitClause+`
 						) comparison
 					ON
-							%[17]s -- base.t_offset = comparison.t_offset AND ...
+							`+strings.Join(joinConditions, " AND ")+` -- base.t_offset = comparison.t_offset AND ...
 				) partial
 				ON
-				%[21]s -- base.t_offset = partial.t_offset AND ...
+				`+strings.Join(outerJoinConditions, " AND ")+` -- base.t_offset = partial.t_offset AND ...
 			)
-				%[15]s -- WHERE d1 = 'having_value'
-				%[6]s -- ORDER BY d1, ...
+				`+outerWhereClause+` -- WHERE d1 = 'having_value'
+				`+orderByClause+` -- ORDER BY d1, ...
 				`+limitClause+`
 				OFFSET %[8]d
 
@@ -1704,28 +1673,11 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 			escapeMetricsViewTable(dialect, mv),                                      // 3
 			baseWhereClause,                                                          // 4
 			comparisonWhereClause,                                                    // 5
-			orderByClause,                                                            // 6
-			limitClause,                                                              // 7
+			measureFilterClause,                                                      // 6
+			strings.Join(unnestClauses, ""),                                          // 7
 			q.Offset,                                                                 // 8
-			finalSelectClause,                                                        // 9
-			strings.Join(innerGroupCols, ","),                                        // 10
-			"LEFT OUTER",                                                             // 11
-			baseLimitClause,                                                          // 12
-			subqueryLimitClause,                                                      // 13
-			strings.Join(unnestClauses, ""),                                          // 14
-			outerWhereClause,                                                         // 15
-			comparisonSelectClause,                                                   // 16
-			strings.Join(joinConditions, " AND "),                                    // 17
-			finalTimeDimsClause,                                                      // 18
-			withPrefix("base", outerDims),                                            // 19
-			strings.Join(measureCols, ","),                                           // 20
-			strings.Join(outerJoinConditions, " AND "),                               // 21
-			extraOuterOrderByClause,                                                  // 22
-			strings.Join(baseDims, ","),                                              // 23
-			measureFilterClause,                                                      // 24
-			strings.Join(finalComparisonTimeDimsLabels, ","),                         // 25
+			strings.Join(innerGroupCols, ","),                                        // 9
 		)
-		fmt.Println(sql, args)
 	} else { // Druid measure filter
 		// SELECT d1, d2, d3 ... GROUP BY 1, 2, 3 ...
 		var innerGroupCols []string
@@ -1816,7 +1768,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 			// Handle regular dimensions
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 				dim := mvDimsByName[d.Name]
-				outerDims = append(outerDims, fmt.Sprintf("%s", safeName(dim.Name)))
+				outerDims = append(outerDims, safeName(dim.Name))
 				var joinCondition string
 				if dialect == drivers.DialectClickHouse {
 					joinCondition = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, partial.%[1]s)", safeName(dim.Name))
@@ -1846,11 +1798,9 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		}
 
 		limitClause := ""
-		// subqueryLimitClause := ""
 		limit := 0
 		if q.Limit != nil {
 			limit = int(*q.Limit)
-			// subqueryLimitClause = fmt.Sprintf(" LIMIT %d", (limit * 2))
 			limitClause = fmt.Sprintf(" LIMIT %d", limit)
 		}
 
