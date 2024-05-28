@@ -191,7 +191,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 						}
 						return err
 					}
-					if err = convert(row, schema); err != nil { // duckdb specific datatype conversion
+					if err := convert(row, schema); err != nil { // duckdb specific datatype conversion
 						return err
 					}
 
