@@ -4,7 +4,7 @@
     COLUMN_PROFILE_CONFIG,
     LIST_SLIDE_DURATION,
   } from "@rilldata/web-common/layout/config";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { createEventDispatcher } from "svelte";
   import { slide } from "svelte/transition";
 
@@ -17,9 +17,9 @@
   export let compact = false;
   export let hideNullPercentage = false;
   export let mode = "summaries";
+  export let onShiftClick: () => void;
 
   const dispatch = createEventDispatcher();
-  const { shiftClickAction } = createShiftClickAction();
 
   let columns: string;
   $: summarySize =
@@ -47,11 +47,12 @@
         justify-between w-full"
     class:ui-copy-disabled-faint={isFetching}
     class:bg-gray-50={active}
-    use:shiftClickAction
-    on:shift-click
-    on:click={() => {
-      dispatch("select");
-    }}
+    on:click={modified({
+      shift: onShiftClick,
+      click: () => {
+        dispatch("select");
+      },
+    })}
   >
     <div class="flex gap-2 items-baseline flex-1" style:min-width="0px">
       <div class="self-center flex items-center ui-copy-icon-muted">
@@ -59,7 +60,7 @@
       </div>
       <div
         class:font-bold={emphasize}
-        class="text-left w-full text-left text-ellipsis overflow-hidden whitespace-nowrap"
+        class="text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
       >
         <slot name="left" />
       </div>

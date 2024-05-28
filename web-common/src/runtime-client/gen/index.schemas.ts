@@ -1594,6 +1594,7 @@ export interface V1DashboardState {
 
 export interface V1DashboardItem {
   component?: string;
+  definedInDashboard?: boolean;
   x?: number;
   y?: number;
   width?: number;
