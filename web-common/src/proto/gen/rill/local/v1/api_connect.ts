@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployRequest, DeployResponse, DeployValidationRequest, DeployValidationResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGitRequest, PushToGitResponse } from "./api_pb.js";
+import { DeployRequest, DeployResponse, DeployValidationRequest, DeployValidationResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -57,14 +57,14 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * PushToGit create a Git repo from local project and pushed to users git account.
+     * PushToGithub create a Git repo from local project and pushed to users git account.
      *
-     * @generated from rpc rill.local.v1.LocalService.PushToGit
+     * @generated from rpc rill.local.v1.LocalService.PushToGithub
      */
-    pushToGit: {
-      name: "PushToGit",
-      I: PushToGitRequest,
-      O: PushToGitResponse,
+    pushToGithub: {
+      name: "PushToGithub",
+      I: PushToGithubRequest,
+      O: PushToGithubResponse,
       kind: MethodKind.Unary,
     },
     /**

@@ -43,8 +43,9 @@ const (
 	// LocalServiceDeployValidationProcedure is the fully-qualified name of the LocalService's
 	// DeployValidation RPC.
 	LocalServiceDeployValidationProcedure = "/rill.local.v1.LocalService/DeployValidation"
-	// LocalServicePushToGitProcedure is the fully-qualified name of the LocalService's PushToGit RPC.
-	LocalServicePushToGitProcedure = "/rill.local.v1.LocalService/PushToGit"
+	// LocalServicePushToGithubProcedure is the fully-qualified name of the LocalService's PushToGithub
+	// RPC.
+	LocalServicePushToGithubProcedure = "/rill.local.v1.LocalService/PushToGithub"
 	// LocalServiceDeployProcedure is the fully-qualified name of the LocalService's Deploy RPC.
 	LocalServiceDeployProcedure = "/rill.local.v1.LocalService/Deploy"
 )
@@ -56,7 +57,7 @@ var (
 	localServiceGetMetadataMethodDescriptor      = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
 	localServiceGetVersionMethodDescriptor       = localServiceServiceDescriptor.Methods().ByName("GetVersion")
 	localServiceDeployValidationMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("DeployValidation")
-	localServicePushToGitMethodDescriptor        = localServiceServiceDescriptor.Methods().ByName("PushToGit")
+	localServicePushToGithubMethodDescriptor     = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
 	localServiceDeployMethodDescriptor           = localServiceServiceDescriptor.Methods().ByName("Deploy")
 )
 
@@ -70,8 +71,8 @@ type LocalServiceClient interface {
 	GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error)
 	// DeployValidation validates a deploy request.
 	DeployValidation(context.Context, *connect.Request[v1.DeployValidationRequest]) (*connect.Response[v1.DeployValidationResponse], error)
-	// PushToGit create a Git repo from local project and pushed to users git account.
-	PushToGit(context.Context, *connect.Request[v1.PushToGitRequest]) (*connect.Response[v1.PushToGitResponse], error)
+	// PushToGithub create a Git repo from local project and pushed to users git account.
+	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
 	// Deploy deploys the local project to the Rill cloud.
 	Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error)
 }
@@ -110,10 +111,10 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceDeployValidationMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
-		pushToGit: connect.NewClient[v1.PushToGitRequest, v1.PushToGitResponse](
+		pushToGithub: connect.NewClient[v1.PushToGithubRequest, v1.PushToGithubResponse](
 			httpClient,
-			baseURL+LocalServicePushToGitProcedure,
-			connect.WithSchema(localServicePushToGitMethodDescriptor),
+			baseURL+LocalServicePushToGithubProcedure,
+			connect.WithSchema(localServicePushToGithubMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
 		deploy: connect.NewClient[v1.DeployRequest, v1.DeployResponse](
@@ -131,7 +132,7 @@ type localServiceClient struct {
 	getMetadata      *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
 	getVersion       *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
 	deployValidation *connect.Client[v1.DeployValidationRequest, v1.DeployValidationResponse]
-	pushToGit        *connect.Client[v1.PushToGitRequest, v1.PushToGitResponse]
+	pushToGithub     *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
 	deploy           *connect.Client[v1.DeployRequest, v1.DeployResponse]
 }
 
@@ -155,9 +156,9 @@ func (c *localServiceClient) DeployValidation(ctx context.Context, req *connect.
 	return c.deployValidation.CallUnary(ctx, req)
 }
 
-// PushToGit calls rill.local.v1.LocalService.PushToGit.
-func (c *localServiceClient) PushToGit(ctx context.Context, req *connect.Request[v1.PushToGitRequest]) (*connect.Response[v1.PushToGitResponse], error) {
-	return c.pushToGit.CallUnary(ctx, req)
+// PushToGithub calls rill.local.v1.LocalService.PushToGithub.
+func (c *localServiceClient) PushToGithub(ctx context.Context, req *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error) {
+	return c.pushToGithub.CallUnary(ctx, req)
 }
 
 // Deploy calls rill.local.v1.LocalService.Deploy.
@@ -175,8 +176,8 @@ type LocalServiceHandler interface {
 	GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error)
 	// DeployValidation validates a deploy request.
 	DeployValidation(context.Context, *connect.Request[v1.DeployValidationRequest]) (*connect.Response[v1.DeployValidationResponse], error)
-	// PushToGit create a Git repo from local project and pushed to users git account.
-	PushToGit(context.Context, *connect.Request[v1.PushToGitRequest]) (*connect.Response[v1.PushToGitResponse], error)
+	// PushToGithub create a Git repo from local project and pushed to users git account.
+	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
 	// Deploy deploys the local project to the Rill cloud.
 	Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error)
 }
@@ -211,10 +212,10 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceDeployValidationMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
-	localServicePushToGitHandler := connect.NewUnaryHandler(
-		LocalServicePushToGitProcedure,
-		svc.PushToGit,
-		connect.WithSchema(localServicePushToGitMethodDescriptor),
+	localServicePushToGithubHandler := connect.NewUnaryHandler(
+		LocalServicePushToGithubProcedure,
+		svc.PushToGithub,
+		connect.WithSchema(localServicePushToGithubMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
 	localServiceDeployHandler := connect.NewUnaryHandler(
@@ -233,8 +234,8 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceGetVersionHandler.ServeHTTP(w, r)
 		case LocalServiceDeployValidationProcedure:
 			localServiceDeployValidationHandler.ServeHTTP(w, r)
-		case LocalServicePushToGitProcedure:
-			localServicePushToGitHandler.ServeHTTP(w, r)
+		case LocalServicePushToGithubProcedure:
+			localServicePushToGithubHandler.ServeHTTP(w, r)
 		case LocalServiceDeployProcedure:
 			localServiceDeployHandler.ServeHTTP(w, r)
 		default:
@@ -262,8 +263,8 @@ func (UnimplementedLocalServiceHandler) DeployValidation(context.Context, *conne
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.DeployValidation is not implemented"))
 }
 
-func (UnimplementedLocalServiceHandler) PushToGit(context.Context, *connect.Request[v1.PushToGitRequest]) (*connect.Response[v1.PushToGitResponse], error) {
-	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.PushToGit is not implemented"))
+func (UnimplementedLocalServiceHandler) PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.PushToGithub is not implemented"))
 }
 
 func (UnimplementedLocalServiceHandler) Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error) {

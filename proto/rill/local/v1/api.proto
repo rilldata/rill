@@ -2,6 +2,7 @@ syntax = "proto3";
 package rill.local.v1;
 
 import "google/protobuf/timestamp.proto";
+import "rill/admin/v1/api.proto";
 
 service LocalService {
   // Ping returns the current time.
@@ -16,8 +17,8 @@ service LocalService {
   // DeployValidation validates a deploy request.
   rpc DeployValidation(DeployValidationRequest) returns (DeployValidationResponse) {}
 
-  // PushToGit create a Git repo from local project and pushed to users git account.
-  rpc PushToGit(PushToGitRequest) returns (PushToGitResponse) {}
+  // PushToGithub create a Git repo from local project and pushed to users git account.
+  rpc PushToGithub(PushToGithubRequest) returns (PushToGithubResponse) {}
 
   // Deploy deploys the local project to the Rill cloud.
   rpc Deploy(DeployRequest) returns (DeployResponse) {}
@@ -56,46 +57,33 @@ message DeployValidationRequest {}
 
 message DeployValidationResponse {
   bool is_authenticated = 1; // if true below fields are relevant after login
-  bool is_github_connected = 2; // if true below fields are relevant after git install
-  string git_grant_access_url = 3; // redirect to this if is_github_connected or is_repo_access_granted is false
-  string git_user_name = 4;
-  bool is_user_app_installed = 5; // if rill git app is installed on user account
-  string user_app_permission = 6;
-  repeated string git_user_orgs = 7;
-  bool is_git_repo = 8;
-  bool git_remote_found = 9; // only applicable when is_git_repo is true
-  bool is_repo_access_granted = 10; // relevant only when is_git_repo is true and remote found, if false redirect to git_grant_access_url
-  string git_url = 11; // only applicable when is_git_repo is true and remote found
-  UncommittedChanges uncommitted_changes = 12; // only applicable when is_git_repo is true and remote found
-  bool rill_org_exists_as_git_user_name = 13; // only applicable when user does not have any orgs
-  repeated string rill_user_orgs = 14;
-  string local_project_name = 15;
-  repeated OrganizationWithApp organizations_with_app = 16;
+  bool is_github_connected = 2; // if true below fields are relevant after github install
+  string github_grant_access_url = 3; // redirect to this if is_github_connected or is_github_repo_access_granted is false
+  string github_user_name = 4;
+  rill.admin.v1.GithubPermission github_app_user_permission = 5; // if unspecified then github app not installed on user account
+  map<string, rill.admin.v1.GithubPermission> github_organization_installation_permissions = 6;
+  bool is_github_repo = 7;
+  bool is_github_remote_found = 8; // only applicable when is_github_repo is true
+  bool is_github_repo_access_granted = 9; // relevant only when is_github_repo is true and remote found, if false redirect to github_grant_access_url
+  string github_url = 10; // only applicable when is_github_repo is true and remote found
+  optional bool has_uncommitted_changes = 11; // only applicable when is_github_repo is true and remote found
+  bool rill_org_exists_as_github_user_name = 12; // only applicable when user does not have any orgs
+  repeated string rill_user_orgs = 13;
+  string local_project_name = 14;
 }
 
-enum UncommittedChanges {
-  UNCOMMITTED_CHANGES_UNSPECIFIED = 0;
-  UNCOMMITTED_CHANGES_YES = 1;
-  UNCOMMITTED_CHANGES_NO = 2;
-}
-
-message OrganizationWithApp {
-  string org = 1;
-  string permission = 2;
-}
-
-message PushToGitRequest {
+message PushToGithubRequest {
   string org = 1;
   string repo = 2;
 }
 
-message PushToGitResponse {
-  string git_url = 1;
+message PushToGithubResponse {
+  string github_url = 1;
 }
 
 message DeployRequest {
-  string rill_org = 1; // creates the org if does not exists, no validation
-  string rill_project_name = 2; // no validation, assuming user provided correct name as per the prompts
+  string org = 1;
+  string project_name = 2;
 }
 
 message DeployResponse {

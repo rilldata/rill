@@ -2600,19 +2600,12 @@ definitions:
         type: string
       account:
         type: string
-      organizations:
-        type: array
-        items:
-          type: string
-      isUserAppInstalled:
-        type: boolean
       userInstallationPermission:
-        type: string
-      organizationsWithApp:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1OrganizationWithApp'
+        $ref: '#/definitions/v1GithubPermission'
+      organizationInstallationPermissions:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1GithubPermission'
   v1GetIFrameResponse:
     type: object
     properties:
@@ -2676,6 +2669,13 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1GithubPermission:
+    type: string
+    enum:
+      - GITHUB_PERMISSION_UNSPECIFIED
+      - GITHUB_PERMISSION_READ
+      - GITHUB_PERMISSION_WRITE
+    default: GITHUB_PERMISSION_UNSPECIFIED
   v1IssueRepresentativeAuthTokenRequest:
     type: object
     properties:
@@ -2874,13 +2874,6 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
-  v1OrganizationWithApp:
-    type: object
-    properties:
-      org:
-        type: string
-      permission:
-        type: string
   v1PingResponse:
     type: object
     properties:

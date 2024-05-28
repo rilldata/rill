@@ -87,23 +87,21 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
-	isUserAppInstalled := false
-	userInstallationPermission := ""
+	userInstallationPermission := adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
 	installation, _, err := s.admin.Github.AppClient().Apps.FindUserInstallation(ctx, user.GithubUsername)
 	if err != nil {
 		if !strings.Contains(err.Error(), "404") {
 			return nil, fmt.Errorf("failed to get user installation: %w", err)
 		}
 	} else {
-		isUserAppInstalled = true
-		userInstallationPermission = "read"
+		userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_READ
 		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
-		if installation.Permissions != nil && installation.Permissions.Contents != nil {
-			if installation.Permissions.Administration != nil && strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
-				userInstallationPermission = "write"
-			}
-		} else {
+		if installation.Permissions == nil || installation.Permissions.Contents == nil {
 			return nil, status.Errorf(codes.Internal, "failed to get user installation permissions for user %s", user.GithubUsername)
+		}
+
+		if installation.Permissions.Administration != nil && strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
+			userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_WRITE
 		}
 	}
 
@@ -120,49 +118,42 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 	}
 
 	orgs = append(orgs, publicOrgs...)
-	seen := make(map[string]bool)
 
-	var orgNames []string
-	var orgWithApp []*adminv1.OrganizationWithApp
+	orgInstallationPermission := make(map[string]adminv1.GithubPermission)
 	for _, org := range orgs {
 		// dedupe orgs
-		if seen[org.GetLogin()] {
+		if _, ok := orgInstallationPermission[org.GetLogin()]; ok {
 			continue
 		}
-		seen[org.GetLogin()] = true
 
-		orgNames = append(orgNames, org.GetLogin())
 		i, _, err := s.admin.Github.AppClient().Apps.FindOrganizationInstallation(ctx, org.GetLogin())
 		if err != nil {
 			if strings.Contains(err.Error(), "404") {
+				orgInstallationPermission[org.GetLogin()] = adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
 				continue
 			}
 			return nil, status.Errorf(codes.Internal, "failed to get organization installation: %s", err.Error())
 		}
-		permission := "read"
+		permission := adminv1.GithubPermission_GITHUB_PERMISSION_READ
 		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
-		if i.Permissions != nil && i.Permissions.Contents != nil {
-			if i.Permissions.Administration != nil && strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
-				permission = "write"
-			}
-		} else {
+		if i.Permissions == nil || i.Permissions.Contents == nil {
 			return nil, status.Errorf(codes.Internal, "failed to get organization permissions for org %s", org.GetLogin())
 		}
-		orgWithApp = append(orgWithApp, &adminv1.OrganizationWithApp{
-			Org:        org.GetLogin(),
-			Permission: permission,
-		})
+
+		if i.Permissions.Administration != nil && strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
+			permission = adminv1.GithubPermission_GITHUB_PERMISSION_WRITE
+		}
+
+		orgInstallationPermission[org.GetLogin()] = permission
 	}
 
 	return &adminv1.GetGithubUserStatusResponse{
-		HasAccess:                  true,
-		GrantAccessUrl:             s.urls.githubConnect,
-		AccessToken:                token,
-		Account:                    user.GithubUsername,
-		Organizations:              orgNames,
-		IsUserAppInstalled:         isUserAppInstalled,
-		UserInstallationPermission: userInstallationPermission,
-		OrganizationsWithApp:       orgWithApp,
+		HasAccess:                           true,
+		GrantAccessUrl:                      s.urls.githubConnect,
+		AccessToken:                         token,
+		Account:                             user.GithubUsername,
+		UserInstallationPermission:          userInstallationPermission,
+		OrganizationInstallationPermissions: orgInstallationPermission,
 	}, nil
 }
 

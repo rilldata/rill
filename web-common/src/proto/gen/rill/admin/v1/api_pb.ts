@@ -8,6 +8,32 @@ import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protob
 import { ExportFormat } from "../../runtime/v1/export_format_pb.js";
 
 /**
+ * @generated from enum rill.admin.v1.GithubPermission
+ */
+export enum GithubPermission {
+  /**
+   * @generated from enum value: GITHUB_PERMISSION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: GITHUB_PERMISSION_READ = 1;
+   */
+  READ = 1,
+
+  /**
+   * @generated from enum value: GITHUB_PERMISSION_WRITE = 2;
+   */
+  WRITE = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(GithubPermission)
+proto3.util.setEnumType(GithubPermission, "rill.admin.v1.GithubPermission", [
+  { no: 0, name: "GITHUB_PERMISSION_UNSPECIFIED" },
+  { no: 1, name: "GITHUB_PERMISSION_READ" },
+  { no: 2, name: "GITHUB_PERMISSION_WRITE" },
+]);
+
+/**
  * @generated from enum rill.admin.v1.DeploymentStatus
  */
 export enum DeploymentStatus {
@@ -5137,24 +5163,14 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
   account = "";
 
   /**
-   * @generated from field: repeated string organizations = 5;
+   * @generated from field: rill.admin.v1.GithubPermission user_installation_permission = 5;
    */
-  organizations: string[] = [];
+  userInstallationPermission = GithubPermission.UNSPECIFIED;
 
   /**
-   * @generated from field: bool is_user_app_installed = 6;
+   * @generated from field: map<string, rill.admin.v1.GithubPermission> organization_installation_permissions = 6;
    */
-  isUserAppInstalled = false;
-
-  /**
-   * @generated from field: string user_installation_permission = 7;
-   */
-  userInstallationPermission = "";
-
-  /**
-   * @generated from field: repeated rill.admin.v1.OrganizationWithApp organizations_with_app = 8;
-   */
-  organizationsWithApp: OrganizationWithApp[] = [];
+  organizationInstallationPermissions: { [key: string]: GithubPermission } = {};
 
   constructor(data?: PartialMessage<GetGithubUserStatusResponse>) {
     super();
@@ -5168,10 +5184,8 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
     { no: 2, name: "grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "organizations", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "is_user_app_installed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 7, name: "user_installation_permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
+    { no: 5, name: "user_installation_permission", kind: "enum", T: proto3.getEnumType(GithubPermission) },
+    { no: 6, name: "organization_installation_permissions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "enum", T: proto3.getEnumType(GithubPermission)} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetGithubUserStatusResponse {
@@ -5188,49 +5202,6 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
 
   static equals(a: GetGithubUserStatusResponse | PlainMessage<GetGithubUserStatusResponse> | undefined, b: GetGithubUserStatusResponse | PlainMessage<GetGithubUserStatusResponse> | undefined): boolean {
     return proto3.util.equals(GetGithubUserStatusResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.OrganizationWithApp
- */
-export class OrganizationWithApp extends Message<OrganizationWithApp> {
-  /**
-   * @generated from field: string org = 1;
-   */
-  org = "";
-
-  /**
-   * @generated from field: string permission = 2;
-   */
-  permission = "";
-
-  constructor(data?: PartialMessage<OrganizationWithApp>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.OrganizationWithApp";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationWithApp {
-    return new OrganizationWithApp().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OrganizationWithApp {
-    return new OrganizationWithApp().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OrganizationWithApp {
-    return new OrganizationWithApp().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: OrganizationWithApp | PlainMessage<OrganizationWithApp> | undefined, b: OrganizationWithApp | PlainMessage<OrganizationWithApp> | undefined): boolean {
-    return proto3.util.equals(OrganizationWithApp, a, b);
   }
 }
 

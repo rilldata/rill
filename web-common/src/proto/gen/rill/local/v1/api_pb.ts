@@ -5,32 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
-
-/**
- * @generated from enum rill.local.v1.UncommittedChanges
- */
-export enum UncommittedChanges {
-  /**
-   * @generated from enum value: UNCOMMITTED_CHANGES_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: UNCOMMITTED_CHANGES_YES = 1;
-   */
-  YES = 1,
-
-  /**
-   * @generated from enum value: UNCOMMITTED_CHANGES_NO = 2;
-   */
-  NO = 2,
-}
-// Retrieve enum metadata with: proto3.getEnumType(UncommittedChanges)
-proto3.util.setEnumType(UncommittedChanges, "rill.local.v1.UncommittedChanges", [
-  { no: 0, name: "UNCOMMITTED_CHANGES_UNSPECIFIED" },
-  { no: 1, name: "UNCOMMITTED_CHANGES_YES" },
-  { no: 2, name: "UNCOMMITTED_CHANGES_NO" },
-]);
+import { GithubPermission } from "../../admin/v1/api_pb.js";
 
 /**
  * @generated from message rill.local.v1.PingRequest
@@ -345,95 +320,85 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   isAuthenticated = false;
 
   /**
-   * if true below fields are relevant after git install
+   * if true below fields are relevant after github install
    *
    * @generated from field: bool is_github_connected = 2;
    */
   isGithubConnected = false;
 
   /**
-   * redirect to this if is_github_connected or is_repo_access_granted is false
+   * redirect to this if is_github_connected or is_github_repo_access_granted is false
    *
-   * @generated from field: string git_grant_access_url = 3;
+   * @generated from field: string github_grant_access_url = 3;
    */
-  gitGrantAccessUrl = "";
+  githubGrantAccessUrl = "";
 
   /**
-   * @generated from field: string git_user_name = 4;
+   * @generated from field: string github_user_name = 4;
    */
-  gitUserName = "";
+  githubUserName = "";
 
   /**
-   * if rill git app is installed on user account
+   * if unspecified then github app not installed on user account
    *
-   * @generated from field: bool is_user_app_installed = 5;
+   * @generated from field: rill.admin.v1.GithubPermission github_app_user_permission = 5;
    */
-  isUserAppInstalled = false;
+  githubAppUserPermission = GithubPermission.UNSPECIFIED;
 
   /**
-   * @generated from field: string user_app_permission = 6;
+   * @generated from field: map<string, rill.admin.v1.GithubPermission> github_organization_installation_permissions = 6;
    */
-  userAppPermission = "";
+  githubOrganizationInstallationPermissions: { [key: string]: GithubPermission } = {};
 
   /**
-   * @generated from field: repeated string git_user_orgs = 7;
+   * @generated from field: bool is_github_repo = 7;
    */
-  gitUserOrgs: string[] = [];
+  isGithubRepo = false;
 
   /**
-   * @generated from field: bool is_git_repo = 8;
-   */
-  isGitRepo = false;
-
-  /**
-   * only applicable when is_git_repo is true
+   * only applicable when is_github_repo is true
    *
-   * @generated from field: bool git_remote_found = 9;
+   * @generated from field: bool is_github_remote_found = 8;
    */
-  gitRemoteFound = false;
+  isGithubRemoteFound = false;
 
   /**
-   * relevant only when is_git_repo is true and remote found, if false redirect to git_grant_access_url
+   * relevant only when is_github_repo is true and remote found, if false redirect to github_grant_access_url
    *
-   * @generated from field: bool is_repo_access_granted = 10;
+   * @generated from field: bool is_github_repo_access_granted = 9;
    */
-  isRepoAccessGranted = false;
+  isGithubRepoAccessGranted = false;
 
   /**
-   * only applicable when is_git_repo is true and remote found
+   * only applicable when is_github_repo is true and remote found
    *
-   * @generated from field: string git_url = 11;
+   * @generated from field: string github_url = 10;
    */
-  gitUrl = "";
+  githubUrl = "";
 
   /**
-   * only applicable when is_git_repo is true and remote found
+   * only applicable when is_github_repo is true and remote found
    *
-   * @generated from field: rill.local.v1.UncommittedChanges uncommitted_changes = 12;
+   * @generated from field: optional bool has_uncommitted_changes = 11;
    */
-  uncommittedChanges = UncommittedChanges.UNSPECIFIED;
+  hasUncommittedChanges?: boolean;
 
   /**
    * only applicable when user does not have any orgs
    *
-   * @generated from field: bool rill_org_exists_as_git_user_name = 13;
+   * @generated from field: bool rill_org_exists_as_github_user_name = 12;
    */
-  rillOrgExistsAsGitUserName = false;
+  rillOrgExistsAsGithubUserName = false;
 
   /**
-   * @generated from field: repeated string rill_user_orgs = 14;
+   * @generated from field: repeated string rill_user_orgs = 13;
    */
   rillUserOrgs: string[] = [];
 
   /**
-   * @generated from field: string local_project_name = 15;
+   * @generated from field: string local_project_name = 14;
    */
   localProjectName = "";
-
-  /**
-   * @generated from field: repeated rill.local.v1.OrganizationWithApp organizations_with_app = 16;
-   */
-  organizationsWithApp: OrganizationWithApp[] = [];
 
   constructor(data?: PartialMessage<DeployValidationResponse>) {
     super();
@@ -445,20 +410,18 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "is_authenticated", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "is_github_connected", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 3, name: "git_grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "git_user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "is_user_app_installed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 6, name: "user_app_permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "git_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 8, name: "is_git_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 9, name: "git_remote_found", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 10, name: "is_repo_access_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 11, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 12, name: "uncommitted_changes", kind: "enum", T: proto3.getEnumType(UncommittedChanges) },
-    { no: 13, name: "rill_org_exists_as_git_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 14, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 15, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 16, name: "organizations_with_app", kind: "message", T: OrganizationWithApp, repeated: true },
+    { no: 3, name: "github_grant_access_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "github_user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "github_app_user_permission", kind: "enum", T: proto3.getEnumType(GithubPermission) },
+    { no: 6, name: "github_organization_installation_permissions", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "enum", T: proto3.getEnumType(GithubPermission)} },
+    { no: 7, name: "is_github_repo", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 8, name: "is_github_remote_found", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 9, name: "is_github_repo_access_granted", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "has_uncommitted_changes", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
+    { no: 12, name: "rill_org_exists_as_github_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 13, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 14, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployValidationResponse {
@@ -479,52 +442,9 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
 }
 
 /**
- * @generated from message rill.local.v1.OrganizationWithApp
+ * @generated from message rill.local.v1.PushToGithubRequest
  */
-export class OrganizationWithApp extends Message<OrganizationWithApp> {
-  /**
-   * @generated from field: string org = 1;
-   */
-  org = "";
-
-  /**
-   * @generated from field: string permission = 2;
-   */
-  permission = "";
-
-  constructor(data?: PartialMessage<OrganizationWithApp>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.OrganizationWithApp";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "permission", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationWithApp {
-    return new OrganizationWithApp().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OrganizationWithApp {
-    return new OrganizationWithApp().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OrganizationWithApp {
-    return new OrganizationWithApp().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: OrganizationWithApp | PlainMessage<OrganizationWithApp> | undefined, b: OrganizationWithApp | PlainMessage<OrganizationWithApp> | undefined): boolean {
-    return proto3.util.equals(OrganizationWithApp, a, b);
-  }
-}
-
-/**
- * @generated from message rill.local.v1.PushToGitRequest
- */
-export class PushToGitRequest extends Message<PushToGitRequest> {
+export class PushToGithubRequest extends Message<PushToGithubRequest> {
   /**
    * @generated from field: string org = 1;
    */
@@ -535,69 +455,69 @@ export class PushToGitRequest extends Message<PushToGitRequest> {
    */
   repo = "";
 
-  constructor(data?: PartialMessage<PushToGitRequest>) {
+  constructor(data?: PartialMessage<PushToGithubRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.PushToGitRequest";
+  static readonly typeName = "rill.local.v1.PushToGithubRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "repo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushToGitRequest {
-    return new PushToGitRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushToGithubRequest {
+    return new PushToGithubRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PushToGitRequest {
-    return new PushToGitRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PushToGithubRequest {
+    return new PushToGithubRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PushToGitRequest {
-    return new PushToGitRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PushToGithubRequest {
+    return new PushToGithubRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: PushToGitRequest | PlainMessage<PushToGitRequest> | undefined, b: PushToGitRequest | PlainMessage<PushToGitRequest> | undefined): boolean {
-    return proto3.util.equals(PushToGitRequest, a, b);
+  static equals(a: PushToGithubRequest | PlainMessage<PushToGithubRequest> | undefined, b: PushToGithubRequest | PlainMessage<PushToGithubRequest> | undefined): boolean {
+    return proto3.util.equals(PushToGithubRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.local.v1.PushToGitResponse
+ * @generated from message rill.local.v1.PushToGithubResponse
  */
-export class PushToGitResponse extends Message<PushToGitResponse> {
+export class PushToGithubResponse extends Message<PushToGithubResponse> {
   /**
-   * @generated from field: string git_url = 1;
+   * @generated from field: string github_url = 1;
    */
-  gitUrl = "";
+  githubUrl = "";
 
-  constructor(data?: PartialMessage<PushToGitResponse>) {
+  constructor(data?: PartialMessage<PushToGithubResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.PushToGitResponse";
+  static readonly typeName = "rill.local.v1.PushToGithubResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushToGitResponse {
-    return new PushToGitResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): PushToGithubResponse {
+    return new PushToGithubResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PushToGitResponse {
-    return new PushToGitResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): PushToGithubResponse {
+    return new PushToGithubResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PushToGitResponse {
-    return new PushToGitResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): PushToGithubResponse {
+    return new PushToGithubResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: PushToGitResponse | PlainMessage<PushToGitResponse> | undefined, b: PushToGitResponse | PlainMessage<PushToGitResponse> | undefined): boolean {
-    return proto3.util.equals(PushToGitResponse, a, b);
+  static equals(a: PushToGithubResponse | PlainMessage<PushToGithubResponse> | undefined, b: PushToGithubResponse | PlainMessage<PushToGithubResponse> | undefined): boolean {
+    return proto3.util.equals(PushToGithubResponse, a, b);
   }
 }
 
@@ -606,18 +526,14 @@ export class PushToGitResponse extends Message<PushToGitResponse> {
  */
 export class DeployRequest extends Message<DeployRequest> {
   /**
-   * creates the org if does not exists, no validation
-   *
-   * @generated from field: string rill_org = 1;
+   * @generated from field: string org = 1;
    */
-  rillOrg = "";
+  org = "";
 
   /**
-   * no validation, assuming user provided correct name as per the prompts
-   *
-   * @generated from field: string rill_project_name = 2;
+   * @generated from field: string project_name = 2;
    */
-  rillProjectName = "";
+  projectName = "";
 
   constructor(data?: PartialMessage<DeployRequest>) {
     super();
@@ -627,8 +543,8 @@ export class DeployRequest extends Message<DeployRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.local.v1.DeployRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "rill_org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "rill_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployRequest {

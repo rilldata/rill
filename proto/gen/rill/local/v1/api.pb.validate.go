@@ -17,6 +17,8 @@ import (
 	"unicode/utf8"
 
 	"google.golang.org/protobuf/types/known/anypb"
+
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 )
 
 // ensure the imports are used
@@ -33,6 +35,8 @@ var (
 	_ = (*mail.Address)(nil)
 	_ = anypb.Any{}
 	_ = sort.Sort
+
+	_ = adminv1.GithubPermission(0)
 )
 
 // Validate checks the field values on PingRequest with the rules defined in
@@ -824,60 +828,28 @@ func (m *DeployValidationResponse) validate(all bool) error {
 
 	// no validation rules for IsGithubConnected
 
-	// no validation rules for GitGrantAccessUrl
+	// no validation rules for GithubGrantAccessUrl
 
-	// no validation rules for GitUserName
+	// no validation rules for GithubUserName
 
-	// no validation rules for IsUserAppInstalled
+	// no validation rules for GithubAppUserPermission
 
-	// no validation rules for UserAppPermission
+	// no validation rules for GithubOrganizationInstallationPermissions
 
-	// no validation rules for IsGitRepo
+	// no validation rules for IsGithubRepo
 
-	// no validation rules for GitRemoteFound
+	// no validation rules for IsGithubRemoteFound
 
-	// no validation rules for IsRepoAccessGranted
+	// no validation rules for IsGithubRepoAccessGranted
 
-	// no validation rules for GitUrl
+	// no validation rules for GithubUrl
 
-	// no validation rules for UncommittedChanges
-
-	// no validation rules for RillOrgExistsAsGitUserName
+	// no validation rules for RillOrgExistsAsGithubUserName
 
 	// no validation rules for LocalProjectName
 
-	for idx, item := range m.GetOrganizationsWithApp() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, DeployValidationResponseValidationError{
-						field:  fmt.Sprintf("OrganizationsWithApp[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, DeployValidationResponseValidationError{
-						field:  fmt.Sprintf("OrganizationsWithApp[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return DeployValidationResponseValidationError{
-					field:  fmt.Sprintf("OrganizationsWithApp[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
+	if m.HasUncommittedChanges != nil {
+		// no validation rules for HasUncommittedChanges
 	}
 
 	if len(errors) > 0 {
@@ -960,128 +932,22 @@ var _ interface {
 	ErrorName() string
 } = DeployValidationResponseValidationError{}
 
-// Validate checks the field values on OrganizationWithApp with the rules
+// Validate checks the field values on PushToGithubRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *OrganizationWithApp) Validate() error {
+func (m *PushToGithubRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on OrganizationWithApp with the rules
+// ValidateAll checks the field values on PushToGithubRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// OrganizationWithAppMultiError, or nil if none found.
-func (m *OrganizationWithApp) ValidateAll() error {
+// PushToGithubRequestMultiError, or nil if none found.
+func (m *PushToGithubRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *OrganizationWithApp) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Org
-
-	// no validation rules for Permission
-
-	if len(errors) > 0 {
-		return OrganizationWithAppMultiError(errors)
-	}
-
-	return nil
-}
-
-// OrganizationWithAppMultiError is an error wrapping multiple validation
-// errors returned by OrganizationWithApp.ValidateAll() if the designated
-// constraints aren't met.
-type OrganizationWithAppMultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m OrganizationWithAppMultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m OrganizationWithAppMultiError) AllErrors() []error { return m }
-
-// OrganizationWithAppValidationError is the validation error returned by
-// OrganizationWithApp.Validate if the designated constraints aren't met.
-type OrganizationWithAppValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e OrganizationWithAppValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e OrganizationWithAppValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e OrganizationWithAppValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e OrganizationWithAppValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e OrganizationWithAppValidationError) ErrorName() string {
-	return "OrganizationWithAppValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e OrganizationWithAppValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sOrganizationWithApp.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = OrganizationWithAppValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = OrganizationWithAppValidationError{}
-
-// Validate checks the field values on PushToGitRequest with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *PushToGitRequest) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on PushToGitRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// PushToGitRequestMultiError, or nil if none found.
-func (m *PushToGitRequest) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *PushToGitRequest) validate(all bool) error {
+func (m *PushToGithubRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1093,19 +959,19 @@ func (m *PushToGitRequest) validate(all bool) error {
 	// no validation rules for Repo
 
 	if len(errors) > 0 {
-		return PushToGitRequestMultiError(errors)
+		return PushToGithubRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// PushToGitRequestMultiError is an error wrapping multiple validation errors
-// returned by PushToGitRequest.ValidateAll() if the designated constraints
-// aren't met.
-type PushToGitRequestMultiError []error
+// PushToGithubRequestMultiError is an error wrapping multiple validation
+// errors returned by PushToGithubRequest.ValidateAll() if the designated
+// constraints aren't met.
+type PushToGithubRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m PushToGitRequestMultiError) Error() string {
+func (m PushToGithubRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1114,11 +980,11 @@ func (m PushToGitRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m PushToGitRequestMultiError) AllErrors() []error { return m }
+func (m PushToGithubRequestMultiError) AllErrors() []error { return m }
 
-// PushToGitRequestValidationError is the validation error returned by
-// PushToGitRequest.Validate if the designated constraints aren't met.
-type PushToGitRequestValidationError struct {
+// PushToGithubRequestValidationError is the validation error returned by
+// PushToGithubRequest.Validate if the designated constraints aren't met.
+type PushToGithubRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1126,22 +992,24 @@ type PushToGitRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e PushToGitRequestValidationError) Field() string { return e.field }
+func (e PushToGithubRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e PushToGitRequestValidationError) Reason() string { return e.reason }
+func (e PushToGithubRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e PushToGitRequestValidationError) Cause() error { return e.cause }
+func (e PushToGithubRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e PushToGitRequestValidationError) Key() bool { return e.key }
+func (e PushToGithubRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e PushToGitRequestValidationError) ErrorName() string { return "PushToGitRequestValidationError" }
+func (e PushToGithubRequestValidationError) ErrorName() string {
+	return "PushToGithubRequestValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e PushToGitRequestValidationError) Error() string {
+func (e PushToGithubRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1153,14 +1021,14 @@ func (e PushToGitRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sPushToGitRequest.%s: %s%s",
+		"invalid %sPushToGithubRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = PushToGitRequestValidationError{}
+var _ error = PushToGithubRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1168,46 +1036,46 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = PushToGitRequestValidationError{}
+} = PushToGithubRequestValidationError{}
 
-// Validate checks the field values on PushToGitResponse with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *PushToGitResponse) Validate() error {
+// Validate checks the field values on PushToGithubResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *PushToGithubResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on PushToGitResponse with the rules
+// ValidateAll checks the field values on PushToGithubResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// PushToGitResponseMultiError, or nil if none found.
-func (m *PushToGitResponse) ValidateAll() error {
+// PushToGithubResponseMultiError, or nil if none found.
+func (m *PushToGithubResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *PushToGitResponse) validate(all bool) error {
+func (m *PushToGithubResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
 
 	var errors []error
 
-	// no validation rules for GitUrl
+	// no validation rules for GithubUrl
 
 	if len(errors) > 0 {
-		return PushToGitResponseMultiError(errors)
+		return PushToGithubResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// PushToGitResponseMultiError is an error wrapping multiple validation errors
-// returned by PushToGitResponse.ValidateAll() if the designated constraints
-// aren't met.
-type PushToGitResponseMultiError []error
+// PushToGithubResponseMultiError is an error wrapping multiple validation
+// errors returned by PushToGithubResponse.ValidateAll() if the designated
+// constraints aren't met.
+type PushToGithubResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m PushToGitResponseMultiError) Error() string {
+func (m PushToGithubResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1216,11 +1084,11 @@ func (m PushToGitResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m PushToGitResponseMultiError) AllErrors() []error { return m }
+func (m PushToGithubResponseMultiError) AllErrors() []error { return m }
 
-// PushToGitResponseValidationError is the validation error returned by
-// PushToGitResponse.Validate if the designated constraints aren't met.
-type PushToGitResponseValidationError struct {
+// PushToGithubResponseValidationError is the validation error returned by
+// PushToGithubResponse.Validate if the designated constraints aren't met.
+type PushToGithubResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1228,24 +1096,24 @@ type PushToGitResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e PushToGitResponseValidationError) Field() string { return e.field }
+func (e PushToGithubResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e PushToGitResponseValidationError) Reason() string { return e.reason }
+func (e PushToGithubResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e PushToGitResponseValidationError) Cause() error { return e.cause }
+func (e PushToGithubResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e PushToGitResponseValidationError) Key() bool { return e.key }
+func (e PushToGithubResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e PushToGitResponseValidationError) ErrorName() string {
-	return "PushToGitResponseValidationError"
+func (e PushToGithubResponseValidationError) ErrorName() string {
+	return "PushToGithubResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e PushToGitResponseValidationError) Error() string {
+func (e PushToGithubResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1257,14 +1125,14 @@ func (e PushToGitResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sPushToGitResponse.%s: %s%s",
+		"invalid %sPushToGithubResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = PushToGitResponseValidationError{}
+var _ error = PushToGithubResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1272,7 +1140,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = PushToGitResponseValidationError{}
+} = PushToGithubResponseValidationError{}
 
 // Validate checks the field values on DeployRequest with the rules defined in
 // the proto definition for this message. If any rules are violated, the first
@@ -1296,9 +1164,9 @@ func (m *DeployRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for RillOrg
+	// no validation rules for Org
 
-	// no validation rules for RillProjectName
+	// no validation rules for ProjectName
 
 	if len(errors) > 0 {
 		return DeployRequestMultiError(errors)

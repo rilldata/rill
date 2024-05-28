@@ -460,14 +460,14 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		return nil
 	}
 
-	// get orgs on which rill git app is installed with write permission
+	// get orgs on which rill github app is installed with write permission
 	var candidateOrgs []string
-	if pollRes.IsUserAppInstalled && strings.EqualFold(pollRes.UserInstallationPermission, "write") {
+	if pollRes.UserInstallationPermission == adminv1.GithubPermission_GITHUB_PERMISSION_WRITE {
 		candidateOrgs = append(candidateOrgs, pollRes.Account)
 	}
-	for _, o := range pollRes.OrganizationsWithApp {
-		if strings.EqualFold(o.Permission, "write") {
-			candidateOrgs = append(candidateOrgs, o.Org)
+	for o, p := range pollRes.OrganizationInstallationPermissions {
+		if p == adminv1.GithubPermission_GITHUB_PERMISSION_WRITE {
+			candidateOrgs = append(candidateOrgs, o)
 		}
 	}
 
