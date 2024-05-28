@@ -73,7 +73,7 @@
     position="top-left"
     borderRight={horizontalScrolling}
     bgClass={$sortedByDimensionValue ? `bg-gray-50` : "bg-white"}
-    on:click={sortByDimensionValue}
+    onClick={sortByDimensionValue}
     on:keydown={sortByDimensionValue}
     on:resize={handleResize}
   >
