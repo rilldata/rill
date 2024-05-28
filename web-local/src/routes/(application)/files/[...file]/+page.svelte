@@ -8,10 +8,13 @@
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import {
+    extractFileExtension,
+    splitFolderAndName,
+  } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
-  import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
@@ -34,6 +37,7 @@
 
   $: filePath = addLeadingSlash($page.params.file);
   $: fileExtension = extractFileExtension(filePath);
+  $: [, fileName] = splitFolderAndName(filePath);
   $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
 
   $: fileQuery = createRuntimeServiceGetFile(
@@ -72,7 +76,10 @@
   });
 
   beforeNavigate((e) => {
-    if (!hasUnsavedChanges || interceptedUrl) return;
+    if (!hasUnsavedChanges || interceptedUrl) {
+      localContent = null;
+      return;
+    }
 
     e.cancel();
 
@@ -82,8 +89,8 @@
   let blob = "";
   $: blob = $fileQuery.data?.blob ?? blob;
 
-  $: latest = blob;
-  $: hasUnsavedChanges = latest !== blob;
+  let localContent: string | null = null;
+  $: hasUnsavedChanges = localContent !== null && localContent !== blob;
 
   $: pathname = $page.url.pathname;
   $: workspace = workspaces.get(pathname);
@@ -91,19 +98,19 @@
   $: disableAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
 
   async function save() {
-    if (!hasUnsavedChanges) return;
+    if (localContent === null) return;
 
     await $putFile.mutateAsync({
       instanceId: $runtime.instanceId,
       data: {
         path: filePath,
-        blob: latest,
+        blob: localContent,
       },
     });
   }
 
   function revert() {
-    latest = blob;
+    localContent = null;
   }
 
   // TODO: move this logic into the DirectoryState
@@ -116,7 +123,7 @@
   function handleConfirm() {
     if (!interceptedUrl) return;
     const url = interceptedUrl;
-    latest = blob;
+    localContent = null;
     hasUnsavedChanges = false;
     interceptedUrl = null;
     goto(url).catch(console.error);
@@ -126,6 +133,10 @@
     interceptedUrl = null;
   }
 </script>
+
+<svelte:head>
+  <title>Rill Developer | {fileName}</title>
+</svelte:head>
 
 {#if fileTypeUnsupported}
   <WorkspaceError message="Unsupported file type." />
@@ -154,11 +165,12 @@
     >
       <WorkspaceEditorContainer>
         <Editor
-          {blob}
+          key={filePath}
+          remoteContent={blob}
           {hasUnsavedChanges}
           extensions={getExtensionsForFile(filePath)}
           {disableAutoSave}
-          bind:latest
+          bind:localContent
           bind:autoSave={$autoSave}
           on:save={save}
           on:revert={revert}

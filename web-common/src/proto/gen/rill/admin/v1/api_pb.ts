@@ -8393,6 +8393,11 @@ export class ReportOptions extends Message<ReportOptions> {
   refreshTimeZone = "";
 
   /**
+   * @generated from field: string interval_duration = 13;
+   */
+  intervalDuration = "";
+
+  /**
    * @generated from field: string query_name = 3;
    */
   queryName = "";
@@ -8448,6 +8453,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "refresh_cron", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "refresh_time_zone", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "export_limit", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },

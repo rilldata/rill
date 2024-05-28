@@ -477,7 +477,7 @@ func (u *externalURLs) reportEdit(org, project, report string) string {
 }
 
 func (u *externalURLs) alertOpen(org, project, alert string) string {
-	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert, "open")
 }
 
 func (u *externalURLs) alertEdit(org, project, alert string) string {

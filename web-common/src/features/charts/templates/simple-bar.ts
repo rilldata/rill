@@ -43,7 +43,6 @@ export function buildSimpleBar(
         on: "pointerover",
         clear: "pointerout",
         encodings: ["x"],
-        nearest: true,
       },
     },
   ];

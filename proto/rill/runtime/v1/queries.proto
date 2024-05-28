@@ -326,10 +326,14 @@ message MetricsViewAggregationRequest {
   repeated MetricsViewAggregationSort sort = 5;
   // Optional. Defaults to unbounded
   TimeRange time_range = 12;
+  // Optional, if omitted than the request prepares an aggregation without a comparison
+  TimeRange comparison_time_range = 16;
   google.protobuf.Timestamp time_start = 6; // Deprecated in favor of time_range
   google.protobuf.Timestamp time_end = 7; // Deprecated in favor of time_range
   // Optional. List of dimensions/measures. No pivot is done if ommitted
   repeated string pivot_on = 15;
+  // Optional
+  repeated MetricsViewComparisonMeasureAlias aliases = 18;
   // Optional
   Expression where = 8;
   // Optional
@@ -342,6 +346,7 @@ message MetricsViewAggregationRequest {
   int32 priority = 11;
   // Optional
   MetricsViewFilter filter = 14; // Deprecated. should be removed once UI is moved to use new filters
+  bool exact = 17;
 }
 
 message MetricsViewAggregationResponse {
@@ -369,6 +374,32 @@ message MetricsViewAggregationMeasure {
   // Required if BUILTIN_MEASURE_COUNT_DISTINCT
   repeated google.protobuf.Value builtin_measure_args = 3;
   Expression filter = 4;
+  // Optional
+  oneof compute {
+    MetricsViewAggregationMeasureComputeCount count = 5;
+    MetricsViewAggregationMeasureComputeCountDistinct count_distinct = 6;
+    MetricsViewAggregationMeasureComputeComparisonValue comparison_value = 7;
+    MetricsViewAggregationMeasureComputeComparisonDelta comparison_delta = 8;
+    MetricsViewAggregationMeasureComputeComparisonRatio comparison_ratio = 9;
+  }
+}
+
+message MetricsViewAggregationMeasureComputeCount {}
+
+message MetricsViewAggregationMeasureComputeCountDistinct {
+  string dimension = 1;
+}
+
+message MetricsViewAggregationMeasureComputeComparisonValue {
+  string measure = 1;
+}
+
+message MetricsViewAggregationMeasureComputeComparisonDelta {
+  string measure = 1;
+}
+
+message MetricsViewAggregationMeasureComputeComparisonRatio {
+  string measure = 1;
 }
 
 message MetricsViewAggregationSort {

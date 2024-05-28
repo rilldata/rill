@@ -21,9 +21,11 @@
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
-  import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import {
+    copyToClipboard,
+    isClipboardApiSupported,
+  } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import type {
     V1MetricsViewColumn,
     V1MetricsViewRowsResponseDataItem,
@@ -211,7 +213,7 @@
     hovering = null;
   }
 
-  async function handleMouseDown(
+  function handleMouseDown(
     e: MouseEvent & {
       currentTarget: EventTarget & HTMLTableSectionElement;
     },
@@ -223,10 +225,8 @@
         hovering.value,
         hovering.type,
       );
-      await navigator.clipboard.writeText(exportedValue);
-      eventBus.emit("notification", {
-        message: `copied value "${exportedValue}" to clipboard`,
-      });
+
+      copyToClipboard(exportedValue);
 
       return;
     }
@@ -451,6 +451,7 @@
 
   .table-wrapper {
     @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-white;
+    @apply border-b;
   }
 
   .has-selection tbody {

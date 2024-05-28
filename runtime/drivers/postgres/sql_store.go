@@ -84,7 +84,7 @@ func (r *rowIterator) Close() error {
 	r.rows.Close()
 	r.conn.Release()
 	r.pool.Close()
-	return nil
+	return r.rows.Err()
 }
 
 // Next implements drivers.RowIterator.
@@ -95,7 +95,7 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 			return nil, drivers.ErrIteratorDone
 		}
 		if errors.Is(err, sql.ErrNoRows) {
-			return nil, fmt.Errorf("no results found for the query")
+			return nil, drivers.ErrNoRows
 		}
 		return nil, err
 	}

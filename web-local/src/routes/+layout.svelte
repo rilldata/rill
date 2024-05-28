@@ -2,8 +2,6 @@
   import { RillTheme } from "@rilldata/web-common/layout";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { initializeNodeStoreContexts } from "@rilldata/web-local/lib/application-state-stores/initialize-node-store-contexts";
-  import { beforeNavigate } from "$app/navigation";
-  import { retainFeaturesFlags } from "@rilldata/web-common/features/feature-flags";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import type { Query } from "@tanstack/query-core";
   import { QueryClientProvider } from "@tanstack/svelte-query";
@@ -32,8 +30,6 @@
     query: Query,
   ) => errorEventHandler?.requestErrorEventHandler(error, query);
 
-  beforeNavigate(retainFeaturesFlags);
-
   export let data: LayoutData;
 
   onMount(async () => {
@@ -42,8 +38,6 @@
 
     featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
-    // Disable AI when running e2e tests
-    featureFlags.set(!import.meta.env.VITE_PLAYWRIGHT_TEST, "ai");
 
     appBuildMetaStore.set({
       version: config.version,

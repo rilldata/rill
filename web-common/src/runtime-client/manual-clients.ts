@@ -58,7 +58,7 @@ export function createRuntimeServiceGetChartData(
   // we need this till we figure out why last updated is not changing on charts
   props: V1ComponentSpecResolverProperties | undefined,
 ) {
-  return createQuery(
+  return createQuery<unknown, unknown, Record<string, unknown>[]>(
     [`/v1/instances/${instanceId}/components/${chartName}/data`, props],
     {
       queryFn: ({ signal }) =>

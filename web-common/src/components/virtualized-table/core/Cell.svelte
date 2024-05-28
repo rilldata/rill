@@ -1,6 +1,5 @@
 <script lang="ts">
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -9,9 +8,10 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
   import {
-    createShiftClickAction,
+    copyToClipboard,
     isClipboardApiSupported,
-  } from "@rilldata/web-common/lib/actions/shift-click-action";
+  } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
   import { createEventDispatcher, getContext } from "svelte";
@@ -40,8 +40,6 @@
   $: isTextColumn = type === "VARCHAR" || type === "CODE_STRING";
 
   const dispatch = createEventDispatcher();
-
-  const { shiftClickAction } = createShiftClickAction();
 
   function onFocus() {
     dispatch("inspect", row.index);
@@ -102,10 +100,7 @@
 
   const shiftClick = async () => {
     let exportedValue = formatDataTypeAsDuckDbQueryString(value, type);
-    await navigator.clipboard.writeText(exportedValue);
-    eventBus.emit("notification", {
-      message: `copied value "${exportedValue}" to clipboard`,
-    });
+    copyToClipboard(exportedValue);
     // update this to set the active animation in the tooltip text
   };
 </script>
@@ -151,9 +146,10 @@
           {isDimensionTable ? '' : 'px-4'}
           w-full text-ellipsis overflow-x-hidden whitespace-nowrap
           "
-        on:shift-click={shiftClick}
+        on:click={modified({
+          shift: shiftClick,
+        })}
         style:height="{row.size}px"
-        use:shiftClickAction
       >
         <FormattedDataType
           customStyle={formattedDataTypeStyle}
@@ -167,7 +163,7 @@
   </div>
   <TooltipContent maxWidth="360px" slot="tooltip-content">
     <TooltipTitle>
-      <FormattedDataType dark slot="name" {type} value={tooltipValue} />
+      <FormattedDataType dark slot="name" value={tooltipValue} />
     </TooltipTitle>
     <TooltipShortcutContainer>
       <div>
