@@ -1418,32 +1418,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 	baseLimitClause := ""
 	comparisonLimitClause := ""
 
-	/*
-		Example of the SQL:
-
-		SELECT * from (
-				-- SELECT d1, d2, d3, td1, td2, m1, m2 ... , td1__previous, td2__previous
-				SELECT COALESCE(base."pub",comparison."pub") as "pub",COALESCE(base."dom",comparison."dom") as "dom",base."timestamp" as "timestamp",base."timestamp_year" as "timestamp_year", base."measure_0" AS "measure_0", comparison."measure_0" AS "measure_0__previous", base."measure_0" - comparison."measure_0" AS "measure_0__delta_abs", (base."measure_0" - comparison."measure_0")/comparison."measure_0"::DOUBLE AS "measure_0__delta_rel", base."measure_1" AS "measure_1", base."m1" AS "m1", comparison."m1" AS "m1__previous", base."m1" - comparison."m1" AS "m1__delta_abs", (base."m1" - comparison."m1")/comparison."m1"::DOUBLE AS "m1__delta_rel" , comparison."timestamp" as "timestamp__previous", comparison."timestamp_year" as "timestamp_year__previous" FROM
-					(
-						-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ...
-						SELECT epoch_ms(date_trunc('DAY', "timestamp")::TIMESTAMP)-epoch_ms(date_trunc('DAY', ?)::TIMESTAMP) as t_offset, ("publisher") as "pub", ("domain") as "dom", date_trunc('DAY', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp", date_trunc('YEAR', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp_year", count(*) as "measure_0", avg(bid_price) as "measure_1", avg(bid_price) as "m1" FROM "ad_bids"  WHERE 1=1 AND "timestamp"::TIMESTAMP >= ? AND "timestamp"::TIMESTAMP < ? AND ((("publisher") = (?)) OR (("publisher") = (?))) GROUP BY 1,2,3,4,5
-					) base
-				FULL JOIN
-					(
-						SELECT epoch_ms(date_trunc('DAY', "timestamp")::TIMESTAMP)-epoch_ms(date_trunc('DAY', ?)::TIMESTAMP) as t_offset, ("publisher") as "pub", ("domain") as "dom", date_trunc('DAY', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp", date_trunc('YEAR', "timestamp"::TIMESTAMP)::TIMESTAMP as "timestamp_year", count(*) as "measure_0", avg(bid_price) as "m1" FROM "ad_bids"  WHERE 1=1 AND "timestamp"::TIMESTAMP >= ? AND "timestamp"::TIMESTAMP < ? AND ((("publisher") = (?)) OR (("publisher") = (?))) GROUP BY 1,2,3,4,5
-					) comparison
-				ON
-						base.t_offset = comparison.t_offset AND base."pub" IS NOT DISTINCT FROM comparison."pub" AND base."dom" IS NOT DISTINCT FROM comparison."dom"
-				ORDER BY 4 NULLS LAST, 2 NULLS LAST, 3 NULLS LAST, 5 NULLS LAST, 9 NULLS LAST
-					LIMIT 1374419126128
-				OFFSET
-					0
-			) WHERE 1=1 AND ("measure_1") > (?)
-
-		Example of arguments:
-		[2022-01-01 00:00:00 +0000 UTC 2022-01-01 00:00:00 +0000 UTC 2022-01-03 00:00:00 +0000 UTC Yahoo Google 2022-01-03 00:00:00 +0000 UTC 2022-01-03 00:00:00 +0000 UTC 2022-01-05 00:00:00 +0000 UTC Yahoo Google 0]
-	*/
-
 	var args []any
 	var sql string
 	if dialect != drivers.DialectDruid {
@@ -1831,14 +1805,6 @@ func inFunc(name string, cols []string) string {
 	return strings.Join(cs, ",")
 }
 
-func colsWithPrefix(prefix string, cols []string) []string {
-	cs := make([]string, len(cols))
-	for i, c := range cols {
-		cs[i] = prefix + "." + c
-	}
-	return cs
-}
-
 func anyTimestamps(cols []string) string {
 	cs := make([]string, len(cols))
 	for i, c := range cols {
@@ -1904,7 +1870,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	joinConditions = append(joinConditions, "base.t_offset = comparison.t_offset")
 	var finalComparisonTimeDims []string
 	mvDimsByName := make(map[string]*runtimev1.MetricsViewSpec_DimensionV2, len(mv.Dimensions))
-	var timeDims []string
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -1941,7 +1906,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			alias = d.Alias
 		}
 		timeDimClause := fmt.Sprintf("%s as %s", expr, safeName(alias))
-		timeDims = append(timeDims, alias)
 
 		selectCols = append(selectCols, timeDimClause)
 		colMap[alias] = len(selectCols)
