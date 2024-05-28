@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5/pgtype"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -248,11 +247,7 @@ func (m *uuidMapper) runtimeType() *runtimev1.Type {
 func (m *uuidMapper) value(pgxVal any) (any, error) {
 	switch b := pgxVal.(type) {
 	case [16]byte:
-		id, err := uuid.FromBytes(b[:])
-		if err != nil {
-			return nil, err
-		}
-		return id.String(), nil
+		return b, nil
 	default:
 		return nil, fmt.Errorf("uuidMapper: unsupported type %v", b)
 	}
