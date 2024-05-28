@@ -283,7 +283,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	})
 }
 
-func (q *MetricsViewAggregation) executeComparisonWithMeasureFilter(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity, cfg drivers.InstanceConfig) error {
+func (q *MetricsViewAggregation) executeComparisonWithMeasureFilter(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity) error {
 	sqlString, args, err := q.buildMeasureFilterComparisonAggregationSQL(ctx, olap, priority, mv, dialect, security, false)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -303,82 +303,6 @@ func (q *MetricsViewAggregation) executeComparisonWithMeasureFilter(ctx context.
 	}
 
 	return fmt.Errorf("pivot unsupported for the measure filter")
-
-	// if olap.Dialect() == drivers.DialectDuckDB {
-	// 	return olap.WithConnection(ctx, priority, false, false, func(ctx context.Context, ensuredCtx context.Context, conn *databasesql.Conn) error {
-	// 		temporaryTableName := tempName("_for_pivot_")
-
-	// 		err := olap.Exec(ctx, &drivers.Statement{
-	// 			Query:    fmt.Sprintf("CREATE TEMPORARY TABLE %[1]s AS %[2]s", temporaryTableName, sqlString),
-	// 			Args:     args,
-	// 			Priority: priority,
-	// 		})
-	// 		if err != nil {
-	// 			return err
-	// 		}
-
-	// 		res, err := olap.Execute(ctx, &drivers.Statement{ // a separate query instead of the multi-statement query due to a DuckDB bug
-	// 			Query:    fmt.Sprintf("SELECT COUNT(*) FROM %[1]s", temporaryTableName),
-	// 			Priority: priority,
-	// 		})
-	// 		if err != nil {
-	// 			return err
-	// 		}
-
-	// 		count := 0
-	// 		if res.Next() {
-	// 			err := res.Scan(&count)
-	// 			if err != nil {
-	// 				res.Close()
-	// 				return err
-	// 			}
-
-	// 			if count > int(cfg.PivotCellLimit)/q.cols() {
-	// 				res.Close()
-	// 				return fmt.Errorf("PIVOT cells count exceeded %d", cfg.PivotCellLimit)
-	// 			}
-	// 		}
-	// 		res.Close()
-
-	// 		defer func() {
-	// 			_ = olap.Exec(ensuredCtx, &drivers.Statement{
-	// 				Query: `DROP TABLE "` + temporaryTableName + `"`,
-	// 			})
-	// 		}()
-
-	// 		schema, data, err := olapQuery(ctx, olap, int(q.Priority), q.createComparisonPivotSQL(temporaryTableName, mv), nil)
-	// 		if err != nil {
-	// 			return err
-	// 		}
-
-	// 		if q.Limit != nil && *q.Limit > 0 && int64(len(data)) > *q.Limit {
-	// 			return fmt.Errorf("Limit exceeded %d", *q.Limit)
-	// 		}
-
-	// 		q.Result = &runtimev1.MetricsViewAggregationResponse{
-	// 			Schema: schema,
-	// 			Data:   data,
-	// 		}
-
-	// 		return nil
-	// 	})
-	// }
-
-	// rows, err := olap.Execute(ctx, &drivers.Statement{
-	// 	Query:            sqlString,
-	// 	Args:             args,
-	// 	Priority:         priority,
-	// 	ExecutionTimeout: defaultExecutionTimeout,
-	// })
-	// if err != nil {
-	// 	return nil
-	// }
-	// defer rows.Close()
-
-	// return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit, func(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
-	// 	return q.createComparisonPivotSQL(temporaryTableName, mv)
-	// })
-
 }
 
 func (q *MetricsViewAggregation) executeComparisonAggregation(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity, cfg drivers.InstanceConfig) error {
