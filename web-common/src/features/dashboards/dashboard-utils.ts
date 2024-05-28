@@ -11,9 +11,13 @@ import { getQuerySortType } from "./leaderboard/leaderboard-utils";
 import { SortType } from "./proto-state/derived-types";
 
 export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
-  return (
-    measure?.expression.toLowerCase()?.includes("count(") ||
-    measure?.expression?.toLowerCase()?.includes("sum(")
+  return !!(
+    measure?.expression?.toLowerCase()?.includes("count(") ||
+    measure?.expression?.toLowerCase()?.includes("sum(") ||
+    measure.expression
+      ?.toLowerCase()
+      ?.includes("approx_count_distinct_ds_hll(") ||
+    measure.expression?.toLowerCase()?.includes("approx_count_distinct(")
   );
 }
 
