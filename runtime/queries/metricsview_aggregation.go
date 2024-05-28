@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"time"
 
@@ -1311,7 +1312,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			outerClause = s.Name
 			subQueryClause = ColumnName(m)
 		} else {
-			return "", nil, fmt.Errorf("no dimension or measure '%s' found for sorting", s.Name)
+			return "", nil, fmt.Errorf("no selected dimension or measure '%s' found for sorting", s.Name)
 		}
 
 		var ending string
@@ -1457,7 +1458,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		sql = fmt.Sprintf(`
 				SELECT * from (
 					-- SELECT d1, d2, d3, td1, td2, m1, m2 ... , td1__previous, td2__previous
-					SELECT %[2]s, %[9]s %[18]s FROM 
+					SELECT %[2]s %[18]s FROM 
 						(
 							-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ...
 							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[10]s %[12]s 
@@ -1474,84 +1475,87 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 						%[8]d
 				) WHERE 1=1 AND %[15]s 
 			`,
-			baseSelectClause,                      // 1
-			strings.Join(finalDims, ","),          // 2
-			escapeMetricsViewTable(dialect, mv),   // 3
-			baseWhereClause,                       // 4
-			comparisonWhereClause,                 // 5
-			orderByClause,                         // 6
-			limitClause,                           // 7
-			q.Offset,                              // 8
-			finalSelectClause,                     // 9
-			strings.Join(innerGroupCols, ","),     // 10
-			joinType,                              // 11
-			baseLimitClause,                       // 12
-			comparisonLimitClause,                 // 13
-			strings.Join(unnestClauses, ""),       // 14
-			havingClause,                          // 15
-			comparisonSelectClause,                // 16
-			strings.Join(joinConditions, " AND "), // 17
-			finalTimeDimsClause,                   // 18
+			baseSelectClause, // 1
+			strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ","), // 2
+			escapeMetricsViewTable(dialect, mv),                                      // 3
+			baseWhereClause,                                                          // 4
+			comparisonWhereClause,                                                    // 5
+			orderByClause,                                                            // 6
+			limitClause,                                                              // 7
+			q.Offset,                                                                 // 8
+			finalSelectClause,                                                        // 9
+			strings.Join(innerGroupCols, ","),                                        // 10
+			joinType,                                                                 // 11
+			baseLimitClause,                                                          // 12
+			comparisonLimitClause,                                                    // 13
+			strings.Join(unnestClauses, ""),                                          // 14
+			havingClause,                                                             // 15
+			comparisonSelectClause,                                                   // 16
+			strings.Join(joinConditions, " AND "),                                    // 17
+			finalTimeDimsClause,                                                      // 18
 		)
 	} else {
-		// an additional request for Druid to prevent full scan
-		if !comparisonSort {
+		if !comparisonSort || len(q.Dimensions) == 0 { // no dimensions means a single row (totals) - no sorting is required
 			// SELECT d1, d2, d3 ... GROUP BY 1, 2, 3 ...
-			innerGroupCols := make([]string, 0, len(q.Dimensions))
-			for i := range q.Dimensions {
-				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
-			}
-			nonTimeCols := make([]string, 0, len(selectCols)) // avoid group by time cols
-			for i, s := range selectCols[1:] {                // skip t_offset
-				if i >= len(q.Dimensions) {
-					nonTimeCols = append(nonTimeCols, s)
-				} else {
-					if q.Dimensions[i].TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-						nonTimeCols = append(nonTimeCols, "1")
-					} else {
-						nonTimeCols = append(nonTimeCols, s)
-					}
-				}
-			}
-			sql = fmt.Sprintf("SELECT 1, %[1]s FROM %[2]s %[3]s WHERE %[4]s GROUP BY %[5]s %[6]s",
-				strings.Join(nonTimeCols, ","),      // 1
-				escapeMetricsViewTable(dialect, mv), // 2
-				strings.Join(unnestClauses, ""),     // 3
-				baseWhereClause,                     // 4
-				strings.Join(innerGroupCols, ","),   // 5
-				baseLimitClause,                     // 6
-			)
-
-			var druidArgs []any
-			druidArgs = append(druidArgs, selectArgs...)
-			druidArgs = append(druidArgs, baseTimeRangeArgs...)
-			druidArgs = append(druidArgs, whereClauseArgs...)
-
-			_, result, err := olapQuery(ctx, olap, priority, sql, druidArgs)
-			if err != nil {
-				return "", nil, err
-			}
-
-			// without this extra where condition, the join will be a full scan
+			var innerGroupCols []string
 			var whereDimConditions []string
-			for _, row := range result {
-				var dimConditions []string
-				for _, dim := range q.Dimensions {
-					if dim.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
-						field := row.Fields[dim.Name]
+			if len(q.Dimensions) > 0 { // an additional request for Druid to prevent full scan
+				innerGroupCols = make([]string, 0, len(q.Dimensions))
+				for i := range q.Dimensions {
+					innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
+				}
 
-						// Druid doesn't resolve aliases in where clause
-						mvDim := mvDimsByName[dim.Name]
-
-						_, ok := field.GetKind().(*structpb.Value_NullValue)
-						if ok {
-							dimConditions = append(dimConditions, fmt.Sprintf("%[1]s is null", safeName(mvDim.Column)))
+				nonTimeCols := make([]string, 0, len(selectCols)) // avoid group by time cols
+				for i, s := range selectCols[1:] {                // skip t_offset
+					if i >= len(q.Dimensions) {
+						nonTimeCols = append(nonTimeCols, s)
+					} else {
+						if q.Dimensions[i].TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+							nonTimeCols = append(nonTimeCols, "1")
 						} else {
-							dimConditions = append(dimConditions, fmt.Sprintf("%[1]s = '%[2]s'", safeName(mvDim.Column), field.AsInterface()))
+							nonTimeCols = append(nonTimeCols, s)
 						}
 					}
 				}
-				whereDimConditions = append(whereDimConditions, strings.Join(dimConditions, " AND "))
+				sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s WHERE %[4]s GROUP BY %[5]s %[6]s",
+					strings.Join(slices.Concat([]string{"1"}, nonTimeCols), ","), // 1
+					escapeMetricsViewTable(dialect, mv),                          // 2
+					strings.Join(unnestClauses, ""),                              // 3
+					baseWhereClause,                                              // 4
+					strings.Join(innerGroupCols, ","),                            // 5
+					baseLimitClause,                                              // 6
+				)
+
+				var druidArgs []any
+				druidArgs = append(druidArgs, selectArgs...)
+				druidArgs = append(druidArgs, baseTimeRangeArgs...)
+				druidArgs = append(druidArgs, whereClauseArgs...)
+
+				_, result, err := olapQuery(ctx, olap, priority, sql, druidArgs)
+				if err != nil {
+					return "", nil, err
+				}
+
+				// without this extra where condition, the join will be a full scan
+				for _, row := range result {
+					var dimConditions []string
+					for _, dim := range q.Dimensions {
+						if dim.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+							field := row.Fields[dim.Name]
+
+							// Druid doesn't resolve aliases in where clause
+							mvDim := mvDimsByName[dim.Name]
+
+							_, ok := field.GetKind().(*structpb.Value_NullValue)
+							if ok {
+								dimConditions = append(dimConditions, fmt.Sprintf("%[1]s is null", safeName(mvDim.Column)))
+							} else {
+								dimConditions = append(dimConditions, fmt.Sprintf("%[1]s = '%[2]s'", safeName(mvDim.Column), field.AsInterface()))
+							}
+						}
+					}
+					whereDimConditions = append(whereDimConditions, strings.Join(dimConditions, " AND "))
+				}
 			}
 
 			innerGroupCols = make([]string, 0, len(q.Dimensions)+1)
@@ -1583,48 +1587,55 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				finalTimeDimsClause = fmt.Sprintf(", %s", strings.Join(finalComparisonTimeDims, ", "))
 			}
 
+			whereDimClause := ""
+			outterGroupClause := ""
+			if len(whereDimConditions) > 0 {
+				whereDimClause = fmt.Sprintf(" AND (%s) ", strings.Join(whereDimConditions, " OR "))
+				outterGroupClause = " GROUP BY " + strings.Join(outterGroupCols, ",")
+			}
+
 			sql = fmt.Sprintf(`
 				SELECT * from (
 					-- SELECT d1, d2, d3, td1, td2, m1, m2 ... 
-					SELECT %[2]s, %[9]s %[20]s FROM 
+					SELECT %[2]s %[20]s FROM 
 						(
 							-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ... 
 							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[10]s %[12]s 
 						) base
 					LEFT JOIN
 						(
-							SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s AND (%[18]s) GROUP BY %[10]s %[13]s 
+							SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s %[18]s GROUP BY %[10]s %[13]s 
 						) comparison
 					ON
 					-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
 							%[17]s
-					GROUP BY %[19]s
+					%[19]s
 					%[6]s
 					%[7]s
 					OFFSET
 						%[8]d
 				) WHERE 1=1 AND %[15]s 
 			`,
-				baseSelectClause,                         // 1
-				strings.Join(finalDims, ","),             // 2
-				escapeMetricsViewTable(dialect, mv),      // 3
-				baseWhereClause,                          // 4
-				comparisonWhereClause,                    // 5
-				orderByClause,                            // 6
-				limitClause,                              // 7
-				q.Offset,                                 // 8
-				finalSelectClause,                        // 9
-				strings.Join(innerGroupCols, ","),        // 10
-				joinType,                                 // 11
-				baseLimitClause,                          // 12
-				comparisonLimitClause,                    // 13
-				strings.Join(unnestClauses, ""),          // 14
-				havingClause,                             // 15
-				comparisonSelectClause,                   // 16
-				strings.Join(joinConditions, " AND "),    // 17
-				strings.Join(whereDimConditions, " OR "), // 18
-				strings.Join(outterGroupCols, ","),       // 19
-				finalTimeDimsClause,                      // 20
+				baseSelectClause, // 1
+				strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ","), // 2
+				escapeMetricsViewTable(dialect, mv),                                      // 3
+				baseWhereClause,                                                          // 4
+				comparisonWhereClause,                                                    // 5
+				orderByClause,                                                            // 6
+				limitClause,                                                              // 7
+				q.Offset,                                                                 // 8
+				finalSelectClause,                                                        // 9
+				strings.Join(innerGroupCols, ","),                                        // 10
+				joinType,                                                                 // 11
+				baseLimitClause,                                                          // 12
+				comparisonLimitClause,                                                    // 13
+				strings.Join(unnestClauses, ""),                                          // 14
+				havingClause,                                                             // 15
+				comparisonSelectClause,                                                   // 16
+				strings.Join(joinConditions, " AND "),                                    // 17
+				whereDimClause,                                                           // 18
+				outterGroupClause,                                                        // 19
+				finalTimeDimsClause,                                                      // 20
 			)
 		} else {
 			limit := 0
@@ -1656,13 +1667,13 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 					}
 				}
 			}
-			sql = fmt.Sprintf("SELECT 1, %[1]s FROM %[2]s %[3]s WHERE %[4]s GROUP BY %[5]s %[6]s",
-				strings.Join(nonTimeCols, ","),      // 1
-				escapeMetricsViewTable(dialect, mv), // 2
-				strings.Join(unnestClauses, ""),     // 3
-				comparisonWhereClause,               // 4
-				strings.Join(innerGroupCols, ","),   // 5
-				comparisonLimitClause,               // 6
+			sql = fmt.Sprintf("SELECT %[1]s FROM %[2]s %[3]s WHERE %[4]s GROUP BY %[5]s %[6]s",
+				strings.Join(slices.Concat([]string{"1"}, nonTimeCols), ","), // 1
+				escapeMetricsViewTable(dialect, mv),                          // 2
+				strings.Join(unnestClauses, ""),                              // 3
+				comparisonWhereClause,                                        // 4
+				strings.Join(innerGroupCols, ","),                            // 5
+				comparisonLimitClause,                                        // 6
 			)
 
 			var druidArgs []any
@@ -1745,26 +1756,26 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 						%[8]d
 				) WHERE 1=1 AND %[15]s 
 			`,
-				baseSelectClause,                         // 1
-				strings.Join(finalDims, ","),             // 2
-				escapeMetricsViewTable(dialect, mv),      // 3
-				baseWhereClause,                          // 4
-				comparisonWhereClause,                    // 5
-				orderByClause,                            // 6
-				limitClause,                              // 7
-				q.Offset,                                 // 8
-				finalSelectClause,                        // 9
-				strings.Join(innerGroupCols, ","),        // 10
-				joinType,                                 // 11
-				baseLimitClause,                          // 12
-				comparisonLimitClause,                    // 13
-				strings.Join(unnestClauses, ""),          // 14
-				havingClause,                             // 15
-				comparisonSelectClause,                   // 16
-				strings.Join(joinConditions, " AND "),    // 17
-				strings.Join(whereDimConditions, " OR "), // 18
-				strings.Join(outterGroupCols, ","),       // 19
-				finalTimeDimsClause,                      // 20
+				baseSelectClause, // 1
+				strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ","), // 2
+				escapeMetricsViewTable(dialect, mv),                                      // 3
+				baseWhereClause,                                                          // 4
+				comparisonWhereClause,                                                    // 5
+				orderByClause,                                                            // 6
+				limitClause,                                                              // 7
+				q.Offset,                                                                 // 8
+				finalSelectClause,                                                        // 9
+				strings.Join(innerGroupCols, ","),                                        // 10
+				joinType,                                                                 // 11
+				baseLimitClause,                                                          // 12
+				comparisonLimitClause,                                                    // 13
+				strings.Join(unnestClauses, ""),                                          // 14
+				havingClause,                                                             // 15
+				comparisonSelectClause,                                                   // 16
+				strings.Join(joinConditions, " AND "),                                    // 17
+				strings.Join(whereDimConditions, " OR "),                                 // 18
+				strings.Join(outterGroupCols, ","),                                       // 19
+				finalTimeDimsClause,                                                      // 20
 			)
 		}
 	}
