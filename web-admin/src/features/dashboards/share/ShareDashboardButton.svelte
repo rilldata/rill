@@ -2,16 +2,7 @@
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-
-  async function handleCopyLink() {
-    // Copy the current URL to the clipboard
-    await navigator.clipboard.writeText(window.location.href);
-
-    eventBus.emit("notification", {
-      message: "Link copied to clipboard",
-    });
-  }
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 </script>
 
 <DropdownMenu.Root>
@@ -21,7 +12,7 @@
   <DropdownMenu.Content align="end">
     <DropdownMenu.Item
       on:click={() => {
-        handleCopyLink();
+        copyToClipboard(window.location.href, "Link copied to clipboard");
       }}
     >
       <Link size="16px" className="text-gray-900 mr-2 h-4 w-4" />
