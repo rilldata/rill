@@ -46,6 +46,7 @@
     // for percentages in the dimension table,
     // but this whole thing is a mess and needs to be cleaned up.
 
+    diffIsNegative = value < 0;
     intValue = Math.round(100 * value).toString();
     approxSign = Math.abs(value) < 0.005 ? "~" : "";
     negSign = "";

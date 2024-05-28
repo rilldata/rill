@@ -65,7 +65,10 @@
       placeholder="Select a dimension"
     />
   </FormSection>
-  <FormSection title="Data preview">
+  <FormSection
+    title="Data preview"
+    description="Here’s a look at the data you’ve selected above."
+  >
     <DataPreview formValues={$form} />
   </FormSection>
 </div>

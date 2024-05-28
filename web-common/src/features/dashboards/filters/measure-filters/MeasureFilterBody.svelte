@@ -9,6 +9,7 @@
   import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
     AllMeasureFilterOperationOptions,
+    AllMeasureFilterTypeOptions,
     MeasureFilterOperation,
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 
@@ -46,6 +47,10 @@
         break;
     }
   }
+
+  $: typeOption = AllMeasureFilterTypeOptions.find(
+    (o) => o.value === filter?.type,
+  );
 </script>
 
 <div class="flex gap-x-2">
@@ -57,6 +62,9 @@
     {#if dimensionName}
       <!-- span needed to make sure the space before the `for` is not removed by prettier -->
       <span> for {dimensionName}</span>
+    {/if}
+    {#if typeOption?.shortLabel}
+      <span>{typeOption.shortLabel}</span>
     {/if}
   </div>
   <div class="flex flex-wrap flex-row items-baseline gap-y-1">

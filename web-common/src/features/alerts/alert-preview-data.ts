@@ -102,6 +102,8 @@ function getSchemaEntryForField(
           name: field.name as string,
           type: field.type?.code ?? TypeCode.CODE_STRING,
           label: dimension.label ?? field.name,
+          enableResize: false,
+          enableSorting: false,
         };
       }
     }
@@ -132,6 +134,8 @@ function getSchemaEntryForField(
         type,
         label,
         format,
+        enableResize: false,
+        enableSorting: false,
       };
     }
   }
@@ -140,5 +144,7 @@ function getSchemaEntryForField(
     name: field.name as string,
     type: field.type?.code ?? TypeCode.CODE_STRING,
     label: field.name,
+    enableResize: false,
+    enableSorting: false,
   };
 }

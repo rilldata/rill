@@ -88,9 +88,16 @@
         </ProjectAccessControls>
       </div>
       <div class="flex gap-x-2 items-center">
-        <h1 class="text-gray-700 text-lg font-bold">
-          {alertSpec.title}
-        </h1>
+        <div class="flex flex-col">
+          <h1 class="text-gray-700 text-lg font-bold">
+            {alertSpec.title}
+          </h1>
+          {#if alertSpec.description}
+            <h3 class="text-gray-500 text-base font-normal">
+              {alertSpec.description}
+            </h3>
+          {/if}
+        </div>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
           <EditAlert {alertSpec} metricsViewName={$dashboardName.data} />

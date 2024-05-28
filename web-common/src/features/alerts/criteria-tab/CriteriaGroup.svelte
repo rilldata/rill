@@ -25,8 +25,7 @@
   <div class="flex flex-col gap-2">
     {#each $form["criteria"] as _, index}
       {#if index > 0}
-        <div class="flex flex-row items-center">
-          <div class="w-full text-lg"></div>
+        <div class="flex flex-row items-center justify-center">
           <div class="mr-2">
             <Select
               bind:value={$form["criteriaOperation"]}
