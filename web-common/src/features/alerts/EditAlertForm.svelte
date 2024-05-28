@@ -53,6 +53,7 @@
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: alertSpec.title as string,
+      description: alertSpec.description as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertNotification(alertSpec),
