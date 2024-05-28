@@ -441,6 +441,12 @@ export class FileArtifacts {
       ),
     );
   }
+
+  public hasUnsaved() {
+    return Object.values(this.artifacts).some((artifact) =>
+      get(artifact.hasUnsavedChanges),
+    );
+  }
 }
 
 export const fileArtifacts = new FileArtifacts();

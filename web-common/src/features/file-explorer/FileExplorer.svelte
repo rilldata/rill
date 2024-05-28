@@ -149,6 +149,14 @@
 </script>
 
 <svelte:window
+  on:beforeunload={(event) => {
+    if (fileArtifacts.hasUnsaved()) {
+      event.preventDefault();
+      return confirm(
+        "Are you sure you want to leave? Unsaved changes will be lost.",
+      );
+    }
+  }}
   on:mousemove={(e) => navEntryDragDropStore.onMouseMove(e)}
   on:mouseup={(e) => navEntryDragDropStore.onMouseUp(e, handleDropSuccess)}
   on:keydown={saveAll}
