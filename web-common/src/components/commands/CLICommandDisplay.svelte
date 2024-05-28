@@ -23,8 +23,7 @@
   <div
     role="button"
     tabindex="0"
-    class="p-1 border border-gray-200 rounded-br-sm rounded-tr-sm bg-gray-50
-    {copied ? '' : 'cursor-pointer'}"
+    class="p-1 border border-gray-200 rounded-br-sm rounded-tr-sm bg-gray-50"
     class:cursor-pointer={copied}
     on:click={copyCommand}
     on:keydown={copyCommand}
