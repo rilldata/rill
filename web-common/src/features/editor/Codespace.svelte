@@ -25,7 +25,6 @@
   let parent: HTMLElement;
   let showWarning = false;
   let saving = false;
-
   let unsubscribers: Array<() => void> = [];
 
   $: ({

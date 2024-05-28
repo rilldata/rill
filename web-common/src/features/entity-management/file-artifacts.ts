@@ -433,6 +433,14 @@ export class FileArtifacts {
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");
   }
+
+  public async saveAll() {
+    await Promise.all(
+      Object.entries(this.artifacts).map(([_, artifact]) =>
+        artifact.saveLocalContent(),
+      ),
+    );
+  }
 }
 
 export const fileArtifacts = new FileArtifacts();
