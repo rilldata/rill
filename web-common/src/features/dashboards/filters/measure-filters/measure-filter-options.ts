@@ -40,6 +40,7 @@ export const MeasureFilterBaseTypeOptions = [
     value: MeasureFilterType.Value,
     label: "value",
     shortLabel: "",
+    description: "value",
   },
 ];
 export const MeasureFilterComparisonTypeOptions = [
@@ -47,21 +48,18 @@ export const MeasureFilterComparisonTypeOptions = [
   {
     value: MeasureFilterType.PercentChange,
     label: "% change from",
-    shortLabel: "% change from",
+    shortLabel: "% change",
+    description: "% change",
   },
   {
     value: MeasureFilterType.AbsoluteChange,
     label: "change from",
-    shortLabel: "change from",
+    shortLabel: "change",
+    description: "change",
   },
 ];
 export const AllMeasureFilterTypeOptions = [
   ...MeasureFilterComparisonTypeOptions,
-  {
-    value: MeasureFilterType.AbsoluteChange,
-    label: "% change from",
-    shortLabel: "% change from",
-  },
   // TODO
   // {
   //   value: MeasureFilterType.PercentOfTotal,

@@ -2042,6 +2042,11 @@ export class AlertSpec extends Message<AlertSpec> {
   title = "";
 
   /**
+   * @generated from field: string description = 22;
+   */
+  description = "";
+
+  /**
    * @generated from field: rill.runtime.v1.Schedule refresh_schedule = 3;
    */
   refreshSchedule?: Schedule;
@@ -2151,6 +2156,7 @@ export class AlertSpec extends Message<AlertSpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 2, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 22, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "refresh_schedule", kind: "message", T: Schedule },
     { no: 4, name: "watermark_inherit", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 5, name: "intervals_iso_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },

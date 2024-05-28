@@ -4525,6 +4525,8 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for Title
 
+	// no validation rules for Description
+
 	if all {
 		switch v := interface{}(m.GetRefreshSchedule()).(type) {
 		case interface{ ValidateAll() error }:

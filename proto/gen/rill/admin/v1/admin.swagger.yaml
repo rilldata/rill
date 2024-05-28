@@ -2320,6 +2320,8 @@ definitions:
     properties:
       title:
         type: string
+      description:
+        type: string
       intervalDuration:
         type: string
       queryName:

@@ -1,6 +1,5 @@
 import {
   ComparisonDeltaAbsoluteSuffix,
-  ComparisonDeltaPreviousSuffix,
   ComparisonDeltaRelativeSuffix,
   mapMeasureFilterToExpr,
   MeasureFilterEntry,
@@ -16,6 +15,7 @@ import * as yup from "yup";
 
 export type AlertFormValues = {
   name: string;
+  description: string;
   measure: string;
   splitByDimension: string;
   criteria: MeasureFilterEntry[];
@@ -115,9 +115,9 @@ export const alertFormValidationSchema = yup.object({
   ),
 });
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
-  ["name", "measure"],
+  ["measure"],
   ["criteria", "criteriaOperation"],
-  ["snooze", "slackUsers", "emailRecipients"],
+  ["name", "snooze", "slackUsers", "emailRecipients"],
 ];
 
 export function checkIsTabValid(
@@ -129,8 +129,8 @@ export function checkIsTabValid(
   let hasErrors: boolean;
 
   if (tabIndex === 0) {
-    hasRequiredFields = formValues.name !== "" && formValues.measure !== "";
-    hasErrors = !!errors.name && !!errors.measure;
+    hasRequiredFields = formValues.measure !== "";
+    hasErrors = !!errors.measure;
   } else if (tabIndex === 1) {
     hasRequiredFields = true;
     formValues.criteria.forEach((criteria) => {
@@ -146,7 +146,9 @@ export function checkIsTabValid(
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =
-      formValues.snooze !== "" && formValues.emailRecipients[0].email !== "";
+      formValues.name !== "" &&
+      formValues.snooze !== "" &&
+      formValues.emailRecipients[0].email !== "";
 
     // There's a bug in how `svelte-forms-lib` types the `$errors` store for arrays.
     // See: https://github.com/tjinauyeung/svelte-forms-lib/issues/154#issuecomment-1087331250
@@ -154,7 +156,7 @@ export function checkIsTabValid(
       email: string;
     }[];
 
-    hasErrors = !!errors.snooze || !!recipientErrors[0].email;
+    hasErrors = !!errors.name || !!errors.snooze || !!recipientErrors[0].email;
   } else {
     throw new Error(`Unexpected tabIndex: ${tabIndex}`);
   }

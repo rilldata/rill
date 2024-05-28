@@ -1,7 +1,12 @@
 <script lang="ts">
   import { DialogTitle } from "@rilldata/web-common/components/dialog-v2";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
-  import { getTouched } from "@rilldata/web-common/features/alerts/utils";
+  import {
+    getTitleAndDescription,
+    getTouched,
+  } from "@rilldata/web-common/features/alerts/utils";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { X } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import type { createForm } from "svelte-forms-lib";
@@ -38,6 +43,9 @@
 
   let currentTabIndex = 0;
 
+  $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
+  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
+
   function handleCancel() {
     if (getTouched($touched)) {
       dispatch("cancel");
@@ -56,6 +64,19 @@
       return;
     }
     currentTabIndex += 1;
+
+    if (
+      isEditForm ||
+      currentTabIndex !== 2 ||
+      $touched.name ||
+      $touched.description
+    )
+      return;
+    // if the user came to the delivery tab and name/description was not changed then auto generate it
+    const titleAndDesc = getTitleAndDescription($form, $metricsView.data ?? {});
+    if (!titleAndDesc) return;
+    $form.name = titleAndDesc.title;
+    $form.description = titleAndDesc.description;
   }
 </script>
 

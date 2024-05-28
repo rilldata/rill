@@ -2897,6 +2897,8 @@ definitions:
         type: boolean
       title:
         type: string
+      description:
+        type: string
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       watermarkInherit:
