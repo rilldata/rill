@@ -95,15 +95,7 @@ export class FileArtifact {
         this.getResource(queryClient, instanceId),
       ],
       ([name, projectParser, resource]) => {
-        if (
-          projectParser.isFetching ||
-          resource.isFetching ||
-          // retain old state while reconciling
-          resource.data?.meta?.reconcileStatus ===
-            V1ReconcileStatus.RECONCILE_STATUS_RUNNING ||
-          resource.data?.meta?.reconcileStatus ===
-            V1ReconcileStatus.RECONCILE_STATUS_PENDING
-        ) {
+        if (projectParser.isFetching || resource.isFetching) {
           // to avoid flicker during a re-fetch, retain the previous value
           return get(store);
         }
