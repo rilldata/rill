@@ -159,7 +159,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		}
 
 		if filterCount == 1 {
-			return q.executeComparisonWithMeasureFilter(ctx, olap, priority, mv, olap.Dialect(), security, cfg)
+			return q.executeComparisonWithMeasureFilter(ctx, olap, priority, mv, olap.Dialect(), security)
 		}
 
 		return q.executeComparisonAggregation(ctx, olap, priority, mv, olap.Dialect(), security, cfg)
