@@ -107,7 +107,7 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		return nil, err
 	}
 
-	stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1"
+	stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC'"
 	if c.config.EnableCache {
 		stmt.Query += ", use_query_cache = 1"
 	}

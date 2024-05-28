@@ -84,7 +84,7 @@ func (r *rowIterator) Close() error {
 	r.rows.Close()
 	r.conn.Release()
 	r.pool.Close()
-	return nil
+	return r.rows.Err()
 }
 
 // Next implements drivers.RowIterator.

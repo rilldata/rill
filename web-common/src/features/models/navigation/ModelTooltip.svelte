@@ -3,7 +3,7 @@
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import { isClipboardApiSupported } from "../../../lib/actions/shift-click-action";
+  import { isClipboardApiSupported } from "../../../lib/actions/copy-to-clipboard";
 
   export let modelName;
 </script>

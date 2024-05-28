@@ -3594,6 +3594,8 @@ definitions:
     properties:
       component:
         type: string
+      definedInDashboard:
+        type: boolean
       x:
         type: integer
         format: int64
