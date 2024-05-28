@@ -6,38 +6,54 @@
             "additionalProperties": false,
             "properties": {
                 "name": {
-                    "const": "line_chart"
+                    "const": "line"
                 },
                 "x": {
                     "type": "string"
                 },
                 "y": {
                     "type": "string"
+                },
+                "x_label": {
+                    "type": "string"
+                },
+                "y_label": {
+                    "type": "string"
                 }
             },
             "required": [
                 "name",
                 "x",
-                "y"
+                "y",
+                "x_label",
+                "y_label"
             ]
         },
         {
             "additionalProperties": false,
             "properties": {
                 "name": {
-                    "const": "bar_chart"
+                    "const": "bar"
                 },
                 "x": {
                     "type": "string"
                 },
                 "y": {
                     "type": "string"
+                },
+                "x_label": {
+                    "type": "string"
+                },
+                "y_label": {
+                    "type": "string"
                 }
             },
             "required": [
                 "name",
                 "x",
-                "y"
+                "y",
+                "x_label",
+                "y_label"
             ]
         }
     ]    

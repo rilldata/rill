@@ -1,14 +1,14 @@
 <script lang="ts" context="module">
-  import { onMount } from "svelte";
-  import type ResizeHandle from "./ResizeHandle.svelte";
-  import type { ComponentType } from "svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import Chart from "./Chart.svelte";
-  import Markdown from "./Markdown.svelte";
+  import type { ComponentType } from "svelte";
+  import { onMount } from "svelte";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
+  import Chart from "./Chart.svelte";
+  import Markdown from "./Markdown.svelte";
+  import type ResizeHandle from "./ResizeHandle.svelte";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -17,6 +17,8 @@
 </script>
 
 <script lang="ts">
+  import TemplateRenderer from "@rilldata/web-common/features/charts/templates/TemplateRenderer.svelte";
+
   export let i: number;
   export let builders: Builder[] = [];
   export let left: number;
@@ -111,6 +113,13 @@
         />
       {:else if renderer === "markdown" && rendererProperties?.content}
         <Markdown markdown={rendererProperties.content} {fontSize} />
+      {:else if renderer === "template" && resolverProperties && rendererProperties}
+        <TemplateRenderer
+          {chartView}
+          {rendererProperties}
+          {resolverProperties}
+          {componentName}
+        />
       {/if}
     </div>
   </div>
