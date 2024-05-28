@@ -74,7 +74,7 @@
       },
     );
 
-    const unsub = onLocalContentChange((content) => {
+    const unsubscribeLocalContent = onLocalContentChange((content) => {
       if (content === null && $remoteContent !== null) {
         updateEditorContent($remoteContent);
       } else if (
@@ -85,14 +85,16 @@
       )
         updateEditorContent(content);
     });
-    unsubscribers.push(unsub);
 
     const unsubscribeHighlighter = eventBus.on("highlightSelection", (refs) => {
       if (editor) underlineSelection(editor, refs);
     });
 
-    unsubscribers.push(unsubscribeHighlighter);
-    unsubscribers.push(unsubscribeRemoteContent);
+    unsubscribers.push(
+      unsubscribeRemoteContent,
+      unsubscribeLocalContent,
+      unsubscribeHighlighter,
+    );
   });
 
   onDestroy(() => {

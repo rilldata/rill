@@ -315,9 +315,6 @@ export class FileArtifacts {
   }
 
   public async fileUpdated(filePath: string) {
-    if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
-      return;
-
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
