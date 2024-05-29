@@ -359,6 +359,7 @@ function fromPivotProto(
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,
+    enableComparison: dashboard.pivotEnableComparison ?? true,
     rowJoinType:
       FromProtoPivotRowJoinTypeMap[
         dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST
