@@ -32,8 +32,12 @@ class EventBus {
 
 export const eventBus = new EventBus();
 
-interface Events {
+export interface Events {
   notification: NotificationMessage;
+  "shift-click": null;
+  "command-click": null;
+  click: null;
+  "shift-command-click": null;
 }
 
 type T = keyof Events;
