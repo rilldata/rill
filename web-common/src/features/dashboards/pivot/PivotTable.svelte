@@ -328,7 +328,7 @@
             <td
               class="ui-copy-number"
               class:border-r={i % measureCount === 0 && i}
-              class:totals-column={i <= measureCount}
+              class:totals-column={i > 0 && i <= measureCount}
             >
               <div class="cell">
                 {#if result?.component && result?.props}
