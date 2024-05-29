@@ -99,6 +99,9 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) er
 		return a.analyzeResourceNotifiers(r, r.AlertSpec.Notifiers)
 	} else if r.ReportSpec != nil {
 		return a.analyzeResourceNotifiers(r, r.ReportSpec.Notifiers)
+	} else if r.ConnectorSpec != nil {
+		// resource is not passed to prevent the connector depends on itself
+		return a.trackConnector(r.ConnectorSpec.Name, nil, false)
 	}
 	// Other resource kinds currently don't use connectors.
 	return nil
@@ -238,7 +241,7 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 			return err
 		}
 
-		// Searfch rill.yaml for default config properties for this connector
+		// Search rill.yaml for default config properties for this connector
 		var defaultConfig map[string]string
 		if a.parser.RillYAML != nil {
 			for _, c := range a.parser.RillYAML.Connectors {
@@ -246,6 +249,14 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 					defaultConfig = c.Defaults
 					break
 				}
+			}
+		}
+
+		// Search among dedicated connectors
+		for _, c := range a.parser.Resources {
+			if c.ConnectorSpec != nil && c.ConnectorSpec.Name == connector {
+				defaultConfig = c.ConnectorSpec.Properties
+				break
 			}
 		}
 

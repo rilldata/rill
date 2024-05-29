@@ -561,11 +561,25 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 		}
 		return err
 	}
-	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)
+
+	instance, err := r.get(iwc.instanceID)
 	if err != nil {
 		return err
 	}
-	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, dotEnv, false)
+
+	p, err := rillv1.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
+	if err != nil {
+		return err
+	}
+
+	var connectors []*runtimev1.ConnectorSpec
+	for _, r := range p.Resources {
+		if r.ConnectorSpec != nil {
+			connectors = append(connectors, r.ConnectorSpec)
+		}
+	}
+
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, p.DotEnv, connectors, false)
 }
 
 func sizeOfDir(path string) int64 {
