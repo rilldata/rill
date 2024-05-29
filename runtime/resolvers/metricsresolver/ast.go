@@ -262,7 +262,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.CountDistinct != nil {
-		dim, err := a.lookupDimension(*qm.Compute.CountDistinct, visible)
+		dim, err := a.lookupDimension(qm.Compute.CountDistinct.Dimension, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -281,7 +281,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 	}
 
 	if qm.Compute.ComparisonValue != nil {
-		m, err := a.lookupMeasure(*qm.Compute.ComparisonValue, visible)
+		m, err := a.lookupMeasure(qm.Compute.ComparisonValue.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -290,13 +290,13 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
-			ReferencedMeasures: []string{*qm.Compute.ComparisonValue},
+			ReferencedMeasures: []string{qm.Compute.ComparisonValue.Measure},
 			Label:              fmt.Sprintf("%s (prev)", m.Label),
 		}, nil
 	}
 
 	if qm.Compute.ComparisonDelta != nil {
-		m, err := a.lookupMeasure(*qm.Compute.ComparisonDelta, visible)
+		m, err := a.lookupMeasure(qm.Compute.ComparisonDelta.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -305,13 +305,13 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
-			ReferencedMeasures: []string{*qm.Compute.ComparisonDelta},
+			ReferencedMeasures: []string{qm.Compute.ComparisonDelta.Measure},
 			Label:              fmt.Sprintf("%s (Δ)", m.Label),
 		}, nil
 	}
 
 	if qm.Compute.ComparisonRatio != nil {
-		m, err := a.lookupMeasure(*qm.Compute.ComparisonRatio, visible)
+		m, err := a.lookupMeasure(qm.Compute.ComparisonRatio.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -320,7 +320,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Name:               qm.Name,
 			Expression:         a.dialect.SafeDivideExpression(fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name)), fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
-			ReferencedMeasures: []string{*qm.Compute.ComparisonRatio},
+			ReferencedMeasures: []string{qm.Compute.ComparisonRatio.Measure},
 			Label:              fmt.Sprintf("%s (Δ%%)", m.Label),
 		}, nil
 	}

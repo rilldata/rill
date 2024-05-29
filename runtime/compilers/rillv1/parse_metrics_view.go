@@ -212,8 +212,10 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	switch v.Kind {
 	case yaml.ScalarNode:
 		switch strings.ToLower(v.Value) {
-		case "", "none", "false":
-			return nil
+		case "partitioned", "true":
+			f.Partition = true
+		case "unpartitioned":
+			f.Partition = false
 		default:
 			return fmt.Errorf(`invalid window type %q`, v.Value)
 		}

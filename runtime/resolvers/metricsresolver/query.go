@@ -43,11 +43,11 @@ type Measure struct {
 }
 
 type MeasureCompute struct {
-	Count           bool    `mapstructure:"count"`
-	CountDistinct   *string `mapstructure:"count_distinct"`
-	ComparisonValue *string `mapstructure:"comparison_value"`
-	ComparisonDelta *string `mapstructure:"comparison_delta"`
-	ComparisonRatio *string `mapstructure:"comparison_ratio"`
+	Count           bool                           `mapstructure:"count"`
+	CountDistinct   *MeasureComputeCountDistinct   `mapstructure:"count_distinct"`
+	ComparisonValue *MeasureComputeComparisonValue `mapstructure:"comparison_value"`
+	ComparisonDelta *MeasureComputeComparisonDelta `mapstructure:"comparison_delta"`
+	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
 }
 
 func (m *MeasureCompute) Validate() error {
@@ -74,6 +74,22 @@ func (m *MeasureCompute) Validate() error {
 		return fmt.Errorf("must specify only one compute operation")
 	}
 	return nil
+}
+
+type MeasureComputeCountDistinct struct {
+	Dimension string `mapstructure:"dimension"`
+}
+
+type MeasureComputeComparisonValue struct {
+	Measure string `mapstructure:"measure"`
+}
+
+type MeasureComputeComparisonDelta struct {
+	Measure string `mapstructure:"measure"`
+}
+
+type MeasureComputeComparisonRatio struct {
+	Measure string `mapstructure:"measure"`
 }
 
 type Sort struct {
