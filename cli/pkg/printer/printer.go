@@ -100,6 +100,13 @@ func (p *Printer) PrintData(v interface{}) {
 	}
 }
 
+func (p *Printer) PrintDataWithTitle(v interface{}, title string) {
+	if p.Format == FormatHuman {
+		p.Printf("  %s\n", strings.ToUpper(title))
+	}
+	p.PrintData(v)
+}
+
 func (p *Printer) Print(i ...interface{}) {
 	fmt.Fprint(p.humanOut(), i...)
 }

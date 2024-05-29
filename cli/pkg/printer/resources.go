@@ -154,7 +154,7 @@ func (p *Printer) PrintInvites(invites []*adminv1.UserInvite) {
 	if len(invites) == 0 {
 		return
 	}
-	p.PrintData(toInvitesTable(invites))
+	p.PrintDataWithTitle(toInvitesTable(invites), "Invites pending acceptance")
 }
 
 func toInvitesTable(invites []*adminv1.UserInvite) []*userInvite {
