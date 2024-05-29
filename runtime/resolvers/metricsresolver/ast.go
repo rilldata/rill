@@ -727,14 +727,6 @@ func (a *AST) addReferencedMeasuresToScope(n *MetricsSelect, referencedMeasures 
 			return err
 		}
 
-		// We only allow simple measures to be referenced.
-		switch m.Type {
-		case runtimev1.MetricsViewSpec_MEASURE_TYPE_UNSPECIFIED, runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE:
-			// Keep going
-		default:
-			return fmt.Errorf("referenced measure %q is not simple", rm)
-		}
-
 		// Add to the base SELECT. addMeasureField skips it if it's already present.
 		err = a.addMeasureField(n.FromSelect, m)
 		if err != nil {
