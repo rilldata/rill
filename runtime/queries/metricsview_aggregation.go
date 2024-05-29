@@ -1381,6 +1381,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 	}
 
 	var orderClauses []string
+	var subqueryOrderByClauses []string
 
 	for _, s := range q.Sort {
 		var outerClause, subQueryClause, extraOuterClause string
@@ -1408,15 +1409,15 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		subQueryClause += ending
 		extraOuterClause += ending
 		orderClauses = append(orderClauses, outerClause)
+		subqueryOrderByClauses = append(subqueryOrderByClauses, subQueryClause)
 	}
 
 	orderByClause := ""
+	subqueryOrderByClause := ""
 	if len(orderClauses) > 0 {
 		orderByClause = "ORDER BY " + strings.Join(orderClauses, ", ")
+		subqueryOrderByClause = "ORDER BY " + strings.Join(subqueryOrderByClauses, ",")
 	}
-
-	baseLimitClause := ""
-	comparisonLimitClause := ""
 
 	var args []any
 	var sql string
@@ -1533,7 +1534,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 				SELECT `+withPrefix("base", outerDims)+`, `+strings.Join(slices.Concat(measureCols, finalComparisonTimeDimsLabels), ",")+` FROM
 				( 
 					-- SELECT ... as t_offset, dim1 as d1, ...
-					SELECT %[1]s FROM %[3]s %[7]s WHERE %[4]s GROUP BY %[2]s `+subqueryLimitClause+`
+					SELECT %[1]s FROM %[3]s %[7]s WHERE %[4]s GROUP BY %[2]s 
 				) base
 				LEFT JOIN 
 				(
@@ -1541,12 +1542,12 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 					SELECT `+strings.Join(slices.Concat(finalDims, []string{finalMeasuresClause}, finalComparisonTimeDims), ",")+` FROM 
 						(
 							-- SELECT t_offset, dim1 as d1, ... timed1 as td1, ..., avg(price) as m1, ... AND d2 = 'a' ...
-							SELECT %[1]s FROM %[3]s %[7]s WHERE (%[4]s) AND (%[6]s) GROUP BY %[2]s `+subqueryLimitClause+` 
+							SELECT %[1]s FROM %[3]s %[7]s WHERE (%[4]s) AND (%[6]s) GROUP BY %[2]s `+subqueryOrderByClause+" "+subqueryLimitClause+` 
 						) base
 					LEFT OUTER JOIN
 						(
 							-- SELECT t_offset, dim1 as d1, ..., timed1 as td1, ... avg(price) as m1, ... AND d2 = 'a' ...
-							SELECT `+comparisonSelectClause+` FROM %[3]s %[7]s WHERE (%[5]s) AND (%[6]s) GROUP BY %[2]s `+subqueryLimitClause+`
+							SELECT `+comparisonSelectClause+` FROM %[3]s %[7]s WHERE (%[5]s) AND (%[6]s) GROUP BY %[2]s `+subqueryOrderByClause+" "+subqueryLimitClause+`
 						) comparison
 					ON
 							`+strings.Join(joinConditions, " AND ")+` -- base.t_offset = comparison.t_offset AND ...
@@ -1570,6 +1571,20 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 			q.Offset,                            // 8
 		)
 	} else { // Druid measure filter
+		limitClause := ""
+		subqueryLimitClause := ""
+		limit := 0
+
+		if q.Limit != nil {
+			limit = int(*q.Limit)
+			subQueryLimit := limit * 2
+			if q.Offset != 0 {
+				subQueryLimit = int(q.Offset) + limit*2
+			}
+			subqueryLimitClause = fmt.Sprintf(" LIMIT %d", (subQueryLimit))
+			limitClause = fmt.Sprintf(" LIMIT %d", limit)
+		}
+
 		// SELECT d1, d2, d3 ... GROUP BY 1, 2, 3 ...
 		var innerGroupCols []string
 		var whereDimConditions []string
@@ -1597,7 +1612,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 				strings.Join(unnestClauses, ""),                              // 3
 				baseWhereClause,                                              // 4
 				strings.Join(innerGroupCols, ","),                            // 5
-				baseLimitClause,                                              // 6
+				subqueryLimitClause,                                          // 6
 			)
 
 			var druidArgs []any
@@ -1683,13 +1698,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 			}
 		}
 
-		limitClause := ""
-		limit := 0
-		if q.Limit != nil {
-			limit = int(*q.Limit)
-			limitClause = fmt.Sprintf(" LIMIT %d", limit)
-		}
-
 		args = args[:0]
 		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			args = append(args, q.TimeRange.Start.AsTime())
@@ -1728,7 +1736,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 						-- SELECT base.d1 as d1, ..., partial.m1, ...
 						SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withPrefixCols("partial", finalSimpleSelectCols), withPrefixCols("partial", finalComparisonTimeDimsLabels)), ",")+` FROM (
 							-- SELECT dim1 as d1, ... 
-							SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[9]s GROUP BY %[10]s %[2]s
+							SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[9]s GROUP BY %[2]s `+subqueryLimitClause+` 
 						) base
 						LEFT JOIN
 						(
@@ -1736,11 +1744,11 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 							SELECT `+strings.Join(slices.Concat(finalDims, []string{finalMeasuresClause}, finalComparisonTimeDims), ",")+` FROM 
 								(
 									-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
-									SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[9]s AND `+measureFilterClause+` GROUP BY %[10]s %[2]s 
+									SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[7]s AND `+measureFilterClause+` GROUP BY %[2]s `+subqueryLimitClause+`
 								) base
 							LEFT JOIN
 								(
-									SELECT `+comparisonSelectClause+` FROM %[3]s %[6]s WHERE %[5]s %[9]s AND `+measureFilterClause+` GROUP BY %[10]s %[7]s 
+									SELECT `+comparisonSelectClause+` FROM %[3]s %[6]s WHERE %[5]s %[7]s AND `+measureFilterClause+` GROUP BY %[2]s `+subqueryLimitClause+` 
 								) comparison
 							ON
 							-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
@@ -1762,15 +1770,13 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 				) `+havingWhereClause+` 
 			`,
 			baseSelectClause,                    // 1
-			baseLimitClause,                     // 2
+			strings.Join(innerGroupCols, ","),   // 2
 			escapeMetricsViewTable(dialect, mv), // 3
 			baseWhereClause,                     // 4
 			comparisonWhereClause,               // 5
 			strings.Join(unnestClauses, ""),     // 6
-			comparisonLimitClause,               // 7
+			whereDimClause,                      // 7
 			q.Offset,                            // 8
-			whereDimClause,                      // 9
-			strings.Join(innerGroupCols, ","),   // 10
 		)
 	}
 
