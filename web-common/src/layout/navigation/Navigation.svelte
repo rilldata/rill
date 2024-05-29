@@ -60,7 +60,7 @@
   <div class="inner" style:width="{width}px">
     <ProjectTitle />
 
-    <div class="px-2 w-full">
+    <div class="p-2 w-full">
       <AddAssetButton />
     </div>
     <div class="scroll-container">

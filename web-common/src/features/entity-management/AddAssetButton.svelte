@@ -30,6 +30,7 @@
   import { getName } from "./name-utils";
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   let active = false;
 
@@ -198,114 +199,113 @@
   // }
 </script>
 
-<div class="p-2">
-  <DropdownMenu.Root bind:open={active}>
-    <DropdownMenu.Trigger asChild let:builder>
-      <button
-        {...builder}
-        aria-label="Add Asset"
-        class="add-asset-button"
-        class:open={active}
-        use:builder.action
-      >
-        <PlusCircleIcon size="14px" />
-        <div class="flex gap-x-1 items-center">
-          Add
-          <span class="transition-transform" class:-rotate-180={active}>
-            <CaretDownIcon size="10px" />
-          </span>
-        </div>
-      </button>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start" class="w-[240px]">
-      {#if $isModelingSupportedForCurrentOlapDriver.data}
-        <DropdownMenu.Item
-          aria-label="Add Source"
-          class="flex gap-x-2"
-          on:click={handleAddSource}
-        >
-          <svelte:component
-            this={resourceIconMapping[ResourceKind.Source]}
-            className="text-gray-900"
-            size="16px"
-          />
-          Source
-        </DropdownMenu.Item>
-        <DropdownMenu.Item
-          aria-label="Add Model"
-          class="flex gap-x-2"
-          on:click={handleAddModel}
-        >
-          <svelte:component
-            this={resourceIconMapping[ResourceKind.Model]}
-            className="text-gray-900"
-            size="16px"
-          />
-          Model
-        </DropdownMenu.Item>
-      {/if}
+<DropdownMenu.Root bind:open={active}>
+  <DropdownMenu.Trigger asChild let:builder>
+    <Button
+      builders={[builder]}
+      aria-label="Add Asset"
+      class="w-full"
+      type="subtle"
+      selected={active}
+    >
+      <PlusCircleIcon size="14px" />
+      <div class="flex gap-x-1 items-center">
+        Add
+        <span class="transition-transform" class:-rotate-180={active}>
+          <CaretDownIcon size="10px" />
+        </span>
+      </div>
+    </Button>
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start" class="w-[240px]">
+    {#if $isModelingSupportedForCurrentOlapDriver.data}
       <DropdownMenu.Item
-        aria-label="Add Dashboard"
+        aria-label="Add Source"
         class="flex gap-x-2"
-        on:click={handleAddDashboard}
+        on:click={handleAddSource}
       >
         <svelte:component
-          this={resourceIconMapping[ResourceKind.MetricsView]}
+          this={resourceIconMapping[ResourceKind.Source]}
           className="text-gray-900"
           size="16px"
         />
-        Dashboard
+        Source
       </DropdownMenu.Item>
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent class="w-[240px]">
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
-            <Folder size="16px" /> Folder
-          </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
-            <File size="16px" /> Blank file
-          </DropdownMenu.Item>
+      <DropdownMenu.Item
+        aria-label="Add Model"
+        class="flex gap-x-2"
+        on:click={handleAddModel}
+      >
+        <svelte:component
+          this={resourceIconMapping[ResourceKind.Model]}
+          className="text-gray-900"
+          size="16px"
+        />
+        Model
+      </DropdownMenu.Item>
+    {/if}
+    <DropdownMenu.Item
+      aria-label="Add Dashboard"
+      class="flex gap-x-2"
+      on:click={handleAddDashboard}
+    >
+      <svelte:component
+        this={resourceIconMapping[ResourceKind.MetricsView]}
+        className="text-gray-900"
+        size="16px"
+      />
+      Dashboard
+    </DropdownMenu.Item>
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent class="w-[240px]">
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
+          <Folder size="16px" /> Folder
+        </DropdownMenu.Item>
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
+          <File size="16px" /> Blank file
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.API]}
+            className="text-gray-900"
+            size="16px"
+          />
+          API
           <DropdownMenu.Separator />
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
+        </DropdownMenu.Item>
+        {#if $customDashboards}
+          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
             <svelte:component
-              this={resourceIconMapping[ResourceKind.API]}
+              this={resourceIconMapping[ResourceKind.Component]}
               className="text-gray-900"
               size="16px"
             />
-            API
-            <DropdownMenu.Separator />
+            Chart
           </DropdownMenu.Item>
-          {#if $customDashboards}
-            <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
-              <svelte:component
-                this={resourceIconMapping[ResourceKind.Component]}
-                className="text-gray-900"
-                size="16px"
-              />
-              Chart
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              class="flex gap-x-2"
-              on:click={handleAddCustomDashboard}
-            >
-              <svelte:component
-                this={resourceIconMapping[ResourceKind.Dashboard]}
-                className="text-gray-900"
-                size="16px"
-              />
-              Custom Dashboard
-            </DropdownMenu.Item>
-          {/if}
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
+          <DropdownMenu.Item
+            class="flex gap-x-2"
+            on:click={handleAddCustomDashboard}
+          >
             <svelte:component
-              this={resourceIconMapping[ResourceKind.Theme]}
+              this={resourceIconMapping[ResourceKind.Dashboard]}
               className="text-gray-900"
               size="16px"
             />
-            Theme
+            Custom Dashboard
           </DropdownMenu.Item>
-          <!-- Temporarily hide Report and Alert options -->
-          <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
+        {/if}
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Theme]}
+            className="text-gray-900"
+            size="16px"
+          />
+          Theme
+        </DropdownMenu.Item>
+        <!-- Temporarily hide Report and Alert options -->
+        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-gray-900"
@@ -321,24 +321,7 @@
             />
             Alert
           </DropdownMenu.Item> -->
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-</div>
-
-<style lang="postcss">
-  .add-asset-button {
-    @apply w-full h-7 p-2 rounded-sm;
-    @apply flex gap-x-2 items-center justify-center;
-    @apply text-primary-700 font-medium bg-primary-50;
-  }
-
-  .add-asset-button:hover {
-    @apply text-primary-800 bg-primary-100;
-  }
-
-  .add-asset-button.open {
-    @apply text-primary-900 bg-primary-200;
-  }
-</style>
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
