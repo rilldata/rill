@@ -67,7 +67,6 @@ export class WatchRequestClient<Res extends WatchResponse> {
   }
 
   public throttle() {
-    console.log("throttle");
     this.outOfFocusThrottler.throttle(() => {
       this.cancel();
     });
@@ -80,10 +79,8 @@ export class WatchRequestClient<Res extends WatchResponse> {
       this.outOfFocusThrottler.cancel();
     }
 
-    console.log("here");
     // The stream was not cancelled, so don't reconnect
     if (this.controller && !this.controller.signal.aborted) return;
-    console.log("reconnecting");
 
     if (this.retryAttempts >= MAX_RETRIES)
       throw new Error("Max retries exceeded");
