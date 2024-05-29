@@ -1736,7 +1736,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 						-- SELECT base.d1 as d1, ..., partial.m1, ...
 						SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withPrefixCols("partial", finalSimpleSelectCols), withPrefixCols("partial", finalComparisonTimeDimsLabels)), ",")+` FROM (
 							-- SELECT dim1 as d1, ... 
-							SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[7]s GROUP BY %[2]s `+subqueryLimitClause+` 
+							SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[7]s GROUP BY %[2]s 
 						) base
 						LEFT JOIN
 						(
