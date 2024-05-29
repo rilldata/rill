@@ -7,10 +7,6 @@
 
 declare namespace svelteHTML {
   interface HTMLAttributes {
-    // Used for copy action `shift-click-actions.ts`
-    "on:shift-click"?: (event: CustomEvent) => void;
-    "on:command-click"?: (event: CustomEvent) => void;
-
     // Used for DragList actions
     "on:consider"?: (event: CustomEvent) => void;
     "on:finalize"?: (event: CustomEvent) => void;
@@ -21,7 +17,6 @@ declare namespace svelteHTML {
     "on:scrub-start"?: (event: CustomEvent) => void;
     "on:scrub-end"?: (event: CustomEvent) => void;
     "on:scrub-move"?: (event: CustomEvent) => void;
-    "on:shift-click"?: (event: CustomEvent) => void;
     "on:scrolling"?: (event: CustomEvent) => void;
   }
 }

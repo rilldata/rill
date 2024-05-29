@@ -12,8 +12,9 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  V1ReconcileStatus,
+  getRuntimeServiceGetResourceQueryKey,
   type V1ParseError,
+  V1ReconcileStatus,
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
@@ -29,20 +30,10 @@ export class FileArtifact {
   public readonly reconciling = writable<boolean>(false);
 
   /**
-   * Used to check if a file has finished renaming.
-   *
-   * Reconciler uses meta.renamedFrom internally to track it.
-   * It is unset once rename is complete.
-   */
-  public renaming = false;
-
-  /**
    * Last time the state of the resource `kind/name` was updated.
    * This is updated in watch-resources and is used there to avoid unnecessary calls to GetResource API.
    */
   public lastStateUpdatedOn: string | undefined;
-
-  public hasTable = false;
 
   public deleted = false;
 
@@ -59,8 +50,6 @@ export class FileArtifact {
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
-    this.renaming = !!resource.meta?.renamedFrom;
-    this.hasTable = resourceHasTable(resource);
     this.deleted = false;
   }
 
@@ -106,15 +95,7 @@ export class FileArtifact {
         this.getResource(queryClient, instanceId),
       ],
       ([name, projectParser, resource]) => {
-        if (
-          projectParser.isFetching ||
-          resource.isFetching ||
-          // retain old state while reconciling
-          resource.data?.meta?.reconcileStatus ===
-            V1ReconcileStatus.RECONCILE_STATUS_RUNNING ||
-          resource.data?.meta?.reconcileStatus ===
-            V1ReconcileStatus.RECONCILE_STATUS_PENDING
-        ) {
+        if (projectParser.isFetching || resource.isFetching) {
           // to avoid flicker during a re-fetch, retain the previous value
           return get(store);
         }
@@ -188,6 +169,16 @@ export class FileArtifacts {
         case ResourceKind.MetricsView:
         case ResourceKind.Component:
         case ResourceKind.Dashboard:
+          // set query data for GetResource to avoid refetching data we already have
+          queryClient.setQueryData(
+            getRuntimeServiceGetResourceQueryKey(instanceId, {
+              "name.name": resource.meta?.name?.name,
+              "name.kind": resource.meta?.name?.kind,
+            }),
+            {
+              resource,
+            },
+          );
           this.updateArtifacts(resource);
           break;
       }
@@ -215,6 +206,7 @@ export class FileArtifacts {
   public async fileUpdated(filePath: string) {
     if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
       return;
+
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
@@ -277,24 +269,6 @@ export class FileArtifacts {
     });
   }
 
-  public tableStatusChanged(resource: V1Resource) {
-    const hadTable =
-      resource.meta?.filePaths?.some((filePath) => {
-        return this.artifacts[filePath].hasTable;
-      }) ?? false;
-    const hasTable = resourceHasTable(resource);
-    return hadTable !== hasTable;
-  }
-
-  public wasRenaming(resource: V1Resource) {
-    const finishedRename = !resource.meta?.renamedFrom;
-    return (
-      resource.meta?.filePaths?.some((filePath) => {
-        return this.artifacts[filePath].renaming && finishedRename;
-      }) ?? false
-    );
-  }
-
   /**
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
@@ -350,13 +324,6 @@ export class FileArtifacts {
       .filter((artifact) => get(artifact.name)?.kind === kind)
       .map((artifact) => get(artifact.name)?.name ?? "");
   }
-}
-
-function resourceHasTable(resource: V1Resource) {
-  return (
-    (!!resource.model && !!resource.model.state?.resultTable) ||
-    (!!resource.source && !!resource.source.state?.table)
-  );
 }
 
 export const fileArtifacts = new FileArtifacts();

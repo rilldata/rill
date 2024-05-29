@@ -1,12 +1,13 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import PivotPanel from "@rilldata/web-common/components/icons/PivotPanel.svelte";
+  import { canEnablePivotComparison } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { featureFlags } from "../../feature-flags";
   import { getStateManagers } from "../state-managers/state-managers";
   import PivotExportButton from "./PivotExportButton.svelte";
-  import { featureFlags } from "../../feature-flags";
 
   export let showPanels = true;
   export let isFetching = false;
@@ -14,9 +15,22 @@
   const { exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const { metricsViewName, dashboardStore } = stateManagers;
+  const {
+    metricsViewName,
+    dashboardStore,
+    selectors: {
+      timeRangeSelectors: { timeControlsState },
+    },
+  } = stateManagers;
 
+  $: comparisonStart = $timeControlsState.comparisonTimeStart;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
+  $: comparisonEnabled = $dashboardStore?.pivot?.enableComparison;
+
+  $: canShowComparison = canEnablePivotComparison(
+    $dashboardStore?.pivot,
+    comparisonStart,
+  );
 
   // function expandVisible() {
   //   // const lowestVisibleRow = 0;
@@ -81,6 +95,21 @@
       Collapse All
     </Button>
   {/if}
+  {#if canShowComparison}
+    <Button
+      compact
+      type="text"
+      on:click={() => {
+        metricsExplorerStore.setPivotComparison(
+          $metricsViewName,
+          !comparisonEnabled,
+        );
+      }}
+    >
+      {comparisonEnabled ? "Hide comparisons" : "Show comparisons"}
+    </Button>
+  {/if}
+
   {#if isFetching}
     <Spinner size="18px" status={EntityStatus.Running} />
   {/if}

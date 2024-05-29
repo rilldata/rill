@@ -2,12 +2,15 @@ package worker
 
 import (
 	"context"
+	"time"
 
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
+
+const upgradeLatestVersionForProjectTimeout = 5 * time.Minute
 
 func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
 	// Resolve 'latest' version
@@ -50,6 +53,10 @@ func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
 }
 
 func (w *Worker) upgradeAllDeploymentsForProject(ctx context.Context, proj *database.Project, latestVersion string) error {
+	// Apply timeout
+	ctx, cancel := context.WithTimeout(ctx, upgradeLatestVersionForProjectTimeout)
+	defer cancel()
+
 	// Get all project deployments
 	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {

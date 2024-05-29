@@ -12,7 +12,7 @@
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
-  import { isClipboardApiSupported } from "../../../../lib/actions/shift-click-action";
+  import { isClipboardApiSupported } from "../../../../lib/actions/copy-to-clipboard";
   import TimestampSpark from "./TimestampSpark.svelte";
 
   export let xAccessor: string;
