@@ -203,7 +203,7 @@
   <DropdownMenu.Trigger asChild let:builder>
     <Button
       builders={[builder]}
-      aria-label="Add Asset"
+      label="Add Asset"
       class="w-full"
       type="subtle"
       selected={active}
