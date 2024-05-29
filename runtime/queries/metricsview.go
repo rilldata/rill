@@ -127,6 +127,7 @@ func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineM
 				ms[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 					Name:       m.Name,
 					Expression: m.Expression,
+					Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 				}
 				found = true
 				break
