@@ -26,15 +26,6 @@
       placeholder="My alert"
       value={$form["name"]}
     />
-    <InputV2
-      alwaysShowError
-      error={$errors["description"]}
-      id="description"
-      on:change={handleChange}
-      placeholder="My alert description"
-      value={$form["description"]}
-      optional
-    />
   </FormSection>
   <FormSection
     description="We'll check for this alert whenever the data refreshes"

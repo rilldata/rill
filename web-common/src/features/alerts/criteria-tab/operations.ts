@@ -7,37 +7,31 @@ export const CriteriaOperationOptions = [
     value: MeasureFilterOperation.GreaterThanOrEquals,
     label: ">=",
     shortLabel: ">=",
-    description: "greater than or equal to",
   },
   {
     value: MeasureFilterOperation.GreaterThan,
     label: ">",
     shortLabel: ">",
-    description: "greater than",
   },
   {
     value: MeasureFilterOperation.LessThanOrEquals,
     label: "<=",
     shortLabel: "<=",
-    description: "less than or equal to",
   },
   {
     value: MeasureFilterOperation.LessThan,
     label: "<",
     shortLabel: "<",
-    description: "less than",
   },
   {
     value: MeasureFilterOperation.Equals,
     label: "=",
     shortLabel: "=",
-    description: "equal to",
   },
   {
     value: MeasureFilterOperation.NotEquals,
     label: "!=",
     shortLabel: "!=",
-    description: "does not equal to",
   },
 ];
 

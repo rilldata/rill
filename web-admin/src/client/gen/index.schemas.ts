@@ -885,7 +885,6 @@ export interface V1Bookmark {
 
 export interface V1AlertOptions {
   title?: string;
-  description?: string;
   intervalDuration?: string;
   queryName?: string;
   queryArgsJson?: string;

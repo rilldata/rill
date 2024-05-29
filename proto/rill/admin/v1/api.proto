@@ -1545,7 +1545,6 @@ message ReportOptions {
 
 message AlertOptions {
   string title = 1;
-  string description = 12;
   string interval_duration = 2;
   string query_name = 3;
   string query_args_json = 4;

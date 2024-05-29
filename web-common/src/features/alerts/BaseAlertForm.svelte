@@ -2,7 +2,7 @@
   import { DialogTitle } from "@rilldata/web-common/components/dialog-v2";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
   import {
-    getTitleAndDescription,
+    generateAlertName,
     getTouched,
   } from "@rilldata/web-common/features/alerts/utils";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
@@ -65,19 +65,13 @@
     }
     currentTabIndex += 1;
 
-    if (
-      isEditForm ||
-      currentTabIndex !== 2 ||
-      $touched.name ||
-      $touched.description
-    ) {
+    if (isEditForm || currentTabIndex !== 2 || $touched.name) {
       return;
     }
-    // if the user came to the delivery tab and name/description was not changed then auto generate it
-    const titleAndDesc = getTitleAndDescription($form, $metricsView.data ?? {});
-    if (!titleAndDesc) return;
-    $form.name = titleAndDesc.title;
-    $form.description = titleAndDesc.description;
+    // if the user came to the delivery tab and name was not changed then auto generate it
+    const name = generateAlertName($form, $metricsView.data ?? {});
+    if (!name) return;
+    $form.name = name;
   }
 </script>
 

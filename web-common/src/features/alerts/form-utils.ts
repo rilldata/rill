@@ -15,7 +15,6 @@ import * as yup from "yup";
 
 export type AlertFormValues = {
   name: string;
-  description: string;
   measure: string;
   splitByDimension: string;
   criteria: MeasureFilterEntry[];

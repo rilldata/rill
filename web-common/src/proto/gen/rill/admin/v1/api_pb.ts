@@ -8492,11 +8492,6 @@ export class AlertOptions extends Message<AlertOptions> {
   title = "";
 
   /**
-   * @generated from field: string description = 12;
-   */
-  description = "";
-
-  /**
    * @generated from field: string interval_duration = 2;
    */
   intervalDuration = "";
@@ -8555,7 +8550,6 @@ export class AlertOptions extends Message<AlertOptions> {
   static readonly typeName = "rill.admin.v1.AlertOptions";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 12, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },

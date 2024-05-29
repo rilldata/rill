@@ -455,7 +455,6 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.Title = opts.Title
-	res.Description = opts.Description
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
@@ -490,7 +489,6 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.Title = opts.Title
-	res.Description = opts.Description
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
 	res.Query.Name = opts.QueryName
@@ -546,7 +544,6 @@ func randomAlertName(title string) string {
 func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOptions, error) {
 	opts := &adminv1.AlertOptions{}
 	opts.Title = spec.Title
-	opts.Description = spec.Description
 	opts.IntervalDuration = spec.IntervalsIsoDuration
 	opts.QueryName = spec.QueryName
 	opts.QueryArgsJson = spec.QueryArgsJson
@@ -573,12 +570,11 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
-	Type        string   `yaml:"type"`
-	Description string   `yaml:"description"`
-	Refs        []string `yaml:"refs"`
-	Title       string   `yaml:"title"`
-	Watermark   string   `yaml:"watermark"`
-	Intervals   struct {
+	Type      string   `yaml:"type"`
+	Refs      []string `yaml:"refs"`
+	Title     string   `yaml:"title"`
+	Watermark string   `yaml:"watermark"`
+	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
 	Query struct {

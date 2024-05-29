@@ -22959,8 +22959,6 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for Title
 
-	// no validation rules for Description
-
 	// no validation rules for IntervalDuration
 
 	// no validation rules for QueryName

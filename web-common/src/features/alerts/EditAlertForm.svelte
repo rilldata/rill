@@ -53,7 +53,6 @@
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: alertSpec.title as string,
-      description: alertSpec.description as string,
       snooze: getSnoozeValueFromAlertSpec(alertSpec),
       evaluationInterval: alertSpec.intervalsIsoDuration ?? "",
       ...extractAlertNotification(alertSpec),
@@ -73,7 +72,6 @@
           data: {
             options: {
               title: values.name,
-              description: values.description,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),

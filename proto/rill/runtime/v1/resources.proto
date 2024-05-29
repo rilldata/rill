@@ -298,7 +298,6 @@ message Alert {
 message AlertSpec {
   bool trigger = 1;
   string title = 2;
-  string description = 22;
   Schedule refresh_schedule = 3;
   bool watermark_inherit = 4; // If true, will use the lowest watermark of its refs instead of the trigger time.
   string intervals_iso_duration = 5;

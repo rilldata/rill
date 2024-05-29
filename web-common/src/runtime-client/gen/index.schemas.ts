@@ -1964,7 +1964,6 @@ export type V1AlertSpecQueryForAttributes = { [key: string]: any };
 export interface V1AlertSpec {
   trigger?: boolean;
   title?: string;
-  description?: string;
   refreshSchedule?: V1Schedule;
   /** If true, will use the lowest watermark of its refs instead of the trigger time. */
   watermarkInherit?: boolean;

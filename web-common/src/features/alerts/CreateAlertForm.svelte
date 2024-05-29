@@ -121,7 +121,6 @@
           data: {
             options: {
               title: values.name,
-              description: values.description,
               queryName: "MetricsViewAggregation",
               queryArgsJson: JSON.stringify(
                 getAlertQueryArgsFromFormValues(values),
