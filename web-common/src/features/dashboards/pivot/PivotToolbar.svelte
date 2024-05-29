@@ -58,7 +58,7 @@
       e.detail.currentTarget.blur();
     }}
   >
-    <PivotPanel size="18px" />
+    <PivotPanel size="18px" open={showPanels} />
   </Button>
 
   <!-- <Button
