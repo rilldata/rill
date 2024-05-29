@@ -2393,6 +2393,140 @@ func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 	require.Equal(t, "Yahoo,news.yahoo.com,106.00,106.00,1.50,1.50", fieldsToString2digits(rows[i], "pub", "dom", "measure_0", "measure_0__p", "measure_1", "m1"))
 }
 
+func Ignore_TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions:      []*runtimev1.MetricsViewAggregationDimension{},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+			{
+				Name: "measure_1",
+			},
+			{
+				Name: "m1",
+			},
+			{
+				Name: "measure_0__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "measure_0",
+					},
+				},
+			},
+		},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "Yahoo"),
+			expressionpb.Eq("pub", "Google"),
+		),
+		Having: expressionpb.Gt("measure_1", 0.0),
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit: &limit,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "measure_0,measure_1,m1,measure_0__p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 1, len(rows))
+
+	i = 0
+	require.Equal(t, "463.00,464.00,3.20,3.20", fieldsToString2digits(rows[i], "measure_0", "measure_0__p", "measure_1", "m1"))
+}
+
+func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions:      []*runtimev1.MetricsViewAggregationDimension{},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "measure_0",
+			},
+			{
+				Name: "measure_1",
+			},
+			{
+				Name: "m1",
+			},
+			{
+				Name: "measure_0__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "measure_0",
+					},
+				},
+			},
+		},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "Yahoo"),
+			expressionpb.Eq("pub", "Google"),
+		),
+		Having: expressionpb.Gt("measure_1", 0.0),
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit: &limit,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "measure_0,measure_1,m1,measure_0__p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 1, len(rows))
+
+	i = 0
+	require.Equal(t, "463.00,464.00,3.20,3.20", fieldsToString2digits(rows[i], "measure_0", "measure_0__p", "measure_1", "m1"))
+}
+
 func TestMetricsViewsAggregation_comparison(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 

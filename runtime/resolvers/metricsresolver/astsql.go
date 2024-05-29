@@ -79,42 +79,16 @@ func (a *AST) writeSQLForMetricsSelect(n *MetricsSelect, b *strings.Builder, arg
 		b.WriteString(n.FromSelect.Alias)
 
 		for _, ljs := range n.LeftJoinSelects {
-			b.WriteString(" LEFT JOIN (")
-			err := a.writeSQLForMetricsSelect(ljs, b, args)
+			err := a.writeSQLForJoin("LEFT", n.FromSelect, ljs, b, args)
 			if err != nil {
 				return err
-			}
-			b.WriteString(") ")
-			b.WriteString(ljs.Alias)
-			b.WriteString(" ON ")
-			for i, f := range n.FromSelect.DimFields {
-				if i > 0 {
-					b.WriteString(" AND ")
-				}
-				b.WriteString(a.expressionForMember(n.FromSelect.Alias, f.Name))
-				b.WriteByte('=')
-				b.WriteString(a.expressionForMember(ljs.Alias, f.Name))
 			}
 		}
 
 		if n.JoinComparisonSelect != nil {
-			b.WriteByte(' ')
-			b.WriteString(n.JoinComparisonType)
-			b.WriteString(" JOIN (")
-			err := a.writeSQLForMetricsSelect(n.JoinComparisonSelect, b, args)
+			err := a.writeSQLForJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect, b, args)
 			if err != nil {
 				return err
-			}
-			b.WriteString(") ")
-			b.WriteString(n.JoinComparisonSelect.Alias)
-			b.WriteString(" ON ")
-			for i, f := range n.FromSelect.DimFields {
-				if i > 0 {
-					b.WriteString(" AND ")
-				}
-				b.WriteString(a.expressionForMember(n.FromSelect.Alias, f.Name))
-				b.WriteByte('=')
-				b.WriteString(a.expressionForMember(n.JoinComparisonSelect.Alias, f.Name))
 			}
 		}
 	} else {
@@ -140,18 +114,13 @@ func (a *AST) writeSQLForMetricsSelect(n *MetricsSelect, b *strings.Builder, arg
 		*args = append(*args, n.Where.Args...)
 	}
 
-	if n.Group {
-		var baseAlias string
-		if n.FromSelect != nil {
-			baseAlias = n.FromSelect.Alias
-		}
-
+	if n.Group && len(n.DimFields) > 0 {
 		b.WriteString(" GROUP BY ")
-		for i, f := range n.DimFields {
+		for i := range n.DimFields {
 			if i > 0 {
 				b.WriteString(", ")
 			}
-			b.WriteString(a.expressionForMember(baseAlias, f.Name))
+			b.WriteString(strconv.Itoa(i + 1))
 		}
 	}
 
@@ -184,5 +153,36 @@ func (a *AST) writeSQLForMetricsSelect(n *MetricsSelect, b *strings.Builder, arg
 		b.WriteString(strconv.Itoa(*n.Offset))
 	}
 
+	return nil
+}
+
+func (a *AST) writeSQLForJoin(joinType string, baseSelect, joinSelect *MetricsSelect, b *strings.Builder, args *[]any) error {
+	b.WriteByte(' ')
+	b.WriteString(joinType)
+	b.WriteString(" JOIN (")
+	err := a.writeSQLForMetricsSelect(joinSelect, b, args)
+	if err != nil {
+		return err
+	}
+	b.WriteString(") ")
+	b.WriteString(joinSelect.Alias)
+	b.WriteString(" ON ")
+	for i, f := range baseSelect.DimFields {
+		if i > 0 {
+			b.WriteString(" AND ")
+		}
+		lhs := a.expressionForMember(baseSelect.Alias, f.Name)
+		rhs := a.expressionForMember(joinSelect.Alias, f.Name)
+		b.WriteByte('(')
+		b.WriteString(lhs)
+		b.WriteByte('=')
+		b.WriteString(rhs)
+		b.WriteString(" OR ")
+		b.WriteString(lhs)
+		b.WriteString(" IS NULL AND ")
+		b.WriteString(rhs)
+		b.WriteString(" IS NULL")
+		b.WriteByte(')')
+	}
 	return nil
 }

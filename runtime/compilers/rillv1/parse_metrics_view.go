@@ -46,7 +46,11 @@ type MetricsViewYAML struct {
 	Measures          []*struct {
 		Name                string
 		Label               string
+		Type                string
 		Expression          string
+		Window              *MetricsViewMeasureWindow
+		Per                 []MetricsViewFieldSelectorYAML
+		Requires            []MetricsViewFieldSelectorYAML
 		Description         string
 		FormatPreset        string `yaml:"format_preset"`
 		FormatD3            string `yaml:"format_d3"`
@@ -77,6 +81,7 @@ type AvailableTimeRange struct {
 	Range             string
 	ComparisonOffsets []AvailableComparisonOffset
 }
+
 type tmpAvailableTimeRange struct {
 	Range             string                      `yaml:"range"`
 	ComparisonOffsets []AvailableComparisonOffset `yaml:"comparison_offsets"`
@@ -118,6 +123,7 @@ type AvailableComparisonOffset struct {
 	Offset string
 	Range  string
 }
+
 type tmpAvailableComparisonOffset struct {
 	Offset string `yaml:"offset"`
 	Range  string `yaml:"range"`
@@ -155,12 +161,95 @@ func (o *AvailableComparisonOffset) UnmarshalYAML(v *yaml.Node) error {
 	return nil
 }
 
+type MetricsViewFieldSelectorYAML struct {
+	Name      string
+	TimeGrain runtimev1.TimeGrain
+}
+
+func (f *MetricsViewFieldSelectorYAML) UnmarshalYAML(v *yaml.Node) error {
+	if v == nil {
+		return nil
+	}
+
+	switch v.Kind {
+	case yaml.ScalarNode:
+		f.Name = v.Value
+	case yaml.MappingNode:
+		// avoid infinite loop by using a separate struct
+		tmp := &struct {
+			Name      string
+			TimeGrain string `yaml:"time_grain"`
+		}{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+
+		tg, err := parseTimeGrain(tmp.TimeGrain)
+		if err != nil {
+			return fmt.Errorf(`invalid "time_grain": %w`, err)
+		}
+
+		f.Name = tmp.Name
+		f.TimeGrain = tg
+	default:
+		return fmt.Errorf("field reference should be either a string or an object")
+	}
+
+	return nil
+}
+
+type MetricsViewMeasureWindow struct {
+	Partition bool
+	Frame     string
+}
+
+func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
+	if v == nil {
+		return nil
+	}
+
+	switch v.Kind {
+	case yaml.ScalarNode:
+		switch strings.ToLower(v.Value) {
+		case "partitioned", "true":
+			f.Partition = true
+		case "unpartitioned":
+			f.Partition = false
+		default:
+			return fmt.Errorf(`invalid window type %q`, v.Value)
+		}
+	case yaml.MappingNode:
+		// avoid infinite loop by using a separate struct
+		tmp := &struct {
+			Partition *bool // Defaults to true
+			Frame     string
+		}{}
+		err := v.Decode(tmp)
+		if err != nil {
+			return err
+		}
+
+		f.Partition = true
+		if tmp.Partition != nil {
+			f.Partition = *tmp.Partition
+		}
+
+		f.Frame = tmp.Frame
+	default:
+		return fmt.Errorf("measure window should be either a string or an object")
+	}
+
+	return nil
+}
+
 var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
 	"":          runtimev1.MetricsViewSpec_COMPARISON_MODE_UNSPECIFIED,
 	"none":      runtimev1.MetricsViewSpec_COMPARISON_MODE_NONE,
 	"time":      runtimev1.MetricsViewSpec_COMPARISON_MODE_TIME,
 	"dimension": runtimev1.MetricsViewSpec_COMPARISON_MODE_DIMENSION,
 }
+
 var validComparisonModes = []string{"none", "time", "dimension"}
 
 const (
@@ -214,6 +303,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 
 	names := make(map[string]uint8)
+	names[strings.ToLower(tmp.TimeDimension)] = nameIsDimension
 
 	for i, dim := range tmp.Dimensions {
 		if dim == nil || dim.Ignore {
@@ -251,13 +341,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
-	measureCount := 0
+	measures := make([]*runtimev1.MetricsViewSpec_MeasureV2, 0, len(tmp.Measures))
 	for i, measure := range tmp.Measures {
 		if measure == nil || measure.Ignore {
 			continue
 		}
-
-		measureCount++
 
 		// Backwards compatibility
 		if measure.Name == "" {
@@ -273,9 +361,107 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		if measure.FormatPreset != "" && measure.FormatD3 != "" {
 			return fmt.Errorf(`cannot set both "format_preset" and "format_d3" for a measure`)
 		}
+
+		var perDimensions []*runtimev1.MetricsViewSpec_DimensionSelector
+		for _, per := range measure.Per {
+			typ, ok := names[strings.ToLower(per.Name)]
+			if !ok || typ != nameIsDimension {
+				return fmt.Errorf(`per dimension %q not found`, per.Name)
+			}
+			perDimensions = append(perDimensions, &runtimev1.MetricsViewSpec_DimensionSelector{
+				Name:      per.Name,
+				TimeGrain: per.TimeGrain,
+			})
+		}
+
+		var requiredDimensions []*runtimev1.MetricsViewSpec_DimensionSelector
+		var referencedMeasures []string
+		for _, ref := range measure.Requires {
+			typ, ok := names[strings.ToLower(ref.Name)]
+
+			// All dimensions have already been parsed, so we know for sure if it's a dimension
+			if ok && typ == nameIsDimension {
+				requiredDimensions = append(requiredDimensions, &runtimev1.MetricsViewSpec_DimensionSelector{
+					Name:      ref.Name,
+					TimeGrain: ref.TimeGrain,
+				})
+				continue
+			}
+
+			// If not a dimension, we assume it's a measure and validate after the loop (when all measures have been seen)
+			referencedMeasures = append(referencedMeasures, ref.Name)
+		}
+
+		var window *runtimev1.MetricsViewSpec_MeasureWindow
+		if measure.Window != nil {
+			window = &runtimev1.MetricsViewSpec_MeasureWindow{
+				Partition:       measure.Window.Partition,
+				FrameExpression: measure.Window.Frame,
+			}
+		}
+
+		// If the window has a frame expression and a time dimension is set, ensure the time dimension is in the required dimensions
+		if window != nil && window.FrameExpression != "" && tmp.TimeDimension != "" {
+			found := false
+			for _, rd := range requiredDimensions {
+				if rd.Name == tmp.TimeDimension {
+					found = true
+					break
+				}
+			}
+			if !found {
+				requiredDimensions = append(requiredDimensions, &runtimev1.MetricsViewSpec_DimensionSelector{
+					Name: tmp.TimeDimension,
+				})
+			}
+		}
+
+		var typ runtimev1.MetricsViewSpec_MeasureType
+		switch strings.ToLower(measure.Type) {
+		case "":
+			typ = runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE
+			if len(referencedMeasures) > 0 || len(perDimensions) > 0 {
+				typ = runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED
+			}
+		case "simple":
+			typ = runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE
+			if len(referencedMeasures) > 0 || len(perDimensions) > 0 {
+				return fmt.Errorf(`measure type "simple" cannot have "per" or "requires" fields`)
+			}
+		case "derived":
+			typ = runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED
+		case "time_comparison":
+			typ = runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON
+		default:
+			return fmt.Errorf(`invalid measure type %q (allowed values: simple, derived, time_comparison)`, measure.Type)
+		}
+
+		measures = append(measures, &runtimev1.MetricsViewSpec_MeasureV2{
+			Name:                measure.Name,
+			Expression:          measure.Expression,
+			Type:                typ,
+			Window:              window,
+			PerDimensions:       perDimensions,
+			RequiredDimensions:  requiredDimensions,
+			ReferencedMeasures:  referencedMeasures,
+			Label:               measure.Label,
+			Description:         measure.Description,
+			FormatPreset:        measure.FormatPreset,
+			FormatD3:            measure.FormatD3,
+			ValidPercentOfTotal: measure.ValidPercentOfTotal,
+		})
 	}
-	if measureCount == 0 {
+	if len(measures) == 0 {
 		return fmt.Errorf("must define at least one measure")
+	}
+
+	// Validate referenced measures now that all measures have been seen
+	for _, m := range measures {
+		for _, ref := range m.ReferencedMeasures {
+			if typ, ok := names[strings.ToLower(ref)]; !ok || typ != nameIsMeasure {
+				return fmt.Errorf(`referenced measure %q not found`, ref)
+			}
+		}
 	}
 
 	for _, measure := range tmp.DefaultMeasures {
@@ -447,21 +633,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 	}
 	spec.DefaultDimensions = tmp.DefaultDimensions
 
-	for _, measure := range tmp.Measures {
-		if measure == nil || measure.Ignore {
-			continue
-		}
-
-		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:                measure.Name,
-			Expression:          measure.Expression,
-			Label:               measure.Label,
-			Description:         measure.Description,
-			FormatPreset:        measure.FormatPreset,
-			FormatD3:            measure.FormatD3,
-			ValidPercentOfTotal: measure.ValidPercentOfTotal,
-		})
-	}
+	spec.Measures = measures
 	spec.DefaultMeasures = tmp.DefaultMeasures
 
 	spec.DefaultComparisonMode = comparisonModesMap[tmp.DefaultComparison.Mode]

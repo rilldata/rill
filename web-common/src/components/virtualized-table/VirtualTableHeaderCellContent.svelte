@@ -8,7 +8,9 @@
 </script>
 
 <div class="header-cell" class:sorted>
-  <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
+  {#if type}
+    <DataTypeIcon suppressTooltip color={"text-gray-500"} {type} />
+  {/if}
 
   <p class="truncate w-full grow text-left">
     {name}

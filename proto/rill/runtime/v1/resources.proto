@@ -468,6 +468,7 @@ message DashboardState {}
 
 message DashboardItem {
   string component = 1;
+  bool defined_in_dashboard = 8;
   optional uint32 x = 2;
   optional uint32 y = 3;
   optional uint32 width = 4;

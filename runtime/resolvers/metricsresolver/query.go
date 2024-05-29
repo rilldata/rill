@@ -43,11 +43,11 @@ type Measure struct {
 }
 
 type MeasureCompute struct {
-	Count           bool    `mapstructure:"count"`
-	CountDistinct   *string `mapstructure:"count_distinct"`
-	ComparisonValue *string `mapstructure:"comparison_value"`
-	ComparisonDelta *string `mapstructure:"comparison_delta"`
-	ComparisonRatio *string `mapstructure:"comparison_ratio"`
+	Count           bool                           `mapstructure:"count"`
+	CountDistinct   *MeasureComputeCountDistinct   `mapstructure:"count_distinct"`
+	ComparisonValue *MeasureComputeComparisonValue `mapstructure:"comparison_value"`
+	ComparisonDelta *MeasureComputeComparisonDelta `mapstructure:"comparison_delta"`
+	ComparisonRatio *MeasureComputeComparisonRatio `mapstructure:"comparison_ratio"`
 }
 
 func (m *MeasureCompute) Validate() error {
@@ -76,25 +76,37 @@ func (m *MeasureCompute) Validate() error {
 	return nil
 }
 
+type MeasureComputeCountDistinct struct {
+	Dimension string `mapstructure:"dimension"`
+}
+
+type MeasureComputeComparisonValue struct {
+	Measure string `mapstructure:"measure"`
+}
+
+type MeasureComputeComparisonDelta struct {
+	Measure string `mapstructure:"measure"`
+}
+
+type MeasureComputeComparisonRatio struct {
+	Measure string `mapstructure:"measure"`
+}
+
 type Sort struct {
 	Name string `mapstructure:"name"`
 	Desc bool   `mapstructure:"desc"`
 }
 
 type TimeRange struct {
-	Start        string    `mapstructure:"start"`
-	End          string    `mapstructure:"end"`
+	Start        time.Time `mapstructure:"start"`
+	End          time.Time `mapstructure:"end"`
 	IsoDuration  string    `mapstructure:"iso_duration"`
 	IsoOffset    string    `mapstructure:"iso_offset"`
 	RoundToGrain TimeGrain `mapstructure:"round_to_grain"`
-
-	// Resolved in pre-processing
-	StartTime *time.Time `mapstructure:"-"`
-	EndTime   *time.Time `mapstructure:"-"`
 }
 
 func (tr *TimeRange) IsZero() bool {
-	return tr.Start == "" && tr.End == "" && tr.IsoDuration == "" && tr.IsoOffset == "" && tr.RoundToGrain == TimeGrainUnspecified && tr.StartTime == nil && tr.EndTime == nil
+	return tr.Start.IsZero() && tr.End.IsZero() && tr.IsoDuration == "" && tr.IsoOffset == "" && tr.RoundToGrain == TimeGrainUnspecified
 }
 
 type Expression struct {
@@ -162,7 +174,7 @@ const (
 
 func (t TimeGrain) Valid() bool {
 	switch t {
-	case TimeGrainMillisecond, TimeGrainSecond, TimeGrainMinute, TimeGrainHour, TimeGrainDay, TimeGrainWeek, TimeGrainMonth, TimeGrainQuarter, TimeGrainYear:
+	case TimeGrainUnspecified, TimeGrainMillisecond, TimeGrainSecond, TimeGrainMinute, TimeGrainHour, TimeGrainDay, TimeGrainWeek, TimeGrainMonth, TimeGrainQuarter, TimeGrainYear:
 		return true
 	}
 	return false

@@ -14,6 +14,7 @@ cli.prepare:
 	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
 	rm -rf runtime/pkg/examples/embed/dist/.git
 	cp scripts/install.sh cli/pkg/installscript/embed/install.sh
+	go run scripts/embed_duckdb_ext/main.go
 
 .PHONY: coverage.go
 coverage.go:

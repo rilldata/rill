@@ -65,12 +65,13 @@ func (p *Parser) parseDashboard(node *Node) error {
 		}
 
 		items[i] = &runtimev1.DashboardItem{
-			Component: component,
-			X:         item.X,
-			Y:         item.Y,
-			Width:     item.Width,
-			Height:    item.Height,
-			FontSize:  item.FontSize,
+			Component:          component,
+			DefinedInDashboard: inlineComponentDef != nil,
+			X:                  item.X,
+			Y:                  item.Y,
+			Width:              item.Width,
+			Height:             item.Height,
+			FontSize:           item.FontSize,
 		}
 
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})

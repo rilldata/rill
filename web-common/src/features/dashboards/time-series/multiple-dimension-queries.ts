@@ -1,5 +1,5 @@
 import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { selectedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { includedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
   createInExpression,
@@ -48,7 +48,7 @@ export interface DimensionDataItem {
 }
 
 interface DimensionTopList {
-  values: string[];
+  values: (string | null)[];
   filter: V1Expression;
   totals?: number[];
 }
@@ -92,9 +92,9 @@ export function getDimensionValuesForComparison(
       if (!isValidMeasureList || !dimensionName) return;
 
       // Values to be compared
-      let comparisonValues: string[] = [];
+      let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
-        let dimensionValues = selectedDimensionValues({
+        let dimensionValues = includedDimensionValues({
           dashboard: dashboardStore,
         })(dimensionName);
         if (measureFilterResolution.filter) {
@@ -114,7 +114,7 @@ export function getDimensionValuesForComparison(
           comparisonValues = dimensionValues.slice(
             0,
             isInTimeDimensionView ? 11 : 7,
-          );
+          ) as (string | null)[];
         }
         return set({
           values: comparisonValues,

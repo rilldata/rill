@@ -463,8 +463,7 @@ func (b *expressionBuilder) resolveName(name string) (expr string, unnest bool, 
 	for _, f := range b.metricsNode.DimFields {
 		if f.Name == name {
 			// NOTE: We don't need to handle Unnest here because it's always applied at the innermost query (i.e. when metricsNode==nil).
-			// TODO: When b.having==true, could it use the name instead of the expression?
-			return f.Expr, false, nil
+			return b.ast.dialect.EscapeIdentifier(f.Name), false, nil
 		}
 	}
 
@@ -476,8 +475,7 @@ func (b *expressionBuilder) resolveName(name string) (expr string, unnest bool, 
 	// Check measure fields
 	for _, f := range b.metricsNode.MeasureFields {
 		if f.Name == name {
-			// TODO: When b.having==true, could it use the name instead of the expression?
-			return f.Expr, false, nil
+			return b.ast.dialect.EscapeIdentifier(f.Name), false, nil
 		}
 	}
 

@@ -2,6 +2,7 @@
   import { createEventDispatcher, getContext } from "svelte";
   import { dragTableCell } from "../drag-table-cell";
   import type { HeaderPosition, VirtualizedTableConfig } from "../types";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
 
   const config: VirtualizedTableConfig = getContext("config");
   const isDimensionTable = config.table === "DimensionTable";
@@ -11,10 +12,12 @@
   export let position: HeaderPosition = "top";
   export let enableResize = true;
   export let borderRight = false;
+  export let onClick: undefined | (() => void) = undefined;
+  export let onShiftClick: undefined | (() => void) = undefined;
 
   export let bgClass = "";
 
-  let positionClasses;
+  let positionClasses: string;
   $: {
     if (position === "top") {
       positionClasses = "absolute left-0 top-0";
@@ -49,7 +52,7 @@
   on:mouseleave={blur}
   on:focus={focus}
   on:blur={blur}
-  on:click
+  on:click={modified({ shift: onShiftClick, click: onClick })}
   style:transform="translate{position === "left" ? "Y" : "X"}({header.start}px)"
   style:width="{header.size}px"
   style:height="{position === "left"

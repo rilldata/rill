@@ -16,9 +16,8 @@ import (
 type AST struct {
 	Root *MetricsSelect
 
-	baseSelect       *PlainSelect
-	comparisonSelect *PlainSelect
-	dimFields        []SelectField
+	baseSelect *PlainSelect // Cached here because it's needed when adding new JOIN nodes.
+	dimFields  []SelectField
 
 	metricsView    *runtimev1.MetricsViewSpec
 	security       *runtime.ResolvedMetricsViewSecurity
@@ -72,12 +71,18 @@ type WhereExpr struct {
 	Args []any
 }
 
+// OrderByField represents a field in an ORDER BY clause.
 type OrderByField struct {
 	Name string
 	Desc bool
 }
 
 func BuildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
+	// Validate there's at least one dim or measure
+	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 {
+		return nil, fmt.Errorf("must specify at least one dimension or measure")
+	}
+
 	// Init
 	ast := &AST{
 		metricsView: mv,
@@ -145,15 +150,7 @@ func BuildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSec
 		}
 	}
 
-	// Incrementally add each sort criterion.
-	for _, s := range ast.query.Sort {
-		err = ast.addSortField(ast.Root, s.Name, s.Desc)
-		if err != nil {
-			return nil, fmt.Errorf("can't sort by %q: %w", s.Name, err)
-		}
-	}
-
-	// Handle Having. If the root node is grouped, we add it as a HAVING clause, otherwise as a WHERE clause.
+	// Handle Having. If the root node is grouped, we add it as a HAVING clause, otherwise wrap it in a SELECT and add it as a WHERE clause.
 	if ast.query.Having != nil {
 		expr, args, err := ast.buildExpression(ast.query.Having, ast.Root.Group, ast.Root)
 		if err != nil {
@@ -168,7 +165,18 @@ func BuildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSec
 		if ast.Root.Group {
 			ast.Root.Having = res
 		} else {
+			// We need to wrap in a new SELECT because a WHERE clause cannot apply directly to a field with a window function.
+			// If this turns out to have performance implications, we could consider only wrapping if one of ast.Root.MeasureFields contains a window function.
+			ast.wrapSelect(ast.Root, ast.generateIdentifier())
 			ast.addWhere(ast.Root, res)
+		}
+	}
+
+	// Incrementally add each sort criterion.
+	for _, s := range ast.query.Sort {
+		err = ast.addSortField(ast.Root, s.Name, s.Desc)
+		if err != nil {
+			return nil, fmt.Errorf("can't sort by %q: %w", s.Name, err)
 		}
 	}
 
@@ -248,12 +256,13 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       qm.Name,
 			Expression: "COUNT(*)",
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			Label:      "Count",
 		}, nil
 	}
 
 	if qm.Compute.CountDistinct != nil {
-		dim, err := a.lookupDimension(*qm.Compute.CountDistinct, visible)
+		dim, err := a.lookupDimension(qm.Compute.CountDistinct.Dimension, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -266,12 +275,13 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       qm.Name,
 			Expression: fmt.Sprintf("COUNT(DISTINCT %s)", expr),
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			Label:      fmt.Sprintf("Unique %s", dim.Label),
 		}, nil
 	}
 
 	if qm.Compute.ComparisonValue != nil {
-		m, err := a.lookupMeasure(*qm.Compute.ComparisonValue, visible)
+		m, err := a.lookupMeasure(qm.Compute.ComparisonValue.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -280,13 +290,13 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
-			ReferencedMeasures: []string{*qm.Compute.ComparisonValue},
+			ReferencedMeasures: []string{qm.Compute.ComparisonValue.Measure},
 			Label:              fmt.Sprintf("%s (prev)", m.Label),
 		}, nil
 	}
 
 	if qm.Compute.ComparisonDelta != nil {
-		m, err := a.lookupMeasure(*qm.Compute.ComparisonDelta, visible)
+		m, err := a.lookupMeasure(qm.Compute.ComparisonDelta.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
@@ -295,22 +305,22 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			Name:               qm.Name,
 			Expression:         fmt.Sprintf("base.%s - comparison.%s", a.dialect.EscapeIdentifier(m.Name), a.dialect.EscapeIdentifier(m.Name)),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
-			ReferencedMeasures: []string{*qm.Compute.ComparisonDelta},
+			ReferencedMeasures: []string{qm.Compute.ComparisonDelta.Measure},
 			Label:              fmt.Sprintf("%s (Δ)", m.Label),
 		}, nil
 	}
 
 	if qm.Compute.ComparisonRatio != nil {
-		m, err := a.lookupMeasure(*qm.Compute.ComparisonRatio, visible)
+		m, err := a.lookupMeasure(qm.Compute.ComparisonRatio.Measure, visible)
 		if err != nil {
 			return nil, err
 		}
 
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
-			Expression:         a.dialect.SafeDivideExpression(fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name)), fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name))),
+			Expression:         a.dialect.SafeDivideExpression(fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name)), fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))),
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
-			ReferencedMeasures: []string{*qm.Compute.ComparisonDelta},
+			ReferencedMeasures: []string{qm.Compute.ComparisonRatio.Measure},
 			Label:              fmt.Sprintf("%s (Δ%%)", m.Label),
 		}, nil
 	}
@@ -391,6 +401,26 @@ func (a *AST) checkRequiredDimensionsPresentInQuery(m *runtimev1.MetricsViewSpec
 	for _, rd := range m.RequiredDimensions {
 		var found bool
 		for _, qd := range a.query.Dimensions {
+			// Handle computed dimension
+			if qd.Compute != nil {
+				if qd.Compute.TimeFloor == nil {
+					continue
+				}
+
+				if rd.Name != qd.Compute.TimeFloor.Dimension {
+					continue
+				}
+
+				isGrainSpecified := rd.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+				isGrainDifferent := TimeGrainFromProto(rd.TimeGrain) != qd.Compute.TimeFloor.Grain
+				if isGrainSpecified && isGrainDifferent {
+					continue
+				}
+
+				found = true
+				break
+			}
+
 			// Check for time dimension with time floor applied
 			if rd.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 				if qd.Compute == nil || qd.Compute.TimeFloor == nil {
@@ -435,7 +465,7 @@ func (a *AST) buildUnderlyingWhere() (*WhereExpr, error) {
 		return nil, fmt.Errorf("failed to compile 'where': %w", err)
 	}
 
-	if a.security.RowFilter != "" {
+	if a.security != nil && a.security.RowFilter != "" {
 		if expr == "" {
 			expr = a.security.RowFilter
 		} else {
@@ -456,11 +486,11 @@ func (a *AST) addTimeRange(n *MetricsSelect, tr *TimeRange) {
 	}
 
 	// Since resolving time ranges may require contextual info (like watermarks), the upstream caller is responsible for resolving them.
-	if tr.StartTime == nil && tr.EndTime == nil {
+	if tr.Start.IsZero() && tr.End.IsZero() {
 		panic("ast received a non-empty, unresolved time range")
 	}
 
-	expr, args := a.expressionForTimeRange(a.metricsView.TimeDimension, tr.StartTime, tr.EndTime)
+	expr, args := a.expressionForTimeRange(a.metricsView.TimeDimension, tr.Start, tr.End)
 	a.addWhere(n, &WhereExpr{
 		Expr: expr,
 		Args: args,
@@ -613,7 +643,7 @@ func (a *AST) addTimeComparisonMeasure(n *MetricsSelect, m *runtimev1.MetricsVie
 	// If the node doesn't have a comparison join, we wrap it in a new SELECT that we add the comparison join to.
 	// We use the hardcoded aliases "base" and "comparison" for the two SELECTs (which must be used in the comparison measure expression).
 	if n.JoinComparisonSelect == nil {
-		if a.comparisonSelect == nil {
+		if a.query.ComparisonTimeRange == nil {
 			return errors.New("comparison time range not provided")
 		}
 
@@ -625,9 +655,15 @@ func (a *AST) addTimeComparisonMeasure(n *MetricsSelect, m *runtimev1.MetricsVie
 			Group:     true,
 			FromPlain: a.baseSelect,
 		}
-		n.JoinComparisonType = "OUTER"
 
 		a.addTimeRange(n.JoinComparisonSelect, a.query.ComparisonTimeRange)
+
+		n.JoinComparisonType = "FULL OUTER"
+
+		for i, f := range n.DimFields {
+			f.Expr = fmt.Sprintf("COALESCE(%s, %s)", f.Expr, a.expressionForMember("comparison", f.Name))
+			n.DimFields[i] = f // Because it's not a value, not a pointer
+		}
 	}
 
 	// Add the referenced measures to the base and comparison SELECTs.
@@ -691,14 +727,6 @@ func (a *AST) addReferencedMeasuresToScope(n *MetricsSelect, referencedMeasures 
 			return err
 		}
 
-		// We only allow simple measures to be referenced.
-		switch m.Type {
-		case runtimev1.MetricsViewSpec_MEASURE_TYPE_UNSPECIFIED, runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE:
-			// Keep going
-		default:
-			return fmt.Errorf("referenced measure %q is not simple", rm)
-		}
-
 		// Add to the base SELECT. addMeasureField skips it if it's already present.
 		err = a.addMeasureField(n.FromSelect, m)
 		if err != nil {
@@ -726,14 +754,21 @@ func (a *AST) wrapSelect(s *MetricsSelect, innerAlias string) {
 
 	s.DimFields = make([]SelectField, 0, len(cpy.DimFields))
 	for _, f := range cpy.DimFields {
-		f.Expr = a.expressionForMember(cpy.Alias, f.Name)
-		s.DimFields = append(s.DimFields, f)
+		s.DimFields = append(s.DimFields, SelectField{
+			Name:  f.Name,
+			Label: f.Label,
+			Expr:  a.expressionForMember(cpy.Alias, f.Name),
+			// Not copying Unnest because we should only unnest once (at the innermost level).
+		})
 	}
 
 	s.MeasureFields = make([]SelectField, 0, len(cpy.MeasureFields))
 	for _, f := range cpy.MeasureFields {
-		f.Expr = a.expressionForMember(cpy.Alias, f.Name)
-		s.MeasureFields = append(s.MeasureFields, f)
+		s.MeasureFields = append(s.MeasureFields, SelectField{
+			Name:  f.Name,
+			Label: f.Label,
+			Expr:  a.expressionForMember(cpy.Alias, f.Name),
+		})
 	}
 
 	s.Group = false
@@ -742,9 +777,14 @@ func (a *AST) wrapSelect(s *MetricsSelect, innerAlias string) {
 	s.LeftJoinSelects = nil
 	s.JoinComparisonSelect = nil
 	s.JoinComparisonType = ""
+	s.Where = nil
+	s.Having = nil
 
 	s.OrderBy = make([]OrderByField, 0, len(cpy.OrderBy))
 	s.OrderBy = append(s.OrderBy, cpy.OrderBy...) // Fresh copy
+
+	s.Limit = nil
+	s.Offset = nil
 }
 
 // hasName checks if the given name is present as either a dimension or measure field in the node.
@@ -777,19 +817,19 @@ func (a *AST) hasMeasure(n *MetricsSelect, name string) bool {
 }
 
 // expressionForTimeRange builds a SQL expression and query args for filtering by a time range.
-func (a *AST) expressionForTimeRange(timeCol string, start, end *time.Time) (string, []any) {
+func (a *AST) expressionForTimeRange(timeCol string, start, end time.Time) (string, []any) {
 	var where string
 	var args []any
-	if start != nil && end != nil {
+	if !start.IsZero() && !end.IsZero() {
 		col := a.dialect.EscapeIdentifier(timeCol)
 		where = fmt.Sprintf("%s >= ? AND %s < ?", col, col)
-		args = []any{*start, *end}
-	} else if start != nil {
+		args = []any{start, end}
+	} else if !start.IsZero() {
 		where = fmt.Sprintf("%s >= ?", a.dialect.EscapeIdentifier(timeCol))
-		args = []any{*start}
-	} else if end != nil {
+		args = []any{start}
+	} else if end.IsZero() {
 		where = fmt.Sprintf("%s < ?", a.dialect.EscapeIdentifier(timeCol))
-		args = []any{*end}
+		args = []any{end}
 	} else {
 		return "", nil
 	}
@@ -800,12 +840,12 @@ func (a *AST) expressionForTimeRange(timeCol string, start, end *time.Time) (str
 // It uses the provided n to resolve dimensions expressions for window partitions.
 func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *MetricsSelect) string {
 	// If not applying a window, just return the measure expression.
-	if m.Window != nil {
+	if m.Window == nil {
 		return m.Expression
 	}
 
 	// For windows, we currently have a very hard-coded logic:
-	// 1. If partitioning is configured, we partition by all dimensions except the time dimension.
+	// 1. If partitioning is configured, we partition by all dimensions in the query except the time dimension.
 	// 2. If the time dimension is present in the query, we always order by time.
 
 	var partitionExprs []string
@@ -816,7 +856,21 @@ func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *Me
 			expr = a.expressionForMember(f.UnnestAlias, f.Name)
 		}
 
-		if f.Name == a.metricsView.TimeDimension {
+		isTimeDimension := f.Name == a.metricsView.TimeDimension
+		if !isTimeDimension {
+			// The field name may not be the time dim itself, but an alias for the floored time dimension.
+			// Search the query dimensions to check if that's the case.
+			for _, qd := range a.query.Dimensions {
+				if f.Name == qd.Name {
+					if qd.Compute != nil && qd.Compute.TimeFloor != nil {
+						isTimeDimension = true
+					}
+					break
+				}
+			}
+		}
+
+		if isTimeDimension {
 			orderExprs = append(orderExprs, expr)
 			continue
 		}

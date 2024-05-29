@@ -7,4 +7,6 @@ import (
 
 func init() {
 	runtime.RegisterResolverInitializer("metrics", metricsresolver.New)
+	runtime.RegisterResolverInitializer("builtin_metrics", metricsresolver.NewBuiltin)
+	runtime.RegisterBuiltinAPI("metrics", "builtin_metrics", nil)
 }
