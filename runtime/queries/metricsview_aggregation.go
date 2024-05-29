@@ -1736,7 +1736,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 						-- SELECT base.d1 as d1, ..., partial.m1, ...
 						SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withPrefixCols("partial", finalSimpleSelectCols), withPrefixCols("partial", finalComparisonTimeDimsLabels)), ",")+` FROM (
 							-- SELECT dim1 as d1, ... 
-							SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[9]s GROUP BY %[2]s `+subqueryLimitClause+` 
+							SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[7]s GROUP BY %[2]s `+subqueryLimitClause+` 
 						) base
 						LEFT JOIN
 						(
@@ -1744,16 +1744,16 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 							SELECT `+strings.Join(slices.Concat(finalDims, []string{finalMeasuresClause}, finalComparisonTimeDims), ",")+` FROM 
 								(
 									-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
-									SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[7]s AND `+measureFilterClause+` GROUP BY %[2]s `+subqueryLimitClause+`
+									SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[7]s AND `+measureFilterClause+` GROUP BY %[2]s `+subqueryOrderByClause+" "+subqueryLimitClause+`
 								) base
 							LEFT JOIN
 								(
-									SELECT `+comparisonSelectClause+` FROM %[3]s %[6]s WHERE %[5]s %[7]s AND `+measureFilterClause+` GROUP BY %[2]s `+subqueryLimitClause+` 
+									SELECT `+comparisonSelectClause+` FROM %[3]s %[6]s WHERE %[5]s %[7]s AND `+measureFilterClause+` GROUP BY %[2]s `+subqueryOrderByClause+" "+subqueryLimitClause+` 
 								) comparison
 							ON
 							-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
 									`+strings.Join(joinConditions, " AND ")+`
-							GROUP BY %[10]s
+							GROUP BY %[2]s
 						) partial
 						ON
 						-- base.d1 IS NOT DISTINCT FROM partial.d1 ...
@@ -1780,6 +1780,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		)
 	}
 
+	fmt.Println(sql, args)
 	return sql, args, nil
 }
 
