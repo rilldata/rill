@@ -1808,14 +1808,6 @@ func inFuncCols(name string, cols []string) []string {
 	return cs
 }
 
-func anyTimestamps(cols []string) string {
-	cs := make([]string, len(cols))
-	for i, c := range cols {
-		cs[i] = fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(%s))) AS %s", c, c)
-	}
-	return strings.Join(cs, ",")
-}
-
 func anyTimestampsCols(cols []string) []string {
 	cs := make([]string, len(cols))
 	for i, c := range cols {
