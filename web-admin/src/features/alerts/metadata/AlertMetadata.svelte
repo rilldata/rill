@@ -88,16 +88,9 @@
         </ProjectAccessControls>
       </div>
       <div class="flex gap-x-2 items-center">
-        <div class="flex flex-col">
-          <h1 class="text-gray-700 text-lg font-bold">
-            {alertSpec.title}
-          </h1>
-          {#if alertSpec.description}
-            <h3 class="text-gray-500 text-base font-normal">
-              {alertSpec.description}
-            </h3>
-          {/if}
-        </div>
+        <h1 class="text-gray-700 text-lg font-bold">
+          {alertSpec.title}
+        </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
           <EditAlert {alertSpec} metricsViewName={$dashboardName.data} />
@@ -159,7 +152,10 @@
     />
 
     <!-- Criteria -->
-    <AlertFilterCriteria filters={metricsViewAggregationRequest?.having} />
+    <AlertFilterCriteria
+      filters={metricsViewAggregationRequest?.having}
+      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
+    />
 
     <!-- Slack notification -->
     {#if slackNotifier}

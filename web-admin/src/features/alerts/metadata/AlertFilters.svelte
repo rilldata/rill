@@ -37,10 +37,9 @@
   <MetadataLabel>Filters ({filtersLength})</MetadataLabel>
   <div class="flex flex-wrap gap-2">
     {#if filtersLength}
-      {#if hasTimeRange}<TimeRangeReadOnly
-          {timeRange}
-          {comparisonTimeRange}
-        />{/if}
+      {#if hasTimeRange}
+        <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
+      {/if}
       {#each currentDimensionFilters as { name, label, selectedValues, isInclude } (name)}
         {@const dimension = dimensions.find((d) => d.name === name)}
         <div animate:flip={{ duration: 200 }}>

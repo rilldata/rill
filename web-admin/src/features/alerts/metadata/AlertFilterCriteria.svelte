@@ -4,15 +4,23 @@
   import { measureChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import { mapExprToMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
+  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+  import type {
+    V1Expression,
+    V1TimeRange,
+  } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
 
   export let filters: V1Expression | undefined;
+  export let comparisonTimeRange: V1TimeRange | undefined;
 
   $: filtersLength = filters?.cond?.exprs?.length ?? 0;
 
   $: measureFilters = filters?.cond?.exprs?.map(mapExprToMeasureFilter) ?? [];
+
+  $: comparisonLabel =
+    TIME_COMPARISON[comparisonTimeRange?.isoOffset]?.label?.toLowerCase();
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -34,6 +42,8 @@
                 {filter}
                 label={filter.measure}
                 readOnly
+                {comparisonLabel}
+                labelMaxWidth="300px"
               />
             </div>
           </Chip>
