@@ -134,8 +134,8 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	defer rows.Close()
 
 	// handle schema
-	var cols []wire.Column
 	fds := rows.FieldDescriptions()
+	cols := make([]wire.Column, 0, len(fds))
 	for _, fd := range fds {
 		cols = append(cols, wire.Column{
 			Table: int32(fd.TableOID),
