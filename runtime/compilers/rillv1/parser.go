@@ -137,6 +137,8 @@ func (k ResourceKind) String() string {
 		return "Dashboard"
 	case ResourceKindAPI:
 		return "API"
+	case ResourceKindConnector:
+		return "Connector"
 	default:
 		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
