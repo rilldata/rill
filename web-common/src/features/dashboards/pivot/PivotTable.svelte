@@ -328,6 +328,7 @@
             <td
               class="ui-copy-number"
               class:border-r={i % measureCount === 0 && i}
+              class:totals-column={i <= measureCount}
             >
               <div class="cell">
                 {#if result?.component && result?.props}
@@ -433,7 +434,7 @@
 
   /* The totals row */
   tbody > tr:nth-of-type(2) {
-    @apply bg-slate-100 sticky z-20 font-semibold;
+    @apply bg-slate-50 sticky z-20 font-semibold;
     top: var(--total-header-height);
   }
 
@@ -445,5 +446,9 @@
   tr:hover,
   tr:hover .cell {
     @apply bg-slate-100;
+  }
+
+  .totals-column {
+    @apply bg-slate-50 font-semibold;
   }
 </style>
