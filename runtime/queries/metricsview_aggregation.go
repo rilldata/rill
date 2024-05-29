@@ -1383,11 +1383,14 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 	var orderClauses []string
 	var subqueryOrderByClauses []string
 
+	/*
+		Dimensions are referenced by index because time dimensions have an issue with aliases in DuckDB.
+	*/
 	for _, s := range q.Sort {
 		var outerClause, subQueryClause, extraOuterClause string
 		if dimByName[s.Name] != nil { // dimension
-			outerClause = fmt.Sprintf("%d", colMap[s.Name])
-			subQueryClause = fmt.Sprintf("%d", colMap[s.Name]+1)
+			outerClause = fmt.Sprintf("%d", colMap[s.Name]-1)
+			subQueryClause = fmt.Sprintf("%d", colMap[s.Name])
 			extraOuterClause = fmt.Sprintf("base.%s", safeName(s.Name)) // todo check unnest
 		} else if measuresByFinalName[s.Name] != nil { // measure
 			m := measuresByFinalName[s.Name]
@@ -1503,6 +1506,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			args = append(args, q.TimeRange.Start.AsTime())
 		}
+		args = append(args, measureFilterArgs...)
 		args = append(args, baseTimeRangeArgs...)
 		args = append(args, whereClauseArgs...)
 
@@ -1525,16 +1529,39 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		// outer query
 		args = append(args, havingClauseArgs...)
 
-		// measure filter could include the base measure name.
+		// Outer query rationale:
+		// Measure filter could include the base measure name.
 		// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
-		// to keep the clause builder consistent we add an outer query here.
+		// to keep the clause builder consistent we add an outer query.
+
+		/*
+			CASE expression rationale:
+			Assume filter is `count(*)/10 FILTER publisher = 'Yahoo'`. FILTER doesn't support arithmetics on aggregation. To mimic FILTER one can produce 2 tables, one with the filter condition
+			and another without it and merge tables aftewards.
+			Full table:
+				Publisher count(*)
+				Microsoft 20
+				Yahoo 40
+
+			Filtered table:
+				Publisher count(*)
+				Yahoo 40
+
+			Result:
+				Publisher count(*)
+				Microsoft nil
+				Yahoo 4
+
+			But those tables should be limited if possible to increase performance. If they're limited the tables should be ordered. But the full table should contain all the dimension values that
+			are in the filtered table before being limited. That can be accomplished by including a virtual column with CASE <filter condition> expression and ordering by it.
+		*/
 		sql = fmt.Sprintf(`
 			SELECT * FROM (
 				-- SELECT base.d1, ... partial.m1, ...
 				SELECT `+withPrefix("base", outerDims)+`, `+strings.Join(slices.Concat(measureCols, finalComparisonTimeDimsLabels), ",")+` FROM
 				( 
 					-- SELECT ... as t_offset, dim1 as d1, ...
-					SELECT %[1]s FROM %[3]s %[7]s WHERE %[4]s GROUP BY %[2]s 
+					SELECT %[1]s , (CASE WHEN `+measureFilterClause+` THEN 0 ELSE 1 END) whereCase FROM %[3]s %[7]s WHERE %[4]s GROUP BY %[2]s, whereCase ORDER BY whereCase `+subqueryLimitClause+` 
 				) base
 				LEFT JOIN 
 				(
@@ -1702,6 +1729,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 			args = append(args, q.TimeRange.Start.AsTime())
 		}
+		args = append(args, measureFilterArgs...)
 		args = append(args, baseTimeRangeArgs...)
 		args = append(args, whereClauseArgs...)
 
@@ -1729,6 +1757,27 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		if havingWhereClause != "" {
 			havingWhereClause = "WHERE " + havingWhereClause
 		}
+		/*
+			CASE expression rationale:
+			Assume filter is `count(*)/10 FILTER publisher = 'Yahoo'`. FILTER doesn't support arithmetics on aggregation. To mimic FILTER one can produce 2 tables, one with the filter condition
+			and another without it and merge tables aftewards.
+			Full table:
+				Publisher count(*)
+				Microsoft 20
+				Yahoo 40
+
+			Filtered table:
+				Publisher count(*)
+				Yahoo 40
+
+			Result:
+				Publisher count(*)
+				Microsoft nil
+				Yahoo 4
+
+			But those tables should be limited if possible to increase performance. If they're limited the tables should be ordered. But the full table should contain all the dimension values that
+			are in the filtered table before being limited. That can be accomplished by including a virtual column with CASE <filter condition> expression and ordering by it.
+		*/
 		sql = fmt.Sprintf(`
 				SELECT * from (
 					-- SELECT d1, ..., ANY_VALUE(m1) as m1, ...
@@ -1736,7 +1785,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 						-- SELECT base.d1 as d1, ..., partial.m1, ...
 						SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withPrefixCols("partial", finalSimpleSelectCols), withPrefixCols("partial", finalComparisonTimeDimsLabels)), ",")+` FROM (
 							-- SELECT dim1 as d1, ... 
-							SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[7]s GROUP BY %[2]s 
+							SELECT %[1]s, (CASE WHEN `+measureFilterClause+` THEN 0 ELSE 1 END) whereCase FROM %[3]s %[6]s WHERE %[4]s %[7]s GROUP BY %[2]s, whereCase ORDER BY whereCase `+subqueryLimitClause+`
 						) base
 						LEFT JOIN
 						(
@@ -1780,7 +1829,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx 
 		)
 	}
 
-	fmt.Println(sql, args)
 	return sql, args, nil
 }
 
