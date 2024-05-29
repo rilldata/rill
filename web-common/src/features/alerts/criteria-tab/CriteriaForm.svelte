@@ -7,9 +7,11 @@
   import {
     MeasureFilterBaseTypeOptions,
     MeasureFilterComparisonTypeOptions,
+    MeasureFilterType,
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -37,6 +39,23 @@
   $: hasComparison =
     $form.comparisonTimeRange?.isoDuration ||
     $form.comparisonTimeRange?.isoOffset;
+  $: comparisonLabel =
+    TIME_COMPARISON[
+      $form.comparisonTimeRange?.isoOffset ?? ""
+    ]?.label?.toLowerCase();
+  $: typeOptions = hasComparison
+    ? MeasureFilterComparisonTypeOptions.map((o) => {
+        if (
+          o.value !== MeasureFilterType.AbsoluteChange &&
+          o.value !== MeasureFilterType.PercentChange
+        )
+          return o;
+        return {
+          ...o,
+          label: `${o.label} from ${comparisonLabel}`,
+        };
+      })
+    : MeasureFilterBaseTypeOptions;
 
   // Debounce the update of value. This avoid constant refetches
   let value: string = $form["criteria"][index].value1;
@@ -61,11 +80,9 @@
     bind:value={$form["criteria"][index].type}
     id="type"
     label=""
-    options={hasComparison
-      ? MeasureFilterComparisonTypeOptions
-      : MeasureFilterBaseTypeOptions}
+    options={typeOptions}
     placeholder="type"
-    className="col-span-4"
+    className="col-span-5"
   />
   <Select
     bind:value={$form["criteria"][index].operation}
@@ -83,7 +100,7 @@
     id="value"
     on:input={valueUpdater}
     placeholder={"0"}
-    className="col-span-4"
+    className="col-span-3"
   />
 </div>
 {#if groupErr}

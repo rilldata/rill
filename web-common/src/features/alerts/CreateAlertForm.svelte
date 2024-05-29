@@ -108,7 +108,7 @@
       comparisonTimeRange: comparisonTimeRange
         ? {
             ...comparisonTimeRange,
-            end: timeControls.comparisonTimeEnd,
+            end: timeControls.timeEnd,
           }
         : undefined,
     } as AlertFormValues,

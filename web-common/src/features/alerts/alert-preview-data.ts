@@ -62,8 +62,8 @@ function getAlertPreviewQueryRequest(
   if (req.timeRange) {
     req.timeRange.end = formValues.timeRange.end;
   }
-  if (req.comparisonTimeRange && formValues.comparisonTimeRange) {
-    req.comparisonTimeRange.end = formValues.comparisonTimeRange.end;
+  if (req.comparisonTimeRange) {
+    req.comparisonTimeRange.end = formValues.timeRange?.end;
   }
   return req;
 }
@@ -78,7 +78,11 @@ function getAlertPreviewQueryOptions(
   AlertPreviewResponse
 > {
   return {
-    enabled: !!formValues.measure && !!metricsViewSpec,
+    enabled:
+      !!formValues.measure &&
+      !!metricsViewSpec &&
+      (!formValues.timeRange || !!formValues.timeRange.end) &&
+      (!formValues.comparisonTimeRange || !!formValues.comparisonTimeRange.end),
     select: (resp) => {
       return {
         rows: resp.data as V1MetricsViewAggregationResponseDataItem[],
