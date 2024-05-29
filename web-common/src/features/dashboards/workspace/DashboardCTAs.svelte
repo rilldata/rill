@@ -76,7 +76,7 @@
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
-      <Button on:click={() => showDeployModal()} type="brand">Deploy</Button>
+      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>

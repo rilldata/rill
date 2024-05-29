@@ -60,7 +60,9 @@
   <div class="inner" style:width="{width}px">
     <ProjectTitle />
 
-    <AddAssetButton />
+    <div class="px-2 w-full">
+      <AddAssetButton />
+    </div>
     <div class="scroll-container">
       <div class="nav-wrapper" bind:clientHeight={navWrapperHeight}>
         <FileExplorer />
