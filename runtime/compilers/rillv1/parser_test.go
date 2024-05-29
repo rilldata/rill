@@ -1613,7 +1613,111 @@ select 3
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestAdvancedMeasures(t *testing.T) {
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// dashboard d1
+		`dashboards/d1.yaml`: `
+table: t1
+timeseries: t
+dimensions:
+  - column: foo
+measures:
+  - name: a
+    type: simple
+    expression: count(*)
+  - name: b
+    type: derived
+    expression: a+1
+    requires: [a]
+  - name: c
+    expression: sum(a)
+    per: [foo]
+    requires: [a]
+  - name: d
+    type: derived
+    expression: a/lag(a)
+    window:
+      frame: unbounded preceding to current row
+    requires:
+      - a
+      - name: t
+        time_grain: day
+`,
+	}
+
+	resources := []*Resource{
+		// dashboard d1
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:     "duckdb",
+				Table:         "t1",
+				TimeDimension: "t",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "foo", Column: "foo"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{
+						Name:       "a",
+						Expression: "count(*)",
+						Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+					},
+					{
+						Name:               "b",
+						Expression:         "a+1",
+						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						ReferencedMeasures: []string{"a"},
+					},
+					{
+						Name:               "c",
+						Expression:         "sum(a)",
+						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						PerDimensions:      []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "foo"}},
+						ReferencedMeasures: []string{"a"},
+					},
+					{
+						Name:               "d",
+						Expression:         "a/lag(a)",
+						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						Window:             &runtimev1.MetricsViewSpec_MeasureWindow{Partition: true, FrameExpression: "unbounded preceding to current row"},
+						RequiredDimensions: []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "t", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY}},
+						ReferencedMeasures: []string{"a"},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
+	// Check errors
+	// NOTE: Assumes there's at most one parse error per file path
+	// NOTE: Matches error messages using Contains (exact match not required)
+	gotErrors := slices.Clone(p.Errors)
+	for _, want := range wantErrors {
+		found := false
+		for i, got := range gotErrors {
+			if want.FilePath == got.FilePath {
+				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
+				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
+				gotErrors = slices.Delete(gotErrors, i, i+1)
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "missing error for path %q", want.FilePath)
+	}
+	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
+
 	// Check resources
 	gotResources := maps.Clone(p.Resources)
 	for _, want := range wantResources {
@@ -1639,25 +1743,6 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 		require.True(t, found, "missing resource %q", want.Name)
 	}
 	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
-
-	// Check errors
-	// NOTE: Assumes there's at most one parse error per file path
-	// NOTE: Matches error messages using Contains (exact match not required)
-	gotErrors := slices.Clone(p.Errors)
-	for _, want := range wantErrors {
-		found := false
-		for i, got := range gotErrors {
-			if want.FilePath == got.FilePath {
-				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
-				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
-				gotErrors = slices.Delete(gotErrors, i, i+1)
-				found = true
-				break
-			}
-		}
-		require.True(t, found, "missing error for path %q", want.FilePath)
-	}
-	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
 }
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {
