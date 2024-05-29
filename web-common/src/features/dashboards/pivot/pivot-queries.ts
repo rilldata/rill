@@ -55,16 +55,6 @@ export function createPivotAggregationRowQuery(
     ];
   }
 
-  // Probably a API bug where comparison API does not work when
-  // this is no dimension
-  if (!dimensions.length) {
-    measures = measures.filter(
-      (m) =>
-        !m.name?.endsWith(COMPARISON_PERCENT) &&
-        !m.name?.endsWith(COMPARISON_DELTA),
-    );
-  }
-
   let hasComparison = false;
   if (
     measures.some(
