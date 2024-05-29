@@ -150,15 +150,7 @@ func BuildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSec
 		}
 	}
 
-	// Incrementally add each sort criterion.
-	for _, s := range ast.query.Sort {
-		err = ast.addSortField(ast.Root, s.Name, s.Desc)
-		if err != nil {
-			return nil, fmt.Errorf("can't sort by %q: %w", s.Name, err)
-		}
-	}
-
-	// Handle Having. If the root node is grouped, we add it as a HAVING clause, otherwise as a WHERE clause.
+	// Handle Having. If the root node is grouped, we add it as a HAVING clause, otherwise wrap it in a SELECT and add it as a WHERE clause.
 	if ast.query.Having != nil {
 		expr, args, err := ast.buildExpression(ast.query.Having, ast.Root.Group, ast.Root)
 		if err != nil {
@@ -173,7 +165,18 @@ func BuildAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSec
 		if ast.Root.Group {
 			ast.Root.Having = res
 		} else {
+			// We need to wrap in a new SELECT because a WHERE clause cannot apply directly to a field with a window function.
+			// If this turns out to have performance implications, we could consider only wrapping if one of ast.Root.MeasureFields contains a window function.
+			ast.wrapSelect(ast.Root, ast.generateIdentifier())
 			ast.addWhere(ast.Root, res)
+		}
+	}
+
+	// Incrementally add each sort criterion.
+	for _, s := range ast.query.Sort {
+		err = ast.addSortField(ast.Root, s.Name, s.Desc)
+		if err != nil {
+			return nil, fmt.Errorf("can't sort by %q: %w", s.Name, err)
 		}
 	}
 
@@ -398,6 +401,26 @@ func (a *AST) checkRequiredDimensionsPresentInQuery(m *runtimev1.MetricsViewSpec
 	for _, rd := range m.RequiredDimensions {
 		var found bool
 		for _, qd := range a.query.Dimensions {
+			// Handle computed dimension
+			if qd.Compute != nil {
+				if qd.Compute.TimeFloor == nil {
+					continue
+				}
+
+				if rd.Name != qd.Compute.TimeFloor.Dimension {
+					continue
+				}
+
+				isGrainSpecified := rd.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+				isGrainDifferent := TimeGrainFromProto(rd.TimeGrain) != qd.Compute.TimeFloor.Grain
+				if isGrainSpecified && isGrainDifferent {
+					continue
+				}
+
+				found = true
+				break
+			}
+
 			// Check for time dimension with time floor applied
 			if rd.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 				if qd.Compute == nil || qd.Compute.TimeFloor == nil {
@@ -830,7 +853,7 @@ func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *Me
 	}
 
 	// For windows, we currently have a very hard-coded logic:
-	// 1. If partitioning is configured, we partition by all dimensions except the time dimension.
+	// 1. If partitioning is configured, we partition by all dimensions in the query except the time dimension.
 	// 2. If the time dimension is present in the query, we always order by time.
 
 	var partitionExprs []string
@@ -841,7 +864,21 @@ func (a *AST) expressionForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *Me
 			expr = a.expressionForMember(f.UnnestAlias, f.Name)
 		}
 
-		if f.Name == a.metricsView.TimeDimension {
+		isTimeDimension := f.Name == a.metricsView.TimeDimension
+		if !isTimeDimension {
+			// The field name may not be the time dim itself, but an alias for the floored time dimension.
+			// Search the query dimensions to check if that's the case.
+			for _, qd := range a.query.Dimensions {
+				if f.Name == qd.Name {
+					if qd.Compute != nil && qd.Compute.TimeFloor != nil {
+						isTimeDimension = true
+					}
+					break
+				}
+			}
+		}
+
+		if isTimeDimension {
 			orderExprs = append(orderExprs, expr)
 			continue
 		}

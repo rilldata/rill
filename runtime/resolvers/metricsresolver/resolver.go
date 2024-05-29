@@ -155,7 +155,7 @@ func (r *Resolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverRes
 	}
 	defer res.Close()
 
-	var out []map[string]any
+	out := []map[string]any{}
 	for res.Rows.Next() {
 		if int64(len(out)) >= r.interactiveRowLimit {
 			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", r.interactiveRowLimit)

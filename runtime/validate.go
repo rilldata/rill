@@ -133,7 +133,7 @@ func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStor
 	}
 	var metricExprs []string
 	for _, m := range mv.Measures {
-		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE { // TODO: Validate advanced measures
+		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil { // TODO: Validate advanced measures
 			continue
 		}
 		metricExprs = append(metricExprs, "("+m.Expression+")")
@@ -204,7 +204,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 
 	// Check measure expressions are valid
 	for idx, m := range mv.Measures {
-		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE { // TODO: Validate advanced measures
+		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil { // TODO: Validate advanced measures
 			continue
 		}
 
