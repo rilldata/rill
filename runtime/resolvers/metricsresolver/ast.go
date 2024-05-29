@@ -253,6 +253,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       qm.Name,
 			Expression: "COUNT(*)",
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			Label:      "Count",
 		}, nil
 	}
@@ -271,6 +272,7 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       qm.Name,
 			Expression: fmt.Sprintf("COUNT(DISTINCT %s)", expr),
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			Label:      fmt.Sprintf("Unique %s", dim.Label),
 		}, nil
 	}
