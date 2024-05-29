@@ -1,16 +1,17 @@
 <script lang="ts">
+  import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
   import { Tag } from "../../components/tag";
   import {
     V1AnalyzedConnector,
     createRuntimeServiceGetInstance,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
-  import TableExplorer from "../tables/TableExplorer.svelte";
   import { connectorIconMapping } from "./connector-icon-mapping";
+  import DatabaseExplorer from "./olap/DatabaseExplorer.svelte";
 
   export let connector: V1AnalyzedConnector;
 
-  let showTables = true;
+  let showDatabases = true;
 
   $: ({ instanceId } = $runtime);
   $: instance = createRuntimeServiceGetInstance(instanceId, {
@@ -22,40 +23,50 @@
 
 <!-- Only show the OLAP connector, for now -->
 {#if isOlapConnector}
-  <li>
-    <button on:click={() => (showTables = !showTables)}>
-      <div class="flex-none">
-        {#if connector.driver?.name}
-          <svelte:component
-            this={connectorIconMapping[connector.driver.name]}
-            size="16px"
-          />
+  {#if connector.name}
+    <li aria-label={connector.name} class="connector-entry">
+      <button
+        class="connector-entry-header"
+        on:click={() => (showDatabases = !showDatabases)}
+      >
+        <CaretDownIcon
+          className="transform transition-transform text-gray-400 {showDatabases
+            ? 'rotate-0'
+            : '-rotate-90'}"
+        />
+        <div class="flex-none">
+          {#if connector.driver?.name}
+            <svelte:component
+              this={connectorIconMapping[connector.driver.name]}
+              size="16px"
+            />
+          {/if}
+        </div>
+        <h4>{connector.name}</h4>
+        <div class="flex-grow" />
+        {#if isOlapConnector}
+          <Tag height={16}>OLAP</Tag>
         {/if}
-      </div>
-      <h4>{connector?.name}</h4>
-      <div class="flex-grow" />
-      {#if isOlapConnector}
-        <Tag height={16}>OLAP</Tag>
+      </button>
+      {#if showDatabases}
+        <DatabaseExplorer {instanceId} {connector} />
       {/if}
-    </button>
-    {#if showTables}
-      <TableExplorer {instanceId} {connector} />
-    {/if}
-  </li>
+    </li>
+  {/if}
 {/if}
 
 <style lang="postcss">
-  li {
+  .connector-entry {
     @apply flex flex-col;
   }
 
-  button {
+  .connector-entry-header {
     @apply flex gap-x-1 items-center;
-    @apply w-full p-2;
+    @apply w-full p-1;
   }
 
   button:hover {
-    @apply bg-gray-200;
+    @apply bg-slate-100;
   }
 
   h4 {

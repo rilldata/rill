@@ -1,0 +1,88 @@
+<script lang="ts">
+  import { Folder } from "lucide-svelte";
+  import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
+  import { V1AnalyzedConnector } from "../../../runtime-client";
+  import TableEntry from "./TableEntry.svelte";
+  import { useTables } from "./selectors";
+
+  export let instanceId: string;
+  export let connector: V1AnalyzedConnector;
+  export let database: string;
+  export let databaseSchema: string;
+
+  let showTables = true;
+
+  $: connectorName = connector?.name as string;
+  $: tablesQuery = useTables(
+    instanceId,
+    connectorName,
+    database,
+    databaseSchema,
+  );
+  $: ({ data } = $tablesQuery);
+
+  $: typedData = data as
+    | {
+        name: string;
+        database: string;
+        databaseSchema: string;
+        hasUnsupportedDataTypes: boolean;
+      }[]
+    | undefined;
+</script>
+
+<li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
+  <button
+    class="database-schema-entry-header"
+    class:open={showTables}
+    on:click={() => (showTables = !showTables)}
+  >
+    <CaretDownIcon
+      className="transform transition-transform text-gray-400 {showTables
+        ? 'rotate-0'
+        : '-rotate-90'}"
+    />
+    <Folder size="14px" class="shrink-0 text-gray-400" />
+    <span class="truncate">
+      {databaseSchema}
+    </span>
+  </button>
+
+  {#if showTables}
+    {#if typedData && typedData.length > 0}
+      <ol>
+        {#each typedData as tableInfo (tableInfo)}
+          <TableEntry
+            connectorInstanceId={instanceId}
+            connector={connectorName}
+            {database}
+            {databaseSchema}
+            table={tableInfo.name}
+            hasUnsupportedDataTypes={tableInfo.hasUnsupportedDataTypes}
+          />
+        {/each}
+      </ol>
+    {/if}
+  {/if}
+</li>
+
+<style lang="postcss">
+  .database-schema-entry {
+    @apply w-full;
+    @apply flex flex-col;
+  }
+
+  .database-schema-entry-header {
+    @apply flex items-center gap-x-1;
+    @apply sticky top-0 z-10;
+    @apply h-6 pl-[40px] pr-2;
+  }
+
+  button:hover {
+    @apply bg-slate-100;
+  }
+
+  .entry:not(.open) .entry-header {
+    @apply bg-white;
+  }
+</style>

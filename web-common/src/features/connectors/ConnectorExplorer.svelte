@@ -64,11 +64,13 @@
   }
 
   button {
-    @apply flex justify-between items-center w-full pl-2 pr-3.5 pt-2 pb-2 text-gray-500;
+    @apply flex justify-between items-center w-full;
+    @apply pl-2 pr-3.5 py-2;
+    @apply text-gray-500;
   }
 
   button:hover {
-    @apply bg-gray-200;
+    @apply bg-slate-100;
   }
 
   h3 {
