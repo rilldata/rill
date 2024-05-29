@@ -826,6 +826,8 @@ func (m *DeployValidationResponse) validate(all bool) error {
 
 	// no validation rules for IsAuthenticated
 
+	// no validation rules for LoginUrl
+
 	// no validation rules for IsGithubConnected
 
 	// no validation rules for GithubGrantAccessUrl

@@ -57,19 +57,20 @@ message DeployValidationRequest {}
 
 message DeployValidationResponse {
   bool is_authenticated = 1; // if true below fields are relevant after login
-  bool is_github_connected = 2; // if true below fields are relevant after github install
-  string github_grant_access_url = 3; // redirect to this if is_github_connected or is_github_repo_access_granted is false
-  string github_user_name = 4;
-  rill.admin.v1.GithubPermission github_app_user_permission = 5; // if unspecified then github app not installed on user account
-  map<string, rill.admin.v1.GithubPermission> github_organization_installation_permissions = 6;
-  bool is_github_repo = 7;
-  bool is_github_remote_found = 8; // only applicable when is_github_repo is true
-  bool is_github_repo_access_granted = 9; // relevant only when is_github_repo is true and remote found, if false redirect to github_grant_access_url
-  string github_url = 10; // only applicable when is_github_repo is true and remote found
-  optional bool has_uncommitted_changes = 11; // only applicable when is_github_repo is true and remote found
-  bool rill_org_exists_as_github_user_name = 12; // only applicable when user does not have any orgs
-  repeated string rill_user_orgs = 13;
-  string local_project_name = 14;
+  string login_url = 2; // redirect to this if is_authenticated is false
+  bool is_github_connected = 3; // if true below fields are relevant after github install
+  string github_grant_access_url = 4; // redirect to this if is_github_connected or is_github_repo_access_granted is false
+  string github_user_name = 5;
+  rill.admin.v1.GithubPermission github_app_user_permission = 6; // if unspecified then github app not installed on user account
+  map<string, rill.admin.v1.GithubPermission> github_organization_installation_permissions = 7;
+  bool is_github_repo = 8;
+  bool is_github_remote_found = 9; // only applicable when is_github_repo is true
+  bool is_github_repo_access_granted = 10; // relevant only when is_github_repo is true and remote found, if false redirect to github_grant_access_url
+  string github_url = 11; // only applicable when is_github_repo is true and remote found
+  optional bool has_uncommitted_changes = 12; // only applicable when is_github_repo is true and remote found
+  bool rill_org_exists_as_github_user_name = 13; // only applicable when user does not have any orgs
+  repeated string rill_user_orgs = 14;
+  string local_project_name = 15;
 }
 
 message PushToGithubRequest {

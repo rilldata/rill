@@ -94,13 +94,12 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 			return nil, fmt.Errorf("failed to get user installation: %w", err)
 		}
 	} else {
-		userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_READ
 		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
-		if installation.Permissions == nil || installation.Permissions.Contents == nil {
-			return nil, status.Errorf(codes.Internal, "failed to get user installation permissions for user %s", user.GithubUsername)
+		if installation.Permissions != nil && installation.Permissions.Contents != nil && strings.EqualFold(*installation.Permissions.Contents, "read") {
+			userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_READ
 		}
 
-		if installation.Permissions.Administration != nil && strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
+		if installation.Permissions != nil && installation.Permissions.Contents != nil && installation.Permissions.Administration != nil && strings.EqualFold(*installation.Permissions.Administration, "write") && strings.EqualFold(*installation.Permissions.Contents, "write") {
 			userInstallationPermission = adminv1.GithubPermission_GITHUB_PERMISSION_WRITE
 		}
 	}
@@ -136,13 +135,13 @@ func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithub
 			}
 			return nil, status.Errorf(codes.Internal, "failed to get organization installation: %s", err.Error())
 		}
-		permission := adminv1.GithubPermission_GITHUB_PERMISSION_READ
+		permission := adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED
 		// older git app would ask for Contents=read permission whereas new one asks for Contents=write and && Administration=write
-		if i.Permissions == nil || i.Permissions.Contents == nil {
-			return nil, status.Errorf(codes.Internal, "failed to get organization permissions for org %s", org.GetLogin())
+		if i.Permissions != nil && i.Permissions.Contents != nil && strings.EqualFold(*i.Permissions.Contents, "read") {
+			permission = adminv1.GithubPermission_GITHUB_PERMISSION_READ
 		}
 
-		if i.Permissions.Administration != nil && strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
+		if i.Permissions != nil && i.Permissions.Contents != nil && i.Permissions.Administration != nil && strings.EqualFold(*i.Permissions.Administration, "write") && strings.EqualFold(*i.Permissions.Contents, "write") {
 			permission = adminv1.GithubPermission_GITHUB_PERMISSION_WRITE
 		}
 
