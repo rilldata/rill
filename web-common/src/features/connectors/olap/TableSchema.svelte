@@ -28,7 +28,7 @@
     </div>
   {:else if data && data.profileColumns}
     {#each data.profileColumns as column (column)}
-      <li class="table-schema-entry">
+      <li class="table-schema-entry {database ? 'pl-[74px]' : 'pl-[58px]'}">
         <Tooltip distance={4}>
           <span class="font-mono truncate">{column.name}</span>
           <TooltipContent slot="tooltip-content">
@@ -43,7 +43,7 @@
 
 <style lang="postcss">
   .table-schema-list {
-    @apply pl-[74px] pr-4 py-1.5;
+    @apply pr-4 py-1.5; /* padding-left is set dynamically above */
     @apply flex flex-col gap-y-0.5;
   }
 

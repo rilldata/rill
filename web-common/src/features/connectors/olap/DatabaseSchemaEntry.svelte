@@ -33,7 +33,7 @@
 
 <li aria-label={`${database}.${databaseSchema}`} class="database-schema-entry">
   <button
-    class="database-schema-entry-header"
+    class="database-schema-entry-header {database ? 'pl-[40px]' : 'pl-[22px]'}"
     class:open={showTables}
     on:click={() => (showTables = !showTables)}
   >
@@ -73,16 +73,16 @@
   }
 
   .database-schema-entry-header {
+    @apply h-6 pr-2; /* left-padding is set dynamically above */
     @apply flex items-center gap-x-1;
     @apply sticky top-0 z-10;
-    @apply h-6 pl-[40px] pr-2;
   }
 
   button:hover {
     @apply bg-slate-100;
   }
 
-  .entry:not(.open) .entry-header {
+  .database-schema-entry:not(.open) .database-schema-entry-header {
     @apply bg-white;
   }
 </style>

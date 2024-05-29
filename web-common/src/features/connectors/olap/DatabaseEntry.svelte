@@ -71,9 +71,9 @@
   }
 
   .database-entry-header {
+    @apply h-6 pl-[22px] pr-2;
     @apply flex items-center gap-x-1;
     @apply sticky top-0 z-10;
-    @apply h-6 pl-[22px] pr-2;
   }
 
   button:hover {

@@ -35,7 +35,7 @@
 </script>
 
 <li aria-label={fullyQualifiedTableName} class="table-entry group" class:open>
-  <div class="table-entry-header">
+  <div class="table-entry-header {database ? 'pl-[58px]' : 'pl-[40px]'}">
     <TableIcon size="14px" className="shrink-0 text-gray-400" />
     <Tooltip alignment="start" location="right" distance={32}>
       <button
@@ -94,8 +94,8 @@
   }
 
   .table-entry-header {
+    @apply h-6 pr-2; /* left-padding is set dynamically above */
     @apply flex justify-between items-center gap-x-1;
-    @apply h-6 pl-[58px] pr-2;
     @apply sticky top-0 z-10;
   }
 
