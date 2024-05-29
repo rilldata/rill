@@ -18,7 +18,7 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
+func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
 	clientParams := wire.ClientParameters(ctx)
 	instanceID := clientParams[wire.ParamDatabase]
 	var api *runtimev1.API

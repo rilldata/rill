@@ -126,7 +126,6 @@ func newBuiltinPostgresSQL(ctx context.Context, opts *runtime.ResolverOptions) (
 	if err := populateCatalogTables(ctx, olap); err != nil {
 		return nil, err
 	}
-	fmt.Printf("final SQL: %v\n", args.SQL)
 	return &catalogSQLResolver{
 		olap:  olap,
 		sql:   args.SQL,

@@ -48,7 +48,7 @@ var (
 type Options struct {
 	HTTPPort               int
 	GRPCPort               int
-	PostgresPort           int
+	PSQLPort               int
 	ExternalURL            string
 	FrontendURL            string
 	AllowedOrigins         []string
@@ -76,6 +76,9 @@ type Server struct {
 	urls          *externalURLs
 	limiter       ratelimit.Limiter
 	activity      *activity.Client
+
+	// psqlConnectionPool maintains a psql wire connection pool to runtime servers
+	psqlConnectionPool *psqlConnectionPool
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -131,7 +134,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		return nil, err
 	}
 
-	return &Server{
+	s := &Server{
 		logger:        logger,
 		admin:         adm,
 		opts:          opts,
@@ -141,7 +144,9 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		urls:          newURLRegistry(opts),
 		limiter:       limiter,
 		activity:      activityClient,
-	}, nil
+	}
+	s.psqlConnectionPool = newPSQLConnectionPool(s)
+	return s, nil
 }
 
 // ServeGRPC Starts the gRPC server.
@@ -192,8 +197,14 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 
 // ServePostgres Starts the postrges server.
 func (s *Server) ServePostgres(ctx context.Context) error {
-	authHandler := s.authenticator.PostgresAuthHandler()
-	return graceful.ServePostgres(ctx, s.QueryHandler, authHandler, s.opts.PostgresPort, false, s.logger)
+	authHandler := s.authenticator.PSQLAuthHandler()
+	opts := &graceful.ServePSQLOptions{
+		QueryHandler: s.psqlProxyQueryHandler,
+		AuthHandler:  authHandler,
+		Port:         s.opts.PSQLPort,
+		Logger:       s.logger,
+	}
+	return graceful.ServePostgres(ctx, opts)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
@@ -299,6 +310,11 @@ func (s *Server) Ping(ctx context.Context, req *adminv1.PingRequest) (*adminv1.P
 		Time:    timestamppb.New(time.Now()),
 	}
 	return resp, nil
+}
+
+func (s *Server) Close() error {
+	s.psqlConnectionPool.close()
+	return nil
 }
 
 func (s *Server) checkRateLimit(ctx context.Context) (context.Context, error) {

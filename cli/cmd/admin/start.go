@@ -48,7 +48,7 @@ type Config struct {
 	TracesExporter           observability.Exporter `default:"" split_words:"true"`
 	HTTPPort                 int                    `default:"8080" split_words:"true"`
 	GRPCPort                 int                    `default:"9090" split_words:"true"`
-	PostgresPort             int                    `default:"25432" split_words:"true"`
+	PSQLPort                 int                    `default:"5432" split_words:"true"`
 	DebugPort                int                    `split_words:"true"`
 	ExternalURL              string                 `default:"http://localhost:8080" split_words:"true"`
 	ExternalGRPCURL          string                 `envconfig:"external_grpc_url"`
@@ -289,7 +289,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
-					PostgresPort:           conf.PostgresPort,
+					PSQLPort:               conf.PSQLPort,
 					ExternalURL:            conf.ExternalURL,
 					FrontendURL:            conf.FrontendURL,
 					AllowedOrigins:         conf.AllowedOrigins,
@@ -306,6 +306,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))
 				}
+				defer srv.Close()
 				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
 				group.Go(func() error { return srv.ServePostgres(cctx) })

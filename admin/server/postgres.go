@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"strconv"
@@ -9,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	wire "github.com/jeroenrinzema/psql-wire"
 	"github.com/lib/pq/oid"
@@ -17,121 +19,41 @@ import (
 	"go.uber.org/zap"
 )
 
-func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
-	s.logger.Debug("query", zap.String("query", query))
+func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt wire.PreparedStatements, err error) {
+	s.logger.Info("psql proxy query", zap.String("query", query))
+	now := time.Now()
+	defer func() {
+		s.logger.Info("psql proxy query executed", zap.Duration("duration", time.Since(now)), zap.Error(err))
+	}()
+
 	if strings.Trim(query, " ") == "" {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 			return writer.Empty()
 		})), nil
 	}
 
-	upperQuery := strings.ToUpper(query)
-	if strings.HasPrefix(upperQuery, "SET") {
+	if hasPrefixFold(query, "SET") {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 			return writer.Complete("SET")
 		}, wire.WithColumns(nil))), nil
 	}
 
-	if strings.HasPrefix(upperQuery, "BEGIN") || strings.HasPrefix(upperQuery, "COMMIT") || strings.HasPrefix(upperQuery, "ROLLBACK") {
+	if hasPrefixFold(query, "BEGIN") || hasPrefixFold(query, "COMMIT") || hasPrefixFold(query, "ROLLBACK") {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-			return writer.Complete(strings.Trim(upperQuery, ";"))
+			return writer.Complete(strings.ToUpper(strings.Trim(query, ";")))
 		}, wire.WithColumns(nil))), nil
 	}
 
 	clientParams := wire.ClientParameters(ctx)
-	// database is org.password
-	tokens := strings.Split(clientParams[wire.ParamDatabase], ".")
-	if len(tokens) != 2 {
-		return nil, fmt.Errorf("invalid org or project")
-	}
-	org := tokens[0]
-	project := tokens[1]
-
-	// Find the production deployment for the project we're proxying to
-	proj, err := s.admin.DB.FindProjectByName(ctx, org, project)
+	conn, err := s.psqlConnectionPool.acquire(ctx, clientParams[wire.ParamDatabase])
 	if err != nil {
-		return nil, fmt.Errorf("invalid org or project")
-	}
-
-	if proj.ProdDeploymentID == nil {
-		return nil, fmt.Errorf("no prod deployment for project")
-	}
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
-	if err != nil {
-		return nil, fmt.Errorf("no prod deployment for project")
-	}
-
-	var jwt string
-	claims := auth.GetClaims(ctx)
-	switch claims.OwnerType() {
-	case auth.OwnerTypeAnon:
-		// If the client is not authenticated with the admin service, we just proxy the contents of the password to the runtime (if any).
-		password := ctx.Value(auth.PostgresPassword{}).(string)
-		if len(password) >= 6 && strings.EqualFold(password[0:6], "bearer") {
-			jwt = strings.TrimSpace(password[6:])
-		}
-	case auth.OwnerTypeUser, auth.OwnerTypeService:
-		// If the client is authenticated with the admin service, we issue a new ephemeral runtime JWT.
-		// The JWT should have the same permissions/configuration as one they would get by calling AdminService.GetProject.
-		permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, depl.ProjectID)
-		if !permissions.ReadProd {
-			return nil, fmt.Errorf("does not have permission to access the production deployment")
-		}
-
-		var attr map[string]any
-		if claims.OwnerType() == auth.OwnerTypeUser {
-			attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
-			if err != nil {
-				return nil, err
-			}
-		}
-
-		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{
-			AudienceURL: depl.RuntimeAudience,
-			Subject:     claims.OwnerID(),
-			TTL:         runtimeAccessTokenDefaultTTL,
-			InstancePermissions: map[string][]runtimeauth.Permission{
-				depl.RuntimeInstanceID: {
-					// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
-					runtimeauth.ReadObjects,
-					runtimeauth.ReadMetrics,
-					runtimeauth.ReadProfiling,
-					runtimeauth.ReadRepo,
-					runtimeauth.ReadAPI,
-				},
-			},
-			Attributes: attr,
-		})
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, fmt.Errorf("runtime proxy not available for owner type %q", claims.OwnerType())
-	}
-
-	// Track usage of the deployment
-	s.admin.Used.Deployment(depl.ID)
-
-	hostURL, err := url.Parse(depl.RuntimeHost)
-	if err != nil {
-		return nil, err
-	}
-	hostURL.Scheme = "postgres"
-	hostURL.Host = hostURL.Hostname() + ":" + strconv.FormatInt(int64(15432), 10)
-	hostURL.User = url.UserPassword("postgres", fmt.Sprintf("Bearer %s", jwt))
-	hostURL.Path = depl.RuntimeInstanceID
-	conn, err := connectionPool(ctx, hostURL.String())
-	if err != nil {
-		s.logger.Info("error in get connection pool", zap.Error(err))
 		return nil, err
 	}
 
 	rows, err := conn.Query(ctx, query) // query to underlying host
 	if err != nil {
-		s.logger.Info("error in query", zap.Error(err))
 		return nil, err
 	}
-	defer rows.Close()
 
 	// handle schema
 	fds := rows.FieldDescriptions()
@@ -147,48 +69,153 @@ func (s *Server) QueryHandler(ctx context.Context, query string) (wire.PreparedS
 	}
 
 	// handle data
-	// NOTE :: This creates a copy of data and stores this till client starts reading data. This is required so that we
-	// can close runtime connection and not wait for client to complete reading whole data which can leak connection.
-	// We can improve this logic in future.
-	var data [][]any
-	for rows.Next() {
-		d, err := rows.Values()
-		if err != nil {
-			s.logger.Info("error in fetching next row", zap.Error(err))
-			return nil, err
-		}
-		data = append(data, d)
-	}
-	if rows.Err() != nil {
-		s.logger.Info("error in fetching rows", zap.Error(err))
-		return nil, err
-	}
-
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-		for i := 0; i < len(data); i++ {
-			if err := writer.Row(data[i]); err != nil {
+		defer rows.Close()
+		for rows.Next() {
+			d, err := rows.Values()
+			if err != nil {
+				return err
+			}
+			if err := writer.Row(d); err != nil {
 				return err
 			}
 		}
+		if rows.Err() != nil {
+			return err
+		}
+
 		return writer.Complete("OK")
 	}
 	return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(cols))), nil
 }
 
-var (
-	runtimePool map[string]*pgxpool.Pool = make(map[string]*pgxpool.Pool)
+func (s *Server) runtimeJWT(ctx context.Context, org, project string) (string, error) {
+	// Find the production deployment for the project we're proxying to
+	proj, err := s.admin.DB.FindProjectByName(ctx, org, project)
+	if err != nil {
+		return "", fmt.Errorf("invalid org or project")
+	}
+
+	if proj.ProdDeploymentID == nil {
+		return "", fmt.Errorf("no prod deployment for project")
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	if err != nil {
+		return "", fmt.Errorf("no prod deployment for project")
+	}
+
+	claims := auth.GetClaims(ctx)
+	switch claims.OwnerType() {
+	case auth.OwnerTypeUser, auth.OwnerTypeService:
+	default:
+		return "", fmt.Errorf("runtime proxy not available for owner type %q", claims.OwnerType())
+	}
+
+	// The JWT should have the same permissions/configuration as one they would get by calling AdminService.GetProject.
+	permissions := claims.ProjectPermissions(ctx, *proj.ProdDeploymentID, depl.ProjectID)
+	if !permissions.ReadProd {
+		return "", fmt.Errorf("does not have permission to access the production deployment")
+	}
+
+	var attr map[string]any
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return s.issuer.NewToken(runtimeauth.TokenOptions{
+		AudienceURL: depl.RuntimeAudience,
+		Subject:     claims.OwnerID(),
+		TTL:         runtimeAccessTokenDefaultTTL,
+		InstancePermissions: map[string][]runtimeauth.Permission{
+			depl.RuntimeInstanceID: {
+				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
+				runtimeauth.ReadObjects,
+				runtimeauth.ReadMetrics,
+				runtimeauth.ReadProfiling,
+				runtimeauth.ReadRepo,
+				runtimeauth.ReadAPI,
+			},
+		},
+		Attributes: attr,
+	})
+}
+
+type psqlConnectionPool struct {
+	runtimePool map[string]*pgxpool.Pool
 	mu          sync.Mutex
-)
+	closed      bool
+	server      *Server
+}
 
-func connectionPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
-	mu.Lock()
-	defer mu.Unlock()
+func newPSQLConnectionPool(server *Server) *psqlConnectionPool {
+	return &psqlConnectionPool{
+		runtimePool: make(map[string]*pgxpool.Pool),
+		server:      server,
+	}
+}
 
-	pool, ok := runtimePool[dsn]
+func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.Pool, error) {
+	// database is org.project
+	tokens := strings.Split(db, ".")
+	if len(tokens) != 2 {
+		return nil, fmt.Errorf("invalid org or project")
+	}
+	org := tokens[0]
+	project := tokens[1]
+
+	// Find the production deployment for the project we're proxying to
+	proj, err := p.server.admin.DB.FindProjectByName(ctx, org, project)
+	if err != nil {
+		return nil, fmt.Errorf("invalid org or project")
+	}
+
+	if proj.ProdDeploymentID == nil {
+		return nil, fmt.Errorf("no prod deployment for project")
+	}
+
+	depl, err := p.server.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	if err != nil {
+		return nil, fmt.Errorf("no prod deployment for project")
+	}
+	// Track usage of the deployment
+	p.server.admin.Used.Deployment(depl.ID)
+
+	// generate a postgres dsn for the runtime psql endpoint
+	port := 5432
+	// hack : the runtime port on localhost is 15432 so that it does not conflict with the postgres db port used in admin service
+	if strings.Contains(depl.RuntimeHost, "localhost") {
+		port = 15432
+	}
+
+	hostURL, err := url.Parse(depl.RuntimeHost)
+	if err != nil {
+		return nil, err
+	}
+	hostURL.Scheme = "postgres"
+	hostURL.Host = hostURL.Hostname() + ":" + strconv.FormatInt(int64(port), 10)
+	hostURL.User = url.UserPassword("postgres", "")
+	hostURL.Path = depl.RuntimeInstanceID
+
+	dsn := hostURL.String()
+
+	// acquire connection pool from the cache
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	if p.closed {
+		return nil, errors.New("pool is closed")
+	}
+
+	pool, ok := p.runtimePool[dsn]
 	if ok {
 		return pool, nil
 	}
 
+	// parse dsn into pgxpool.Config
 	config, err := pgxpool.ParseConfig(dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse dsn: %w", err)
@@ -199,6 +226,44 @@ func connectionPool(ctx context.Context, dsn string) (*pgxpool.Pool, error) {
 	// since runtimes get restarted more often than actual DB servers. Consider if this should be reduced to even less time
 	// also consider if we should add some health check on connection acquisition
 	config.HealthCheckPeriod = time.Minute
+	// issues a runtime JWT and set it as password
+	config.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
+		tokens := strings.Split(db, ".")
+		if len(tokens) != 2 {
+			// this error will be captured much earlier
+			return fmt.Errorf("developer error: invalid org or project")
+		}
+		org := tokens[0]
+		project := tokens[1]
 
-	return pgxpool.NewWithConfig(ctx, config)
+		// NOTE :: runtimeJWT makes duplicate DB calls to get project and deployment again but this will only be on a new connection.
+		// This is done to avoid capturing project and deployment already present in this flow for the entire duration of the pool
+		jwt, err := p.server.runtimeJWT(ctx, org, project)
+		if err != nil {
+			return err
+		}
+		cc.Password = fmt.Sprintf("Bearer %s", jwt)
+		return nil
+	}
+
+	pool, err = pgxpool.NewWithConfig(ctx, config)
+	if err != nil {
+		return nil, fmt.Errorf("failed to connect to psql: %w", err)
+	}
+	p.runtimePool[dsn] = pool
+	return pool, nil
+}
+
+func (p *psqlConnectionPool) close() {
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	p.closed = true
+	for _, pool := range p.runtimePool {
+		pool.Close()
+	}
+}
+
+func hasPrefixFold(str, prefix string) bool {
+	return len(str) >= len(prefix) && strings.EqualFold(str[:len(prefix)], prefix)
 }

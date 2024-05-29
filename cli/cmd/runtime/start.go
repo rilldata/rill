@@ -61,7 +61,7 @@ type Config struct {
 	HTTPPort                int                    `default:"8080" split_words:"true"`
 	GRPCPort                int                    `default:"9090" split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
-	PostgresPort            int                    `default:"15432" split_words:"true"`
+	PSQLPort                int                    `default:"5432" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
@@ -237,7 +237,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			srvOpts := &server.Options{
 				HTTPPort:        conf.HTTPPort,
 				GRPCPort:        conf.GRPCPort,
-				PostgresPort:    conf.PostgresPort,
+				PSQLPort:        conf.PSQLPort,
 				AllowedOrigins:  conf.AllowedOrigins,
 				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
 				SessionKeyPairs: keyPairs,

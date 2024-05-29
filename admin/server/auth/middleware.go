@@ -75,20 +75,26 @@ func (a *Authenticator) HTTPMiddlewareLenient(next http.Handler) http.Handler {
 	return a.httpMiddleware(next, true)
 }
 
-type PostgresPassword struct{}
+type psqlPasswordContextKey struct{}
 
-func (a *Authenticator) PostgresAuthHandler() func(ctx context.Context, username, password string) (context.Context, bool, error) {
+// PSQLAuthHandler handles authentication for a PostgreSQL wire-compatible endpoint.
+// It does not throw an error if the password is invalid. Instead, it sets anonymous claims on the request.
+// The password is also stored in the context and can be retrieved using GetPSQLPassword.
+func (a *Authenticator) PSQLAuthHandler() func(ctx context.Context, username, password string) (context.Context, bool, error) {
 	return func(ctx context.Context, username, password string) (context.Context, bool, error) {
 		// Clients do not pass Bearer to avoid encoding the password
 		// The default token type is Bearer. In case of different token type, the type will be passed in postgres additional properties
-		password = fmt.Sprintf("bearer %s", password)
-		ctx = context.WithValue(ctx, PostgresPassword{}, password)
-		newCtx, err := a.parseClaimsFromBearer(ctx, password)
+		ctx = context.WithValue(ctx, psqlPasswordContextKey{}, password)
+		newCtx, err := a.parseClaimsFromToken(ctx, password)
 		if err != nil {
 			newCtx = context.WithValue(ctx, claimsContextKey{}, anonClaims{})
 		}
 		return newCtx, true, nil
 	}
+}
+
+func GetPSQLPassword(ctx context.Context) string {
+	return ctx.Value(psqlPasswordContextKey{}).(string)
 }
 
 // httpMiddleware is the actual implementation of HTTPMiddleware and HTTPMiddlewareLenient.

@@ -97,7 +97,8 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 	})
 }
 
-func PostgresAuthHandler(aud *Audience) func(ctx context.Context, username, password string) (context.Context, bool, error) {
+// PSQLAuthHandler handles authentication for a PostgreSQL wire-compatible endpoint
+func PSQLAuthHandler(aud *Audience) func(ctx context.Context, username, password string) (context.Context, bool, error) {
 	return func(ctx context.Context, username, password string) (context.Context, bool, error) {
 		var err error
 		password, err = url.QueryUnescape(password)
