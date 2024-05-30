@@ -97,9 +97,10 @@ export function mapComparisonTimeRange(
     default:
       comparisonTimeRange.isoOffset =
         timeControlState.selectedComparisonTimeRange.name;
-    // eslint-disable-next-line no-fallthrough
+      break;
     case TimeComparisonOption.CONTIGUOUS:
-      comparisonTimeRange.isoDuration = timeRange.isoDuration;
+      comparisonTimeRange.isoOffset = comparisonTimeRange.isoDuration =
+        timeRange.isoDuration;
       break;
 
     case TimeComparisonOption.CUSTOM:

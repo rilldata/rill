@@ -1,5 +1,6 @@
 import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
 import { AllMeasureFilterTypeOptions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
+import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
 import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 
@@ -50,10 +51,9 @@ export function generateAlertName(
     formValues.comparisonTimeRange?.isoOffset &&
     formValues.comparisonTimeRange.isoOffset in TIME_COMPARISON
   ) {
-    const label =
-      TIME_COMPARISON[
-        formValues.comparisonTimeRange.isoOffset
-      ].label.toLowerCase();
+    const label = getComparisonLabel(
+      formValues.comparisonTimeRange,
+    ).toLowerCase();
     comparisonTitle = ` vs ${label}`;
   }
 

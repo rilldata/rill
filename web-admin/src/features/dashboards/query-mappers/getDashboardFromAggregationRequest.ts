@@ -1,7 +1,6 @@
 import {
   convertExprToToplist,
   fillTimeRange,
-  getSelectedTimeRange,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import {
@@ -18,7 +17,6 @@ import {
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
-import { TimeComparisonOption } from "@rilldata/web-common/lib/time/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1Expression,
@@ -107,14 +105,12 @@ export async function getDashboardFromAggregationRequest({
     dashboard.activePage = DashboardState_ActivePage.TIME_DIMENSIONAL_DETAIL;
   }
 
-  console.log(dashboard);
   return dashboard;
 }
 
 function exprHasComparison(expr: V1Expression) {
   let hasComparison = false;
   forEachIdentifier(expr, (e, ident) => {
-    console.log(ident);
     if (
       ident.endsWith(ComparisonDeltaAbsoluteSuffix) ||
       ident.endsWith(ComparisonDeltaRelativeSuffix)

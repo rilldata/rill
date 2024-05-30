@@ -11,7 +11,7 @@
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
-  import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+  import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -39,10 +39,9 @@
   $: hasComparison =
     $form.comparisonTimeRange?.isoDuration ||
     $form.comparisonTimeRange?.isoOffset;
-  $: comparisonLabel =
-    TIME_COMPARISON[
-      $form.comparisonTimeRange?.isoOffset ?? ""
-    ]?.label?.toLowerCase();
+  $: comparisonLabel = $form.comparisonTimeRange
+    ? getComparisonLabel($form.comparisonTimeRange).toLowerCase()
+    : "";
   $: typeOptions = hasComparison
     ? MeasureFilterComparisonTypeOptions.map((o) => {
         if (

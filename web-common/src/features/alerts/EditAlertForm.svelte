@@ -121,8 +121,6 @@
       $form[fk] = formValues[fk];
     }
   }
-
-  $: console.log($form);
 </script>
 
 <BaseAlertForm {formState} isEditForm={true} on:cancel on:close />
