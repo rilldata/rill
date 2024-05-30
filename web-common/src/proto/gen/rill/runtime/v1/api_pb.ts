@@ -3137,6 +3137,13 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
    */
   usedBy: ResourceName[] = [];
 
+  /**
+   * Error message if the connector is misconfigured
+   *
+   * @generated from field: string error_message = 9;
+   */
+  errorMessage = "";
+
   constructor(data?: PartialMessage<AnalyzedConnector>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3153,6 +3160,7 @@ export class AnalyzedConnector extends Message<AnalyzedConnector> {
     { no: 6, name: "env_config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 7, name: "has_anonymous_access", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "used_by", kind: "message", T: ResourceName, repeated: true },
+    { no: 9, name: "error_message", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AnalyzedConnector {

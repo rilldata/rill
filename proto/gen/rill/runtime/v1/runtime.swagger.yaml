@@ -3009,6 +3009,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1ResourceName'
         title: List of resources that appear to use the connector
+      errorMessage:
+        type: string
+        title: Error message if the connector is misconfigured
     description: AnalyzedConnector contains information about a connector that is referenced in the project files.
   v1AssertionResult:
     type: object
