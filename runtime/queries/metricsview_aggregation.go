@@ -14,7 +14,6 @@ import (
 
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
-	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -81,63 +80,40 @@ func (q *MetricsViewAggregation) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	// Route to new resolver implementation
-	qry, ok, err := q.rewriteToMetricsResolver()
-	if err != nil {
-		return fmt.Errorf("error rewriting to metrics query: %w", err)
-	}
-	if ok {
-		props := map[string]any{}
-		err := mapstructure.Decode(qry, &props)
-		if err != nil {
-			return fmt.Errorf("error decoding metrics query: %w", err)
-		}
-
-		res, err := rt.Resolve(ctx, &runtime.ResolveOptions{
-			InstanceID:         instanceID,
-			Resolver:           "metrics",
-			ResolverProperties: props,
-			Args:               map[string]any{"priority": priority},
-			UserAttributes:     q.SecurityAttributes,
-		})
-		if err != nil {
-			return err
-		}
-
-		var data []any
-		err = json.Unmarshal(res.Data, &data)
-		if err != nil {
-			return err
-		}
-
-		dataPB := make([]*structpb.Struct, 0, len(data))
-		for _, row := range data {
-			row, ok := row.(map[string]any)
-			if !ok {
-				return fmt.Errorf("invalid row type %T", row)
-			}
-
-			rowPB, err := structpb.NewStruct(row)
-			if err != nil {
-				return err
-			}
-
-			dataPB = append(dataPB, rowPB)
-		}
-
-		q.Result = &runtimev1.MetricsViewAggregationResponse{
-			Schema: res.Schema,
-			Data:   dataPB,
-		}
-		return nil
-	}
-	// Falling back to the old implementation
-
 	// Resolve metrics view
 	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
 	if err != nil {
 		return err
 	}
+
+	// Attempt to route to metricsview executor
+	qry, ok, err := q.rewriteToMetricsViewQuery()
+	if err != nil {
+		return fmt.Errorf("error rewriting to metrics query: %w", err)
+	}
+	if ok {
+		e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, priority)
+		if err != nil {
+			return err
+		}
+
+		res, _, err := e.Query(ctx, qry, nil)
+		if err != nil {
+			return err
+		}
+
+		data, err := rowsToData(res)
+		if err != nil {
+			return err
+		}
+
+		q.Result = &runtimev1.MetricsViewAggregationResponse{
+			Schema: res.Schema,
+			Data:   data,
+		}
+		return nil
+	}
+	// Falling back to the old implementation
 
 	cfg, err := rt.InstanceConfig(ctx, instanceID)
 	if err != nil {
@@ -2096,7 +2072,7 @@ func (q *MetricsViewAggregation) truncateExpression(s string, timeGrain runtimev
 	}
 }
 
-func (q *MetricsViewAggregation) rewriteToMetricsResolver() (*metricsview.Query, bool, error) {
+func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query, bool, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
 
 	for _, d := range q.Dimensions {
