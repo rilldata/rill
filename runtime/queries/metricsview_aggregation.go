@@ -147,6 +147,21 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 			End:   timestamppb.New(end.In(time.UTC)),
 		}
 
+		filterCount := 0
+		for _, f := range q.Measures {
+			if f.Filter != nil {
+				filterCount++
+			}
+		}
+
+		if filterCount > 1 {
+			return fmt.Errorf("multiple measures with filter")
+		}
+
+		if filterCount == 1 {
+			return q.executeComparisonWithMeasureFilter(ctx, olap, priority, mv, olap.Dialect(), security)
+		}
+
 		return q.executeComparisonAggregation(ctx, olap, priority, mv, olap.Dialect(), security, cfg)
 	}
 
@@ -266,6 +281,28 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	return q.pivotDruid(ctx, rows, mv, cfg.PivotCellLimit, func(temporaryTableName string, mv *runtimev1.MetricsViewSpec) string {
 		return q.createPivotSQL(temporaryTableName, mv)
 	})
+}
+
+func (q *MetricsViewAggregation) executeComparisonWithMeasureFilter(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity) error {
+	sqlString, args, err := q.buildMeasureFilterComparisonAggregationSQL(ctx, olap, priority, mv, dialect, security, false)
+	if err != nil {
+		return fmt.Errorf("error building query: %w", err)
+	}
+
+	if len(q.PivotOn) == 0 {
+		schema, data, err := olapQuery(ctx, olap, priority, sqlString, args)
+		if err != nil {
+			return err
+		}
+
+		q.Result = &runtimev1.MetricsViewAggregationResponse{
+			Schema: schema,
+			Data:   data,
+		}
+		return nil
+	}
+
+	return fmt.Errorf("pivot unsupported for the measure filter")
 }
 
 func (q *MetricsViewAggregation) executeComparisonAggregation(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity, cfg drivers.InstanceConfig) error {
@@ -997,6 +1034,845 @@ func (q *MetricsViewAggregation) buildMetricsAggregationSQL(mv *runtimev1.Metric
 	return sql, args, nil
 }
 
+func originalName(m *runtimev1.MetricsViewAggregationMeasure) string {
+	switch t := m.Compute.(type) {
+	case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+		return t.ComparisonRatio.Measure
+	case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+		return t.ComparisonDelta.Measure
+	case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+		return t.ComparisonValue.Measure
+	case *runtimev1.MetricsViewAggregationMeasure_Count:
+		return m.Name
+	case *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
+		return m.Name
+	default:
+		return m.Name
+	}
+}
+
+func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
+	originals := make(map[string]bool, len(q.Measures))
+	for _, m := range q.Measures {
+		if m.Compute != nil {
+			originals[originalName(m)] = true
+		}
+	}
+	if len(originals) > 1 {
+		return "", nil, errors.New("more than one original measures specified")
+	}
+
+	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
+		return "", nil, errors.New("no dimensions or measures specified")
+	}
+
+	dimByName := make(map[string]*runtimev1.MetricsViewAggregationDimension, len(mv.Dimensions))
+	measuresByFinalName := make(map[string]*runtimev1.MetricsViewAggregationMeasure, len(q.Measures))
+	for _, d := range q.Dimensions {
+		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || d.Alias == "" {
+			dimByName[d.Name] = d
+		} else {
+			dimByName[d.Alias] = d
+		}
+	}
+	for _, m := range q.Measures {
+		measuresByFinalName[m.Name] = m
+	}
+
+	cols := q.cols()
+	selectCols := make([]string, 0, cols+1)
+	var comparisonSelectCols []string
+
+	finalDims := make([]string, 0, len(q.Dimensions))
+	joinConditions := make([]string, 0, len(q.Dimensions))
+
+	unnestClauses := make([]string, 0)
+	var selectArgs []any
+
+	err := q.calculateMeasuresMeta()
+	if err != nil {
+		return "", nil, err
+	}
+
+	// Required for t_offset, ie
+	// SELECT t_offset, d1, d2, t1, t2, m1, m2
+	minTimeGrain := runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED
+	for _, d := range q.Dimensions {
+		if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && d.GetName() == mv.TimeDimension {
+			if minTimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED || d.TimeGrain < minTimeGrain {
+				minTimeGrain = d.TimeGrain
+			}
+		}
+	}
+
+	// it's required for joining the base and comparison tables
+	timeOffsetExpression, err := q.buildOffsetExpression(mv.TimeDimension, minTimeGrain, dialect)
+	if err != nil {
+		return "", nil, err
+	}
+
+	colMap := make(map[string]int, q.cols())
+
+	selectCols = append(selectCols, timeOffsetExpression)
+	comparisonSelectCols = append(comparisonSelectCols, timeOffsetExpression)
+
+	joinConditions = append(joinConditions, "base.t_offset = comparison.t_offset")
+	var finalComparisonTimeDims []string
+	var finalComparisonTimeDimsLabels []string
+
+	mvDimsByName := make(map[string]*runtimev1.MetricsViewSpec_DimensionV2, len(mv.Dimensions))
+	finalDims = append(finalDims, "COALESCE(base.t_offset, comparison.t_offset) AS t_offset")
+	var timeDims []string
+	for _, d := range q.Dimensions {
+		// Handle regular dimensions
+		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			dim, err := metricsViewDimension(mv, d.Name)
+			if err != nil {
+				return "", nil, err
+			}
+			mvDimsByName[d.Name] = dim
+			dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
+			selectCols = append(selectCols, dimSel)
+			comparisonSelectCols = append(comparisonSelectCols, dimSel)
+			finalDims = append(finalDims, fmt.Sprintf("COALESCE(base.%[1]s,comparison.%[1]s) as %[1]s", safeName(dim.Name)))
+			if unnestClause != "" {
+				unnestClauses = append(unnestClauses, unnestClause)
+			}
+			colMap[d.Name] = len(selectCols)
+			var joinCondition string
+			if dialect == drivers.DialectClickHouse {
+				joinCondition = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, comparison.%[1]s)", safeName(dim.Name))
+			} else {
+				joinCondition = fmt.Sprintf("base.%[1]s IS NOT DISTINCT FROM comparison.%[1]s", safeName(dim.Name))
+			}
+			joinConditions = append(joinConditions, joinCondition)
+			continue
+		}
+
+		// Handle time dimension
+		expr, exprArgs, err := q.buildTimestampExpr(mv, d, dialect)
+		if err != nil {
+			return "", nil, err
+		}
+		alias := d.Name
+		if d.Alias != "" {
+			alias = d.Alias
+		}
+		timeDimClause := fmt.Sprintf("%s as %s", expr, safeName(alias))
+
+		timeDims = append(timeDims, safeName(alias))
+		selectCols = append(selectCols, timeDimClause)
+		colMap[alias] = len(selectCols)
+		comparisonSelectCols = append(comparisonSelectCols, timeDimClause)
+		finalDims = append(finalDims, fmt.Sprintf("base.%[1]s as %[1]s", safeName(alias)))
+		// workaround for Druid time conversion with aggregates bug
+		if dialect == drivers.DialectDruid {
+			finalComparisonTimeDims = append(finalComparisonTimeDims, fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(comparison.%[1]s))) as %[2]s", safeName(alias), safeName(alias+"__previous")))
+		} else {
+			finalComparisonTimeDims = append(finalComparisonTimeDims, fmt.Sprintf("comparison.%[1]s as %[2]s", safeName(alias), safeName(alias+"__previous")))
+		}
+		finalComparisonTimeDimsLabels = append(finalComparisonTimeDimsLabels, safeName(alias+"__previous"))
+
+		selectArgs = append(selectArgs, exprArgs...)
+	}
+
+	labelMap := make(map[string]string, len(mv.Measures))
+	for _, m := range mv.Measures {
+		labelMap[m.Name] = m.Name
+		if m.Label != "" {
+			labelMap[m.Name] = m.Label
+		}
+	}
+
+	// collect subquery expressions
+	for _, m := range q.Measures {
+		switch m.Compute.(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue, *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta, *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+			// nothing
+		case *runtimev1.MetricsViewAggregationMeasure_Count:
+			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+			if q.measuresMeta[m.Name].expand {
+				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+			}
+		case *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
+			arg := m.GetCountDistinct().GetDimension()
+			if arg == "" {
+				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
+			}
+			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+			if q.measuresMeta[m.Name].expand {
+				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+			}
+		default:
+			expr, err := metricsViewMeasureExpression(mv, m.Name)
+			if err != nil {
+				return "", nil, err
+			}
+			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			if q.measuresMeta[m.Name].expand {
+				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			}
+		}
+	}
+
+	// collect final expressions
+	var finalSelectCols []string
+	var labelCols []string
+	var finalSimpleSelectCols []string
+	for _, m := range q.Measures {
+		var columnsTuple string
+		var labelTuple string
+		var subqueryName, finalName string
+		prefix := ""
+		if dialect == drivers.DialectDruid {
+			prefix = "ANY_VALUE"
+		}
+
+		switch m.Compute.(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+			subqueryName = m.GetComparisonRatio().Measure
+			finalName = m.Name
+			if dialect == drivers.DialectDruid {
+				columnsTuple = fmt.Sprintf(
+					"ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[2]s",
+					safeName(subqueryName),
+					safeName(finalName),
+				)
+				finalSimpleSelectCols = append(finalSimpleSelectCols, safeName(finalName))
+			} else {
+				columnsTuple = fmt.Sprintf(
+					"(base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[2]s",
+					safeName(subqueryName),
+					safeName(finalName),
+				)
+			}
+			labelTuple = columnsTuple
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+			subqueryName = m.GetComparisonDelta().Measure
+			finalName = m.Name
+			finalSimpleSelectCols = append(finalSimpleSelectCols, safeName(finalName))
+
+			columnsTuple = fmt.Sprintf(
+				"%[3]s(base.%[1]s - comparison.%[1]s) AS %[2]s",
+				safeName(subqueryName),
+				safeName(finalName),
+				prefix,
+			)
+			labelTuple = columnsTuple
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+			subqueryName = m.GetComparisonValue().Measure
+			finalName = m.Name
+			finalSimpleSelectCols = append(finalSimpleSelectCols, safeName(finalName))
+
+			columnsTuple = fmt.Sprintf(
+				"%[3]s(comparison.%[1]s) AS %[2]s",
+				safeName(subqueryName),
+				safeName(finalName),
+				prefix,
+			)
+			labelTuple = columnsTuple
+		case *runtimev1.MetricsViewAggregationMeasure_Count, *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
+			subqueryName = m.Name
+			finalName = m.Name
+			finalSimpleSelectCols = append(finalSimpleSelectCols, safeName(finalName))
+
+			columnsTuple = fmt.Sprintf(
+				"%[3]s(base.%[1]s) AS %[1]s",
+				safeName(subqueryName),
+				safeName(finalName),
+				prefix,
+			)
+			labelTuple = columnsTuple
+		default: // not a virtual (generated) column
+			subqueryName = m.Name
+			finalName = m.Name
+			// todo: export for finalSimpleSelectCols
+			finalSimpleSelectCols = append(finalSimpleSelectCols, safeName(finalName))
+
+			columnsTuple = fmt.Sprintf(
+				"%[3]s(base.%[1]s) AS %[1]s",
+				safeName(subqueryName),
+				safeName(finalName),
+				prefix,
+			)
+			labelTuple = fmt.Sprintf( // non-virtial columns have a label
+				"%[3]s(base.%[1]s) AS %[1]s",
+				safeName(subqueryName),
+				safeName(labelMap[subqueryName]),
+				prefix,
+			)
+		}
+		finalSelectCols = append(
+			finalSelectCols,
+			columnsTuple,
+		)
+		labelCols = append(labelCols, labelTuple)
+	}
+
+	baseSelectClause := strings.Join(selectCols, ", ")
+	comparisonSelectClause := strings.Join(comparisonSelectCols, ", ")
+	finalMeasuresClause := strings.Join(finalSelectCols, ", ")
+	labelSelectClause := strings.Join(labelCols, ", ")
+	if export {
+		finalMeasuresClause = labelSelectClause
+	}
+
+	baseWhereClause := "1=1"
+	comparisonWhereClause := "1=1"
+
+	if mv.TimeDimension == "" {
+		return "", nil, fmt.Errorf("metrics view '%s' doesn't have time dimension", q.MetricsViewName)
+	}
+
+	td := safeName(mv.TimeDimension)
+	if dialect == drivers.DialectDuckDB {
+		td = fmt.Sprintf("%s::TIMESTAMP", td)
+	}
+
+	whereBuilder := &ExpressionBuilder{
+		mv:       mv,
+		dialect:  dialect,
+		measures: q.Measures,
+	}
+	whereClause, whereClauseArgs, err := whereBuilder.buildExpression(q.Where)
+	if err != nil {
+		return "", nil, err
+	}
+
+	var baseTimeRangeArgs []any
+	trc, err := timeRangeClause(q.TimeRange, mv, td, &baseTimeRangeArgs)
+	if err != nil {
+		return "", nil, err
+	}
+	baseWhereClause += trc
+
+	if whereClause != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", whereClause)
+	}
+
+	var comparisonTimeRangeArgs []any
+	trc, err = timeRangeClause(q.ComparisonTimeRange, mv, td, &comparisonTimeRangeArgs)
+	if err != nil {
+		return "", nil, err
+	}
+	comparisonWhereClause += trc
+
+	if whereClause != "" {
+		comparisonWhereClause += fmt.Sprintf(" AND (%s)", whereClause)
+	}
+
+	if policy != nil && policy.RowFilter != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+		comparisonWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	}
+
+	havingWhereClause := "1=1"
+	var havingClauseArgs []any
+	if q.Having != nil {
+		havingBuilder := &ExpressionBuilder{
+			mv:       mv,
+			dialect:  dialect,
+			measures: q.Measures,
+		}
+		havingWhereClause, havingClauseArgs, err = havingBuilder.buildExpression(q.Having)
+		if err != nil {
+			return "", nil, err
+		}
+	}
+
+	var orderClauses []string
+	var subqueryOrderByClauses []string
+
+	/*
+		Dimensions are referenced by index because time dimensions have an issue with aliases in DuckDB
+		and other dimensions cannot be referenced by alias in Druid.
+	*/
+	for _, s := range q.Sort {
+		var outerClause, subQueryClause, extraOuterClause string
+		if dimByName[s.Name] != nil { // dimension
+			outerClause = fmt.Sprintf("%d", colMap[s.Name]-1)
+			subQueryClause = fmt.Sprintf("%d", colMap[s.Name])
+			extraOuterClause = fmt.Sprintf("base.%s", safeName(s.Name)) // todo check unnest
+		} else if measuresByFinalName[s.Name] != nil { // measure
+			m := measuresByFinalName[s.Name]
+			outerClause = safeName(s.Name)
+			subQueryClause = ColumnName(m)
+			extraOuterClause = fmt.Sprintf("partial.%s", safeName(s.Name))
+		} else {
+			return "", nil, fmt.Errorf("no selected dimension or measure '%s' found for sorting", s.Name)
+		}
+
+		var ending string
+		if s.Desc {
+			ending += " DESC"
+		}
+		if dialect == drivers.DialectDuckDB {
+			ending += " NULLS LAST"
+		}
+		outerClause += ending
+		subQueryClause += ending
+		extraOuterClause += ending
+		orderClauses = append(orderClauses, outerClause)
+		subqueryOrderByClauses = append(subqueryOrderByClauses, subQueryClause)
+	}
+
+	orderByClause := ""
+	subqueryOrderByClause := ""
+	if len(orderClauses) > 0 {
+		orderByClause = "ORDER BY " + strings.Join(orderClauses, ", ")
+		subqueryOrderByClause = "ORDER BY " + strings.Join(subqueryOrderByClauses, ",")
+	}
+
+	var args []any
+	var sql string
+	if dialect != drivers.DialectDruid {
+		// Using expr was causing issues with query arg expansion in duckdb.
+		// Using column name is not possible either since it will take the original column name instead of the aliased column name
+		// But using numbered group we can exactly target the correct selected column.
+		// Note that the non-timestamp columns also use the numbered group-by for constancy.
+
+		// Inner grouping should include t_offset
+		// SELECT t_offset, d1, d2, d3 ... GROUP BY 1, 2, 3, 4 ...
+		innerGroupCols := make([]string, 0, len(q.Dimensions)+1)
+		innerGroupCols = append(innerGroupCols, "1")
+		for i := range q.Dimensions {
+			innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
+		}
+
+		var measureCols []string
+		for _, m := range q.Measures {
+			nm := m.Name
+			if export {
+				nm = labelMap[m.Name]
+			}
+			measureCols = append(measureCols, fmt.Sprintf("partial.%s", safeName(nm)))
+		}
+
+		outerJoinConditions := make([]string, 0, len(q.Dimensions))
+		outerDims := make([]string, 0, len(q.Dimensions))
+		outerJoinConditions = append(outerJoinConditions, "base.t_offset IS NOT DISTINCT FROM partial.t_offset")
+		for _, d := range q.Dimensions {
+			// Handle regular dimensions
+			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				dim := mvDimsByName[d.Name]
+				outerDims = append(outerDims, safeName(dim.Name))
+				var joinCondition string
+				if dialect == drivers.DialectClickHouse {
+					joinCondition = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, partial.%[1]s)", safeName(dim.Name))
+				} else {
+					joinCondition = fmt.Sprintf("base.%[1]s IS NOT DISTINCT FROM partial.%[1]s", safeName(dim.Name))
+				}
+				outerJoinConditions = append(outerJoinConditions, joinCondition)
+			}
+		}
+
+		outerDims = append(outerDims, timeDims...)
+
+		outerWhereClause := ""
+		if q.Having != nil {
+			outerWhereClause += " WHERE " + havingWhereClause
+		}
+
+		measureFilterClause := ""
+		var measureFilterArgs []any
+		for _, m := range q.Measures {
+			if m.Filter != nil {
+				whereBuilder := &ExpressionBuilder{
+					mv:       mv,
+					dialect:  dialect,
+					measures: q.Measures,
+				}
+				measureFilterClause, measureFilterArgs, err = whereBuilder.buildExpression(m.Filter)
+				if err != nil {
+					return "", nil, err
+				}
+			}
+		}
+
+		limitClause := ""
+		subqueryLimitClause := ""
+		extraSubqueryLimitClause := ""
+		limit := 0
+
+		if q.Limit != nil {
+			limit = int(*q.Limit)
+			subQueryLimit := limit * 2
+			if q.Offset != 0 {
+				subQueryLimit = int(q.Offset) + limit*2
+			}
+			subqueryLimitClause = fmt.Sprintf(" LIMIT %d", (subQueryLimit))
+			extraSubqueryLimitClause = fmt.Sprintf(" LIMIT %d", subQueryLimit*100)
+			limitClause = fmt.Sprintf(" LIMIT %d", limit)
+		}
+
+		// unfiltered dims query
+		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			args = append(args, q.TimeRange.Start.AsTime())
+		}
+		args = append(args, measureFilterArgs...)
+		args = append(args, baseTimeRangeArgs...)
+		args = append(args, whereClauseArgs...)
+
+		// base subquery
+		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			args = append(args, q.TimeRange.Start.AsTime())
+		}
+		args = append(args, selectArgs...)
+		args = append(args, baseTimeRangeArgs...)
+		args = append(args, whereClauseArgs...)
+		args = append(args, measureFilterArgs...)
+		// comparison subquery
+		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			args = append(args, q.ComparisonTimeRange.Start.AsTime())
+		}
+		args = append(args, selectArgs...)
+		args = append(args, comparisonTimeRangeArgs...)
+		args = append(args, whereClauseArgs...)
+		args = append(args, measureFilterArgs...)
+		// outer query
+		args = append(args, havingClauseArgs...)
+
+		// Outer query rationale:
+		// Measure filter could include the base measure name.
+		// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
+		// to keep the clause builder consistent we add an outer query.
+
+		/*
+			CASE expression rationale:
+			Assume filter is `count(*)/10 FILTER publisher = 'Yahoo'`. FILTER doesn't support arithmetics on aggregation. To mimic FILTER one can produce 2 tables, one with the filter condition
+			and another without it and merge tables aftewards.
+			Full table:
+				Publisher count(*)
+				Microsoft 20
+				Yahoo 40
+
+			Filtered table:
+				Publisher count(*)
+				Yahoo 40
+
+			Result:
+				Publisher count(*)
+				Microsoft nil
+				Yahoo 4
+
+			But those tables should be limited if possible to increase performance. If they're limited the tables should be ordered. But the full table should contain all the dimension values that
+			are in the filtered table before being limited. That can be accomplished by including a virtual column with CASE <filter condition> expression and ordering by it.
+		*/
+		sql = fmt.Sprintf(`
+			SELECT * FROM (
+				-- SELECT base.d1, ... partial.m1, ...
+				SELECT `+withPrefix("base", outerDims)+`, `+strings.Join(slices.Concat(measureCols, finalComparisonTimeDimsLabels), ",")+` FROM
+				( 
+					-- SELECT ... as t_offset, dim1 as d1, ...
+					SELECT %[1]s , (CASE WHEN `+measureFilterClause+` THEN 0 ELSE 1 END) whereCase FROM %[3]s %[7]s WHERE %[4]s GROUP BY %[2]s, whereCase ORDER BY whereCase `+extraSubqueryLimitClause+` 
+				) base
+				LEFT JOIN 
+				(
+					-- SELECT ... as t_offset, base.d1, ..., base.td1, ..., base.m1, ... , comparison.td1 as td1__previous, ...
+					SELECT `+strings.Join(slices.Concat(finalDims, []string{finalMeasuresClause}, finalComparisonTimeDims), ",")+` FROM 
+						(
+							-- SELECT t_offset, dim1 as d1, ... timed1 as td1, ..., avg(price) as m1, ... AND d2 = 'a' ...
+							SELECT %[1]s FROM %[3]s %[7]s WHERE (%[4]s) AND (%[6]s) GROUP BY %[2]s `+subqueryOrderByClause+" "+subqueryLimitClause+` 
+						) base
+					LEFT OUTER JOIN
+						(
+							-- SELECT t_offset, dim1 as d1, ..., timed1 as td1, ... avg(price) as m1, ... AND d2 = 'a' ...
+							SELECT `+comparisonSelectClause+` FROM %[3]s %[7]s WHERE (%[5]s) AND (%[6]s) GROUP BY %[2]s `+subqueryOrderByClause+" "+subqueryLimitClause+`
+						) comparison
+					ON
+							`+strings.Join(joinConditions, " AND ")+` -- base.t_offset = comparison.t_offset AND ...
+				) partial
+				ON
+				`+strings.Join(outerJoinConditions, " AND ")+` -- base.t_offset = partial.t_offset AND ...
+			)
+				`+outerWhereClause+` -- WHERE d1 = 'having_value'
+				`+orderByClause+` -- ORDER BY d1, ...
+				`+limitClause+`
+				OFFSET %[8]d
+
+			`,
+			baseSelectClause,                    // 1
+			strings.Join(innerGroupCols, ","),   // 2
+			escapeMetricsViewTable(dialect, mv), // 3
+			baseWhereClause,                     // 4
+			comparisonWhereClause,               // 5
+			measureFilterClause,                 // 6
+			strings.Join(unnestClauses, ""),     // 7
+			q.Offset,                            // 8
+		)
+	} else { // Druid measure filter
+		limitClause := ""
+		subqueryLimitClause := ""
+		extraSubqueryLimitClause := ""
+		limit := 0
+
+		if q.Limit != nil {
+			limit = int(*q.Limit)
+			subQueryLimit := limit * 2
+			if q.Offset != 0 {
+				subQueryLimit = int(q.Offset) + limit*2
+			}
+			subqueryLimitClause = fmt.Sprintf(" LIMIT %d", (subQueryLimit))
+			extraSubqueryLimitClause = fmt.Sprintf(" LIMIT %d", subQueryLimit*100)
+			limitClause = fmt.Sprintf(" LIMIT %d", limit)
+		}
+
+		measureFilterClause := ""
+		var measureFilterArgs []any
+		for _, m := range q.Measures {
+			if m.Filter != nil {
+				whereBuilder := &ExpressionBuilder{
+					mv:       mv,
+					dialect:  dialect,
+					measures: q.Measures,
+				}
+				measureFilterClause, measureFilterArgs, err = whereBuilder.buildExpression(m.Filter)
+				if err != nil {
+					return "", nil, err
+				}
+			}
+		}
+
+		// SELECT d1, d2, d3 ... GROUP BY 1, 2, 3 ...
+		var innerGroupCols []string
+		var whereDimConditions []string
+		if len(q.Dimensions) > 0 { // an additional request for Druid to prevent full scan
+			innerGroupCols = make([]string, 0, len(q.Dimensions))
+			for i := range q.Dimensions {
+				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
+			}
+
+			nonTimeCols := make([]string, 0, len(selectCols)) // avoid group by time cols
+			for i, s := range selectCols[1:] {                // skip t_offset
+				if i >= len(q.Dimensions) {
+					nonTimeCols = append(nonTimeCols, s)
+				} else {
+					if q.Dimensions[i].TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+						nonTimeCols = append(nonTimeCols, "1")
+					} else {
+						nonTimeCols = append(nonTimeCols, s)
+					}
+				}
+			}
+			/*
+				CASE expression rationale:
+				Assume filter is `count(*)/10 FILTER publisher = 'Yahoo'`. FILTER doesn't support arithmetics on aggregation. To mimic FILTER one can produce 2 tables, one with the filter condition
+				and another without it and merge tables aftewards.
+				Full table:
+					Publisher count(*)
+					Microsoft 20
+					Yahoo 40
+
+				Filtered table:
+					Publisher count(*)
+					Yahoo 40
+
+				Result:
+					Publisher count(*)
+					Microsoft nil
+					Yahoo 4
+
+				But those tables should be limited if possible to increase performance. If they're limited the tables should be ordered. But the full table should contain all the dimension values that
+				are in the filtered table before being limited. That can be accomplished by including a virtual column with CASE <filter condition> expression and ordering by it.
+			*/
+
+			sql = fmt.Sprintf("SELECT %[1]s, (CASE WHEN "+measureFilterClause+" THEN 0 ELSE 1 END) whereCase FROM %[2]s %[3]s WHERE %[4]s GROUP BY %[5]s, %[7]d ORDER BY whereCase %[6]s",
+				strings.Join(slices.Concat([]string{"1"}, nonTimeCols), ","), // 1
+				escapeMetricsViewTable(dialect, mv),                          // 2
+				strings.Join(unnestClauses, ""),                              // 3
+				baseWhereClause,                                              // 4
+				strings.Join(innerGroupCols, ","),                            // 5
+				extraSubqueryLimitClause,                                     // 6
+				len(nonTimeCols)+2,                                           // 7
+			)
+			fmt.Println(sql)
+
+			var druidArgs []any
+			druidArgs = append(druidArgs, selectArgs...)
+			druidArgs = append(druidArgs, measureFilterArgs...)
+			druidArgs = append(druidArgs, baseTimeRangeArgs...)
+			druidArgs = append(druidArgs, whereClauseArgs...)
+
+			_, result, err := olapQuery(ctx, olap, priority, sql, druidArgs)
+			if err != nil {
+				return "", nil, err
+			}
+
+			// without this extra where condition, the join will be a full scan
+			for _, row := range result {
+				var dimConditions []string
+				for _, dim := range q.Dimensions {
+					if dim.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+						field := row.Fields[dim.Name]
+
+						// Druid doesn't resolve aliases in where clause
+						mvDim := mvDimsByName[dim.Name]
+
+						_, ok := field.GetKind().(*structpb.Value_NullValue)
+						if ok {
+							dimConditions = append(dimConditions, fmt.Sprintf("%[1]s is null", safeName(mvDim.Column)))
+						} else {
+							dimConditions = append(dimConditions, fmt.Sprintf("%[1]s = '%[2]s'", safeName(mvDim.Column), field.AsInterface()))
+						}
+					}
+				}
+				whereDimConditions = append(whereDimConditions, strings.Join(dimConditions, " AND "))
+			}
+		}
+
+		innerGroupCols = make([]string, 0, len(q.Dimensions)+1)
+		outerGroupCols := make([]string, 0, len(q.Dimensions))
+		innerGroupCols = append(innerGroupCols, "1")
+		for i := range q.Dimensions {
+			innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
+			outerGroupCols = append(outerGroupCols, fmt.Sprintf("%d", i+1))
+		}
+
+		whereDimClause := ""
+		outerGroupClause := ""
+		if len(whereDimConditions) > 0 {
+			whereDimClause = fmt.Sprintf(" AND (%s) ", strings.Join(whereDimConditions, " OR "))
+			outerGroupClause = " GROUP BY " + strings.Join(outerGroupCols, ",")
+		}
+
+		outerJoinConditions := make([]string, 0, len(q.Dimensions))
+		outerDims := make([]string, 0, len(q.Dimensions))
+		outerJoinConditions = append(outerJoinConditions, "base.t_offset IS NOT DISTINCT FROM partial.t_offset")
+		for _, d := range q.Dimensions {
+			// Handle regular dimensions
+			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+				dim := mvDimsByName[d.Name]
+				outerDims = append(outerDims, safeName(dim.Name))
+				var joinCondition string
+				if dialect == drivers.DialectClickHouse {
+					joinCondition = fmt.Sprintf("isNotDistinctFrom(base.%[1]s, partial.%[1]s)", safeName(dim.Name))
+				} else {
+					joinCondition = fmt.Sprintf("base.%[1]s IS NOT DISTINCT FROM partial.%[1]s", safeName(dim.Name))
+				}
+				outerJoinConditions = append(outerJoinConditions, joinCondition)
+			}
+		}
+
+		outerDims = append(outerDims, timeDims...)
+
+		args = args[:0]
+		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			args = append(args, q.TimeRange.Start.AsTime())
+		}
+		args = append(args, measureFilterArgs...)
+		args = append(args, baseTimeRangeArgs...)
+		args = append(args, whereClauseArgs...)
+
+		// base subquery
+		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			args = append(args, q.TimeRange.Start.AsTime())
+		}
+		args = append(args, selectArgs...)
+		args = append(args, baseTimeRangeArgs...)
+		args = append(args, whereClauseArgs...)
+		args = append(args, measureFilterArgs...)
+
+		// comparison subquery
+		if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			args = append(args, q.ComparisonTimeRange.Start.AsTime())
+		}
+		args = append(args, selectArgs...)
+		args = append(args, comparisonTimeRangeArgs...)
+		args = append(args, whereClauseArgs...)
+		args = append(args, measureFilterArgs...)
+
+		// outer query
+		args = append(args, havingClauseArgs...)
+
+		if havingWhereClause != "" {
+			havingWhereClause = "WHERE " + havingWhereClause
+		}
+		sql = fmt.Sprintf(`
+				SELECT * from (
+					-- SELECT d1, ..., ANY_VALUE(m1) as m1, ...
+					SELECT `+strings.Join(slices.Concat(outerDims, inFuncCols("ANY_VALUE", finalSimpleSelectCols), anyTimestampsCols(finalComparisonTimeDimsLabels)), ",")+` FROM ( -- GROUP BY doesn't see aliases in JOIN query
+						-- SELECT base.d1 as d1, ..., partial.m1, ...
+						SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withPrefixCols("partial", finalSimpleSelectCols), withPrefixCols("partial", finalComparisonTimeDimsLabels)), ",")+` FROM (
+							-- SELECT dim1 as d1, ... 
+							SELECT %[1]s, (CASE WHEN `+measureFilterClause+` THEN 0 ELSE 1 END) whereCase FROM %[3]s %[6]s WHERE %[4]s %[7]s GROUP BY %[2]s, `+fmt.Sprintf("%d", (len(selectCols)+1))+` ORDER BY whereCase `+extraSubqueryLimitClause+`
+						) base
+						LEFT JOIN
+						(
+							-- SELECT COALESCE(base.d1, comparison.d1), ..., base.m1, ..., base.m2 ... 
+							SELECT `+strings.Join(slices.Concat(finalDims, []string{finalMeasuresClause}, finalComparisonTimeDims), ",")+` FROM 
+								(
+									-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
+									SELECT %[1]s FROM %[3]s %[6]s WHERE %[4]s %[7]s AND `+measureFilterClause+` GROUP BY %[2]s `+subqueryOrderByClause+" "+subqueryLimitClause+`
+								) base
+							LEFT JOIN
+								(
+									SELECT `+comparisonSelectClause+` FROM %[3]s %[6]s WHERE %[5]s %[7]s AND `+measureFilterClause+` GROUP BY %[2]s `+subqueryOrderByClause+" "+subqueryLimitClause+` 
+								) comparison
+							ON
+							-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
+									`+strings.Join(joinConditions, " AND ")+`
+							GROUP BY %[2]s
+						) partial
+						ON
+						-- base.d1 IS NOT DISTINCT FROM partial.d1 ...
+						`+strings.Join(outerJoinConditions, " AND ")+`
+					)
+					-- GROUP BY
+					`+outerGroupClause+`
+					-- ORDER BY
+				    `+orderByClause+`	
+					-- LIMIT
+					`+limitClause+`
+					OFFSET
+						%[8]d
+				) `+havingWhereClause+` 
+			`,
+			baseSelectClause,                    // 1
+			strings.Join(innerGroupCols, ","),   // 2
+			escapeMetricsViewTable(dialect, mv), // 3
+			baseWhereClause,                     // 4
+			comparisonWhereClause,               // 5
+			strings.Join(unnestClauses, ""),     // 6
+			whereDimClause,                      // 7
+			q.Offset,                            // 8
+		)
+	}
+
+	return sql, args, nil
+}
+
+func withPrefix(prefix string, cols []string) string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = prefix + "." + c
+	}
+	return strings.Join(cs, ",")
+}
+
+func withPrefixCols(prefix string, cols []string) []string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = prefix + "." + c
+	}
+	return cs
+}
+
+func inFuncCols(name string, cols []string) []string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = fmt.Sprintf("%s(%s) AS %s", name, c, c)
+	}
+	return cs
+}
+
+func anyTimestampsCols(cols []string) []string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(%s))) AS %s", c, c)
+	}
+	return cs
+}
+
 func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
@@ -1052,6 +1928,8 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	comparisonSelectCols = append(comparisonSelectCols, timeOffsetExpression)
 
 	joinConditions = append(joinConditions, "base.t_offset = comparison.t_offset")
+
+	// these go last to decrease complexity of indexing columns
 	var finalComparisonTimeDims []string
 	mvDimsByName := make(map[string]*runtimev1.MetricsViewSpec_DimensionV2, len(mv.Dimensions))
 	for _, d := range q.Dimensions {
@@ -1559,11 +2437,11 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			}
 
 			innerGroupCols = make([]string, 0, len(q.Dimensions)+1)
-			outterGroupCols := make([]string, 0, len(q.Dimensions))
+			outerGroupCols := make([]string, 0, len(q.Dimensions))
 			innerGroupCols = append(innerGroupCols, "1")
 			for i := range q.Dimensions {
 				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
-				outterGroupCols = append(outterGroupCols, fmt.Sprintf("%d", i+1))
+				outerGroupCols = append(outerGroupCols, fmt.Sprintf("%d", i+1))
 			}
 			// base subquery
 			if minTimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -1588,10 +2466,10 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			}
 
 			whereDimClause := ""
-			outterGroupClause := ""
+			outerGroupClause := ""
 			if len(whereDimConditions) > 0 {
 				whereDimClause = fmt.Sprintf(" AND (%s) ", strings.Join(whereDimConditions, " OR "))
-				outterGroupClause = " GROUP BY " + strings.Join(outterGroupCols, ",")
+				outerGroupClause = " GROUP BY " + strings.Join(outerGroupCols, ",")
 			}
 
 			sql = fmt.Sprintf(`
@@ -1634,7 +2512,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				comparisonSelectClause,                                                   // 16
 				strings.Join(joinConditions, " AND "),                                    // 17
 				whereDimClause,                                                           // 18
-				outterGroupClause,                                                        // 19
+				outerGroupClause,                                                         // 19
 				finalTimeDimsClause,                                                      // 20
 			)
 		} else {
@@ -1709,11 +2587,11 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			}
 
 			innerGroupCols = make([]string, 0, len(q.Dimensions)+1)
-			outterGroupCols := make([]string, 0, len(q.Dimensions))
+			outerGroupCols := make([]string, 0, len(q.Dimensions))
 			innerGroupCols = append(innerGroupCols, "1")
 			for i := range q.Dimensions {
 				innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
-				outterGroupCols = append(outterGroupCols, fmt.Sprintf("%d", i+1))
+				outerGroupCols = append(outerGroupCols, fmt.Sprintf("%d", i+1))
 			}
 
 			// base subquery
@@ -1774,7 +2652,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				comparisonSelectClause,                                                   // 16
 				strings.Join(joinConditions, " AND "),                                    // 17
 				strings.Join(whereDimConditions, " OR "),                                 // 18
-				strings.Join(outterGroupCols, ","),                                       // 19
+				strings.Join(outerGroupCols, ","),                                        // 19
 				finalTimeDimsClause,                                                      // 20
 			)
 		}
@@ -2010,11 +2888,11 @@ func (q *MetricsViewAggregation) buildOffsetExpression(col string, timeGrain run
 		return "0 as t_offset", nil
 	}
 
-	timeCol, err := q.truncateExpression(safeName(col), timeGrain, dialect)
+	timeCol, err := q.trancationExpression(safeName(col), timeGrain, dialect)
 	if err != nil {
 		return "", err
 	}
-	start, _ := q.truncateExpression("?", timeGrain, dialect)
+	start, _ := q.trancationExpression("?", timeGrain, dialect)
 
 	var timeOffsetColumn string
 	if dialect == drivers.DialectDuckDB {
@@ -2029,7 +2907,7 @@ func (q *MetricsViewAggregation) buildOffsetExpression(col string, timeGrain run
 	return timeOffsetColumn, nil
 }
 
-func (q *MetricsViewAggregation) truncateExpression(s string, timeGrain runtimev1.TimeGrain, dialect drivers.Dialect) (string, error) {
+func (q *MetricsViewAggregation) trancationExpression(s string, timeGrain runtimev1.TimeGrain, dialect drivers.Dialect) (string, error) {
 	switch dialect {
 	case drivers.DialectDuckDB:
 		return fmt.Sprintf("date_trunc('%s', %s)::TIMESTAMP", dialect.ConvertToDateTruncSpecifier(timeGrain), s), nil
