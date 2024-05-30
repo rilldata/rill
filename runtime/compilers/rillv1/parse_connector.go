@@ -17,13 +17,8 @@ func (p *Parser) parseConnector(node *Node) error {
 		return err
 	}
 
-	name := tmp.Name
-	if name == "" {
-		name = node.Name
-	}
-
 	// Insert the connector
-	r, err := p.insertResource(ResourceKindConnector, name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindConnector, node.Name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
 	}
