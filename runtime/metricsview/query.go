@@ -1,4 +1,4 @@
-package metricsresolver
+package metricsview
 
 import (
 	"fmt"
@@ -20,7 +20,7 @@ type Query struct {
 	Having              *Expression `mapstructure:"having"`
 	Limit               *int        `mapstructure:"limit"`
 	Offset              *int        `mapstructure:"offset"`
-	TimeZone            *string     `mapstructure:"time_zone"`
+	TimeZone            string      `mapstructure:"time_zone"`
 }
 
 type Dimension struct {

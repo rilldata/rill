@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -13,6 +14,8 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"go.uber.org/zap"
 )
+
+var ErrForbidden = errors.New("action not allowed")
 
 type securityEngine struct {
 	cache  *simplelru.LRU
