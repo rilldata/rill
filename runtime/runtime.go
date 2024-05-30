@@ -117,12 +117,6 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 
 	rillYAML := parser.RillYAML
 	dotEnv := parser.DotEnv
-	var connectors []*rillv1.Resource
-	for _, c := range parser.Resources {
-		if c.ConnectorSpec != nil {
-			connectors = append(connectors, c)
-		}
-	}
 
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
@@ -144,11 +138,13 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 			Config: c.Defaults,
 		}
 	}
-	for _, c := range connectors {
-		connMap[c.Name.Name] = &runtimev1.Connector{
-			Name:   c.Name.Name,
-			Type:   c.ConnectorSpec.Driver,
-			Config: c.ConnectorSpec.Properties,
+	for _, r := range parser.Resources {
+		if r.ConnectorSpec != nil {
+			connMap[r.Name.Name] = &runtimev1.Connector{
+				Name:   r.Name.Name,
+				Type:   r.ConnectorSpec.Driver,
+				Config: r.ConnectorSpec.Properties,
+			}
 		}
 	}
 
