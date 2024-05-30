@@ -1661,7 +1661,6 @@ export interface V1ConnectorV2 {
 export type V1ConnectorSpecProperties = { [key: string]: string };
 
 export interface V1ConnectorSpec {
-  name?: string;
   driver?: string;
   properties?: V1ConnectorSpecProperties;
 }

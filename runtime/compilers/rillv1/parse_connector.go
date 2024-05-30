@@ -17,20 +17,19 @@ func (p *Parser) parseConnector(node *Node) error {
 		return err
 	}
 
+	name := tmp.Name
+	if name == "" {
+		name = node.Name
+	}
+
 	// Insert the connector
-	r, err := p.insertResource(ResourceKindConnector, node.Name, node.Paths, node.Refs...)
+	r, err := p.insertResource(ResourceKindConnector, name, node.Paths, node.Refs...)
 	if err != nil {
 		return err
 	}
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
-	name := tmp.Name
-	if name == "" {
-		name = tmp.Driver
-	}
-
 	r.ConnectorSpec.Driver = tmp.Driver
-	r.ConnectorSpec.Name = name
 	r.ConnectorSpec.Properties = tmp.Defaults
 	return nil
 }

@@ -1370,11 +1370,16 @@ driver: s3
 name: s3-dedicated
 region: us-west-2
 `,
+		// Dedicated GCS connector with a custom name
+		"/connectors/gcs-dedicated.yaml": `
+driver: gcs
+name: my-gcs
+`,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
-	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 
-	// Verify the dedicated connector
+	// Verify the dedicated connectors
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: "s3-dedicated"},
@@ -1383,7 +1388,19 @@ region: us-west-2
 		},
 		Resource: &runtimev1.Resource_Connector{
 			Connector: &runtimev1.ConnectorV2{
-				Spec: &runtimev1.ConnectorSpec{Driver: "s3", Name: "s3-dedicated", Properties: map[string]string{"region": "us-west-2"}},
+				Spec: &runtimev1.ConnectorSpec{Driver: "s3", Properties: map[string]string{"region": "us-west-2"}},
+			},
+		},
+	})
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: "my-gcs"},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/connectors/gcs-dedicated.yaml"},
+		},
+		Resource: &runtimev1.Resource_Connector{
+			Connector: &runtimev1.ConnectorV2{
+				Spec: &runtimev1.ConnectorSpec{Driver: "gcs"},
 			},
 		},
 	})

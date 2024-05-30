@@ -101,7 +101,7 @@ func (a *connectorAnalyzer) analyzeResource(ctx context.Context, r *Resource) er
 		return a.analyzeResourceNotifiers(r, r.ReportSpec.Notifiers)
 	} else if r.ConnectorSpec != nil {
 		// resource is not passed to prevent the connector depends on itself
-		return a.trackConnector(r.ConnectorSpec.Name, nil, false)
+		return a.trackConnector(r.Name.Name, nil, false)
 	}
 	// Other resource kinds currently don't use connectors.
 	return nil
@@ -254,7 +254,7 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 
 		// Search among dedicated connectors
 		for _, c := range a.parser.Resources {
-			if c.ConnectorSpec != nil && c.ConnectorSpec.Name == connector {
+			if c.ConnectorSpec != nil && c.Name.Name == connector {
 				defaultConfig = c.ConnectorSpec.Properties
 				break
 			}

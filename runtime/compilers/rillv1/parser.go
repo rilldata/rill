@@ -939,7 +939,7 @@ func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error)
 	}
 
 	for _, c := range p.Resources {
-		if c.ConnectorSpec != nil && c.ConnectorSpec.Name == name {
+		if c.ConnectorSpec != nil && c.Name.Name == name {
 			driver = c.ConnectorSpec.Driver
 			break
 		}

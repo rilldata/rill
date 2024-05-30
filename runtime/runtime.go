@@ -110,7 +110,20 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	return instanceAnnotationsToAttribs(instance)
 }
 
-func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, rillYAML *rillv1.RillYAML, dotEnv map[string]string, connectors []*runtimev1.ConnectorSpec, restartController bool) error {
+func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, parser *rillv1.Parser, restartController bool) error {
+	if parser.RillYAML == nil {
+		return errors.New("rill.yaml is required to update an instance")
+	}
+
+	rillYAML := parser.RillYAML
+	dotEnv := parser.DotEnv
+	var connectors []*rillv1.Resource
+	for _, c := range parser.Resources {
+		if c.ConnectorSpec != nil {
+			connectors = append(connectors, c)
+		}
+	}
+
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return err
@@ -132,10 +145,10 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 		}
 	}
 	for _, c := range connectors {
-		connMap[c.Name] = &runtimev1.Connector{
-			Type:   c.Driver,
-			Name:   c.Name,
-			Config: c.Properties,
+		connMap[c.Name.Name] = &runtimev1.Connector{
+			Name:   c.Name.Name,
+			Type:   c.ConnectorSpec.Driver,
+			Config: c.ConnectorSpec.Properties,
 		}
 	}
 
