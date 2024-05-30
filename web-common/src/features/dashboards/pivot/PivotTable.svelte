@@ -328,6 +328,7 @@
             <td
               class="ui-copy-number"
               class:border-r={i % measureCount === 0 && i}
+              class:totals-column={i > 0 && i <= measureCount}
             >
               <div class="cell">
                 {#if result?.component && result?.props}
@@ -405,6 +406,7 @@
   .header-cell {
     @apply px-2 bg-white size-full;
     @apply flex items-center gap-x-1 w-full truncate;
+    @apply font-medium;
     height: var(--header-height);
   }
 
@@ -428,12 +430,12 @@
   }
 
   tr > td:first-of-type:not(:last-of-type) {
-    @apply border-r font-medium;
+    @apply border-r font-normal;
   }
 
   /* The totals row */
   tbody > tr:nth-of-type(2) {
-    @apply bg-slate-100 sticky z-20 font-semibold;
+    @apply bg-slate-50 sticky z-20 font-semibold;
     top: var(--total-header-height);
   }
 
@@ -445,5 +447,9 @@
   tr:hover,
   tr:hover .cell {
     @apply bg-slate-100;
+  }
+
+  .totals-column {
+    @apply bg-slate-50 font-semibold;
   }
 </style>

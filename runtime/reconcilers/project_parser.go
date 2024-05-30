@@ -325,13 +325,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
 func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser, restartController bool) error {
-	var connectors []*runtimev1.ConnectorSpec
-	for _, c := range parser.Resources {
-		if c.ConnectorSpec != nil {
-			connectors = append(connectors, c.ConnectorSpec)
-		}
-	}
-	return r.C.Runtime.UpdateInstanceWithRillYAML(ctx, r.C.InstanceID, parser.RillYAML, parser.DotEnv, connectors, restartController)
+	return r.C.Runtime.UpdateInstanceWithRillYAML(ctx, r.C.InstanceID, parser, restartController)
 }
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.

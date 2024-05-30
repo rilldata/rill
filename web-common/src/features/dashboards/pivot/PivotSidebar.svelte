@@ -6,6 +6,7 @@
   import { PivotChipType } from "./types";
   import type { PivotChipData } from "./types";
   import Search from "@rilldata/web-common/components/icons/Search.svelte";
+  import { slide } from "svelte/transition";
 
   const CHIP_HEIGHT = 34;
 
@@ -64,7 +65,11 @@
   }
 </script>
 
-<div class="sidebar" bind:clientHeight={sidebarHeight}>
+<div
+  class="sidebar"
+  bind:clientHeight={sidebarHeight}
+  transition:slide={{ axis: "x" }}
+>
   <div class="input-wrapper">
     <button on:click={() => inputEl.focus()}>
       <Search size="16px" />
@@ -106,10 +111,10 @@
 
 <style lang="postcss">
   .sidebar {
-    @apply flex flex-col items-start;
-    @apply h-full min-w-60 w-fit;
-    @apply bg-white border-r border-slate-200;
-    @apply overflow-hidden;
+    @apply flex flex-col flex-none relative overflow-hidden;
+    @apply h-full border-r z-0 w-60;
+    transition-property: width;
+    will-change: width;
   }
 
   .input-wrapper {

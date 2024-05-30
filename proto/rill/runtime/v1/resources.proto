@@ -502,9 +502,8 @@ message CharLocation {
 }
 
 message ConnectorSpec {
-  string name = 1;
-  string driver = 2;
-  map<string, string> properties = 3;
+  string driver = 1;
+  map<string, string> properties = 2;
 }
 
 message ConnectorState {

@@ -3496,8 +3496,6 @@ definitions:
   v1ConnectorSpec:
     type: object
     properties:
-      name:
-        type: string
       driver:
         type: string
       properties:
