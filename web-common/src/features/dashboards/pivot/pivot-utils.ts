@@ -12,15 +12,19 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
+  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
-import type {
-  PivotDataRow,
-  PivotDataStoreConfig,
-  PivotTimeConfig,
-  TimeFilters,
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  PivotState,
+  type PivotDataRow,
+  type PivotDataStoreConfig,
+  type PivotTimeConfig,
+  type TimeFilters,
 } from "./types";
 
 /**
@@ -29,23 +33,28 @@ import type {
  */
 export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const {
+    time,
     colDimensionNames,
     rowDimensionNames,
     measureNames,
     whereFilter,
     measureFilter,
+    enableComparison,
+    comparisonTime,
     pivot,
   } = config;
 
   const { sorting } = pivot;
+  const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
   const measureFilterKey = JSON.stringify(measureFilter);
+  const comparisonTimeKey = JSON.stringify(comparisonTime);
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${sortingKey}_${filterKey}_${measureFilterKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${measureFilterKey}_${enableComparison}_${comparisonTimeKey}`;
 }
 
 /**
@@ -187,7 +196,6 @@ export function getFilterForPivotTable(
  */
 export function getAccessorForCell(
   colDimensionNames: string[],
-  timeDimension: string,
   colValuesIndexMaps: Map<string, number>[],
   numMeasures: number,
   cell: { [key: string]: string | number },
@@ -395,4 +403,51 @@ export function getFilterForMeasuresTotalsAxesQuery(
   const mergedFilters = mergeFilters(config.whereFilter, rowFilters ?? {});
 
   return mergedFilters;
+}
+
+export function prepareMeasureForComparison(
+  measures: V1MetricsViewAggregationMeasure[],
+): V1MetricsViewAggregationMeasure[] {
+  return measures.map((measure) => {
+    if (measure.name?.endsWith(COMPARISON_PERCENT)) {
+      return {
+        ...measure,
+        comparisonRatio: {
+          measure: measure.name.replace(COMPARISON_PERCENT, ""),
+        },
+      };
+    } else if (measure.name?.endsWith(COMPARISON_DELTA)) {
+      return {
+        ...measure,
+        comparisonDelta: {
+          measure: measure.name.replace(COMPARISON_DELTA, ""),
+        },
+      };
+    }
+
+    return measure;
+  });
+}
+
+export function canEnablePivotComparison(
+  pivotState: PivotState,
+  comparisonStart: string | Date | undefined,
+) {
+  // Disable if more than 5 measures
+  if (pivotState.columns.measure.length >= 5) {
+    return false;
+  }
+  // Disable if time dimension is present in columns or rows
+  if (pivotState.columns.dimension.some((d) => d.type === "time")) {
+    return false;
+  }
+  if (pivotState.rows.dimension.some((d) => d.type === "time")) {
+    return false;
+  }
+  // Disable if time comparison is not present
+  if (!comparisonStart) {
+    return false;
+  }
+
+  return true;
 }
