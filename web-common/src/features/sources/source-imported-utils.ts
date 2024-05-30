@@ -1,6 +1,5 @@
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
-import { createDebouncer } from "@rilldata/web-common/lib/create-debouncer";
 import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
@@ -16,7 +15,6 @@ export async function checkSourceImported(
 
   waitForResourceUpdate(queryClient, get(runtime).instanceId, filePath)
     .then((success) => {
-      console.log("s", success);
       if (!success) return;
       sourceImportedPath.set(filePath);
     })
@@ -29,8 +27,6 @@ function waitForResourceUpdate(
   filePath: string,
 ) {
   return new Promise<boolean>((resolve) => {
-    const debouncer = createDebouncer();
-
     const end = (changed: boolean) => {
       unsub?.();
       resolve(changed);
@@ -43,10 +39,7 @@ function waitForResourceUpdate(
       filePath,
     ).subscribe(({ done, errored }) => {
       if (!done) return;
-
-      debouncer(() => {
-        end(!errored);
-      }, 500);
+      end(!errored);
     });
   });
 }
