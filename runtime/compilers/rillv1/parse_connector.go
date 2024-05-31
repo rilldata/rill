@@ -1,5 +1,7 @@
 package rillv1
 
+import "strings"
+
 // ConnectorYAML is the raw structure of a Connector resource defined in YAML (does not include common fields)
 type ConnectorYAML struct {
 	commonYAML `yaml:",inline" mapstructure:",squash"` // Only to avoid loading common fields into Properties
@@ -26,5 +28,27 @@ func (p *Parser) parseConnector(node *Node) error {
 
 	r.ConnectorSpec.Driver = tmp.Driver
 	r.ConnectorSpec.Properties = tmp.Defaults
+	r.ConnectorSpec.PropertiesFromVariables, err = propertiesFromVariables(tmp.Defaults)
+	if err != nil {
+		return err
+	}
 	return nil
+}
+
+func propertiesFromVariables(props map[string]string) (map[string]string, error) {
+	res := make(map[string]string)
+	for key, val := range props {
+		// todo fix assumption that value is of string type only
+		meta, err := AnalyzeTemplate(val)
+		if err != nil {
+			return nil, err
+		}
+		// todo fix assumption that only one variable will be set
+		for _, k := range meta.Variables {
+			if after, found := strings.CutPrefix(k, "vars."); found {
+				res[key] = after
+			}
+		}
+	}
+	return res, nil
 }

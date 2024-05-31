@@ -199,11 +199,20 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		}
 	}
 
+	vars := inst.ResolveVariables()
 	// Search for connector definition in rill.yaml
 	for _, c := range inst.ProjectConnectors {
 		if c.Name == name {
 			res.Driver = c.Type
 			res.Project = maps.Clone(c.Config) // Cloning because Project may be mutated later, but the inst object is shared.
+			// Resolve properties obtained from connectors that depend on an env variable
+			for k, v := range c.ConfigFromVariables {
+				var ok bool
+				res.Project[k], ok = vars[v]
+				if !ok {
+					return nil, fmt.Errorf("variable %q referenced in connector property %q not found", v, k)
+				}
+			}
 			break
 		}
 	}
@@ -222,7 +231,6 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	}
 
 	// Build res.Env config based on instance variables matching the format "connector.name.var"
-	vars := inst.ResolveVariables()
 	prefix := fmt.Sprintf("connector.%s.", name)
 	for k, v := range vars {
 		if after, found := strings.CutPrefix(k, prefix); found {

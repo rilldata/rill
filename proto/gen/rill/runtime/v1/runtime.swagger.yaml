@@ -2813,7 +2813,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3447,6 +3447,11 @@ definitions:
         additionalProperties:
           type: string
         title: Config for the connector
+      configFromVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: Config for the connector obtained from variables
   v1ConnectorDriver:
     type: object
     properties:
@@ -3502,6 +3507,11 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      propertiesFromVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: properties_from_variables store the properties to variables mapping for properties whose value depend on an env variable
   v1ConnectorState:
     type: object
   v1ConnectorV2:

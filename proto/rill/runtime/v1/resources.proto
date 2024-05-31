@@ -504,6 +504,8 @@ message CharLocation {
 message ConnectorSpec {
   string driver = 1;
   map<string, string> properties = 2;
+  // properties_from_variables store the properties to variables mapping for properties whose value depend on an env variable
+  map<string, string> properties_from_variables = 3;
 }
 
 message ConnectorState {

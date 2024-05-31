@@ -346,6 +346,13 @@ export class Connector extends Message<Connector> {
    */
   config: { [key: string]: string } = {};
 
+  /**
+   * Config for the connector obtained from variables
+   *
+   * @generated from field: map<string, string> configFromVariables = 4;
+   */
+  configFromVariables: { [key: string]: string } = {};
+
   constructor(data?: PartialMessage<Connector>) {
     super();
     proto3.util.initPartial(data, this);
@@ -357,6 +364,7 @@ export class Connector extends Message<Connector> {
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "configFromVariables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Connector {

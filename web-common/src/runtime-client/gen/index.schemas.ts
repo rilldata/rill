@@ -534,12 +534,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -567,6 +561,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -763,6 +763,13 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -789,13 +796,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1112,21 +1112,6 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  where?: V1Expression;
-  having?: V1Expression;
-  timeZone?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1187,6 +1172,21 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
+}
+
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  where?: V1Expression;
+  having?: V1Expression;
+  timeZone?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1658,11 +1658,14 @@ export interface V1ConnectorV2 {
   state?: V1ConnectorState;
 }
 
+export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
+
 export type V1ConnectorSpecProperties = { [key: string]: string };
 
 export interface V1ConnectorSpec {
   driver?: string;
   properties?: V1ConnectorSpecProperties;
+  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
 }
 
 /**
@@ -1686,6 +1689,8 @@ export interface V1ConnectorDriver {
   implementsNotifier?: boolean;
 }
 
+export type V1ConnectorConfigFromVariables = { [key: string]: string };
+
 export type V1ConnectorConfig = { [key: string]: string };
 
 export interface V1Connector {
@@ -1693,6 +1698,7 @@ export interface V1Connector {
   type?: string;
   name?: string;
   config?: V1ConnectorConfig;
+  configFromVariables?: V1ConnectorConfigFromVariables;
 }
 
 export interface V1Condition {
@@ -2056,7 +2062,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

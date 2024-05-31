@@ -251,6 +251,8 @@ message Connector {
   string name = 2;
   // Config for the connector
   map<string, string> config = 3;
+  // Config for the connector obtained from variables
+  map<string, string> configFromVariables = 4;
 }
 
 // Request message for RuntimeService.ListInstances
