@@ -1,10 +1,10 @@
 <script lang="ts">
   import { getAlertPreviewData } from "@rilldata/web-common/features/alerts/alert-preview-data";
+  import AlertPreviewTable from "@rilldata/web-common/features/alerts/AlertPreviewTable.svelte";
   import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import PreviewTable from "../../../components/preview-table/PreviewTable.svelte";
   import PreviewEmpty from "../PreviewEmpty.svelte";
 
   export let formValues: AlertFormValues;
@@ -28,10 +28,9 @@
   />
 {:else}
   <div class="max-h-64 overflow-auto">
-    <PreviewTable
-      name="Data Preview"
+    <AlertPreviewTable
       rows={$alertPreviewQuery.data.rows}
-      columnNames={$alertPreviewQuery.data.schema}
+      columns={$alertPreviewQuery.data.schema}
     />
   </div>
 {/if}

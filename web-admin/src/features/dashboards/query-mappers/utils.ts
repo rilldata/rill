@@ -1,14 +1,20 @@
-import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-export-utils";
+import {
+  ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaRelativeSuffix,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   type DashboardTimeControls,
+  TimeComparisonOption,
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  getQueryServiceMetricsViewToplistQueryKey,
-  queryServiceMetricsViewToplist,
-  type QueryServiceMetricsViewToplistBody,
+  getQueryServiceMetricsViewAggregationQueryKey,
+  queryServiceMetricsViewAggregation,
+  type QueryServiceMetricsViewAggregationBody,
   type V1Expression,
   type V1TimeRange,
   type V1TimeRangeSummary,
@@ -23,6 +29,49 @@ for (const preset in PreviousCompleteRangeMap) {
   PreviousCompleteRangeReverseMap[
     `${range.isoDuration}_${range.isoOffset}_${range.roundToGrain}`
   ] = preset as TimeRangePreset;
+}
+
+export function fillTimeRange(
+  dashboard: MetricsExplorerEntity,
+  reqTimeRange: V1TimeRange | undefined,
+  reqComparisonTimeRange: V1TimeRange | undefined,
+  timeRangeSummary: V1TimeRangeSummary,
+  executionTime: string,
+) {
+  if (reqTimeRange) {
+    dashboard.selectedTimeRange = getSelectedTimeRange(
+      reqTimeRange,
+      timeRangeSummary,
+      reqTimeRange.isoDuration ?? "",
+      executionTime,
+    );
+  }
+
+  if (reqComparisonTimeRange) {
+    if (
+      !reqComparisonTimeRange.isoOffset &&
+      reqComparisonTimeRange.isoDuration
+    ) {
+      dashboard.selectedComparisonTimeRange = {
+        name: TimeComparisonOption.CONTIGUOUS,
+        start: undefined as unknown as Date,
+        end: undefined as unknown as Date,
+      };
+    } else {
+      dashboard.selectedComparisonTimeRange = getSelectedTimeRange(
+        reqComparisonTimeRange,
+        timeRangeSummary,
+        reqComparisonTimeRange.isoOffset,
+        executionTime,
+      );
+    }
+
+    if (dashboard.selectedComparisonTimeRange) {
+      dashboard.selectedComparisonTimeRange.interval =
+        dashboard.selectedTimeRange?.interval;
+    }
+    dashboard.showTimeComparison = true;
+  }
 }
 
 export function getSelectedTimeRange(
@@ -65,29 +114,67 @@ export async function convertExprToToplist(
   metricsView: string,
   dimensionName: string,
   measureName: string,
-  timeRange: DashboardTimeControls | undefined,
+  timeRange: V1TimeRange | undefined,
+  comparisonTimeRange: V1TimeRange | undefined,
+  executionTime: string,
   where: V1Expression | undefined,
   having: V1Expression,
 ) {
-  const toplistBody: QueryServiceMetricsViewToplistBody = {
-    dimensionName,
-    measureNames: [measureName],
+  const toplistBody: QueryServiceMetricsViewAggregationBody = {
+    measures: [
+      {
+        name: measureName,
+      },
+      ...(comparisonTimeRange
+        ? [
+            {
+              name: measureName + ComparisonDeltaAbsoluteSuffix,
+              comparisonDelta: { measure: measureName },
+            },
+            {
+              name: measureName + ComparisonDeltaRelativeSuffix,
+              comparisonRatio: { measure: measureName },
+            },
+          ]
+        : []),
+    ],
+    dimensions: [{ name: dimensionName }],
+    ...(timeRange
+      ? {
+          timeRange: {
+            ...timeRange,
+            end: executionTime,
+          },
+        }
+      : {}),
+    ...(comparisonTimeRange
+      ? {
+          comparisonTimeRange: {
+            ...comparisonTimeRange,
+            end: executionTime,
+          },
+        }
+      : {}),
     where,
     having,
+    sort: [
+      {
+        name: measureName,
+        desc: false,
+      },
+    ],
     limit: "250",
-    timeStart: timeRange?.start.toISOString(),
-    timeEnd: timeRange?.end.toISOString(),
   };
   const toplist = await queryClient.fetchQuery({
-    queryKey: getQueryServiceMetricsViewToplistQueryKey(
+    queryKey: getQueryServiceMetricsViewAggregationQueryKey(
       instanceId,
       metricsView,
       toplistBody,
     ),
     queryFn: () =>
-      queryServiceMetricsViewToplist(instanceId, metricsView, toplistBody),
+      queryServiceMetricsViewAggregation(instanceId, metricsView, toplistBody),
   });
-  if (!toplist.data?.length) {
+  if (!toplist.data) {
     return undefined;
   }
   return createInExpression(

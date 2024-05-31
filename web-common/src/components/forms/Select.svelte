@@ -16,6 +16,7 @@
   export let placeholder: string = "";
   export let optional: boolean = false;
   export let tooltip: string = "";
+  export let className = "";
 
   // temporary till we figure out the menus
   export let detach = false;
@@ -32,7 +33,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-y-2">
+<div class="flex flex-col gap-y-2 {className}">
   {#if label?.length}
     <label for={id} class="text-sm flex items-center gap-x-1">
       <span class="text-gray-800 font-medium">
@@ -61,11 +62,13 @@
         ? 'text-gray-400'
         : ''}"
     >
-      {#if hasNoValue}
-        {placeholder}
-      {:else}
-        {displayValue}
-      {/if}
+      <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+        {#if hasNoValue}
+          {placeholder}
+        {:else}
+          {displayValue}
+        {/if}
+      </div>
       <CaretDownIcon />
     </MenuButton>
     <MenuItems positioningOverride={itemsClass}>
