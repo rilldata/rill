@@ -3,7 +3,6 @@ package metricsview
 import (
 	"context"
 	"fmt"
-	"log"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -158,8 +157,6 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 	if err != nil {
 		return nil, false, err
 	}
-
-	log.Printf("SQL: %s", sql)
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,

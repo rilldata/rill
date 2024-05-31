@@ -1678,11 +1678,12 @@ measures:
     type: derived
     expression: a/lag(a)
     window:
+      order:
+      - name: t
+        time_grain: day
       frame: unbounded preceding to current row
     requires:
       - a
-      - name: t
-        time_grain: day
 `,
 	}
 
@@ -1718,10 +1719,14 @@ measures:
 						ReferencedMeasures: []string{"a"},
 					},
 					{
-						Name:               "d",
-						Expression:         "a/lag(a)",
-						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
-						Window:             &runtimev1.MetricsViewSpec_MeasureWindow{Partition: true, FrameExpression: "unbounded preceding to current row"},
+						Name:       "d",
+						Expression: "a/lag(a)",
+						Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						Window: &runtimev1.MetricsViewSpec_MeasureWindow{
+							Partition:       true,
+							OrderBy:         []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "t", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY}},
+							FrameExpression: "unbounded preceding to current row",
+						},
 						RequiredDimensions: []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "t", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY}},
 						ReferencedMeasures: []string{"a"},
 					},

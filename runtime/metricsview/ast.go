@@ -874,7 +874,7 @@ func (a *AST) sqlForTimeRange(timeCol string, start, end time.Time) (string, []a
 	} else if !start.IsZero() {
 		where = fmt.Sprintf("%s >= ?", a.dialect.EscapeIdentifier(timeCol))
 		args = []any{start}
-	} else if end.IsZero() {
+	} else if !end.IsZero() {
 		where = fmt.Sprintf("%s < ?", a.dialect.EscapeIdentifier(timeCol))
 		args = []any{end}
 	} else {
