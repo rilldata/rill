@@ -36,20 +36,6 @@ var spec = drivers.Spec{
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
 		},
 		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-			Placeholder: "default",
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "host",
@@ -62,6 +48,20 @@ var spec = drivers.Spec{
 			DisplayName: "port",
 			Required:    false,
 			Placeholder: "9000",
+		},
+		{
+			Key:         "username",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "username",
+			Required:    false,
+			Placeholder: "default",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "password",
+			Required:    false,
+			Secret:      true,
 		},
 		{
 			Key:         "ssl",
@@ -132,7 +132,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 
 		dsn = dsnURL.String()
 	} else {
-		return nil, fmt.Errorf("no clickhouse credentials supplied. Set `dsn` or individual properties")
+		return nil, fmt.Errorf("clickhouse connection parameters not set. Set `dsn` or individual properties")
 	}
 
 	db, err := sqlx.Open("clickhouse", dsn)
