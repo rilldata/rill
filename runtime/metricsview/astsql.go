@@ -8,13 +8,20 @@ import (
 
 // SQL builds a SQL query from the AST.
 // It returns the query and query arguments to be passed to the database driver.
+//
+// It does not produce a PIVOT query when PivotOn is set. See astpivot.go for functions to build PIVOT queries from an AST.
 func (a *AST) SQL() (string, []any, error) {
 	b := &sqlBuilder{
 		ast: a,
 		out: &strings.Builder{},
 	}
 
-	err := b.writeSelect(a.Root)
+	var err error
+	if a.query.Label {
+		err = b.writeSelectWithLabels(a.Root)
+	} else {
+		err = b.writeSelect(a.Root)
+	}
 	if err != nil {
 		return "", nil, err
 	}
@@ -26,6 +33,47 @@ type sqlBuilder struct {
 	ast  *AST
 	out  *strings.Builder
 	args []any
+}
+
+func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
+	b.out.WriteString("SELECT ")
+
+	for i, f := range n.DimFields {
+		label := f.Label
+		if label == "" {
+			label = f.Name
+		}
+
+		if i > 0 {
+			b.out.WriteString(", ")
+		}
+		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(" as ")
+		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
+	}
+
+	for i, f := range n.MeasureFields {
+		label := f.Label
+		if label == "" {
+			label = f.Name
+		}
+
+		if i > 0 || len(n.DimFields) > 0 {
+			b.out.WriteString(", ")
+		}
+		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
+		b.out.WriteString(" as ")
+		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
+	}
+
+	b.out.WriteString(" FROM (")
+	err := b.writeSelect(n)
+	if err != nil {
+		return err
+	}
+	b.out.WriteString(")")
+
+	return nil
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {

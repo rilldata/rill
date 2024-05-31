@@ -49,8 +49,8 @@ type MetricsViewYAML struct {
 		Type                string
 		Expression          string
 		Window              *MetricsViewMeasureWindow
-		Per                 []MetricsViewFieldSelectorYAML
-		Requires            []MetricsViewFieldSelectorYAML
+		Per                 MetricsViewFieldSelectorsYAML
+		Requires            MetricsViewFieldSelectorsYAML
 		Description         string
 		FormatPreset        string `yaml:"format_preset"`
 		FormatD3            string `yaml:"format_d3"`
@@ -162,8 +162,9 @@ func (o *AvailableComparisonOffset) UnmarshalYAML(v *yaml.Node) error {
 }
 
 type MetricsViewFieldSelectorYAML struct {
-	Name      string
-	TimeGrain runtimev1.TimeGrain
+	Name       string
+	TimeGrain  runtimev1.TimeGrain // Only for time dimensions
+	Descending bool                // Only for sorting
 }
 
 func (f *MetricsViewFieldSelectorYAML) UnmarshalYAML(v *yaml.Node) error {
@@ -199,8 +200,38 @@ func (f *MetricsViewFieldSelectorYAML) UnmarshalYAML(v *yaml.Node) error {
 	return nil
 }
 
+type MetricsViewFieldSelectorsYAML []MetricsViewFieldSelectorYAML
+
+func (f *MetricsViewFieldSelectorsYAML) UnmarshalYAML(v *yaml.Node) error {
+	if v == nil {
+		return nil
+	}
+
+	switch v.Kind {
+	case yaml.ScalarNode:
+		*f = []MetricsViewFieldSelectorYAML{{Name: v.Value}}
+	case yaml.SequenceNode:
+		res := make([]MetricsViewFieldSelectorYAML, len(v.Content))
+		for i, n := range v.Content {
+			var tmp MetricsViewFieldSelectorYAML
+			err := n.Decode(&tmp)
+			if err != nil {
+				return err
+			}
+			res[i] = tmp
+		}
+		*f = res
+	default:
+		return fmt.Errorf("field references should be a name or a list")
+	}
+
+	return nil
+}
+
 type MetricsViewMeasureWindow struct {
 	Partition bool
+	Order     []MetricsViewFieldSelectorYAML
+	OrderTime bool // Preset for ordering by only the time dimension
 	Frame     string
 }
 
@@ -212,17 +243,19 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	switch v.Kind {
 	case yaml.ScalarNode:
 		switch strings.ToLower(v.Value) {
-		case "partitioned", "true":
+		case "time", "true":
 			f.Partition = true
-		case "unpartitioned":
+			f.OrderTime = true
+		case "all":
 			f.Partition = false
 		default:
 			return fmt.Errorf(`invalid window type %q`, v.Value)
 		}
 	case yaml.MappingNode:
-		// avoid infinite loop by using a separate struct
+		// Avoid infinite loop by using a separate struct
 		tmp := &struct {
-			Partition *bool // Defaults to true
+			Partition *bool
+			Order     *MetricsViewFieldSelectorsYAML
 			Frame     string
 		}{}
 		err := v.Decode(tmp)
@@ -230,9 +263,17 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 			return err
 		}
 
+		// Let partition default to true
 		f.Partition = true
 		if tmp.Partition != nil {
 			f.Partition = *tmp.Partition
+		}
+
+		if tmp.Order != nil {
+			f.Order = *tmp.Order
+		} else {
+			// If order is not specified, default to ordering by time if it's a partitioned window
+			f.OrderTime = f.Partition
 		}
 
 		f.Frame = tmp.Frame
@@ -394,25 +435,48 @@ func (p *Parser) parseMetricsView(node *Node) error {
 
 		var window *runtimev1.MetricsViewSpec_MeasureWindow
 		if measure.Window != nil {
-			window = &runtimev1.MetricsViewSpec_MeasureWindow{
-				Partition:       measure.Window.Partition,
-				FrameExpression: measure.Window.Frame,
-			}
-		}
-
-		// If the window has a frame expression and a time dimension is set, ensure the time dimension is in the required dimensions
-		if window != nil && window.FrameExpression != "" && tmp.TimeDimension != "" {
-			found := false
-			for _, rd := range requiredDimensions {
-				if rd.Name == tmp.TimeDimension {
-					found = true
-					break
-				}
-			}
-			if !found {
-				requiredDimensions = append(requiredDimensions, &runtimev1.MetricsViewSpec_DimensionSelector{
+			// Build order list
+			var order []*runtimev1.MetricsViewSpec_DimensionSelector
+			if measure.Window.OrderTime && tmp.TimeDimension != "" {
+				order = append(order, &runtimev1.MetricsViewSpec_DimensionSelector{
 					Name: tmp.TimeDimension,
 				})
+			}
+			for _, o := range measure.Window.Order {
+				typ, ok := names[strings.ToLower(o.Name)]
+				if !ok || typ != nameIsDimension {
+					return fmt.Errorf(`order dimension %q not found`, o.Name)
+				}
+
+				order = append(order, &runtimev1.MetricsViewSpec_DimensionSelector{
+					Name:      o.Name,
+					TimeGrain: o.TimeGrain,
+					Desc:      o.Descending,
+				})
+			}
+
+			// Add items in order list to requiredDimensions
+			for _, o := range order {
+				found := false
+				for _, rd := range requiredDimensions {
+					if strings.EqualFold(rd.Name, o.Name) {
+						found = true
+						break
+					}
+				}
+				if !found {
+					requiredDimensions = append(requiredDimensions, &runtimev1.MetricsViewSpec_DimensionSelector{
+						Name:      o.Name,
+						TimeGrain: o.TimeGrain,
+					})
+				}
+			}
+
+			// Build window
+			window = &runtimev1.MetricsViewSpec_MeasureWindow{
+				Partition:       measure.Window.Partition,
+				OrderBy:         order,
+				FrameExpression: measure.Window.Frame,
 			}
 		}
 

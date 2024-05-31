@@ -2645,7 +2645,11 @@ definitions:
         type: string
       timeGrain:
         $ref: '#/definitions/v1TimeGrain'
-    title: Selector for a dimension, optionally truncated to a time grain
+        title: Only for time dimensions (optional)
+      desc:
+        type: boolean
+        title: Only for when ordering (optional)
+    title: Selector for a dimension
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2712,8 +2716,16 @@ definitions:
     properties:
       partition:
         type: boolean
+        title: If true, partitions the window by all present dimensions except those in order_by
+      orderBy:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+        description: Dimensions to order the window by. Must be present in required_dimensions.
       frameExpression:
         type: string
+        title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
   MetricsViewSpecSecurityV2:
     type: object

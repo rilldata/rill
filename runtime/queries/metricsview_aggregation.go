@@ -101,6 +101,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		if err != nil {
 			return err
 		}
+		defer res.Close()
 
 		data, err := rowsToData(res)
 		if err != nil {
@@ -3070,6 +3071,8 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query
 	if len(q.PivotOn) > 0 {
 		qry.PivotOn = q.PivotOn
 	}
+
+	qry.Label = q.Exporting
 
 	return qry, true, nil
 }

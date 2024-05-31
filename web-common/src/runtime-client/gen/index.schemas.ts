@@ -2158,6 +2158,8 @@ export interface MetricsViewSpecSecurityV2 {
 
 export interface MetricsViewSpecMeasureWindow {
   partition?: boolean;
+  /** Dimensions to order the window by. Must be present in required_dimensions. */
+  orderBy?: MetricsViewSpecDimensionSelector[];
   frameExpression?: string;
 }
 
@@ -2184,6 +2186,7 @@ export interface MetricsViewSpecDimensionV2 {
 export interface MetricsViewSpecDimensionSelector {
   name?: string;
   timeGrain?: V1TimeGrain;
+  desc?: boolean;
 }
 
 export interface MetricsViewSpecMeasureV2 {

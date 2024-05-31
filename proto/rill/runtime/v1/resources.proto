@@ -144,10 +144,11 @@ message MetricsViewSpec {
     string description = 4;
     bool unnest = 5;
   }
-  // Selector for a dimension, optionally truncated to a time grain
+  // Selector for a dimension
   message DimensionSelector {
     string name = 1;
-    TimeGrain time_grain = 2;
+    TimeGrain time_grain = 2; // Only for time dimensions (optional)
+    bool desc = 3; // Only for when ordering (optional)
   }
   // Type of measure query to generate
   enum MeasureType {
@@ -158,7 +159,11 @@ message MetricsViewSpec {
   }
   // Window to apply to the measure calculation
   message MeasureWindow {
+    // If true, partitions the window by all present dimensions except those in order_by
     bool partition = 1;
+    // Dimensions to order the window by. Must be present in required_dimensions.
+    repeated DimensionSelector order_by = 3;
+    // Raw SQL expression to use as the frame (starting with "ROWS ...")
     string frame_expression = 2;
   }
   // Measures are aggregated computed values

@@ -9641,6 +9641,8 @@ func (m *MetricsViewSpec_DimensionSelector) validate(all bool) error {
 
 	// no validation rules for TimeGrain
 
+	// no validation rules for Desc
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionSelectorMultiError(errors)
 	}
@@ -9746,6 +9748,40 @@ func (m *MetricsViewSpec_MeasureWindow) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for Partition
+
+	for idx, item := range m.GetOrderBy() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpec_MeasureWindowValidationError{
+						field:  fmt.Sprintf("OrderBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpec_MeasureWindowValidationError{
+						field:  fmt.Sprintf("OrderBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpec_MeasureWindowValidationError{
+					field:  fmt.Sprintf("OrderBy[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for FrameExpression
 
