@@ -3711,7 +3711,7 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
   properties: { [key: string]: string } = {};
 
   /**
-   * properties_from_variables store the properties to variables mapping for properties whose value depend on an env variable
+   * properties_from_variables stores a copy of properties whose value is a variable. The key is the property and value is the variable.
    *
    * @generated from field: map<string, string> properties_from_variables = 3;
    */

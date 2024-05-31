@@ -3451,7 +3451,7 @@ definitions:
         type: object
         additionalProperties:
           type: string
-        title: config_from_variables stores a copy of configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
+        title: config_from_variables stores a copy of configs whose value is a variable. The key is the property and value is the variable. This is only set for configs obtained from `connector.yaml`
   v1ConnectorDriver:
     type: object
     properties:
@@ -3511,7 +3511,7 @@ definitions:
         type: object
         additionalProperties:
           type: string
-        title: properties_from_variables store the properties to variables mapping for properties whose value depend on an env variable
+        description: properties_from_variables stores a copy of properties whose value is a variable. The key is the property and value is the variable.
   v1ConnectorState:
     type: object
   v1ConnectorV2:
