@@ -1,10 +1,14 @@
 import { TIME_COMPARISON } from "@rilldata/web-common/lib/time/config";
+import { prettyFormatTimeRange } from "@rilldata/web-common/lib/time/ranges";
+import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
+import type { V1TimeRange } from "@rilldata/web-common/runtime-client";
 import { Duration, Interval } from "luxon";
 import { getTimeWidth, transformDate } from "../transforms";
 import {
   RelativeTimeTransformation,
   TimeComparisonOption,
   TimeOffsetType,
+  TimeRangePreset,
 } from "../types";
 
 export function getComparisonTransform(
@@ -231,4 +235,28 @@ export function getTimeComparisonParametersForComponent(
     end,
     isComparisonRangeAvailable,
   };
+}
+
+export function getComparisonLabel(comparisonTimeRange: V1TimeRange) {
+  if (
+    !comparisonTimeRange.isoOffset ||
+    comparisonTimeRange.isoOffset === TimeRangePreset.CUSTOM
+  ) {
+    return prettyFormatTimeRange(
+      new Date(comparisonTimeRange.start ?? ""),
+      new Date(comparisonTimeRange.end ?? ""),
+      TimeRangePreset.CUSTOM,
+      "UTC", // TODO
+    );
+  }
+  switch (true) {
+    case comparisonTimeRange.isoOffset === TimeRangePreset.ALL_TIME:
+      return "All time";
+    case comparisonTimeRange.isoDuration === comparisonTimeRange.isoOffset:
+      return "Previous period";
+    case comparisonTimeRange.isoOffset in TIME_COMPARISON:
+      return TIME_COMPARISON[comparisonTimeRange.isoOffset].label;
+    default:
+      return `Last ${humaniseISODuration(comparisonTimeRange.isoOffset)}`;
+  }
 }

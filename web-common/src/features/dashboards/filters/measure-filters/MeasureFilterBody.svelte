@@ -8,8 +8,10 @@
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
-    AllMeasureFilterOptions,
+    AllMeasureFilterOperationOptions,
+    AllMeasureFilterTypeOptions,
     MeasureFilterOperation,
+    MeasureFilterType,
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 
   export let dimensionName: string;
@@ -18,23 +20,40 @@
   export let labelMaxWidth = "160px";
   export let active = false;
   export let readOnly = false;
+  export let comparisonLabel = "";
 
+  let typeLabel: string | undefined;
   let shortLabel: string | undefined;
   $: if (filter) {
+    const typeOption = AllMeasureFilterTypeOptions.find(
+      (o) => o.value === filter?.type,
+    );
+    typeLabel = typeOption?.shortLabel;
+
+    if (
+      filter.type === MeasureFilterType.AbsoluteChange ||
+      filter.type === MeasureFilterType.PercentChange
+    ) {
+      typeLabel += ` from ${comparisonLabel}`;
+    }
+
     switch (filter.operation) {
       case MeasureFilterOperation.GreaterThan:
       case MeasureFilterOperation.GreaterThanOrEquals:
       case MeasureFilterOperation.LessThan:
       case MeasureFilterOperation.LessThanOrEquals:
+      case MeasureFilterOperation.Equals:
+      case MeasureFilterOperation.NotEquals:
         shortLabel =
-          AllMeasureFilterOptions.find(
+          AllMeasureFilterOperationOptions.find(
             (o) =>
               // svelte-check is throwing an error here stating `filter could be undefined` so we need this
               o.value === filter?.operation ??
               MeasureFilterOperation.GreaterThan,
           )?.shortLabel +
           " " +
-          filter.value1;
+          filter.value1 +
+          (filter.type === MeasureFilterType.PercentChange ? "%" : "");
         break;
       case MeasureFilterOperation.Between:
         shortLabel = `(${filter.value1},${filter.value2})`;
@@ -55,6 +74,9 @@
     {#if dimensionName}
       <!-- span needed to make sure the space before the `for` is not removed by prettier -->
       <span> for {dimensionName}</span>
+    {/if}
+    {#if typeLabel}
+      <span>{typeLabel}</span>
     {/if}
   </div>
   <div class="flex flex-wrap flex-row items-baseline gap-y-1">
