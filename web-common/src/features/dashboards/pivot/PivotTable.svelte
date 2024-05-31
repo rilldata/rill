@@ -28,6 +28,7 @@
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -267,17 +268,14 @@
     hovering = null;
   }
 
-  async function handleClick(e: MouseEvent) {
+  function handleClick(e: MouseEvent) {
     if (!isElement(e.target)) return;
 
     const value = e.target.dataset.value;
 
     if (value === undefined) return;
 
-    await navigator.clipboard.writeText(value);
-    eventBus.emit("notification", {
-      message: `copied value "${value}" to clipboard`,
-    });
+    copyToClipboard(value);
   }
 
   function isElement(target: EventTarget | null): target is HTMLElement {
