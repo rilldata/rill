@@ -70,6 +70,13 @@ var spec = drivers.Spec{
 			Placeholder: "password",
 			Secret:      true,
 		},
+		{
+			Key:         "ssl",
+			Type:        drivers.BooleanPropertyType,
+			Required:    true,
+			DisplayName: "SSL",
+			Description: "Use SSL to connect to the ClickHouse server",
+		},
 	},
 	ImplementsOLAP: true,
 }
