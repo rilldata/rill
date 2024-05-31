@@ -23,10 +23,10 @@ type AST struct {
 	nextIdentifier  int
 
 	// Contextual info for building the AST
-	query       *Query
-	dialect     drivers.Dialect
 	metricsView *runtimev1.MetricsViewSpec
 	security    *runtime.ResolvedMetricsViewSecurity
+	query       *Query
+	dialect     drivers.Dialect
 }
 
 // SelectNode represents a query that computes measures by dimensions.

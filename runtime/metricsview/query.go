@@ -21,6 +21,7 @@ type Query struct {
 	Limit               *int        `mapstructure:"limit"`
 	Offset              *int        `mapstructure:"offset"`
 	TimeZone            string      `mapstructure:"time_zone"`
+	Label               bool        `mapstructure:"label"`
 }
 
 type Dimension struct {

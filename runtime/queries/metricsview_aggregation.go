@@ -3071,5 +3071,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query
 		qry.PivotOn = q.PivotOn
 	}
 
+	qry.Label = q.Exporting
+
 	return qry, true, nil
 }
