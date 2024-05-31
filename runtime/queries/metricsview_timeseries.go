@@ -42,81 +42,6 @@ type MetricsViewTimeSeries struct {
 	Result *runtimev1.MetricsViewTimeSeriesResponse `json:"-"`
 }
 
-func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery() (*metricsview.Query, bool, error) {
-	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
-
-	for _, m := range q.MeasureNames {
-		qry.Measures = append(qry.Measures, metricsview.Measure{Name: m})
-	}
-
-	for _, m := range q.InlineMeasures {
-		res := metricsview.Measure{Name: m.Name}
-		switch strings.ToLower(m.Expression) {
-		case "count(*)":
-			res.Compute = &metricsview.MeasureCompute{Count: true}
-		default:
-			return nil, false, fmt.Errorf("inline measure expression is not supported")
-		}
-
-		qry.Measures = append(qry.Measures, res)
-	}
-
-	res := &metricsview.TimeRange{}
-	if q.TimeStart != nil {
-		res.Start = q.TimeStart.AsTime()
-	}
-	if q.TimeEnd != nil {
-		res.End = q.TimeEnd.AsTime()
-	}
-	qry.TimeRange = res
-
-	if q.Limit != 0 {
-		tmp := int(q.Limit)
-		qry.Limit = &tmp
-	}
-
-	if q.Offset != 0 {
-		tmp := int(q.Offset)
-		qry.Offset = &tmp
-	}
-
-	for _, s := range q.Sort {
-		qry.Sort = append(qry.Sort, metricsview.Sort{
-			Name: s.Name,
-			Desc: !s.Ascending,
-		})
-	}
-
-	if q.Filter != nil { // backwards backwards compatibility
-		if q.Where != nil {
-			return nil, false, fmt.Errorf("both filter and where is provided")
-		}
-		q.Where = convertFilterToExpression(q.Filter)
-	}
-
-	if q.Where != nil {
-		qry.Where = rewriteToMetricsResolverExpression(q.Where)
-	}
-
-	if q.Having != nil {
-		qry.Having = rewriteToMetricsResolverExpression(q.Having)
-	}
-
-	qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{
-		Name: q.MetricsView.TimeDimension,
-		Compute: &metricsview.DimensionCompute{
-			TimeFloor: &metricsview.DimensionComputeTimeFloor{
-				Dimension: q.MetricsView.TimeDimension,
-				Grain:     metricsview.TimeGrainFromProto(q.TimeGranularity),
-			},
-		},
-	})
-
-	qry.TimeZone = q.TimeZone
-
-	return qry, true, nil
-}
-
 var _ runtime.Query = &MetricsViewTimeSeries{}
 
 func (q *MetricsViewTimeSeries) Key() string {
@@ -674,4 +599,86 @@ func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
 		return d.Add(t)
 	}
 	return d.Add(t.In(tz)).In(time.UTC)
+}
+
+func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery() (*metricsview.Query, bool, error) {
+	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
+
+	for _, m := range q.MeasureNames {
+		qry.Measures = append(qry.Measures, metricsview.Measure{Name: m})
+	}
+
+	for _, m := range q.InlineMeasures {
+		res := metricsview.Measure{Name: m.Name}
+		switch strings.ToLower(m.Expression) {
+		case "count(*)":
+			res.Compute = &metricsview.MeasureCompute{Count: true}
+		default:
+			return nil, false, fmt.Errorf("inline measure expression is not supported")
+		}
+
+		qry.Measures = append(qry.Measures, res)
+	}
+
+	res := &metricsview.TimeRange{}
+	if q.TimeStart != nil {
+		res.Start = q.TimeStart.AsTime()
+	}
+	if q.TimeEnd != nil {
+		res.End = q.TimeEnd.AsTime()
+	}
+	qry.TimeRange = res
+
+	if q.Limit != 0 {
+		tmp := int(q.Limit)
+		qry.Limit = &tmp
+	}
+
+	if q.Offset != 0 {
+		tmp := int(q.Offset)
+		qry.Offset = &tmp
+	}
+
+	for _, s := range q.Sort {
+		qry.Sort = append(qry.Sort, metricsview.Sort{
+			Name: s.Name,
+			Desc: !s.Ascending,
+		})
+	}
+
+	if len(q.Sort) == 0 {
+		qry.Sort = append(qry.Sort, metricsview.Sort{
+			Name: q.MetricsView.TimeDimension,
+			Desc: false,
+		})
+	}
+
+	if q.Filter != nil { // backwards backwards compatibility
+		if q.Where != nil {
+			return nil, false, fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
+	}
+
+	if q.Where != nil {
+		qry.Where = rewriteToMetricsResolverExpression(q.Where)
+	}
+
+	if q.Having != nil {
+		qry.Having = rewriteToMetricsResolverExpression(q.Having)
+	}
+
+	qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{
+		Name: q.MetricsView.TimeDimension,
+		Compute: &metricsview.DimensionCompute{
+			TimeFloor: &metricsview.DimensionComputeTimeFloor{
+				Dimension: q.MetricsView.TimeDimension,
+				Grain:     metricsview.TimeGrainFromProto(q.TimeGranularity),
+			},
+		},
+	})
+
+	qry.TimeZone = q.TimeZone
+
+	return qry, true, nil
 }
