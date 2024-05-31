@@ -3,8 +3,10 @@ package pinot
 import (
 	"context"
 	"fmt"
+	"net/url"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/pinot/sqldriver"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -36,14 +38,59 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
+type configProperties struct {
+	// DSN is the connection string. Set either DSN or properties below.
+	DSN      string `mapstructure:"dsn"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
+	SSL bool `mapstructure:"ssl"`
+	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
+	LogQueries bool `mapstructure:"log_queries"`
+}
+
 // Open a connection to Apache Pinot using HTTP API.
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, fmt.Errorf("pinot driver can't be shared")
 	}
-	dsn, ok := config["dsn"].(string)
-	if !ok || dsn == "" {
-		return nil, fmt.Errorf("require dsn to open pinot connection")
+
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, err
+	}
+
+	var dsn string
+	if conf.DSN != "" {
+		dsn = conf.DSN
+	} else if conf.Host != "" {
+		var dsnURL url.URL
+		dsnURL.Host = conf.Host
+		// set port
+		if conf.Port != 0 {
+			dsnURL.Host = fmt.Sprintf("%v:%v", conf.Host, conf.Port)
+		}
+
+		// set scheme
+		if conf.SSL {
+			dsnURL.Scheme = "https"
+		} else {
+			dsnURL.Scheme = "http"
+		}
+
+		// set username and password
+		if conf.Password != "" {
+			dsnURL.User = url.UserPassword(conf.Username, conf.Password)
+		} else if conf.Username != "" {
+			dsnURL.User = url.User(conf.Username)
+		}
+
+		dsn = dsnURL.String()
+	} else {
+		return nil, fmt.Errorf("pinot connection parameters not set. Set `dsn` or individual properties")
 	}
 
 	db, err := sqlx.Open("pinot", dsn)
