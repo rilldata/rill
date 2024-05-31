@@ -2,6 +2,7 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
   import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
+  import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -181,6 +182,7 @@
       // Fetch more data when scrolling near the bottom end
       if (
         bottomEndDistance < ROW_THRESHOLD &&
+        rows.length >= NUM_ROWS_PER_PAGE &&
         !$pivotDataStore.isFetching &&
         !reachedEndForRows
       ) {
