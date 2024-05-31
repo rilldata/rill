@@ -26,7 +26,6 @@
   import { isTimeDimension } from "./pivot-utils";
   import type { PivotDataRow, PivotDataStore } from "./types";
   import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
