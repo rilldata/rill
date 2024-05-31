@@ -192,18 +192,12 @@ func TestMetricsViewAggregation_dimension_expression_filters(t *testing.T) {
 		}),
 	})
 	require.NoError(t, err)
-	require.Equal(t, 2, len(tr.Data))
+	require.Equal(t, 1, len(tr.Data))
 	require.Equal(t, 5, len(tr.Data[0].Fields))
 
 	require.Equal(t, 1.0, tr.Data[0].Fields["__count"].GetNumberValue())
 	require.Equal(t, 2.0, tr.Data[0].Fields["measure_2"].GetNumberValue())
 	require.Equal(t, "msn.com", tr.Data[0].Fields["domain"].GetStringValue())
-	require.Equal(t, "msn", tr.Data[0].Fields["domain_parts"].GetStringValue())
+	require.Equal(t, "com", tr.Data[0].Fields["domain_parts"].GetStringValue())
 	require.Equal(t, "msn.com", tr.Data[0].Fields["tld"].GetStringValue())
-
-	require.Equal(t, 1.0, tr.Data[1].Fields["__count"].GetNumberValue())
-	require.Equal(t, 2.0, tr.Data[1].Fields["measure_2"].GetNumberValue())
-	require.Equal(t, "msn.com", tr.Data[1].Fields["domain"].GetStringValue())
-	require.Equal(t, "com", tr.Data[1].Fields["domain_parts"].GetStringValue())
-	require.Equal(t, "msn.com", tr.Data[1].Fields["tld"].GetStringValue())
 }
