@@ -38,12 +38,11 @@ func (p *Parser) parseConnector(node *Node) error {
 func propertiesFromVariables(props map[string]string) (map[string]string, error) {
 	res := make(map[string]string)
 	for key, val := range props {
-		// todo fix assumption that value is of string type only
 		meta, err := AnalyzeTemplate(val)
 		if err != nil {
 			return nil, err
 		}
-		// todo fix assumption that only one variable will be set
+		// assume that only one variable will be set
 		for _, k := range meta.Variables {
 			if after, found := strings.CutPrefix(k, "vars."); found {
 				res[key] = after
