@@ -1,5 +1,6 @@
 import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+import { getMeasuresAndDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -135,13 +136,21 @@ export function createTimeSeriesDataStore(
           ? [...dashboardStore.visibleMeasureKeys]
           : [];
       }
+      const { dimensions } = getMeasuresAndDimensions({
+        dashboard: dashboardStore,
+      })(metricsView.data ?? {}, measures);
 
       const primaryTimeSeries = createMetricsViewTimeSeries(
         ctx,
         measures,
         false,
       );
-      const primaryTotals = createTotalsForMeasure(ctx, measures, false);
+      const primaryTotals = createTotalsForMeasure(
+        ctx,
+        measures,
+        dimensions,
+        false,
+      );
 
       let unfilteredTotals:
         | CreateQueryResult<V1MetricsViewAggregationResponse, unknown>
@@ -162,7 +171,12 @@ export function createTimeSeriesDataStore(
         | Writable<null> = writable(null);
       if (showComparison) {
         comparisonTimeSeries = createMetricsViewTimeSeries(ctx, measures, true);
-        comparisonTotals = createTotalsForMeasure(ctx, measures, true);
+        comparisonTotals = createTotalsForMeasure(
+          ctx,
+          measures,
+          dimensions,
+          true,
+        );
       }
 
       let dimensionTimeSeriesCharts:
