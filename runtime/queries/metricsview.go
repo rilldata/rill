@@ -19,6 +19,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/xuri/excelize/v2"
@@ -890,4 +891,61 @@ func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsViewSpec) string
 		filename += "_filtered"
 	}
 	return filename
+}
+
+func rewriteToMetricsResolverExpression(expr *runtimev1.Expression) *metricsview.Expression {
+	if expr == nil {
+		return nil
+	}
+
+	res := &metricsview.Expression{}
+
+	switch e := expr.Expression.(type) {
+	case *runtimev1.Expression_Ident:
+		res.Name = e.Ident
+	case *runtimev1.Expression_Val:
+		res.Value = e.Val.AsInterface()
+	case *runtimev1.Expression_Cond:
+		var op metricsview.Operator
+		switch e.Cond.Op {
+		case runtimev1.Operation_OPERATION_UNSPECIFIED:
+			op = metricsview.OperatorUnspecified
+		case runtimev1.Operation_OPERATION_EQ:
+			op = metricsview.OperatorEq
+		case runtimev1.Operation_OPERATION_NEQ:
+			op = metricsview.OperatorNeq
+		case runtimev1.Operation_OPERATION_LT:
+			op = metricsview.OperatorLt
+		case runtimev1.Operation_OPERATION_LTE:
+			op = metricsview.OperatorLte
+		case runtimev1.Operation_OPERATION_GT:
+			op = metricsview.OperatorGt
+		case runtimev1.Operation_OPERATION_GTE:
+			op = metricsview.OperatorGte
+		case runtimev1.Operation_OPERATION_OR:
+			op = metricsview.OperatorOr
+		case runtimev1.Operation_OPERATION_AND:
+			op = metricsview.OperatorAnd
+		case runtimev1.Operation_OPERATION_IN:
+			op = metricsview.OperatorIn
+		case runtimev1.Operation_OPERATION_NIN:
+			op = metricsview.OperatorNin
+		case runtimev1.Operation_OPERATION_LIKE:
+			op = metricsview.OperatorIlike
+		case runtimev1.Operation_OPERATION_NLIKE:
+			op = metricsview.OperatorNilike
+		}
+
+		exprs := make([]*metricsview.Expression, 0, len(e.Cond.Exprs))
+		for _, e := range e.Cond.Exprs {
+			exprs = append(exprs, rewriteToMetricsResolverExpression(e))
+		}
+
+		res.Condition = &metricsview.Condition{
+			Operator:    op,
+			Expressions: exprs,
+		}
+	}
+
+	return res
 }

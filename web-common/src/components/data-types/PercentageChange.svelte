@@ -8,6 +8,7 @@
   export let customStyle = "";
   export let value: number | undefined | null | NumberParts | PERC_DIFF;
   export let tabularNumber = true;
+  export let assembled = true;
 
   let diffIsNegative = false;
   let intValue: string;
@@ -63,7 +64,7 @@
   <slot name="value">
     {#if isNoData}
       <span class="text-gray-400">-</span>
-    {:else if value !== null}
+    {:else if value !== null && assembled}
       <span class:text-red-500={diffIsNegative}>
         {approxSign}{negSign}{intValue}{suffix}<span class="opacity-50">%</span>
       </span>

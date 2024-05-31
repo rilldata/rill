@@ -1,4 +1,4 @@
-package metricsresolver
+package metricsview
 
 import (
 	"errors"
@@ -6,12 +6,13 @@ import (
 	"strings"
 )
 
-func (ast *AST) buildExpression(e *Expression, having bool, n *MetricsSelect) (string, []any, error) {
-	b := &expressionBuilder{
-		ast:         ast,
-		out:         &strings.Builder{},
-		having:      having,
-		metricsNode: n,
+// sqlForExpression generates a SQL expression for a query expression.
+func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, having bool) (string, []any, error) {
+	b := &sqlExprBuilder{
+		ast:    ast,
+		node:   n,
+		having: having,
+		out:    &strings.Builder{},
 	}
 
 	err := b.writeExpression(e)
@@ -22,15 +23,15 @@ func (ast *AST) buildExpression(e *Expression, having bool, n *MetricsSelect) (s
 	return b.out.String(), b.args, nil
 }
 
-type expressionBuilder struct {
-	ast         *AST
-	out         *strings.Builder
-	args        []any
-	having      bool
-	metricsNode *MetricsSelect
+type sqlExprBuilder struct {
+	ast    *AST
+	node   *SelectNode
+	having bool
+	out    *strings.Builder
+	args   []any
 }
 
-func (b *expressionBuilder) writeExpression(e *Expression) error {
+func (b *sqlExprBuilder) writeExpression(e *Expression) error {
 	if e == nil {
 		return nil
 	}
@@ -49,8 +50,8 @@ func (b *expressionBuilder) writeExpression(e *Expression) error {
 	return errors.New("invalid expression")
 }
 
-func (b *expressionBuilder) writeName(name string) error {
-	expr, unnest, err := b.resolveName(name)
+func (b *sqlExprBuilder) writeName(name string) error {
+	expr, unnest, err := b.sqlForName(name)
 	if err != nil {
 		return err
 	}
@@ -64,18 +65,18 @@ func (b *expressionBuilder) writeName(name string) error {
 	return nil
 }
 
-func (b *expressionBuilder) writeValue(val any) error {
+func (b *sqlExprBuilder) writeValue(val any) error {
 	b.writeString("?")
 	b.args = append(b.args, val)
 	return nil
 }
 
-func (b *expressionBuilder) writeSubquery(_ *Subquery) error {
+func (b *sqlExprBuilder) writeSubquery(_ *Subquery) error {
 	// TODO: Implement
 	return fmt.Errorf("subqueries in expressions are not supported")
 }
 
-func (b *expressionBuilder) writeCondition(cond *Condition) error {
+func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
 	switch cond.Operator {
 	case OperatorOr:
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
@@ -89,7 +90,7 @@ func (b *expressionBuilder) writeCondition(cond *Condition) error {
 	}
 }
 
-func (b *expressionBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
+func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
 	if len(exprs) == 0 {
 		return nil
 	}
@@ -111,7 +112,7 @@ func (b *expressionBuilder) writeJoinedExpressions(exprs []*Expression, joiner s
 	return nil
 }
 
-func (b *expressionBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
+func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
 	if len(exprs) != 2 {
 		return fmt.Errorf("binary condition must have exactly 2 expressions")
 	}
@@ -128,7 +129,7 @@ func (b *expressionBuilder) writeBinaryCondition(exprs []*Expression, op Operato
 
 	// Check there isn't an unnest on the right side
 	if right.Name != "" {
-		_, unnest, err := b.resolveName(right.Name)
+		_, unnest, err := b.sqlForName(right.Name)
 		if err != nil {
 			return err
 		}
@@ -139,7 +140,7 @@ func (b *expressionBuilder) writeBinaryCondition(exprs []*Expression, op Operato
 
 	// Handle unnest on the left side
 	if left.Name != "" {
-		leftExpr, unnest, err := b.resolveName(left.Name)
+		leftExpr, unnest, err := b.sqlForName(left.Name)
 		if err != nil {
 			return err
 		}
@@ -159,7 +160,7 @@ func (b *expressionBuilder) writeBinaryCondition(exprs []*Expression, op Operato
 			// Means the DB automatically unnests, so we can treat it as a normal value
 			return b.writeBinaryConditionInner(nil, right, leftExpr, op)
 		}
-		unnestColAlias := b.ast.expressionForMember(unnestTableAlias, left.Name)
+		unnestColAlias := b.ast.sqlForMember(unnestTableAlias, left.Name)
 
 		// Need to move "NOT" to outside of the subquery
 		var not bool
@@ -194,7 +195,7 @@ func (b *expressionBuilder) writeBinaryCondition(exprs []*Expression, op Operato
 	return b.writeBinaryConditionInner(left, right, "", op)
 }
 
-func (b *expressionBuilder) writeBinaryConditionInner(left, right *Expression, leftOverride string, op Operator) error {
+func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, leftOverride string, op Operator) error {
 	var joiner string
 	switch op {
 	case OperatorEq:
@@ -237,7 +238,7 @@ func (b *expressionBuilder) writeBinaryConditionInner(left, right *Expression, l
 	return nil
 }
 
-func (b *expressionBuilder) writeILikeCondition(left, right *Expression, leftOverride string, not bool) error {
+func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverride string, not bool) error {
 	if not {
 		b.writeByte('(')
 	}
@@ -314,7 +315,7 @@ func (b *expressionBuilder) writeILikeCondition(left, right *Expression, leftOve
 	return nil
 }
 
-func (b *expressionBuilder) writeInCondition(left, right *Expression, leftOverride string, not bool) error {
+func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride string, not bool) error {
 	if right.Value == nil {
 		return fmt.Errorf("the right expression must be a value for an IN condition")
 	}
@@ -415,24 +416,24 @@ func (b *expressionBuilder) writeInCondition(left, right *Expression, leftOverri
 	return nil
 }
 
-func (b *expressionBuilder) writeByte(v byte) {
+func (b *sqlExprBuilder) writeByte(v byte) {
 	_ = b.out.WriteByte(v)
 }
 
-func (b *expressionBuilder) writeString(s string) {
+func (b *sqlExprBuilder) writeString(s string) {
 	_, _ = b.out.WriteString(s)
 }
 
-func (b *expressionBuilder) writeParenthesizedString(s string) {
+func (b *sqlExprBuilder) writeParenthesizedString(s string) {
 	_ = b.out.WriteByte('(')
 	_, _ = b.out.WriteString(s)
 	_ = b.out.WriteByte(')')
 }
 
-func (b *expressionBuilder) resolveName(name string) (expr string, unnest bool, err error) {
-	// If metricsNode is nil, we are evaluating the expression against the underlying table.
+func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err error) {
+	// If node is nil, we are evaluating the expression against the underlying table.
 	// In this case, we only allow filters to reference dimension names.
-	if b.metricsNode == nil {
+	if b.node == nil {
 		// First, search for the dimension in the ASTs dimension fields (this also covers any computed dimension)
 		for _, f := range b.ast.dimFields {
 			if f.Name == name {
@@ -440,7 +441,7 @@ func (b *expressionBuilder) resolveName(name string) (expr string, unnest bool, 
 					// Since it's unnested, we need to reference the unnested alias.
 					// Note that we return "false" for "unnest" because it will already have been unnested since it's one of the dimensions included in the query,
 					// so we can filter against it as if it's a normal dimension.
-					return b.ast.expressionForMember(f.UnnestAlias, f.Name), false, nil
+					return b.ast.sqlForMember(f.UnnestAlias, f.Name), false, nil
 				}
 				return f.Expr, false, nil
 			}
@@ -456,26 +457,32 @@ func (b *expressionBuilder) resolveName(name string) (expr string, unnest bool, 
 		return b.ast.dialect.MetricsViewDimensionExpression(dim), dim.Unnest, nil
 	}
 
-	// Since metricsNode is not nil, we're in the context of a wrapped SELECT.
+	// Since node is not nil, we're in the context of a wrapped SELECT.
 	// We only allow expressions against the node's dimensions and measures (not those in scope within sub-queries).
 
 	// Check if it's a dimension name
-	for _, f := range b.metricsNode.DimFields {
+	for _, f := range b.node.DimFields {
 		if f.Name == name {
-			// NOTE: We don't need to handle Unnest here because it's always applied at the innermost query (i.e. when metricsNode==nil).
-			return b.ast.dialect.EscapeIdentifier(f.Name), false, nil
+			// NOTE: We don't need to handle Unnest here because it's always applied at the innermost query (i.e. when node==nil).
+			if b.having {
+				return b.ast.dialect.EscapeIdentifier(f.Name), false, nil
+			}
+			return f.Expr, false, nil
 		}
 	}
 
 	// Can't have a WHERE clause against a measure field if it's a GROUP BY query
-	if b.metricsNode.Group {
+	if b.node.Group {
 		return "", false, fmt.Errorf("name %q in expression is not a dimension available in the current context", name)
 	}
 
 	// Check measure fields
-	for _, f := range b.metricsNode.MeasureFields {
+	for _, f := range b.node.MeasureFields {
 		if f.Name == name {
-			return b.ast.dialect.EscapeIdentifier(f.Name), false, nil
+			if b.having {
+				return b.ast.dialect.EscapeIdentifier(f.Name), false, nil
+			}
+			return f.Expr, false, nil
 		}
 	}
 

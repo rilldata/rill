@@ -36,6 +36,7 @@ import {
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
+  canEnablePivotComparison,
   getFilterForPivotTable,
   getPivotConfigKey,
   getSortForAccessor,
@@ -45,6 +46,8 @@ import {
   isTimeDimension,
 } from "./pivot-utils";
 import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
   PivotChipType,
   type PivotDataRow,
   type PivotDataStore,
@@ -76,6 +79,8 @@ export function getPivotConfig(
           measureFilter: { ready: true, filter: undefined },
           pivot: dashboardStore.pivot,
           time: {} as PivotTimeConfig,
+          comparisonTime: undefined,
+          enableComparison: false,
         });
         return;
       }
@@ -92,6 +97,21 @@ export function getPivotConfig(
         timeZone: dashboardStore?.selectedTimezone || "UTC",
         timeDimension: metricsView?.data?.timeDimension || "",
       };
+
+      const enableComparison =
+        canEnablePivotComparison(
+          dashboardStore.pivot,
+          timeControl.comparisonTimeStart,
+        ) && dashboardStore.pivot.enableComparison;
+
+      let comparisonTime: TimeRangeString | undefined = undefined;
+      if (enableComparison) {
+        comparisonTime = {
+          start: timeControl.comparisonTimeStart,
+          end: timeControl.comparisonTimeEnd,
+        };
+      }
+
       derived(
         [
           prepareMeasureFilterResolutions(
@@ -111,12 +131,25 @@ export function getPivotConfig(
               whereFilter: dashboardStore.whereFilter,
               measureFilter: measureFilterResolution,
               pivot: dashboardStore.pivot,
+              enableComparison,
+              comparisonTime,
               time,
             };
           }
 
-          const measureNames = dashboardStore.pivot.columns.measure.map(
-            (m) => m.id,
+          const measureNames = dashboardStore.pivot.columns.measure.flatMap(
+            (m) => {
+              const measureName = m.id;
+              const group = [measureName];
+
+              if (enableComparison) {
+                group.push(
+                  `${measureName}${COMPARISON_DELTA}`,
+                  `${measureName}${COMPARISON_PERCENT}`,
+                );
+              }
+              return group;
+            },
           );
 
           // This is temporary until we have a better way to handle time grains
@@ -147,6 +180,8 @@ export function getPivotConfig(
             whereFilter: dashboardStore.whereFilter,
             measureFilter: measureFilterResolution,
             pivot: dashboardStore.pivot,
+            enableComparison,
+            comparisonTime,
             time,
           };
         },

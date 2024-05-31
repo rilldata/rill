@@ -1,4 +1,4 @@
-package metricsresolver
+package resolvers
 
 import (
 	"context"
@@ -6,10 +6,15 @@ import (
 	"github.com/rilldata/rill/runtime"
 )
 
-// NewBuiltin is a resolver for the built-in /metrics API.
+func init() {
+	runtime.RegisterResolverInitializer("builtin_metrics", newBuiltinMetrics)
+	runtime.RegisterBuiltinAPI("metrics", "builtin_metrics", nil)
+}
+
+// newBuiltinMetrics is a resolver for the built-in /metrics API.
 // It executes a metrics query provided dynamically through the args.
 // It errors if the user identified by the attributes does not have access to read metrics.
-func NewBuiltin(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
+func newBuiltinMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
 	// We translate the API args to props for the metrics resolver
 	props := opts.Args
 
@@ -23,7 +28,7 @@ func NewBuiltin(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 	}
 
 	// Rewrite to the metrics resolver
-	return New(ctx, &runtime.ResolverOptions{
+	return newMetrics(ctx, &runtime.ResolverOptions{
 		Runtime:        opts.Runtime,
 		InstanceID:     opts.InstanceID,
 		Properties:     props,
