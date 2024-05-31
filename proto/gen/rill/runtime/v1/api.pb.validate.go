@@ -7276,6 +7276,8 @@ func (m *AnalyzedConnector) validate(all bool) error {
 
 	}
 
+	// no validation rules for ErrorMessage
+
 	if len(errors) > 0 {
 		return AnalyzedConnectorMultiError(errors)
 	}

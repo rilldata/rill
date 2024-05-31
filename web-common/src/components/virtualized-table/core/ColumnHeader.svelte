@@ -29,6 +29,7 @@
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
+  export let enableSorting = true;
   export let isSelected = false;
   export let highlight = false;
   export let sorted: SortDirection | undefined = undefined;
@@ -39,7 +40,8 @@
   let showMore = false;
 
   $: isDimensionTable = config.table === "DimensionTable";
-  $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
+  $: isDimensionColumn =
+    isDimensionTable && (type === "VARCHAR" || type === "CODE_STRING");
 
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
@@ -92,9 +94,8 @@
       <div
         class="
         grid
-        items-center cursor-pointer w-full
-        {isSelected ? '' : 'gap-x-2'}
-        "
+        items-center cursor-pointer w-full"
+        class:gap-x-2={!isSelected}
         style:grid-template-columns={isDimensionTable
           ? ""
           : `max-content auto ${!noPin && showMore ? "max-content" : ""}`}
@@ -137,7 +138,7 @@
         {/if}
         {#if isDimensionTable || isClipboardApiSupported()}
           <TooltipShortcutContainer>
-            {#if isDimensionTable}
+            {#if enableSorting}
               <div>Sort column</div>
               <Shortcut>Click</Shortcut>
             {/if}

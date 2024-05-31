@@ -47,6 +47,7 @@
     setTimeout(() => (open = true));
   }}
   closeOnOutsideClick={false}
+  closeOnEscape={false}
 >
   <slot {onCancel} {onClose} />
 </Dialog>
