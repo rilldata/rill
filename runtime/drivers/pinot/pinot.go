@@ -38,6 +38,7 @@ var spec = drivers.Spec{
 			DisplayName: "DSN",
 			Description: "Connection string",
 			Placeholder: "http(s)://username:password@localhost:9000",
+			Secret:      true,
 		},
 	},
 	ImplementsOLAP: true,
