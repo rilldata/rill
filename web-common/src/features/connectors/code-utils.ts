@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/svelte-query";
+import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
   V1ConnectorDriver,
@@ -36,11 +36,11 @@ driver: ${connector.name}`;
 }
 
 export async function updateDotEnvWithSecrets(
+  queryClient: QueryClient,
   connector: V1ConnectorDriver,
   formValues: Record<string, string>,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
-  const queryClient = useQueryClient();
 
   // Get the existing .env file
   let blob: string;
@@ -120,10 +120,10 @@ export function makeDotEnvConnectorKey(connectorName: string, key: string) {
 }
 
 export async function updateRillYAMLWithOlapConnector(
+  queryClient: QueryClient,
   newConnector: string,
 ): Promise<string> {
   // Get the existing rill.yaml file
-  const queryClient = useQueryClient();
   const instanceId = get(runtime).instanceId;
   const file = await queryClient.fetchQuery({
     queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {

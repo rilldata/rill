@@ -116,7 +116,7 @@ export async function submitRemoteSourceForm(
   // Update the `.env` file
   await runtimeServicePutFile(instanceId, {
     path: ".env",
-    blob: await updateDotEnvWithSecrets(connector, formValues),
+    blob: await updateDotEnvWithSecrets(queryClient, connector, formValues),
     create: true,
     createOnly: false,
   });
@@ -124,7 +124,10 @@ export async function submitRemoteSourceForm(
   // Update the `rill.yaml` file
   await runtimeServicePutFile(instanceId, {
     path: "rill.yaml",
-    blob: await updateRillYAMLWithOlapConnector(connector.name as string),
+    blob: await updateRillYAMLWithOlapConnector(
+      queryClient,
+      connector.name as string,
+    ),
     create: true,
     createOnly: false,
   });
