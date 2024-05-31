@@ -3451,7 +3451,7 @@ definitions:
         type: object
         additionalProperties:
           type: string
-        title: Config for the connector obtained from variables
+        title: config_from_variables stores a copy of configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
   v1ConnectorDriver:
     type: object
     properties:

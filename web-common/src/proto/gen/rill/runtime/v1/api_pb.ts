@@ -347,9 +347,9 @@ export class Connector extends Message<Connector> {
   config: { [key: string]: string } = {};
 
   /**
-   * Config for the connector obtained from variables
+   * config_from_variables stores a copy of configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
    *
-   * @generated from field: map<string, string> configFromVariables = 4;
+   * @generated from field: map<string, string> config_from_variables = 4;
    */
   configFromVariables: { [key: string]: string } = {};
 
@@ -364,7 +364,7 @@ export class Connector extends Message<Connector> {
     { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "config", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 4, name: "configFromVariables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
+    { no: 4, name: "config_from_variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Connector {
