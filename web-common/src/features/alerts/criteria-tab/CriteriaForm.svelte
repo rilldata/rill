@@ -51,7 +51,7 @@
           return o;
         return {
           ...o,
-          label: `${o.label} from ${comparisonLabel}`,
+          label: `${o.label} ${comparisonLabel}`,
         };
       })
     : MeasureFilterBaseTypeOptions;
@@ -73,7 +73,7 @@
     label=""
     options={measureOptions}
     placeholder="Measure"
-    className="col-span-3"
+    className="col-span-4"
   />
   <Select
     bind:value={$form["criteria"][index].type}
@@ -81,7 +81,7 @@
     label=""
     options={typeOptions}
     placeholder="type"
-    className="col-span-5"
+    className="col-span-4"
   />
   <Select
     bind:value={$form["criteria"][index].operation}

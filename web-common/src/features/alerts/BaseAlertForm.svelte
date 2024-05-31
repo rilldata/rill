@@ -73,6 +73,12 @@
     if (!name) return;
     $form.name = name;
   }
+
+  $: measure = $form.measure;
+  function measureUpdated(mes: string) {
+    $form.criteria.forEach((c) => (c.measure = mes));
+  }
+  $: measureUpdated(measure);
 </script>
 
 <!-- 802px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->

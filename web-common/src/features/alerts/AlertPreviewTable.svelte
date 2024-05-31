@@ -20,6 +20,9 @@
    */
   export let rowOverscanAmount = 40;
   export let columnOverscanAmount = 5;
+  /** this is a perceived character width value, in pixels, when our monospace
+   * font is 12px high. */
+  const CHARACTER_LIMIT_FOR_WRAPPING = 9;
 
   let container: HTMLDivElement;
   let containerWidth: number;
@@ -30,7 +33,14 @@
   let colScrollOffset = 0;
   $: colScrollOffset = $columnVirtualizer?.scrollOffset || 0;
 
-  const { columnWidths } = estimateColumnCharacterWidths(columns, rows);
+  const { columnWidths, largestColumnLength } = estimateColumnCharacterWidths(
+    columns,
+    rows,
+  );
+  console.log(columns, rows, largestColumnLength, config.columnHeaderHeight);
+  if (largestColumnLength > CHARACTER_LIMIT_FOR_WRAPPING) {
+    config.columnHeaderHeight = 46;
+  }
 
   /* set context for child components */
   setContext("config", config);
@@ -51,6 +61,7 @@
       containerWidth,
       config,
     );
+    console.log(estimateColumnSize);
   }
 
   $: columnVirtualizer = createVirtualizer({

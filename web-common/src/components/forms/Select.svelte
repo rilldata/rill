@@ -62,11 +62,13 @@
         ? 'text-gray-400'
         : ''}"
     >
-      {#if hasNoValue}
-        {placeholder}
-      {:else}
-        {displayValue}
-      {/if}
+      <div class="text-ellipsis overflow-hidden whitespace-nowrap">
+        {#if hasNoValue}
+          {placeholder}
+        {:else}
+          {displayValue}
+        {/if}
+      </div>
       <CaretDownIcon />
     </MenuButton>
     <MenuItems positioningOverride={itemsClass}>

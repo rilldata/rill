@@ -97,6 +97,7 @@ export function mapComparisonTimeRange(
     default:
       comparisonTimeRange.isoOffset =
         timeControlState.selectedComparisonTimeRange.name;
+      comparisonTimeRange.isoDuration = timeRange.isoDuration;
       break;
     case TimeComparisonOption.CONTIGUOUS:
       comparisonTimeRange.isoOffset = comparisonTimeRange.isoDuration =

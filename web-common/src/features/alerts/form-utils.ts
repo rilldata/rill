@@ -141,7 +141,15 @@ export function checkIsTabValid(
         hasRequiredFields = false;
       }
     });
-    hasErrors = !!errors.criteria;
+    hasErrors =
+      typeof errors.criteria === "string"
+        ? !!errors.criteria
+        : (errors.criteria as Array<MeasureFilterEntry>).some(
+            (c) =>
+              c.measure !== "" ||
+              (c.operation as string) !== "" ||
+              c.measure !== "",
+          );
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =
