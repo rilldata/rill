@@ -10,6 +10,7 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+  import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
   import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
   import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
   import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
@@ -53,7 +54,9 @@
     "local_file",
     "https",
     "clickhouse",
+    "druid",
     "duckdb",
+    // "motherduck",
     "pinot",
   ];
 
@@ -72,6 +75,7 @@
     local_file: LocalFile,
     https: Https,
     clickhouse: ClickHouse,
+    druid: ApacheDruid,
     duckdb: DuckDB,
     pinot: ApachePinot,
   };
@@ -182,7 +186,7 @@
           <section>
             <h2>Add a source</h2>
             <div class="connector-grid">
-              {#each $connectors.data.connectors.filter((c) => !c.implementsOlap) as connector}
+              {#each $connectors.data.connectors.filter((c) => !c.implementsOlap) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
@@ -200,7 +204,7 @@
           <section>
             <h2>Connect an OLAP engine</h2>
             <div class="connector-grid">
-              {#each $connectors.data.connectors.filter((c) => c.implementsOlap) as connector}
+              {#each $connectors.data.connectors.filter((c) => c.implementsOlap) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
