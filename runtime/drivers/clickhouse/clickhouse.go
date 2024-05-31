@@ -44,6 +44,7 @@ var spec = drivers.Spec{
 			DisplayName: "DSN",
 			Description: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			Secret:      true,
 		},
 	},
 	ImplementsOLAP: true,

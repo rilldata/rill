@@ -5,23 +5,12 @@ import { sanitizeEntityName } from "../entity-management/name-utils";
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string,
-  implementsOlap?: boolean,
 ) {
   // Add instructions to the top of the file
-  let topOfFile: string;
-  if (implementsOlap) {
-    // Connector YAML
-    topOfFile = `# Connector YAML
-# Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
-  
-type: connector`;
-  } else {
-    // Source YAML
-    topOfFile = `# Source YAML
+  const topOfFile = `# Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
   
 type: source`;
-  }
 
   // Convert applicable connectors to duckdb
   switch (connectorName) {

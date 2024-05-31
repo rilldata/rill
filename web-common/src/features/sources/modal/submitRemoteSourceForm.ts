@@ -10,10 +10,15 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   V1ConnectorDriver,
+  runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
+import {
+  compileConnectorYAML,
+  updateDotEnvBlobWithNewSecrets,
+} from "../../connectors/code-utils";
 import {
   getFileAPIPathFromNameAndType,
   getFilePathFromNameAndType,
@@ -25,7 +30,7 @@ import { compileCreateSourceYAML } from "../sourceUtils";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
 export interface RemoteSourceFormValues {
-  sourceName: string;
+  // sourceName: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: any;
 }
 
@@ -71,27 +76,69 @@ export async function submitRemoteSourceForm(
       }
     }),
   );
-  const yaml = compileCreateSourceYAML(
-    formValues,
-    connector.name as string,
-    connector.implementsOlap,
-  );
 
-  // Attempt to create & import the source
-  await runtimeServicePutFile(instanceId, {
-    path: getFileAPIPathFromNameAndType(
-      values.sourceName,
-      connector.implementsOlap ? EntityType.Connector : EntityType.Table,
-    ),
-    blob: yaml,
-    create: true,
-    createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-  });
+  /**
+   * Sources
+   */
 
   if (!connector.implementsOlap) {
+    // Make a new <source>.yaml file
+    await runtimeServicePutFile(instanceId, {
+      path: getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+      blob: compileCreateSourceYAML(formValues, connector.name as string),
+      create: true,
+      createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
+    });
+
     await checkSourceImported(
       queryClient,
       getFilePathFromNameAndType(values.sourceName, EntityType.Table),
     );
+
+    return;
   }
+
+  /**
+   * Connectors
+   */
+
+  // Make a new `<connector>.yaml` file
+  await runtimeServicePutFile(instanceId, {
+    path: getFileAPIPathFromNameAndType(
+      connector.name as string,
+      EntityType.Connector,
+    ),
+    blob: compileConnectorYAML(connector, formValues),
+    create: true,
+    createOnly: false,
+  });
+
+  // Update the `.env` file
+  let blob: string;
+  try {
+    const file = await runtimeServiceGetFile(instanceId, { path: ".env" });
+    blob = file.blob || "";
+  } catch (error) {
+    // Handle the case where the .env file does not exist
+    if (error?.response?.data?.message?.includes("no such file")) {
+      blob = "";
+    } else {
+      throw error;
+    }
+  }
+
+  await runtimeServicePutFile(instanceId, {
+    path: ".env",
+    blob: updateDotEnvBlobWithNewSecrets(blob, connector, formValues),
+    create: true,
+    createOnly: false,
+  });
+
+  // Update the `rill.yaml` file
+  // await runtimeServicePutFile(instanceId, {
+  //   path: "rill.yaml",
+  //   blob: await updateRillYAMLBlob(connector, formValues),
+  //   create: true,
+  //   createOnly: false,
+  // });
 }

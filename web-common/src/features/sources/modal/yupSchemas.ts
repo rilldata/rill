@@ -156,10 +156,11 @@ export function getYupSchema(connector: V1ConnectorDriver) {
 
     case "clickhouse":
       return yup.object().shape({
-        sourceName: yup
-          .string()
-          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-          .required("Connector name is required"),
+        // User-provided names requires a little refactor. Commenting out for now.
+        // sourceName: yup
+        //   .string()
+        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+        //   .required("Connector name is required"),
         dsn: yup.string().required("DSN is required"),
       });
 
