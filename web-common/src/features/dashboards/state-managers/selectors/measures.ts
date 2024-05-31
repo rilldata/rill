@@ -106,6 +106,7 @@ export const getMeasuresAndDimensions = ({
       });
       if (skipMeasure) return;
       measures.add(measureName);
+      measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
     });
     return {
       measures: [...measures],
@@ -141,4 +142,6 @@ export const measureSelectors = {
    * Checks if the provided measure is a valid percent of total
    */
   isMeasureValidPercentOfTotal,
+
+  getMeasuresAndDimensions,
 };

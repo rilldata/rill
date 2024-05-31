@@ -136,18 +136,19 @@ export function createTimeSeriesDataStore(
           ? [...dashboardStore.visibleMeasureKeys]
           : [];
       }
-      const { dimensions } = getMeasuresAndDimensions({
-        dashboard: dashboardStore,
-      })(metricsView.data ?? {}, measures);
+      const { measures: filteredMeasures, dimensions } =
+        getMeasuresAndDimensions({
+          dashboard: dashboardStore,
+        })(metricsView.data ?? {}, measures);
 
       const primaryTimeSeries = createMetricsViewTimeSeries(
         ctx,
-        measures,
+        filteredMeasures,
         false,
       );
       const primaryTotals = createTotalsForMeasure(
         ctx,
-        measures,
+        filteredMeasures,
         dimensions,
         false,
       );
@@ -159,7 +160,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         unfilteredTotals = createUnfilteredTotalsForMeasure(
           ctx,
-          measures,
+          filteredMeasures,
           dashboardStore?.selectedComparisonDimension,
         );
       }
@@ -170,10 +171,14 @@ export function createTimeSeriesDataStore(
         | CreateQueryResult<V1MetricsViewAggregationResponse, unknown>
         | Writable<null> = writable(null);
       if (showComparison) {
-        comparisonTimeSeries = createMetricsViewTimeSeries(ctx, measures, true);
+        comparisonTimeSeries = createMetricsViewTimeSeries(
+          ctx,
+          filteredMeasures,
+          true,
+        );
         comparisonTotals = createTotalsForMeasure(
           ctx,
-          measures,
+          filteredMeasures,
           dimensions,
           true,
         );
@@ -185,7 +190,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         dimensionTimeSeriesCharts = getDimensionValueTimeSeries(
           ctx,
-          measures,
+          filteredMeasures,
           "chart",
         );
       }
