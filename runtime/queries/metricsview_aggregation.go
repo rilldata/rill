@@ -87,7 +87,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// Attempt to route to metricsview executor
-	qry, ok, err := q.rewriteToMetricsViewQuery()
+	qry, ok, err := q.rewriteToMetricsViewQuery(mv)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
@@ -2951,7 +2951,21 @@ func (q *MetricsViewAggregation) trancationExpression(s string, timeGrain runtim
 	}
 }
 
-func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query, bool, error) {
+func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.MetricsViewSpec) (*metricsview.Query, bool, error) {
+	// Pivot not supported yet
+	if len(q.PivotOn) > 0 {
+		return nil, false, nil
+	}
+
+	// Time offset-based comparison joins not supported yet
+	if q.ComparisonTimeRange != nil && !isTimeRangeNil(q.ComparisonTimeRange) {
+		for _, d := range q.Dimensions {
+			if d.Name == mv.TimeDimension {
+				return nil, false, nil
+			}
+		}
+	}
+
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
 
 	for _, d := range q.Dimensions {
@@ -2984,8 +2998,9 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query
 			}}
 		}
 
+		// Measure filters not supported yet
 		if m.Filter != nil {
-			return nil, false, fmt.Errorf("measure filter is not supported")
+			return nil, false, nil
 		}
 
 		if m.Compute != nil {

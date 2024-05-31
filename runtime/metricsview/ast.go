@@ -154,15 +154,11 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecur
 
 	// Handle Having. If the root node is grouped, we add it as a HAVING clause, otherwise wrap it in a SELECT and add it as a WHERE clause.
 	if ast.query.Having != nil {
-		// If not a grouped node, we need to wrap in a new SELECT because a WHERE clause cannot apply directly to a field with a window function.
-		// If this turns out to have performance implications, we could consider only wrapping if one of ast.Root.Measures contains a window function.
-		if !ast.Root.Group {
-			ast.wrapSelect(ast.Root, ast.generateIdentifier())
-		}
+		// We need to wrap in a new SELECT because a WHERE/HAVING clause cannot apply directly to a field with a window function.
+		// This also enables us to template the field name instead of the field expression into the expression.
+		ast.wrapSelect(ast.Root, ast.generateIdentifier())
 
-		useHaving := ast.Root.Group
-
-		expr, args, err := ast.sqlForExpression(ast.query.Having, ast.Root, useHaving)
+		expr, args, err := ast.sqlForExpression(ast.query.Having, ast.Root, true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile 'having': %w", err)
 		}
@@ -171,11 +167,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecur
 			Args: args,
 		}
 
-		if useHaving {
-			ast.Root.Having = res
-		} else {
-			ast.Root.Where = res
-		}
+		ast.Root.Where = res
 	}
 
 	// Incrementally add each sort criterion.
@@ -210,6 +202,9 @@ func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsVi
 	if !qd.Compute.TimeFloor.Grain.Valid() {
 		return nil, errors.New(`invalid "grain"`)
 	}
+	if qd.Compute.TimeFloor.Grain == TimeGrainUnspecified {
+		return nil, errors.New(`"grain" must be specified for time floor`)
+	}
 
 	dim, err := a.lookupDimension(qd.Compute.TimeFloor.Dimension, visible)
 	if err != nil {
@@ -229,10 +224,16 @@ func (a *AST) resolveDimension(qd Dimension, visible bool) (*runtimev1.MetricsVi
 		return nil, fmt.Errorf(`failed to compute time floor: %w`, err)
 	}
 
+	label := dim.Label
+	if label == "" {
+		label = qd.Name
+	}
+	label = fmt.Sprintf("%s (%s)", label, qd.Compute.TimeFloor.Grain)
+
 	return &runtimev1.MetricsViewSpec_DimensionV2{
 		Name:       qd.Name,
 		Expression: expr,
-		Label:      dim.Label,
+		Label:      label,
 		Unnest:     dim.Unnest,
 	}, nil
 }

@@ -225,6 +225,12 @@ func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNo
 	}
 	b.out.WriteString(") ")
 	b.out.WriteString(joinSelect.Alias)
+
+	if len(baseSelect.DimFields) == 0 {
+		b.out.WriteString(" ON TRUE")
+		return nil
+	}
+
 	b.out.WriteString(" ON ")
 	for i, f := range baseSelect.DimFields {
 		if i > 0 {

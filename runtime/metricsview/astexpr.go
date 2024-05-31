@@ -7,12 +7,13 @@ import (
 )
 
 // sqlForExpression generates a SQL expression for a query expression.
-func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, having bool) (string, []any, error) {
+// pseudoHaving is true if the expression is allowed to reference measure expressions.
+func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, pseudoHaving bool) (string, []any, error) {
 	b := &sqlExprBuilder{
-		ast:    ast,
-		node:   n,
-		having: having,
-		out:    &strings.Builder{},
+		ast:          ast,
+		node:         n,
+		pseudoHaving: pseudoHaving,
+		out:          &strings.Builder{},
 	}
 
 	err := b.writeExpression(e)
@@ -24,11 +25,11 @@ func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, having bool) (str
 }
 
 type sqlExprBuilder struct {
-	ast    *AST
-	node   *SelectNode
-	having bool
-	out    *strings.Builder
-	args   []any
+	ast          *AST
+	node         *SelectNode
+	pseudoHaving bool
+	out          *strings.Builder
+	args         []any
 }
 
 func (b *sqlExprBuilder) writeExpression(e *Expression) error {
@@ -113,6 +114,22 @@ func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner stri
 }
 
 func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
+	// Backwards compatibility: For IN and NIN, the right hand side may not be a list.
+	if op == OperatorIn || op == OperatorNin {
+		if len(exprs) == 2 {
+			if _, ok := exprs[1].Value.([]any); !ok {
+				exprs[1] = &Expression{Value: []any{exprs[1].Value}}
+			}
+		}
+		if len(exprs) > 2 {
+			vals := make([]any, 0, len(exprs)-1)
+			for _, e := range exprs[1:] {
+				vals = append(vals, e.Value)
+			}
+			exprs = []*Expression{exprs[0], {Value: vals}}
+		}
+	}
+
 	if len(exprs) != 2 {
 		return fmt.Errorf("binary condition must have exactly 2 expressions")
 	}
@@ -464,24 +481,18 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err 
 	for _, f := range b.node.DimFields {
 		if f.Name == name {
 			// NOTE: We don't need to handle Unnest here because it's always applied at the innermost query (i.e. when node==nil).
-			if b.having {
-				return b.ast.dialect.EscapeIdentifier(f.Name), false, nil
-			}
 			return f.Expr, false, nil
 		}
 	}
 
-	// Can't have a WHERE clause against a measure field if it's a GROUP BY query
-	if b.node.Group {
+	// Can't have expressions against a measure field unless it's a pseudo-HAVING clause (pseudo because we currently output it as a WHERE in an outer SELECT)
+	if !b.pseudoHaving {
 		return "", false, fmt.Errorf("name %q in expression is not a dimension available in the current context", name)
 	}
 
 	// Check measure fields
 	for _, f := range b.node.MeasureFields {
 		if f.Name == name {
-			if b.having {
-				return b.ast.dialect.EscapeIdentifier(f.Name), false, nil
-			}
 			return f.Expr, false, nil
 		}
 	}

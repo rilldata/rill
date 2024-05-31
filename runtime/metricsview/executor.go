@@ -158,11 +158,6 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, err
 	}
 
-	// if len(qry.PivotOn) > 0 {
-	// 	// If pivoting is requested, we need to execute the query in a separate step
-	// 	return e.executePivot(ctx, qry.PivotOn, sql, args)
-	// }
-
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query:    sql,
 		Args:     args,
