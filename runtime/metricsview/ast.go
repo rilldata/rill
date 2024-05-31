@@ -333,6 +333,10 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 // lookupDimension finds a dimension spec in the metrics view.
 // If visible is true, it returns an error if the security policy does not grant access to the dimension.
 func (a *AST) lookupDimension(name string, visible bool) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
+	if name == "" {
+		return nil, errors.New("received empty dimension name")
+	}
+
 	if name == a.metricsView.TimeDimension {
 		return &runtimev1.MetricsViewSpec_DimensionV2{
 			Name:   name,
@@ -376,6 +380,10 @@ func (a *AST) lookupMeasure(name string, visible bool) (*runtimev1.MetricsViewSp
 // checkNameForComputedField checks that the name for a computed field does not collide with an existing dimension or measure name.
 // (This is necessary because even if the other name is not used in the query, it might be referenced by a derived measure.)
 func (a *AST) checkNameForComputedField(name string) error {
+	if name == "" {
+		return errors.New("name for computed field is empty")
+	}
+
 	if name == a.metricsView.TimeDimension {
 		return errors.New("name for computed field collides with the time dimension name")
 	}
@@ -483,7 +491,7 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 
 // addTimeRange adds a time range to the given SelectNode's WHERE clause.
 func (a *AST) addTimeRange(n *SelectNode, tr *TimeRange) {
-	if tr == nil || tr.IsZero() {
+	if tr == nil || tr.IsZero() || a.metricsView.TimeDimension == "" {
 		return
 	}
 

@@ -76,15 +76,18 @@ func (e *Executor) Watermark(ctx context.Context) (time.Time, error) {
 func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	// Build a query that selects all dimensions and measures
 	qry := &Query{}
-	qry.Dimensions = append(qry.Dimensions, Dimension{
-		Name: e.metricsView.TimeDimension,
-		Compute: &DimensionCompute{
-			TimeFloor: &DimensionComputeTimeFloor{
-				Dimension: e.metricsView.TimeDimension,
-				Grain:     TimeGrainDay,
+
+	if e.metricsView.TimeDimension != "" {
+		qry.Dimensions = append(qry.Dimensions, Dimension{
+			Name: e.metricsView.TimeDimension,
+			Compute: &DimensionCompute{
+				TimeFloor: &DimensionComputeTimeFloor{
+					Dimension: e.metricsView.TimeDimension,
+					Grain:     TimeGrainDay,
+				},
 			},
-		},
-	})
+		})
+	}
 
 	for _, d := range e.metricsView.Dimensions {
 		qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
@@ -95,14 +98,16 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	// Setting both base and comparison time ranges in case there are time_comparison measures.
-	now := time.Now()
-	qry.TimeRange = &TimeRange{
-		Start: now.Add(-time.Second),
-		End:   now,
-	}
-	qry.ComparisonTimeRange = &TimeRange{
-		Start: now.Add(-2 * time.Second),
-		End:   now.Add(-time.Second),
+	if e.metricsView.TimeDimension != "" {
+		now := time.Now()
+		qry.TimeRange = &TimeRange{
+			Start: now.Add(-time.Second),
+			End:   now,
+		}
+		qry.ComparisonTimeRange = &TimeRange{
+			Start: now.Add(-2 * time.Second),
+			End:   now.Add(-time.Second),
+		}
 	}
 
 	// Importantly, limit to 0 rows
