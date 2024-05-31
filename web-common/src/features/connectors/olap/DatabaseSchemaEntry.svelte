@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Folder } from "lucide-svelte";
+  import { Database, Folder } from "lucide-svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import { V1AnalyzedConnector } from "../../../runtime-client";
   import TableEntry from "./TableEntry.svelte";
@@ -42,7 +42,14 @@
         ? 'rotate-0'
         : '-rotate-90'}"
     />
-    <Folder size="14px" class="shrink-0 text-gray-400" />
+    <!-- Some databases do not have a full "database -> databaseSchema -> table" hierarchy. 
+      When there are only two organizational levels,the API returns "databaseSchema -> table". 
+      However, in these cases, we should use a Database icon (not a Folder icon) to represent the organizational structure. -->
+    {#if !database}
+      <Database size="14px" class="shrink-0 text-gray-400" />
+    {:else}
+      <Folder size="14px" class="shrink-0 text-gray-400" />
+    {/if}
     <span class="truncate">
       {databaseSchema}
     </span>
