@@ -88,3 +88,20 @@ export function makeDotEnvConnectorKey(connectorName: string, key: string) {
   // Note: The connector name, not driver, is used. This enables configuring multiple connectors that use the same driver.
   return `connector.${connectorName}.${key}`;
 }
+
+/**
+ * Update the `olap_connector` key in a Rill YAML file.
+ * This function uses a regex approach to preserve comments and formatting.
+ */
+export function updateRillYAMLBlobWithNewOlapConnector(
+  blob: string,
+  newConnector: string,
+): string {
+  const olapConnectorRegex = /^olap_connector: .+$/m;
+
+  if (olapConnectorRegex.test(blob)) {
+    return blob.replace(olapConnectorRegex, `olap_connector: ${newConnector}`);
+  } else {
+    return `${blob}${blob !== "" ? "\n" : ""}olap_connector: ${newConnector}\n`;
+  }
+}

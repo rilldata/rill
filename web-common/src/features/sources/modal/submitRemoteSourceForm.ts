@@ -18,6 +18,7 @@ import { runtime } from "../../../runtime-client/runtime-store";
 import {
   compileConnectorYAML,
   updateDotEnvBlobWithNewSecrets,
+  updateRillYAMLBlobWithNewOlapConnector,
 } from "../../connectors/code-utils";
 import {
   getFileAPIPathFromNameAndType,
@@ -116,6 +117,7 @@ export async function submitRemoteSourceForm(
   // Update the `.env` file
   let blob: string;
   try {
+    // TODO: use the query cache
     const file = await runtimeServiceGetFile(instanceId, { path: ".env" });
     blob = file.blob || "";
   } catch (error) {
@@ -135,10 +137,16 @@ export async function submitRemoteSourceForm(
   });
 
   // Update the `rill.yaml` file
-  // await runtimeServicePutFile(instanceId, {
-  //   path: "rill.yaml",
-  //   blob: await updateRillYAMLBlob(connector, formValues),
-  //   create: true,
-  //   createOnly: false,
-  // });
+  // TODO: use the query cache
+  const file = await runtimeServiceGetFile(instanceId, { path: "rill.yaml" });
+
+  await runtimeServicePutFile(instanceId, {
+    path: "rill.yaml",
+    blob: updateRillYAMLBlobWithNewOlapConnector(
+      file.blob || "",
+      connector.name as string,
+    ),
+    create: true,
+    createOnly: false,
+  });
 }
