@@ -227,17 +227,78 @@
 
     percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
   }
+  let resizing = false;
 </script>
 
 <div
-  class="table-wrapper"
+  class="table-wrapper relative"
   class:with-row-dimension={hasDimension}
   style:--row-height="{ROW_HEIGHT}px"
   style:--header-height="{HEADER_HEIGHT}px"
   style:--total-header-height="{totalHeaderHeight + headerGroups.length}px"
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
+  class:pointer-events-none={resizing}
 >
+  <div
+    class="w-full absolute top-0 z-50 flex pointer-events-none"
+    style:width="{totalLength + firstColumnWidth}px"
+    style:height="{totalRowSize + totalHeaderHeight + headerGroups.length}px"
+  >
+    <div style:width="{firstColumnWidth}px" class="flex-none relative flex">
+      <Resizer
+        side="right"
+        direction="EW"
+        min={MIN_COL_WIDTH}
+        max={MAX_COL_WIDTH}
+        dimension={firstColumnWidth}
+        onUpdate={(d) => {
+          firstColumnWidth = d;
+        }}
+        onMouseDown={(e) => {
+          resizingMeasure = false;
+          resizing = true;
+          onResizeStart(e);
+        }}
+        onMouseUp={() => {
+          resizing = false;
+          resizingMeasure = false;
+        }}
+      >
+        <div class="w-1 h-full bg-primary-500"></div>
+      </Resizer>
+    </div>
+    {#each measureGroups as _, i (i)}
+      <div class="h-full z-50 flex" style:width="{totalMeasureWidth}px">
+        {#each measureLengths as length, measureIndex (measureIndex)}
+          <div style:width="{length}px" class="h-full relative">
+            <Resizer
+              side="right"
+              direction="EW"
+              min={MIN_MEASURE_WIDTH}
+              max={MAX_MEAUSRE_WIDTH}
+              dimension={length}
+              onUpdate={(d) => {
+                measureLengths[measureIndex] = d;
+              }}
+              onMouseDown={(e) => {
+                resizingMeasure = true;
+                resizing = true;
+                initialMeasureIndexOnResize = measureIndex;
+                onResizeStart(e);
+              }}
+              onMouseUp={() => {
+                resizing = false;
+                resizingMeasure = false;
+              }}
+            >
+              <div class="w-1 h-full bg-primary-500"></div>
+            </Resizer>
+          </div>
+        {/each}
+      </div>
+    {/each}
+  </div>
   <table style:width="{totalLength}px">
     {#if firstColumnName && firstColumnWidth}
       <colgroup>
@@ -257,39 +318,12 @@
     {/each}
 
     <thead>
-      {#each headerGroups as headerGroup, group (headerGroup.id)}
+      {#each headerGroups as headerGroup (headerGroup.id)}
         <tr>
-          {#each headerGroup.headers as header, i (header.id)}
+          {#each headerGroup.headers as header (header.id)}
             {@const sortDirection = header.column.getIsSorted()}
-            {@const isFirstColumn = i === 0}
-            {@const canResize = hasDimension && (isFirstColumn || group !== 0)}
-            {@const measureIndex = (i - 1) % measureLengths.length}
-            <th colSpan={header.colSpan}>
-              {#if canResize}
-                <Resizer
-                  side="right"
-                  direction="EW"
-                  min={isFirstColumn ? MIN_COL_WIDTH : MIN_MEASURE_WIDTH}
-                  max={isFirstColumn ? MAX_COL_WIDTH : MAX_MEAUSRE_WIDTH}
-                  basis={isFirstColumn ? MIN_COL_WIDTH : INIT_MEASURE_WIDTH}
-                  dimension={isFirstColumn
-                    ? firstColumnWidth
-                    : measureLengths[measureIndex]}
-                  onMouseDown={(e) => {
-                    resizingMeasure = !isFirstColumn;
-                    initialMeasureIndexOnResize = measureIndex;
-                    if (resizingMeasure) onResizeStart(e);
-                  }}
-                  onUpdate={(d) => {
-                    if (isFirstColumn) {
-                      firstColumnWidth = d;
-                    } else {
-                      measureLengths[measureIndex] = d;
-                    }
-                  }}
-                />
-              {/if}
 
+            <th colSpan={header.colSpan}>
               <button
                 class="header-cell"
                 class:cursor-pointer={header.column.getCanSort()}

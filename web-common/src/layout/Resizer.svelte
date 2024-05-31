@@ -16,10 +16,13 @@
   export let absolute = true;
   export let onMouseDown: ((e: MouseEvent) => void) | null = null;
   export let onUpdate: ((dimension: number) => void) | null = null;
+  export let onMouseUp: (() => void) | null = null;
   export let disabled = false;
 
   let start = 0;
   let startingDimension = dimension;
+  let hover = false;
+  let timeout: ReturnType<typeof setTimeout> | null = null;
 
   function handleMousedown(e: Event) {
     startingDimension = dimension;
@@ -33,7 +36,7 @@
 
     if (onMouseDown) onMouseDown(e);
     window.addEventListener("mousemove", onMouseMove);
-    window.addEventListener("mouseup", onMouseUp);
+    window.addEventListener("mouseup", handleMouseUp);
   }
 
   function onMouseMove(e: MouseEvent) {
@@ -59,10 +62,12 @@
     });
   }
 
-  function onMouseUp() {
+  function handleMouseUp() {
     resizing = false;
+    hover = false;
+    if (onMouseUp) onMouseUp();
     window.removeEventListener("mousemove", onMouseMove);
-    window.removeEventListener("mouseup", onMouseUp);
+    window.removeEventListener("mouseup", handleMouseUp);
   }
 
   function handleDoubleClick() {
@@ -77,14 +82,27 @@
   class="{direction} {side}"
   on:mousedown|stopPropagation|preventDefault={handleMousedown}
   on:dblclick={handleDoubleClick}
+  on:mouseenter={() => {
+    if (timeout) clearTimeout(timeout);
+    timeout = setTimeout(() => (hover = true), 150);
+  }}
+  on:mouseleave={() => {
+    if (timeout) clearTimeout(timeout);
+    timeout = null;
+    hover = false;
+  }}
 >
-  <slot />
+  {#if hover || resizing}
+    <slot />
+  {/if}
 </button>
 
 <style lang="postcss">
   button {
     @apply z-50 flex-none;
-    /* @apply bg-red-400; */
+    @apply pointer-events-auto;
+    @apply flex items-center justify-center;
+    /* @apply bg-red-500; */
   }
 
   button:disabled {
