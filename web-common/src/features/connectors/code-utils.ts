@@ -9,6 +9,7 @@ export function compileConnectorYAML(
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
   
 type: connector
+
 driver: ${connector.name}`;
 
   // Get the secret keys
@@ -19,13 +20,12 @@ driver: ${connector.name}`;
 
   // Compile key value pairs
   const compiledKeyValues = Object.entries(formValues)
-    // Remove the secrets
-    .filter(([key]) => !secretKeys.includes(key))
+    .filter(([key]) => !secretKeys.includes(key)) // Remove the secrets
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 
   // Return the compiled YAML
-  return `${topOfFile}\n\n` + compiledKeyValues;
+  return `${topOfFile}\n` + compiledKeyValues;
 }
 
 export function updateDotEnvBlobWithNewSecrets(
