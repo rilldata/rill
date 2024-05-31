@@ -1,4 +1,11 @@
-import { V1ConnectorDriver } from "../../runtime-client";
+import { useQueryClient } from "@tanstack/svelte-query";
+import { get } from "svelte/store";
+import {
+  V1ConnectorDriver,
+  getRuntimeServiceGetFileQueryKey,
+  runtimeServiceGetFile,
+} from "../../runtime-client";
+import { runtime } from "../../runtime-client/runtime-store";
 
 export function compileConnectorYAML(
   connector: V1ConnectorDriver,
@@ -28,35 +35,58 @@ driver: ${connector.name}`;
   return `${topOfFile}\n\n` + compiledKeyValues;
 }
 
-export function updateDotEnvBlobWithNewSecrets(
-  blob: string,
+export async function updateDotEnvWithSecrets(
   connector: V1ConnectorDriver,
   formValues: Record<string, string>,
-): string {
+): Promise<string> {
+  const instanceId = get(runtime).instanceId;
+  const queryClient = useQueryClient();
+
+  // Get the existing .env file
+  let blob: string;
+  try {
+    const file = await queryClient.fetchQuery({
+      queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: ".env" }),
+      queryFn: () => runtimeServiceGetFile(instanceId, { path: ".env" }),
+    });
+    blob = file.blob || "";
+  } catch (error) {
+    // Handle the case where the .env file does not exist
+    if (error?.response?.data?.message?.includes("no such file")) {
+      blob = "";
+    } else {
+      throw error;
+    }
+  }
+
+  // Get the secret keys
   const secretKeys = connector.sourceProperties
     ?.filter((property) => property.secret)
     .map((property) => property.key);
 
+  // In reality, all connectors have secret keys, but this is a safeguard
   if (!secretKeys) {
     return blob;
   }
 
+  // Update the blob with the new secrets
   secretKeys.forEach((key) => {
     if (!key) {
       return;
     }
 
-    blob = updateDotEnvBlobWithNewSecret(
-      blob,
-      makeDotEnvConnectorKey(connector.name as string, key),
-      formValues[key],
+    const connectorSecretKey = makeDotEnvConnectorKey(
+      connector.name as string,
+      key,
     );
+    const secretValue = formValues[key];
+    blob = replaceOrAddEnvVariable(blob, connectorSecretKey, secretValue);
   });
 
   return blob;
 }
 
-export function updateDotEnvBlobWithNewSecret(
+export function replaceOrAddEnvVariable(
   existingEnvBlob: string,
   key: string,
   newValue: string,
@@ -89,11 +119,29 @@ export function makeDotEnvConnectorKey(connectorName: string, key: string) {
   return `connector.${connectorName}.${key}`;
 }
 
+export async function updateRillYAMLWithOlapConnector(
+  newConnector: string,
+): Promise<string> {
+  // Get the existing rill.yaml file
+  const queryClient = useQueryClient();
+  const instanceId = get(runtime).instanceId;
+  const file = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, {
+      path: "rill.yaml",
+    }),
+    queryFn: () => runtimeServiceGetFile(instanceId, { path: "rill.yaml" }),
+  });
+  const blob = file.blob || "";
+
+  // Update the blob with the new OLAP connector
+  return replaceOlapConnectorInYAML(blob, newConnector);
+}
+
 /**
- * Update the `olap_connector` key in a Rill YAML file.
+ * Update the `olap_connector` key in a YAML file.
  * This function uses a regex approach to preserve comments and formatting.
  */
-export function updateRillYAMLBlobWithNewOlapConnector(
+export function replaceOlapConnectorInYAML(
   blob: string,
   newConnector: string,
 ): string {

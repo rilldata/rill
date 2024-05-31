@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { updateDotEnvBlobWithNewSecret } from "./code-utils";
+import { replaceOrAddEnvVariable } from "./code-utils";
 
 describe("updateEnvVariables", () => {
   it("should create a new env file", () => {
-    const updatedEnvBlob = updateDotEnvBlobWithNewSecret("", "KEY1", "VALUE1");
+    const updatedEnvBlob = replaceOrAddEnvVariable("", "KEY1", "VALUE1");
     expect(updatedEnvBlob).toBe("KEY1=VALUE1");
   });
 
@@ -13,7 +13,7 @@ KEY1=VALUE1
 KEY2=VALUE2`;
 
   it("should update the env file", () => {
-    const updatedEnvBlob = updateDotEnvBlobWithNewSecret(
+    const updatedEnvBlob = replaceOrAddEnvVariable(
       existingEnvBlob,
       "KEY1",
       "NEW_VALUE1",
@@ -25,7 +25,7 @@ KEY2=VALUE2`);
   });
 
   it("should add a new key to the env file", () => {
-    const updatedEnvBlob = updateDotEnvBlobWithNewSecret(
+    const updatedEnvBlob = replaceOrAddEnvVariable(
       existingEnvBlob,
       "KEY3",
       "VALUE3",
