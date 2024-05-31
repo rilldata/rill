@@ -531,10 +531,15 @@ func (a *AST) addSimpleMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Measu
 	// Base case: it targets the underlying table.
 	// Add the measure directly to the SELECT list.
 	if n.FromTable != nil {
+		expr, err := a.sqlForMeasure(m, n)
+		if err != nil {
+			return err
+		}
+
 		n.MeasureFields = append(n.MeasureFields, FieldNode{
 			Name:  m.Name,
 			Label: m.Label,
-			Expr:  a.sqlForMeasure(m, n),
+			Expr:  expr,
 		})
 
 		return nil
@@ -607,7 +612,10 @@ func (a *AST) addDerivedMeasure(n *SelectNode, m *runtimev1.MetricsViewSpec_Meas
 	}
 
 	// Add the derived measure expression to the current node.
-	expr := a.sqlForMeasure(m, n)
+	expr, err := a.sqlForMeasure(m, n)
+	if err != nil {
+		return err
+	}
 	if n.Group {
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
 		expr = a.sqlForAnyInGroup(expr)
@@ -665,7 +673,10 @@ func (a *AST) addTimeComparisonMeasure(n *SelectNode, m *runtimev1.MetricsViewSp
 	}
 
 	// Add the comparison measure expression to the current node.
-	expr := a.sqlForMeasure(m, n)
+	expr, err := a.sqlForMeasure(m, n)
+	if err != nil {
+		return err
+	}
 	if n.Group {
 		// TODO: There's a risk of expr containing a window, which can't be wrapped by ANY_VALUE. Need to fix it by wrapping with a non-grouped SELECT. Doesn't matter until we implement addDerivedMeasureWithPer.
 		// TODO: Can a node with a comparison ever have Group==true?
@@ -809,6 +820,41 @@ func (a *AST) hasMeasure(n *SelectNode, name string) bool {
 	return false
 }
 
+// findFieldForDimension finds the field in the SelectNode that corresponds to the dimension selector.
+// It takes computed dimensions into account, comparing against the underlying dimension name instead of the query alias.
+func (a *AST) findFieldForDimension(n *SelectNode, dim *runtimev1.MetricsViewSpec_DimensionSelector) (FieldNode, bool) {
+	for _, f := range n.DimFields {
+		// If name matches, we're done
+		if dim.Name == f.Name {
+			return f, true
+		}
+
+		// Find original query dimension for the field
+		var fqd Dimension
+		for _, qd := range a.query.Dimensions {
+			if f.Name == qd.Name {
+				fqd = qd
+				break
+			}
+		}
+
+		// If it's a computed dimension, check against the underlying dimension name (and time grain if specified)
+		if fqd.Compute != nil && fqd.Compute.TimeFloor != nil {
+			if dim.Name != fqd.Compute.TimeFloor.Dimension {
+				continue
+			}
+
+			if dim.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED && dim.TimeGrain != fqd.Compute.TimeFloor.Grain.ToProto() {
+				continue
+			}
+
+			return f, true
+		}
+	}
+
+	return FieldNode{}, false
+}
+
 // generateIdentifier generates a unique table identifier for use in the AST.
 func (a *AST) generateIdentifier() string {
 	tmp := fmt.Sprintf("t%d", a.nextIdentifier)
@@ -838,58 +884,94 @@ func (a *AST) sqlForTimeRange(timeCol string, start, end time.Time) (string, []a
 
 // sqlForMeasure builds a SQL expression for a measure, including its window if present.
 // It uses the provided n to resolve dimensions expressions for window partitions.
-func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNode) string {
+func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNode) (string, error) {
 	// If not applying a window, just return the measure expression.
 	if m.Window == nil {
-		return m.Expression
+		return m.Expression, nil
 	}
 
-	// For windows, we currently have a very hard-coded logic:
-	// 1. If partitioning is configured, we partition by all dimensions in the query except the time dimension.
-	// 2. If the time dimension is present in the query, we always order by time.
+	// If partitioning is not enabled, ordering and framing doesn't matter
+	if !m.Window.Partition {
+		return fmt.Sprintf("%s OVER ()", m.Expression), nil
+	}
 
-	var partitionExprs []string
-	var orderExprs []string
-	for _, f := range n.DimFields {
-		expr := f.Expr
-		if f.Unnest {
-			expr = a.sqlForMember(f.UnnestAlias, f.Name)
+	// If partitioning is enabled, we partition by all dimensions that we don't order by.
+
+	// Gather order by fields
+	orderFields := make([]FieldNode, 0, len(m.Window.OrderBy))
+	orderDesc := make([]bool, 0, len(m.Window.OrderBy))
+	for _, d := range m.Window.OrderBy {
+		f, ok := a.findFieldForDimension(n, d)
+		if !ok {
+			// In practice, this should never happen because the OrderBy dimensions are in RequiredDimensions and have been checked before this point.
+			return "", fmt.Errorf("dimension %q required by window measure %q not found in query", d.Name, m.Name)
 		}
+		orderFields = append(orderFields, f)
+		orderDesc = append(orderDesc, d.Desc)
+	}
 
-		isTimeDimension := f.Name == a.metricsView.TimeDimension
-		if !isTimeDimension {
-			// The field name may not be the time dim itself, but an alias for the floored time dimension.
-			// Search the query dimensions to check if that's the case.
-			for _, qd := range a.query.Dimensions {
-				if f.Name == qd.Name {
-					if qd.Compute != nil && qd.Compute.TimeFloor != nil {
-						isTimeDimension = true
-					}
-					break
-				}
+	// Gather partition fields
+	var partitionFields []FieldNode
+	for _, f := range n.DimFields {
+		found := false
+		for _, of := range orderFields {
+			if f.Name == of.Name {
+				found = true
+				break
 			}
 		}
-
-		if isTimeDimension {
-			orderExprs = append(orderExprs, expr)
-			continue
-		}
-
-		if m.Window.Partition {
-			partitionExprs = append(partitionExprs, expr)
+		if !found {
+			partitionFields = append(partitionFields, f)
 		}
 	}
 
-	var partitionClause string
-	if len(partitionExprs) > 0 && len(orderExprs) > 0 {
-		partitionClause = fmt.Sprintf("PARTITION BY %s ORDER BY %s", strings.Join(partitionExprs, ", "), strings.Join(orderExprs, ", "))
-	} else if len(partitionExprs) > 0 {
-		partitionClause = fmt.Sprintf("PARTITION BY %s", strings.Join(partitionExprs, ", "))
-	} else if len(orderExprs) > 0 {
-		partitionClause = fmt.Sprintf("ORDER BY %s", strings.Join(orderExprs, ", "))
-	}
+	// Build the window expression
+	b := &strings.Builder{}
+	b.WriteString(m.Expression)
+	b.WriteString(" OVER (")
+	if len(partitionFields) > 0 {
+		b.WriteString("PARTITION BY ")
+		for i, f := range partitionFields {
+			if i > 0 {
+				b.WriteString(", ")
+			}
 
-	return fmt.Sprintf("%s OVER (%s %s)", m.Expression, partitionClause, m.Window.FrameExpression)
+			expr := f.Expr
+			if f.Unnest {
+				expr = a.sqlForMember(f.UnnestAlias, f.Name)
+			}
+
+			b.WriteString(expr)
+		}
+	}
+	if len(orderFields) > 0 {
+		if len(partitionFields) > 0 {
+			b.WriteString(" ")
+		}
+		b.WriteString("ORDER BY ")
+		for i, f := range orderFields {
+			if i > 0 {
+				b.WriteString(", ")
+			}
+
+			expr := f.Expr
+			if f.Unnest {
+				expr = a.sqlForMember(f.UnnestAlias, f.Name)
+			}
+
+			b.WriteString(expr)
+			if orderDesc[i] {
+				b.WriteString(" DESC")
+			}
+		}
+	}
+	if m.Window.FrameExpression != "" {
+		b.WriteString(" ")
+		b.WriteString(m.Window.FrameExpression)
+	}
+	b.WriteString(")")
+
+	return b.String(), nil
 }
 
 // sqlForMember builds a SQL expression for a column in a table.

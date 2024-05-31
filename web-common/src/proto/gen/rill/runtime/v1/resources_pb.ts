@@ -1300,7 +1300,7 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
 }
 
 /**
- * Selector for a dimension, optionally truncated to a time grain
+ * Selector for a dimension
  *
  * @generated from message rill.runtime.v1.MetricsViewSpec.DimensionSelector
  */
@@ -1311,9 +1311,18 @@ export class MetricsViewSpec_DimensionSelector extends Message<MetricsViewSpec_D
   name = "";
 
   /**
+   * Only for time dimensions (optional)
+   *
    * @generated from field: rill.runtime.v1.TimeGrain time_grain = 2;
    */
   timeGrain = TimeGrain.UNSPECIFIED;
+
+  /**
+   * Only for when ordering (optional)
+   *
+   * @generated from field: bool desc = 3;
+   */
+  desc = false;
 
   constructor(data?: PartialMessage<MetricsViewSpec_DimensionSelector>) {
     super();
@@ -1325,6 +1334,7 @@ export class MetricsViewSpec_DimensionSelector extends Message<MetricsViewSpec_D
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
+    { no: 3, name: "desc", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionSelector {
@@ -1351,11 +1361,22 @@ export class MetricsViewSpec_DimensionSelector extends Message<MetricsViewSpec_D
  */
 export class MetricsViewSpec_MeasureWindow extends Message<MetricsViewSpec_MeasureWindow> {
   /**
+   * If true, partitions the window by all present dimensions except those in order_by
+   *
    * @generated from field: bool partition = 1;
    */
   partition = false;
 
   /**
+   * Dimensions to order the window by. Must be present in required_dimensions.
+   *
+   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.DimensionSelector order_by = 3;
+   */
+  orderBy: MetricsViewSpec_DimensionSelector[] = [];
+
+  /**
+   * Raw SQL expression to use as the frame (starting with "ROWS ...")
+   *
    * @generated from field: string frame_expression = 2;
    */
   frameExpression = "";
@@ -1369,6 +1390,7 @@ export class MetricsViewSpec_MeasureWindow extends Message<MetricsViewSpec_Measu
   static readonly typeName = "rill.runtime.v1.MetricsViewSpec.MeasureWindow";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "partition", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "order_by", kind: "message", T: MetricsViewSpec_DimensionSelector, repeated: true },
     { no: 2, name: "frame_expression", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
