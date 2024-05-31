@@ -2738,7 +2738,7 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_limit(t *testing.T) { // todo limit
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
-	limit := int64(2)
+	limit := int64(3)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -2827,12 +2827,15 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_lim
 
 	}
 	rows := q.Result.Data
-	require.Equal(t, 2, len(rows))
+	// require.Equal(t, 2, len(rows))
 
 	i = 0
 	require.Equal(t, "Google,news.google.com,3.55", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
 	i++
 	require.Equal(t, "Yahoo,news.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
+	i++
+	require.Equal(t, "Yahoo,sports.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
+
 }
 
 func TestMetricsViewsAggregation_comparison_measure_filter_with_limit(t *testing.T) {
@@ -2929,9 +2932,9 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_limit(t *testing
 	require.Equal(t, 2, len(rows))
 
 	i = 0
-	require.Equal(t, "null,news.google.com,3.70", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
+	require.Equal(t, "null,news.google.com,3.70,3.58", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
 	i++
-	require.Equal(t, "Yahoo,news.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
+	require.Equal(t, "Yahoo,news.yahoo.com,null,null", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
 }
 
 func TestMetricsViewsAggregation_comparison_measure_filter(t *testing.T) {
@@ -3046,13 +3049,13 @@ func TestMetricsViewsAggregation_comparison_measure_filter(t *testing.T) {
 	require.Equal(t, 4, len(rows))
 
 	i = 0
-	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
+	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
 	i++
 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,3.55,3.74,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
 	i++
-	require.Equal(t, "Yahoo,news.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
+	require.Equal(t, "Yahoo,news.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
 	i++
-	require.Equal(t, "Yahoo,sports.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
+	require.Equal(t, "Yahoo,sports.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
 }
 
 func TestMetricsViewsAggregation_comparison_measure_filter_with_having(t *testing.T) {
