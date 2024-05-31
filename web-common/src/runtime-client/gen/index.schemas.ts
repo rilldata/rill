@@ -1968,6 +1968,7 @@ export interface V1AnalyzedConnector {
   envConfig?: V1AnalyzedConnectorEnvConfig;
   hasAnonymousAccess?: boolean;
   usedBy?: V1ResourceName[];
+  errorMessage?: string;
 }
 
 export interface V1AnalyzeConnectorsResponse {
