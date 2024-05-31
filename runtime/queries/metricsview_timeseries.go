@@ -180,6 +180,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		if err != nil {
 			return err
 		}
+		defer res.Close()
 
 		return q.populateResult(res, q.MetricsView.TimeDimension, mv)
 	}

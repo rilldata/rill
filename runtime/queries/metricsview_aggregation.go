@@ -101,6 +101,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		if err != nil {
 			return err
 		}
+		defer res.Close()
 
 		data, err := rowsToData(res)
 		if err != nil {
