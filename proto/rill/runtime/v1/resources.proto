@@ -33,6 +33,7 @@ message Resource {
     Component component = 13;
     Dashboard dashboard = 14;
     API api = 15;
+    ConnectorV2 connector = 16;
   }
 }
 
@@ -498,4 +499,17 @@ message ExecutionError {
 
 message CharLocation {
   uint32 line = 1;
+}
+
+message ConnectorSpec {
+  string driver = 1;
+  map<string, string> properties = 2;
+}
+
+message ConnectorState {
+}
+
+message ConnectorV2 {
+  ConnectorSpec spec = 1;
+  ConnectorState state = 2;
 }

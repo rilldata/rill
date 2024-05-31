@@ -30,6 +30,7 @@ export interface VirtualizedTableColumns {
   total?: number;
   description?: string;
   enableResize?: boolean;
+  enableSorting?: boolean;
   // is this column highlighted in the table
   highlight?: boolean;
   // Is this the table sorted by this column, and if so, in what direction?
