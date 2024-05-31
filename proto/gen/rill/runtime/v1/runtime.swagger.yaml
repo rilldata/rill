@@ -3536,6 +3536,24 @@ definitions:
       implementsNotifier:
         type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
+  v1ConnectorSpec:
+    type: object
+    properties:
+      driver:
+        type: string
+      properties:
+        type: object
+        additionalProperties:
+          type: string
+  v1ConnectorState:
+    type: object
+  v1ConnectorV2:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ConnectorSpec'
+      state:
+        $ref: '#/definitions/v1ConnectorState'
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -5099,6 +5117,8 @@ definitions:
         $ref: '#/definitions/v1Dashboard'
       api:
         $ref: '#/definitions/v1API'
+      connector:
+        $ref: '#/definitions/v1ConnectorV2'
   v1ResourceEvent:
     type: string
     enum:

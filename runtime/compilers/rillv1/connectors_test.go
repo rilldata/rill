@@ -32,6 +32,11 @@ uri: gs://path/to/bar
 connector: my-s3
 uri: s3://path/to/foo
 `,
+		// S3 source, with a dedicated connector
+		`sources/foo-dedicated.yaml`: `
+connector: s3-dedicated
+uri: s3://path/to/foo
+`,
 		// DuckDB source, referencing a tertiary connector
 		`sources/foobar.yaml`: `
 connector: duckdb
@@ -69,6 +74,12 @@ notify:
     users:
     - user@example.com
 `,
+		// Dedicated S3 connector
+		"/connectors/s3-dedicated.yaml": `
+driver: s3
+name: s3-dedicated
+region: us-west-2
+`,
 	})
 
 	p, err := Parse(ctx, repo, "", "", "duckdb")
@@ -77,10 +88,10 @@ notify:
 	cs, err := p.AnalyzeConnectors(ctx)
 	require.NoError(t, err)
 
-	require.Len(t, cs, 6)
+	require.Len(t, cs, 7)
 
 	c := cs[0]
-	require.Len(t, c.Resources, 3)
+	require.Len(t, c.Resources, 4)
 	require.Equal(t, "druid", c.Name)
 	require.Equal(t, "druid", c.Driver)
 	require.Equal(t, false, c.AnonymousAccess)
@@ -115,6 +126,14 @@ notify:
 	require.Equal(t, drivers.Connectors["s3"].Spec(), c.Spec)
 
 	c = cs[5]
+	require.Len(t, c.Resources, 1)
+	require.Equal(t, "s3-dedicated", c.Name)
+	require.Equal(t, "s3", c.Driver)
+	require.Equal(t, false, c.AnonymousAccess)
+	require.Equal(t, drivers.Connectors["s3"].Spec(), c.Spec)
+	require.Equal(t, c.DefaultConfig["region"], "us-west-2")
+
+	c = cs[6]
 	require.Len(t, c.Resources, 1)
 	require.Equal(t, "slack", c.Name)
 	require.Equal(t, "slack", c.Driver)

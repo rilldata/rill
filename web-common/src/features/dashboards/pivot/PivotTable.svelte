@@ -406,6 +406,7 @@
   .header-cell {
     @apply px-2 bg-white size-full;
     @apply flex items-center gap-x-1 w-full truncate;
+    @apply font-medium;
     height: var(--header-height);
   }
 
@@ -429,7 +430,7 @@
   }
 
   tr > td:first-of-type:not(:last-of-type) {
-    @apply border-r font-medium;
+    @apply border-r font-normal;
   }
 
   /* The totals row */

@@ -58,7 +58,7 @@
   {isNull}
   classes="{tabularNumber
     ? 'ui-copy-number'
-    : ''} font-normal w-full {customStyle} {inTable && 'block text-right'}"
+    : ''} w-full {customStyle} {inTable && 'block text-right'}"
   {dark}
 >
   <slot name="value">
