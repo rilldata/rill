@@ -322,6 +322,9 @@ func mapGRPCError(err error) error {
 	if errors.Is(err, queries.ErrForbidden) {
 		return ErrForbidden
 	}
+	if errors.Is(err, runtime.ErrForbidden) {
+		return ErrForbidden
+	}
 	return err
 }
 

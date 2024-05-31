@@ -4,11 +4,10 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"strings"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 type MetricsViewSchema struct {
@@ -53,15 +52,12 @@ func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, in
 		return err
 	}
 
-	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, nil, priority)
 	if err != nil {
 		return err
 	}
-	defer release()
 
-	sql := q.buildMetricsViewDataTypesSQL(mv, olap.Dialect())
-
-	schema, _, err := olapQuery(ctx, olap, priority, sql, nil)
+	schema, err := e.Schema(ctx)
 	if err != nil {
 		return err
 	}
@@ -75,50 +71,4 @@ func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, in
 
 func (q *MetricsViewSchema) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return nil
-}
-
-func (q *MetricsViewSchema) buildMetricsViewDataTypesSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect) string {
-	var dimensions []string
-	var unnestClauses []string
-	for _, dim := range mv.Dimensions {
-		sel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
-		if unnestClause != "" {
-			unnestClauses = append(unnestClauses, unnestClause)
-		}
-		dimensions = append(dimensions, sel)
-	}
-
-	var measures []string
-	for _, meas := range mv.Measures {
-		measures = append(measures, fmt.Sprintf("%s as %s", meas.Expression, safeName(meas.Name)))
-	}
-
-	groups := make([]string, len(dimensions))
-	for i := range dimensions {
-		groups[i] = fmt.Sprintf("%d", i+1)
-	}
-
-	dimensionColumns := strings.Join(dimensions, ",")
-	measureColumns := strings.Join(measures, ",")
-
-	columns := dimensionColumns
-	if measureColumns != "" {
-		if columns != "" {
-			columns += ","
-		}
-		columns += measureColumns
-	}
-
-	groupBy := strings.Join(groups, ",")
-	if groupBy != "" {
-		groupBy = fmt.Sprintf("GROUP BY %s", groupBy)
-	}
-
-	return fmt.Sprintf(
-		`SELECT %[1]s FROM %[2]s %[3]s %[4]s LIMIT 0`,
-		columns,                             // 1
-		escapeMetricsViewTable(dialect, mv), // 2
-		strings.Join(unnestClauses, ""),     // 3
-		groupBy,                             // 4
-	)
 }

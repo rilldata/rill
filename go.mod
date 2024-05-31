@@ -3,8 +3,8 @@ module github.com/rilldata/rill
 go 1.22.0
 
 require (
-	cloud.google.com/go/bigquery v1.57.1
-	cloud.google.com/go/storage v1.35.1
+	cloud.google.com/go/bigquery v1.59.1
+	cloud.google.com/go/storage v1.37.0
 	connectrpc.com/connect v1.16.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Andrew-M-C/go.jsonvalue v1.3.4
@@ -34,7 +34,7 @@ require (
 	github.com/coreos/go-oidc/v3 v3.6.0
 	github.com/dgraph-io/ristretto v0.1.1
 	github.com/eapache/go-resiliency v1.3.0
-	github.com/envoyproxy/protoc-gen-validate v1.0.2
+	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/fatih/color v1.15.0
 	github.com/fsnotify/fsnotify v1.7.0
 	github.com/go-git/go-git/v5 v5.12.0
@@ -54,16 +54,17 @@ require (
 	github.com/hashicorp/go-retryablehttp v0.7.5
 	github.com/hashicorp/go-version v1.6.0
 	github.com/hashicorp/golang-lru v0.6.0
-	github.com/jackc/pgconn v1.14.0
-	github.com/jackc/pgtype v1.12.0
-	github.com/jackc/pgx/v4 v4.17.2
-	github.com/jackc/pgx/v5 v5.4.3
+	github.com/jackc/pgconn v1.14.3
+	github.com/jackc/pgtype v1.14.3
+	github.com/jackc/pgx/v4 v4.18.2
+	github.com/jackc/pgx/v5 v5.5.5
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.5.1
 	github.com/kelseyhightower/envconfig v1.4.0
 	github.com/lensesio/tableprinter v0.0.0-20201125135848-89e81fc956e7
 	github.com/marcboeker/go-duckdb v1.6.4
 	github.com/mazznoer/csscolorparser v0.1.3
+	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/mitchellh/mapstructure v1.5.0
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/prometheus/client_golang v1.17.0
@@ -81,8 +82,8 @@ require (
 	github.com/testcontainers/testcontainers-go v0.27.0
 	github.com/testcontainers/testcontainers-go/modules/clickhouse v0.27.0
 	github.com/xuri/excelize/v2 v2.7.1
-	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.46.1
-	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.46.1
+	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.47.0
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.47.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.46.1
 	go.opentelemetry.io/otel v1.22.0
 	go.opentelemetry.io/otel/exporters/otlp/otlpmetric/otlpmetricgrpc v0.44.0
@@ -97,13 +98,13 @@ require (
 	go.uber.org/zap v1.26.0
 	gocloud.dev v0.36.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/oauth2 v0.14.0
-	golang.org/x/sync v0.5.0
+	golang.org/x/oauth2 v0.17.0
+	golang.org/x/sync v0.6.0
 	golang.org/x/sys v0.18.0
 	golang.org/x/text v0.14.0
-	google.golang.org/api v0.151.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20231212172506-995d672761c0
-	google.golang.org/grpc v1.60.1
+	google.golang.org/api v0.162.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240227224415-6ceb2ff114de
+	google.golang.org/grpc v1.63.0
 	google.golang.org/protobuf v1.33.0
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
@@ -115,10 +116,10 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.110.10 // indirect
-	cloud.google.com/go/compute v1.23.3 // indirect
+	cloud.google.com/go v0.112.0 // indirect
+	cloud.google.com/go/compute v1.24.0 // indirect
 	cloud.google.com/go/compute/metadata v0.2.3 // indirect
-	cloud.google.com/go/iam v1.1.5 // indirect
+	cloud.google.com/go/iam v1.1.6 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
@@ -127,7 +128,6 @@ require (
 	github.com/Azure/go-autorest v14.2.0+incompatible // indirect
 	github.com/Azure/go-autorest/autorest/to v0.4.0 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.0 // indirect
-	github.com/apache/arrow/go/v12 v12.0.0 // indirect
 	github.com/danieljoos/wincred v1.1.2 // indirect
 	github.com/distribution/reference v0.5.0 // indirect
 	github.com/dvsekhvalnov/jose2go v1.6.0 // indirect
@@ -139,7 +139,7 @@ require (
 	github.com/matttproud/golang_protobuf_extensions/v2 v2.0.0 // indirect
 	github.com/mtibben/percent v0.2.1 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
-	google.golang.org/genproto v0.0.0-20231211222908-989df2bf70f3 // indirect
+	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
 )
 
 require (
@@ -212,9 +212,9 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang-jwt/jwt/v5 v5.1.0 // indirect
-	github.com/golang/glog v1.1.2 // indirect
+	github.com/golang/glog v1.2.0 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
-	github.com/golang/protobuf v1.5.3 // indirect
+	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/gomodule/redigo v1.8.9 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
@@ -235,8 +235,8 @@ require (
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
-	github.com/jackc/pgproto3/v2 v2.3.2 // indirect
-	github.com/jackc/pgservicefile v0.0.0-20221227161230-091c0ba34f0a // indirect
+	github.com/jackc/pgproto3/v2 v2.3.3 // indirect
+	github.com/jackc/pgservicefile v0.0.0-20231201235250-de7065d80cb9 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -310,11 +310,11 @@ require (
 	golang.org/x/mod v0.13.0 // indirect
 	golang.org/x/net v0.22.0 // indirect
 	golang.org/x/term v0.18.0 // indirect
-	golang.org/x/time v0.4.0 // indirect
+	golang.org/x/time v0.5.0 // indirect
 	golang.org/x/tools v0.14.0 // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
 	google.golang.org/appengine v1.6.8 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20231212172506-995d672761c0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240227224415-6ceb2ff114de // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
@@ -333,6 +333,9 @@ require (
 	sigs.k8s.io/structured-merge-diff/v4 v4.2.3 // indirect
 	sigs.k8s.io/yaml v1.3.0 // indirect
 )
+
+// Workaround for https://github.com/marcboeker/go-duckdb/issues/215
+replace github.com/marcboeker/go-duckdb v1.6.4 => github.com/rilldata/go-duckdb v0.0.0-20240521113010-0a4610c39d2c
 
 // Fixes a security warning. Remove when testcontainers-go v0.27.0 is released.
 replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testcontainers/testcontainers-go v0.26.1-0.20231102155908-6aac7412c81a

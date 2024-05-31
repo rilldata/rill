@@ -21,6 +21,8 @@ tsc-tmp/
 /cli/pkg/examples/embed/dist
 /cli/pkg/installscript/embed/install.sh
 /cli/pkg/web/embed/dist
+/runtime/drivers/duckdb/extensions/embed/*/*
+!/runtime/drivers/duckdb/extensions/embed/**/.gitkeep
 /dev-project*
 /dev-cloud-state*
 

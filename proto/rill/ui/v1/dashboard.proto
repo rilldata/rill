@@ -137,6 +137,8 @@ message DashboardState {
   // Pagination data
   optional int32 pivot_column_page = 30;
   optional PivotRowJoinType pivot_row_join_type = 31;
+  // Enable comparison for pivot
+  optional bool pivot_enable_comparison = 34;
 }
 
 message DashboardTimeRange {

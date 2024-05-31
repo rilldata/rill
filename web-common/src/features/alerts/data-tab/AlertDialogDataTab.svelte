@@ -3,7 +3,6 @@
   import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
   import { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";
-  import InputV2 from "../../../components/forms/InputV2.svelte";
   import Select from "../../../components/forms/Select.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
@@ -11,7 +10,7 @@
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
-  const { form, errors, handleChange } = formState;
+  const { form } = formState;
 
   $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
   $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
@@ -34,16 +33,6 @@
 </script>
 
 <div class="flex flex-col gap-y-3">
-  <FormSection title="Alert name">
-    <InputV2
-      alwaysShowError
-      error={$errors["name"]}
-      id="name"
-      on:change={handleChange}
-      placeholder="My alert"
-      value={$form["name"]}
-    />
-  </FormSection>
   <FormSection
     description="These are inherited from the underlying dashboard view."
     title="Filters"
@@ -53,6 +42,7 @@
       filters={$form["whereFilter"]}
       metricsViewName={$form["metricsViewName"]}
       timeRange={$form["timeRange"]}
+      comparisonTimeRange={$form["comparisonTimeRange"]}
     />
   </FormSection>
   <FormSection
@@ -75,7 +65,10 @@
       placeholder="Select a dimension"
     />
   </FormSection>
-  <FormSection title="Data preview">
+  <FormSection
+    title="Data preview"
+    description="Here’s a look at the data you’ve selected above."
+  >
     <DataPreview formValues={$form} />
   </FormSection>
 </div>

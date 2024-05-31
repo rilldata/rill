@@ -195,7 +195,7 @@ export function transformAggregateDimensionData(
   timeDimension: string,
   dimensionName: string,
   measures: string[],
-  dimensionValues: string[],
+  dimensionValues: (string | null)[],
   timeSeriesData: V1TimeSeriesValue[],
   response: V1MetricsViewAggregationResponseDataItem[],
 ): V1TimeSeriesValue[][] {
