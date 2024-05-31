@@ -1083,9 +1083,11 @@ env:
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
+sql: SELECT 10
 env:
   test:
     path: world
+    sql: SELECT 20 # Override a property from commonYAML
     refresh:
       cron: "0 0 * * *"
 `,
@@ -1097,7 +1099,7 @@ env:
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
 			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello", "sql": "SELECT 10"})),
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
@@ -1108,7 +1110,7 @@ env:
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
 			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000})),
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000, "sql": "SELECT 20"})),
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 		},
 	}
