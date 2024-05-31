@@ -3074,6 +3074,10 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 	}
 
 	if q.Limit != nil {
+		if *q.Limit == 0 {
+			tmp := int64(100)
+			q.Limit = &tmp
+		}
 		tmp := int(*q.Limit)
 		qry.Limit = &tmp
 	}
