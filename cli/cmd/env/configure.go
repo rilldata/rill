@@ -120,9 +120,11 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse project: %w", err)
 	}
-	connectors, err := parser.AnalyzeConnectors(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to extract connectors: %w", err)
+	connectors := parser.AnalyzeConnectors(ctx)
+	for _, c := range connectors {
+		if c.Err != nil {
+			return nil, fmt.Errorf("failed to extract connectors: %w", err)
+		}
 	}
 
 	// Remove the default DuckDB connector we always add
