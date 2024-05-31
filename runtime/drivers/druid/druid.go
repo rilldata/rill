@@ -46,14 +46,13 @@ var spec = drivers.Spec{
 			Type:        drivers.NumberPropertyType,
 			DisplayName: "port",
 			Required:    false,
-			Placeholder: "9000",
+			Placeholder: "8888",
 		},
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
 			DisplayName: "username",
 			Required:    false,
-			Placeholder: "default",
 		},
 		{
 			Key:         "password",
@@ -67,7 +66,6 @@ var spec = drivers.Spec{
 			Type:        drivers.BooleanPropertyType,
 			DisplayName: "ssl",
 			Required:    false,
-			Default:     "true",
 		},
 	},
 	ImplementsOLAP: true,
