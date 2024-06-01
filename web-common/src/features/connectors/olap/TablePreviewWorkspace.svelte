@@ -1,6 +1,6 @@
 <script lang="ts">
-  import { ConnectedPreviewTable } from "../../components/preview-table";
-  import WorkspaceContainer from "../../layout/workspace/WorkspaceContainer.svelte";
+  import { ConnectedPreviewTable } from "../../../components/preview-table";
+  import WorkspaceContainer from "../../../layout/workspace/WorkspaceContainer.svelte";
   import TableWorkspaceHeader from "./TableWorkspaceHeader.svelte";
 
   export let connector: string;
