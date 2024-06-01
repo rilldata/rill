@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
+  ConnectorDriverPropertyType,
   V1ConnectorDriver,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
@@ -28,7 +29,13 @@ driver: ${connector.name}`;
   // Compile key value pairs
   const compiledKeyValues = Object.entries(formValues)
     .filter(([key]) => !secretKeys.includes(key)) // Remove the secrets
-    .map(([key, value]) => `${key}: "${value}"`)
+    .map(([key, formValue]) => {
+      const isBooleanProperty =
+        connector.sourceProperties?.find((property) => property.key === key)
+          ?.type === ConnectorDriverPropertyType.TYPE_BOOLEAN;
+      const value = formValue as string;
+      return `${key}: ${isBooleanProperty ? value : `"${value}"`}`;
+    })
     .join("\n");
 
   // Return the compiled YAML
