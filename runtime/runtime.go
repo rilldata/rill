@@ -110,7 +110,14 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	return instanceAnnotationsToAttribs(instance)
 }
 
-func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, rillYAML *rillv1.RillYAML, dotEnv map[string]string, restartController bool) error {
+func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, parser *rillv1.Parser, restartController bool) error {
+	if parser.RillYAML == nil {
+		return errors.New("rill.yaml is required to update an instance")
+	}
+
+	rillYAML := parser.RillYAML
+	dotEnv := parser.DotEnv
+
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return err
@@ -122,15 +129,31 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 
 	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
 
-	conns := make([]*runtimev1.Connector, 0, len(rillYAML.Connectors))
+	// Dedupe connectors
+	connMap := make(map[string]*runtimev1.Connector)
 	for _, c := range rillYAML.Connectors {
-		conns = append(conns, &runtimev1.Connector{
+		connMap[c.Name] = &runtimev1.Connector{
 			Type:   c.Type,
 			Name:   c.Name,
 			Config: c.Defaults,
-		})
+		}
+	}
+	for _, r := range parser.Resources {
+		if r.ConnectorSpec != nil {
+			connMap[r.Name.Name] = &runtimev1.Connector{
+				Name:   r.Name.Name,
+				Type:   r.ConnectorSpec.Driver,
+				Config: r.ConnectorSpec.Properties,
+			}
+		}
+	}
+
+	conns := make([]*runtimev1.Connector, 0, len(connMap))
+	for _, c := range connMap {
+		conns = append(conns, c)
 	}
 	inst.ProjectConnectors = conns
+
 	vars := make(map[string]string)
 	for _, v := range rillYAML.Variables {
 		vars[v.Name] = v.Default

@@ -15,7 +15,8 @@ import (
 func (s *Server) ListConnectorDrivers(ctx context.Context, req *runtimev1.ListConnectorDriversRequest) (*runtimev1.ListConnectorDriversResponse, error) {
 	var pbs []*runtimev1.ConnectorDriver
 	for name, driver := range drivers.Connectors {
-		pbs = append(pbs, driverSpecToPB(name, driver.Spec()))
+		spec := driver.Spec()
+		pbs = append(pbs, driverSpecToPB(name, &spec))
 	}
 	return &runtimev1.ListConnectorDriversResponse{Connectors: pbs}, nil
 }
@@ -41,14 +42,19 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 		return nil, err
 	}
 
-	connectors, err := p.AnalyzeConnectors(ctx)
-	if err != nil {
-		return nil, err
-	}
+	connectors := p.AnalyzeConnectors(ctx)
 
 	res := make(map[string]*runtimev1.AnalyzedConnector)
 
 	for _, connector := range connectors {
+		if connector.Err != nil {
+			res[connector.Name] = &runtimev1.AnalyzedConnector{
+				Name:         connector.Name,
+				ErrorMessage: connector.Err.Error(),
+			}
+			continue
+		}
+
 		cfg, err := s.runtime.ConnectorConfig(ctx, req.InstanceId, connector.Name)
 		if err != nil {
 			return nil, err
@@ -134,7 +140,7 @@ func (s *Server) ListNotifierConnectors(ctx context.Context, req *runtimev1.List
 	}, nil
 }
 
-func driverSpecToPB(name string, spec drivers.Spec) *runtimev1.ConnectorDriver {
+func driverSpecToPB(name string, spec *drivers.Spec) *runtimev1.ConnectorDriver {
 	pb := &runtimev1.ConnectorDriver{
 		Name:                  name,
 		ConfigProperties:      nil,

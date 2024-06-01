@@ -350,10 +350,12 @@ func newMetricsView(name, table, timeDim string, measures, dimensions []string) 
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {

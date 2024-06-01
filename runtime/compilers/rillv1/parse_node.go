@@ -52,6 +52,8 @@ func (p *Parser) parseNode(node *Node) error {
 		return p.parseDashboard(node)
 	case ResourceKindAPI:
 		return p.parseAPI(node)
+	case ResourceKindConnector:
+		return p.parseConnector(node)
 	default:
 		panic(fmt.Errorf("unexpected resource type: %s", node.Kind.String()))
 	}
@@ -110,12 +112,6 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 	// Handle YAML config
 	templatingEnabled := true
 	if cfg != nil {
-		// Copy basic properties
-		res.Name = cfg.Name
-		res.Connector = cfg.Connector
-		res.SQL = cfg.SQL
-		res.SQLPath = ymlPath
-
 		// Handle "dev:" and "prod:" shorthands (copy to to cfg.Env)
 		if !cfg.Dev.IsZero() {
 			if cfg.Env == nil {
@@ -133,7 +129,19 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		// Set environment-specific override
 		if envOverride := cfg.Env[p.Environment]; !envOverride.IsZero() {
 			res.YAMLOverride = &envOverride
+
+			// Apply the override immediately in case it changes any of the commonYAML fields
+			err := res.YAMLOverride.Decode(&cfg)
+			if err != nil {
+				return nil, pathError{path: ymlPath, err: newYAMLError(err)}
+			}
 		}
+
+		// Copy basic properties
+		res.Name = cfg.Name
+		res.Connector = cfg.Connector
+		res.SQL = cfg.SQL
+		res.SQLPath = ymlPath
 
 		// Handle templating config
 		if cfg.ParserConfig.Templating != nil {
@@ -266,6 +274,8 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 			res.Kind = ResourceKindModel
 		} else if strings.HasPrefix(paths[0], "/dashboards") {
 			res.Kind = ResourceKindMetricsView
+		} else if strings.HasPrefix(paths[0], "/connectors") {
+			res.Kind = ResourceKindConnector
 		} else if strings.HasPrefix(paths[0], "/init.sql") {
 			res.Kind = ResourceKindMigration
 		} else if sqlPath != "" {
