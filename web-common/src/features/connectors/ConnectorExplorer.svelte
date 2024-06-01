@@ -40,27 +40,30 @@
     />
   </button>
   {#if showConnectors}
-    {#if error}
-      <span class="message">
-        {error.message}
-      </span>
-    {:else if data?.connectors}
-      {#if data.connectors.length === 0}
-        <span class="message">No connectors found</span>
-      {:else}
-        <ol transition:slide={{ duration }}>
-          {#each data.connectors as connector (connector.name)}
-            <ConnectorEntry {connector} />
-          {/each}
-        </ol>
+    <div class="wrapper">
+      {#if error}
+        <span class="message">
+          {error.message}
+        </span>
+      {:else if data?.connectors}
+        {#if data.connectors.length === 0}
+          <span class="message">No connectors found</span>
+        {:else}
+          <ol transition:slide={{ duration }}>
+            {#each data.connectors as connector (connector.name)}
+              <ConnectorEntry {connector} />
+            {/each}
+          </ol>
+        {/if}
       {/if}
-    {/if}
+    </div>
   {/if}
 </section>
 
 <style lang="postcss">
   section {
-    @apply flex flex-col border-t border-t-gray-200 relative;
+    @apply flex flex-col relative;
+    @apply border-t border-t-gray-200;
   }
 
   button {
@@ -77,8 +80,8 @@
     @apply font-semibold text-[10px] uppercase;
   }
 
-  ol {
-    @apply flex flex-col;
+  .wrapper {
+    @apply overflow-auto;
   }
 
   .message {

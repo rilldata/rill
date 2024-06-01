@@ -96,7 +96,6 @@
   .table-entry-header {
     @apply h-6 pr-2; /* left-padding is set dynamically above */
     @apply flex justify-between items-center gap-x-1;
-    @apply sticky top-0 z-10;
   }
 
   .table-entry-header:hover {
