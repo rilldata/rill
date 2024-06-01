@@ -112,12 +112,6 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 	// Handle YAML config
 	templatingEnabled := true
 	if cfg != nil {
-		// Copy basic properties
-		res.Name = cfg.Name
-		res.Connector = cfg.Connector
-		res.SQL = cfg.SQL
-		res.SQLPath = ymlPath
-
 		// Handle "dev:" and "prod:" shorthands (copy to to cfg.Env)
 		if !cfg.Dev.IsZero() {
 			if cfg.Env == nil {
@@ -135,7 +129,19 @@ func (p *Parser) parseStem(paths []string, ymlPath, yml, sqlPath, sql string) (*
 		// Set environment-specific override
 		if envOverride := cfg.Env[p.Environment]; !envOverride.IsZero() {
 			res.YAMLOverride = &envOverride
+
+			// Apply the override immediately in case it changes any of the commonYAML fields
+			err := res.YAMLOverride.Decode(&cfg)
+			if err != nil {
+				return nil, pathError{path: ymlPath, err: newYAMLError(err)}
+			}
 		}
+
+		// Copy basic properties
+		res.Name = cfg.Name
+		res.Connector = cfg.Connector
+		res.SQL = cfg.SQL
+		res.SQLPath = ymlPath
 
 		// Handle templating config
 		if cfg.ParserConfig.Templating != nil {

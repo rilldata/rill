@@ -10,15 +10,14 @@ import {
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
   V1ConnectorDriver,
-  runtimeServiceGetFile,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
 import {
   compileConnectorYAML,
-  updateDotEnvBlobWithNewSecrets,
-  updateRillYAMLBlobWithNewOlapConnector,
+  updateDotEnvWithSecrets,
+  updateRillYAMLWithOlapConnector,
 } from "../../connectors/code-utils";
 import {
   getFileAPIPathFromNameAndType,
@@ -115,35 +114,18 @@ export async function submitRemoteSourceForm(
   });
 
   // Update the `.env` file
-  let blob: string;
-  try {
-    // TODO: use the query cache
-    const file = await runtimeServiceGetFile(instanceId, { path: ".env" });
-    blob = file.blob || "";
-  } catch (error) {
-    // Handle the case where the .env file does not exist
-    if (error?.response?.data?.message?.includes("no such file")) {
-      blob = "";
-    } else {
-      throw error;
-    }
-  }
-
   await runtimeServicePutFile(instanceId, {
     path: ".env",
-    blob: updateDotEnvBlobWithNewSecrets(blob, connector, formValues),
+    blob: await updateDotEnvWithSecrets(queryClient, connector, formValues),
     create: true,
     createOnly: false,
   });
 
   // Update the `rill.yaml` file
-  // TODO: use the query cache
-  const file = await runtimeServiceGetFile(instanceId, { path: "rill.yaml" });
-
   await runtimeServicePutFile(instanceId, {
     path: "rill.yaml",
-    blob: updateRillYAMLBlobWithNewOlapConnector(
-      file.blob || "",
+    blob: await updateRillYAMLWithOlapConnector(
+      queryClient,
       connector.name as string,
     ),
     create: true,

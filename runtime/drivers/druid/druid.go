@@ -35,6 +35,38 @@ var spec = drivers.Spec{
 			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
 			Secret:      true,
 		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "host",
+			Required:    false,
+		},
+		{
+			Key:         "port",
+			Type:        drivers.NumberPropertyType,
+			DisplayName: "port",
+			Required:    false,
+			Placeholder: "8888",
+		},
+		{
+			Key:         "username",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "username",
+			Required:    false,
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "password",
+			Required:    false,
+			Secret:      true,
+		},
+		{
+			Key:         "ssl",
+			Type:        drivers.BooleanPropertyType,
+			DisplayName: "ssl",
+			Required:    false,
+		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
@@ -86,8 +118,14 @@ type driver struct{}
 var _ drivers.Driver = &driver{}
 
 type configProperties struct {
-	// DSN is the connection string
-	DSN string `mapstructure:"dsn"`
+	// DSN is the connection string. Set either DSN or properties below.
+	DSN      string `mapstructure:"dsn"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
+	SSL bool `mapstructure:"ssl"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 }
@@ -105,12 +143,40 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	if conf.DSN == "" {
-		return nil, fmt.Errorf("no DSN provided to open the connection")
-	}
-	dsn, err := correctURL(conf.DSN)
-	if err != nil {
-		return nil, err
+	var dsn string
+	if conf.DSN != "" {
+		dsn, err = correctURL(conf.DSN)
+		if err != nil {
+			return nil, err
+		}
+	} else if conf.Host != "" {
+		var dsnURL url.URL
+		dsnURL.Host = conf.Host
+		// set port
+		if conf.Port != 0 {
+			dsnURL.Host = fmt.Sprintf("%v:%v", conf.Host, conf.Port)
+		}
+
+		// set scheme
+		if conf.SSL {
+			dsnURL.Scheme = "https"
+		} else {
+			dsnURL.Scheme = "http"
+		}
+
+		// set path
+		dsnURL.Path = "druid/v2/sql"
+
+		// set username and password
+		if conf.Password != "" {
+			dsnURL.User = url.UserPassword(conf.Username, conf.Password)
+		} else if conf.Username != "" {
+			dsnURL.User = url.User(conf.Username)
+		}
+
+		dsn = dsnURL.String()
+	} else {
+		return nil, fmt.Errorf("druid connection parameters not set. Set `dsn` or individual properties")
 	}
 
 	db, err := sqlx.Open("druid", dsn)

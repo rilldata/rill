@@ -3,13 +3,11 @@
   import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-  import {
-    MeasureFilterComparisonType,
-    MeasureFilterEntry,
-  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
     MeasureFilterOperation,
-    MeasureFilterOptions,
+    MeasureFilterOperationOptions,
+    MeasureFilterType,
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createEventDispatcher } from "svelte";
@@ -31,7 +29,7 @@
 
   const initialValues = {
     dimension: dimensionName,
-    operation: filter?.operation ?? MeasureFilterOptions[0].value,
+    operation: filter?.operation ?? MeasureFilterOperationOptions[0].value,
     value1: filter?.value1 ?? "",
     value2: filter?.value2 ?? "",
   };
@@ -60,7 +58,7 @@
           filter: <MeasureFilterEntry>{
             measure: name,
             operation: values.operation,
-            comparison: MeasureFilterComparisonType.None,
+            type: MeasureFilterType.Value,
             value1: values.value1,
             value2: values.value2,
           },
@@ -122,7 +120,7 @@
       itemsClass="absolute left-4.5"
       label="Threshold"
       on:change={handleSubmit}
-      options={MeasureFilterOptions}
+      options={MeasureFilterOperationOptions}
     />
     <InputV2
       bind:value={$form["value1"]}

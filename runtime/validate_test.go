@@ -20,9 +20,9 @@ func TestValidateMetricsView(t *testing.T) {
 			{Column: "publisher"},
 		},
 		Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-			{Name: "records", Expression: "count(*)"},
-			{Name: "invalid_nested_aggregation", Expression: "MAX(COUNT(DISTINCT publisher))"},
-			{Name: "invalid_partition", Expression: "AVG(bid_price) OVER (PARTITION BY publisher)"},
+			{Name: "records", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+			{Name: "invalid_nested_aggregation", Expression: "MAX(COUNT(DISTINCT publisher))", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+			{Name: "invalid_partition", Expression: "AVG(bid_price) OVER (PARTITION BY publisher)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 		},
 	})
 	require.NoError(t, err)
