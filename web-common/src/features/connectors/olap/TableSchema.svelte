@@ -1,8 +1,8 @@
 <script lang="ts">
-  import Tooltip from "../../components/tooltip/Tooltip.svelte";
-  import TooltipContent from "../../components/tooltip/TooltipContent.svelte";
-  import { createQueryServiceTableColumns } from "../../runtime-client";
-  import { runtime } from "../../runtime-client/runtime-store";
+  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
+  import { createQueryServiceTableColumns } from "../../../runtime-client";
+  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let connector: string;
   export let database: string = ""; // The backend interprets an empty string as the default database
@@ -18,16 +18,17 @@
       databaseSchema,
     },
   );
+  $: ({ data, error, isError } = $columnsQuery);
 </script>
 
-<ul class="schema-list">
-  {#if $columnsQuery.isError}
+<ul class="table-schema-list">
+  {#if isError}
     <div>
-      Error loading schema: {$columnsQuery.error?.response.data.message}
+      Error loading schema: {error?.response.data.message}
     </div>
-  {:else if $columnsQuery.data && $columnsQuery.data.profileColumns}
-    {#each $columnsQuery.data.profileColumns as column}
-      <li>
+  {:else if data && data.profileColumns}
+    {#each data.profileColumns as column (column)}
+      <li class="table-schema-entry {database ? 'pl-[74px]' : 'pl-[58px]'}">
         <Tooltip distance={4}>
           <span class="font-mono truncate">{column.name}</span>
           <TooltipContent slot="tooltip-content">
@@ -41,12 +42,12 @@
 </ul>
 
 <style lang="postcss">
-  .schema-list {
-    @apply pl-[30px] pr-4 py-1.5;
+  .table-schema-list {
+    @apply pr-4 py-1.5; /* padding-left is set dynamically above */
     @apply flex flex-col gap-y-0.5;
   }
 
-  .schema-list li {
+  .table-schema-entry {
     @apply flex justify-between gap-x-2;
   }
 </style>

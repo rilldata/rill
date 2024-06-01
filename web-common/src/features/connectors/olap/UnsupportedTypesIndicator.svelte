@@ -1,8 +1,8 @@
 <script lang="ts">
-  import WarningIcon from "../../components/icons/WarningIcon.svelte";
-  import Tooltip from "../../components/tooltip/Tooltip.svelte";
-  import TooltipContent from "../../components/tooltip/TooltipContent.svelte";
-  import { createQueryServiceTableColumns } from "../../runtime-client";
+  import WarningIcon from "../../../components/icons/WarningIcon.svelte";
+  import Tooltip from "../../../components/tooltip/Tooltip.svelte";
+  import TooltipContent from "../../../components/tooltip/TooltipContent.svelte";
+  import { createQueryServiceTableColumns } from "../../../runtime-client";
 
   export let instanceId: string;
   export let connector: string;
