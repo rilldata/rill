@@ -162,9 +162,10 @@ export function getYupSchema(connector: V1ConnectorDriver) {
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         //   .required("Connector name is required"),
         host: yup.string().required("Host is required"),
-        port: yup.number().required("Port is required"),
-        username: yup.string().required("Username is required"),
-        password: yup.string().required("Password is required"),
+        port: yup.number(),
+        username: yup.string(),
+        password: yup.string(),
+        ssl: yup.boolean(),
       });
 
     case "druid":
@@ -175,9 +176,10 @@ export function getYupSchema(connector: V1ConnectorDriver) {
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         //   .required("Connector name is required"),
         host: yup.string().required("Host is required"),
-        port: yup.number().required("Port is required"),
-        username: yup.string().required("Username is required"),
-        password: yup.string().required("Password is required"),
+        port: yup.number(),
+        username: yup.string(),
+        password: yup.string(),
+        ssl: yup.boolean(),
       });
 
     case "pinot":
@@ -188,9 +190,10 @@ export function getYupSchema(connector: V1ConnectorDriver) {
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         //   .required("Connector name is required"),
         host: yup.string().required("Host is required"),
-        port: yup.number().required("Port is required"),
-        username: yup.string().required("Username is required"),
-        password: yup.string().required("Password is required"),
+        port: yup.number(),
+        username: yup.string(),
+        password: yup.string(),
+        ssl: yup.boolean(),
       });
 
     default:

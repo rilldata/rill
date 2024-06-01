@@ -80,7 +80,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "port",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "Port",
 			Description: "Port number of the Druid server",
 			Placeholder: "9000",
@@ -88,7 +88,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "Username",
 			Description: "Username to connect to the Druid server",
 			Placeholder: "default",
@@ -96,7 +96,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "Password",
 			Description: "Password to connect to the Druid server",
 			Placeholder: "password",
