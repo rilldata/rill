@@ -78,7 +78,7 @@ export async function updateDotEnvWithSecrets(
 
   // Update the blob with the new secrets
   secretKeys.forEach((key) => {
-    if (!key) {
+    if (!key || !formValues[key]) {
       return;
     }
 
@@ -86,8 +86,8 @@ export async function updateDotEnvWithSecrets(
       connector.name as string,
       key,
     );
-    const secretValue = formValues[key];
-    blob = replaceOrAddEnvVariable(blob, connectorSecretKey, secretValue);
+
+    blob = replaceOrAddEnvVariable(blob, connectorSecretKey, formValues[key]);
   });
 
   return blob;
