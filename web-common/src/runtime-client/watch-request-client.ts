@@ -74,7 +74,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   }
 
   public async reconnect() {
-    this.closed = true;
+    this.closed = false;
     clearTimeout(this.reconnectTimeout);
 
     if (this.outOfFocusThrottler.isThrottling()) {

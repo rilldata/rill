@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	duckdbolap "github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -84,6 +85,36 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	if err != nil {
 		return err
 	}
+
+	// Attempt to route to metricsview executor
+	qry, ok, err := q.rewriteToMetricsViewQuery(mv)
+	if err != nil {
+		return fmt.Errorf("error rewriting to metrics query: %w", err)
+	}
+	if ok {
+		e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, priority)
+		if err != nil {
+			return err
+		}
+
+		res, _, err := e.Query(ctx, qry, nil)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		data, err := rowsToData(res)
+		if err != nil {
+			return err
+		}
+
+		q.Result = &runtimev1.MetricsViewAggregationResponse{
+			Schema: res.Schema,
+			Data:   data,
+		}
+		return nil
+	}
+	// Falling back to the old implementation
 
 	cfg, err := rt.InstanceConfig(ctx, instanceID)
 	if err != nil {
@@ -2918,4 +2949,149 @@ func (q *MetricsViewAggregation) trancationExpression(s string, timeGrain runtim
 	default:
 		return "", fmt.Errorf("unsupported dialect %q", dialect)
 	}
+}
+
+func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.MetricsViewSpec) (*metricsview.Query, bool, error) {
+	// Pivot not supported yet
+	if len(q.PivotOn) > 0 {
+		return nil, false, nil
+	}
+
+	// Time offset-based comparison joins not supported yet
+	if q.ComparisonTimeRange != nil && !isTimeRangeNil(q.ComparisonTimeRange) {
+		for _, d := range q.Dimensions {
+			if d.Name == mv.TimeDimension {
+				return nil, false, nil
+			}
+		}
+	}
+
+	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
+
+	for _, d := range q.Dimensions {
+		res := metricsview.Dimension{Name: d.Name}
+		if d.Alias != "" {
+			res.Name = d.Alias
+		}
+		if d.TimeZone != "" {
+			qry.TimeZone = d.TimeZone
+		}
+		if d.TimeGrain != runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
+			res.Compute = &metricsview.DimensionCompute{
+				TimeFloor: &metricsview.DimensionComputeTimeFloor{
+					Dimension: d.Name,
+					Grain:     metricsview.TimeGrainFromProto(d.TimeGrain),
+				},
+			}
+		}
+		qry.Dimensions = append(qry.Dimensions, res)
+	}
+
+	for _, m := range q.Measures {
+		res := metricsview.Measure{Name: m.Name}
+		switch m.BuiltinMeasure {
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
+			res.Compute = &metricsview.MeasureCompute{Count: true}
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
+			res.Compute = &metricsview.MeasureCompute{CountDistinct: &metricsview.MeasureComputeCountDistinct{
+				Dimension: m.BuiltinMeasureArgs[0].GetStringValue(),
+			}}
+		}
+
+		// Measure filters not supported yet
+		if m.Filter != nil {
+			return nil, false, nil
+		}
+
+		if m.Compute != nil {
+			switch c := m.Compute.(type) {
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+				res.Compute = &metricsview.MeasureCompute{ComparisonValue: &metricsview.MeasureComputeComparisonValue{
+					Measure: c.ComparisonValue.Measure,
+				}}
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+				res.Compute = &metricsview.MeasureCompute{ComparisonDelta: &metricsview.MeasureComputeComparisonDelta{
+					Measure: c.ComparisonDelta.Measure,
+				}}
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+				res.Compute = &metricsview.MeasureCompute{ComparisonRatio: &metricsview.MeasureComputeComparisonRatio{
+					Measure: c.ComparisonRatio.Measure,
+				}}
+			}
+		}
+
+		qry.Measures = append(qry.Measures, res)
+	}
+
+	for _, s := range q.Sort {
+		qry.Sort = append(qry.Sort, metricsview.Sort{
+			Name: s.Name,
+			Desc: s.Desc,
+		})
+	}
+
+	if q.TimeRange != nil {
+		res := &metricsview.TimeRange{}
+		if q.TimeRange.Start != nil {
+			res.Start = q.TimeRange.Start.AsTime()
+		}
+		if q.TimeRange.End != nil {
+			res.End = q.TimeRange.End.AsTime()
+		}
+		res.IsoDuration = q.TimeRange.IsoDuration
+		res.IsoOffset = q.TimeRange.IsoOffset
+		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
+		qry.TimeRange = res
+	}
+
+	if q.ComparisonTimeRange != nil {
+		res := &metricsview.TimeRange{}
+		if q.ComparisonTimeRange.Start != nil {
+			res.Start = q.ComparisonTimeRange.Start.AsTime()
+		}
+		if q.ComparisonTimeRange.End != nil {
+			res.End = q.ComparisonTimeRange.End.AsTime()
+		}
+		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
+		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
+		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)
+		qry.ComparisonTimeRange = res
+	}
+
+	if q.Filter != nil { // backwards backwards compatibility
+		if q.Where != nil {
+			return nil, false, fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
+	}
+
+	if q.Where != nil {
+		qry.Where = rewriteToMetricsResolverExpression(q.Where)
+	}
+
+	if q.Having != nil {
+		qry.Having = rewriteToMetricsResolverExpression(q.Having)
+	}
+
+	if q.Limit != nil {
+		if *q.Limit == 0 {
+			tmp := int64(100)
+			q.Limit = &tmp
+		}
+		tmp := int(*q.Limit)
+		qry.Limit = &tmp
+	}
+
+	if q.Offset != 0 {
+		tmp := int(q.Offset)
+		qry.Offset = &tmp
+	}
+
+	if len(q.PivotOn) > 0 {
+		qry.PivotOn = q.PivotOn
+	}
+
+	qry.Label = q.Exporting
+
+	return qry, true, nil
 }
