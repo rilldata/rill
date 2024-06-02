@@ -26,6 +26,9 @@
   import { getPivotConfig } from "./pivot-data-store";
   import { isTimeDimension } from "./pivot-utils";
   import type { PivotDataRow, PivotDataStore } from "./types";
+  import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -175,6 +178,7 @@
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
+      if (hovering) hovering = null;
       const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
       scrollLeft = containerRefElement.scrollLeft;
@@ -229,6 +233,55 @@
 
     percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
   }
+
+  let showTooltip = false;
+  let hoverPosition: DOMRect;
+  let hovering: HoveringData | null = null;
+  let timer: ReturnType<typeof setTimeout>;
+
+  type HoveringData = {
+    value: string | number | null;
+  };
+
+  function handleHover(
+    e: MouseEvent & {
+      currentTarget: EventTarget & HTMLElement;
+    },
+  ) {
+    hoverPosition = e.currentTarget.getBoundingClientRect();
+
+    const value = e.currentTarget.dataset.value;
+
+    if (value === undefined) return;
+
+    hovering = {
+      value,
+    };
+
+    timer = setTimeout(() => {
+      showTooltip = true;
+    }, 250);
+  }
+
+  function handleLeave() {
+    clearTimeout(timer);
+    showTooltip = false;
+    hovering = null;
+  }
+
+  function handleClick(e: MouseEvent) {
+    if (!isElement(e.target)) return;
+
+    const value = e.target.dataset.value;
+
+    if (value === undefined) return;
+
+    copyToClipboard(value);
+  }
+
+  function isElement(target: EventTarget | null): target is HTMLElement {
+    return target instanceof HTMLElement;
+  }
 </script>
 
 <div
@@ -240,7 +293,11 @@
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
-  <table style:width="{totalLength}px">
+  <table
+    style:width="{totalLength}px"
+    on:click={modified({ shift: handleClick })}
+    role="presentation"
+  >
     {#if firstColumnName && firstColumnWidth}
       <colgroup>
         <col
@@ -330,9 +387,12 @@
             <td
               class="ui-copy-number"
               class:border-r={i % measureCount === 0 && i}
+              on:mouseenter={handleHover}
+              on:mouseleave={handleLeave}
+              data-value={cell.getValue()}
               class:totals-column={i > 0 && i <= measureCount}
             >
-              <div class="cell">
+              <div class="cell pointer-events-none" role="presentation">
                 {#if result?.component && result?.props}
                   <svelte:component
                     this={result.component}
@@ -358,6 +418,10 @@
     </tbody>
   </table>
 </div>
+
+{#if showTooltip && hovering}
+  <VirtualTooltip sortable={true} {hovering} {hoverPosition} pinned={false} />
+{/if}
 
 <style lang="postcss">
   * {
