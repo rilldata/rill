@@ -534,6 +534,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -561,12 +567,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -763,13 +763,6 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -796,6 +789,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1112,6 +1112,21 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  inlineMeasures?: V1InlineMeasure[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  where?: V1Expression;
+  having?: V1Expression;
+  timeZone?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1172,21 +1187,6 @@ export interface V1MetricsViewRowsResponse {
 export interface V1MetricsViewFilter {
   include?: MetricsViewFilterCond[];
   exclude?: MetricsViewFilterCond[];
-}
-
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  where?: V1Expression;
-  having?: V1Expression;
-  timeZone?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewRowsRequest {
@@ -1268,25 +1268,6 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1303,6 +1284,27 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  where?: V1Expression;
+  having?: V1Expression;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
@@ -1344,25 +1346,23 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
-export interface V1MetricsViewAggregationRequest {
+export interface V1MetricsViewComparisonRequest {
   instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
   measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
   priority?: number;
-  filter?: V1MetricsViewFilter;
   exact?: boolean;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MapType {
@@ -1409,6 +1409,27 @@ export interface V1ListFilesResponse {
 
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
+}
+
+/**
+ * ConnectorDriver represents a connector driver available in the runtime.
+ */
+export interface V1ConnectorDriver {
+  name?: string;
+  configProperties?: ConnectorDriverProperty[];
+  sourceProperties?: ConnectorDriverProperty[];
+  displayName?: string;
+  description?: string;
+  implementsRegistry?: boolean;
+  implementsCatalog?: boolean;
+  implementsRepo?: boolean;
+  implementsAdmin?: boolean;
+  implementsAi?: boolean;
+  implementsSqlStore?: boolean;
+  implementsOlap?: boolean;
+  implementsObjectStore?: boolean;
+  implementsFileStore?: boolean;
+  implementsNotifier?: boolean;
 }
 
 export interface V1ListConnectorDriversResponse {
@@ -1653,7 +1674,6 @@ export interface V1ConnectorState {
   [key: string]: any;
 }
 
-<<<<<<< HEAD
 export interface V1ConnectorV2 {
   spec?: V1ConnectorSpec;
   state?: V1ConnectorState;
@@ -1665,8 +1685,6 @@ NOTE : properties_from_variables and properties both should be used to get all p
  */
 export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 
-=======
->>>>>>> origin/main
 export type V1ConnectorSpecProperties = { [key: string]: string };
 
 export interface V1ConnectorSpec {
@@ -1675,32 +1693,6 @@ export interface V1ConnectorSpec {
   /** properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
-}
-
-export interface V1ConnectorV2 {
-  spec?: V1ConnectorSpec;
-  state?: V1ConnectorState;
-}
-
-/**
- * ConnectorDriver represents a connector driver available in the runtime.
- */
-export interface V1ConnectorDriver {
-  name?: string;
-  configProperties?: ConnectorDriverProperty[];
-  sourceProperties?: ConnectorDriverProperty[];
-  displayName?: string;
-  description?: string;
-  implementsRegistry?: boolean;
-  implementsCatalog?: boolean;
-  implementsRepo?: boolean;
-  implementsAdmin?: boolean;
-  implementsAi?: boolean;
-  implementsSqlStore?: boolean;
-  implementsOlap?: boolean;
-  implementsObjectStore?: boolean;
-  implementsFileStore?: boolean;
-  implementsNotifier?: boolean;
 }
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };
@@ -1879,6 +1871,10 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -1905,10 +1901,6 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -1923,6 +1915,10 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1933,10 +1929,6 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
-}
-
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
