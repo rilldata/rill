@@ -83,7 +83,7 @@ var spec = drivers.Spec{
 			Required:    true,
 			DisplayName: "Port",
 			Description: "Port number of the Druid server",
-			Placeholder: "9000",
+			Placeholder: "8888",
 		},
 		{
 			Key:         "username",
