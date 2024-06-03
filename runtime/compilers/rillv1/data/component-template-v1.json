@@ -1,60 +1,112 @@
 {
-    "$schema": "http://json-schema.org/draft-07/schema#",
-    "type": "object",
-    "anyOf": [
+  "$ref": "#/definitions/TemplateSpec",
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "definitions": {
+    "TemplateSpec": {
+      "anyOf": [
         {
-            "additionalProperties": false,
-            "properties": {
-                "name": {
-                    "const": "line"
-                },
-                "x": {
-                    "type": "string"
-                },
-                "y": {
-                    "type": "string"
-                },
-                "x_label": {
-                    "type": "string"
-                },
-                "y_label": {
-                    "type": "string"
-                }
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "const": "line",
+              "type": "string"
             },
-            "required": [
-                "name",
-                "x",
-                "y",
-                "x_label",
-                "y_label"
-            ]
+            "x": {
+              "type": "string"
+            },
+            "xLabel": {
+              "type": "string"
+            },
+            "y": {
+              "type": "string"
+            },
+            "yLabel": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "x",
+            "y"
+          ],
+          "type": "object"
         },
         {
-            "additionalProperties": false,
-            "properties": {
-                "name": {
-                    "const": "bar"
-                },
-                "x": {
-                    "type": "string"
-                },
-                "y": {
-                    "type": "string"
-                },
-                "x_label": {
-                    "type": "string"
-                },
-                "y_label": {
-                    "type": "string"
-                }
+          "additionalProperties": false,
+          "properties": {
+            "name": {
+              "const": "bar",
+              "type": "string"
             },
-            "required": [
-                "name",
-                "x",
-                "y",
-                "x_label",
-                "y_label"
-            ]
+            "x": {
+              "type": "string"
+            },
+            "xLabel": {
+              "type": "string"
+            },
+            "y": {
+              "type": "string"
+            },
+            "yLabel": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name",
+            "x",
+            "y"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "measure": {
+              "type": "string"
+            },
+            "name": {
+              "const": "kpi",
+              "type": "string"
+            },
+            "title": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "measure",
+            "name",
+            "title"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "columns": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "name": {
+              "const": "table",
+              "type": "string"
+            },
+            "rows": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            }
+          },
+          "required": [
+            "columns",
+            "name",
+            "rows"
+          ],
+          "type": "object"
         }
-    ]    
+      ]
+    }
+  }
 }
