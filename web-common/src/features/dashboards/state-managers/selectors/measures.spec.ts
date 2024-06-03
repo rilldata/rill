@@ -1,4 +1,4 @@
-import { getMeasuresAndDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { getFilteredMeasuresAndDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import {
   V1MetricsViewSpec,
@@ -7,7 +7,7 @@ import {
 import { describe, it, expect } from "vitest";
 
 describe("measures selectors", () => {
-  describe("getMeasuresAndDimensions", () => {
+  describe("getFilteredMeasuresAndDimensions", () => {
     const TestCases = [
       {
         title: "with unspecified grains, selected DAY",
@@ -119,7 +119,7 @@ describe("measures selectors", () => {
     for (const { title, measures, timeGrain, expected } of TestCases) {
       it(title, () => {
         expect(
-          getMeasuresAndDimensions({
+          getFilteredMeasuresAndDimensions({
             dashboard: {
               selectedTimeRange: {
                 interval: timeGrain,

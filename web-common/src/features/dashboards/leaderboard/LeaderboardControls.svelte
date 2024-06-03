@@ -3,7 +3,7 @@
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { createShowHideDimensionsStore } from "@rilldata/web-common/features/dashboards/show-hide-selectors";
-  import { filterBasicMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+  import { filterAdvancedMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
   import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
@@ -19,6 +19,9 @@
   export let metricViewName;
 
   const {
+    selectors: {
+      measures: { filteredBasicMeasures },
+    },
     actions: {
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
@@ -27,9 +30,7 @@
 
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
-  $: measures = $metricsView.data?.measures
-    ? filterBasicMeasures($metricsView.data.measures)
-    : undefined;
+  $: measures = $filteredBasicMeasures(false);
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
