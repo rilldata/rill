@@ -537,6 +537,7 @@ message ConnectorSpec {
 }
 
 message ConnectorState {
+  string spec_hash = 1;
 }
 
 message ConnectorV2 {

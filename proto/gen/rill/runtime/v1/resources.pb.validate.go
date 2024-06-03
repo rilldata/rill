@@ -9266,6 +9266,8 @@ func (m *ConnectorState) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for SpecHash
+
 	if len(errors) > 0 {
 		return ConnectorStateMultiError(errors)
 	}
