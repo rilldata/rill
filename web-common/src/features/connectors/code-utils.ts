@@ -26,9 +26,14 @@ driver: ${connector.name}`;
 
   // Compile key value pairs
   const compiledKeyValues = Object.entries(formValues)
-    // Remove the secrets
-    .filter(([key]) => !secretKeys.includes(key))
-    .map(([key, value]) => `${key}: "${value}"`)
+    .map(([key, value]) =>
+      secretKeys.includes(key)
+        ? `${key}: "{{ .vars.${makeDotEnvConnectorKey(
+            connector.name as string,
+            key,
+          )} }}"`
+        : `${key}: "${value}"`,
+    )
     .join("\n");
 
   // Return the compiled YAML
