@@ -10,7 +10,6 @@
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
