@@ -1565,7 +1565,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 						FROM %[3]s %[7]s 
 						WHERE (%[4]s)
 						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(measuresWithCase(cw+" = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+` 
+						ORDER BY `+strings.Join(convertToNullCaseClauses(cw+" = 1", sortConstructs), ",")+" "+subqueryLimitClause+` 
 					) base
 				LEFT OUTER JOIN
 					(
@@ -1576,13 +1576,13 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 						FROM %[3]s %[7]s 
 						WHERE (%[5]s) 
 						GROUP BY %[2]s, %[10]d 
-						ORDER BY `+strings.Join(measuresWithCase(cw+" = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+`
+						ORDER BY `+strings.Join(convertToNullCaseClauses(cw+" = 1", sortConstructs), ",")+" "+subqueryLimitClause+`
 					) comparison
 				ON
 						`+strings.Join(append(joinConditions, "base."+cw+"= comparison."+cw), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
 			)
 				`+outerWhereClause+` -- WHERE d1 = 'having_value'
-				ORDER BY `+strings.Join(measuresWithCase(cw+"= 1", "null", outerSortConstructs), ",")+` -- ORDER BY d1, ...
+				ORDER BY `+strings.Join(convertToNullCaseClauses(cw+"= 1", outerSortConstructs), ",")+` -- ORDER BY d1, ...
 				`+limitClause+`
 				OFFSET %[8]d
 			`,
@@ -1675,7 +1675,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 						FROM %[3]s %[6]s 
 						WHERE %[4]s 
 						GROUP BY %[2]s, %[7]d 
-						ORDER BY `+strings.Join(slices.Concat(measuresWithCase(cw+"= 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+`
+						ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+`
 					) base
 				LEFT JOIN
 					(
@@ -1684,13 +1684,13 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 						FROM %[3]s %[6]s 
 						WHERE %[5]s 
 						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(slices.Concat(measuresWithCase(cw+"= 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+` 
+						ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+` 
 					) comparison
 				ON
 				-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
 						`+strings.Join(append(joinConditions, "base."+cw+" = comparison."+cw), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
 				GROUP BY `+strings.Join(outerGroupCols, ",")+", coalesce(base."+cw+",comparison."+cw+") "+havingWhereClause+`
-				ORDER BY `+strings.Join(slices.Concat(measuresWithCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", outerSortConstructs)), ",")+` -- ORDER BY d1, ...
+				ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses("coalesce(base."+cw+",comparison."+cw+") = 1", outerSortConstructs)), ",")+` -- ORDER BY d1, ...
 				`+limitClause+`
 				OFFSET %[8]d
 			`,
@@ -1720,13 +1720,13 @@ type SortConstruct struct {
 	dim        bool
 }
 
-func measuresWithCase(cond, output2 string, sortConstructs []*SortConstruct) []string {
+func convertToNullCaseClauses(cond string, sortConstructs []*SortConstruct) []string {
 	cs := make([]string, len(sortConstructs))
 	for i, sc := range sortConstructs {
 		if sc.dim {
 			cs[i] = sc.expression + " " + sc.ending
 		} else {
-			cs[i] = "CASE WHEN " + cond + " THEN " + sc.expression + " ELSE " + output2 + " END " + sc.ending
+			cs[i] = "CASE WHEN " + cond + " THEN " + sc.expression + " ELSE null END " + sc.ending
 		}
 	}
 	return cs
