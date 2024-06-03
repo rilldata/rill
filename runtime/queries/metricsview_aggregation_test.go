@@ -2247,13 +2247,13 @@ func TestMetricsViewsAggregation_comparison_having_of_comparison(t *testing.T) {
 		Having: expressionpb.Gt("measure_0__p", 0.0),
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "timestamp",
-			},
-			{
 				Name: "pub",
 			},
 			{
 				Name: "dom",
+			},
+			{
+				Name: "timestamp",
 			},
 			{
 				Name: "timestamp_year",
@@ -3220,13 +3220,13 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 		Having: expressionpb.Gt("measure_1", 0.0),
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "timestamp",
-			},
-			{
 				Name: "pub",
 			},
 			{
 				Name: "dom",
+			},
+			{
+				Name: "timestamp",
 			},
 			{
 				Name: "timestamp_year",
@@ -3583,13 +3583,13 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 		Having: expressionpb.Gt("measure_1", 0.0),
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "__time",
-			},
-			{
 				Name: "pub",
 			},
 			{
 				Name: "dom",
+			},
+			{
+				Name: "__time",
 			},
 			{
 				Name: "timestamp_year",
@@ -3866,6 +3866,148 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testi
 	require.Equal(t, "Yahoo,news.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "m1", "m1_p", "__time__previous", "timestamp_year__previous"))
 	i++
 	require.Equal(t, "Yahoo,sports.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "m1", "m1_p", "__time__previous", "timestamp_year__previous"))
+}
+
+func IgnoreTestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+
+	limit := int64(2)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		// Having: expressionpb.Gt("measure_1", 0.0),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:  &limit,
+		Offset: 1,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "dom,m1,m1__p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "news.yahoo.com,1.50,1.53", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "news.google.com,3.59,3.69", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+}
+
+func TestMetricsViewsAggregation_comparison_with_offset(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(2)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		// Having: expressionpb.Gt("measure_1", 0.0),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:  &limit,
+		Offset: 1,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "dom,m1,m1__p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "news.yahoo.com,1.50,1.53", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "news.google.com,3.59,3.69", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
 }
 
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {
