@@ -36,17 +36,15 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 			C.name AS COLUMNS,
 			C.type AS COLUMN_TYPE,
 			C.position AS ORDINAL_POSITION
-		FROM system.tables AS T
-		INNER JOIN system.columns AS C ON (T.database = C.database) AND (T.name = C.table)
+		FROM system.tables T
+		JOIN system.columns C ON T.database = C.database AND T.name = C.table
 		WHERE lower(T.database) NOT IN ('information_schema', 'system') 
-		ORDER BY SCHEMA ASC, NAME ASC, TABLE_TYPE ASC, ORDINAL_POSITION ASC
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 
 	rows, err := conn.QueryxContext(ctx, q)
 	if err != nil {
-		if err != nil {
-			return nil, err
-		}
+		return nil, err
 	}
 	defer rows.Close()
 
@@ -76,10 +74,10 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 			C.name AS COLUMNS,
 			C.type AS COLUMN_TYPE,
 			C.position AS ORDINAL_POSITION
-		FROM system.tables AS T
-		INNER JOIN system.columns AS C ON (T.database = C.database) AND (T.name = C.table)
+		FROM system.tables T
+		JOIN system.columns C ON T.database = C.database AND T.name = C.table
 		WHERE T.database = coalesce(?, currentDatabase()) AND T.name = ?
-		ORDER BY SCHEMA ASC, NAME ASC, TABLE_TYPE ASC, ORDINAL_POSITION ASC
+		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
 	`
 	if schema == "" {
 		args = append(args, nil, name)
