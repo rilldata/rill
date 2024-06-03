@@ -58,7 +58,7 @@ func propertiesFromVariables(in map[string]string) (map[string]string, map[strin
 		}
 		// property uses variables
 		if len(meta.Variables) > 1 {
-			return nil, nil, fmt.Errorf("connector property should contain atmost one variable. Property %q contains %q", key, len(meta.Variables))
+			return nil, nil, fmt.Errorf("connector property should contain atmost one variable. Property %q contains %v", key, len(meta.Variables))
 		}
 		if !envVarRegex.MatchString(val) {
 			return nil, nil, fmt.Errorf("invalid property %q. When accessing a variable in a connector property, the value should match the form `{{ .vars.variable }}`", key)
