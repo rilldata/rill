@@ -25,6 +25,7 @@ import { get } from "svelte/store";
 const MainResourceKinds: {
   [kind in ResourceKind]?: true;
 } = {
+  [ResourceKind.Connector]: true,
   [ResourceKind.Source]: true,
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
@@ -217,6 +218,10 @@ export class WatchResourcesClient {
   }
 
   private shouldInvalidateOLAPTables(resource: V1Resource) {
+    if (resource.meta?.name?.kind === ResourceKind.Connector) {
+      return true;
+    }
+
     if (
       resource.meta?.name?.kind !== ResourceKind.Source &&
       resource.meta?.name?.kind !== ResourceKind.Model

@@ -68,6 +68,17 @@ var spec = drivers.Spec{
 			Required:    false,
 		},
 	},
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "DSN",
+			Description: "Connection string",
+			Placeholder: "http(s)://username:password@localhost:9000",
+			Secret:      true,
+		},
+	},
 	ImplementsOLAP: true,
 }
 
