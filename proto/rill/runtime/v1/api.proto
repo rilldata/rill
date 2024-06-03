@@ -251,6 +251,8 @@ message Connector {
   string name = 2;
   // Config for the connector
   map<string, string> config = 3;
+  // config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
+  map<string, string> config_from_variables = 4;
 }
 
 // Request message for RuntimeService.ListInstances
