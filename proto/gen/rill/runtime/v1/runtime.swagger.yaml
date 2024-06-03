@@ -3507,6 +3507,9 @@ definitions:
           type: string
   v1ConnectorState:
     type: object
+    properties:
+      specHash:
+        type: string
   v1ConnectorV2:
     type: object
     properties:

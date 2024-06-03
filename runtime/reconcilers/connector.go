@@ -2,12 +2,14 @@ package reconcilers
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"errors"
 	"fmt"
+	"sort"
 
 	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 )
 
 func init() {
@@ -60,39 +62,70 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{Err: errors.New("not a connector")}
 	}
 
-	// Get and sync repo
-	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
-	}
-	defer release()
-	err = repo.Sync(ctx)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
-	}
-
-	// Get instance
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to find instance: %w", err)}
-	}
-
-	// Parse the project
-	parser, err := rillv1.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
-	}
-
-	// Update instance connectors
-	err = r.C.Runtime.UpdateInstanceWithRillYAML(ctx, inst.ID, parser, false)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to update instance: %w", err)}
-	}
-
 	// Exit early for deletion
 	if self.Meta.DeletedOn != nil {
+		err = r.C.Runtime.UpdateInstanceConnector(ctx, r.C.InstanceID, self.Meta.Name.Name, nil)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
 		return runtime.ReconcileResult{}
 	}
 
+	// Check if the spec has changed
+	specHash, err := r.executionSpecHash(t.Spec)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
+	if t.State != nil && specHash == t.State.SpecHash {
+		return runtime.ReconcileResult{}
+	}
+
+	// Update instance connectors
+	err = r.C.Runtime.UpdateInstanceConnector(ctx, r.C.InstanceID, self.Meta.Name.Name, t.Spec)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
+	if t.State == nil {
+		t.State = &runtimev1.ConnectorState{}
+	}
+	t.State.SpecHash = specHash
+
+	err = r.C.UpdateState(ctx, self.Meta.Name, self)
+	if err != nil {
+		return runtime.ReconcileResult{Err: err}
+	}
+
 	return runtime.ReconcileResult{}
+}
+
+func (r *ConnectorReconciler) executionSpecHash(spec *runtimev1.ConnectorSpec) (string, error) {
+	hash := md5.New()
+
+	_, err := hash.Write([]byte(spec.Driver))
+	if err != nil {
+		return "", err
+	}
+
+	// sort properties by key
+	keys := make([]string, 0, len(spec.Properties))
+	for k := range spec.Properties {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// write properties to hash
+	for _, k := range keys {
+		_, err = hash.Write([]byte(k))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(spec.Properties[k]))
+		if err != nil {
+			return "", err
+		}
+	}
+
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }

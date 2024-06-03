@@ -166,6 +166,37 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	return r.EditInstance(ctx, inst, restartController)
 }
 
+// UpdateInstanceConnector upserts or removes a connector from an instance
+// If connector is nil, the connector is removed; otherwise, it is upserted
+func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name string, connector *runtimev1.ConnectorSpec) error {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	// remove the connector if it exists
+	for i, c := range inst.ProjectConnectors {
+		if c.Name == name {
+			inst.ProjectConnectors = append(inst.ProjectConnectors[:i], inst.ProjectConnectors[i+1:]...)
+			break
+		}
+	}
+
+	if connector == nil {
+		// connector should be removed
+		return r.EditInstance(ctx, inst, false)
+	}
+
+	// append the new/updated connector
+	inst.ProjectConnectors = append(inst.ProjectConnectors, &runtimev1.Connector{
+		Name:   name,
+		Type:   connector.Driver,
+		Config: connector.Properties,
+	})
+
+	return r.EditInstance(ctx, inst, false)
+}
+
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {
 	attrs := make([]attribute.KeyValue, 0, len(instance.Annotations)+1)
 	attrs = append(attrs, attribute.String("instance_id", instance.ID))

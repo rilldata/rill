@@ -1650,7 +1650,7 @@ export interface V1CreateDirectoryResponse {
 }
 
 export interface V1ConnectorState {
-  [key: string]: any;
+  specHash?: string;
 }
 
 export interface V1ConnectorV2 {
