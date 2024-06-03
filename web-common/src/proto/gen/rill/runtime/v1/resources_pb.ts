@@ -3752,6 +3752,11 @@ export class ConnectorSpec extends Message<ConnectorSpec> {
  * @generated from message rill.runtime.v1.ConnectorState
  */
 export class ConnectorState extends Message<ConnectorState> {
+  /**
+   * @generated from field: string spec_hash = 1;
+   */
+  specHash = "";
+
   constructor(data?: PartialMessage<ConnectorState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3760,6 +3765,7 @@ export class ConnectorState extends Message<ConnectorState> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.ConnectorState";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "spec_hash", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorState {
