@@ -9164,6 +9164,8 @@ func (m *ConnectorSpec) validate(all bool) error {
 
 	// no validation rules for Properties
 
+	// no validation rules for PropertiesFromVariables
+
 	if len(errors) > 0 {
 		return ConnectorSpecMultiError(errors)
 	}
