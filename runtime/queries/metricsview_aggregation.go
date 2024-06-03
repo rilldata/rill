@@ -2108,8 +2108,8 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	for _, s := range q.Sort {
 		var outerClause, subQueryClause string
 		if dimByName[s.Name] != nil { // dimension
-			outerClause = fmt.Sprintf("%d", colMap[s.Name])
-			subQueryClause = fmt.Sprintf("%d", colMap[s.Name]+1)
+			outerClause = fmt.Sprintf("%d", colMap[s.Name]-1)
+			subQueryClause = fmt.Sprintf("%d", colMap[s.Name])
 		} else if measuresByFinalName[s.Name] != nil { // measure
 			m := measuresByFinalName[s.Name]
 			outerClause = s.Name
@@ -2144,7 +2144,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 
 	limitClause := ""
 	if q.Limit != nil && *q.Limit > 0 {
-		limitClause = fmt.Sprintf(" LIMIT %d", q.Limit)
+		limitClause = fmt.Sprintf(" LIMIT %d", *q.Limit)
 	}
 
 	baseLimitClause := ""
@@ -2174,18 +2174,19 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		if limit != 0 && limit < 100 && deltaComparison {
 			approximationLimit = 100
 		}
+		approximationLimit = (approximationLimit + int(q.Offset)) * 2
 
 		if len(q.Sort) == 0 || !comparisonSort {
 			joinType = "LEFT OUTER"
 			baseLimitClause = baseSubQueryOrderByClause
 			if approximationLimit > 0 {
-				baseLimitClause += fmt.Sprintf(" LIMIT %d OFFSET %d", approximationLimit, q.Offset)
+				baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
 		} else {
 			joinType = "RIGHT OUTER"
 			comparisonLimitClause = comparisonSubQueryOrderByClause
 			if approximationLimit > 0 {
-				comparisonLimitClause += fmt.Sprintf(" LIMIT %d OFFSET %d", approximationLimit, q.Offset)
+				comparisonLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
 			}
 		}
 	}
@@ -2260,7 +2261,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		// to keep the clause builder consistent we add an outer query here.
 		sql = fmt.Sprintf(`
 				SELECT * from (
-					-- SELECT d1, d2, d3, td1, td2, m1, m2 ... , td1__previous, td2__previous
+					-- SELECT base.d1 d1, base.d2 d2, base.timed1 td1, base.m1 m1, comparison.m2 m2 ... , comparison.timed1 td1__previous, ...
 					SELECT %[2]s %[18]s FROM 
 						(
 							-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ...
@@ -2270,13 +2271,12 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 						(
 							SELECT %[16]s FROM %[3]s %[14]s WHERE %[5]s GROUP BY %[10]s %[13]s 
 						) comparison
-					ON
-							%[17]s
+					ON %[17]s
 					%[6]s
-					%[7]s
-					OFFSET
-						%[8]d
 				) WHERE 1=1 AND %[15]s 
+				%[7]s
+				OFFSET %[8]d
+
 			`,
 			baseSelectClause, // 1
 			strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ","), // 2
@@ -2399,7 +2399,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 
 			sql = fmt.Sprintf(`
 				SELECT * from (
-					-- SELECT d1, d2, d3, td1, td2, m1, m2 ... 
+					-- SELECT base.d1 d1, base.d2 d2, base.timed1 td1, base.m1 m1, comparison.m2 m2 ... , comparison.timed1 td1__previous, ...
 					SELECT %[2]s %[20]s FROM 
 						(
 							-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ... 
@@ -2412,12 +2412,12 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 					ON
 					-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
 							%[17]s
-					%[19]s
-					%[6]s
-					%[7]s
-					OFFSET
-						%[8]d
+					%[19]s -- GROUP BY ...
+					%[6]s -- ORDER BY ...
 				) WHERE 1=1 AND %[15]s 
+				%[7]s -- LIMIT ...
+				OFFSET %[8]d
+
 			`,
 				baseSelectClause, // 1
 				strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ","), // 2

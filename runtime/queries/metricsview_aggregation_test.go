@@ -2248,13 +2248,13 @@ func TestMetricsViewsAggregation_comparison_having_of_comparison(t *testing.T) {
 		Having: expressionpb.Gt("measure_0__p", 0.0),
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "timestamp",
-			},
-			{
 				Name: "pub",
 			},
 			{
 				Name: "dom",
+			},
+			{
+				Name: "timestamp",
 			},
 			{
 				Name: "timestamp_year",
@@ -3526,13 +3526,13 @@ func TestMetricsViewsAggregation_comparison(t *testing.T) {
 		Having: expressionpb.Gt("measure_1", 0.0),
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "timestamp",
-			},
-			{
 				Name: "pub",
 			},
 			{
 				Name: "dom",
+			},
+			{
+				Name: "timestamp",
 			},
 			{
 				Name: "timestamp_year",
@@ -3898,13 +3898,13 @@ func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 		Having: expressionpb.Gt("measure_1", 0.0),
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "__time",
-			},
-			{
 				Name: "pub",
 			},
 			{
 				Name: "dom",
+			},
+			{
+				Name: "__time",
 			},
 			{
 				Name: "timestamp_year",
