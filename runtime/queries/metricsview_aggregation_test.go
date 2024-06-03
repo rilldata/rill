@@ -3,6 +3,7 @@ package queries_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -2393,7 +2394,11 @@ func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 	require.Equal(t, "Yahoo,news.yahoo.com,106.00,106.00,1.50,1.50", fieldsToString2digits(rows[i], "pub", "dom", "measure_0", "measure_0__p", "measure_1", "m1"))
 }
 
-func Ignore_TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
+
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2527,7 +2532,10 @@ func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
 	require.Equal(t, "463.00,464.00,3.20,3.20", fieldsToString2digits(rows[i], "measure_0", "measure_0__p", "measure_1", "m1"))
 }
 
-func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *testing.T) {
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2735,7 +2743,10 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 	require.Equal(t, "Yahoo,sports.yahoo.com,null,null", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
 }
 
-func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_limit(t *testing.T) { // todo limit
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_limit(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(3)
@@ -3347,7 +3358,10 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 // 3. Run the test.
 //
 // metrics-in cluster requires proper authentication credentials in the DSN.
-func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3441,7 +3455,10 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *t
 	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,3.23,3.13,0.11,0.03,2022-01-02T00:00:00Z", fieldsToString2digits(rows[i], "pub", "timestamp_day", "m1", "m1__previous", "m1__delta_abs", "m1__delta_rel", "timestamp_day__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3536,7 +3553,10 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_orde
 	require.Equal(t, "Google,2022-01-01T00:00:00Z,3.17,3.18,-0.02,-0.00,2022-01-02T00:00:00Z", fieldsToString2digits(rows[i], "pub", "timestamp_day", "m1", "m1__previous", "m1__delta_abs", "m1__delta_rel", "timestamp_day__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3636,7 +3656,10 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "__time__previous", "timestamp_year__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *testing.T) {
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3751,7 +3774,10 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_hav
 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,3.55,3.74,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "m1", "m1_p", "__time__previous", "timestamp_year__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3871,7 +3897,10 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testi
 	require.Equal(t, "Yahoo,sports.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "m1", "m1_p", "__time__previous", "timestamp_year__previous"))
 }
 
-func IgnoreTestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
+func TestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(2)
