@@ -113,7 +113,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	// Importantly, limit to 0 rows
-	zero := 0
+	zero := int64(0)
 	qry.Limit = &zero
 
 	// Execute the query to get the schema
@@ -147,8 +147,12 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, runtime.ErrForbidden
 	}
 
-	err := e.rewriteQueryTimeRanges(ctx, qry, executionTime)
-	if err != nil {
+	export := qry.Label // TODO: Always set to false when separate exports are implemented
+	if err := e.rewriteQueryLimit(qry, export); err != nil {
+		return nil, false, err
+	}
+
+	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
 		return nil, false, err
 	}
 
@@ -170,6 +174,11 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 	})
 	if err != nil {
 		return nil, false, err
+	}
+
+	limitCap := e.queryLimitCap(export)
+	if limitCap > 0 {
+		res.SetCap(limitCap)
 	}
 
 	// TODO: Get from OLAP instead of hardcoding

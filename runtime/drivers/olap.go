@@ -58,6 +58,8 @@ type Result struct {
 	*sqlx.Rows
 	Schema    *runtimev1.StructType
 	cleanupFn func() error
+	cap       int64
+	rows      int64
 }
 
 // SetCleanupFunc sets a function, which will be called when the Result is closed.
@@ -66,6 +68,31 @@ func (r *Result) SetCleanupFunc(fn func() error) {
 		panic("cleanup function already set")
 	}
 	r.cleanupFn = fn
+}
+
+// SetCap caps the number of rows to return. If the number is exceeded, an error is returned.
+func (r *Result) SetCap(n int64) {
+	if r.cap > 0 {
+		panic("cap already set")
+	}
+	r.cap = n
+}
+
+// Next wraps rows.Next and enforces the cap set by SetCap.
+func (r *Result) Next() bool {
+	r.rows++
+	if r.cap > 0 && r.rows > r.cap {
+		return false
+	}
+	return r.Rows.Next()
+}
+
+// Err returns the error of the underlying rows.
+func (r *Result) Err() error {
+	if r.cap > 0 && r.rows > r.cap {
+		return fmt.Errorf("result cap exceeded: returned more than %d rows", r.cap)
+	}
+	return r.Rows.Err()
 }
 
 // Close wraps rows.Close and calls the Result's cleanup function (if it is set).

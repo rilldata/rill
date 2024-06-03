@@ -48,8 +48,8 @@ type SelectNode struct {
 	TimeWhere            *ExprNode        // Expression for the time range to add to the WHERE clause
 	Having               *ExprNode        // Expression for the HAVING clause. If HAVING is not allowed in the current context, it will added as a WHERE in a wrapping SELECT.
 	OrderBy              []OrderFieldNode // Fields to order by
-	Limit                *int             // Limit for the query
-	Offset               *int             // Offset for the query
+	Limit                *int64           // Limit for the query
+	Offset               *int64           // Offset for the query
 }
 
 // FieldNode represents a column in a SELECT clause. It also carries metadata related to the dimension/measure it was derived from.

@@ -3078,13 +3078,11 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 			tmp := int64(100)
 			q.Limit = &tmp
 		}
-		tmp := int(*q.Limit)
-		qry.Limit = &tmp
+		qry.Limit = q.Limit
 	}
 
 	if q.Offset != 0 {
-		tmp := int(q.Offset)
-		qry.Offset = &tmp
+		qry.Offset = &q.Offset
 	}
 
 	if len(q.PivotOn) > 0 {

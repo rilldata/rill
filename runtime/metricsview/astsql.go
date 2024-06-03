@@ -201,12 +201,12 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 	if n.Limit != nil {
 		b.out.WriteString(" LIMIT ")
-		b.out.WriteString(strconv.Itoa(*n.Limit))
+		b.out.WriteString(strconv.FormatInt(*n.Limit, 10))
 	}
 
 	if n.Offset != nil {
 		b.out.WriteString(" OFFSET ")
-		b.out.WriteString(strconv.Itoa(*n.Offset))
+		b.out.WriteString(strconv.FormatInt(*n.Offset, 10))
 	}
 
 	return nil
