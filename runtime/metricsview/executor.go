@@ -161,6 +161,14 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, err
 	}
 
+	if err := e.rewriteApproximateComparisons(ast); err != nil {
+		return nil, false, err
+	}
+
+	if err := e.rewriteDruidJoins(ast); err != nil {
+		return nil, false, err
+	}
+
 	sql, args, err := ast.SQL()
 	if err != nil {
 		return nil, false, err
