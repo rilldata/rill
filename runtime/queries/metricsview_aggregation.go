@@ -1374,8 +1374,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 		}
 	}
 
-	var orderClauses []string
-
 	/*
 		Dimensions are referenced by index because time dimensions have an issue with aliases in DuckDB
 		and other dimensions cannot be referenced by alias in Druid.
@@ -1404,7 +1402,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 		if dialect == drivers.DialectDuckDB {
 			ending += " NULLS LAST"
 		}
-		orderClauses = append(orderClauses, outerClause+ending)
 
 		if !dimClause {
 			sortConstructs = append(sortConstructs, &SortConstruct{
