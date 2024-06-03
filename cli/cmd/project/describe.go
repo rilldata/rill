@@ -113,6 +113,8 @@ func parseResourceKind(k string) string {
 		return runtime.ResourceKindDashboard
 	case "api":
 		return runtime.ResourceKindAPI
+	case "connector":
+		return runtime.ResourceKindConnector
 	default:
 		return k
 	}

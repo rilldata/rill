@@ -102,7 +102,7 @@ measures:
 		Connector:  "duckdb",
 		Table:      "bar",
 		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
-		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)"}},
+		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
@@ -1325,10 +1325,12 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {
@@ -1353,6 +1355,57 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		},
 	}
 	return metrics, metricsRes
+}
+
+func TestDedicatedConnector(t *testing.T) {
+	// Add source, model, and dashboard
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"rill.yaml": `
+connectors:
+- name: s3-integrated
+  type: s3
+`,
+		// Dedicated S3 connector
+		"/connectors/s3-dedicated.yaml": `
+driver: s3
+name: s3-dedicated
+region: us-west-2
+`,
+		// Dedicated GCS connector with a custom name
+		"/connectors/gcs-dedicated.yaml": `
+driver: gcs
+name: my-gcs
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	// Verify the dedicated connectors
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: "s3-dedicated"},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/connectors/s3-dedicated.yaml"},
+		},
+		Resource: &runtimev1.Resource_Connector{
+			Connector: &runtimev1.ConnectorV2{
+				Spec: &runtimev1.ConnectorSpec{Driver: "s3", Properties: map[string]string{"region": "us-west-2"}},
+			},
+		},
+	})
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: "my-gcs"},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/connectors/gcs-dedicated.yaml"},
+		},
+		Resource: &runtimev1.Resource_Connector{
+			Connector: &runtimev1.ConnectorV2{
+				Spec: &runtimev1.ConnectorSpec{Driver: "gcs"},
+			},
+		},
+	})
 }
 
 func must[T any](v T, err error) T {

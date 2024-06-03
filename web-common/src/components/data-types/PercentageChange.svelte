@@ -8,6 +8,7 @@
   export let customStyle = "";
   export let value: number | undefined | null | NumberParts | PERC_DIFF;
   export let tabularNumber = true;
+  export let assembled = true;
 
   let diffIsNegative = false;
   let intValue: string;
@@ -46,6 +47,7 @@
     // for percentages in the dimension table,
     // but this whole thing is a mess and needs to be cleaned up.
 
+    diffIsNegative = value < 0;
     intValue = Math.round(100 * value).toString();
     approxSign = Math.abs(value) < 0.005 ? "~" : "";
     negSign = "";
@@ -57,13 +59,13 @@
   {isNull}
   classes="{tabularNumber
     ? 'ui-copy-number'
-    : ''} font-normal w-full {customStyle} {inTable && 'block text-right'}"
+    : ''} w-full {customStyle} {inTable && 'block text-right'}"
   {dark}
 >
   <slot name="value">
     {#if isNoData}
       <span class="text-gray-400">-</span>
-    {:else if value !== null}
+    {:else if value !== null && assembled}
       <span class:text-red-500={diffIsNegative}>
         {approxSign}{negSign}{intValue}{suffix}<span class="opacity-50">%</span>
       </span>

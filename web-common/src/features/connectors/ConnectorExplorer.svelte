@@ -40,43 +40,48 @@
     />
   </button>
   {#if showConnectors}
-    {#if error}
-      <span class="message">
-        {error.message}
-      </span>
-    {:else if data?.connectors}
-      {#if data.connectors.length === 0}
-        <span class="message">No connectors found</span>
-      {:else}
-        <ol transition:slide={{ duration }}>
-          {#each data.connectors as connector (connector.name)}
-            <ConnectorEntry {connector} />
-          {/each}
-        </ol>
+    <div class="wrapper">
+      {#if error}
+        <span class="message">
+          {error.message}
+        </span>
+      {:else if data?.connectors}
+        {#if data.connectors.length === 0}
+          <span class="message">No connectors found</span>
+        {:else}
+          <ol transition:slide={{ duration }}>
+            {#each data.connectors as connector (connector.name)}
+              <ConnectorEntry {connector} />
+            {/each}
+          </ol>
+        {/if}
       {/if}
-    {/if}
+    </div>
   {/if}
 </section>
 
 <style lang="postcss">
   section {
-    @apply flex flex-col border-t border-t-gray-200 relative;
+    @apply flex flex-col relative;
+    @apply border-t border-t-gray-200;
   }
 
   button {
-    @apply flex justify-between items-center w-full pl-2 pr-3.5 pt-2 pb-2 text-gray-500;
+    @apply flex justify-between items-center w-full;
+    @apply pl-2 pr-3.5 py-2;
+    @apply text-gray-500;
   }
 
   button:hover {
-    @apply bg-gray-200;
+    @apply bg-slate-100;
   }
 
   h3 {
     @apply font-semibold text-[10px] uppercase;
   }
 
-  ol {
-    @apply flex flex-col;
+  .wrapper {
+    @apply overflow-auto;
   }
 
   .message {

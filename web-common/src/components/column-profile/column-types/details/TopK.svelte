@@ -8,9 +8,9 @@
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import {
     copyToClipboard,
-    createShiftClickAction,
     isClipboardApiSupported,
-  } from "@rilldata/web-common/lib/actions/shift-click-action";
+  } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { isNested } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
     formatBigNumberPercentage,
@@ -24,9 +24,6 @@
   import TopKListItem from "./TopKListItem.svelte";
 
   export let colorClass = "bg-primary-200";
-
-  const { shiftClickAction } = createShiftClickAction();
-
   export let topK: TopKEntry[] | undefined;
   export let totalRows: number;
   export let k = 15;
@@ -90,22 +87,23 @@
       >
         <svelte:fragment slot="title">
           <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
-            <div
+            <button
               style:font-size="12px"
               class="text-ellipsis overflow-hidden whitespace-nowrap"
-              use:shiftClickAction
-              on:shift-click={() =>
-                copyToClipboard(
-                  getCopyValue(type, item.value),
-                  `copied column value "${
-                    item.value === null
-                      ? "NULL"
-                      : getCopyValue(type, item.value)
-                  }" to clipboard`,
-                )}
+              on:click={modified({
+                shift: () =>
+                  copyToClipboard(
+                    getCopyValue(type, item.value),
+                    `copied column value "${
+                      item.value === null
+                        ? "NULL"
+                        : getCopyValue(type, item.value)
+                    }" to clipboard`,
+                  ),
+              })}
             >
               {formatDataType(item.value, type)}
-            </div>
+            </button>
             <TooltipContent slot="tooltip-content" maxWidth="300px">
               <TooltipTitle>
                 <svelte:fragment slot="name">
@@ -128,19 +126,20 @@
         </svelte:fragment>
         <svelte:fragment slot="right">
           <Tooltip {...tooltipProps} suppress={!isClipboardApiSupported()}>
-            <div
-              use:shiftClickAction
-              on:shift-click={() =>
-                copyToClipboard(
-                  item.count,
-                  `copied ${item.count} to clipboard`,
-                )}
+            <button
+              on:click={modified({
+                shift: () =>
+                  copyToClipboard(
+                    item.count,
+                    `copied ${item.count} to clipboard`,
+                  ),
+              })}
             >
               {formatInteger(item.count)}
               <span class="ui-copy-inactive pl-2">
                 {@html ensureSpaces(percentage)}</span
               >
-            </div>
+            </button>
             <TooltipContent slot="tooltip-content">
               <TooltipTitle>
                 <svelte:fragment slot="name"

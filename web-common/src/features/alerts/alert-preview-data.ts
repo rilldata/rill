@@ -3,11 +3,18 @@ import {
   AlertFormValues,
   getAlertQueryArgsFromFormValues,
 } from "@rilldata/web-common/features/alerts/form-utils";
-import { getLabelForFieldName } from "@rilldata/web-common/features/alerts/utils";
+import { getComparisonProperties } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
+import {
+  ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaPreviousSuffix,
+  ComparisonDeltaRelativeSuffix,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
 import {
   createQueryServiceMetricsViewAggregation,
   queryServiceMetricsViewAggregation,
+  StructTypeField,
+  TypeCode,
   type V1MetricsViewAggregationRequest,
   type V1MetricsViewAggregationResponseDataItem,
   type V1MetricsViewSpec,
@@ -52,6 +59,12 @@ function getAlertPreviewQueryRequest(
 ): V1MetricsViewAggregationRequest {
   const req = getAlertQueryArgsFromFormValues(formValues);
   req.limit = "50"; // arbitrary limit to make sure we do not pull too much of data
+  if (req.timeRange) {
+    req.timeRange.end = formValues.timeRange.end;
+  }
+  if (req.comparisonTimeRange) {
+    req.comparisonTimeRange.end = formValues.timeRange?.end;
+  }
   return req;
 }
 
@@ -65,21 +78,77 @@ function getAlertPreviewQueryOptions(
   AlertPreviewResponse
 > {
   return {
-    enabled: !!formValues.measure && !!metricsViewSpec,
+    enabled:
+      !!formValues.measure &&
+      !!metricsViewSpec &&
+      (!formValues.timeRange || !!formValues.timeRange.end) &&
+      (!formValues.comparisonTimeRange || !!formValues.comparisonTimeRange.end),
     select: (resp) => {
-      const rows = resp.data as V1MetricsViewAggregationResponseDataItem[];
-      const schema = resp.schema?.fields?.map((field) => {
-        return {
-          name: field.name,
-          type: field.type?.code,
-          label: getLabelForFieldName(
-            metricsViewSpec ?? {},
-            field.name as string,
-          ),
-        };
-      }) as VirtualizedTableColumns[];
-      return { rows, schema };
+      return {
+        rows: resp.data as V1MetricsViewAggregationResponseDataItem[],
+        schema: (resp.schema?.fields
+          ?.map((field) => getSchemaEntryForField(metricsViewSpec ?? {}, field))
+          .filter(Boolean) ?? []) as VirtualizedTableColumns[],
+      };
     },
     queryClient,
+  };
+}
+
+function getSchemaEntryForField(
+  metricsViewSpec: V1MetricsViewSpec,
+  field: StructTypeField,
+): VirtualizedTableColumns | undefined {
+  if (metricsViewSpec.dimensions) {
+    for (const dimension of metricsViewSpec.dimensions) {
+      if (dimension.name === field.name) {
+        return {
+          name: field.name as string,
+          type: field.type?.code ?? TypeCode.CODE_STRING,
+          label: dimension.label ?? field.name,
+          enableResize: false,
+          enableSorting: false,
+        };
+      }
+    }
+  }
+
+  if (metricsViewSpec.measures) {
+    for (const measure of metricsViewSpec.measures) {
+      if (measure.name + ComparisonDeltaPreviousSuffix === field.name)
+        return undefined;
+
+      let label: VirtualizedTableColumns["label"] = measure.label ?? field.name;
+      let format = measure.formatPreset;
+      let type: string = field.type?.code ?? TypeCode.CODE_STRING;
+      if (
+        measure.name + ComparisonDeltaAbsoluteSuffix === field.name ||
+        measure.name + ComparisonDeltaRelativeSuffix === field.name
+      ) {
+        const comparisonProps = getComparisonProperties(field.name, measure);
+        label = comparisonProps.component;
+        format = comparisonProps.format;
+        type = comparisonProps.type;
+      } else if (measure.name !== field.name) {
+        continue;
+      }
+
+      return {
+        name: field.name as string,
+        type,
+        label,
+        format,
+        enableResize: false,
+        enableSorting: false,
+      };
+    }
+  }
+
+  return {
+    name: field.name as string,
+    type: field.type?.code ?? TypeCode.CODE_STRING,
+    label: field.name,
+    enableResize: false,
+    enableSorting: false,
   };
 }

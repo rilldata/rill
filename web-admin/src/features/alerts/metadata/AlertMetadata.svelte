@@ -148,12 +148,13 @@
       metricsViewName={$dashboardName.data}
       filters={metricsViewAggregationRequest?.where}
       timeRange={metricsViewAggregationRequest?.timeRange}
+      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />
 
     <!-- Criteria -->
     <AlertFilterCriteria
-      metricsViewName={$dashboardName.data}
       filters={metricsViewAggregationRequest?.having}
+      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />
 
     <!-- Slack notification -->

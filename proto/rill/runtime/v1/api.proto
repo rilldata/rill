@@ -677,6 +677,8 @@ message AnalyzedConnector {
   bool has_anonymous_access = 7;
   // List of resources that appear to use the connector
   repeated ResourceName used_by = 8;
+  // Error message if the connector is misconfigured
+  string error_message = 9;
 }
 
 // Request message for RuntimeService.ListConnectorDrivers

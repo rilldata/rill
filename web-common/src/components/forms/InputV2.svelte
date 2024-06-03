@@ -14,6 +14,7 @@
   export let optional = false;
   export let claimFocusOnMount = false;
   export let alwaysShowError = false;
+  export let className = "";
 
   const dispatch = createEventDispatcher();
 
@@ -35,7 +36,7 @@
   }
 </script>
 
-<div class="flex flex-col gap-y-2">
+<div class="flex flex-col gap-y-2 {className}">
   {#if label}
     <div class="flex items-center gap-x-1">
       <label for={id} class="text-gray-800 text-sm font-medium">

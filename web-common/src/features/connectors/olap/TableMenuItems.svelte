@@ -11,13 +11,13 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { WandIcon } from "lucide-svelte";
-  import TableIcon from "../../components/icons/TableIcon.svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
-  import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromSource } from "../sources/createModel";
+  import TableIcon from "../../../components/icons/TableIcon.svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { featureFlags } from "../../feature-flags";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { createModelFromSource } from "../../sources/createModel";
   import { makeTablePreviewHref } from "./olap-config";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
-  import { featureFlags } from "../feature-flags";
 
   const { ai } = featureFlags;
 
