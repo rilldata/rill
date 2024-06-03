@@ -9616,6 +9616,258 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewSpec_DimensionV2ValidationError{}
 
+// Validate checks the field values on MetricsViewSpec_DimensionSelector with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *MetricsViewSpec_DimensionSelector) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewSpec_DimensionSelector
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// MetricsViewSpec_DimensionSelectorMultiError, or nil if none found.
+func (m *MetricsViewSpec_DimensionSelector) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSpec_DimensionSelector) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for TimeGrain
+
+	// no validation rules for Desc
+
+	if len(errors) > 0 {
+		return MetricsViewSpec_DimensionSelectorMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSpec_DimensionSelectorMultiError is an error wrapping multiple
+// validation errors returned by
+// MetricsViewSpec_DimensionSelector.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSpec_DimensionSelectorMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSpec_DimensionSelectorMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSpec_DimensionSelectorMultiError) AllErrors() []error { return m }
+
+// MetricsViewSpec_DimensionSelectorValidationError is the validation error
+// returned by MetricsViewSpec_DimensionSelector.Validate if the designated
+// constraints aren't met.
+type MetricsViewSpec_DimensionSelectorValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSpec_DimensionSelectorValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSpec_DimensionSelectorValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSpec_DimensionSelectorValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSpec_DimensionSelectorValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSpec_DimensionSelectorValidationError) ErrorName() string {
+	return "MetricsViewSpec_DimensionSelectorValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSpec_DimensionSelectorValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSpec_DimensionSelector.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSpec_DimensionSelectorValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSpec_DimensionSelectorValidationError{}
+
+// Validate checks the field values on MetricsViewSpec_MeasureWindow with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewSpec_MeasureWindow) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewSpec_MeasureWindow with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// MetricsViewSpec_MeasureWindowMultiError, or nil if none found.
+func (m *MetricsViewSpec_MeasureWindow) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSpec_MeasureWindow) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Partition
+
+	for idx, item := range m.GetOrderBy() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpec_MeasureWindowValidationError{
+						field:  fmt.Sprintf("OrderBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpec_MeasureWindowValidationError{
+						field:  fmt.Sprintf("OrderBy[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpec_MeasureWindowValidationError{
+					field:  fmt.Sprintf("OrderBy[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for FrameExpression
+
+	if len(errors) > 0 {
+		return MetricsViewSpec_MeasureWindowMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSpec_MeasureWindowMultiError is an error wrapping multiple
+// validation errors returned by MetricsViewSpec_MeasureWindow.ValidateAll()
+// if the designated constraints aren't met.
+type MetricsViewSpec_MeasureWindowMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSpec_MeasureWindowMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSpec_MeasureWindowMultiError) AllErrors() []error { return m }
+
+// MetricsViewSpec_MeasureWindowValidationError is the validation error
+// returned by MetricsViewSpec_MeasureWindow.Validate if the designated
+// constraints aren't met.
+type MetricsViewSpec_MeasureWindowValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSpec_MeasureWindowValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSpec_MeasureWindowValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSpec_MeasureWindowValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSpec_MeasureWindowValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSpec_MeasureWindowValidationError) ErrorName() string {
+	return "MetricsViewSpec_MeasureWindowValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSpec_MeasureWindowValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSpec_MeasureWindow.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSpec_MeasureWindowValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSpec_MeasureWindowValidationError{}
+
 // Validate checks the field values on MetricsViewSpec_MeasureV2 with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -9641,6 +9893,105 @@ func (m *MetricsViewSpec_MeasureV2) validate(all bool) error {
 	// no validation rules for Name
 
 	// no validation rules for Expression
+
+	// no validation rules for Type
+
+	if all {
+		switch v := interface{}(m.GetWindow()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+					field:  "Window",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+					field:  "Window",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetWindow()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSpec_MeasureV2ValidationError{
+				field:  "Window",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	for idx, item := range m.GetPerDimensions() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+						field:  fmt.Sprintf("PerDimensions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+						field:  fmt.Sprintf("PerDimensions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpec_MeasureV2ValidationError{
+					field:  fmt.Sprintf("PerDimensions[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	for idx, item := range m.GetRequiredDimensions() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+						field:  fmt.Sprintf("RequiredDimensions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpec_MeasureV2ValidationError{
+						field:  fmt.Sprintf("RequiredDimensions[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSpec_MeasureV2ValidationError{
+					field:  fmt.Sprintf("RequiredDimensions[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
 
 	// no validation rules for Label
 

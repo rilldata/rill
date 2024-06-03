@@ -9,6 +9,7 @@ import {
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   createQueryServiceMetricsViewAggregation,
+  MetricsViewSpecDimensionSelector,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
@@ -17,6 +18,7 @@ import { derived } from "svelte/store";
 export function createTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
+  dimensions: MetricsViewSpecDimensionSelector[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse> {
   return derived(
@@ -42,6 +44,7 @@ export function createTotalsForMeasure(
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
+          dimensions,
           where: sanitiseExpression(
             dashboard.whereFilter,
             measureFilterResolution.filter,

@@ -218,6 +218,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			Name:         measure.Name,
 			Label:        measure.Label,
 			Expression:   measure.Expression,
+			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			FormatPreset: measure.FormatPreset,
 		})
 	}

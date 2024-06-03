@@ -165,7 +165,7 @@ func TestMetricsViewsAggregation_export_day(t *testing.T) {
 	rows := q.Result.Data
 
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "timestamp (day)"))
 }
 
 func TestMetricsViewsAggregation_export_hour(t *testing.T) {
@@ -208,7 +208,7 @@ func TestMetricsViewsAggregation_export_hour(t *testing.T) {
 	rows := q.Result.Data
 
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "timestamp (hour)"))
 }
 
 func TestMetricsViewsAggregation_no_limit(t *testing.T) {
@@ -1379,7 +1379,7 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1395,15 +1395,15 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Google,18763", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,18763", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "inline_1"))
 
 	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
 		{
-			Name:           "measure_1",
+			Name:           "inline_1",
 			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			Filter: &runtimev1.Expression{
 				Expression: &runtimev1.Expression_Cond{
@@ -1433,11 +1433,11 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 
 	rows = q.Result.Data
 	i = 0
-	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
@@ -1461,7 +1461,7 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1484,13 +1484,13 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,232", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,232", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 	i++
-	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,208", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,208", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 
 	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
 		{
-			Name:           "measure_1",
+			Name:           "inline_1",
 			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			Filter: &runtimev1.Expression{
 				Expression: &runtimev1.Expression_Cond{
@@ -1520,9 +1520,9 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 
 	rows = q.Result.Data
 	i = 0
-	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,52", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,52", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 	i++
-	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,54", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,54", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
@@ -1540,7 +1540,7 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1559,15 +1559,15 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Facebook,facebook.com,10533", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Facebook,facebook.com,10533", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 	i++
-	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 	i++
-	require.Equal(t, "Google,google.com,10119", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Google,google.com,10119", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 
 	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
 		{
-			Name:           "measure_1",
+			Name:           "inline_1",
 			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			Filter: &runtimev1.Expression{
 				Expression: &runtimev1.Expression_Cond{
@@ -1597,11 +1597,11 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 
 	rows = q.Result.Data
 	i = 0
-	require.Equal(t, "Facebook,facebook.com,null", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Facebook,facebook.com,null", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 	i++
-	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 	i++
-	require.Equal(t, "Google,google.com,null", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Google,google.com,null", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_having_gt(t *testing.T) {
@@ -1616,7 +1616,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_0",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1627,7 +1627,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 					Exprs: []*runtimev1.Expression{
 						{
 							Expression: &runtimev1.Expression_Ident{
-								Ident: "measure_0",
+								Ident: "inline_1",
 							},
 						},
 						{
@@ -1652,9 +1652,9 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 	rows := q.Result.Data
 	require.Equal(t, 2, len(rows))
 	i := 0
-	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_0"))
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "null,32897", fieldsToString(rows[i], "pub", "measure_0"))
+	require.Equal(t, "null,32897", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_having_same_name(t *testing.T) {
@@ -1772,7 +1772,7 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1807,9 +1807,9 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_measure_filter_same_name(t *testing.T) {
