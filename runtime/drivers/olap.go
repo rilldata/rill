@@ -248,6 +248,17 @@ func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	}
 }
 
+func (d Dialect) OrderByExpression(name string, desc bool) string {
+	res := d.EscapeIdentifier(name)
+	if desc {
+		res += " DESC"
+	}
+	if d == DialectDuckDB {
+		res += " NULLS LAST"
+	}
+	return res
+}
+
 func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""

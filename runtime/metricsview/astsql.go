@@ -195,10 +195,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			if i > 0 {
 				b.out.WriteString(", ")
 			}
-			b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
-			if f.Desc {
-				b.out.WriteString(" DESC")
-			}
+			b.out.WriteString(b.ast.dialect.OrderByExpression(f.Name, f.Desc))
 		}
 	}
 
