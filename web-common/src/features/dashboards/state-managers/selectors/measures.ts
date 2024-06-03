@@ -91,6 +91,11 @@ export const getFilteredMeasuresAndDimensions = ({
       if (
         !measure ||
         measure.type === MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON
+        // TODO: we need to send a single query for this support
+        // (measure.type ===
+        //   MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
+        //   (!dashboard.showTimeComparison ||
+        //     !dashboard.selectedComparisonTimeRange))
       )
         return;
 
