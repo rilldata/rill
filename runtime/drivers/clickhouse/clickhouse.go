@@ -70,10 +70,18 @@ var spec = drivers.Spec{
 			Required:    false,
 		},
 	},
-	// This spec is intentionally missing a source schema, as the frontend provides
-	// custom instructions for how to connect Clickhouse as the OLAP driver.
-	SourceProperties: nil,
-	ImplementsOLAP:   true,
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "DSN",
+			Description: "Connection string",
+			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			Secret:      true,
+		},
+	},
+	ImplementsOLAP: true,
 }
 
 var maxOpenConnections = 20

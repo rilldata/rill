@@ -50,14 +50,6 @@ var spec = drivers.Spec{
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "DuckDB SQL query.",
-			Placeholder: "select * from read_csv('data/file.csv', header=true);",
-		},
-		{
 			Key:         "db",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
