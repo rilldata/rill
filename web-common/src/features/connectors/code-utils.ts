@@ -20,21 +20,39 @@ type: connector
 
 driver: ${connector.name}`;
 
-  // Get the secret keys
-  const secretKeys =
+  // Get the secret property keys
+  const secretPropertyKeys =
     connector.sourceProperties
       ?.filter((property) => property.secret)
       .map((property) => property.key) || [];
 
+  // Get the string property keys
+  const stringPropertyKeys =
+    connector.sourceProperties
+      ?.filter(
+        (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
+      )
+      .map((property) => property.key) || [];
+
   // Compile key value pairs
   const compiledKeyValues = Object.entries(formValues)
-    .filter(([key]) => !secretKeys.includes(key)) // Remove the secrets
     .map(([key, formValue]) => {
-      const isBooleanProperty =
-        connector.sourceProperties?.find((property) => property.key === key)
-          ?.type === ConnectorDriverPropertyType.TYPE_BOOLEAN;
       const value = formValue as string;
-      return `${key}: ${isBooleanProperty ? value : `"${value}"`}`;
+
+      const isSecretProperty = secretPropertyKeys.includes(key);
+      if (isSecretProperty) {
+        return `${key}: "{{ .vars.${makeDotEnvConnectorKey(
+          connector.name as string,
+          key,
+        )} }}"`;
+      }
+
+      const isStringProperty = stringPropertyKeys.includes(key);
+      if (isStringProperty) {
+        return `${key}: "${value}"`;
+      }
+
+      return `${key}: ${value}`;
     })
     .join("\n");
 

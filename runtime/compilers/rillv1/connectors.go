@@ -104,15 +104,10 @@ func (a *connectorAnalyzer) analyzeSource(ctx context.Context, r *Resource) {
 	spec := r.SourceSpec
 	srcProps := spec.Properties.AsMap()
 	_, sourceDriver, driverErr := a.parser.driverForConnector(spec.SourceConnector)
-	if driverErr != nil {
-		// Track the errored source connector and return
-		a.trackConnector(spec.SourceConnector, r, false)
-		return
-	}
 
 	// Check if we have anonymous access (unless we already know that we don't)
 	var anonAccess bool
-	if res, ok := a.result[spec.SourceConnector]; !ok || res.AnonymousAccess {
+	if res, ok := a.result[spec.SourceConnector]; (!ok || res.AnonymousAccess) && driverErr != nil {
 		anonAccess, _ = sourceDriver.HasAnonymousSourceAccess(ctx, srcProps, zap.NewNop())
 	}
 
@@ -138,15 +133,10 @@ func (a *connectorAnalyzer) analyzeModel(ctx context.Context, r *Resource) {
 	spec := r.ModelSpec
 	inputProps := spec.InputProperties.AsMap()
 	_, inputDriver, driverErr := a.parser.driverForConnector(spec.InputConnector)
-	if driverErr != nil {
-		// Track the errored input connector and return
-		a.trackConnector(spec.InputConnector, r, false)
-		return
-	}
 
 	// Check if we have anonymous access (unless we already know that we don't)
 	var anonAccess bool
-	if res, ok := a.result[spec.InputConnector]; !ok || res.AnonymousAccess {
+	if res, ok := a.result[spec.InputConnector]; (!ok || res.AnonymousAccess) && driverErr != nil {
 		anonAccess, _ = inputDriver.HasAnonymousSourceAccess(ctx, inputProps, zap.NewNop())
 	}
 
@@ -204,6 +194,8 @@ func (a *connectorAnalyzer) analyzeResourceNotifiers(r *Resource, notifiers []*r
 func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAccess bool) {
 	res, ok := a.result[connector]
 	if !ok {
+		driver, driverConnector, driverErr := a.parser.driverForConnector(connector)
+
 		// Search rill.yaml for default config properties for this connector
 		var defaultConfig map[string]string
 		if a.parser.RillYAML != nil {
@@ -223,22 +215,19 @@ func (a *connectorAnalyzer) trackConnector(connector string, r *Resource, anonAc
 			}
 		}
 
-		driver, driverConnector, driverErr := a.parser.driverForConnector(connector)
-		if driverErr != nil {
-			res = &Connector{
-				Name: connector,
-				Err:  driverErr,
-			}
-		} else {
-			driverSpec := driverConnector.Spec()
-			res = &Connector{
-				Name:            connector,
-				Driver:          driver,
-				Spec:            &driverSpec,
-				DefaultConfig:   defaultConfig,
-				AnonymousAccess: true,
-				Err:             driverErr,
-			}
+		var driverSpec *drivers.Spec
+		if driverConnector != nil {
+			spec := driverConnector.Spec()
+			driverSpec = &spec
+		}
+
+		res = &Connector{
+			Name:            connector,
+			Driver:          driver,
+			Spec:            driverSpec,
+			DefaultConfig:   defaultConfig,
+			AnonymousAccess: true,
+			Err:             driverErr,
 		}
 
 		a.result[connector] = res

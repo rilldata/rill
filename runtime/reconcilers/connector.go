@@ -5,9 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 )
 
 func init() {
@@ -58,35 +57,6 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	t := self.GetConnector()
 	if t == nil {
 		return runtime.ReconcileResult{Err: errors.New("not a connector")}
-	}
-
-	// Get and sync repo
-	repo, release, err := r.C.Runtime.Repo(ctx, r.C.InstanceID)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to access repo: %w", err)}
-	}
-	defer release()
-	err = repo.Sync(ctx)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to sync repo: %w", err)}
-	}
-
-	// Get instance
-	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to find instance: %w", err)}
-	}
-
-	// Parse the project
-	parser, err := rillv1.Parse(ctx, repo, r.C.InstanceID, inst.Environment, inst.OLAPConnector)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to parse: %w", err)}
-	}
-
-	// Update instance connectors
-	err = r.C.Runtime.UpdateInstanceWithRillYAML(ctx, inst.ID, parser, false)
-	if err != nil {
-		return runtime.ReconcileResult{Err: fmt.Errorf("failed to update instance: %w", err)}
 	}
 
 	// Exit early for deletion
