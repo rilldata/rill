@@ -3505,6 +3505,11 @@ definitions:
         additionalProperties:
           type: string
         title: Config for the connector
+      configFromVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
   v1ConnectorDriver:
     type: object
     properties:
@@ -3560,6 +3565,13 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      propertiesFromVariables:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          properties_from_variables stores properties whose value is a variable.
+          NOTE : properties_from_variables and properties both should be used to get all properties.
   v1ConnectorState:
     type: object
   v1ConnectorV2:
