@@ -141,9 +141,10 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	for _, r := range parser.Resources {
 		if r.ConnectorSpec != nil {
 			connMap[r.Name.Name] = &runtimev1.Connector{
-				Name:   r.Name.Name,
-				Type:   r.ConnectorSpec.Driver,
-				Config: r.ConnectorSpec.Properties,
+				Name:                r.Name.Name,
+				Type:                r.ConnectorSpec.Driver,
+				Config:              r.ConnectorSpec.Properties,
+				ConfigFromVariables: r.ConnectorSpec.PropertiesFromVariables,
 			}
 		}
 	}
