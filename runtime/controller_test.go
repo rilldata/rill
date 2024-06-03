@@ -1391,7 +1391,7 @@ name: my-gcs
 		Resource: &runtimev1.Resource_Connector{
 			Connector: &runtimev1.ConnectorV2{
 				Spec:  &runtimev1.ConnectorSpec{Driver: "s3", Properties: map[string]string{"region": "us-west-2"}},
-				State: &runtimev1.ConnectorState{SpecHash: "76b3819c673b0a4e4755418614d8cb62"},
+				State: &runtimev1.ConnectorState{},
 			},
 		},
 	})
@@ -1404,7 +1404,7 @@ name: my-gcs
 		Resource: &runtimev1.Resource_Connector{
 			Connector: &runtimev1.ConnectorV2{
 				Spec:  &runtimev1.ConnectorSpec{Driver: "gcs"},
-				State: &runtimev1.ConnectorState{SpecHash: "c9fe99b9b26a69ece268aba6e41eda08"},
+				State: &runtimev1.ConnectorState{},
 			},
 		},
 	})

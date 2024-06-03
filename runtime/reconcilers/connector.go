@@ -49,6 +49,7 @@ func (r *ConnectorReconciler) AssignState(from, to *runtimev1.Resource) error {
 }
 
 func (r *ConnectorReconciler) ResetState(res *runtimev1.Resource) error {
+	res.GetConnector().State = &runtimev1.ConnectorState{}
 	return nil
 }
 
@@ -77,7 +78,7 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	if t.State != nil && specHash == t.State.SpecHash {
+	if specHash == t.State.SpecHash {
 		return runtime.ReconcileResult{}
 	}
 
@@ -87,9 +88,6 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 		return runtime.ReconcileResult{Err: err}
 	}
 
-	if t.State == nil {
-		t.State = &runtimev1.ConnectorState{}
-	}
 	t.State.SpecHash = specHash
 
 	err = r.C.UpdateState(ctx, self.Meta.Name, self)
