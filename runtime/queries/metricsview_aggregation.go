@@ -1097,6 +1097,19 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
 
+	if len(q.Measures) == 1 {
+		m := &runtimev1.MetricsViewAggregationMeasure{}
+		switch t := q.Measures[0].Compute.(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+			m.Name = t.ComparisonValue.Measure
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+			m.Name = t.ComparisonDelta.Measure
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+			m.Name = t.ComparisonRatio.Measure
+		}
+		q.Measures = append(q.Measures, m)
+	}
+
 	dimByName := make(map[string]*runtimev1.MetricsViewAggregationDimension, len(mv.Dimensions))
 	measuresByFinalName := make(map[string]*runtimev1.MetricsViewAggregationMeasure, len(q.Measures))
 	for _, d := range q.Dimensions {
@@ -1597,7 +1610,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 			len(selectCols)+1,                   // 9 index of casewhere
 			len(comparisonSelectCols)+1,         // 10 index of casewhere
 		)
-
 		// ^^^ Outer query rationale:
 		// DuckDB query `SELECT publisher, avg(bid_price) AS bid_price ... HAVING bid_price > 0` is ambiguous because alias is the same.
 	} else { // Druid measure filter
