@@ -162,7 +162,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         //   .required("Connector name is required"),
         host: yup.string().required("Host is required"),
-        port: yup.number(),
+        port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
         ssl: yup.boolean(),
@@ -176,7 +176,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         //   .required("Connector name is required"),
         host: yup.string().required("Host is required"),
-        port: yup.number(),
+        port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
         ssl: yup.boolean(),
@@ -190,7 +190,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
         //   .required("Connector name is required"),
         host: yup.string().required("Host is required"),
-        port: yup.number(),
+        port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
         ssl: yup.boolean(),

@@ -80,7 +80,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "port",
 			Type:        drivers.StringPropertyType,
-			Required:    false,
+			Required:    true,
 			DisplayName: "Port",
 			Description: "Port number of the Druid server",
 			Placeholder: "9000",
