@@ -236,14 +236,7 @@ func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNo
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
 		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
 		b.out.WriteByte('(')
-		b.out.WriteString(lhs)
-		b.out.WriteByte('=')
-		b.out.WriteString(rhs)
-		b.out.WriteString(" OR ")
-		b.out.WriteString(lhs)
-		b.out.WriteString(" IS NULL AND ")
-		b.out.WriteString(rhs)
-		b.out.WriteString(" IS NULL")
+		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')
 	}
 	return nil

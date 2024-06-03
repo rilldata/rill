@@ -286,6 +286,13 @@ func (d Dialect) OrderByExpression(name string, desc bool) string {
 	return res
 }
 
+func (d Dialect) JoinOnExpression(lhs, rhs string) string {
+	if d == DialectClickHouse {
+		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
+	}
+	return fmt.Sprintf("%s = %s OR (%s IS NULL AND %s IS NULL)", lhs, rhs, lhs, rhs)
+}
+
 func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
 	if tz == "UTC" || tz == "Etc/UTC" {
 		tz = ""
