@@ -16,9 +16,9 @@ func IsInit(ctx context.Context, repo drivers.RepoStore, instanceID string) bool
 
 // InitEmpty initializes an empty project
 func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, title string) error {
-	mockUsersInfo := "# These are example mock users to test your security policies.\n# For more information, see the documentation: https://docs.rilldata.com/manage/security"
+	mockUsersInfo := "# These are example mock users to test your security policies.\n# Learn more: https://docs.rilldata.com/manage/security"
 	mockUsers := "mock_users:\n- email: john@yourcompany.com\n- email: jane@partnercompany.com"
-	rillYAML := fmt.Sprintf("compiler: %s\n\ntitle: %q\n\n%s\n\n%s", Version, title, mockUsersInfo, mockUsers)
+	rillYAML := fmt.Sprintf("compiler: %s\n\ntitle: %q\n\n%s\n%s", Version, title, mockUsersInfo, mockUsers)
 
 	err := repo.Put(ctx, "rill.yaml", strings.NewReader(rillYAML))
 	if err != nil {
