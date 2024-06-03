@@ -3,6 +3,7 @@ import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/piv
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
@@ -54,6 +55,8 @@ import {
   type PivotDataStoreConfig,
   type PivotTimeConfig,
 } from "./types";
+
+let lastKey: string | undefined = undefined;
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
@@ -171,12 +174,12 @@ export function getPivotConfig(
             },
           );
 
-          return {
+          const config: PivotDataStoreConfig = {
             measureNames,
             rowDimensionNames,
             colDimensionNames,
-            allMeasures: metricsView.data?.measures,
-            allDimensions: metricsView.data?.dimensions,
+            allMeasures: metricsView.data?.measures || [],
+            allDimensions: metricsView.data?.dimensions || [],
             whereFilter: dashboardStore.whereFilter,
             measureFilter: measureFilterResolution,
             pivot: dashboardStore.pivot,
@@ -184,6 +187,19 @@ export function getPivotConfig(
             comparisonTime,
             time,
           };
+
+          const currentKey = getPivotConfigKey(config);
+
+          if (lastKey !== currentKey) {
+            // Reset rowPage when pivot config changes
+            lastKey = currentKey;
+            if (config.pivot.rowPage !== 1) {
+              metricsExplorerStore.setPivotRowPage(dashboardStore.name, 1);
+              config.pivot.rowPage = 1;
+            }
+          }
+
+          return config;
         },
       ).subscribe(set);
     },
