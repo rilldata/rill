@@ -57,7 +57,11 @@ func (s *Server) AnalyzeConnectors(ctx context.Context, req *runtimev1.AnalyzeCo
 
 		cfg, err := s.runtime.ConnectorConfig(ctx, req.InstanceId, connector.Name)
 		if err != nil {
-			return nil, err
+			res[connector.Name] = &runtimev1.AnalyzedConnector{
+				Name:         connector.Name,
+				ErrorMessage: err.Error(),
+			}
+			continue
 		}
 
 		c := &runtimev1.AnalyzedConnector{
