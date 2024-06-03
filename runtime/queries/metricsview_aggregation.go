@@ -315,7 +315,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 }
 
 func (q *MetricsViewAggregation) executeComparisonWithMeasureFilter(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity) error {
-	sqlString, args, err := q.buildMeasureFilterComparisonAggregationSQL(ctx, olap, priority, mv, dialect, security, false)
+	sqlString, args, err := q.buildMeasureFilterComparisonAggregationSQL(olap, priority, mv, dialect, security, false)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -1273,7 +1273,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 					safeName(finalName),
 				)
 				finalMeasure.expression = fmt.Sprintf(
-					"(base.%[1]s - comparison.%[1]s)/comparison.%[1]s", // todo DuckDB ::DOUBLE
+					"(base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE",
 					safeName(subqueryName))
 				finalMeasure.alias = safeName(finalName)
 			}
@@ -1314,7 +1314,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 			labelTuple = columnsTuple
 		case *runtimev1.MetricsViewAggregationMeasure_Count, *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
 			subqueryName = m.Name
-			// finalName = m.Name
 			columnsTuple = fmt.Sprintf(
 				"%[2]s(base.%[1]s) AS %[1]s",
 				safeName(subqueryName),
@@ -1496,6 +1495,8 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 
 	var args []any
 	var sql string
+
+	cw := tempName("casewhere")
 	if dialect != drivers.DialectDruid {
 		// Using expr was causing issues with query arg expansion in duckdb.
 		// Using column name is not possible either since it will take the original column name instead of the aliased column name
@@ -1585,56 +1586,57 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 		// to keep the clause builder consistent we add an outer query.
 
 		/*
-			CASE expression rationale:
-			Assume filter is `count(*)/10 FILTER publisher = 'Yahoo'`. FILTER doesn't support arithmetics on aggregation. To mimic FILTER one can produce 2 tables, one with the filter condition
-			and another without it and merge tables aftewards.
-			Full table:
-				Publisher count(*)
-				Microsoft 20
-				Yahoo 40
+				CASE expression rationale:
+				Assume filter is `count(*)/10 FILTER publisher = 'Yahoo'`. FILTER doesn't support arithmetics on aggregation.
+			    To mimic FILTER one can produce 2 tables, one with the filter condition and another without it and merge tables aftewards.
+				Full table:
+					Publisher count(*)
+					Microsoft 20
+					Yahoo 40
 
-			Filtered table:
-				Publisher count(*)
-				Yahoo 40
+				Filtered table:
+					Publisher count(*)
+					Yahoo 40
 
-			Result:
-				Publisher count(*)
-				Microsoft nil
-				Yahoo 4
+				Result:
+					Publisher count(*)
+					Microsoft nil
+					Yahoo 4
 
-			But those tables should be limited if possible to increase performance. If they're limited the tables should be ordered. But the full table should contain all the dimension values that
-			are in the filtered table before being limited. That can be accomplished by including a virtual column with CASE <filter condition> expression and ordering by it.
+				But those tables should be limited if possible to increase performance. If they're limited the tables should be ordered.
+				The full table should contain all the dimension values that are in the filtered table before being limited. That can be
+				accomplished by including a virtual column with CASE <filter condition> expression and ordering by it.
 		*/
 		sql = fmt.Sprintf(`
-			SELECT * EXCLUDE(casewhere) FROM (
+			SELECT * EXCLUDE(`+cw+`) FROM (
 				-- SELECT ... as t_offset, base.d1, ..., base.td1, ..., base.m1, ... , comparison.td1 as td1__previous, ...
-				SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withCase("coalesce(base.casewhere,comparison.casewhere) = 1", "null", finalMeasures), finalComparisonTimeDims), ",")+`, coalesce(base.casewhere,comparison.casewhere) as casewhere FROM 
+				SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures), finalComparisonTimeDims), ",")+`, coalesce(base.`+cw+`,comparison.`+cw+`) as `+cw+` FROM 
 					(
 						-- SELECT t_offset, dim1 as d1, ... timed1 as td1, ..., avg(price) as m1, ... AND d2 = 'a' ...
 						SELECT 
 							%[1]s, 
-							CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END casewhere 
+							CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+` 
 						FROM %[3]s %[7]s 
 						WHERE (%[4]s)
 						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(_measuresWithCase("casewhere = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+` 
+						ORDER BY `+strings.Join(_measuresWithCase(cw+" = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+` 
 					) base
 				LEFT OUTER JOIN
 					(
 						-- SELECT t_offset, dim1 as d1, ..., timed1 as td1, ... avg(price) as m1, ... AND d2 = 'a' ...
 						SELECT 
 							`+comparisonSelectClause+`,`+
-			` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END casewhere 
+			` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+`
 						FROM %[3]s %[7]s 
 						WHERE (%[5]s) 
 						GROUP BY %[2]s, %[10]d 
-						ORDER BY `+strings.Join(_measuresWithCase("casewhere = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+`
+						ORDER BY `+strings.Join(_measuresWithCase(cw+" = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+`
 					) comparison
 				ON
-						`+strings.Join(append(joinConditions, "base.casewhere = comparison.casewhere"), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
+						`+strings.Join(append(joinConditions, "base."+cw+"= comparison."+cw), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
 			)
 				`+outerWhereClause+` -- WHERE d1 = 'having_value'
-				ORDER BY `+strings.Join(_measuresWithCase("casewhere = 1", "null", outerSortConstructs), ",")+` -- ORDER BY d1, ...
+				ORDER BY `+strings.Join(_measuresWithCase(cw+"= 1", "null", outerSortConstructs), ",")+` -- ORDER BY d1, ...
 				`+limitClause+`
 				OFFSET %[8]d
 			`,
@@ -1715,31 +1717,31 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 		}
 		sql = fmt.Sprintf(`
 				-- SELECT COALESCE(base.d1, comparison.d1), ..., base.m1, ..., base.m2 ... 
-				SELECT `+strings.Join(slices.Concat(finalDims[1:], toClauses(inFunc("ANY_VALUE", withCase0("coalesce(base.casewhere,comparison.casewhere) = 1", "null", finalMeasures))), finalComparisonTimeDims), ",")+` FROM 
+				SELECT `+strings.Join(slices.Concat(finalDims[1:], toClauses(inFunc("ANY_VALUE", __withCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures))), finalComparisonTimeDims), ",")+` FROM 
 					(
 						-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
 						SELECT 
 							%[1]s,
-							CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END casewhere  
+							CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+` 
 						FROM %[3]s %[6]s 
 						WHERE %[4]s 
 						GROUP BY %[2]s, %[7]d 
-						ORDER BY casewhere DESC, `+strings.Join(slices.Concat(_measuresWithCase("casewhere = 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+`
+						ORDER BY `+strings.Join(slices.Concat(_measuresWithCase(cw+"= 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+`
 					) base
 				LEFT JOIN
 					(
 						SELECT 
-							`+comparisonSelectClause+","+` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END casewhere  
+							`+comparisonSelectClause+","+` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+`  
 						FROM %[3]s %[6]s 
 						WHERE %[5]s 
 						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(slices.Concat(_measuresWithCase("casewhere = 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+` 
+						ORDER BY `+strings.Join(slices.Concat(_measuresWithCase(cw+"= 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+` 
 					) comparison
 				ON
 				-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
-						`+strings.Join(append(joinConditions, "base.casewhere = comparison.casewhere"), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
-				GROUP BY `+strings.Join(outerGroupCols, ",")+", coalesce(base.casewhere,comparison.casewhere) "+havingWhereClause+`
-				ORDER BY `+strings.Join(slices.Concat(_measuresWithCase("coalesce(base.casewhere,comparison.casewhere) = 1", "null", outerSortConstructs)), ",")+` -- ORDER BY d1, ...
+						`+strings.Join(append(joinConditions, "base."+cw+" = comparison."+cw), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
+				GROUP BY `+strings.Join(outerGroupCols, ",")+", coalesce(base."+cw+",comparison."+cw+") "+havingWhereClause+`
+				ORDER BY `+strings.Join(slices.Concat(_measuresWithCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", outerSortConstructs)), ",")+` -- ORDER BY d1, ...
 				`+limitClause+`
 				OFFSET %[8]d
 			`,
@@ -1789,7 +1791,7 @@ func withCase(cond, output2 string, finalMeasures []*FinalMeasure) []string {
 	return cs
 }
 
-func withCase0(cond, output2 string, finalMeasures []*FinalMeasure) []*FinalMeasure {
+func __withCase(cond, output2 string, finalMeasures []*FinalMeasure) []*FinalMeasure {
 	cs := make([]*FinalMeasure, len(finalMeasures))
 	for i, fm := range finalMeasures {
 		cs[i] = &FinalMeasure{
