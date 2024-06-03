@@ -346,9 +346,9 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 
 		// TODO: Should this use date_trunc(grain, expr, tz) instead?
 		if shift == "" {
-			return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s')), '%s')", grain, expr, tz, tz), nil
+			return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s'))::TIMESTAMP, '%s')", specifier, expr, tz, tz), nil
 		}
-		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s') + INTERVAL %s) - INTERVAL %s, '%s')", grain, expr, tz, shift, shift, tz), nil
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s') + INTERVAL %s)::TIMESTAMP - INTERVAL %s, '%s')", specifier, expr, tz, shift, shift, tz), nil
 	case DialectPinot:
 		// TODO: Handle tz instead of ignoring it.
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
