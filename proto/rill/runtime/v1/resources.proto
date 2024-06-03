@@ -504,7 +504,8 @@ message CharLocation {
 message ConnectorSpec {
   string driver = 1;
   map<string, string> properties = 2;
-  // properties_from_variables stores a copy of properties whose value is a variable. The key is the property and value is the variable.
+  // properties_from_variables stores properties whose value is a variable.
+  // NOTE : properties_from_variables and properties both should be used to get all properties.
   map<string, string> properties_from_variables = 3;
 }
 

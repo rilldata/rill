@@ -1,6 +1,13 @@
 package rillv1
 
-import "strings"
+import (
+	"fmt"
+	"regexp"
+	"strings"
+)
+
+// envVarRegex matches a variable reference in the form {{   .vars.variable   }}
+var envVarRegex = regexp.MustCompile(`^\{\{\s*\.vars\.\w+(?:\.\w+)*\s*\}\}$`)
 
 // ConnectorYAML is the raw structure of a Connector resource defined in YAML (does not include common fields)
 type ConnectorYAML struct {
@@ -19,6 +26,11 @@ func (p *Parser) parseConnector(node *Node) error {
 		return err
 	}
 
+	props, propsFromVariables, err := propertiesFromVariables(tmp.Defaults)
+	if err != nil {
+		return err
+	}
+
 	// Insert the connector
 	r, err := p.insertResource(ResourceKindConnector, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -27,27 +39,33 @@ func (p *Parser) parseConnector(node *Node) error {
 	// NOTE: After calling insertResource, an error must not be returned. Any validation should be done before calling it.
 
 	r.ConnectorSpec.Driver = tmp.Driver
-	r.ConnectorSpec.Properties = tmp.Defaults
-	r.ConnectorSpec.PropertiesFromVariables, err = propertiesFromVariables(tmp.Defaults)
-	if err != nil {
-		return err
-	}
+	r.ConnectorSpec.Properties = props
+	r.ConnectorSpec.PropertiesFromVariables = propsFromVariables
 	return nil
 }
 
-func propertiesFromVariables(props map[string]string) (map[string]string, error) {
-	res := make(map[string]string)
-	for key, val := range props {
+func propertiesFromVariables(in map[string]string) (map[string]string, map[string]string, error) {
+	props := make(map[string]string)
+	propsFromVars := make(map[string]string)
+	for key, val := range in {
 		meta, err := AnalyzeTemplate(val)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
-		// assume that only one variable will be set
-		for _, k := range meta.Variables {
-			if after, found := strings.CutPrefix(k, "vars."); found {
-				res[key] = after
-			}
+		if len(meta.Variables) == 0 { // property does not use any variables
+			props[key] = val
+			continue
 		}
+		// property uses variables
+		if len(meta.Variables) > 1 {
+			return nil, nil, fmt.Errorf("connector property should contain atmost one variable. Property %q contains %q", key, len(meta.Variables))
+		}
+		if !envVarRegex.MatchString(val) {
+			return nil, nil, fmt.Errorf("invalid property %q. When accessing a variable in a connector property, the value should match the form `{{ .vars.variable }}`", key)
+		}
+
+		after, _ := strings.CutPrefix(meta.Variables[0], "vars.")
+		propsFromVars[key] = after
 	}
-	return res, nil
+	return props, propsFromVars, nil
 }

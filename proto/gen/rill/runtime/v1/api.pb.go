@@ -521,7 +521,7 @@ type Connector struct {
 	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
 	// Config for the connector
 	Config map[string]string `protobuf:"bytes,3,rep,name=config,proto3" json:"config,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// config_from_variables stores a copy of configs whose value is a variable. The key is the property and value is the variable. This is only set for configs obtained from `connector.yaml`
+	// config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
 	ConfigFromVariables map[string]string `protobuf:"bytes,4,rep,name=config_from_variables,json=configFromVariables,proto3" json:"config_from_variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 

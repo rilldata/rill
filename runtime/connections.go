@@ -199,8 +199,8 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 		}
 	}
 
-	vars := inst.ResolveVariables()
 	// Search for connector definition in rill.yaml
+	vars := inst.ResolveVariables()
 	for _, c := range inst.ProjectConnectors {
 		if c.Name == name {
 			res.Driver = c.Type

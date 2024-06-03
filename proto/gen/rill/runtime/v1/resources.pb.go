@@ -4437,7 +4437,8 @@ type ConnectorSpec struct {
 
 	Driver     string            `protobuf:"bytes,1,opt,name=driver,proto3" json:"driver,omitempty"`
 	Properties map[string]string `protobuf:"bytes,2,rep,name=properties,proto3" json:"properties,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
-	// properties_from_variables stores a copy of properties whose value is a variable. The key is the property and value is the variable.
+	// properties_from_variables stores properties whose value is a variable.
+	// NOTE : properties_from_variables and properties both should be used to get all properties.
 	PropertiesFromVariables map[string]string `protobuf:"bytes,3,rep,name=properties_from_variables,json=propertiesFromVariables,proto3" json:"properties_from_variables,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
 }
 

@@ -1659,7 +1659,8 @@ export interface V1ConnectorV2 {
 }
 
 /**
- * properties_from_variables stores a copy of properties whose value is a variable. The key is the property and value is the variable.
+ * properties_from_variables stores properties whose value is a variable.
+NOTE : properties_from_variables and properties both should be used to get all properties.
  */
 export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 
@@ -1668,7 +1669,8 @@ export type V1ConnectorSpecProperties = { [key: string]: string };
 export interface V1ConnectorSpec {
   driver?: string;
   properties?: V1ConnectorSpecProperties;
-  /** properties_from_variables stores a copy of properties whose value is a variable. The key is the property and value is the variable. */
+  /** properties_from_variables stores properties whose value is a variable.
+NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
 }
 
