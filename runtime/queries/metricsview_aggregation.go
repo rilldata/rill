@@ -1243,13 +1243,8 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 		}
 	}
 
-	// collect final expressions
-	// var finalSelectCols []string
-	// var labelCols []string
 	var finalMeasures []*FinalMeasure
 	for _, m := range q.Measures {
-		var columnsTuple string
-		// var labelTuple string
 		var subqueryName, finalName string
 		prefix := ""
 
@@ -1259,89 +1254,46 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 			subqueryName = m.GetComparisonRatio().Measure
 			finalName = m.Name
 			if dialect == drivers.DialectDruid {
-				columnsTuple = fmt.Sprintf(
-					"ANY_VALUE(SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))) AS %[2]s",
-					safeName(subqueryName),
-					safeName(finalName),
-				)
 				finalMeasure.expression = fmt.Sprintf("SAFE_DIVIDE(base.%[1]s - comparison.%[1]s, CAST(comparison.%[1]s AS DOUBLE))", safeName(subqueryName))
 				finalMeasure.alias = safeName(finalName)
 			} else {
-				columnsTuple = fmt.Sprintf(
-					"(base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE AS %[2]s",
-					safeName(subqueryName),
-					safeName(finalName),
-				)
 				finalMeasure.expression = fmt.Sprintf(
 					"(base.%[1]s - comparison.%[1]s)/comparison.%[1]s::DOUBLE",
 					safeName(subqueryName))
 				finalMeasure.alias = safeName(finalName)
 			}
-			// labelTuple = columnsTuple
 		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
 			subqueryName = m.GetComparisonDelta().Measure
 			finalName = m.Name
 
-			columnsTuple = fmt.Sprintf(
-				"%[3]s(base.%[1]s - comparison.%[1]s) AS %[2]s",
-				safeName(subqueryName),
-				safeName(finalName),
-				prefix,
-			)
 			finalMeasure.alias = safeName(finalName)
 			finalMeasure.expression = fmt.Sprintf( // non-virtial columns have a label
 				"%[2]s(base.%[1]s - comparison.%[1]s)",
 				safeName(subqueryName),
 				prefix,
 			)
-			labelTuple = columnsTuple
 		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
 			subqueryName = m.GetComparisonValue().Measure
 			finalName = m.Name
 
-			columnsTuple = fmt.Sprintf(
-				"%[3]s(comparison.%[1]s) AS %[2]s",
-				safeName(subqueryName),
-				safeName(finalName),
-				prefix,
-			)
 			finalMeasure.alias = safeName(finalName)
 			finalMeasure.expression = fmt.Sprintf( // non-virtial columns have a label
 				"%[2]s(comparison.%[1]s)",
 				safeName(subqueryName),
 				prefix,
 			)
-			// labelTuple = columnsTuple
 		case *runtimev1.MetricsViewAggregationMeasure_Count, *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
 			subqueryName = m.Name
-			columnsTuple = fmt.Sprintf(
-				"%[2]s(base.%[1]s) AS %[1]s",
-				safeName(subqueryName),
-				prefix,
-			)
 			finalMeasure.alias = safeName(subqueryName)
 			finalMeasure.expression = fmt.Sprintf( // non-virtial columns have a label
 				"%[2]s(base.%[1]s)",
 				safeName(subqueryName),
 				prefix,
 			)
-			// labelTuple = columnsTuple
 		default: // not a virtual (not a generated) column
 			subqueryName = m.Name
 			finalName = m.Name
 
-			columnsTuple = fmt.Sprintf(
-				"%[3]s(base.%[1]s) AS %[1]s",
-				safeName(subqueryName),
-				safeName(finalName),
-				prefix,
-			)
-			// labelTuple = fmt.Sprintf( // non-virtial columns have a label
-			// "%[3]s(base.%[1]s) AS %[1]s",
-			// safeName(subqueryName),
-			// safeName(labelMap[subqueryName]),
-			// prefix,
-			// )
 			finalMeasure.expression = fmt.Sprintf( // non-virtial columns have a label
 				"%[2]s(base.%[1]s)",
 				safeName(subqueryName),
@@ -1354,12 +1306,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 			}
 		}
 		finalMeasures = append(finalMeasures, &finalMeasure)
-		// finalSelectCols = append(
-		// finalSelectCols,
-		// columnsTuple,
-		// )
-		// labelCols = append(labelCols, labelTuple)
-
 	}
 
 	baseSelectClause := strings.Join(selectCols, ", ")
