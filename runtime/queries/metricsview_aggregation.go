@@ -315,7 +315,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 }
 
 func (q *MetricsViewAggregation) executeComparisonWithMeasureFilter(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, security *runtime.ResolvedMetricsViewSecurity) error {
-	sqlString, args, err := q.buildMeasureFilterComparisonAggregationSQL(olap, priority, mv, dialect, security, false)
+	sqlString, args, err := q.buildMeasureFilterComparisonAggregationSQL(mv, dialect, security, false)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
 	}
@@ -1082,7 +1082,7 @@ func originalName(m *runtimev1.MetricsViewAggregationMeasure) string {
 	}
 }
 
-func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
+func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
 	originals := make(map[string]bool, len(q.Measures))
 	for _, m := range q.Measures {
 		if m.Compute != nil {
@@ -1244,12 +1244,12 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 	}
 
 	// collect final expressions
-	var finalSelectCols []string
-	var labelCols []string
+	// var finalSelectCols []string
+	// var labelCols []string
 	var finalMeasures []*FinalMeasure
 	for _, m := range q.Measures {
 		var columnsTuple string
-		var labelTuple string
+		// var labelTuple string
 		var subqueryName, finalName string
 		prefix := ""
 
@@ -1277,7 +1277,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 					safeName(subqueryName))
 				finalMeasure.alias = safeName(finalName)
 			}
-			labelTuple = columnsTuple
+			// labelTuple = columnsTuple
 		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
 			subqueryName = m.GetComparisonDelta().Measure
 			finalName = m.Name
@@ -1311,7 +1311,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 				safeName(subqueryName),
 				prefix,
 			)
-			labelTuple = columnsTuple
+			// labelTuple = columnsTuple
 		case *runtimev1.MetricsViewAggregationMeasure_Count, *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
 			subqueryName = m.Name
 			columnsTuple = fmt.Sprintf(
@@ -1325,7 +1325,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 				safeName(subqueryName),
 				prefix,
 			)
-			labelTuple = columnsTuple
+			// labelTuple = columnsTuple
 		default: // not a virtual (not a generated) column
 			subqueryName = m.Name
 			finalName = m.Name
@@ -1336,12 +1336,12 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 				safeName(finalName),
 				prefix,
 			)
-			labelTuple = fmt.Sprintf( // non-virtial columns have a label
-				"%[3]s(base.%[1]s) AS %[1]s",
-				safeName(subqueryName),
-				safeName(labelMap[subqueryName]),
-				prefix,
-			)
+			// labelTuple = fmt.Sprintf( // non-virtial columns have a label
+			// "%[3]s(base.%[1]s) AS %[1]s",
+			// safeName(subqueryName),
+			// safeName(labelMap[subqueryName]),
+			// prefix,
+			// )
 			finalMeasure.expression = fmt.Sprintf( // non-virtial columns have a label
 				"%[2]s(base.%[1]s)",
 				safeName(subqueryName),
@@ -1354,11 +1354,11 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 			}
 		}
 		finalMeasures = append(finalMeasures, &finalMeasure)
-		finalSelectCols = append(
-			finalSelectCols,
-			columnsTuple,
-		)
-		labelCols = append(labelCols, labelTuple)
+		// finalSelectCols = append(
+		// finalSelectCols,
+		// columnsTuple,
+		// )
+		// labelCols = append(labelCols, labelTuple)
 
 	}
 
@@ -1429,7 +1429,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 	}
 
 	var orderClauses []string
-	var subqueryOrderByClauses []string
+	// var subqueryOrderByClauses []string
 
 	/*
 		Dimensions are referenced by index because time dimensions have an issue with aliases in DuckDB
@@ -1483,14 +1483,14 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 				dim:        true,
 			})
 		}
-		subqueryOrderByClauses = append(subqueryOrderByClauses, subQueryClause+ending)
+		// subqueryOrderByClauses = append(subqueryOrderByClauses, subQueryClause+ending)
 	}
 
 	outerWhereClause := ""
-	havingClause := ""
+	// havingClause := ""
 	if q.Having != nil {
 		outerWhereClause += " WHERE " + havingWhereClause
-		havingClause += "HAVING " + havingClause
+		// havingClause += "HAVING " + havingClause
 	}
 
 	var args []any
@@ -1511,14 +1511,14 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 			innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 		}
 
-		var measureCols []string
-		for _, m := range q.Measures {
-			nm := m.Name
-			if export {
-				nm = labelMap[m.Name]
-			}
-			measureCols = append(measureCols, fmt.Sprintf("partial.%s", safeName(nm)))
-		}
+		// var measureCols []string
+		// for _, m := range q.Measures {
+		// nm := m.Name
+		// if export {
+		// nm = labelMap[m.Name]
+		// }
+		// measureCols = append(measureCols, fmt.Sprintf("partial.%s", safeName(nm)))
+		// }
 
 		outerDims := make([]string, 0, len(q.Dimensions))
 		for _, d := range q.Dimensions {
@@ -1580,11 +1580,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 		// outer query
 		args = append(args, havingClauseArgs...)
 
-		// Outer query rationale:
-		// Measure filter could include the base measure name.
-		// this leads to ambiguity whether it applies to the base.measure ot comparison.measure.
-		// to keep the clause builder consistent we add an outer query.
-
 		/*
 				CASE expression rationale:
 				Assume filter is `count(*)/10 FILTER publisher = 'Yahoo'`. FILTER doesn't support arithmetics on aggregation.
@@ -1605,12 +1600,33 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 
 				But those tables should be limited if possible to increase performance. If they're limited the tables should be ordered.
 				The full table should contain all the dimension values that are in the filtered table before being limited. That can be
-				accomplished by including a virtual column with CASE <filter condition> expression and ordering by it.
+				accomplished by including a virtual column with `CASE <filter condition> AS "casewhere"` expression and ordering by it.
+
+				For example, Google can have multiple domains (news.google.com, google.com, ...):
+				┌───────────┬────────────────────┬───────────┬──────────────────┐
+				│    pub    │         m1         │ casewhere │      domain      │
+				│  varchar  │       double       │   int32   │     varchar      │
+				├───────────┼────────────────────┼───────────┼──────────────────┤
+				│           │ 2.8476409530549693 │         1 │ news.google.com  │
+				│ Google    │ 2.8545245256825496 │         1 │ news.google.com  │
+				│ Google    │ 3.0921039628421707 │         0 │ google.com       │
+
+				To get all the aggregations with specified condition grouping and ordering by 'casewhere' splits 'Google' group even when "domain" is unspecified:
+				┌───────────┬────────────────────┬───────────┐
+				│    pub    │         m1         │ casewhere │
+				│  varchar  │       double       │   int32   │
+				├───────────┼────────────────────┼───────────┤
+				│           │ 2.8476409530549693 │         1 │
+				│ Google    │ 2.8545245256825496 │         1 │
+				│ Yahoo     │  2.986993492174502 │         0 │
+				│ Facebook  │ 2.9896851248642617 │         0 │
+				│           │ 3.0256741573033525 │         0 │
+				│ Google    │ 3.0921039628421707 │         0 │
 		*/
 		sql = fmt.Sprintf(`
 			SELECT * EXCLUDE(`+cw+`) FROM (
 				-- SELECT ... as t_offset, base.d1, ..., base.td1, ..., base.m1, ... , comparison.td1 as td1__previous, ...
-				SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures), finalComparisonTimeDims), ",")+`, coalesce(base.`+cw+`,comparison.`+cw+`) as `+cw+` FROM 
+				SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withCaseAsClauses("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures), finalComparisonTimeDims), ",")+`, coalesce(base.`+cw+`,comparison.`+cw+`) as `+cw+` FROM 
 					(
 						-- SELECT t_offset, dim1 as d1, ... timed1 as td1, ..., avg(price) as m1, ... AND d2 = 'a' ...
 						SELECT 
@@ -1619,7 +1635,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 						FROM %[3]s %[7]s 
 						WHERE (%[4]s)
 						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(_measuresWithCase(cw+" = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+` 
+						ORDER BY `+strings.Join(measuresWithCase(cw+" = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+` 
 					) base
 				LEFT OUTER JOIN
 					(
@@ -1630,13 +1646,13 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 						FROM %[3]s %[7]s 
 						WHERE (%[5]s) 
 						GROUP BY %[2]s, %[10]d 
-						ORDER BY `+strings.Join(_measuresWithCase(cw+" = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+`
+						ORDER BY `+strings.Join(measuresWithCase(cw+" = 1", "null", sortConstructs), ",")+" "+subqueryLimitClause+`
 					) comparison
 				ON
 						`+strings.Join(append(joinConditions, "base."+cw+"= comparison."+cw), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
 			)
 				`+outerWhereClause+` -- WHERE d1 = 'having_value'
-				ORDER BY `+strings.Join(_measuresWithCase(cw+"= 1", "null", outerSortConstructs), ",")+` -- ORDER BY d1, ...
+				ORDER BY `+strings.Join(measuresWithCase(cw+"= 1", "null", outerSortConstructs), ",")+` -- ORDER BY d1, ...
 				`+limitClause+`
 				OFFSET %[8]d
 			`,
@@ -1651,6 +1667,9 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 			len(selectCols)+1,                   // 9 index of casewhere
 			len(comparisonSelectCols)+1,         // 10 index of casewhere
 		)
+
+		// ^^^ Outer query rationale:
+		// DuckDB query `SELECT publisher, avg(bid_price) AS bid_price ... HAVING bid_price > 0` is ambiguous because alias is the same.
 	} else { // Druid measure filter
 		limitClause := ""
 		subqueryLimitClause := ""
@@ -1717,7 +1736,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 		}
 		sql = fmt.Sprintf(`
 				-- SELECT COALESCE(base.d1, comparison.d1), ..., base.m1, ..., base.m2 ... 
-				SELECT `+strings.Join(slices.Concat(finalDims[1:], toClauses(inFunc("ANY_VALUE", __withCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures))), finalComparisonTimeDims), ",")+` FROM 
+				SELECT `+strings.Join(slices.Concat(finalDims[1:], toClauses(inFunc("ANY_VALUE", withCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures))), finalComparisonTimeDims), ",")+` FROM 
 					(
 						-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
 						SELECT 
@@ -1726,7 +1745,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 						FROM %[3]s %[6]s 
 						WHERE %[4]s 
 						GROUP BY %[2]s, %[7]d 
-						ORDER BY `+strings.Join(slices.Concat(_measuresWithCase(cw+"= 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+`
+						ORDER BY `+strings.Join(slices.Concat(measuresWithCase(cw+"= 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+`
 					) base
 				LEFT JOIN
 					(
@@ -1735,13 +1754,13 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(olap
 						FROM %[3]s %[6]s 
 						WHERE %[5]s 
 						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(slices.Concat(_measuresWithCase(cw+"= 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+` 
+						ORDER BY `+strings.Join(slices.Concat(measuresWithCase(cw+"= 1", "null", sortConstructs)), ",")+" "+subqueryLimitClause+` 
 					) comparison
 				ON
 				-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
 						`+strings.Join(append(joinConditions, "base."+cw+" = comparison."+cw), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
 				GROUP BY `+strings.Join(outerGroupCols, ",")+", coalesce(base."+cw+",comparison."+cw+") "+havingWhereClause+`
-				ORDER BY `+strings.Join(slices.Concat(_measuresWithCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", outerSortConstructs)), ",")+` -- ORDER BY d1, ...
+				ORDER BY `+strings.Join(slices.Concat(measuresWithCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", outerSortConstructs)), ",")+` -- ORDER BY d1, ...
 				`+limitClause+`
 				OFFSET %[8]d
 			`,
@@ -1771,7 +1790,7 @@ type SortConstruct struct {
 	dim        bool
 }
 
-func _measuresWithCase(cond, output2 string, sortConstructs []*SortConstruct) []string {
+func measuresWithCase(cond, output2 string, sortConstructs []*SortConstruct) []string {
 	cs := make([]string, len(sortConstructs))
 	for i, sc := range sortConstructs {
 		if sc.dim {
@@ -1783,7 +1802,7 @@ func _measuresWithCase(cond, output2 string, sortConstructs []*SortConstruct) []
 	return cs
 }
 
-func withCase(cond, output2 string, finalMeasures []*FinalMeasure) []string {
+func withCaseAsClauses(cond, output2 string, finalMeasures []*FinalMeasure) []string {
 	cs := make([]string, len(finalMeasures))
 	for i, fm := range finalMeasures {
 		cs[i] = "CASE WHEN " + cond + " THEN " + fm.expression + " ELSE " + output2 + " END AS " + fm.alias
@@ -1791,7 +1810,7 @@ func withCase(cond, output2 string, finalMeasures []*FinalMeasure) []string {
 	return cs
 }
 
-func __withCase(cond, output2 string, finalMeasures []*FinalMeasure) []*FinalMeasure {
+func withCase(cond, output2 string, finalMeasures []*FinalMeasure) []*FinalMeasure {
 	cs := make([]*FinalMeasure, len(finalMeasures))
 	for i, fm := range finalMeasures {
 		cs[i] = &FinalMeasure{
@@ -1829,21 +1848,21 @@ func withPrefixCols(prefix string, cols []string) []string {
 	return cs
 }
 
-func inFuncCols(name string, cols []string) []string {
-	cs := make([]string, len(cols))
-	for i, c := range cols {
-		cs[i] = fmt.Sprintf("%s(%s) AS %s", name, c, c)
-	}
-	return cs
-}
+// func inFuncCols(name string, cols []string) []string {
+// 	cs := make([]string, len(cols))
+// 	for i, c := range cols {
+// 		cs[i] = fmt.Sprintf("%s(%s) AS %s", name, c, c)
+// 	}
+// 	return cs
+// }
 
-func anyTimestampsCols(cols []string) []string {
-	cs := make([]string, len(cols))
-	for i, c := range cols {
-		cs[i] = fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(%s))) AS %s", c, c)
-	}
-	return cs
-}
+// func anyTimestampsCols(cols []string) []string {
+// 	cs := make([]string, len(cols))
+// 	for i, c := range cols {
+// 		cs[i] = fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(%s))) AS %s", c, c)
+// 	}
+// 	return cs
+// }
 
 func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
