@@ -1,6 +1,7 @@
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 import {
+  ConnectorDriverPropertyType,
   V1ConnectorDriver,
   getRuntimeServiceGetFileQueryKey,
   runtimeServiceGetFile,
@@ -16,28 +17,47 @@ export function compileConnectorYAML(
 # Reference documentation: https://docs.rilldata.com/reference/project-files/connectors
   
 type: connector
+
 driver: ${connector.name}`;
 
-  // Get the secret keys
-  const secretKeys =
+  // Get the secret property keys
+  const secretPropertyKeys =
     connector.sourceProperties
       ?.filter((property) => property.secret)
       .map((property) => property.key) || [];
 
+  // Get the string property keys
+  const stringPropertyKeys =
+    connector.sourceProperties
+      ?.filter(
+        (property) => property.type === ConnectorDriverPropertyType.TYPE_STRING,
+      )
+      .map((property) => property.key) || [];
+
   // Compile key value pairs
   const compiledKeyValues = Object.entries(formValues)
-    .map(([key, value]) =>
-      secretKeys.includes(key)
-        ? `${key}: "{{ .vars.${makeDotEnvConnectorKey(
-            connector.name as string,
-            key,
-          )} }}"`
-        : `${key}: "${value}"`,
-    )
+    .map(([key, formValue]) => {
+      const value = formValue as string;
+
+      const isSecretProperty = secretPropertyKeys.includes(key);
+      if (isSecretProperty) {
+        return `${key}: "{{ .vars.${makeDotEnvConnectorKey(
+          connector.name as string,
+          key,
+        )} }}"`;
+      }
+
+      const isStringProperty = stringPropertyKeys.includes(key);
+      if (isStringProperty) {
+        return `${key}: "${value}"`;
+      }
+
+      return `${key}: ${value}`;
+    })
     .join("\n");
 
   // Return the compiled YAML
-  return `${topOfFile}\n\n` + compiledKeyValues;
+  return `${topOfFile}\n` + compiledKeyValues;
 }
 
 export async function updateDotEnvWithSecrets(
@@ -76,7 +96,7 @@ export async function updateDotEnvWithSecrets(
 
   // Update the blob with the new secrets
   secretKeys.forEach((key) => {
-    if (!key) {
+    if (!key || !formValues[key]) {
       return;
     }
 
@@ -84,8 +104,8 @@ export async function updateDotEnvWithSecrets(
       connector.name as string,
       key,
     );
-    const secretValue = formValues[key];
-    blob = replaceOrAddEnvVariable(blob, connectorSecretKey, secretValue);
+
+    blob = replaceOrAddEnvVariable(blob, connectorSecretKey, formValues[key]);
   });
 
   return blob;
