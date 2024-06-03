@@ -190,9 +190,10 @@ func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name 
 
 	// append the new/updated connector
 	inst.ProjectConnectors = append(inst.ProjectConnectors, &runtimev1.Connector{
-		Name:   name,
-		Type:   connector.Driver,
-		Config: connector.Properties,
+		Name:                name,
+		Type:                connector.Driver,
+		Config:              connector.Properties,
+		ConfigFromVariables: connector.PropertiesFromVariables,
 	})
 
 	return r.EditInstance(ctx, inst, false)

@@ -125,5 +125,24 @@ func (r *ConnectorReconciler) executionSpecHash(spec *runtimev1.ConnectorSpec) (
 		}
 	}
 
+	// sort propertiesFromVariables by key
+	keys = make([]string, 0, len(spec.PropertiesFromVariables))
+	for k := range spec.PropertiesFromVariables {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+
+	// write propertiesFromVariables to hash
+	for _, k := range keys {
+		_, err = hash.Write([]byte(k))
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write([]byte(spec.PropertiesFromVariables[k]))
+		if err != nil {
+			return "", err
+		}
+	}
+
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
