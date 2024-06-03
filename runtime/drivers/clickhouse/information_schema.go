@@ -28,23 +28,25 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 	// Given the usual way of querying table in clickhouse is `SELECT * FROM table_name` or `SELECT * FROM database.table_name`.
 	// We map clickhouse database to `database schema` and table_name to `table name`.
 	q := `
-		SELECT
-			T.table_schema AS SCHEMA,
-			T.table_schema = currentDatabase() AS is_default_schema,
-			T.table_name AS NAME,
-			T.table_type AS TABLE_TYPE, 
-			C.column_name AS COLUMNS,
-			C.data_type AS COLUMN_TYPE,
-			C.ordinal_position as ORDINAL_POSITION
-		FROM information_schema.tables T 
-		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
-		WHERE lower(T.table_schema) NOT IN ('information_schema', 'system')
-		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+		SELECT 
+			T.database AS SCHEMA,
+			T.database = currentDatabase() AS is_default_schema,
+			T.name AS NAME,
+			if(lower(T.engine) like '%view%', 'VIEW', 'TABLE') AS TABLE_TYPE,
+			C.name AS COLUMNS,
+			C.type AS COLUMN_TYPE,
+			C.position AS ORDINAL_POSITION
+		FROM system.tables AS T
+		INNER JOIN system.columns AS C ON (T.database = C.database) AND (T.name = C.table)
+		WHERE lower(T.database) NOT IN ('information_schema', 'system') 
+		ORDER BY SCHEMA ASC, NAME ASC, TABLE_TYPE ASC, ORDINAL_POSITION ASC
 	`
 
 	rows, err := conn.QueryxContext(ctx, q)
 	if err != nil {
-		return nil, err
+		if err != nil {
+			return nil, err
+		}
 	}
 	defer rows.Close()
 
@@ -66,18 +68,18 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 	var q string
 	var args []any
 	q = `
-		SELECT
-			T.table_schema AS SCHEMA,
-			T.table_schema = currentDatabase() AS is_default_schema,
-			T.table_name AS NAME,
-			T.table_type AS TABLE_TYPE, 
-			C.column_name AS COLUMNS,
-			C.data_type AS COLUMN_TYPE,
-			C.ordinal_position as ORDINAL_POSITION
-		FROM information_schema.tables T 
-		JOIN information_schema.columns C ON T.table_schema = C.table_schema AND T.table_name = C.table_name
-		WHERE T.table_schema = coalesce(?, currentDatabase()) AND T.table_name = ?
-		ORDER BY SCHEMA, NAME, TABLE_TYPE, ORDINAL_POSITION
+		SELECT 
+			T.database AS SCHEMA,
+			T.database = currentDatabase() AS is_default_schema,
+			T.name AS NAME,
+			if(lower(T.engine) like '%view%', 'VIEW', 'TABLE') AS TABLE_TYPE,
+			C.name AS COLUMNS,
+			C.type AS COLUMN_TYPE,
+			C.position AS ORDINAL_POSITION
+		FROM system.tables AS T
+		INNER JOIN system.columns AS C ON (T.database = C.database) AND (T.name = C.table)
+		WHERE T.database = coalesce(?, currentDatabase()) AND T.name = ?
+		ORDER BY SCHEMA ASC, NAME ASC, TABLE_TYPE ASC, ORDINAL_POSITION ASC
 	`
 	if schema == "" {
 		args = append(args, nil, name)
