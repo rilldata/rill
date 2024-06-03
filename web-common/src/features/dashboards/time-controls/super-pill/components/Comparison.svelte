@@ -7,9 +7,10 @@
     TimeComparisonOption,
   } from "@rilldata/web-common/lib/time/types";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import { Interval } from "luxon";
+  import { DateTime, Interval } from "luxon";
   import { metricsExplorerStore } from "../../../stores/dashboard-stores";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
 
   type Option = {
     name: TimeComparisonOption;
@@ -28,6 +29,13 @@
   export let showComparison: boolean | undefined;
   export let selectedComparison: DashboardTimeControls | undefined;
   export let metricViewName: string;
+  export let zone: string;
+
+  $: interval = selectedComparison?.start
+    ? Interval.fromDateTimes(selectedComparison.start, selectedComparison.end)
+    : null;
+
+  $: firstVisibleMonth = interval?.start ?? DateTime.now();
 
   let open = false;
 
@@ -40,14 +48,13 @@
 
   $: selectedLabel = showComparison ? comparisonOption : "custom period";
 
-  // function onSelectCustomComparisonRange(startDate: string, endDate: string) {
-
-  //   onSelectComparisonRange(
-  //     TimeComparisonOption.CUSTOM,
-  //     new Date(startDate),
-  //     new Date(endDate),
-  //   );
-  // }
+  function applyRange(range: Interval<true>) {
+    onSelectComparisonRange(
+      TimeComparisonOption.CUSTOM,
+      range.start.toJSDate(),
+      range.end.toJSDate(),
+    );
+  }
 
   function onCompareRangeSelect(comparisonOption: TimeComparisonOption) {
     if (
@@ -74,10 +81,21 @@
   }
 </script>
 
-<DropdownMenu.Root bind:open>
+<DropdownMenu.Root
+  bind:open
+  onOpenChange={(open) => {
+    if (open && interval?.isValid) {
+      firstVisibleMonth = interval.start;
+    }
+  }}
+>
   <DropdownMenu.Trigger asChild let:builder>
     {#if showComparison}
-      <button use:builder.action {...builder}>
+      <button
+        use:builder.action
+        {...builder}
+        aria-label="Select time comparison option"
+      >
         <div class="gap-x-2 flex" class:inactive={!showComparison}>
           <b>vs</b>
 
@@ -101,7 +119,7 @@
     {/if}
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start">
+  <DropdownMenu.Content align="start" class="w-72">
     {#each timeComparisonOptionsState as option (option.name)}
       {@const preset = TIME_COMPARISON[option.name]}
       {@const selected = selectedLabel === option.name}
@@ -124,6 +142,17 @@
         <DropdownMenu.Separator />
       {/if}
     {/each}
+
+    <DropdownMenu.Separator />
+    {#if interval?.isValid}
+      <CalendarPlusDateInput
+        {firstVisibleMonth}
+        {interval}
+        {zone}
+        {applyRange}
+        closeMenu={() => (open = false)}
+      />
+    {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 

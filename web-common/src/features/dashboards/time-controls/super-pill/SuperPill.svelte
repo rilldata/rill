@@ -289,6 +289,7 @@
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showComparisonTimeSeries}
       currentInterval={interval}
+      zone={activeTimeZone}
       {onSelectComparisonRange}
     />
   {/if}
