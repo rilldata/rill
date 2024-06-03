@@ -1375,7 +1375,6 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 	}
 
 	var orderClauses []string
-	// var subqueryOrderByClauses []string
 
 	/*
 		Dimensions are referenced by index because time dimensions have an issue with aliases in DuckDB
@@ -1429,14 +1428,11 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 				dim:        true,
 			})
 		}
-		// subqueryOrderByClauses = append(subqueryOrderByClauses, subQueryClause+ending)
 	}
 
 	outerWhereClause := ""
-	// havingClause := ""
 	if q.Having != nil {
 		outerWhereClause += " WHERE " + havingWhereClause
-		// havingClause += "HAVING " + havingClause
 	}
 
 	var args []any
@@ -1457,18 +1453,9 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 			innerGroupCols = append(innerGroupCols, fmt.Sprintf("%d", i+2))
 		}
 
-		// var measureCols []string
-		// for _, m := range q.Measures {
-		// nm := m.Name
-		// if export {
-		// nm = labelMap[m.Name]
-		// }
-		// measureCols = append(measureCols, fmt.Sprintf("partial.%s", safeName(nm)))
-		// }
-
 		outerDims := make([]string, 0, len(q.Dimensions))
 		for _, d := range q.Dimensions {
-			// 	// Handle regular dimensions
+			// Handle regular dimensions
 			if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 				dim := mvDimsByName[d.Name]
 				outerDims = append(outerDims, safeName(dim.Name))
@@ -1793,22 +1780,6 @@ func withPrefixCols(prefix string, cols []string) []string {
 	}
 	return cs
 }
-
-// func inFuncCols(name string, cols []string) []string {
-// 	cs := make([]string, len(cols))
-// 	for i, c := range cols {
-// 		cs[i] = fmt.Sprintf("%s(%s) AS %s", name, c, c)
-// 	}
-// 	return cs
-// }
-
-// func anyTimestampsCols(cols []string) []string {
-// 	cs := make([]string, len(cols))
-// 	for i, c := range cols {
-// 		cs[i] = fmt.Sprintf("MILLIS_TO_TIMESTAMP(PARSE_LONG(ANY_VALUE(%s))) AS %s", c, c)
-// 	}
-// 	return cs
-// }
 
 func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx context.Context, olap drivers.OLAPStore, priority int, mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity, export bool) (string, []any, error) {
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
