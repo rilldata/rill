@@ -36,20 +36,5 @@ func InitEmpty(ctx context.Context, repo drivers.RepoStore, instanceID, title st
 		return err
 	}
 
-	err = repo.Put(ctx, "sources/.gitkeep", strings.NewReader(""))
-	if err != nil {
-		return err
-	}
-
-	err = repo.Put(ctx, "models/.gitkeep", strings.NewReader(""))
-	if err != nil {
-		return err
-	}
-
-	err = repo.Put(ctx, "dashboards/.gitkeep", strings.NewReader(""))
-	if err != nil {
-		return err
-	}
-
 	return nil
 }
