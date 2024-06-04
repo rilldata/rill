@@ -17,3 +17,5 @@ export const runtime = writable<Runtime>({
   host: "",
   instanceId: "",
 });
+
+export const projectInitialized = writable(false);

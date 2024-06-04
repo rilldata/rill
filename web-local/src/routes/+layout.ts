@@ -1,18 +1,47 @@
-import { dev } from "$app/environment";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { projectInitialized } from "@rilldata/web-common/runtime-client/runtime-store";
+import { redirect } from "@sveltejs/kit";
+import {
+  runtimeServiceGetInstance,
+  runtimeServiceUnpackEmpty,
+} from "@rilldata/web-common/runtime-client/index.js";
+import { EMPTY_PROJECT_TITLE } from "@rilldata/web-common/features/welcome/constants";
+import { get } from "svelte/store";
 
 export const ssr = false;
 
-// When testing, we need to use the relative path to the server
-const HOST = dev ? "http://localhost:9009" : "";
-const INSTANCE_ID = "default";
+export async function load({ url }) {
+  // Untrack url after upgrading to SvelteKit 2.0
+  const onWelcomePage = url.pathname === "/welcome";
 
-const runtimeInit = {
-  host: HOST,
-  instanceId: INSTANCE_ID,
-};
+  const initialized = get(projectInitialized);
 
-export function load() {
-  runtime.set(runtimeInit);
-  return runtimeInit;
+  if (!initialized && !onWelcomePage) {
+    await handleUninitializedProject();
+  } else if (initialized && onWelcomePage) {
+    throw redirect(303, "/");
+  }
+}
+
+async function handleUninitializedProject() {
+  const instanceId = get(runtime).instanceId;
+  // If the project is not initialized, determine what page to route to dependent on the OLAP connector
+  const instance = await runtimeServiceGetInstance(instanceId, {
+    sensitive: true,
+  });
+  const olapConnector = instance.instance?.olapConnector;
+  if (!olapConnector) {
+    throw new Error("OLAP connector is not defined");
+  }
+
+  // DuckDB-backed projects should head to the Welcome page for user-guided initialization
+  if (olapConnector === "duckdb") {
+    throw redirect(303, "/welcome");
+  } else {
+    // Clickhouse and Druid-backed projects should be initialized immediately
+    await runtimeServiceUnpackEmpty(instanceId, {
+      title: EMPTY_PROJECT_TITLE,
+      force: true,
+    });
+  }
 }

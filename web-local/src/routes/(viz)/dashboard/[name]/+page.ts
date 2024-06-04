@@ -6,9 +6,11 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { error } from "@sveltejs/kit";
 import type { QueryFunction } from "@tanstack/svelte-query";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { get } from "svelte/store";
 
-export const load = async ({ parent, params, depends }) => {
-  const { instanceId } = await parent();
+export const load = async ({ params, depends }) => {
+  const { instanceId } = get(runtime);
 
   const dashboardName = params.name;
 
