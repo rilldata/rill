@@ -21,6 +21,7 @@ import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matc
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
+import { getConnectorNameForResource } from "../connectors/utils";
 
 const MainResourceKinds: {
   [kind in ResourceKind]?: true;
@@ -144,10 +145,7 @@ export class WatchResourcesClient {
       void queryClient.invalidateQueries(
         getConnectorServiceOLAPListTablesQueryKey({
           instanceId: get(runtime).instanceId,
-          connector:
-            resource.source?.spec?.sinkConnector ??
-            resource.model?.spec?.outputConnector ??
-            "",
+          connector: getConnectorNameForResource(resource),
         }),
       );
     }
