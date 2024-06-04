@@ -153,7 +153,7 @@ func (e *Executor) loadWatermark(ctx context.Context, executionTime *time.Time) 
 	defer res.Close()
 
 	var t time.Time
-	for res.Next() {
+	if res.Next() {
 		if err := res.Scan(&t); err != nil {
 			return time.Time{}, fmt.Errorf("failed to scan time anchor: %w", err)
 		}

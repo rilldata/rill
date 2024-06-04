@@ -156,6 +156,10 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, err
 	}
 
+	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
+		return nil, false, err
+	}
+
 	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, false, err
