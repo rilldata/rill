@@ -14,7 +14,8 @@
     makeTablePreviewHref,
   } from "./olap-config";
 
-  export let connectorInstanceId: string;
+  export let instanceId: string;
+  export let driver: string;
   export let connector: string;
   export let database: string; // The backend interprets an empty string as the default database
   export let databaseSchema: string; // The backend interprets an empty string as the default schema
@@ -30,11 +31,18 @@
     databaseSchema,
     table,
   );
-  $: href = makeTablePreviewHref(connector, database, databaseSchema, table);
+  $: tableId = `${connector}-${fullyQualifiedTableName}`;
+  $: href = makeTablePreviewHref(
+    driver,
+    connector,
+    database,
+    databaseSchema,
+    table,
+  );
   $: open = $page.url.pathname === href;
 </script>
 
-<li aria-label={fullyQualifiedTableName} class="table-entry group" class:open>
+<li aria-label={tableId} class="table-entry group" class:open>
   <div class="table-entry-header {database ? 'pl-[58px]' : 'pl-[40px]'}">
     <TableIcon size="14px" className="shrink-0 text-gray-400" />
     <Tooltip alignment="start" location="right" distance={32}>
@@ -52,7 +60,7 @@
     </Tooltip>
     {#if hasUnsupportedDataTypes}
       <UnsupportedTypesIndicator
-        instanceId={connectorInstanceId}
+        {instanceId}
         {connector}
         {database}
         {databaseSchema}
@@ -62,9 +70,9 @@
     <DropdownMenu.Root bind:open={contextMenuOpen}>
       <DropdownMenu.Trigger asChild let:builder>
         <ContextButton
-          id="more-actions-{fullyQualifiedTableName}"
+          id="more-actions-{tableId}"
           tooltipText="More actions"
-          label="{fullyQualifiedTableName} actions menu trigger"
+          label="{tableId} actions menu trigger"
           builders={[builder]}
           suppressTooltip={contextMenuOpen}
         >
@@ -77,7 +85,13 @@
         side="right"
         sideOffset={16}
       >
-        <TableMenuItems {connector} {database} {databaseSchema} {table} />
+        <TableMenuItems
+          {driver}
+          {connector}
+          {database}
+          {databaseSchema}
+          {table}
+        />
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   </div>
