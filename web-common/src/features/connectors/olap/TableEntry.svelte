@@ -26,7 +26,7 @@
   let showSchema = false;
 
   $: fullyQualifiedTableName = makeFullyQualifiedTableName(
-    connector,
+    driver,
     database,
     databaseSchema,
     table,

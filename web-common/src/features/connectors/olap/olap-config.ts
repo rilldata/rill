@@ -1,12 +1,12 @@
 export const OLAP_DRIVERS_WITHOUT_MODELING = ["clickhouse", "druid", "pinot"];
 
 export function makeFullyQualifiedTableName(
-  connector: string,
+  driver: string,
   database: string,
   databaseSchema: string,
   table: string,
 ) {
-  switch (connector) {
+  switch (driver) {
     case "clickhouse":
       return `${databaseSchema}.${table}`;
     case "druid":
@@ -16,7 +16,7 @@ export function makeFullyQualifiedTableName(
     case "pinot":
       return table;
     default:
-      throw new Error(`Unsupported OLAP connector: ${connector}`);
+      throw new Error(`Unsupported OLAP connector: ${driver}`);
   }
 }
 
