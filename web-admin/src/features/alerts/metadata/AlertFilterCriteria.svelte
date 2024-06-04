@@ -43,7 +43,7 @@
                 label={filter.measure}
                 readOnly
                 {comparisonLabel}
-                labelMaxWidth="300px"
+                labelMaxWidth=""
               />
             </div>
           </Chip>
