@@ -66,14 +66,14 @@
   $: groupErr = parseCriteriaError($errors["criteria"], index);
 </script>
 
-<div class="grid grid-cols-12 gap-2">
+<div class="flex flex-row gap-2">
   <Select
     bind:value={$form["criteria"][index].measure}
     id="field"
     label=""
     options={measureOptions}
     placeholder="Measure"
-    className="col-span-4"
+    className="w-[160px]"
   />
   <Select
     bind:value={$form["criteria"][index].type}
@@ -81,7 +81,7 @@
     label=""
     options={typeOptions}
     placeholder="type"
-    className="col-span-4"
+    className="w-[256px]"
   />
   <Select
     bind:value={$form["criteria"][index].operation}
@@ -89,7 +89,7 @@
     label=""
     options={CriteriaOperationOptions}
     placeholder="Operator"
-    className="col-span-1"
+    className="w-[70px]"
   />
   <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
   <InputV2
@@ -99,7 +99,7 @@
     id="value"
     on:input={valueUpdater}
     placeholder={"0"}
-    className="col-span-3"
+    className="w-[256px]"
   />
 </div>
 {#if groupErr}
