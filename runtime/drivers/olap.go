@@ -269,9 +269,9 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	switch d {
 	case DialectDruid:
-		return fmt.Sprintf("SAFE_DIVIDE(%s, %s)", numExpr, denExpr)
+		return fmt.Sprintf("SAFE_DIVIDE(%s, CAST(%s AS DOUBLE))", numExpr, denExpr)
 	default:
-		return fmt.Sprintf("CAST((%s) AS DOUBLE)/%s", numExpr, denExpr)
+		return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
 	}
 }
 

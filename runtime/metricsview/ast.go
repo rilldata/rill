@@ -318,9 +318,13 @@ func (a *AST) resolveMeasure(qm Measure, visible bool) (*runtimev1.MetricsViewSp
 			return nil, err
 		}
 
+		base := fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name))
+		comp := fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))
+		expr := a.dialect.SafeDivideExpression(fmt.Sprintf("%s - %s", base, comp), comp)
+
 		return &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:               qm.Name,
-			Expression:         a.dialect.SafeDivideExpression(fmt.Sprintf("base.%s", a.dialect.EscapeIdentifier(m.Name)), fmt.Sprintf("comparison.%s", a.dialect.EscapeIdentifier(m.Name))),
+			Expression:         expr,
 			Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_TIME_COMPARISON,
 			ReferencedMeasures: []string{qm.Compute.ComparisonRatio.Measure},
 			Label:              fmt.Sprintf("%s (Δ%%)", m.Label),
