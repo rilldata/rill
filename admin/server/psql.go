@@ -19,13 +19,10 @@ import (
 	"go.uber.org/zap"
 )
 
+// psqlProxyQueryHandler is a handler for proxying psql queries to a runtime server
 func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt wire.PreparedStatements, err error) {
 	s.logger.Info("psql proxy query", zap.String("query", query))
 	now := time.Now()
-	defer func() {
-		s.logger.Info("psql proxy query executed", zap.Duration("duration", time.Since(now)), zap.Error(err))
-	}()
-
 	if strings.Trim(query, " ") == "" {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 			return writer.Empty()
@@ -69,7 +66,10 @@ func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt 
 	}
 
 	// handle data
-	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) (err error) {
+		defer func() {
+			s.logger.Info("psql proxy query executed", zap.Duration("duration", time.Since(now)), zap.Error(err))
+		}()
 		defer rows.Close()
 		for rows.Next() {
 			d, err := rows.Values()
@@ -212,7 +212,6 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 
 	pool, ok := p.runtimePool[dsn]
 	if ok {
-		p.server.logger.Info("using cached connection")
 		return pool, nil
 	}
 
@@ -229,6 +228,7 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 	config.HealthCheckPeriod = time.Minute
 	// issues a runtime JWT and set it as password
 	config.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
+		p.server.logger.Info("opening new connection to runtime")
 		tokens := strings.Split(db, ".")
 		if len(tokens) != 2 {
 			// this error will be captured much earlier
@@ -237,8 +237,6 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 		org := tokens[0]
 		project := tokens[1]
 
-		// NOTE :: runtimeJWT makes duplicate DB calls to get project and deployment again but this will only be on a new connection.
-		// This is done to avoid capturing project and deployment already present in this flow for the entire duration of the pool
 		jwt, err := p.server.runtimeJWT(ctx, org, project)
 		if err != nil {
 			return err
@@ -247,8 +245,7 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 		return nil
 	}
 
-	// TODO fix this
-	config.ConnConfig.StatementCacheCapacity = 0
+	// Runtime psql sever does not support prepared statements
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err = pgxpool.NewWithConfig(ctx, config)

@@ -44,6 +44,10 @@ type PSQLQueryOpts struct {
 	Logger         *zap.Logger
 }
 
+// ResolvePSQLQuery takes a SQL query and returns the result of the query.
+// The query is typically a SQL query that targets `pg_catalog` or is a metadata query.
+// We route such queries to an in-memory duckDB since duckDB is compatible with postgres.
+// The in-memory db is populated with empty tables having same schema as metrics views.
 func ResolvePSQLQuery(ctx context.Context, opts *PSQLQueryOpts) ([][]any, *runtimev1.StructType, error) {
 	// various hacks to make postgres query compatible with a duckdb query
 	sqlStr := rewriteSQL(opts.SQL)
@@ -79,7 +83,7 @@ func ResolvePSQLQuery(ctx context.Context, opts *PSQLQueryOpts) ([][]any, *runti
 		return nil, nil, err
 	}
 
-	// loop over all resources and create corresponding table in duckdb so that these can be queried with information_schema
+	// loop over all resources and create corresponding table in duckdb so that these can be queried with pg_catalog
 	for _, resource := range resources {
 		cols, err := colsForMetricView(ctrl, opts, resource)
 		if err != nil {
@@ -222,6 +226,7 @@ func colsForMetricView(ctrl *runtime.Controller, opts *PSQLQueryOpts, mv *runtim
 	return final, nil
 }
 
+// duckdb is not fully compatible with postgres so need to rewrite some queries. This is a hacky solution.
 func rewriteSQL(sql string) string {
 	sql = extraCharRe.ReplaceAllString(sql, "\n")
 

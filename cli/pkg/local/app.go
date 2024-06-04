@@ -411,7 +411,7 @@ func (a *App) Serve(httpPort, grpcPort, psqlPort int, enableUI, openBrowser, rea
 	}
 	if psqlPort != 0 {
 		group.Go(func() error {
-			return runtimeServer.ServePostgres(ctx, false)
+			return runtimeServer.ServePSQL(ctx, false)
 		})
 	}
 

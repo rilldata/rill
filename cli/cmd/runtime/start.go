@@ -244,7 +244,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				AuthEnable:      conf.AuthEnable,
 				AuthIssuerURL:   conf.AuthIssuerURL,
 				AuthAudienceURL: conf.AuthAudienceURL,
-				DataDir:         conf.DataDir,
 			}
 			s, err := server.NewServer(ctx, srvOpts, rt, logger, limiter, activityClient)
 			if err != nil {
@@ -255,7 +254,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
-			group.Go(func() error { return s.ServePostgres(cctx, true) })
+			group.Go(func() error { return s.ServePSQL(cctx, true) })
 			if conf.DebugPort != 0 {
 				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 			}

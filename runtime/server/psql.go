@@ -18,10 +18,16 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+// psqlQueryHandler handles incoming queries on psql wire endpoint.
+// The metadata queries are redirected to ResolvePSQLQuery.
+// The metrics_sql queries are redirected to metrics_sql resolver.
 func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
 	clientParams := wire.ClientParameters(ctx)
 	instanceID := clientParams[wire.ParamDatabase]
 
+	// The logic to identify metadata queries is somewhat hacky.
+	// Identify metadata queries based on whether query contains names of common catalogs like pg_attribute, pg_catalog etc.
+	// Also consider queries that do not have a FROM clause as metadata queries since querying from metrics_view requires a FROM clause.
 	if strings.Contains(query, "pg_attribute") || strings.Contains(query, "pg_catalog") || strings.Contains(query, "pg_type") || strings.Contains(query, "pg_namespace") || !strings.Contains(strings.ToUpper(query), "FROM") {
 		data, schema, err := psql.ResolvePSQLQuery(ctx, &psql.PSQLQueryOpts{
 			SQL:            query,

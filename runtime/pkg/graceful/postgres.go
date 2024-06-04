@@ -21,8 +21,8 @@ type ServePSQLOptions struct {
 	Logger       *zap.Logger
 }
 
-// ServePostgres serves a Postgres server and performs a graceful shutdown if/when ctx is cancelled.
-func ServePostgres(ctx context.Context, serveOpts *ServePSQLOptions) error {
+// ServePSQL serves a Postgres server and performs a graceful shutdown if/when ctx is cancelled.
+func ServePSQL(ctx context.Context, serveOpts *ServePSQLOptions) error {
 	// Calling net.Listen("tcp", ...) will succeed if the port is blocked on IPv4 but not on IPv6.
 	// This workaround ensures we get the port on IPv4 (and most likely also on IPv6).
 	lis, err := net.Listen("tcp4", fmt.Sprintf(":%d", serveOpts.Port))

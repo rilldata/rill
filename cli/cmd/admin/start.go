@@ -309,7 +309,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				defer srv.Close()
 				group.Go(func() error { return srv.ServeGRPC(cctx) })
 				group.Go(func() error { return srv.ServeHTTP(cctx) })
-				group.Go(func() error { return srv.ServePostgres(cctx) })
+				group.Go(func() error { return srv.ServePSQL(cctx) })
 				if conf.DebugPort != 0 {
 					group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 				}

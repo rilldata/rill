@@ -195,8 +195,8 @@ func (s *Server) ServeHTTP(ctx context.Context) error {
 	})
 }
 
-// ServePostgres Starts the postrges server.
-func (s *Server) ServePostgres(ctx context.Context) error {
+// ServePSQL starts a postrges server based on postgres wire protocol.
+func (s *Server) ServePSQL(ctx context.Context) error {
 	authHandler := s.authenticator.PSQLAuthHandler()
 	opts := &graceful.ServePSQLOptions{
 		QueryHandler: s.psqlProxyQueryHandler,
@@ -204,7 +204,7 @@ func (s *Server) ServePostgres(ctx context.Context) error {
 		Port:         s.opts.PSQLPort,
 		Logger:       s.logger,
 	}
-	return graceful.ServePostgres(ctx, opts)
+	return graceful.ServePSQL(ctx, opts)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.

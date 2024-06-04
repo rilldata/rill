@@ -76,24 +76,21 @@ func (r *resolverResult) Close() error {
 
 // MarshalJSON implements ResolverResult.
 func (r *resolverResult) MarshalJSON() ([]byte, error) {
+	// close is idempotent so we close rows in this function itself
+	defer r.rows.Close()
 	var out []map[string]any
 	for r.rows.Next() {
 		if int64(len(out)) >= r.rowLimit {
-			_ = r.rows.Close()
 			return nil, fmt.Errorf("sql resolver: query limit exceeded: returned more than %d rows", r.rowLimit)
 		}
 
 		row := make(map[string]any)
 		err := r.rows.MapScan(row)
 		if err != nil {
-			_ = r.rows.Close()
 			return nil, err
 		}
 		out = append(out, row)
 	}
-
-	// close is idempotent so we close rows in this function itself
-	_ = r.rows.Close()
 	return json.Marshal(out)
 }
 
@@ -111,21 +108,6 @@ type ResolverExportOptions struct {
 	// PreWriteHook is a function that is called after the export has been prepared, but before the first bytes are output to the io.Writer.
 	PreWriteHook func(filename string) error
 }
-
-// ResolverInteractiveOptions are the options passed to a resolver's ResolveInteractive method.
-type ResolverInteractiveOptions struct {
-	// Format is the format to export the result in. Example values : JSON(default), GOOBJECTS
-	Format InteractiveFormat
-}
-
-type InteractiveFormat int32
-
-const (
-	UNSPECIFIED InteractiveFormat = 0
-	JSON        InteractiveFormat = 1
-	// GOOBJECTS is used for formats that return rows as array of go objects
-	GOOBJECTS InteractiveFormat = 2
-)
 
 // ResolverOptions are the options passed to a resolver initializer.
 type ResolverOptions struct {

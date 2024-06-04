@@ -50,7 +50,6 @@ type Options struct {
 	AuthAudienceURL string
 	TLSCertPath     string
 	TLSKeyPath      string
-	DataDir         string
 }
 
 type Server struct {
@@ -172,8 +171,8 @@ func (s *Server) ServeHTTP(ctx context.Context, registerAdditionalHandlers func(
 	return graceful.ServeHTTP(ctx, server, options)
 }
 
-// ServePostgres starts a Postgres server.
-func (s *Server) ServePostgres(ctx context.Context, requirePassword bool) error {
+// ServePSQL starts a Postgres server based on postgres wire protocol.
+func (s *Server) ServePSQL(ctx context.Context, requirePassword bool) error {
 	opts := &graceful.ServePSQLOptions{
 		QueryHandler: s.psqlQueryHandler,
 		Port:         s.opts.PSQLPort,
@@ -182,7 +181,7 @@ func (s *Server) ServePostgres(ctx context.Context, requirePassword bool) error 
 	if requirePassword {
 		opts.AuthHandler = auth.PSQLAuthHandler(s.aud)
 	}
-	return graceful.ServePostgres(ctx, opts)
+	return graceful.ServePSQL(ctx, opts)
 }
 
 // HTTPHandler HTTP handler serving REST gateway.
