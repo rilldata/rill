@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { DateTime, Interval } from "luxon";
+  import { DateTime } from "luxon";
 
   const formatsWithoutYear = [
     "M/d", // 7/4 or 07/04
