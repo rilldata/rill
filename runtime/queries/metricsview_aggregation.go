@@ -1166,6 +1166,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 	mvDimsByName := make(map[string]*runtimev1.MetricsViewSpec_DimensionV2, len(mv.Dimensions))
 	finalDims = append(finalDims, "COALESCE(base.t_offset, comparison.t_offset) AS t_offset")
 	var timeDims []string
+	var subSelectDimAliases []string
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -1174,8 +1175,10 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 				return "", nil, err
 			}
 			mvDimsByName[d.Name] = dim
-			dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
+			expr, alias, unnestClause := dialect.DimensionSelectPair(mv.Database, mv.DatabaseSchema, mv.Table, dim)
+			dimSel := fmt.Sprintf("%s AS %s", expr, alias)
 			selectCols = append(selectCols, dimSel)
+			subSelectDimAliases = append(subSelectDimAliases, alias)
 			comparisonSelectCols = append(comparisonSelectCols, dimSel)
 			finalDims = append(finalDims, fmt.Sprintf("COALESCE(base.%[1]s,comparison.%[1]s) as %[1]s", safeName(dim.Name)))
 			if unnestClause != "" {
@@ -1205,6 +1208,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 
 		timeDims = append(timeDims, safeName(alias))
 		selectCols = append(selectCols, timeDimClause)
+		subSelectDimAliases = append(subSelectDimAliases, safeName(alias))
 		colMap[alias] = len(selectCols)
 		comparisonSelectCols = append(comparisonSelectCols, timeDimClause)
 		finalDims = append(finalDims, fmt.Sprintf("base.%[1]s as %[1]s", safeName(alias)))
@@ -1225,6 +1229,9 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 		}
 	}
 
+	var subselectMeasureAliases []string
+	var subselectComparisonAliases []string
+
 	// collect subquery expressions
 	for _, m := range q.Measures {
 		switch m.Compute.(type) {
@@ -1232,8 +1239,10 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 			// nothing
 		case *runtimev1.MetricsViewAggregationMeasure_Count:
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+			subselectMeasureAliases = append(subselectMeasureAliases, safeName(m.Name))
 			if q.measuresMeta[m.Name].expand {
 				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(*) as %s", safeName(m.Name)))
+				subselectComparisonAliases = append(subselectComparisonAliases, safeName(m.Name))
 			}
 		case *runtimev1.MetricsViewAggregationMeasure_CountDistinct:
 			arg := m.GetCountDistinct().GetDimension()
@@ -1241,8 +1250,10 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 				return "", nil, fmt.Errorf("builtin measure '%s' expects non-empty string argument, got '%v'", m.BuiltinMeasure.String(), m.BuiltinMeasureArgs[0])
 			}
 			selectCols = append(selectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+			subselectMeasureAliases = append(subselectMeasureAliases, safeName(m.Name))
 			if q.measuresMeta[m.Name].expand {
 				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("COUNT(DISTINCT %s) as %s", safeName(arg), safeName(m.Name)))
+				subselectComparisonAliases = append(subselectComparisonAliases, safeName(m.Name))
 			}
 		default:
 			expr, err := metricsViewMeasureExpression(mv, m.Name)
@@ -1250,8 +1261,10 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 				return "", nil, err
 			}
 			selectCols = append(selectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+			subselectMeasureAliases = append(subselectMeasureAliases, safeName(m.Name))
 			if q.measuresMeta[m.Name].expand {
 				comparisonSelectCols = append(comparisonSelectCols, fmt.Sprintf("%s as %s", expr, safeName(m.Name)))
+				subselectComparisonAliases = append(subselectComparisonAliases, safeName(m.Name))
 			}
 		}
 	}
@@ -1496,7 +1509,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 
 		if q.Limit != nil {
 			limit = int(*q.Limit)
-			subQueryLimit := limit * 2
+			subQueryLimit := limit * 2 // the amount can be halved due to duplicates
 			if q.Offset != 0 {
 				subQueryLimit = int(q.Offset) + limit*2
 			}
@@ -1571,25 +1584,32 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 				-- SELECT ... as t_offset, base.d1, ..., base.td1, ..., base.m1, ... , comparison.td1 as td1__previous, ...
 				SELECT `+strings.Join(slices.Concat(withPrefixCols("base", outerDims), withCaseAsClauses("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures), finalComparisonTimeDims), ",")+`, coalesce(base.`+cw+`,comparison.`+cw+`) as `+cw+` FROM 
 					(
-						-- SELECT t_offset, dim1 as d1, ... timed1 as td1, ..., avg(price) as m1, ... AND d2 = 'a' ...
-						SELECT 
-							%[1]s, 
-							CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+` 
-						FROM %[3]s %[7]s 
-						WHERE (%[4]s)
-						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(convertToNullCaseClauses(cw+" = 1", sortConstructs), ",")+" "+subqueryLimitClause+` 
+						-- removing duplicates
+						SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+","+strings.Join(inFuncCols("FIRST", subselectMeasureAliases), ",")+`, FIRST(`+cw+`) AS `+cw+` FROM (
+							-- SELECT t_offset, dim1 as d1, ... timed1 as td1, ..., avg(price) as m1, ... AND d2 = 'a' ...
+							SELECT 
+								%[1]s, 
+								CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+` 
+							FROM %[3]s %[7]s 
+							WHERE (%[4]s)
+							GROUP BY %[2]s, %[9]d 
+							ORDER BY `+strings.Join(convertToNullCaseClauses(cw+" = 1", sortConstructs), ",")+" "+subqueryLimitClause+` 
+						)
+						GROUP BY `+groupForDims(len(subSelectDimAliases)+1)+`
 					) base
 				LEFT OUTER JOIN
 					(
-						-- SELECT t_offset, dim1 as d1, ..., timed1 as td1, ... avg(price) as m1, ... AND d2 = 'a' ...
-						SELECT 
-							`+comparisonSelectClause+`,`+
-			` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+`
-						FROM %[3]s %[7]s 
-						WHERE (%[5]s) 
-						GROUP BY %[2]s, %[10]d 
-						ORDER BY `+strings.Join(convertToNullCaseClauses(cw+" = 1", sortConstructs), ",")+" "+subqueryLimitClause+`
+						-- removing duplicates
+						SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+","+strings.Join(inFuncCols("FIRST", subselectComparisonAliases), ",")+`, FIRST(`+cw+`) AS `+cw+` FROM (
+							-- SELECT t_offset, dim1 as d1, ..., timed1 as td1, ... avg(price) as m1, ... AND d2 = 'a' ...
+							SELECT 
+								`+comparisonSelectClause+`,`+` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+`
+							FROM %[3]s %[7]s 
+							WHERE (%[5]s) 
+							GROUP BY %[2]s, %[10]d 
+							ORDER BY `+strings.Join(convertToNullCaseClauses(cw+" = 1", sortConstructs), ",")+" "+subqueryLimitClause+`
+						)
+						GROUP BY `+groupForDims(len(subSelectDimAliases)+1)+`
 					) comparison
 				ON
 						`+strings.Join(append(joinConditions, "base."+cw+"= comparison."+cw), " AND ")+` -- base.t_offset = comparison.t_offset AND ...
@@ -1610,8 +1630,8 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 			len(selectCols)+1,                   // 9 index of casewhere
 			len(comparisonSelectCols)+1,         // 10 index of casewhere
 		)
-		// ^^^ Outer query rationale:
-		// DuckDB query `SELECT publisher, avg(bid_price) AS bid_price ... HAVING bid_price > 0` is ambiguous because alias is the same.
+		// ^^^ Outer SELECT rationale:
+		// Plain DuckDB query `SELECT publisher, avg(bid_price) AS bid_price ... HAVING bid_price > 0` is ambiguous because alias is the same.
 	} else { // Druid measure filter
 		limitClause := ""
 		subqueryLimitClause := ""
@@ -1721,6 +1741,17 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 	return sql, args, nil
 }
 
+func groupForDims(n int) string {
+	s := ""
+	for i := range n {
+		s += fmt.Sprintf("%d", i+1)
+		if i != n-1 && n != 1 {
+			s += ","
+		}
+	}
+	return s
+}
+
 type FinalMeasure struct {
 	expression string
 	alias      string
@@ -1770,6 +1801,14 @@ func inFunc(name string, cols []*FinalMeasure) []*FinalMeasure {
 			expression: fmt.Sprintf("%s(%s)", name, c.expression),
 			alias:      c.alias,
 		}
+	}
+	return cs
+}
+
+func inFuncCols(name string, cols []string) []string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = fmt.Sprintf("%s(%s) AS %s", name, c, c)
 	}
 	return cs
 }
