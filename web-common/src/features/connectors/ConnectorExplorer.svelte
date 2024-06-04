@@ -85,6 +85,8 @@
   }
 
   .message {
-    @apply pl-2 pr-3.5 pt-2 pb-2 text-gray-500;
+    @apply pl-2 pr-3.5 py-2;
+    @apply text-gray-500;
+    @apply text-wrap;
   }
 </style>
