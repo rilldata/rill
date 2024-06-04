@@ -1,13 +1,11 @@
-import {
-  createAndExpression,
-  filterIdentifiers,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { filterIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   MetricsViewSpecMeasureType,
   MetricsViewSpecMeasureV2,
+  V1Expression,
   V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -20,7 +18,7 @@ export class AdvancedMeasureCorrector {
   private measuresMap: Map<string, MetricsViewSpecMeasureV2>;
   private measuresGrains: Map<string, V1TimeGrain>;
 
-  public constructor(
+  private constructor(
     private readonly dashboard: MetricsExplorerEntity,
     private readonly metricsViewSpec: V1MetricsViewSpec,
   ) {
@@ -41,7 +39,14 @@ export class AdvancedMeasureCorrector {
     );
   }
 
-  public correct() {
+  public static correct(
+    dashboard: MetricsExplorerEntity,
+    metricsViewSpec: V1MetricsViewSpec,
+  ) {
+    new AdvancedMeasureCorrector(dashboard, metricsViewSpec).correct();
+  }
+
+  private correct() {
     this.correctFilters();
     this.correctLeaderboards();
     this.correctTimeDimensionDetails();
@@ -50,16 +55,20 @@ export class AdvancedMeasureCorrector {
 
   private correctFilters() {
     this.dashboard.dimensionThresholdFilters.forEach((dimensionThreshold) => {
-      dimensionThreshold.filter =
-        filterIdentifiers(
-          dimensionThreshold.filter,
-          (_, ident) => !this.measureMismatch(ident, false, false),
-        ) ?? createAndExpression([]);
+      dimensionThreshold.filter = filterIdentifiers(
+        dimensionThreshold.filter,
+        (_, ident) => !this.measureMismatch(ident, false, false),
+      ) as V1Expression;
     });
+    this.dashboard.dimensionThresholdFilters =
+      this.dashboard.dimensionThresholdFilters.filter(
+        (dt) => dt.filter !== undefined,
+      );
   }
 
   private correctLeaderboards() {
     if (
+      this.dashboard.leaderboardMeasureName &&
       !this.measureMismatch(this.dashboard.leaderboardMeasureName, true, false)
     ) {
       return;
@@ -123,7 +132,7 @@ export class AdvancedMeasureCorrector {
         return true;
 
       // for comparison measures,
-      // if the component supports it and has no time comparison is enabled
+      // if the component supports it and no time comparison is enabled
       // or if the component does not support it
       case measure.type ===
         MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
