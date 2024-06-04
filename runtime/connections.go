@@ -204,7 +204,11 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	for _, c := range inst.ProjectConnectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Project = maps.Clone(c.Config) // Cloning because Project may be mutated later, but the inst object is shared.
+			if c.Config != nil {
+				res.Project = maps.Clone(c.Config) // Cloning because Project may be mutated later, but the inst object is shared.
+			} else {
+				res.Project = make(map[string]string)
+			}
 			// Resolve properties obtained from connectors that depend on an env variable
 			for k, v := range c.ConfigFromVariables {
 				var ok bool
