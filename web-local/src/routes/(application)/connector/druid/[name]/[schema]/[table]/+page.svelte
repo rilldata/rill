@@ -7,6 +7,7 @@
 
   const { readOnly } = featureFlags;
 
+  $: name = $page.params.name;
   // Druid does not have a "database" concept
   $: databaseSchema = $page.params.schema;
   $: table = $page.params.table;
@@ -22,4 +23,4 @@
   <title>Rill Developer | {table}</title>
 </svelte:head>
 
-<TablePreviewWorkspace connector="druid" {databaseSchema} {table} />
+<TablePreviewWorkspace connector={name} {databaseSchema} {table} />
