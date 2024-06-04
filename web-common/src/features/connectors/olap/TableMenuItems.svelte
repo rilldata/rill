@@ -21,6 +21,7 @@
 
   const { ai } = featureFlags;
 
+  export let driver: string;
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string = "";
@@ -28,7 +29,13 @@
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
-  $: href = makeTablePreviewHref(connector, database, databaseSchema, table);
+  $: href = makeTablePreviewHref(
+    driver,
+    connector,
+    database,
+    databaseSchema,
+    table,
+  );
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     connector,
