@@ -290,7 +290,7 @@ func (d Dialect) JoinOnExpression(lhs, rhs string) string {
 	if d == DialectClickHouse {
 		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
 	}
-	return fmt.Sprintf("%s = %s OR (%s IS NULL AND %s IS NULL)", lhs, rhs, lhs, rhs)
+	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
 
 func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
