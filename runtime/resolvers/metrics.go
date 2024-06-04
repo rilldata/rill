@@ -2,7 +2,6 @@ package resolvers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -103,7 +102,7 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 	return r.executor.ValidateQuery(r.query)
 }
 
-func (r *metricsResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
+func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	cfg, err := r.runtime.InstanceConfig(ctx, r.instanceID)
 	if err != nil {
 		return nil, err
@@ -115,30 +114,7 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (*runtime.Reso
 	}
 	defer res.Close()
 
-	out := []map[string]any{}
-	for res.Rows.Next() {
-		if int64(len(out)) >= cfg.InteractiveSQLRowLimit {
-			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", cfg.InteractiveSQLRowLimit)
-		}
-
-		row := make(map[string]any)
-		err = res.Rows.MapScan(row)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, row)
-	}
-
-	data, err := json.Marshal(out)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtime.ResolverResult{
-		Data:   data,
-		Schema: res.Schema,
-		Cache:  cache,
-	}, nil
+	return runtime.NewResolverResult(res, cfg.InteractiveSQLRowLimit, cache), nil
 }
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
