@@ -5,10 +5,12 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // Resolver represents logic, such as a SQL query, that produces output data.
@@ -31,22 +33,76 @@ type Resolver interface {
 	// Validate the properties and args without running any expensive operations.
 	Validate(ctx context.Context) error
 	// ResolveInteractive resolves data for interactive use (e.g. API requests or alerts).
-	ResolveInteractive(ctx context.Context, opts *ResolverInteractiveOptions) (*ResolverResult, error)
+	ResolveInteractive(ctx context.Context) (ResolverResult, error)
 	// ResolveExport resolve data for export (e.g. downloads or reports).
 	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
 }
 
 // ResolverResult is the result of a resolver's execution.
-type ResolverResult struct {
-	// Data is a JSON encoded array of objects.
-	Data []byte
-	// Rows is deserialized array of objects. If Rows is set Data will be unset and vice versa.
-	Rows [][]any
+type ResolverResult interface {
 	// Schema is the schema for the Data
-	Schema *runtimev1.StructType
-	// Cache indicates whether the result can be cached.
-	Cache bool
+	Schema() *runtimev1.StructType
+	// Cache indicates whether the result can be cached
+	Cache() bool
+	// MarshalJSON is a convenience method to serialize the result to JSON.
+	MarshalJSON() ([]byte, error)
+	// Close should be called to release resources
+	Close() error
 }
+
+func NewResolverResult(result *drivers.Result, rowLimit int64, cache bool) ResolverResult {
+	return &resolverResult{
+		rows:     result,
+		rowLimit: rowLimit,
+		cache:    cache,
+	}
+}
+
+type resolverResult struct {
+	rows     *drivers.Result
+	cache    bool
+	rowLimit int64
+}
+
+// Cache implements ResolverResult.
+func (r *resolverResult) Cache() bool {
+	return r.cache
+}
+
+// Close implements ResolverResult.
+func (r *resolverResult) Close() error {
+	return r.rows.Close()
+}
+
+// MarshalJSON implements ResolverResult.
+func (r *resolverResult) MarshalJSON() ([]byte, error) {
+	var out []map[string]any
+	for r.rows.Next() {
+		if int64(len(out)) >= r.rowLimit {
+			_ = r.rows.Close()
+			return nil, fmt.Errorf("sql resolver: query limit exceeded: returned more than %d rows", r.rowLimit)
+		}
+
+		row := make(map[string]any)
+		err := r.rows.MapScan(row)
+		if err != nil {
+			_ = r.rows.Close()
+			return nil, err
+		}
+		out = append(out, row)
+	}
+
+	// close is idempotent so we close rows in this function itself
+	_ = r.rows.Close()
+	return json.Marshal(out)
+}
+
+// Schema implements ResolverResult.
+func (r *resolverResult) Schema() *runtimev1.StructType {
+	return r.rows.Schema
+}
+
+var _ ResolverResult = &resolverResult{}
 
 // ResolverExportOptions are the options passed to a resolver's ResolveExport method.
 type ResolverExportOptions struct {
@@ -102,14 +158,11 @@ type ResolveOptions struct {
 	ResolverProperties map[string]any
 	Args               map[string]any
 	UserAttributes     map[string]any
-	// should this be part of ResolverProperties ?
-	ResolveInteractiveOptions *ResolverInteractiveOptions
 }
 
 // ResolveResult is subset of ResolverResult that is cached
 type ResolveResult struct {
 	Data   []byte
-	Rows   [][]any
 	Schema *runtimev1.StructType
 }
 
@@ -177,18 +230,23 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 			return val, nil
 		}
 
-		res, err := resolver.ResolveInteractive(ctx, opts.ResolveInteractiveOptions)
+		res, err := resolver.ResolveInteractive(ctx)
+		if err != nil {
+			return ResolveResult{}, err
+		}
+		defer res.Close()
+
+		data, err := res.MarshalJSON()
 		if err != nil {
 			return ResolveResult{}, err
 		}
 
 		cRes := ResolveResult{
-			Data:   res.Data,
-			Schema: res.Schema,
-			Rows:   res.Rows,
+			Data:   data,
+			Schema: res.Schema(),
 		}
-		if res.Cache {
-			r.queryCache.cache.Set(key, cRes, int64(len(res.Data)))
+		if res.Cache() {
+			r.queryCache.cache.Set(key, cRes, int64(len(data)))
 		}
 		return cRes, nil
 	})

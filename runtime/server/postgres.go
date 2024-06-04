@@ -5,9 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/big"
-	"os"
-	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	wire "github.com/jeroenrinzema/psql-wire"
@@ -15,49 +14,77 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/server/auth"
+	"github.com/rilldata/rill/runtime/server/psql"
 	"github.com/shopspring/decimal"
 )
 
 func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.PreparedStatements, error) {
 	clientParams := wire.ClientParameters(ctx)
 	instanceID := clientParams[wire.ParamDatabase]
-	var api *runtimev1.API
-	var err error
 
 	if strings.Contains(query, "pg_attribute") || strings.Contains(query, "pg_catalog") || strings.Contains(query, "pg_type") || strings.Contains(query, "pg_namespace") || !strings.Contains(strings.ToUpper(query), "FROM") {
-		api, err = s.runtime.APIForName(ctx, instanceID, "pg-catalog-sql")
-	} else {
-		// todo how to handle normal SQL ?
-		api, err = s.runtime.APIForName(ctx, instanceID, "metrics-sql")
-	}
-	if err != nil {
-		return nil, err
+		data, schema, err := psql.ResolvePSQLQuery(ctx, &psql.PSQLQueryOpts{
+			SQL:            query,
+			Runtime:        s.runtime,
+			InstanceID:     instanceID,
+			UserAttributes: auth.GetClaims(ctx).Attributes(),
+			Priority:       1,
+			Logger:         s.logger,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+			for i := 0; i < len(data); i++ {
+				if err := convert(data[i], schema); err != nil {
+					return fmt.Errorf("data conversion failed with error: %w", err)
+				}
+				if err := writer.Row(data[i]); err != nil {
+					return fmt.Errorf("failed to write row: %w", err)
+				}
+			}
+			return writer.Complete("OK")
+		}
+		return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(convertSchema(schema)))), nil
 	}
 
-	tmpDir, err := os.MkdirTemp(filepath.Join(s.opts.DataDir, instanceID, "tmp"), "pg_catalog")
-	if err != nil {
-		return nil, err
-	}
-	defer os.RemoveAll(tmpDir)
-
+	// todo handle normal SQL. Some ideas to handle that
+	// 1. Approach similar to BigQuery which has #legacySQL
+	// 2. We can parse for a -- @connector: xxx comment, and if found, use that connector directly instead of metrics SQL
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID:                instanceID,
-		Resolver:                  api.Spec.Resolver,
-		ResolverProperties:        api.Spec.ResolverProperties.AsMap(),
-		Args:                      map[string]any{"sql": query, "priority": 1, "temp_dir": tmpDir},
-		UserAttributes:            auth.GetClaims(ctx).Attributes(),
-		ResolveInteractiveOptions: &runtime.ResolverInteractiveOptions{Format: runtime.GOOBJECTS},
+		InstanceID:         instanceID,
+		Resolver:           "metrics_sql",
+		ResolverProperties: map[string]any{"sql": query},
+		Args:               map[string]any{"sql": query, "priority": 1},
+		UserAttributes:     auth.GetClaims(ctx).Attributes(),
 	})
 	if err != nil {
 		return nil, err
 	}
 
 	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
-		for i := 0; i < len(res.Rows); i++ {
-			if err := convert(res.Rows[i], res.Schema); err != nil {
+		var rawData []map[string]interface{}
+		err := json.Unmarshal(res.Data, &rawData)
+		if err != nil {
+			return err
+		}
+
+		row := make([]any, len(res.Schema.Fields))
+		for i := 0; i < len(rawData); i++ {
+			// get the values in the same order as schema
+			for j := 0; j < len(res.Schema.Fields); j++ {
+				if v, ok := rawData[i][res.Schema.Fields[j].Name]; ok {
+					row[j] = v
+				} else {
+					row[j] = nil
+				}
+			}
+
+			if err := convert(row, res.Schema); err != nil {
 				return fmt.Errorf("data conversion failed with error: %w", err)
 			}
-			if err := writer.Row(res.Rows[i]); err != nil {
+			if err := writer.Row(row); err != nil {
 				return fmt.Errorf("failed to write row: %w", err)
 			}
 		}
@@ -66,13 +93,23 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 	return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(convertSchema(res.Schema)))), nil
 }
 
-func convert(row []any, schema *runtimev1.StructType) error {
+func convert(row []any, schema *runtimev1.StructType) (err error) {
 	for i := 0; i < len(row); i++ {
+		if row[i] == nil {
+			continue
+		}
 		code := schema.Fields[i].Type.Code
 		switch code {
 		case runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
 			if v, ok := row[i].(*big.Int); ok {
 				row[i] = decimal.NewFromBigInt(v, 0)
+			}
+		case runtimev1.Type_CODE_DATE:
+			if v, ok := row[i].(string); ok {
+				row[i], err = time.Parse(time.DateOnly, v)
+				if err != nil {
+					return err
+				}
 			}
 		case runtimev1.Type_CODE_UINT64:
 			if v, ok := row[i].(uint64); ok {
@@ -80,7 +117,7 @@ func convert(row []any, schema *runtimev1.StructType) error {
 			}
 		case runtimev1.Type_CODE_DECIMAL:
 			switch v := row[i].(type) {
-			case duckdb.Decimal: // may be this duckdb specific handling should go in resolver ?
+			case duckdb.Decimal:
 				row[i] = decimal.NewFromBigInt(v.Value, 0)
 			case uint64:
 				row[i] = decimal.NewFromUint64(v)

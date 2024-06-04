@@ -2,7 +2,6 @@ package resolvers
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"time"
@@ -141,7 +140,7 @@ func (r *sqlResolver) Validate(ctx context.Context) error {
 	return err
 }
 
-func (r *sqlResolver) ResolveInteractive(ctx context.Context, opts *runtime.ResolverInteractiveOptions) (*runtime.ResolverResult, error) {
+func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	// Wrap the SQL with an outer SELECT to limit the number of rows returned in interactive mode.
 	// Adding +1 to the limit so we can return a nice error message if the limit is exceeded.
 	sql := fmt.Sprintf("SELECT * FROM (%s) LIMIT %d", r.sql, r.interactiveRowLimit+1)
@@ -153,30 +152,6 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context, opts *runtime.Reso
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
-
-	if opts != nil && opts.Format == runtime.GOOBJECTS {
-		return r.scanAsGoObjects(res)
-	}
-
-	var out []map[string]any
-	for res.Rows.Next() {
-		if int64(len(out)) >= r.interactiveRowLimit {
-			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", r.interactiveRowLimit)
-		}
-
-		row := make(map[string]any)
-		err = res.Rows.MapScan(row)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, row)
-	}
-
-	data, err := json.Marshal(out)
-	if err != nil {
-		return nil, err
-	}
 
 	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
 	var cache bool
@@ -184,11 +159,7 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context, opts *runtime.Reso
 		cache = len(r.refs) != 0
 	}
 
-	return &runtime.ResolverResult{
-		Data:   data,
-		Schema: res.Schema,
-		Cache:  cache,
-	}, nil
+	return runtime.NewResolverResult(res, r.interactiveRowLimit, cache), nil
 }
 
 func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
@@ -263,33 +234,6 @@ func (r *sqlResolver) generalExport(ctx context.Context, w io.Writer, filename s
 	}
 
 	return nil
-}
-
-func (r *sqlResolver) scanAsGoObjects(res *drivers.Result) (*runtime.ResolverResult, error) {
-	var out [][]any
-	for res.Rows.Next() {
-		if int64(len(out)) >= r.interactiveRowLimit {
-			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", r.interactiveRowLimit)
-		}
-
-		row, err := res.Rows.SliceScan()
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, row)
-	}
-
-	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
-	var cache bool
-	if r.olap.Dialect() == drivers.DialectDuckDB {
-		cache = len(r.refs) != 0
-	}
-
-	return &runtime.ResolverResult{
-		Rows:   out,
-		Schema: res.Schema,
-		Cache:  cache,
-	}, nil
 }
 
 // buildSQL resolves the SQL template and returns the resolved SQL and the resource names it references.

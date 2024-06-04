@@ -212,6 +212,7 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 
 	pool, ok := p.runtimePool[dsn]
 	if ok {
+		p.server.logger.Info("using cached connection")
 		return pool, nil
 	}
 
@@ -245,6 +246,10 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 		cc.Password = fmt.Sprintf("Bearer %s", jwt)
 		return nil
 	}
+
+	// TODO fix this
+	config.ConnConfig.StatementCacheCapacity = 0
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err = pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
