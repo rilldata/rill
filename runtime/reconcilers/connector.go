@@ -73,7 +73,7 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	}
 
 	// Check if the spec has changed
-	specHash, err := r.executionSpecHash(t.Spec)
+	specHash, err := r.executionSpecHash(ctx, t.Spec)
 	if err != nil {
 		return runtime.ReconcileResult{Err: err}
 	}
@@ -98,10 +98,16 @@ func (r *ConnectorReconciler) Reconcile(ctx context.Context, n *runtimev1.Resour
 	return runtime.ReconcileResult{}
 }
 
-func (r *ConnectorReconciler) executionSpecHash(spec *runtimev1.ConnectorSpec) (string, error) {
+func (r *ConnectorReconciler) executionSpecHash(ctx context.Context, spec *runtimev1.ConnectorSpec) (string, error) {
+	instance, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
+	if err != nil {
+		return "", err
+	}
+	vars := instance.ResolveVariables()
+
 	hash := md5.New()
 
-	_, err := hash.Write([]byte(spec.Driver))
+	_, err = hash.Write([]byte(spec.Driver))
 	if err != nil {
 		return "", err
 	}
@@ -132,15 +138,22 @@ func (r *ConnectorReconciler) executionSpecHash(spec *runtimev1.ConnectorSpec) (
 	}
 	sort.Strings(keys)
 
-	// write propertiesFromVariables to hash
+	// write propertiesFromVariables and corresponding vars to hash
 	for _, k := range keys {
 		_, err = hash.Write([]byte(k))
 		if err != nil {
 			return "", err
 		}
-		_, err = hash.Write([]byte(spec.PropertiesFromVariables[k]))
+		name := spec.PropertiesFromVariables[k]
+		_, err = hash.Write([]byte(name))
 		if err != nil {
 			return "", err
+		}
+		if value, ok := vars[name]; ok {
+			_, err = hash.Write([]byte(value))
+			if err != nil {
+				return "", err
+			}
 		}
 	}
 
