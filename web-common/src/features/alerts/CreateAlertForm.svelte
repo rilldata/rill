@@ -11,7 +11,12 @@
     alertFormValidationSchema,
     getAlertQueryArgsFromFormValues,
   } from "@rilldata/web-common/features/alerts/form-utils";
+  import { getEmptyMeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import {
+    mapComparisonTimeRange,
+    mapTimeRange,
+  } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
   import {
     V1Operation,
     getRuntimeServiceListResourcesQueryKey,
@@ -50,6 +55,14 @@
     dimension = $dashboardStore.selectedDimensionName ?? "";
   }
 
+  // TODO: get metrics view spec
+  const timeRange = mapTimeRange(timeControls, {});
+  const comparisonTimeRange = mapComparisonTimeRange(
+    $dashboardStore,
+    timeControls,
+    timeRange,
+  );
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
@@ -61,9 +74,8 @@
       evaluationInterval: "",
       criteria: [
         {
-          field: $dashboardStore.leaderboardMeasureName ?? "",
-          operation: V1Operation.OPERATION_GTE,
-          value: "0",
+          ...getEmptyMeasureFilterEntry(),
+          measure: $dashboardStore.leaderboardMeasureName ?? "",
         },
       ],
       criteriaOperation: V1Operation.OPERATION_AND,
@@ -87,11 +99,18 @@
       // Also, in the future, they might even be editable.
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
-      timeRange: {
-        isoDuration: timeControls.selectedTimeRange?.name,
-        start: timeControls.timeStart,
-        end: timeControls.timeEnd,
-      },
+      timeRange: timeRange
+        ? {
+            ...timeRange,
+            end: timeControls.timeEnd,
+          }
+        : undefined,
+      comparisonTimeRange: comparisonTimeRange
+        ? {
+            ...comparisonTimeRange,
+            end: timeControls.timeEnd,
+          }
+        : undefined,
     } as AlertFormValues,
     validationSchema: alertFormValidationSchema,
     onSubmit: async (values) => {
@@ -142,6 +161,13 @@
   $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
   $: if ($hasSlackNotifier.data) {
     $form["enableSlackNotification"] = true;
+  }
+
+  $: if (timeControls.timeEnd) {
+    $form["timeRange"].end = timeControls.timeEnd;
+  }
+  $: if (timeControls.comparisonTimeEnd && $form["comparisonTimeRange"]) {
+    $form["comparisonTimeRange"].end = timeControls.comparisonTimeEnd;
   }
 </script>
 

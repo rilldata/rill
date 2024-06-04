@@ -2,28 +2,22 @@
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
   import { fly, slide } from "svelte/transition";
   import BarAndLabel from "../../../components/BarAndLabel.svelte";
-
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
-
   import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
-
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { getStateManagers } from "../state-managers/state-managers";
   import ContextColumnValue from "./ContextColumnValue.svelte";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let dimensionName: string;
-
   export let itemData: LeaderboardItemData;
+
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selectedIndex >= 0;
@@ -71,16 +65,15 @@
       ? "ui-measure-bar-included-selected"
       : "ui-measure-bar-included";
 
-  const { shiftClickAction } = createShiftClickAction();
-  async function shiftClickHandler(label) {
-    await navigator.clipboard.writeText(label);
+  function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
     if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
       truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
     }
-    eventBus.emit("notification", {
-      message: `copied dimension value "${truncatedLabel}" to clipboard`,
-    });
+    copyToClipboard(
+      label,
+      `copied dimension value "${truncatedLabel}" to clipboard`,
+    );
   }
 
   let hovered = false;
@@ -96,22 +89,21 @@
   <button
     class="flex flex-row items-center w-full text-left transition-color"
     on:blur={onLeave}
-    on:click={(e) => {
-      if (e.shiftKey) return;
-      toggleDimensionValueSelection(
-        dimensionName,
-        label,
-        false,
-        e.ctrlKey || e.metaKey,
-      );
-    }}
     on:focus={onHover}
     on:keydown
     on:mouseleave={onLeave}
     on:mouseover={onHover}
-    on:shift-click={() => shiftClickHandler(label)}
+    on:click={modified({
+      shift: () => shiftClickHandler(label),
+      click: (e) =>
+        toggleDimensionValueSelection(
+          dimensionName,
+          label,
+          false,
+          e.ctrlKey || e.metaKey,
+        ),
+    })}
     transition:slide={{ duration: 200 }}
-    use:shiftClickAction
   >
     <LeaderboardItemFilterIcon
       {excluded}

@@ -14,16 +14,7 @@
 
 <script lang="ts">
   import { createEventDispatcher } from "svelte";
-  import { portal } from "@rilldata/web-common/lib/actions/portal";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
-  import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
-  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import { formatDataTypeAsDuckDbQueryString } from "@rilldata/web-common/lib/formatters";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
-  import { isClipboardApiSupported } from "@rilldata/web-common/lib/actions/shift-click-action";
   import type {
     V1MetricsViewColumn,
     V1MetricsViewRowsResponseDataItem,
@@ -32,12 +23,14 @@
   import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
   import { initColumnWidths } from "./init-widths";
   import { clamp } from "@rilldata/web-common/lib/clamp";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import VirtualTableCell from "./VirtualTableCell.svelte";
   import VirtualTableHeaderCellContent from "./VirtualTableHeaderCellContent.svelte";
   import VirtualTableRowHeader from "./VirtualTableRowHeader.svelte";
   import ColumnWidths from "./VirtualTableColumnWidths.svelte";
   import VirtualTableHeader from "./VirtualTableHeader.svelte";
   import VirtualTableRow from "./VirtualTableRow.svelte";
+  import VirtualTooltip from "./VirtualTooltip.svelte";
 
   type HoveringData = {
     index: number;
@@ -211,7 +204,7 @@
     hovering = null;
   }
 
-  async function handleMouseDown(
+  function handleMouseDown(
     e: MouseEvent & {
       currentTarget: EventTarget & HTMLTableSectionElement;
     },
@@ -223,10 +216,8 @@
         hovering.value,
         hovering.type,
       );
-      await navigator.clipboard.writeText(exportedValue);
-      eventBus.emit("notification", {
-        message: `copied value "${exportedValue}" to clipboard`,
-      });
+
+      copyToClipboard(exportedValue);
 
       return;
     }
@@ -391,55 +382,12 @@
 </div>
 
 {#if showTooltip && hovering}
-  <aside
-    class="w-fit h-fit absolute -translate-x-1/2 -translate-y-full z-[1000]"
-    use:portal
-    style:top="{hoverPosition.top - 8}px"
-    style:left="{hoverPosition.left + hoverPosition.width / 2}px"
-  >
-    <TooltipContent maxWidth="360px">
-      {#if hovering.isPin}
-        {@const pinned = pinnedColumns.has(hovering.index)}
-        {pinned ? "Unpin" : "Pin"} this column to left side of the table
-      {:else}
-        <TooltipTitle>
-          <svelte:fragment slot="name">
-            {#if hovering.isHeader}
-              {hovering.value}
-            {:else}
-              <FormattedDataType
-                dark
-                type={hovering?.type}
-                value={hovering?.value}
-              />
-            {/if}
-          </svelte:fragment>
-
-          <svelte:fragment slot="description">
-            {hovering.isHeader ? hovering.type : ""}
-          </svelte:fragment>
-        </TooltipTitle>
-
-        {#if !hovering.isPin}
-          <TooltipShortcutContainer>
-            {#if hovering.isHeader && sortable}
-              <div>Sort column</div>
-              <Shortcut>Click</Shortcut>
-            {/if}
-            {#if isClipboardApiSupported()}
-              <div>
-                <StackingWord key="shift">Copy</StackingWord>
-                {hovering.isHeader ? "column name" : "this value"} to clipboard
-              </div>
-              <Shortcut>
-                <span style="font-family: var(--system);">⇧</span> + Click
-              </Shortcut>
-            {/if}
-          </TooltipShortcutContainer>
-        {/if}
-      {/if}
-    </TooltipContent>
-  </aside>
+  <VirtualTooltip
+    {sortable}
+    {hovering}
+    {hoverPosition}
+    pinned={pinnedColumns.has(hovering.index)}
+  />
 {/if}
 
 <style lang="postcss">

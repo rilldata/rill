@@ -47,6 +47,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
     ["response", []],
     ["reconnect", []],
   ]);
+  private closed = false;
 
   public on<K extends keyof EventMap<Res>>(
     event: K,
@@ -61,18 +62,19 @@ export class WatchRequestClient<Res extends WatchResponse> {
     this.listen().catch(console.error);
   }
 
-  public cancel() {
-    this.controller?.abort();
-    this.stream = this.controller = undefined;
+  public close() {
+    this.closed = true;
+    this.cancel();
   }
 
   public throttle() {
     this.outOfFocusThrottler.throttle(() => {
-      this.cancel();
+      this.close();
     });
   }
 
   public async reconnect() {
+    this.closed = false;
     clearTimeout(this.reconnectTimeout);
 
     if (this.outOfFocusThrottler.isThrottling()) {
@@ -92,6 +94,11 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
     this.retryAttempts++;
     this.listen(true).catch(console.error);
+  }
+
+  private cancel() {
+    this.controller?.abort();
+    this.stream = this.controller = undefined;
   }
 
   private async listen(reconnect = false) {
@@ -124,6 +131,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
       clearTimeout(this.retryTimeout);
 
       if (this.controller) this.cancel();
+      if (this.closed) return;
       this.reconnect().catch((e) => {
         throw new Error(e);
       });

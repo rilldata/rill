@@ -482,9 +482,11 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	connectors, err := parser.AnalyzeConnectors(ctx)
-	if err != nil {
-		return err
+	connectors := parser.AnalyzeConnectors(ctx)
+	for _, c := range connectors {
+		if c.Err != nil {
+			return err
+		}
 	}
 
 	var connectorNames []string

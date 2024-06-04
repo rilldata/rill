@@ -51,7 +51,7 @@
         </TooltipContent>
       </Tooltip>
     </DialogTrigger>
-    <DialogContent class="p-0 m-0 w-[602px] max-w-fit rounded-md" noClose>
+    <DialogContent class="p-0 m-0 w-[802px] max-w-fit rounded-md" noClose>
       <CreateAlertForm on:cancel={onCancel} on:close={onClose} />
     </DialogContent>
   </GuardedDialog>

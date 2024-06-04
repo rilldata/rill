@@ -245,7 +245,7 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 		if err != nil {
 			return false, nil
 		}
-		return sts.Status.AvailableReplicas > 0 && sts.Status.AvailableReplicas == sts.Status.Replicas, nil
+		return sts.Status.AvailableReplicas > 0 && sts.Status.AvailableReplicas == sts.Status.Replicas && sts.Generation == sts.Status.ObservedGeneration, nil
 	})
 	if err != nil {
 		return err

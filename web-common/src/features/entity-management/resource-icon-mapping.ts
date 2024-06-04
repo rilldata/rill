@@ -10,6 +10,7 @@ import { Code2Icon, Database } from "lucide-svelte";
 
 export const resourceIconMapping = {
   [ResourceKind.Source]: Database,
+  [ResourceKind.Connector]: Database,
   [ResourceKind.Model]: Code2Icon,
   [ResourceKind.MetricsView]: MetricsExplorerIcon,
   [ResourceKind.API]: ApiIcon,

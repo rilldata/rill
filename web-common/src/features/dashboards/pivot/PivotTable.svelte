@@ -1,14 +1,19 @@
 <script lang="ts">
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
+  import { getMeasureColumnProps } from "@rilldata/web-common/features/dashboards/pivot/pivot-column-definition";
+  import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
+  import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
     ExpandedState,
     SortingState,
     TableOptions,
     Updater,
-    flexRender,
     createSvelteTable,
+    flexRender,
     getCoreRowModel,
     getExpandedRowModel,
   } from "@tanstack/svelte-table";
@@ -16,14 +21,14 @@
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
-  import { isTimeDimension } from "./pivot-utils";
   import type { Readable } from "svelte/motion";
   import { derived } from "svelte/store";
   import { getPivotConfig } from "./pivot-data-store";
+  import { isTimeDimension } from "./pivot-utils";
   import type { PivotDataRow, PivotDataStore } from "./types";
-  import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
-  import { extractSamples } from "@rilldata/web-common/components/virtualized-table/init-widths";
-  import { clamp } from "@rilldata/web-common/lib/clamp";
+  import VirtualTooltip from "@rilldata/web-common/components/virtualized-table/VirtualTooltip.svelte";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -36,7 +41,7 @@
   const MAX_INIT_COL_WIDTH = 400;
   const MIN_MEASURE_WIDTH = 60;
   const MAX_MEAUSRE_WIDTH = 300;
-  const INIT_MEASURE_WIDTH = 90;
+  const INIT_MEASURE_WIDTH = 60;
 
   export let pivotDataStore: PivotDataStore;
 
@@ -87,20 +92,15 @@
   let percentOfChangeDuringResize = 0;
   let resizingMeasure = false;
 
-  $: ({
-    expanded,
-    sorting,
-    rowPage,
-    columns,
-    rows: rowPills,
-  } = $pivotDashboardStore);
+  $: ({ expanded, sorting, rowPage, rows: rowPills } = $pivotDashboardStore);
 
   $: timeDimension = $config.time.timeDimension;
   $: hasDimension = rowPills.dimension.length > 0;
   $: reachedEndForRows = !!$pivotDataStore?.reachedEndForRowData;
   $: assembled = $pivotDataStore.assembled;
 
-  $: measureNames = columns.measure.map((measure) => measure.title) ?? [];
+  $: measures = getMeasureColumnProps($config);
+  $: measureNames = measures.map((m) => m.label) ?? [];
   $: measureCount = measureNames.length;
   $: measureLengths = measureNames.map((name) =>
     Math.max(INIT_MEASURE_WIDTH, name.length * 7 + MEASURE_PADDING),
@@ -178,6 +178,7 @@
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
     if (containerRefElement) {
+      if (hovering) hovering = null;
       const { scrollHeight, scrollTop, clientHeight } = containerRefElement;
       const bottomEndDistance = scrollHeight - scrollTop - clientHeight;
       scrollLeft = containerRefElement.scrollLeft;
@@ -185,6 +186,7 @@
       // Fetch more data when scrolling near the bottom end
       if (
         bottomEndDistance < ROW_THRESHOLD &&
+        rows.length >= NUM_ROWS_PER_PAGE &&
         !$pivotDataStore.isFetching &&
         !reachedEndForRows
       ) {
@@ -231,6 +233,55 @@
 
     percentOfChangeDuringResize = (scrollLeft + offset) / totalLength;
   }
+
+  let showTooltip = false;
+  let hoverPosition: DOMRect;
+  let hovering: HoveringData | null = null;
+  let timer: ReturnType<typeof setTimeout>;
+
+  type HoveringData = {
+    value: string | number | null;
+  };
+
+  function handleHover(
+    e: MouseEvent & {
+      currentTarget: EventTarget & HTMLElement;
+    },
+  ) {
+    hoverPosition = e.currentTarget.getBoundingClientRect();
+
+    const value = e.currentTarget.dataset.value;
+
+    if (value === undefined) return;
+
+    hovering = {
+      value,
+    };
+
+    timer = setTimeout(() => {
+      showTooltip = true;
+    }, 250);
+  }
+
+  function handleLeave() {
+    clearTimeout(timer);
+    showTooltip = false;
+    hovering = null;
+  }
+
+  function handleClick(e: MouseEvent) {
+    if (!isElement(e.target)) return;
+
+    const value = e.target.dataset.value;
+
+    if (value === undefined) return;
+
+    copyToClipboard(value);
+  }
+
+  function isElement(target: EventTarget | null): target is HTMLElement {
+    return target instanceof HTMLElement;
+  }
 </script>
 
 <div
@@ -242,7 +293,11 @@
   bind:this={containerRefElement}
   on:scroll={() => handleScroll(containerRefElement)}
 >
-  <table style:width="{totalLength}px">
+  <table
+    style:width="{totalLength}px"
+    on:click={modified({ shift: handleClick })}
+    role="presentation"
+  >
     {#if firstColumnName && firstColumnWidth}
       <colgroup>
         <col
@@ -332,8 +387,12 @@
             <td
               class="ui-copy-number"
               class:border-r={i % measureCount === 0 && i}
+              on:mouseenter={handleHover}
+              on:mouseleave={handleLeave}
+              data-value={cell.getValue()}
+              class:totals-column={i > 0 && i <= measureCount}
             >
-              <div class="cell">
+              <div class="cell pointer-events-none" role="presentation">
                 {#if result?.component && result?.props}
                   <svelte:component
                     this={result.component}
@@ -359,6 +418,10 @@
     </tbody>
   </table>
 </div>
+
+{#if showTooltip && hovering}
+  <VirtualTooltip sortable={true} {hovering} {hoverPosition} pinned={false} />
+{/if}
 
 <style lang="postcss">
   * {
@@ -409,6 +472,7 @@
   .header-cell {
     @apply px-2 bg-white size-full;
     @apply flex items-center gap-x-1 w-full truncate;
+    @apply font-medium;
     height: var(--header-height);
   }
 
@@ -432,12 +496,12 @@
   }
 
   tr > td:first-of-type:not(:last-of-type) {
-    @apply border-r font-medium;
+    @apply border-r font-normal;
   }
 
   /* The totals row */
   tbody > tr:nth-of-type(2) {
-    @apply bg-slate-100 sticky z-20 font-semibold;
+    @apply bg-slate-50 sticky z-20 font-semibold;
     top: var(--total-header-height);
   }
 
@@ -449,5 +513,9 @@
   tr:hover,
   tr:hover .cell {
     @apply bg-slate-100;
+  }
+
+  .totals-column {
+    @apply bg-slate-50 font-semibold;
   }
 </style>

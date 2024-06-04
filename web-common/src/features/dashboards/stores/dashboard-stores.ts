@@ -324,6 +324,12 @@ const metricViewReducers = {
     });
   },
 
+  setPivotComparison(name: string, enableComparison: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, enableComparison };
+    });
+  },
+
   setPivotSort(name: string, sorting: SortingState) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting, rowPage: 1 };
