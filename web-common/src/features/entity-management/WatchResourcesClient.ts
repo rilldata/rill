@@ -4,6 +4,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getConnectorServiceOLAPListTablesQueryKey,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
@@ -156,6 +157,11 @@ export class WatchResourcesClient {
     const name = resource.meta?.name?.name ?? "";
     let table: string | undefined;
     switch (resource.meta.name?.kind) {
+      case ResourceKind.Connector:
+        void queryClient.invalidateQueries(
+          getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId),
+        );
+        return;
       case ResourceKind.Source:
       case ResourceKind.Model:
         table =
