@@ -3,12 +3,9 @@ import {
   getRuntimeServiceListFilesQueryKey,
   runtimeServiceListFiles,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryClient } from "@tanstack/query-core";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 
-export async function isProjectInitialized(
-  queryClient: QueryClient,
-  instanceId: string,
-) {
+export async function isProjectInitialized(instanceId: string) {
   const files = await queryClient.fetchQuery<V1ListFilesResponse>({
     queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
     queryFn: ({ signal }) => {

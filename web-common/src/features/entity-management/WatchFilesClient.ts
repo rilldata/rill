@@ -13,7 +13,6 @@ import {
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-import { goto } from "$app/navigation";
 
 export class WatchFilesClient {
   public readonly client: WatchRequestClient<V1WatchFilesResponse>;
@@ -56,10 +55,7 @@ export class WatchFilesClient {
               getRuntimeServiceIssueDevJWTQueryKey(),
             );
 
-            if (!get(projectInitialized)) {
-              projectInitialized.set(true);
-              if (window.location.pathname === "/welcome") await goto("/");
-            }
+            await projectInitialized.set(true);
           }
           this.seenFiles.add(res.path);
           break;
@@ -71,10 +67,8 @@ export class WatchFilesClient {
           fileArtifacts.fileDeleted(res.path);
           this.seenFiles.delete(res.path);
 
-          if (res.path === "/rill.yaml") {
-            projectInitialized.set(false);
-            await goto("/welcome");
-          }
+          if (res.path === "/rill.yaml") await projectInitialized.set(false);
+
           break;
       }
     }

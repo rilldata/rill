@@ -1,6 +1,4 @@
 import { dev } from "$app/environment";
-import { isProjectInitialized } from "@rilldata/web-common/features/welcome/is-project-initialized";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   projectInitialized,
   runtime,
@@ -19,8 +17,4 @@ const runtimeInit = {
 
 runtime.set(runtimeInit);
 
-/** CHECK IF RILL.YAML EXISTS **/
-
-isProjectInitialized(queryClient, runtimeInit.instanceId)
-  .then((initialized) => projectInitialized.set(!!initialized))
-  .catch(console.error);
+projectInitialized.init().catch(console.error);
