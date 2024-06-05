@@ -1232,6 +1232,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 	var subselectMeasureAliases []string
 	var subselectComparisonAliases []string
 
+	originalMeasure := ColumnName(q.Measures[0])
 	// collect subquery expressions
 	for _, m := range q.Measures {
 		switch m.Compute.(type) {
@@ -1700,23 +1701,35 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 				-- SELECT COALESCE(base.d1, comparison.d1), ..., base.m1, ..., base.m2 ... 
 				SELECT `+strings.Join(slices.Concat(finalDims[1:], toClauses(inFunc("ANY_VALUE", withCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures))), finalComparisonTimeDims), ",")+` FROM 
 					(
-						-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
-						SELECT 
-							%[1]s,
-							CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+` 
-						FROM %[3]s %[6]s 
-						WHERE %[4]s 
-						GROUP BY %[2]s, %[7]d 
-						ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+`
+						-- 2 additional SELECTs because Druid doesn't support FIRST aggregation
+						-- SELECT t_offset, d1, d2 ..., CASE WHEN ARRAY_LENGTH(cw) = 1 OR ARRAY_ORDINAL(cw,1) = 1 THEN ARRAY_ORDINAL(m1,1) ELSE ARRAY_ORDINAL(m1, 2) end m1 FROM (
+						SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+`,`+strings.Join(caseArraySelectCols(cw, []string{originalMeasure, cw}), ",")+` FROM (
+							-- SELECT t_offset, d1, d2 ..., array_agg(m1), array_agg(casewhere) FROM ( 
+							SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+","+strings.Join(inFuncCols("ARRAY_AGG", []string{originalMeasure, cw}), ",")+` FROM (
+								-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
+								SELECT 
+									%[1]s,
+									CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+` 
+								FROM %[3]s %[6]s 
+								WHERE %[4]s 
+								GROUP BY %[2]s, %[7]d 
+								ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+`
+							) GROUP BY t_offset, `+strings.Join(subSelectDimAliases, ",")+`
+						)
 					) base
 				LEFT JOIN
 					(
-						SELECT 
-							`+comparisonSelectClause+","+` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+`  
-						FROM %[3]s %[6]s 
-						WHERE %[5]s 
-						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+` 
+						SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+`,`+strings.Join(caseArraySelectCols(cw, []string{originalMeasure, cw}), ",")+` FROM (
+							-- SELECT t_offset, d1, d2 ..., array_agg(m1), array_agg(casewhere) FROM ( 
+							SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+","+strings.Join(inFuncCols("ARRAY_AGG", []string{originalMeasure, cw}), ",")+` FROM (
+								SELECT 
+									`+comparisonSelectClause+","+` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+`  
+								FROM %[3]s %[6]s 
+								WHERE %[5]s 
+								GROUP BY %[2]s, %[9]d 
+								ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+` 
+							) GROUP BY t_offset, `+strings.Join(subSelectDimAliases, ",")+`
+						)
 					) comparison
 				ON
 				-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
@@ -1761,6 +1774,14 @@ type SortConstruct struct {
 	expression string
 	ending     string
 	dim        bool
+}
+
+func caseArraySelectCols(condCol string, cols []string) []string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = "CASE WHEN ARRAY_LENGTH(" + condCol + ") = 1 OR ARRAY_ORDINAL(" + condCol + ",1) = 1 THEN ARRAY_ORDINAL(" + c + ",1) ELSE ARRAY_ORDINAL(" + c + ", 2) END " + c
+	}
+	return cs
 }
 
 func convertToNullCaseClauses(cond string, sortConstructs []*SortConstruct) []string {
