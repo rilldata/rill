@@ -19,7 +19,7 @@
     end: Date;
   };
 
-  export let currentInterval: Interval;
+  export let currentInterval: Interval<true>;
   export let timeComparisonOptionsState: Option[];
   export let onSelectComparisonRange: (
     name: string,
@@ -33,7 +33,7 @@
 
   $: interval = selectedComparison?.start
     ? Interval.fromDateTimes(selectedComparison.start, selectedComparison.end)
-    : null;
+    : currentInterval;
 
   $: firstVisibleMonth = interval?.start ?? DateTime.now();
 
@@ -75,51 +75,52 @@
       );
     }
   }
-
-  function enableTimeComparison() {
-    metricsExplorerStore.displayTimeComparison(metricViewName, true);
-  }
 </script>
 
 <DropdownMenu.Root
   bind:open
   onOpenChange={(open) => {
-    if (open && interval?.isValid) {
+    if (open && interval && interval?.isValid) {
       firstVisibleMonth = interval.start;
     }
   }}
 >
   <DropdownMenu.Trigger asChild let:builder>
-    {#if showComparison}
-      <button
-        use:builder.action
-        {...builder}
-        aria-label="Select time comparison option"
-      >
-        <div class="gap-x-2 flex" class:inactive={!showComparison}>
+    <button
+      use:builder.action
+      {...builder}
+      aria-label="Select time comparison option"
+    >
+      <div class="gap-x-2 flex" class:inactive={!showComparison}>
+        {#if showComparison}
           <b>vs</b>
 
           <p class="line-clamp-1">{label.toLowerCase()}</p>
-        </div>
-        <span class="flex-none">
-          <CaretDownIcon />
-        </span>
-      </button>
-    {:else}
-      <button on:click={enableTimeComparison}>
-        <div class="gap-x-2 flex" class:inactive={!showComparison}>
-          <b>vs</b>
-
-          <p class="line-clamp-1">{label.toLowerCase()}</p>
-        </div>
-        <span class="flex-none">
-          <CaretDownIcon />
-        </span>
-      </button>
-    {/if}
+        {:else}
+          no comparison period
+        {/if}
+      </div>
+      <span class="flex-none">
+        <CaretDownIcon />
+      </span>
+    </button>
   </DropdownMenu.Trigger>
 
   <DropdownMenu.Content align="start" class="w-72">
+    <DropdownMenu.Item
+      class="flex gap-x-2"
+      on:click={() => {
+        metricsExplorerStore.disableAllComparisons(metricViewName);
+      }}
+    >
+      <span class="w-3 aspect-square">
+        {#if !showComparison}
+          <Check size="14px" />
+        {/if}
+      </span>
+      <span class:font-bold={!showComparison}> No comparison period </span>
+    </DropdownMenu.Item>
+
     {#each timeComparisonOptionsState as option (option.name)}
       {@const preset = TIME_COMPARISON[option.name]}
       {@const selected = selectedLabel === option.name}

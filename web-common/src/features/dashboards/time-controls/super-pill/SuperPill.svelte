@@ -282,7 +282,7 @@
       {onSelectTimeZone}
     />
   {/if}
-  {#if $timeComparisonOptionsState}
+  {#if $timeComparisonOptionsState && interval.isValid}
     <Elements.Comparison
       {metricViewName}
       timeComparisonOptionsState={$timeComparisonOptionsState}
