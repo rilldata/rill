@@ -105,28 +105,3 @@ func orderByValidSubset(fs []OrderFieldNode, n *SelectNode) []OrderFieldNode {
 
 	return res
 }
-
-// joinType := "FULL"
-// if !q.Exact {
-// 	deltaComparison := q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA ||
-// 		q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA
-
-// 	approximationLimit := int(q.Limit)
-// 	if q.Limit != 0 && q.Limit < 100 && deltaComparison {
-// 		approximationLimit = 100
-// 	}
-
-// 	if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE || deltaComparison {
-// 		joinType = "LEFT OUTER"
-// 		baseLimitClause = subQueryOrderByClause
-// 		if approximationLimit > 0 {
-// 			baseLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
-// 		}
-// 	} else if q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE {
-// 		joinType = "RIGHT OUTER"
-// 		comparisonLimitClause = subQueryOrderByClause
-// 		if approximationLimit > 0 {
-// 			comparisonLimitClause += fmt.Sprintf(" LIMIT %d", approximationLimit)
-// 		}
-// 	}
-// }

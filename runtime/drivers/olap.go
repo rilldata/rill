@@ -80,19 +80,31 @@ func (r *Result) SetCap(n int64) {
 
 // Next wraps rows.Next and enforces the cap set by SetCap.
 func (r *Result) Next() bool {
+	res := r.Rows.Next()
+	if !res {
+		return false
+	}
+
 	r.rows++
 	if r.cap > 0 && r.rows > r.cap {
 		return false
 	}
-	return r.Rows.Next()
+
+	return true
 }
 
 // Err returns the error of the underlying rows.
 func (r *Result) Err() error {
+	err := r.Rows.Err()
+	if err != nil {
+		return err
+	}
+
 	if r.cap > 0 && r.rows > r.cap {
 		return fmt.Errorf("result cap exceeded: returned more than %d rows", r.cap)
 	}
-	return r.Rows.Err()
+
+	return nil
 }
 
 // Close wraps rows.Close and calls the Result's cleanup function (if it is set).
