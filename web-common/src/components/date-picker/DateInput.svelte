@@ -15,8 +15,8 @@
     "M/d/yy", // 7/4/21 or 07/04/21
     "D", // 7/4/2021 or 07/04/2021
     "DDD", // July 4, 2021 or July 04, 2021
-    "MMM d, yyyy", // July 4, 2021 or July 04, 2021
-    "MMM d yyyy", // July 4, 2021 or July 04, 2021
+    "MMM d, yyyy", // Jul 4, 2021
+    "MMM d yyyy", // Jul 4 2021
     "MMMM d yyyy", // July 4 2021 or July 04 2021
     "yyyy-M-d", // July 4, 2021 or July 04, 2021
     "M-d-yyyy", // July 4, 2021 or July 04, 2021
