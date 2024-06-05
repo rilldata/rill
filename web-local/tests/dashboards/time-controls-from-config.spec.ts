@@ -116,7 +116,7 @@ default_comparison:
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // No Comparison
-    await expect(page.getByText("No Comparison")).toBeVisible();
+    await expect(page.getByText("no comparison period")).toBeVisible();
   });
 
   test("available_time_ranges", async ({ page }) => {

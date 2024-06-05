@@ -199,7 +199,7 @@ test.describe("dashboard", () => {
      */
     await expect(page.getByLabel("Comparison selector")).not.toBeVisible();
 
-    await page.getByLabel("Select a custom time range").click();
+    await page.getByLabel("Select time range").click();
 
     await page.getByLabel("Start date").fill("2022-02-01");
     await page.getByLabel("Start date").blur();

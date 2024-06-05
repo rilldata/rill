@@ -106,54 +106,59 @@
     </button>
   </DropdownMenu.Trigger>
 
-  <DropdownMenu.Content align="start" class="w-72">
-    <DropdownMenu.Item
-      class="flex gap-x-2"
-      on:click={() => {
-        metricsExplorerStore.disableAllComparisons(metricViewName);
-      }}
-    >
-      <span class="w-3 aspect-square">
-        {#if !showComparison}
-          <Check size="14px" />
-        {/if}
-      </span>
-      <span class:font-bold={!showComparison}> No comparison period </span>
-    </DropdownMenu.Item>
+  <DropdownMenu.Content align="start" class="p-0 overflow-hidden">
+    <div class="flex">
+      <div class="flex flex-col border-r w-48 p-1">
+        <DropdownMenu.Item
+          class="flex gap-x-2"
+          on:click={() => {
+            metricsExplorerStore.disableAllComparisons(metricViewName);
+          }}
+        >
+          <span class="w-3 aspect-square">
+            {#if !showComparison}
+              <Check size="14px" />
+            {/if}
+          </span>
+          <span class:font-bold={!showComparison}> No comparison period </span>
+        </DropdownMenu.Item>
 
-    {#each timeComparisonOptionsState as option (option.name)}
-      {@const preset = TIME_COMPARISON[option.name]}
-      {@const selected = selectedLabel === option.name}
-      <DropdownMenu.Item
-        class="flex gap-x-2"
-        on:click={() => {
-          onCompareRangeSelect(option.name);
-        }}
-      >
-        <span class="w-3 aspect-square">
-          {#if selected}
-            <Check size="14px" />
+        {#each timeComparisonOptionsState as option (option.name)}
+          {@const preset = TIME_COMPARISON[option.name]}
+          {@const selected = selectedLabel === option.name}
+          <DropdownMenu.Item
+            class="flex gap-x-2"
+            on:click={() => {
+              onCompareRangeSelect(option.name);
+            }}
+          >
+            <span class="w-3 aspect-square">
+              {#if selected}
+                <Check size="14px" />
+              {/if}
+            </span>
+            <span class:font-bold={selected}>
+              {preset?.label || option.name}
+            </span>
+          </DropdownMenu.Item>
+          {#if option.name === TimeComparisonOption.CONTIGUOUS && timeComparisonOptionsState.length > 2}
+            <DropdownMenu.Separator />
           {/if}
-        </span>
-        <span class:font-bold={selected}>
-          {preset?.label || option.name}
-        </span>
-      </DropdownMenu.Item>
-      {#if option.name === TimeComparisonOption.CONTIGUOUS && timeComparisonOptionsState.length > 2}
-        <DropdownMenu.Separator />
-      {/if}
-    {/each}
-
-    <DropdownMenu.Separator />
-    {#if interval?.isValid}
-      <CalendarPlusDateInput
-        {firstVisibleMonth}
-        {interval}
-        {zone}
-        {applyRange}
-        closeMenu={() => (open = false)}
-      />
-    {/if}
+        {/each}
+      </div>
+      <!-- <DropdownMenu.Separator /> -->
+      <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
+        {#if interval?.isValid}
+          <CalendarPlusDateInput
+            {firstVisibleMonth}
+            {interval}
+            {zone}
+            {applyRange}
+            closeMenu={() => (open = false)}
+          />
+        {/if}
+      </div>
+    </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
 

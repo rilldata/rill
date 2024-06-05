@@ -25,7 +25,6 @@
   } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { DateTime, Interval } from "luxon";
   import { initLocalUserPreferenceStore } from "../../user-preferences";
-  import CalendarPicker from "./components/CalendarPicker.svelte";
   import { onMount } from "svelte";
 
   export let allTimeRange: TimeRange;
@@ -56,15 +55,6 @@
 
   $: defaultTimeRange = $metricsView.data?.defaultTimeRange;
 
-  // $: selectedSubRange =
-  //   $dashboardStore?.selectedScrubRange?.start &&
-  //   $dashboardStore?.selectedScrubRange?.end
-  //     ? {
-  //         start: $dashboardStore.selectedScrubRange.start,
-  //         end: $dashboardStore.selectedScrubRange.end,
-  //       }
-  //     : null;
-
   $: interval = selectedTimeRange
     ? Interval.fromDateTimes(
         DateTime.fromJSDate(selectedTimeRange.start).setZone(activeTimeZone),
@@ -72,7 +62,6 @@
       )
     : Interval.fromDateTimes(allTimeRange.start, allTimeRange.end);
 
-  // $: dashboardStore = useDashboardStore(metricViewName);
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
   $: availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
@@ -252,19 +241,16 @@
   />
   <!-- TO DO -->
   <!-- <Elements.Zoom /> -->
-  <Elements.RangePicker
-    {ranges}
-    {showDefaultItem}
-    {defaultTimeRange}
-    selected={selectedRange}
-    {onSelectRange}
-    {interval}
-  />
   {#if interval.isValid}
-    <CalendarPicker
+    <Elements.RangePicker
+      {ranges}
+      {showDefaultItem}
+      {defaultTimeRange}
+      selected={selectedRange}
+      {onSelectRange}
       {interval}
       zone={activeTimeZone}
-      applyRange={(interval) => {
+      applyCustomRange={(interval) => {
         selectRange({
           name: TimeRangePreset.CUSTOM,
           start: interval.start.toJSDate(),

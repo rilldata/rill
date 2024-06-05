@@ -7,22 +7,32 @@
   } from "../../new-time-controls";
   import { getRangeLabel } from "../../new-time-controls";
   import TimeRangeMenu from "./TimeRangeMenu.svelte";
-  import { Interval } from "luxon";
+  import { DateTime, Interval } from "luxon";
   import RangeDisplay from "./RangeDisplay.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
+  import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
-  export let interval: Interval;
-
+  export let interval: Interval<true>;
+  export let zone: string;
   export let showDefaultItem: boolean;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
+  export let applyCustomRange: (range: Interval<true>) => void;
 
+  let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
 </script>
 
-<DropdownMenu.Root bind:open>
+<DropdownMenu.Root
+  bind:open
+  onOpenChange={(open) => {
+    if (open) {
+      firstVisibleMonth = interval.start;
+    }
+  }}
+>
   <DropdownMenu.Trigger asChild let:builder>
     <button
       {...builder}
@@ -37,13 +47,28 @@
       <CaretDownIcon />
     </button>
   </DropdownMenu.Trigger>
-  <TimeRangeMenu
-    {ranges}
-    {selected}
-    {showDefaultItem}
-    {defaultTimeRange}
-    {onSelectRange}
-  />
+  <DropdownMenu.Content align="start" class="p-0 overflow-hidden">
+    <div class="flex">
+      <div class="flex flex-col border-r w-48 p-1">
+        <TimeRangeMenu
+          {ranges}
+          {selected}
+          {showDefaultItem}
+          {defaultTimeRange}
+          {onSelectRange}
+        />
+      </div>
+      <div class="bg-slate-50 flex flex-col w-64 p-2 py-1">
+        <CalendarPlusDateInput
+          {firstVisibleMonth}
+          {interval}
+          {zone}
+          applyRange={applyCustomRange}
+          closeMenu={() => (open = false)}
+        />
+      </div>
+    </div>
+  </DropdownMenu.Content>
 </DropdownMenu.Root>
 
 <style lang="postcss">

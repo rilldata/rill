@@ -46,6 +46,7 @@
   <div class="flex justify-between px-2">
     <button
       class:hide={visibleIndex !== 0}
+      class="hover:opacity-50"
       on:click={() => {
         onPan(-1);
       }}
@@ -59,6 +60,7 @@
       <p>{startDay.year}</p>
     </div>
     <button
+      class="hover:opacity-50"
       class:hide={visibleIndex !== visibleMonths - 1}
       on:click={() => {
         onPan(1);
@@ -120,12 +122,12 @@
 <style lang="postcss">
   .day {
     @apply w-full aspect-square;
-    @apply p-0.5 bg-white;
-    @apply flex items-center justify-center border border-white border-l-0 border-r-0;
+    @apply p-0.5 bg-transparent;
+    @apply flex items-center justify-center border border-transparent border-l-0 border-r-0;
   }
 
   :not(.selecting-start) .day:not(.is-start):not(.is-end):hover {
-    @apply rounded-r-sm  border border-primary-200 bg-white border-dashed;
+    @apply rounded-r-sm  border border-primary-200 bg-transparent border-dashed;
   }
 
   .selecting-start .day:not(.is-start):not(.is-end):hover {
