@@ -1232,7 +1232,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 	var subselectMeasureAliases []string
 	var subselectComparisonAliases []string
 
-	originalMeasure := ColumnName(q.Measures[0])
+	originalMeasure := OriginalColumnName(q.Measures[0])
 	// collect subquery expressions
 	for _, m := range q.Measures {
 		switch m.Compute.(type) {
@@ -1417,7 +1417,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 		} else if measuresByFinalName[s.Name] != nil { // measure
 			m := measuresByFinalName[s.Name]
 			outerClause = safeName(s.Name)
-			subQueryClause = ColumnName(m)
+			subQueryClause = OriginalColumnName(m)
 		} else {
 			return "", nil, fmt.Errorf("no selected dimension or measure '%s' found for sorting", s.Name)
 		}
@@ -2165,7 +2165,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		} else if measuresByFinalName[s.Name] != nil { // measure
 			m := measuresByFinalName[s.Name]
 			outerClause = s.Name
-			subQueryClause = ColumnName(m)
+			subQueryClause = OriginalColumnName(m)
 		} else {
 			return "", nil, fmt.Errorf("no selected dimension or measure '%s' found for sorting", s.Name)
 		}
@@ -2638,7 +2638,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	return sql, args, nil
 }
 
-func ColumnName(m *runtimev1.MetricsViewAggregationMeasure) string {
+func OriginalColumnName(m *runtimev1.MetricsViewAggregationMeasure) string {
 	switch v := m.Compute.(type) {
 	case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
 		return v.ComparisonValue.Measure
@@ -2657,8 +2657,8 @@ func (q *MetricsViewAggregation) calculateMeasuresMeta() error {
 	expands := make(map[string]bool, len(q.Measures))
 	originalNames := make(map[string]bool, len(q.Measures))
 	for _, m := range q.Measures {
-		name := ColumnName(m)
-		if ColumnName(m) != m.Name {
+		name := OriginalColumnName(m)
+		if OriginalColumnName(m) != m.Name {
 			expands[name] = true
 		} else {
 			originalNames[name] = true
@@ -2672,7 +2672,7 @@ func (q *MetricsViewAggregation) calculateMeasuresMeta() error {
 
 	for _, m := range q.Measures {
 		expand := false
-		if expands[ColumnName(m)] {
+		if expands[OriginalColumnName(m)] {
 			expand = true
 		}
 		q.measuresMeta[m.Name] = metricsViewMeasureMeta{
