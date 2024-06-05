@@ -1,8 +1,5 @@
 import { get, writable } from "svelte/store";
-import {
-  isProjectInitialized,
-  handleUninitializedProject,
-} from "@rilldata/web-common/features/welcome/is-project-initialized";
+import { handleUninitializedProject } from "@rilldata/web-common/features/welcome/is-project-initialized";
 
 export interface JWT {
   token: string;
@@ -26,9 +23,14 @@ export const projectInitialized = (() => {
   const { subscribe, set } = writable<boolean>(false);
 
   const updateAndReroute = async (initialized: boolean) => {
+    const onWelcomePage = window.location.pathname === "/welcome";
+    const { instanceId } = get(runtime);
     if (!initialized) {
-      await handleUninitializedProject();
-    } else if (window.location.pathname === "/welcome") {
+      const goToWelcomePage = await handleUninitializedProject(instanceId);
+      if (goToWelcomePage && !onWelcomePage) {
+        window.location.replace("/welcome");
+      }
+    } else if (onWelcomePage) {
       window.location.replace("/");
     }
     set(initialized);
@@ -36,11 +38,7 @@ export const projectInitialized = (() => {
 
   return {
     subscribe,
-    set: updateAndReroute,
-    init: async () => {
-      const instanceId = get(runtime).instanceId;
-      const initialized = await isProjectInitialized(instanceId);
-      await updateAndReroute(!!initialized);
-    },
+    set,
+    updateAndReroute,
   };
 })();

@@ -55,7 +55,7 @@ export class WatchFilesClient {
               getRuntimeServiceIssueDevJWTQueryKey(),
             );
 
-            await projectInitialized.set(true);
+            await projectInitialized.updateAndReroute(true);
           }
           this.seenFiles.add(res.path);
           break;
@@ -67,7 +67,8 @@ export class WatchFilesClient {
           fileArtifacts.fileDeleted(res.path);
           this.seenFiles.delete(res.path);
 
-          if (res.path === "/rill.yaml") await projectInitialized.set(false);
+          if (res.path === "/rill.yaml")
+            await projectInitialized.updateAndReroute(false);
 
           break;
       }
