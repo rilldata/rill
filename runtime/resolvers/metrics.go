@@ -112,7 +112,6 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
 
 	return runtime.NewResolverResult(res, cfg.InteractiveSQLRowLimit, cache), nil
 }

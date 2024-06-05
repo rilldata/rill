@@ -19,10 +19,18 @@ import (
 	"go.uber.org/zap"
 )
 
-// psqlProxyQueryHandler is a handler for proxying psql queries to a runtime server
+// psqlProxyQueryHandler handles queries on PSQL wire endpoint.
+// It proxies queries to the runtime based on targeted project and org.
 func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt wire.PreparedStatements, err error) {
-	s.logger.Info("psql proxy query", zap.String("query", query))
+	s.logger.Info("psql query", zap.String("query", query))
 	now := time.Now()
+	defer func() {
+		// if there is no error then the handler returns a row handler and the query is not completed yet.
+		if err != nil {
+			s.logger.Info("psql query failed", zap.Duration("duration", time.Since(now)), zap.Error(err))
+		}
+	}()
+
 	if strings.Trim(query, " ") == "" {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 			return writer.Empty()
@@ -228,7 +236,7 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 	config.HealthCheckPeriod = time.Minute
 	// issues a runtime JWT and set it as password
 	config.BeforeConnect = func(ctx context.Context, cc *pgx.ConnConfig) error {
-		p.server.logger.Info("opening new connection to runtime")
+		p.server.logger.Info("opening new connection to runtime", zap.String("host", cc.Host), zap.String("instance_id", cc.Database))
 		tokens := strings.Split(db, ".")
 		if len(tokens) != 2 {
 			// this error will be captured much earlier
@@ -245,7 +253,7 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 		return nil
 	}
 
-	// Runtime psql sever does not support prepared statements
+	// Runtime psql server does not support prepared statements
 	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err = pgxpool.NewWithConfig(ctx, config)

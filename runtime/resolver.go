@@ -8,7 +8,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math/big"
+	"strconv"
+	"time"
 
+	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -88,6 +92,39 @@ func (r *resolverResult) MarshalJSON() ([]byte, error) {
 		err := r.rows.MapScan(row)
 		if err != nil {
 			return nil, err
+		}
+		for _, field := range r.rows.Schema.Fields {
+			if row[field.Name] == nil {
+				continue
+			}
+			switch field.Type.Code {
+			case runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
+				// big.Int is marshalled as Number in JSON which can lead to loss of precision. We fix this by setting as string.
+				switch v := row[field.Name].(type) {
+				case big.Int:
+					row[field.Name] = v.Text(10)
+				case *big.Int:
+					row[field.Name] = v.Text(10)
+				}
+			case runtimev1.Type_CODE_DATE:
+				switch v := row[field.Name].(type) {
+				case time.Time:
+					row[field.Name] = v.Format(time.DateOnly)
+				case *time.Time:
+					row[field.Name] = v.Format(time.DateOnly)
+				}
+			case runtimev1.Type_CODE_UINT64:
+				switch v := row[field.Name].(type) {
+				case uint64:
+					row[field.Name] = strconv.FormatUint(v, 10)
+				case *uint64:
+					row[field.Name] = strconv.FormatUint(*v, 10)
+				}
+			case runtimev1.Type_CODE_DECIMAL:
+				if v, ok := row[field.Name].(duckdb.Decimal); ok {
+					row[field.Name] = duckDBDecimalToString(v)
+				}
+			}
 		}
 		out = append(out, row)
 	}
@@ -236,4 +273,12 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 		return ResolveResult{}, err
 	}
 	return val.(ResolveResult), nil
+}
+
+func duckDBDecimalToString(d duckdb.Decimal) string {
+	scale := big.NewInt(int64(d.Scale))
+	factor := new(big.Float).SetInt(new(big.Int).Exp(big.NewInt(10), scale, nil))
+	value := new(big.Float).SetInt(d.Value)
+	value.Quo(value, factor)
+	return value.Text('f', int(d.Scale))
 }

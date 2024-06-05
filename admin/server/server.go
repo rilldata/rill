@@ -77,7 +77,7 @@ type Server struct {
 	limiter       ratelimit.Limiter
 	activity      *activity.Client
 
-	// psqlConnectionPool maintains a psql wire connection pool to runtime servers
+	// psqlConnectionPool holds a pgx pool to runtime server psql wire endpoint
 	psqlConnectionPool *psqlConnectionPool
 }
 

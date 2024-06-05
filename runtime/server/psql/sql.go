@@ -2,20 +2,22 @@ package psql
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math/big"
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 
 	"github.com/jmoiron/sqlx"
+	goduckdb "github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers/duckdb"
+	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
-
-	// import duckdb driver
-	_ "github.com/marcboeker/go-duckdb"
 )
 
 var (
@@ -147,6 +149,7 @@ func ResolvePSQLQuery(ctx context.Context, opts *PSQLQueryOpts) ([][]any, *runti
 		return nil, nil, err
 	}
 
+	// convert db schema to internal schema so that we can reuse schema converter from runtime types to postgres types
 	schema, err := duckdb.RowsToSchema(rows)
 	if err != nil {
 		return nil, nil, err
@@ -158,7 +161,10 @@ func ResolvePSQLQuery(ctx context.Context, opts *PSQLQueryOpts) ([][]any, *runti
 		if err != nil {
 			return nil, nil, err
 		}
-
+		// convert to types suitable for postgres
+		if err := convert(row, schema); err != nil {
+			return nil, nil, err
+		}
 		data = append(data, row)
 	}
 	return data, schema, nil
@@ -348,11 +354,63 @@ func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {
 	case runtimev1.Type_CODE_DECIMAL:
 		return "DECIMAL", nil
 	case runtimev1.Type_CODE_JSON:
-		// keeping type as json but appending varchar using the appender API causes duckdb invalid vector error intermittently
 		return "VARCHAR", nil
 	case runtimev1.Type_CODE_UUID:
 		return "UUID", nil
 	default:
 		return "", fmt.Errorf("unknown type_code %s", code)
 	}
+}
+
+// convert from go types scanned from duckdb driver to go types supporterd by postgres driver
+func convert(row []any, schema *runtimev1.StructType) (err error) {
+	for i := 0; i < len(row); i++ {
+		if row[i] == nil {
+			continue
+		}
+		code := schema.Fields[i].Type.Code
+		switch code {
+		case runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
+			if v, ok := row[i].(*big.Int); ok {
+				row[i] = decimal.NewFromBigInt(v, 0)
+			}
+		case runtimev1.Type_CODE_DATE:
+			if v, ok := row[i].(string); ok {
+				row[i], err = time.Parse(time.DateOnly, v)
+				if err != nil {
+					return err
+				}
+			}
+		case runtimev1.Type_CODE_UINT64:
+			if v, ok := row[i].(uint64); ok {
+				row[i] = decimal.NewFromUint64(v)
+			}
+		case runtimev1.Type_CODE_DECIMAL:
+			if v, ok := row[i].(goduckdb.Decimal); ok {
+				row[i] = decimal.NewFromUint64(v.Value.Uint64())
+			}
+		case runtimev1.Type_CODE_MAP:
+			val, err := json.Marshal(row[i])
+			if err != nil {
+				return err
+			}
+			row[i] = string(val)
+		case runtimev1.Type_CODE_STRUCT:
+			val, err := json.Marshal(row[i])
+			if err != nil {
+				return err
+			}
+			row[i] = string(val)
+		case runtimev1.Type_CODE_ARRAY:
+			elemType := schema.Fields[i].Type.ArrayElementType
+			if elemType != nil && (elemType.Code == runtimev1.Type_CODE_ARRAY || elemType.Code == runtimev1.Type_CODE_STRUCT || elemType.Code == runtimev1.Type_CODE_MAP) {
+				val, err := json.Marshal(row[i])
+				if err != nil {
+					return err
+				}
+				row[i] = string(val)
+			}
+		}
+	}
+	return nil
 }

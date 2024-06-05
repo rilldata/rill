@@ -4,18 +4,14 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"math/big"
 	"strings"
-	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	wire "github.com/jeroenrinzema/psql-wire"
-	"github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"github.com/rilldata/rill/runtime/server/psql"
-	"github.com/shopspring/decimal"
 )
 
 // psqlQueryHandler handles incoming queries on psql wire endpoint.
@@ -26,7 +22,7 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 	instanceID := clientParams[wire.ParamDatabase]
 
 	// The logic to identify metadata queries is somewhat hacky.
-	// Identify metadata queries based on whether query contains names of common catalogs like pg_attribute, pg_catalog etc.
+	// Identify metadata queries based on whether query contains names of common postgres catalogs like pg_attribute, pg_catalog etc.
 	// Also consider queries that do not have a FROM clause as metadata queries since querying from metrics_view requires a FROM clause.
 	if strings.Contains(query, "pg_attribute") || strings.Contains(query, "pg_catalog") || strings.Contains(query, "pg_type") || strings.Contains(query, "pg_namespace") || !strings.Contains(strings.ToUpper(query), "FROM") {
 		data, schema, err := psql.ResolvePSQLQuery(ctx, &psql.PSQLQueryOpts{
@@ -43,9 +39,6 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 
 		handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 			for i := 0; i < len(data); i++ {
-				if err := convert(data[i], schema); err != nil {
-					return fmt.Errorf("data conversion failed with error: %w", err)
-				}
 				if err := writer.Row(data[i]); err != nil {
 					return fmt.Errorf("failed to write row: %w", err)
 				}
@@ -62,7 +55,7 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 		InstanceID:         instanceID,
 		Resolver:           "metrics_sql",
 		ResolverProperties: map[string]any{"sql": query},
-		Args:               map[string]any{"sql": query, "priority": 1},
+		Args:               map[string]any{"priority": 1},
 		UserAttributes:     auth.GetClaims(ctx).Attributes(),
 	})
 	if err != nil {
@@ -86,10 +79,6 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 					row[j] = nil
 				}
 			}
-
-			if err := convert(row, res.Schema); err != nil {
-				return fmt.Errorf("data conversion failed with error: %w", err)
-			}
 			if err := writer.Row(row); err != nil {
 				return fmt.Errorf("failed to write row: %w", err)
 			}
@@ -97,61 +86,6 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 		return writer.Complete("OK")
 	}
 	return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(convertSchema(res.Schema)))), nil
-}
-
-func convert(row []any, schema *runtimev1.StructType) (err error) {
-	for i := 0; i < len(row); i++ {
-		if row[i] == nil {
-			continue
-		}
-		code := schema.Fields[i].Type.Code
-		switch code {
-		case runtimev1.Type_CODE_INT128, runtimev1.Type_CODE_INT256, runtimev1.Type_CODE_UINT128, runtimev1.Type_CODE_UINT256:
-			if v, ok := row[i].(*big.Int); ok {
-				row[i] = decimal.NewFromBigInt(v, 0)
-			}
-		case runtimev1.Type_CODE_DATE:
-			if v, ok := row[i].(string); ok {
-				row[i], err = time.Parse(time.DateOnly, v)
-				if err != nil {
-					return err
-				}
-			}
-		case runtimev1.Type_CODE_UINT64:
-			if v, ok := row[i].(uint64); ok {
-				row[i] = decimal.NewFromUint64(v)
-			}
-		case runtimev1.Type_CODE_DECIMAL:
-			switch v := row[i].(type) {
-			case duckdb.Decimal:
-				row[i] = decimal.NewFromBigInt(v.Value, 0)
-			case uint64:
-				row[i] = decimal.NewFromUint64(v)
-			}
-		case runtimev1.Type_CODE_MAP:
-			val, err := json.Marshal(row[i])
-			if err != nil {
-				return err
-			}
-			row[i] = string(val)
-		case runtimev1.Type_CODE_STRUCT:
-			val, err := json.Marshal(row[i])
-			if err != nil {
-				return err
-			}
-			row[i] = string(val)
-		case runtimev1.Type_CODE_ARRAY:
-			elemType := schema.Fields[i].Type.ArrayElementType
-			if elemType != nil && (elemType.Code == runtimev1.Type_CODE_ARRAY || elemType.Code == runtimev1.Type_CODE_STRUCT || elemType.Code == runtimev1.Type_CODE_MAP) {
-				val, err := json.Marshal(row[i])
-				if err != nil {
-					return err
-				}
-				row[i] = string(val)
-			}
-		}
-	}
-	return nil
 }
 
 func convertSchema(schema *runtimev1.StructType) wire.Columns {
@@ -217,6 +151,8 @@ func columnForType(field *runtimev1.StructType_Field) wire.Column {
 		col.Oid = pgtype.UUIDOID
 		col.Width = 16
 	case runtimev1.Type_CODE_ARRAY:
+		// TODO : array will mostly fail for metrics_sql since in JSON they will be present as string but pgx protocol expects to be []type for array
+		// metrics_sql will not output array right now.
 		return columnForArrayType(field)
 	case runtimev1.Type_CODE_MAP:
 		col.Oid = pgtype.JSONOID
