@@ -7,6 +7,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { EMPTY_PROJECT_TITLE } from "./constants";
+import { writable } from "svelte/store";
 
 export async function isProjectInitialized(instanceId: string) {
   try {
@@ -16,14 +17,14 @@ export async function isProjectInitialized(instanceId: string) {
         return runtimeServiceListFiles(instanceId, undefined, signal);
       },
     });
+
     // Return true if `rill.yaml` exists, else false
-    return files.files?.some((file) => file.path === "/rill.yaml");
+    return !!files.files?.some(({ path }) => path === "/rill.yaml");
   } catch {
     return false;
   }
 }
 
-// This function returns a boolean indicating whether we should redirect to the Welcome page
 export async function handleUninitializedProject(
   instanceId: string,
 ): Promise<boolean> {
@@ -49,3 +50,5 @@ export async function handleUninitializedProject(
     return false;
   }
 }
+
+export const firstLoad = writable(true);

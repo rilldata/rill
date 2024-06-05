@@ -11,13 +11,13 @@
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
-  import { projectInitialized } from "../../../runtime-client/runtime-store";
+  import { isProjectInitialized } from "../../welcome/is-project-initialized";
 
   export let showDropOverlay: boolean;
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
@@ -29,16 +29,15 @@
     // no-op if no files are dropped
     if (files === undefined) return;
 
-    const uploadedFiles = uploadTableFiles(
-      Array.from(files),
-      $runtime.instanceId,
-    );
+    const uploadedFiles = uploadTableFiles(Array.from(files), instanceId);
+
+    const initialized = await isProjectInitialized(instanceId);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
-        if (!$projectInitialized) {
+        if (!initialized) {
           $unpackEmptyProject.mutate({
-            instanceId: $runtime.instanceId,
+            instanceId,
             data: {
               title: EMPTY_PROJECT_TITLE,
             },
@@ -52,7 +51,7 @@
           },
           "local_file",
         );
-        await createSource(runtimeInstanceId, tableName, yaml);
+        await createSource(instanceId, tableName, yaml);
         const newFilePath = getFilePathFromNameAndType(
           tableName,
           EntityType.Table,

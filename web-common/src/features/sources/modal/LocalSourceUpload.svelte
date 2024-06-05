@@ -16,12 +16,12 @@
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
-  import { projectInitialized } from "../../../runtime-client/runtime-store";
+  import { isProjectInitialized } from "../../welcome/is-project-initialized";
 
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
@@ -30,13 +30,14 @@
   }
 
   async function handleUpload(files: Array<File>) {
-    const uploadedFiles = uploadTableFiles(files, $runtime.instanceId, false);
+    const uploadedFiles = uploadTableFiles(files, instanceId, false);
+    const initialized = await isProjectInitialized(instanceId);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
-        if (!$projectInitialized) {
+        if (!initialized) {
           $unpackEmptyProject.mutate({
-            instanceId: $runtime.instanceId,
+            instanceId,
             data: {
               title: EMPTY_PROJECT_TITLE,
             },
@@ -51,7 +52,7 @@
           "local_file",
         );
 
-        await createSource(runtimeInstanceId, tableName, yaml);
+        await createSource(instanceId, tableName, yaml);
         const newFilePath = getFilePathFromNameAndType(
           tableName,
           EntityType.Table,
