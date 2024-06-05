@@ -11,16 +11,17 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { WandIcon } from "lucide-svelte";
-  import TableIcon from "../../components/icons/TableIcon.svelte";
-  import { runtime } from "../../runtime-client/runtime-store";
-  import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromSource } from "../sources/createModel";
+  import TableIcon from "../../../components/icons/TableIcon.svelte";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { featureFlags } from "../../feature-flags";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
+  import { createModelFromSource } from "../../sources/createModel";
   import { makeTablePreviewHref } from "./olap-config";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
-  import { featureFlags } from "../feature-flags";
 
   const { ai } = featureFlags;
 
+  export let driver: string;
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string = "";
@@ -28,7 +29,13 @@
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
-  $: href = makeTablePreviewHref(connector, database, databaseSchema, table);
+  $: href = makeTablePreviewHref(
+    driver,
+    connector,
+    database,
+    databaseSchema,
+    table,
+  );
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     connector,

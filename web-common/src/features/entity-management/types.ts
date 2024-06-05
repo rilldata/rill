@@ -1,4 +1,5 @@
 export enum EntityType {
+  Connector = "Connector",
   Table = "Table",
   Model = "Model",
   Application = "Application",

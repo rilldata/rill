@@ -1,12 +1,13 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import TablePreviewWorkspace from "@rilldata/web-common/features/connectors/olap/TablePreviewWorkspace.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
-  import TablePreviewWorkspace from "@rilldata/web-common/features/tables/TablePreviewWorkspace.svelte";
   import { error } from "@sveltejs/kit";
   import { onMount } from "svelte";
 
   const { readOnly } = featureFlags;
 
+  $: name = $page.params.name;
   $: database = $page.params.database;
   // ClickHouse does not have a database "schema" concept
   // Rill considers the ClickHouse "database" as the "database schema"
@@ -23,8 +24,4 @@
   <title>Rill Developer | {table}</title>
 </svelte:head>
 
-<TablePreviewWorkspace
-  connector="clickhouse"
-  databaseSchema={database}
-  {table}
-/>
+<TablePreviewWorkspace connector={name} databaseSchema={database} {table} />

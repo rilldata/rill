@@ -171,6 +171,9 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 			e.StartedOn = nil
 			e.FinishedOn = nil
 		}
+	case runtime.ResourceKindConnector:
+		state := b.GetConnector().State
+		state.SpecHash = ""
 	}
 
 	// Hack to only compare the Resource field (not Meta)

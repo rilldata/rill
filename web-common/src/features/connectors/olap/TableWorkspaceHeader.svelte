@@ -5,15 +5,13 @@
   } from "@rilldata/web-common/components/button";
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import ResponsiveButtonText from "@rilldata/web-common/components/panel/ResponsiveButtonText.svelte";
-  import Add from "../../components/icons/Add.svelte";
-  import { WorkspaceHeader } from "../../layout/workspace";
-  import { BehaviourEventMedium } from "../../metrics/service/BehaviourEventTypes";
-  import { MetricsEventSpace } from "../../metrics/service/MetricsTypes";
-  import { runtime } from "../../runtime-client/runtime-store";
-  import { useCreateDashboardFromTableUIAction } from "../metrics-views/ai-generation/generateMetricsView";
-  import { makeFullyQualifiedTableName } from "./olap-config";
-  import { WandIcon } from "lucide-svelte";
-  import { featureFlags } from "../feature-flags";
+  import Add from "../../../components/icons/Add.svelte";
+  import { WorkspaceHeader } from "../../../layout/workspace";
+  import { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
+  import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
+  import { runtime } from "../../../runtime-client/runtime-store";
+  import { featureFlags } from "../../feature-flags";
+  import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
 
   export let connector: string;
   export let database: string = "";
@@ -21,13 +19,6 @@
   export let table: string;
 
   const { ai } = featureFlags;
-
-  $: fullyQualifiedTableName = makeFullyQualifiedTableName(
-    connector,
-    database,
-    databaseSchema,
-    table,
-  );
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
@@ -49,7 +40,7 @@
   <WorkspaceHeader
     editable={false}
     showInspectorToggle={false}
-    titleInput={fullyQualifiedTableName}
+    titleInput={table}
   >
     <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}
@@ -61,7 +52,6 @@
           <ResponsiveButtonText {collapse}>
             Generate dashboard {#if $ai}
               with AI
-              <WandIcon class="w-3 h-3" />
             {/if}
           </ResponsiveButtonText>
         </Button>

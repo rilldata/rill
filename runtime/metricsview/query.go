@@ -18,8 +18,8 @@ type Query struct {
 	ComparisonTimeRange *TimeRange  `mapstructure:"comparison_time_range"`
 	Where               *Expression `mapstructure:"where"`
 	Having              *Expression `mapstructure:"having"`
-	Limit               *int        `mapstructure:"limit"`
-	Offset              *int        `mapstructure:"offset"`
+	Limit               *int64      `mapstructure:"limit"`
+	Offset              *int64      `mapstructure:"offset"`
 	TimeZone            string      `mapstructure:"time_zone"`
 	Label               bool        `mapstructure:"label"`
 }

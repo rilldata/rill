@@ -449,7 +449,7 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 		sql = fmt.Sprintf(
 			`
 					SELECT
-					toTimeZone(date_trunc('%[1]s', toTimeZone(%[2]s::DateTime64, '%[7]s'))::DateTime64, '%[7]s') as %[3]s,
+					toTimeZone(date_trunc('%[1]s', toTimeZone(%[2]s::TIMESTAMP, '%[7]s'))::TIMESTAMP, '%[7]s') as %[3]s,
 					%[4]s
 					FROM %[5]s
 					WHERE %[6]s
@@ -469,7 +469,7 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 		sql = fmt.Sprintf(
 			`
 				SELECT
-					toTimeZone(date_trunc('%[1]s', toTimeZone(%[2]s::DateTime64, '%[7]s') + INTERVAL %[8]s) - (INTERVAL %[8]s), '%[7]s') as %[3]s,
+					toTimeZone(date_trunc('%[1]s', toTimeZone(%[2]s::TIMESTAMP, '%[7]s') + INTERVAL %[8]s)::TIMESTAMP - (INTERVAL %[8]s), '%[7]s') as %[3]s,
 				%[4]s
 				FROM %[5]s
 				WHERE %[6]s
@@ -630,13 +630,11 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery() (*metricsview.Query,
 	qry.TimeRange = res
 
 	if q.Limit != 0 {
-		tmp := int(q.Limit)
-		qry.Limit = &tmp
+		qry.Limit = &q.Limit
 	}
 
 	if q.Offset != 0 {
-		tmp := int(q.Offset)
-		qry.Offset = &tmp
+		qry.Offset = &q.Offset
 	}
 
 	for _, s := range q.Sort {
