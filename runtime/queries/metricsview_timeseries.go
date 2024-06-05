@@ -630,13 +630,11 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery() (*metricsview.Query,
 	qry.TimeRange = res
 
 	if q.Limit != 0 {
-		tmp := int(q.Limit)
-		qry.Limit = &tmp
+		qry.Limit = &q.Limit
 	}
 
 	if q.Offset != 0 {
-		tmp := int(q.Offset)
-		qry.Offset = &tmp
+		qry.Offset = &q.Offset
 	}
 
 	for _, s := range q.Sort {
