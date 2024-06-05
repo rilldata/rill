@@ -85,7 +85,7 @@
   class:active={(boundary === "start") === selectingStart}
   class:error={displayError}
   value={date.toLocaleString({
-    month: "long",
+    month: "short",
     day: "2-digit",
     year: "numeric",
   })}
