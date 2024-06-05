@@ -218,7 +218,7 @@
       </button>
     </DropdownMenu.Trigger>
     <DropdownMenu.Content align="start" class="w-[240px]">
-      {#if $isModelingSupportedForCurrentOlapDriver.data}
+      {#if $isModelingSupportedForCurrentOlapDriver}
         <DropdownMenu.Item
           aria-label="Add Source"
           class="flex gap-x-2"

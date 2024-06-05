@@ -73,7 +73,7 @@
   <TableIcon slot="icon" />
   Preview table
 </NavigationMenuItem>
-{#if $isModelingSupportedForCurrentOlapDriver.data}
+{#if $isModelingSupportedForCurrentOlapDriver}
   <NavigationMenuItem on:click={handleCreateModel}>
     <Model slot="icon" />
     Create new model

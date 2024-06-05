@@ -1,23 +1,31 @@
 import { CreateQueryResult } from "@tanstack/svelte-query";
+import { derived } from "svelte/store";
 import { TableInfo } from "../../../proto/gen/rill/runtime/v1/connectors_pb";
 import {
   V1TableInfo,
   createConnectorServiceOLAPListTables,
+  createRuntimeServiceAnalyzeConnectors,
   createRuntimeServiceGetInstance,
 } from "../../../runtime-client";
 import { OLAP_DRIVERS_WITHOUT_MODELING } from "./olap-config";
 
 export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
-  return createRuntimeServiceGetInstance(
-    instanceId,
-    { sensitive: true },
-    {
-      query: {
-        select: (data) => {
-          const olapConnector = data.instance?.olapConnector as string;
-          return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapConnector);
-        },
-      },
+  return derived(
+    [
+      createRuntimeServiceGetInstance(instanceId, { sensitive: true }),
+      createRuntimeServiceAnalyzeConnectors(instanceId),
+    ],
+    ([$instanceQuery, $connectorsQuery]) => {
+      const { instance: { olapConnector: olapConnectorName = "" } = {} } =
+        $instanceQuery.data || {};
+      const { connectors = [] } = $connectorsQuery.data || {};
+
+      const olapConnector = connectors.find(
+        (connector) => connector.name === olapConnectorName,
+      );
+
+      const olapDriverName = olapConnector?.driver?.name ?? "";
+      return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName);
     },
   );
 }
