@@ -121,7 +121,7 @@ export default async function exportPivot({
   window.open(downloadUrl, "_self");
 }
 
-export function getPivotExportArgs(ctx: StateManagers, timeDimension: string) {
+export function getPivotExportArgs(ctx: StateManagers) {
   return derived(
     [
       ctx.metricsViewName,
@@ -143,6 +143,8 @@ export function getPivotExportArgs(ctx: StateManagers, timeDimension: string) {
 
       const timeRange = mapTimeRange(timeControlState, metricsView.data);
       if (!timeRange) return undefined;
+
+      const timeDimension = metricsView.data.timeDimension ?? "";
 
       const measures = columns.measure.map((m) => {
         return {
