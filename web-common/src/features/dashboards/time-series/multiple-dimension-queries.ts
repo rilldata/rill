@@ -7,6 +7,7 @@ import {
   matchExpressionByName,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import { Readable, derived } from "svelte/store";
 
 import { COMPARIONS_COLORS } from "@rilldata/web-common/features/dashboards/config";
@@ -31,7 +32,6 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import {
-  createBatches,
   getFilterForComparedDimension,
   prepareTimeSeries,
   transformAggregateDimensionData,
