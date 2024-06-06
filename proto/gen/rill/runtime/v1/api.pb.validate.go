@@ -552,6 +552,8 @@ func (m *Connector) validate(all bool) error {
 
 	// no validation rules for Config
 
+	// no validation rules for ConfigFromVariables
+
 	if len(errors) > 0 {
 		return ConnectorMultiError(errors)
 	}
@@ -7273,6 +7275,8 @@ func (m *AnalyzedConnector) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for ErrorMessage
 
 	if len(errors) > 0 {
 		return AnalyzedConnectorMultiError(errors)

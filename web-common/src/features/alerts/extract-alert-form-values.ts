@@ -1,5 +1,9 @@
-import { mapExpressionToAlertCriteria } from "@rilldata/web-common/features/alerts/criteria-tab/map-alert-criteria";
 import type { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+import {
+  getEmptyMeasureFilterEntry,
+  mapExprToMeasureFilter,
+  MeasureFilterEntry,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
@@ -18,6 +22,7 @@ export type AlertFormValuesSubset = Pick<
   | "metricsViewName"
   | "whereFilter"
   | "timeRange"
+  | "comparisonTimeRange"
   | "measure"
   | "splitByDimension"
   | "criteria"
@@ -39,21 +44,36 @@ export function extractAlertFormValues(
     isoDuration: metricsViewSpec.defaultTimeRange ?? TimeRangePreset.ALL_TIME,
   };
   if (!timeRange.end && allTimeRange.timeRangeSummary?.max) {
+    // alerts only have duration optionally offset, end is added during execution by reconciler
+    // so, we add end here to get a valid query
     timeRange.end = allTimeRange.timeRangeSummary?.max;
+  }
+
+  const comparisonTimeRange = queryArgs.comparisonTimeRange;
+  if (
+    comparisonTimeRange &&
+    !comparisonTimeRange.end &&
+    allTimeRange.timeRangeSummary?.max
+  ) {
+    // alerts only have duration and offset, end is added during execution by reconciler
+    // so, we add end here to get a valid query
+    comparisonTimeRange.end = allTimeRange.timeRangeSummary?.max;
   }
 
   return {
     measure: measures[0]?.name ?? "",
     splitByDimension: dimensions[0]?.name ?? "",
 
-    criteria:
-      queryArgs.having?.cond?.exprs?.map(mapExpressionToAlertCriteria) ?? [],
+    criteria: (queryArgs.having?.cond?.exprs?.map(
+      mapExprToMeasureFilter,
+    ) as MeasureFilterEntry[]) ?? [getEmptyMeasureFilterEntry()],
     criteriaOperation: queryArgs.having?.cond?.op ?? V1Operation.OPERATION_AND,
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
     whereFilter: queryArgs.where ?? createAndExpression([]),
     timeRange,
+    comparisonTimeRange,
   };
 }
 

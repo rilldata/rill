@@ -19,6 +19,7 @@
     [ResourceKind.Model]: "Building model",
     [ResourceKind.Report]: "Building report",
     [ResourceKind.Source]: "Ingesting source",
+    [ResourceKind.Connector]: "Building connector",
     [ResourceKind.Theme]: "Building theme",
   };
 </script>
@@ -26,7 +27,7 @@
 <div class="size-full p-2 flex flex-col gap-y-2 items-center justify-center">
   <Spinner size="1.5em" status={EntityStatus.Running} />
   <div class="flex flex-col w-full text-center gap-y-1">
-    {#each typedReconcilingItems as reconcilingItem}
+    {#each typedReconcilingItems as reconcilingItem (reconcilingItem.name)}
       {@const kind = reconcilingItem.kind}
       <div class="w-full truncate">
         {userFriendlyPhrases[kind]}

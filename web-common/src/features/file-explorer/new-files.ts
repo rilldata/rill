@@ -45,6 +45,11 @@ const ResourceKindMap: Record<
     extension: ".yaml",
     baseContent: "", // This is constructed in the `features/sources/modal` directory
   },
+  [ResourceKind.Connector]: {
+    name: "connector",
+    extension: ".yaml",
+    baseContent: "", // This is constructed in the `features/connectors` directory
+  },
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",

@@ -12,6 +12,7 @@ import type { QueryClient } from "@tanstack/svelte-query";
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
   Source = "rill.runtime.v1.Source",
+  Connector = "rill.runtime.v1.Connector",
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
   Report = "rill.runtime.v1.Report",

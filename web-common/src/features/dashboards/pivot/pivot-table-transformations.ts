@@ -70,7 +70,6 @@ export function reduceTableCellDataIntoRows(
   cellData?.forEach((cell) => {
     const accessors = getAccessorForCell(
       colDimensionNames,
-      config.time.timeDimension,
       colValuesIndexMaps,
       config.measureNames.length,
       cell,
