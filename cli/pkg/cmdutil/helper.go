@@ -159,11 +159,6 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 				return false
 			}
 
-			// Omit instance heartbeats
-			if e.EventType == activity.EventTypeLog && e.EventName == "instance_heartbeat" {
-				return false
-			}
-
 			return true
 		})
 
