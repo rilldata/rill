@@ -88,6 +88,33 @@ export function createBetweenExpression(
   }
 }
 
+/**
+ * Creates an in filter with subquery
+ */
+export function createSubQueryExpression(
+  dimension: string,
+  where: V1Expression | undefined,
+  having: V1Expression | undefined,
+  negate = false,
+): V1Expression {
+  return {
+    cond: {
+      op: negate ? V1Operation.OPERATION_NIN : V1Operation.OPERATION_IN,
+      exprs: [
+        { ident: dimension },
+        {
+          subquery: {
+            dimension,
+            measures: getAllIdentifiers(having),
+            where,
+            having,
+          },
+        },
+      ],
+    },
+  };
+}
+
 const conditionOperationComplement: Partial<Record<V1Operation, V1Operation>> =
   {
     [V1Operation.OPERATION_EQ]: V1Operation.OPERATION_NEQ,

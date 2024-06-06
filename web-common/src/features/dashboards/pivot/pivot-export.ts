@@ -1,11 +1,19 @@
 import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+import {
+  createAndExpression,
+  createSubQueryExpression,
+  filterExpressions,
+  sanitiseExpression,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
+import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type {
   V1ExportFormat,
   V1TimeGrain,
   createQueryServiceExport,
 } from "@rilldata/web-common/runtime-client";
-import { get } from "svelte/store";
+import { derived, get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
 import { PivotChipType } from "./types";
@@ -111,4 +119,102 @@ export default async function exportPivot({
   const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
 
   window.open(downloadUrl, "_self");
+}
+
+export function getPivotExportArgs(ctx: StateManagers, timeDimension: string) {
+  return derived(
+    [
+      ctx.metricsViewName,
+      ctx.dashboardStore,
+      ctx.selectors.pivot.rows,
+      ctx.selectors.pivot.columns,
+      useTimeControlStore(ctx),
+      useMetricsView(ctx),
+    ],
+    ([
+      metricsViewName,
+      dashboardState,
+      rows,
+      columns,
+      timeControlState,
+      metricsView,
+    ]) => {
+      if (!metricsView.data || !timeControlState.ready) return undefined;
+
+      const timeRange = mapTimeRange(timeControlState, metricsView.data);
+      if (!timeRange) return undefined;
+
+      const measures = columns.measure.map((m) => {
+        return {
+          name: m.id,
+        };
+      });
+
+      const allDimensions = [...rows.dimension, ...columns.dimension].map(
+        (d) =>
+          d.type === PivotChipType.Time
+            ? {
+                name: timeDimension,
+                timeGrain: d.id as V1TimeGrain,
+                timeZone: dashboardState.selectedTimezone,
+                alias: `Time ${d.title}`,
+              }
+            : {
+                name: d.id,
+              },
+      );
+
+      const pivotOn = columns.dimension.map((d) =>
+        d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
+      );
+
+      const rowDimensions = [...rows.dimension].map((d) =>
+        d.type === PivotChipType.Time
+          ? {
+              name: timeDimension,
+              timeGrain: d.id as V1TimeGrain,
+              timeZone: dashboardState.selectedTimezone,
+              alias: `Time ${d.title}`,
+            }
+          : {
+              name: d.id,
+            },
+      );
+
+      // Sort by the dimensions in the pivot's rows
+      const sort = rowDimensions.map((d) => {
+        if (d.alias) {
+          return {
+            name: d.alias,
+            desc: false,
+          };
+        }
+        return {
+          name: d.name,
+          desc: false,
+        };
+      });
+
+      const where =
+        filterExpressions(dashboardState.whereFilter, () => true) ??
+        createAndExpression([]);
+      where.cond?.exprs?.push(
+        ...dashboardState.dimensionThresholdFilters.map((dt) =>
+          createSubQueryExpression(dt.name, undefined, dt.filter),
+        ),
+      );
+
+      return {
+        instanceId: get(runtime).instanceId,
+        metricsViewName,
+        timeRange,
+        measures,
+        dimensions: allDimensions,
+        where: sanitiseExpression(where, undefined),
+        pivotOn,
+        sort,
+        offset: "0",
+      };
+    },
+  );
 }

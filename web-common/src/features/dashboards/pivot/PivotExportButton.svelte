@@ -5,10 +5,11 @@
   import {
     V1ExportFormat,
     createQueryServiceExport,
+    createQueryServiceMetricsViewAggregation,
   } from "../../../runtime-client";
   import { useDashboard } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
-  import exportPivot from "./pivot-export";
+  import exportPivot, { getPivotExportArgs } from "./pivot-export";
 
   let active = false;
 
@@ -26,6 +27,17 @@
       timeDimension: $metricsView.data?.metricsView?.spec?.timeDimension,
     });
   }
+
+  $: exportArgs = getPivotExportArgs(
+    ctx,
+    $metricsView.data?.metricsView?.spec?.timeDimension ?? "",
+  );
+  $: query = createQueryServiceMetricsViewAggregation(
+    $runtime.instanceId,
+    $metricsViewName,
+    $exportArgs ?? {},
+  );
+  $: console.log($query.data);
 </script>
 
 <DropdownMenu.Root bind:open={active}>
