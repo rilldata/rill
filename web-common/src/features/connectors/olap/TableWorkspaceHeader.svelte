@@ -45,7 +45,7 @@
     <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
-        <Button on:click={createDashboardFromTable} type="brand">
+        <Button on:click={createDashboardFromTable} type="primary">
           <IconSpaceFixer pullLeft pullRight={collapse}>
             <Add />
           </IconSpaceFixer>
