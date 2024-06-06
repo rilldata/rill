@@ -40,11 +40,6 @@ func (p *Parser) parseDashboard(node *Node) error {
 		return fmt.Errorf("dashboards cannot have a connector")
 	}
 
-	// Ensure there's at least one item
-	if len(tmp.Items) == 0 {
-		return errors.New(`at least one item must be configured`)
-	}
-
 	// Parse items.
 	// Each item can either reference an externally defined component by name or define a component inline.
 	items := make([]*runtimev1.DashboardItem, len(tmp.Items))
