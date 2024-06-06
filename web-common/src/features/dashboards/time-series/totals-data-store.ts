@@ -1,4 +1,4 @@
-import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -27,28 +27,15 @@ export function createTotalsForMeasure(
       ctx.metricsViewName,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
-      measureFilterResolutionsStore(ctx),
     ],
-    (
-      [
-        runtime,
-        metricsViewName,
-        timeControls,
-        dashboard,
-        measureFilterResolution,
-      ],
-      set,
-    ) =>
+    ([runtime, metricsViewName, timeControls, dashboard], set) =>
       createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
           dimensions,
-          where: sanitiseExpression(
-            dashboard.whereFilter,
-            measureFilterResolution.filter,
-          ),
+          where: sanitiseExpression(mergeMeasureFilters(dashboard), undefined),
           timeStart: isComparison
             ? timeControls?.comparisonTimeStart
             : timeControls.timeStart,
@@ -58,10 +45,7 @@ export function createTotalsForMeasure(
         },
         {
           query: {
-            enabled:
-              !!timeControls.ready &&
-              !!ctx.dashboardStore &&
-              measureFilterResolution.ready,
+            enabled: !!timeControls.ready && !!ctx.dashboardStore,
             queryClient: ctx.queryClient,
           },
         },
@@ -80,21 +64,11 @@ export function createUnfilteredTotalsForMeasure(
       ctx.metricsViewName,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
-      measureFilterResolutionsStore(ctx),
     ],
-    (
-      [
-        runtime,
-        metricsViewName,
-        timeControls,
-        dashboard,
-        measureFilterResolution,
-      ],
-      set,
-    ) => {
+    ([runtime, metricsViewName, timeControls, dashboard], set) => {
       const filter = sanitiseExpression(
-        dashboard.whereFilter,
-        measureFilterResolution.filter,
+        mergeMeasureFilters(dashboard),
+        undefined,
       );
 
       const updatedFilter = filterExpressions(
@@ -113,10 +87,7 @@ export function createUnfilteredTotalsForMeasure(
         },
         {
           query: {
-            enabled:
-              !!timeControls.ready &&
-              !!ctx.dashboardStore &&
-              measureFilterResolution.ready,
+            enabled: !!timeControls.ready && !!ctx.dashboardStore,
             queryClient: ctx.queryClient,
           },
         },

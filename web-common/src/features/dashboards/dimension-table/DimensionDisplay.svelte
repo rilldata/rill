@@ -37,7 +37,6 @@
         prepareDimTableRows,
       },
       activeMeasure: { activeMeasureName },
-      measureFilters: { getResolvedFilterForMeasureFilters },
     },
     actions: {
       dimensionsFilter: {
@@ -53,7 +52,7 @@
   // cast is safe because dimensionTableDimName must be defined
   // for the dimension table to be open
   $: dimensionName = $dimensionTableDimName as string;
-  $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
+  $: dimensionColumnName = $dimensionTableColumnName(dimensionName);
 
   let searchText = "";
 
@@ -67,8 +66,6 @@
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
-  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
-
   $: filterSet = getDimensionFilterWithSearch(
     $dashboardStore?.whereFilter,
     searchText,
@@ -78,10 +75,10 @@
   $: totalsQuery = createQueryServiceMetricsViewTotals(
     instanceId,
     $metricsViewName,
-    $dimensionTableTotalQueryBody($resolvedFilter),
+    $dimensionTableTotalQueryBody(),
     {
       query: {
-        enabled: $timeControlsStore.ready && $resolvedFilter.ready,
+        enabled: $timeControlsStore.ready,
       },
     },
   );
@@ -93,11 +90,10 @@
   $: sortedQuery = createQueryServiceMetricsViewComparison(
     $runtime.instanceId,
     $metricsViewName,
-    $dimensionTableSortedQueryBody($resolvedFilter),
+    $dimensionTableSortedQueryBody(),
     {
       query: {
-        enabled:
-          $timeControlsStore.ready && !!filterSet && $resolvedFilter.ready,
+        enabled: $timeControlsStore.ready && !!filterSet,
       },
     },
   );
@@ -158,7 +154,7 @@
   }
 </script>
 
-{#if sortedQuery}
+{#if $sortedQuery}
   <div class="h-full flex flex-col w-full" style:min-width="365px">
     <div class="flex-none" style:height="50px">
       <DimensionHeader

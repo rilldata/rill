@@ -1,4 +1,3 @@
-import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -40,7 +39,6 @@ export function createPivotAggregationRowQuery(
   measures: V1MetricsViewAggregationMeasure[],
   dimensions: V1MetricsViewAggregationDimension[],
   whereFilter: V1Expression,
-  measureFilter: ResolvedMeasureFilter | undefined,
   sort: V1MetricsViewAggregationSort[] = [],
   limit = "100",
   offset = "0",
@@ -75,7 +73,7 @@ export function createPivotAggregationRowQuery(
         {
           measures: prepareMeasureForComparison(measures),
           dimensions,
-          where: sanitiseExpression(whereFilter, measureFilter?.filter),
+          where: sanitiseExpression(whereFilter, undefined),
           timeRange: {
             start: timeRange?.start ? timeRange.start : timeControls.timeStart,
             end: timeRange?.end ? timeRange.end : timeControls.timeEnd,
@@ -160,7 +158,6 @@ export function getAxisForDimensions(
         measures,
         [dimension],
         whereFilter,
-        config.measureFilter,
         sortByForDimension,
         limit,
         offset,
@@ -271,7 +268,6 @@ export function getTotalsRowQuery(
     measureBody,
     dimensionBody,
     mergedFilter,
-    config.measureFilter,
     sortBy,
     "300",
   );
