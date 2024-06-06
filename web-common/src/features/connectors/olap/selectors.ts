@@ -7,15 +7,18 @@ import {
   createRuntimeServiceAnalyzeConnectors,
   createRuntimeServiceGetInstance,
 } from "../../../runtime-client";
+import { featureFlags } from "../../feature-flags";
 import { OLAP_DRIVERS_WITHOUT_MODELING } from "./olap-config";
 
 export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
+  const { clickhouseModeling } = featureFlags;
   return derived(
     [
       createRuntimeServiceGetInstance(instanceId, { sensitive: true }),
       createRuntimeServiceAnalyzeConnectors(instanceId),
+      clickhouseModeling,
     ],
-    ([$instanceQuery, $connectorsQuery]) => {
+    ([$instanceQuery, $connectorsQuery, $clickhouseModeling]) => {
       const { instance: { olapConnector: olapConnectorName = "" } = {} } =
         $instanceQuery.data || {};
       const { connectors = [] } = $connectorsQuery.data || {};
@@ -25,7 +28,10 @@ export function useIsModelingSupportedForCurrentOlapDriver(instanceId: string) {
       );
 
       const olapDriverName = olapConnector?.driver?.name ?? "";
-      return !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName);
+      return (
+        !OLAP_DRIVERS_WITHOUT_MODELING.includes(olapDriverName) ||
+        $clickhouseModeling
+      );
     },
   );
 }
