@@ -152,6 +152,11 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, err
 	}
 
+	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
+	if err != nil {
+		return nil, false, err
+	}
+
 	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
 		return nil, false, err
 	}
@@ -173,19 +178,27 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, err
 	}
 
-	sql, args, err := ast.SQL()
-	if err != nil {
-		return nil, false, err
-	}
+	var res *drivers.Result
+	if pivoting {
+		res, err = e.executePivot(ctx, ast, pivotAST)
+		if err != nil {
+			return nil, false, err
+		}
+	} else {
+		sql, args, err := ast.SQL()
+		if err != nil {
+			return nil, false, err
+		}
 
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return nil, false, err
+		res, err = e.olap.Execute(ctx, &drivers.Statement{
+			Query:            sql,
+			Args:             args,
+			Priority:         e.priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+		if err != nil {
+			return nil, false, err
+		}
 	}
 
 	limitCap := e.queryLimitCap(export)

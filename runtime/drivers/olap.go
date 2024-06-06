@@ -185,6 +185,10 @@ func (d Dialect) String() string {
 	}
 }
 
+func (d Dialect) CanPivot() bool {
+	return d == DialectDuckDB
+}
+
 // EscapeIdentifier returns an escaped SQL identifier in the dialect.
 func (d Dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
