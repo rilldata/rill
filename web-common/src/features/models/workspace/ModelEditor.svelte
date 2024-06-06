@@ -325,7 +325,11 @@
   <footer>
     <div class="flex gap-x-3">
       {#if !autoSave}
-        <Button disabled={!hasUnsavedChanges} on:click={saveContent}>
+        <Button
+          type="subtle"
+          disabled={!hasUnsavedChanges}
+          on:click={saveContent}
+        >
           <Check size="14px" />
           Save
         </Button>

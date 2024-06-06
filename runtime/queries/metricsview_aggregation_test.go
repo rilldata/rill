@@ -58,6 +58,33 @@ func Ignore_TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("TestMetricsViewAggregation_measure_filters", func(t *testing.T) { TestMetricsViewAggregation_measure_filters(t) })
 	t.Run("TestMetricsViewsAggregation_timezone", func(t *testing.T) { TestMetricsViewsAggregation_timezone(t) })
 	t.Run("TestMetricsViewAggregationClickhouseEnum", func(t *testing.T) { testMetricsViewAggregationClickhouseEnum(t) })
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_totals", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_limit", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_limit(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_having", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_having(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_pivot", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_pivot(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t)
+	})
 }
 
 func TestMetricsViewsAggregation(t *testing.T) {
