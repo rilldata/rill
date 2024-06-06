@@ -94,7 +94,7 @@
         {/if}
       </div>
     {/each}
-    <Button dashed on:click={handleAddItem} type="secondary">
+    <Button on:click={handleAddItem} type="dashed">
       <div class="flex gap-x-2">
         <Add className="text-gray-700" />
         {addItemLabel}
