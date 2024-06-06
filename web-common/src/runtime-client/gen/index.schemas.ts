@@ -647,6 +647,13 @@ export interface V1TableCardinalityRequest {
   priority?: number;
 }
 
+export interface V1Subquery {
+  dimension?: string;
+  measures?: string[];
+  where?: V1Expression;
+  having?: V1Expression;
+}
+
 export interface V1StructType {
   fields?: StructTypeField[];
 }
@@ -1567,6 +1574,7 @@ export interface V1Expression {
   ident?: string;
   val?: unknown;
   cond?: V1Condition;
+  subquery?: V1Subquery;
 }
 
 export interface V1ExportResponse {
@@ -2061,7 +2069,7 @@ export interface V1API {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

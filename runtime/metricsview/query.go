@@ -123,13 +123,10 @@ type Condition struct {
 }
 
 type Subquery struct {
-	Dimensions []*Dimension `mapstructure:"dimensions"`
-	Measures   []*Measure   `mapstructure:"measures"`
-	Sort       []*Sort      `mapstructure:"sort"`
-	Where      *Expression  `mapstructure:"where"`
-	Having     *Expression  `mapstructure:"having"`
-	Limit      *int         `mapstructure:"limit"`
-	Offset     *int         `mapstructure:"offset"`
+	Dimension Dimension   `mapstructure:"dimension"`
+	Measures  []Measure   `mapstructure:"measures"`
+	Where     *Expression `mapstructure:"where"`
+	Having    *Expression `mapstructure:"having"`
 }
 
 type Operator string
