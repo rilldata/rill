@@ -92,7 +92,7 @@
 
 {#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
   <div class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2">
-    <Button compact type="highlighted" on:click={() => zoomScrub()}>
+    <Button compact type="plain" on:click={() => zoomScrub()}>
       <div class="flex items-center gap-x-2">
         <Zoom size="16px" />
         Zoom
