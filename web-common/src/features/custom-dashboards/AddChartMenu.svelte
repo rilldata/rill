@@ -6,12 +6,15 @@
   import { ChevronDown, Plus, WandIcon } from "lucide-svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { createEventDispatcher } from "svelte";
+
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { featureFlags } from "../feature-flags";
+  import { handleEntityCreate } from "../file-explorer/new-files";
 
   const { ai } = featureFlags;
-  const dispatch = createEventDispatcher();
+
+  export let addChart: (chartName: string) => void;
+
   let open = false;
   let value = "";
 
@@ -22,6 +25,16 @@
   );
   $: chartFileNames =
     $chartsQuery.data?.map((c) => c.meta?.name?.name ?? "") ?? [];
+
+  async function handleAddChart() {
+    const newRoute = await handleEntityCreate(ResourceKind.Component);
+
+    const chartName = newRoute?.split("/").pop()?.split(".")[0];
+
+    if (chartName) {
+      addChart(chartName);
+    }
+  }
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
@@ -43,7 +56,9 @@
           <WandIcon class="w-3 h-3" />
         {/if}
       </DropdownMenu.Item>
-      <DropdownMenu.Item disabled>Create new chart</DropdownMenu.Item>
+      <DropdownMenu.Item on:click={handleAddChart}
+        >Create new chart</DropdownMenu.Item
+      >
     </DropdownMenu.Group>
     <DropdownMenu.Separator />
     <div class="px-1">
@@ -55,11 +70,7 @@
     </DropdownMenu.Label>
     <DropdownMenu.Group>
       {#each chartFileNames.filter( (n) => n.startsWith(value), ) as chartName (chartName)}
-        <DropdownMenu.Item
-          on:click={() => {
-            dispatch("add-chart", { chartName });
-          }}
-        >
+        <DropdownMenu.Item on:click={() => addChart(chartName)}>
           {chartName}
         </DropdownMenu.Item>
       {/each}
