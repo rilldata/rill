@@ -52,7 +52,6 @@
   let customDashboardName: string;
   let selectedView = "split";
   let showGrid = true;
-  let snap = false;
   let showChartEditor = false;
   let containerWidth: number;
   let containerHeight: number;
@@ -225,13 +224,6 @@
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />
 
-      <div
-        class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
-      >
-        <Switch bind:checked={snap} id="snap" small />
-        <Label class="font-normal text-xs" for="snap">Snap on change</Label>
-      </div>
-
       {#if selectedView === "split" || selectedView === "viz"}
         <div
           class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
@@ -324,7 +316,6 @@
 
     {#if selectedView == "viz" || selectedView == "split"}
       <CustomDashboardPreview
-        {snap}
         {gap}
         {items}
         {columns}
