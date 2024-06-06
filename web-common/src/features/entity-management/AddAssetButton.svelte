@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Folder, PlusCircleIcon } from "lucide-svelte";
@@ -30,7 +31,6 @@
   import { getName } from "./name-utils";
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   let active = false;
 
@@ -218,7 +218,7 @@
     </Button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="w-[240px]">
-    {#if $isModelingSupportedForCurrentOlapDriver.data}
+    {#if $isModelingSupportedForCurrentOlapDriver}
       <DropdownMenu.Item
         aria-label="Add Source"
         class="flex gap-x-2"
