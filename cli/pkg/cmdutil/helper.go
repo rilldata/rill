@@ -155,11 +155,7 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 		// (Remember, this telemetry client will only be used on local.)
 		sink := activity.NewFilterSink(intakeSink, func(e activity.Event) bool {
 			// Omit metrics events (since they are quite chatty and potentially sensitive).
-			if e.EventType == activity.EventTypeMetric {
-				return false
-			}
-
-			return true
+			return e.EventType != activity.EventTypeMetric
 		})
 
 		// Create the telemetry client with metadata about the current environment.
