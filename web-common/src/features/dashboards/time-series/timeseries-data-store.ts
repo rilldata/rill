@@ -1,6 +1,6 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
-import { getMeasuresAndDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { getFilteredMeasuresAndDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -126,7 +126,7 @@ export function createTimeSeriesDataStore(
           : [];
       }
       const { measures: filteredMeasures, dimensions } =
-        getMeasuresAndDimensions({
+        getFilteredMeasuresAndDimensions({
           dashboard: dashboardStore,
         })(metricsView.data ?? {}, measures);
 
