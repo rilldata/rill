@@ -482,7 +482,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 			return err
 		}
 		if !ok {
-			ch.PrintfWarn("\nIf you want to deploy to another Github account, Please visit %q to grant access.\n", pollRes.GrantAccessUrl)
+			ch.PrintfWarn("\nIf you want to deploy to another Github account, visit this URL to grant access: %s\n", pollRes.GrantAccessUrl)
 			return nil
 		}
 	} else {
