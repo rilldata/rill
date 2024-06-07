@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
@@ -15,10 +16,18 @@ import (
 // This means it creates a ModelExecutor with the provided input connector and props as input,
 // and with the "file" driver as the output connector targeting a temporary output path.
 func (e *Executor) executeExport(ctx context.Context, format, inputConnector string, inputProps map[string]any) (string, error) {
-	path, err := os.MkdirTemp(e.rt.TempDir(e.instanceID, "pivot_export"), "export-*.parquet")
+	path := e.rt.TempDir(e.instanceID, "pivot_export")
+	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
-		return "", fmt.Errorf("failed to create temporary directory: %w", err)
+		return "", err
 	}
+
+	name, err := randomString("export-", 16)
+	if err != nil {
+		return "", err
+	}
+	name = fmt.Sprintf("%s.%s", name, format)
+	path = filepath.Join(path, name)
 
 	ic, ir, err := e.rt.AcquireHandle(ctx, e.instanceID, inputConnector)
 	if err != nil {

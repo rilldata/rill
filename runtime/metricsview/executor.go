@@ -227,7 +227,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 
 		// Use DuckDB to read the Parquet file into a *drivers.Result
 		res, err = duck.Execute(ctx, &drivers.Statement{
-			Query:            fmt.Sprintf("SELECT * FROM '%q'", path),
+			Query:            fmt.Sprintf("SELECT * FROM '%s'", path),
 			Priority:         e.priority,
 			ExecutionTimeout: defaultExecutionTimeout,
 		})
