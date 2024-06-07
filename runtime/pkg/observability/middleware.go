@@ -3,6 +3,7 @@ package observability
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"runtime"
@@ -215,13 +216,13 @@ func LoggingMiddleware(logger *zap.Logger, next http.Handler) http.Handler {
 				wrapped.status = http.StatusInternalServerError
 				_, _ = w.Write([]byte(http.StatusText(http.StatusInternalServerError)))
 
-				// Add error field
-				switch v := err.(type) {
-				case error:
-					fields = append(fields, zap.Error(v))
-				default:
-					fields = append(fields, zap.Any("error", v))
-				}
+				// Get stacktrace
+				stack := make([]byte, 64<<10)
+				stack = stack[:runtime.Stack(stack, false)]
+
+				// Add log fieds
+				err := fmt.Errorf("panic caught: %v", err)
+				fields = append(fields, zap.Error(err), zap.String("stack", string(stack)))
 			}
 
 			// Get status

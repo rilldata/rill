@@ -11,6 +11,9 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+
+	// Load IANA time zone data
+	_ "time/tzdata"
 )
 
 // ErrUnsupportedConnector is returned from Ingest for unsupported connectors.
@@ -55,6 +58,8 @@ type Result struct {
 	*sqlx.Rows
 	Schema    *runtimev1.StructType
 	cleanupFn func() error
+	cap       int64
+	rows      int64
 }
 
 // SetCleanupFunc sets a function, which will be called when the Result is closed.
@@ -63,6 +68,43 @@ func (r *Result) SetCleanupFunc(fn func() error) {
 		panic("cleanup function already set")
 	}
 	r.cleanupFn = fn
+}
+
+// SetCap caps the number of rows to return. If the number is exceeded, an error is returned.
+func (r *Result) SetCap(n int64) {
+	if r.cap > 0 {
+		panic("cap already set")
+	}
+	r.cap = n
+}
+
+// Next wraps rows.Next and enforces the cap set by SetCap.
+func (r *Result) Next() bool {
+	res := r.Rows.Next()
+	if !res {
+		return false
+	}
+
+	r.rows++
+	if r.cap > 0 && r.rows > r.cap {
+		return false
+	}
+
+	return true
+}
+
+// Err returns the error of the underlying rows.
+func (r *Result) Err() error {
+	err := r.Rows.Err()
+	if err != nil {
+		return err
+	}
+
+	if r.cap > 0 && r.rows > r.cap {
+		return fmt.Errorf("result cap exceeded: returned more than %d rows", r.cap)
+	}
+
+	return nil
 }
 
 // Close wraps rows.Close and calls the Result's cleanup function (if it is set).
@@ -151,9 +193,9 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
 }
 
-func (d Dialect) ConvertToDateTruncSpecifier(specifier runtimev1.TimeGrain) string {
+func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 	var str string
-	switch specifier {
+	switch grain {
 	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
 		str = "MILLISECOND"
 	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
@@ -178,6 +220,10 @@ func (d Dialect) ConvertToDateTruncSpecifier(specifier runtimev1.TimeGrain) stri
 		return strings.ToLower(str)
 	}
 	return str
+}
+
+func (d Dialect) SupportsILike() bool {
+	return d != DialectDruid && d != DialectPinot
 }
 
 // EscapeTable returns an esacped fully qualified table name
@@ -212,6 +258,30 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
 }
 
+func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (expr, alias, unnestClause string) {
+	colName := d.EscapeIdentifier(dim.Name)
+	if !dim.Unnest || d == DialectDruid {
+		return d.MetricsViewDimensionExpression(dim), colName, ""
+	}
+
+	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
+	unnestTableName := tempName("tbl")
+	if dim.Expression == "" {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
+		return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
+	}
+
+	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
+}
+
+func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, auto bool, err error) {
+	if d == DialectDruid || d == DialectPinot {
+		return "", true, nil
+	}
+
+	return fmt.Sprintf(`LATERAL UNNEST(%s) %s(%s)`, expr, tableAlias, d.EscapeIdentifier(colName)), false, nil
+}
+
 func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
 	if dimension.Expression != "" {
 		return dimension.Expression
@@ -222,6 +292,167 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 	// backwards compatibility for older projects that have not run reconcile on this dashboard
 	// in that case `column` will not be present
 	return d.EscapeIdentifier(dimension.Name)
+}
+
+func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
+	switch d {
+	case DialectDruid:
+		return fmt.Sprintf("SAFE_DIVIDE(%s, CAST(%s AS DOUBLE))", numExpr, denExpr)
+	default:
+		return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
+	}
+}
+
+func (d Dialect) OrderByExpression(name string, desc bool) string {
+	res := d.EscapeIdentifier(name)
+	if desc {
+		res += " DESC"
+	}
+	if d == DialectDuckDB {
+		res += " NULLS LAST"
+	}
+	return res
+}
+
+func (d Dialect) JoinOnExpression(lhs, rhs string) string {
+	if d == DialectClickHouse {
+		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
+	}
+	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
+}
+
+func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
+	if tz == "UTC" || tz == "Etc/UTC" {
+		tz = ""
+	}
+
+	if tz != "" {
+		_, err := time.LoadLocation(tz)
+		if err != nil {
+			return "", fmt.Errorf("invalid time zone %q: %w", tz, err)
+		}
+	}
+
+	var specifier string
+	if tz != "" && d == DialectDruid {
+		specifier = druidTimeFloorSpecifier(grain)
+	} else {
+		specifier = d.ConvertToDateTruncSpecifier(grain)
+	}
+
+	var expr string
+	if dim.Expression != "" {
+		expr = fmt.Sprintf("(%s)", dim.Expression)
+	} else {
+		expr = d.EscapeIdentifier(dim.Column)
+	}
+
+	switch d {
+	case DialectDuckDB:
+		var shift string
+		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
+			offset := 8 - firstDayOfWeek
+			shift = fmt.Sprintf("%d DAY", offset)
+		} else if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
+			offset := 13 - firstMonthOfYear
+			shift = fmt.Sprintf("%d MONTH", offset)
+		}
+
+		if tz == "" {
+			if shift == "" {
+				return fmt.Sprintf("date_trunc('%s', %s::TIMESTAMP)::TIMESTAMP", specifier, expr), nil
+			}
+			return fmt.Sprintf("date_trunc('%s', %s::TIMESTAMP + INTERVAL %s)::TIMESTAMP - INTERVAL %s", specifier, expr, shift, shift), nil
+		}
+
+		// Optimization: date_trunc is faster for day+ granularity
+		switch grain {
+		case runtimev1.TimeGrain_TIME_GRAIN_DAY, runtimev1.TimeGrain_TIME_GRAIN_WEEK, runtimev1.TimeGrain_TIME_GRAIN_MONTH, runtimev1.TimeGrain_TIME_GRAIN_QUARTER, runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+			if shift == "" {
+				return fmt.Sprintf("timezone('%s', date_trunc('%s', timezone('%s', %s::TIMESTAMPTZ)))::TIMESTAMP", tz, specifier, tz, expr), nil
+			}
+			return fmt.Sprintf("timezone('%s', date_trunc('%s', timezone('%s', %s::TIMESTAMPTZ) + INTERVAL %s) - INTERVAL %s)::TIMESTAMP", tz, specifier, tz, expr, shift, shift), nil
+		}
+
+		if shift == "" {
+			return fmt.Sprintf("time_bucket(INTERVAL '1 %s', %s::TIMESTAMPTZ, '%s')", specifier, expr, tz), nil
+		}
+		return fmt.Sprintf("time_bucket(INTERVAL '1 %s', %s::TIMESTAMPTZ + INTERVAL %s, '%s') - INTERVAL %s", specifier, expr, shift, tz, shift), nil
+	case DialectDruid:
+		var shift int
+		var shiftPeriod string
+		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
+			shift = 8 - firstDayOfWeek
+			shiftPeriod = "P1D"
+		} else if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
+			shift = 13 - firstMonthOfYear
+			shiftPeriod = "P1M"
+		}
+
+		if tz == "" {
+			if shift == 0 {
+				return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
+			}
+			return fmt.Sprintf("time_shift(date_trunc('%s', time_shift(%s, '%s', %d)), '%s', -%d)", specifier, expr, shiftPeriod, shift, shiftPeriod, shift), nil
+		}
+
+		if shift == 0 {
+			return fmt.Sprintf("time_floor(%s, '%s', null, '%s')", expr, specifier, tz), nil
+		}
+		return fmt.Sprintf("time_shift(time_floor(time_shift(%s, '%s', %d), '%s', null, '%s'), '%s', -%d)", expr, shiftPeriod, shift, specifier, tz, shiftPeriod, shift), nil
+	case DialectClickHouse:
+		var shift string
+		if grain == runtimev1.TimeGrain_TIME_GRAIN_WEEK && firstDayOfWeek > 1 {
+			offset := 8 - firstDayOfWeek
+			shift = fmt.Sprintf("%d DAY", offset)
+		} else if grain == runtimev1.TimeGrain_TIME_GRAIN_YEAR && firstMonthOfYear > 1 {
+			offset := 13 - firstMonthOfYear
+			shift = fmt.Sprintf("%d MONTH", offset)
+		}
+
+		if tz == "" {
+			if shift == "" {
+				return fmt.Sprintf("date_trunc('%s', %s)", specifier, expr), nil
+			}
+			return fmt.Sprintf("date_trunc('%s', %s + INTERVAL %s) - INTERVAL %s", specifier, expr, shift, shift), nil
+		}
+
+		// TODO: Should this use date_trunc(grain, expr, tz) instead?
+		if shift == "" {
+			return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s'))::TIMESTAMP, '%s')", specifier, expr, tz, tz), nil
+		}
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s') + INTERVAL %s)::TIMESTAMP - INTERVAL %s, '%s')", specifier, expr, tz, shift, shift, tz), nil
+	case DialectPinot:
+		// TODO: Handle tz instead of ignoring it.
+		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.
+		return fmt.Sprintf("ToDateTime(date_trunc('%s', %s, 'MILLISECONDS', '%s'), 'yyyy-MM-dd''T''HH:mm:ss''Z''')", specifier, expr, tz), nil
+	default:
+		return "", fmt.Errorf("unsupported dialect %q", d)
+	}
+}
+
+func druidTimeFloorSpecifier(grain runtimev1.TimeGrain) string {
+	switch grain {
+	case runtimev1.TimeGrain_TIME_GRAIN_MILLISECOND:
+		return "PT0.001S"
+	case runtimev1.TimeGrain_TIME_GRAIN_SECOND:
+		return "PT1S"
+	case runtimev1.TimeGrain_TIME_GRAIN_MINUTE:
+		return "PT1M"
+	case runtimev1.TimeGrain_TIME_GRAIN_HOUR:
+		return "PT1H"
+	case runtimev1.TimeGrain_TIME_GRAIN_DAY:
+		return "P1D"
+	case runtimev1.TimeGrain_TIME_GRAIN_WEEK:
+		return "P1W"
+	case runtimev1.TimeGrain_TIME_GRAIN_MONTH:
+		return "P1M"
+	case runtimev1.TimeGrain_TIME_GRAIN_QUARTER:
+		return "P3M"
+	case runtimev1.TimeGrain_TIME_GRAIN_YEAR:
+		return "P1Y"
+	}
+	panic(fmt.Errorf("invalid time grain enum value %d", int(grain)))
 }
 
 func tempName(prefix string) string {

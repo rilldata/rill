@@ -215,7 +215,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 
 	// Update the provisioned runtime if the version has changed
-	if opts.Version != depl.RuntimeVersion {
+	if opts.Version != "" && opts.Version != depl.RuntimeVersion {
 		// Get provisioner from the set
 		p, ok := s.ProvisionerSet[depl.Provisioner]
 		if !ok {

@@ -5,7 +5,12 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { Button } from "@rilldata/web-common/components/button";
   import { BellPlusIcon } from "lucide-svelte";
-  import CreateAlertDialog from "@rilldata/web-common/features/alerts/CreateAlertDialog.svelte";
+  import CreateAlertForm from "@rilldata/web-common/features/alerts/CreateAlertForm.svelte";
+  import {
+    DialogContent,
+    DialogTrigger,
+  } from "@rilldata/web-common/components/dialog-v2/index";
+  import GuardedDialog from "@rilldata/web-common/components/dialog-v2/GuardedDialog.svelte";
 
   const {
     selectors: {
@@ -18,31 +23,36 @@
   $: metricsView = useMetricsView($runtime?.instanceId, $metricsViewName);
   $: hasTimeDimension = !!$metricsView?.data?.timeDimension;
 
-  let showAlertDialog = false;
+  let open = false;
 </script>
 
 {#if hasTimeDimension}
-  <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
-    <Button
-      compact
-      disabled={$isCustomTimeRange}
-      on:click={() => (showAlertDialog = true)}
-      type="secondary"
-    >
-      <BellPlusIcon class="inline-flex" size="16px" />
-    </Button>
-    <TooltipContent slot="tooltip-content">
-      To create an alert, set a non-custom time range.
-    </TooltipContent>
-  </Tooltip>
-{/if}
-
-<!-- Including `showAlertDialog` in the conditional ensures we tear 
-    down the form state when the dialog closes -->
-{#if showAlertDialog}
-  <svelte:component
-    this={CreateAlertDialog}
-    open={showAlertDialog}
-    on:close={() => (showAlertDialog = false)}
-  />
+  <GuardedDialog
+    title="Close without saving?"
+    description="You haven’t saved changes to this alert yet, so closing this window will lose your work."
+    confirmLabel="Close"
+    cancelLabel="Keep editing"
+    bind:open
+    let:onCancel
+    let:onClose
+  >
+    <DialogTrigger asChild let:builder>
+      <Tooltip distance={8} location="top" suppress={!$isCustomTimeRange}>
+        <Button
+          compact
+          disabled={$isCustomTimeRange}
+          type="secondary"
+          builders={[builder]}
+        >
+          <BellPlusIcon class="inline-flex" size="16px" />
+        </Button>
+        <TooltipContent slot="tooltip-content">
+          To create an alert, set a non-custom time range.
+        </TooltipContent>
+      </Tooltip>
+    </DialogTrigger>
+    <DialogContent class="p-0 m-0 w-[802px] max-w-fit rounded-md" noClose>
+      <CreateAlertForm on:cancel={onCancel} on:close={onClose} />
+    </DialogContent>
+  </GuardedDialog>
 {/if}

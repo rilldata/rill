@@ -27,39 +27,52 @@
 
   const { form, touched, errors, handleChange, handleSubmit, isSubmitting } =
     createForm({
-      initialValues: {
-        sourceName: "", // avoids `values.sourceName` warning
-      },
+      initialValues: !connector.implementsOlap ? { sourceName: "" } : {},
       validationSchema: getYupSchema(connector),
       onSubmit: async (values) => {
-        overlay.set({ title: `Importing ${values.sourceName}` });
+        // Sources
+        if (!connector.implementsOlap) {
+          overlay.set({ title: `Importing ${values.sourceName}` });
+          try {
+            await submitRemoteSourceForm(queryClient, connector, values);
+            await goto(`/files/sources/${values.sourceName}.yaml`);
+            dispatch("close");
+          } catch (e) {
+            rpcError = e?.response?.data;
+          }
+          overlay.set(null);
+          return;
+        }
+
+        // Connectors
         try {
-          // the following error provides type narrowing for `connector.name`
-          if (connector.name === undefined)
-            throw new Error("connector name is undefined");
-          await submitRemoteSourceForm(queryClient, connector.name, values);
-          await goto(`/files/sources/${values.sourceName}.yaml`);
+          await submitRemoteSourceForm(queryClient, connector, values);
+          await goto(`/files/connectors/${connector.name}.yaml`);
           dispatch("close");
         } catch (e) {
           rpcError = e?.response?.data;
         }
-        overlay.set(null);
       },
     });
 
+  let connectorProperties = connector.sourceProperties ?? [];
+
   // Place the "Source name" field directly under the "Path" field, which is the first property for each connector (s3, gcs, https).
-  const connectorProperties = [
-    ...(connector.sourceProperties?.slice(0, 1) ?? []),
-    {
-      key: "sourceName",
-      displayName: "Source name",
-      description: "The name of the source",
-      placeholder: "my_new_source",
-      type: ConnectorDriverPropertyType.TYPE_STRING,
-      required: true,
-    },
-    ...(connector.sourceProperties?.slice(1) ?? []),
-  ];
+  // Temporary: for OLAP connectors, we enforce that connectorName=driver.
+  if (!connector.implementsOlap) {
+    connectorProperties = [
+      ...(connector.sourceProperties?.slice(0, 1) ?? []),
+      {
+        key: "sourceName",
+        displayName: "Source name",
+        description: "The name of the source",
+        placeholder: "my_new_source",
+        type: ConnectorDriverPropertyType.TYPE_STRING,
+        required: true,
+      },
+      ...(connector.sourceProperties?.slice(1) ?? []),
+    ];
+  }
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -97,7 +110,7 @@
       />
     {/if}
 
-    {#each connectorProperties as property}
+    {#each connectorProperties as property (property.key)}
       {@const label =
         property.displayName + (property.required ? "" : " (optional)")}
       <div class="py-1.5">
@@ -141,7 +154,7 @@
       submitForm
       type="primary"
     >
-      Add source
+      Add data
     </Button>
   </div>
 </div>

@@ -4,12 +4,11 @@
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
-  import type { LayoutData } from "../$types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  export let data: LayoutData;
-
-  $: ({ instanceId } = data);
+  $: ({ instanceId } = $runtime);
 
   $: ({
     params: { name: dashboardName },
@@ -48,7 +47,9 @@
       PREVIEW
     </span>
     {#if route.id?.includes("dashboard")}
-      <DashboardCtAs metricViewName={dashboardName} />
+      <StateManagersProvider metricsViewName={dashboardName}>
+        <DashboardCtAs metricViewName={dashboardName} />
+      </StateManagersProvider>
     {/if}
   </header>
   <slot />

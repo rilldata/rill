@@ -12,7 +12,6 @@
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { useModel } from "../selectors";
   import { featureFlags } from "../../feature-flags";
-  import { WandIcon } from "lucide-svelte";
 
   export let modelName: string;
   export let hasError = false;
@@ -42,7 +41,7 @@
   <Button
     disabled={!modelIsIdle || hasError}
     on:click={createDashboardFromModel}
-    type="brand"
+    type="primary"
   >
     <IconSpaceFixer pullLeft pullRight={collapse}>
       <Add />
@@ -51,7 +50,6 @@
       Generate dashboard
       {#if $ai}
         with AI
-        <WandIcon class="w-3 h-3" />
       {/if}
     </ResponsiveButtonText>
   </Button>

@@ -1,13 +1,16 @@
 <script lang="ts">
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { createWatchFilesClient } from "@rilldata/web-common/features/entity-management/watch-files-client";
-  import { createWatchResourceClient } from "@rilldata/web-common/features/entity-management/watch-resources-client";
+  import { WatchFilesClient } from "@rilldata/web-common/features/entity-management/WatchFilesClient";
+  import { WatchResourcesClient } from "@rilldata/web-common/features/entity-management/WatchResourcesClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
 
-  const fileWatcher = createWatchFilesClient();
-  const resourceWatcher = createWatchResourceClient();
+  const fileWatcher = new WatchFilesClient().client;
+  const resourceWatcher = new WatchResourcesClient().client;
+  const fileAttempts = fileWatcher.retryAttempts;
+  const resourceAttempts = resourceWatcher.retryAttempts;
 
   export let host: string;
   export let instanceId: string;
@@ -18,22 +21,24 @@
     `${host}/v1/instances/${instanceId}/resources/-/watch`,
   );
 
+  $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;
+
   onMount(() => {
     const stopJavascriptErrorListeners =
       errorEventHandler?.addJavascriptErrorListeners();
     void fileArtifacts.init(queryClient, instanceId);
 
     return () => {
-      fileWatcher.cancel();
-      resourceWatcher.cancel();
+      fileWatcher.close();
+      resourceWatcher.close();
       stopJavascriptErrorListeners?.();
     };
   });
 
   function handleVisibilityChange() {
     if (document.visibilityState === "visible") {
-      fileWatcher.reconnect();
-      resourceWatcher.reconnect();
+      fileWatcher.reconnect().catch(console.error);
+      resourceWatcher.reconnect().catch(console.error);
     } else {
       fileWatcher.throttle();
       resourceWatcher.throttle();
@@ -43,4 +48,10 @@
 
 <svelte:window on:visibilitychange={handleVisibilityChange} />
 
-<slot />
+{#if failed}
+  <div class="h-screen w-screen">
+    <WorkspaceError message="Unable to connect to runtime" />
+  </div>
+{:else}
+  <slot />
+{/if}

@@ -1,17 +1,27 @@
 import {
   convertExprToToplist,
-  getSelectedTimeRange,
+  fillTimeRange,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
 import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
+import {
+  ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaRelativeSuffix,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import {
+  createAndExpression,
+  forEachIdentifier,
+} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type { V1MetricsViewAggregationRequest } from "@rilldata/web-common/runtime-client";
+import type {
+  V1Expression,
+  V1MetricsViewAggregationRequest,
+} from "@rilldata/web-common/runtime-client";
 
 export async function getDashboardFromAggregationRequest({
   queryClient,
@@ -22,26 +32,27 @@ export async function getDashboardFromAggregationRequest({
   executionTime,
   metricsView,
 }: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
-  if (req.timeRange) {
-    dashboard.selectedTimeRange = getSelectedTimeRange(
-      req.timeRange,
-      timeRangeSummary,
-      req.timeRange.isoDuration ?? "",
-      executionTime,
-    );
-  }
+  fillTimeRange(
+    dashboard,
+    req.timeRange,
+    req.comparisonTimeRange,
+    timeRangeSummary,
+    executionTime,
+  );
 
   if (req.where) dashboard.whereFilter = req.where;
   if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
     const dimension = req.dimensions[0].name;
-    if (req.having.cond.exprs.length > 1) {
+    if (req.having.cond.exprs.length > 1 || exprHasComparison(req.having)) {
       const expr = await convertExprToToplist(
         queryClient,
         instanceId,
         dashboard.name,
         dimension,
         req.measures?.[0]?.name ?? "",
-        dashboard.selectedTimeRange,
+        req.timeRange,
+        req.comparisonTimeRange,
+        executionTime,
         req.where,
         req.having,
       );
@@ -95,4 +106,17 @@ export async function getDashboardFromAggregationRequest({
   }
 
   return dashboard;
+}
+
+function exprHasComparison(expr: V1Expression) {
+  let hasComparison = false;
+  forEachIdentifier(expr, (e, ident) => {
+    if (
+      ident.endsWith(ComparisonDeltaAbsoluteSuffix) ||
+      ident.endsWith(ComparisonDeltaRelativeSuffix)
+    ) {
+      hasComparison = true;
+    }
+  });
+  return hasComparison;
 }

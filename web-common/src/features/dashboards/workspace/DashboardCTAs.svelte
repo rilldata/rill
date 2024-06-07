@@ -1,5 +1,6 @@
 <script lang="ts">
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
   import { Button } from "../../../components/button";
@@ -57,6 +58,7 @@
   {#if $dashboardPolicyCheck.data}
     <ViewAsButton />
   {/if}
+  <GlobalDimensionSearch metricsViewName={metricViewName} />
   {#if !$readOnly}
     <Tooltip distance={8}>
       <Button
@@ -76,7 +78,7 @@
       </TooltipContent>
     </Tooltip>
     <Tooltip distance={8}>
-      <Button on:click={() => showDeployModal()} type="brand">Deploy</Button>
+      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
       <TooltipContent slot="tooltip-content">
         Deploy this dashboard to Rill Cloud
       </TooltipContent>

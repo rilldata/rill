@@ -1,7 +1,7 @@
 <script lang="ts">
   import {
     ResourceKind,
-    useFilteredResources,
+    useClientFilteredResources,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ChevronDown, Plus, WandIcon } from "lucide-svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
@@ -9,6 +9,7 @@
   import { createEventDispatcher } from "svelte";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
   import { featureFlags } from "../feature-flags";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
 
   const { ai } = featureFlags;
   const dispatch = createEventDispatcher();
@@ -16,23 +17,23 @@
   let value = "";
 
   // We want to get only valid charts here. Hence using ListResources API
-  $: chartFileNamesQuery = useFilteredResources(
+  $: chartsQuery = useClientFilteredResources(
     $runtime.instanceId,
     ResourceKind.Component,
-    (data) => data.resources?.map((r) => r.meta?.name?.name ?? "") ?? [],
   );
-  $: chartFileNames = $chartFileNamesQuery.data ?? [];
+  $: chartFileNames =
+    $chartsQuery.data?.map((c) => c.meta?.name?.name ?? "") ?? [];
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
   <DropdownMenu.Trigger asChild let:builder>
-    <button {...builder} class:open use:builder.action>
+    <Button builders={[builder]} type="secondary">
       <Plus class="flex items-center justify-center" size="16px" />
       <div class="flex gap-x-1 items-center">
-        Add Chart
+        Add chart
         <ChevronDown size="14px" />
       </div>
-    </button>
+    </Button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content class="flex flex-col gap-y-1 ">
     <DropdownMenu.Group>
@@ -66,22 +67,3 @@
     </DropdownMenu.Group>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  button {
-    @apply w-fit h-8;
-    @apply text-primary-600;
-    @apply border-primary-300 border-2;
-    @apply rounded-sm px-3 font-medium;
-    @apply flex gap-x-2 items-center justify-center;
-  }
-
-  button:hover {
-    @apply bg-primary-50;
-  }
-
-  button.open,
-  button:active {
-    @apply bg-primary-100;
-  }
-</style>

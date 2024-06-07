@@ -75,6 +75,9 @@ func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runt
 		}
 		if executionTime != nil {
 			req.TimeRange = overrideTimeRange(req.TimeRange, *executionTime)
+			if req.ComparisonTimeRange != nil {
+				req.ComparisonTimeRange = overrideTimeRange(req.ComparisonTimeRange, *executionTime)
+			}
 		}
 	case "MetricsViewToplist":
 		req := &runtimev1.MetricsViewToplistRequest{}
@@ -106,6 +109,9 @@ func ProtoFromJSON(qryName, qryArgsJSON string, executionTime *time.Time) (*runt
 		}
 		if executionTime != nil {
 			req.TimeRange = overrideTimeRange(req.TimeRange, *executionTime)
+			if req.ComparisonTimeRange != nil {
+				req.ComparisonTimeRange = overrideTimeRange(req.ComparisonTimeRange, *executionTime)
+			}
 		}
 	default:
 		return nil, fmt.Errorf("query %q not supported for reports", qryName)

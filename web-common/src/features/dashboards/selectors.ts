@@ -1,6 +1,7 @@
 import { filterExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import {
   ResourceKind,
+  useClientFilteredResources,
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -22,6 +23,7 @@ export function useDashboard(instanceId: string, metricViewName: string) {
 }
 
 export function useValidDashboards(instanceId: string) {
+  // This is used in cloud as well so do not use "useClientFilteredResources"
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
     data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
   );
@@ -141,7 +143,9 @@ export const useGetDashboardsForModel = (
   instanceId: string,
   modelName: string,
 ) => {
-  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
-    data.resources.filter((res) => res.metricsView?.spec?.table === modelName),
+  return useClientFilteredResources(
+    instanceId,
+    ResourceKind.MetricsView,
+    (res) => res.metricsView?.spec?.table === modelName,
   );
 };

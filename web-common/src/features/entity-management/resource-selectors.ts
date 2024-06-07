@@ -12,6 +12,7 @@ import type { QueryClient } from "@tanstack/svelte-query";
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
   Source = "rill.runtime.v1.Source",
+  Connector = "rill.runtime.v1.Connector",
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
   Report = "rill.runtime.v1.Report",
@@ -95,6 +96,25 @@ export function useFilteredResources<T = Array<V1Resource>>(
       },
     },
   );
+}
+
+/**
+ * Fetches all resources and filters them client side.
+ * This is to improve network requests since we need the full list all the time as well.
+ */
+export function useClientFilteredResources(
+  instanceId: string,
+  kind: ResourceKind,
+  filter: (res: V1Resource) => boolean = () => true,
+) {
+  return createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      select: (data) =>
+        data.resources?.filter(
+          (res) => res.meta?.name?.kind === kind && filter(res),
+        ) ?? [],
+    },
+  });
 }
 
 export function resourceIsLoading(resource?: V1Resource) {

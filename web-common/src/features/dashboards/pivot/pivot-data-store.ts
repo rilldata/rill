@@ -3,6 +3,7 @@ import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/piv
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
@@ -36,6 +37,7 @@ import {
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
+  canEnablePivotComparison,
   getFilterForPivotTable,
   getPivotConfigKey,
   getSortForAccessor,
@@ -45,12 +47,16 @@ import {
   isTimeDimension,
 } from "./pivot-utils";
 import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
   PivotChipType,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
   type PivotTimeConfig,
 } from "./types";
+
+let lastKey: string | undefined = undefined;
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
@@ -76,6 +82,8 @@ export function getPivotConfig(
           measureFilter: { ready: true, filter: undefined },
           pivot: dashboardStore.pivot,
           time: {} as PivotTimeConfig,
+          comparisonTime: undefined,
+          enableComparison: false,
         });
         return;
       }
@@ -92,6 +100,21 @@ export function getPivotConfig(
         timeZone: dashboardStore?.selectedTimezone || "UTC",
         timeDimension: metricsView?.data?.timeDimension || "",
       };
+
+      const enableComparison =
+        canEnablePivotComparison(
+          dashboardStore.pivot,
+          timeControl.comparisonTimeStart,
+        ) && dashboardStore.pivot.enableComparison;
+
+      let comparisonTime: TimeRangeString | undefined = undefined;
+      if (enableComparison) {
+        comparisonTime = {
+          start: timeControl.comparisonTimeStart,
+          end: timeControl.comparisonTimeEnd,
+        };
+      }
+
       derived(
         [
           prepareMeasureFilterResolutions(
@@ -111,12 +134,25 @@ export function getPivotConfig(
               whereFilter: dashboardStore.whereFilter,
               measureFilter: measureFilterResolution,
               pivot: dashboardStore.pivot,
+              enableComparison,
+              comparisonTime,
               time,
             };
           }
 
-          const measureNames = dashboardStore.pivot.columns.measure.map(
-            (m) => m.id,
+          const measureNames = dashboardStore.pivot.columns.measure.flatMap(
+            (m) => {
+              const measureName = m.id;
+              const group = [measureName];
+
+              if (enableComparison) {
+                group.push(
+                  `${measureName}${COMPARISON_DELTA}`,
+                  `${measureName}${COMPARISON_PERCENT}`,
+                );
+              }
+              return group;
+            },
           );
 
           // This is temporary until we have a better way to handle time grains
@@ -138,17 +174,32 @@ export function getPivotConfig(
             },
           );
 
-          return {
+          const config: PivotDataStoreConfig = {
             measureNames,
             rowDimensionNames,
             colDimensionNames,
-            allMeasures: metricsView.data?.measures,
-            allDimensions: metricsView.data?.dimensions,
+            allMeasures: metricsView.data?.measures || [],
+            allDimensions: metricsView.data?.dimensions || [],
             whereFilter: dashboardStore.whereFilter,
             measureFilter: measureFilterResolution,
             pivot: dashboardStore.pivot,
+            enableComparison,
+            comparisonTime,
             time,
           };
+
+          const currentKey = getPivotConfigKey(config);
+
+          if (lastKey !== currentKey) {
+            // Reset rowPage when pivot config changes
+            lastKey = currentKey;
+            if (config.pivot.rowPage !== 1) {
+              metricsExplorerStore.setPivotRowPage(dashboardStore.name, 1);
+              config.pivot.rowPage = 1;
+            }
+          }
+
+          return config;
         },
       ).subscribe(set);
     },

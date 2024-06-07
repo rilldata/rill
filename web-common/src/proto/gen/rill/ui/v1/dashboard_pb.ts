@@ -227,6 +227,13 @@ export class DashboardState extends Message<DashboardState> {
    */
   pivotRowJoinType?: DashboardState_PivotRowJoinType;
 
+  /**
+   * Enable comparison for pivot
+   *
+   * @generated from field: optional bool pivot_enable_comparison = 34;
+   */
+  pivotEnableComparison?: boolean;
+
   constructor(data?: PartialMessage<DashboardState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -268,6 +275,7 @@ export class DashboardState extends Message<DashboardState> {
     { no: 29, name: "pivot_sort", kind: "message", T: PivotColumnSort, repeated: true },
     { no: 30, name: "pivot_column_page", kind: "scalar", T: 5 /* ScalarType.INT32 */, opt: true },
     { no: 31, name: "pivot_row_join_type", kind: "enum", T: proto3.getEnumType(DashboardState_PivotRowJoinType), opt: true },
+    { no: 34, name: "pivot_enable_comparison", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardState {

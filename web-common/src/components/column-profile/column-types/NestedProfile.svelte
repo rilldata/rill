@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import {
     DATA_TYPE_COLORS,
     INTERVALS,
@@ -73,8 +73,7 @@
   isFetching={fetchingSummaries}
   {mode}
   on:select={toggleColumnProfile}
-  on:shift-click={() =>
-    copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
+  onShiftClick={() => copyToClipboard(columnName)}
   {type}
 >
   <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />

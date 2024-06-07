@@ -33,7 +33,16 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 		return nil, fmt.Errorf("the property 'database_url' is required for Postgres. Provide 'database_url' in the YAML properties or pass '--var connector.postgres.database_url=...' to 'rill start'")
 	}
 
-	pool, err := pgxpool.New(ctx, dsn)
+	config, err := pgxpool.ParseConfig(dsn)
+	if err != nil {
+		return nil, err
+	}
+	// disable prepared statements which is not supported by some postgres providers like pgedge cloud for non admin users.
+	// prepared statements are also not supported by proxies like pgbouncer.
+	// The limiatation of not using prepared statements is not a problem for us as we don't support parameters in source queries.
+	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
+
+	pool, err := pgxpool.NewWithConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +93,7 @@ func (r *rowIterator) Close() error {
 	r.rows.Close()
 	r.conn.Release()
 	r.pool.Close()
-	return nil
+	return r.rows.Err()
 }
 
 // Next implements drivers.RowIterator.

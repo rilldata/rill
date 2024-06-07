@@ -815,9 +815,11 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, subPath, pr
 	if err != nil {
 		return
 	}
-	connectors, err := parser.AnalyzeConnectors(ctx)
-	if err != nil {
-		return
+	connectors := parser.AnalyzeConnectors(ctx)
+	for _, c := range connectors {
+		if c.Err != nil {
+			return
+		}
 	}
 
 	// Remove the default DuckDB connector we always add
