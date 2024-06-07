@@ -3,6 +3,7 @@ package metricsview
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -179,12 +180,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 	}
 
 	var res *drivers.Result
-	if pivoting {
-		res, err = e.executePivot(ctx, ast, pivotAST)
-		if err != nil {
-			return nil, false, err
-		}
-	} else {
+	if !pivoting {
 		sql, args, err := ast.SQL()
 		if err != nil {
 			return nil, false, err
@@ -198,6 +194,53 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		})
 		if err != nil {
 			return nil, false, err
+		}
+	} else {
+		// Since pivots are mainly used for exports, we just do an inefficient shim that runs a pivoted export to a temporary Parquet file, and then reads the file into a *drivers.Result using DuckDB.
+		// (An efficient interactive pivot implementation would look quite different from the export-based implementation, so is not worth it at this point.)
+
+		// If e.olap is a DuckDB, use it directly. Else open a "duckdb" handle (which is always available, even for instances where DuckDB is not the main OLAP connector).
+		var duck drivers.OLAPStore
+		var releaseDuck func()
+		if e.olap.Dialect() == drivers.DialectDuckDB {
+			duck = e.olap
+		} else {
+			handle, release, err := e.rt.AcquireHandle(ctx, e.instanceID, "duckdb")
+			if err != nil {
+				return nil, false, fmt.Errorf("failed to acquire DuckDB for serving pivot: %w", err)
+			}
+
+			var ok bool
+			duck, ok = handle.AsOLAP(e.instanceID)
+			if !ok {
+				release()
+				return nil, false, fmt.Errorf(`connector "duckdb" is not an OLAP store`)
+			}
+			releaseDuck = release
+		}
+
+		// Execute the pivot export
+		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet")
+		if err != nil {
+			return nil, false, err
+		}
+
+		// Use DuckDB to read the Parquet file into a *drivers.Result
+		res, err = duck.Execute(ctx, &drivers.Statement{
+			Query:            fmt.Sprintf("SELECT * FROM '%q'", path),
+			Priority:         e.priority,
+			ExecutionTimeout: defaultExecutionTimeout,
+		})
+		if err != nil {
+			_ = os.Remove(path)
+			return nil, false, err
+		}
+		if releaseDuck != nil {
+			res.SetCleanupFunc(func() error {
+				releaseDuck()
+				_ = os.Remove(path)
+				return nil
+			})
 		}
 	}
 

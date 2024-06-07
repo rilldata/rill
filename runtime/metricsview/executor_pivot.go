@@ -5,95 +5,19 @@ import (
 	"crypto/rand"
 	"encoding/hex"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-func (e *Executor) executePivot(ctx context.Context, ast *AST, pivot *pivotAST) (*drivers.Result, error) {
-	// Build underlying SQL
-	underlyingSQL, args, err := ast.SQL()
-	if err != nil {
-		return nil, err
-	}
-
-	// If the dialect supports native pivoting, we can do it as a single query
-	if e.olap.Dialect().CanPivot() {
-		sql, err := pivot.SQL(ast, underlyingSQL, true)
-		if err != nil {
-			return nil, err
-		}
-
-		res, err := e.olap.Execute(ctx, &drivers.Statement{
-			Query:            sql,
-			Args:             args,
-			Priority:         e.priority,
-			ExecutionTimeout: defaultExecutionTimeout,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to execute native pivot: %w", err)
-		}
-		return res, nil
-	}
-
-	// We know that DuckDB supports pivoting and is always available, so we can use it as a fallback to do the pivot
-	duck, release, err := e.rt.OLAP(ctx, e.instanceID, "duckdb")
-	if err != nil {
-		return nil, fmt.Errorf("failed to acquire duckdb for pivot: %w", err)
-	}
-	defer release()
-
-	// Execute underlying SQL on the OLAP
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            underlyingSQL,
-		Args:             args,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return nil, err
-	}
-	defer res.Close()
-
-	// Apply the pivot cell limit
-	res.SetCap(pivot.underlyingRowCap)
-
-	// Transfer data to DuckDB
-	// TODO: Implement this
-
-	// Create cleanup function
-	cleanup := func() error {
-		// TODO: Drop tmp table here
-		release()
-		return nil
-	}
-
-	// Pivot the data in DuckDB
-	sql, err := pivot.SQL(ast, "SELECT * FROM <tmp table>", false)
-	if err != nil {
-		_ = cleanup()
-		return nil, err
-	}
-
-	res, err = duck.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             nil,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		_ = cleanup()
-		return nil, fmt.Errorf("failed to execute non-native pivot: %w", err)
-	}
-
-	res.SetCleanupFunc(cleanup)
-	return res, nil
-}
-
+// rewriteQueryForPivot rewrites a query for pivoting if qry.PivotOn is not empty.
+// It rewrites queries with PivotOn fields to a simpler underlying query,
+// and returns a pivotAST that represents a PIVOT query against the results of the underlying query.
 func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 	// Skip if we're not pivoting
-	if qry.PivotOn == nil {
+	if len(qry.PivotOn) == 0 {
 		return nil, false, nil
 	}
 
@@ -182,6 +106,63 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 	return ast, true, nil
 }
 
+// executePivotExport executes a PIVOT query prepared using rewriteQueryForPivot, and exports the result to a file in the given format.
+func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivotAST, format string) (string, error) {
+	// Build underlying SQL
+	underlyingSQL, args, err := ast.SQL()
+	if err != nil {
+		return "", err
+	}
+
+	// If the connector isn't DuckDB, we export the underlying (non-pivoted) data to a Parquet file, and handover to DuckDB to do the pivot.
+	var pivotConnector string
+	if e.olap.Dialect() == drivers.DialectDuckDB {
+		pivotConnector = e.metricsView.Connector
+	}
+	if pivotConnector == "" {
+		// Export non-pivoted data to a temporary Parquet file
+		path, err := e.executeExport(ctx, "parquet", e.metricsView.Connector, map[string]any{
+			"sql":  underlyingSQL,
+			"args": args,
+		})
+		if err != nil {
+			return "", fmt.Errorf("failed to execute pre-pivot export: %w", err)
+		}
+		defer os.Remove(path)
+
+		// Hard-code DuckDB as the connector that executes the pivot
+		pivotConnector = "duckdb"
+		underlyingSQL = fmt.Sprintf("SELECT * FROM '%s'", path)
+		args = nil
+	}
+
+	// Unfortunately, DuckDB does not support passing args to a PIVOT query.
+	// So we stage the underlying data in a temporary table and run the PIVOT against that table instead.
+	alias, err := randomString("t", 8)
+	if err != nil {
+		return "", fmt.Errorf("failed to generate random alias: %w", err)
+	}
+	preExec := fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s)", alias, underlyingSQL)
+	postExec := fmt.Sprintf("DROP TEMPORARY TABLE %s", alias)
+	pivotSQL, err := pivot.SQL(ast, alias, true)
+	if err != nil {
+		return "", err
+	}
+
+	// Execute the export
+	path, err := e.executeExport(ctx, format, pivotConnector, map[string]any{
+		"pre_exec":      preExec,
+		"pre_exec_args": args,
+		"post_exec":     postExec,
+		"sql":           pivotSQL,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to execute pivot export: %w", err)
+	}
+
+	return path, nil
+}
+
 // pivotAST represents config for generating a PIVOT query.
 type pivotAST struct {
 	keep    []string
@@ -198,49 +179,41 @@ type pivotAST struct {
 }
 
 // SQL generates a query that outputs a pivoted table based on the pivot config and data in the underlying query.
-// As a convenience, it accepts the underlying AST and SQL separately, which enables pivoting in a different connector than the one that runs the actual underlying query.
-func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string, checkCap bool) (string, error) {
+// The underlyingAlias must be an alias for a table that holds the data produced by underlyingAST.SQL().
+func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string, checkCap bool) (string, error) {
 	if !a.dialect.CanPivot() {
 		return "", fmt.Errorf("pivot queries not supported for dialect %q", a.dialect.String())
 	}
 
 	b := &strings.Builder{}
 
-	// Since we query the underlying data and do the pivot in a single query, we need to be creative to enforce the pivot cell limit.
-	// We leverage CTEs and DuckDB's ERROR function to enforce the limit.
+	// Circumstances make it easiest to enforce the pivot cell limit in the PIVOT query itself. To do that, we need to be creative.
+	// We leverage CTEs and DuckDB's ERROR() function to enforce the limit.
 	// This is pretty DuckDB-specific, but that's also currently the only OLAP we use that supports pivoting.
 	// The query looks something like:
 	//
-	//   WITH t1 AS (<underlyingSQL>),
-	//   t2 AS (SELECT * FROM t1 WHERE IF(EXISTS (SELECT COUNT(*) AS count FROM t1 HAVING count > <limit>), ERROR('pivot query exceeds limit'), TRUE))
+	//   WITH t AS (SELECT * FROM <underlyingAlias> WHERE IF(EXISTS (SELECT COUNT(*) AS count FROM <underlyingAlias> HAVING count > <limit>), ERROR('pivot query exceeds limit'), TRUE))
 	//   PIVOT t2 ON ...
+	//
 	if checkCap {
-		t1, err := randomString("t1", 8)
-		if err != nil {
-			return "", fmt.Errorf("failed to generate random alias: %w", err)
-		}
-		t2, err := randomString("t2", 8)
+		tmpAlias, err := randomString("t", 8)
 		if err != nil {
 			return "", fmt.Errorf("failed to generate random alias: %w", err)
 		}
 
 		b.WriteString("WITH ")
-		b.WriteString(t1)
-		b.WriteString(" AS (")
-		b.WriteString(underlyingSQL)
-		b.WriteString("), ")
-		b.WriteString(t2)
+		b.WriteString(tmpAlias)
 		b.WriteString(" AS (SELECT * FROM ")
-		b.WriteString(t1)
+		b.WriteString(underlyingAlias)
 		b.WriteString(" WHERE IF(EXISTS (SELECT COUNT(*) AS count FROM ")
-		b.WriteString(t1)
+		b.WriteString(underlyingAlias)
 		b.WriteString(" HAVING count > ")
 		b.WriteString(strconv.FormatInt(a.underlyingRowCap, 10))
 		b.WriteString("), ERROR('pivot query exceeds limit of ")
 		b.WriteString(strconv.FormatInt(a.underlyingCellCap, 10))
 		b.WriteString(" cells'), TRUE)) ")
 
-		underlyingSQL = fmt.Sprintf("SELECT * FROM %s", t2)
+		underlyingAlias = tmpAlias
 	}
 
 	// If we need to label some fields (in practice, this will be non-pivoted dims during exports),
@@ -279,9 +252,9 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string, checkCap bool) 
 	}
 
 	// Build a PIVOT query like: PIVOT (<underlyingSQL>) ON <dimensions> USING <measures> ORDER BY <sort> LIMIT <limit> OFFSET <offset>
-	b.WriteString("PIVOT (")
-	b.WriteString(underlyingSQL)
-	b.WriteString(") ON ")
+	b.WriteString("PIVOT ")
+	b.WriteString(underlyingAlias)
+	b.WriteString(" ON ")
 	for i, fn := range a.on {
 		if i > 0 {
 			b.WriteString(", ")
