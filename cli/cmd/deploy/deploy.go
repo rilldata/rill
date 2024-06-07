@@ -488,7 +488,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	} else {
 		repoOwner, err = cmdutil.SelectPrompt("Rill has write access to following Github accounts. Please select one", candidateOrgs, candidateOrgs[0])
 		if err != nil {
-			ch.PrintfWarn("\nIf you want to deploy to another Github account, Please visit %q to grant access.\n", pollRes.GrantAccessUrl)
+			ch.PrintfWarn("\nIf you want to deploy to another Github account, visit this URL to grant access: %s\n", pollRes.GrantAccessUrl)
 			return err
 		}
 	}
