@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"connectrpc.com/connect"
+	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -33,6 +34,8 @@ import (
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
+
+const retries = 3
 
 // Server implements endpoints for the local Rill app (usually served on localhost).
 type Server struct {
@@ -110,13 +113,13 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	if !s.app.ch.IsAuthenticated() {
 		// user should be logged in first
 		return connect.NewResponse(&localv1.DeployValidationResponse{
-			IsAuthenticated:         false,
-			LoginUrl:                loginURL,
-			IsGithubConnected:       false,
-			GithubGrantAccessUrl:    "",
-			GithubUserName:          "",
-			GithubAppUserPermission: adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED,
-			GithubOrganizationInstallationPermissions: nil,
+			IsAuthenticated:               false,
+			LoginUrl:                      loginURL,
+			IsGithubConnected:             false,
+			GithubGrantAccessUrl:          "",
+			GithubUserName:                "",
+			GithubUserPermission:          adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED,
+			GithubOrganizationPermissions: nil,
 			IsGithubRepo:                  false,
 			IsGithubRemoteFound:           false,
 			IsGithubRepoAccessGranted:     false,
@@ -141,13 +144,13 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	if !userStatus.HasAccess {
 		// user should have git app installed before deploying, so redirect to grant access url
 		return connect.NewResponse(&localv1.DeployValidationResponse{
-			IsAuthenticated:         true,
-			LoginUrl:                loginURL,
-			IsGithubConnected:       false,
-			GithubGrantAccessUrl:    userStatus.GrantAccessUrl,
-			GithubUserName:          "",
-			GithubAppUserPermission: adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED,
-			GithubOrganizationInstallationPermissions: nil,
+			IsAuthenticated:               true,
+			LoginUrl:                      loginURL,
+			IsGithubConnected:             false,
+			GithubGrantAccessUrl:          userStatus.GrantAccessUrl,
+			GithubUserName:                "",
+			GithubUserPermission:          adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED,
+			GithubOrganizationPermissions: nil,
 			IsGithubRepo:                  false,
 			IsGithubRemoteFound:           false,
 			IsGithubRepoAccessGranted:     false,
@@ -197,13 +200,13 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		if !repoStatus.HasAccess {
 			// we should have access to the repo before deploying
 			return connect.NewResponse(&localv1.DeployValidationResponse{
-				IsAuthenticated:         true,
-				LoginUrl:                loginURL,
-				IsGithubConnected:       true,
-				GithubGrantAccessUrl:    userStatus.GrantAccessUrl,
-				GithubUserName:          userStatus.Account,
-				GithubAppUserPermission: userStatus.UserInstallationPermission,
-				GithubOrganizationInstallationPermissions: userStatus.OrganizationInstallationPermissions,
+				IsAuthenticated:               true,
+				LoginUrl:                      loginURL,
+				IsGithubConnected:             true,
+				GithubGrantAccessUrl:          userStatus.GrantAccessUrl,
+				GithubUserName:                userStatus.Account,
+				GithubUserPermission:          userStatus.UserInstallationPermission,
+				GithubOrganizationPermissions: userStatus.OrganizationInstallationPermissions,
 				IsGithubRepo:                  true,
 				IsGithubRemoteFound:           true,
 				IsGithubRepoAccessGranted:     repoAccess,
@@ -226,12 +229,11 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	for _, org := range resp.Organizations {
 		userOrgs = append(userOrgs, org.Name)
 	}
-	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl, however I think this is not enough, probably should be checked globally ?
+	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
 
 	rillOrgExistsAsGitUserName := false
-	// if user does not any have orgs, check if any orgs exist as git username as we will suggest this for org name
+	// if user does not any have orgs, check if any orgs exist as github username as we suggest this as org name
 	if len(userOrgs) == 0 {
-		// check if any orgs exist as git username
 		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
 			Name: userStatus.Account,
 		})
@@ -244,16 +246,14 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		}
 	}
 
-	// TODO check if any project exists with name localProjectName in any of the users rill org
-
 	return connect.NewResponse(&localv1.DeployValidationResponse{
-		IsAuthenticated:         true,
-		LoginUrl:                loginURL,
-		IsGithubConnected:       true,
-		GithubGrantAccessUrl:    userStatus.GrantAccessUrl,
-		GithubUserName:          userStatus.Account,
-		GithubAppUserPermission: userStatus.UserInstallationPermission,
-		GithubOrganizationInstallationPermissions: userStatus.OrganizationInstallationPermissions,
+		IsAuthenticated:               true,
+		LoginUrl:                      loginURL,
+		IsGithubConnected:             true,
+		GithubGrantAccessUrl:          userStatus.GrantAccessUrl,
+		GithubUserName:                userStatus.Account,
+		GithubUserPermission:          userStatus.UserInstallationPermission,
+		GithubOrganizationPermissions: userStatus.OrganizationInstallationPermissions,
 		IsGithubRepo:                  isGithubRepo,
 		IsGithubRemoteFound:           githubRemoteFound,
 		IsGithubRepoAccessGranted:     repoAccess,
@@ -299,30 +299,30 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 		return nil, fmt.Errorf("rill git app should be installed by user before pushing by visiting %s", gitStatus.GrantAccessUrl)
 	}
 
-	// if r.Msg.Org is empty, githubOrg will be "" which is equivalent to using default git org which is same as git username
-	var githubOrg string
-	if r.Msg.Org == "" || r.Msg.Org == gitStatus.Account {
-		githubOrg = ""
+	// if r.Msg.Account is empty, githubAccount will be "" which is equivalent to using default github account which is same as github username
+	var githubAccount string
+	if r.Msg.Account == "" || r.Msg.Account == gitStatus.Account {
+		githubAccount = ""
 	} else {
-		githubOrg = r.Msg.Org
+		githubAccount = r.Msg.Account
 	}
 
-	// check if we have write permission on the git account
+	// check if we have write permission on the github account
 	// this is a safety check as DeployValidation should take care of this
-	if githubOrg == "" {
+	if githubAccount == "" {
 		if gitStatus.UserInstallationPermission != adminv1.GithubPermission_GITHUB_PERMISSION_WRITE {
 			return nil, fmt.Errorf("rill github app should be installed with write permission on user personal account by visiting %s", gitStatus.GrantAccessUrl)
 		}
 	} else {
 		valid := false
 		for o, p := range gitStatus.OrganizationInstallationPermissions {
-			if o == githubOrg && p == adminv1.GithubPermission_GITHUB_PERMISSION_WRITE {
+			if o == githubAccount && p == adminv1.GithubPermission_GITHUB_PERMISSION_WRITE {
 				valid = true
 				break
 			}
 		}
 		if !valid {
-			return nil, fmt.Errorf("rill github app should be installed with write permission on organization %q by visiting %s", githubOrg, gitStatus.GrantAccessUrl)
+			return nil, fmt.Errorf("rill github app should be installed with write permission on organization %q by visiting %s", githubAccount, gitStatus.GrantAccessUrl)
 		}
 	}
 
@@ -334,13 +334,19 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	defaultBranch := "main"
 
 	// create remote repo
-	githubRepo, _, err := githubClient.Repositories.Create(ctx, githubOrg, &github.Repository{Name: &repoName, DefaultBranch: &defaultBranch})
-	if err != nil {
-		if !strings.Contains(err.Error(), "name already exists") {
-			// TODO should we retry with new name, append a number to repoName like -1, -2 etc
-			return nil, fmt.Errorf("failed to create repository: %w", err)
+	suffix := 0
+	var githubRepo *github.Repository
+	name := repoName
+	err = retrier.New(retrier.ConstantBackoff(retries, 1), nameConflictRetryErrClassifier{}).RunCtx(ctx, func(ctx context.Context) error {
+		if suffix > 0 {
+			name = fmt.Sprintf("%s-%d", repoName, suffix)
 		}
-		return nil, err
+		githubRepo, _, err = githubClient.Repositories.Create(ctx, githubAccount, &github.Repository{Name: &name, DefaultBranch: &defaultBranch})
+		suffix++
+		return err
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create repository: %w", err)
 	}
 
 	var repo *git.Repository
@@ -391,8 +397,15 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 		return nil, fmt.Errorf("failed to push to remote %q : %w", *githubRepo.HTMLURL, err)
 	}
 
+	account := githubAccount
+	if account == "" {
+		account = gitStatus.Account
+	}
+
 	return connect.NewResponse(&localv1.PushToGithubResponse{
 		GithubUrl: *githubRepo.HTMLURL,
+		Account:   account,
+		Repo:      name,
 	}), nil
 }
 
@@ -464,22 +477,31 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 	}
 
 	// create project
-	projResp, err := c.CreateProject(ctx, &adminv1.CreateProjectRequest{
-		OrganizationName: r.Msg.Org,
-		Name:             r.Msg.ProjectName,
-		Description:      "Auto created by Rill",
-		Provisioner:      "",
-		ProdVersion:      "",
-		ProdOlapDriver:   "",
-		ProdOlapDsn:      "",
-		ProdSlots:        2,
-		Subpath:          "",
-		ProdBranch:       repoStatus.DefaultBranch,
-		Public:           false,
-		GithubUrl:        ghURL,
+	suffix := 0
+	var projResp *adminv1.CreateProjectResponse
+	err = retrier.New(retrier.ConstantBackoff(retries, 1), nameConflictRetryErrClassifier{}).RunCtx(ctx, func(ctx context.Context) error {
+		name := r.Msg.ProjectName
+		if suffix > 0 {
+			name = fmt.Sprintf("%s-%d", r.Msg.ProjectName, suffix)
+		}
+		projResp, err = c.CreateProject(ctx, &adminv1.CreateProjectRequest{
+			OrganizationName: r.Msg.Org,
+			Name:             name,
+			Description:      "Auto created by Rill",
+			Provisioner:      "",
+			ProdVersion:      "",
+			ProdOlapDriver:   "",
+			ProdOlapDsn:      "",
+			ProdSlots:        2,
+			Subpath:          "",
+			ProdBranch:       repoStatus.DefaultBranch,
+			Public:           false,
+			GithubUrl:        ghURL,
+		})
+		suffix++
+		return err
 	})
 	if err != nil {
-		// TODO if project with same name exists - should we retry with new name, append a number to repoName like -1, -2 etc
 		return nil, err
 	}
 
@@ -666,4 +688,19 @@ func (s *Server) versionHandler() http.Handler {
 			return
 		}
 	})
+}
+
+// nameConflictRetryErrClassifier classifies name already exists errors as retryable, works for both github repo and project name
+type nameConflictRetryErrClassifier struct{}
+
+func (nameConflictRetryErrClassifier) Classify(err error) retrier.Action {
+	if err == nil {
+		return retrier.Succeed
+	}
+
+	if strings.Contains(err.Error(), "name already exists") {
+		return retrier.Retry
+	}
+
+	return retrier.Fail
 }

@@ -834,9 +834,9 @@ func (m *DeployValidationResponse) validate(all bool) error {
 
 	// no validation rules for GithubUserName
 
-	// no validation rules for GithubAppUserPermission
+	// no validation rules for GithubUserPermission
 
-	// no validation rules for GithubOrganizationInstallationPermissions
+	// no validation rules for GithubOrganizationPermissions
 
 	// no validation rules for IsGithubRepo
 
@@ -956,7 +956,7 @@ func (m *PushToGithubRequest) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for Org
+	// no validation rules for Account
 
 	// no validation rules for Repo
 
@@ -1063,6 +1063,10 @@ func (m *PushToGithubResponse) validate(all bool) error {
 	var errors []error
 
 	// no validation rules for GithubUrl
+
+	// no validation rules for Account
+
+	// no validation rules for Repo
 
 	if len(errors) > 0 {
 		return PushToGithubResponseMultiError(errors)

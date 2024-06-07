@@ -61,8 +61,8 @@ message DeployValidationResponse {
   bool is_github_connected = 3; // if true below fields are relevant after github install
   string github_grant_access_url = 4; // redirect to this if is_github_connected or is_github_repo_access_granted is false
   string github_user_name = 5;
-  rill.admin.v1.GithubPermission github_app_user_permission = 6; // if unspecified then github app not installed on user account
-  map<string, rill.admin.v1.GithubPermission> github_organization_installation_permissions = 7;
+  rill.admin.v1.GithubPermission github_user_permission = 6; // if unspecified then github app not installed on user account
+  map<string, rill.admin.v1.GithubPermission> github_organization_permissions = 7;
   bool is_github_repo = 8;
   bool is_github_remote_found = 9; // only applicable when is_github_repo is true
   bool is_github_repo_access_granted = 10; // relevant only when is_github_repo is true and remote found, if false redirect to github_grant_access_url
@@ -74,12 +74,14 @@ message DeployValidationResponse {
 }
 
 message PushToGithubRequest {
-  string org = 1;
+  string account = 1;
   string repo = 2;
 }
 
 message PushToGithubResponse {
   string github_url = 1;
+  string account = 2;
+  string repo = 3;
 }
 
 message DeployRequest {

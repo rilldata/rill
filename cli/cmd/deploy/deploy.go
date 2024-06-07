@@ -477,7 +477,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		return nil
 	} else if len(candidateOrgs) == 1 {
 		repoOwner = candidateOrgs[0]
-		ok, err = cmdutil.ConfirmPrompt(fmt.Sprintf("Rill will create a new repository in the Github account %q. Do you want to continue?, repoOwner), "", true)
+		ok, err = cmdutil.ConfirmPrompt(fmt.Sprintf("Rill will create a new repository in the Github account %q. Do you want to continue?", repoOwner), "", true)
 		if err != nil {
 			return err
 		}

@@ -705,10 +705,10 @@ export interface V1GetGithubUserStatusResponse {
   grantAccessUrl?: string;
   accessToken?: string;
   account?: string;
-  /** DEPRECATED: Use organization_installation_permissions instead. */
-  organizations?: string[];
   userInstallationPermission?: V1GithubPermission;
   organizationInstallationPermissions?: V1GetGithubUserStatusResponseOrganizationInstallationPermissions;
+  /** DEPRECATED: Use organization_installation_permissions instead. */
+  organizations?: string[];
 }
 
 export interface V1GetGithubRepoStatusResponse {
