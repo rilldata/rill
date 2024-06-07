@@ -1,5 +1,6 @@
 import {
   MetricsViewSpecDimensionSelector,
+  MetricsViewSpecMeasureType,
   MetricsViewSpecMeasureV2,
   V1MetricsViewSpec,
   V1TimeGrain,
@@ -51,11 +52,25 @@ export const isMeasureValidPercentOfTotal = ({
   };
 };
 
-export const filterBasicMeasures = (
-  measures: MetricsViewSpecMeasureV2[] | undefined,
-) => measures?.filter((m) => !m.window) ?? [];
+export const filteredSimpleMeasures = ({
+  metricsSpecQueryResult,
+}: DashboardDataSources) => {
+  return () => {
+    return (
+      metricsSpecQueryResult.data?.measures?.filter(
+        (m) =>
+          !m.window &&
+          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+      ) ?? []
+    );
+  };
+};
 
-export const getMeasuresAndDimensions = ({
+/**
+ * Selects measure valid for current dashboard selections.
+ * Also includes additional dimensions needed for any advanced measures.
+ */
+export const getFilteredMeasuresAndDimensions = ({
   dashboard,
 }: Pick<DashboardDataSources, "dashboard">) => {
   return (
@@ -71,7 +86,16 @@ export const getMeasuresAndDimensions = ({
       const measure = metricsViewSpec.measures?.find(
         (m) => m.name === measureName,
       );
-      if (!measure) return;
+      if (
+        !measure ||
+        measure.type === MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON
+        // TODO: we need to send a single query for this support
+        // (measure.type ===
+        //   MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
+        //   (!dashboard.showTimeComparison ||
+        //     !dashboard.selectedComparisonTimeRange))
+      )
+        return;
 
       let skipMeasure = false;
       measure.requiredDimensions?.forEach((reqDim) => {
@@ -143,5 +167,7 @@ export const measureSelectors = {
    */
   isMeasureValidPercentOfTotal,
 
-  getMeasuresAndDimensions,
+  filteredSimpleMeasures,
+
+  getFilteredMeasuresAndDimensions,
 };
