@@ -1,6 +1,11 @@
 import {
+  ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaPreviousSuffix,
+  ComparisonDeltaRelativeSuffix,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import {
+  V1MetricsViewAggregationResponseDataItem,
   V1MetricsViewComparisonMeasureType as ApiSortType,
-  type V1MetricsViewComparisonRow,
   type V1MetricsViewComparisonValue,
 } from "@rilldata/web-common/runtime-client";
 
@@ -14,10 +19,10 @@ import { SortType } from "../proto-state/derived-types";
  * measure in the leaderboard).
  */
 export function getLabeledComparisonFromComparisonRow(
-  row: V1MetricsViewComparisonRow,
+  row: V1MetricsViewAggregationResponseDataItem,
   measureName: string | number,
 ): ComparisonValueWithLabel {
-  const measure = row.measureValues?.find((v) => v.measureName === measureName);
+  const measure = row[measureName];
   if (!measure) {
     throw new Error(
       `Could not find measure ${measureName} in row ${JSON.stringify(row)}`,
@@ -81,26 +86,29 @@ const finiteOrNull = (v: unknown): number | null =>
   Number.isFinite(v) ? (v as number) : null;
 
 function cleanUpComparisonValue(
-  v: ComparisonValueWithLabel,
+  v: V1MetricsViewAggregationResponseDataItem,
+  dimensionName: string,
+  measureName: string,
   total: number | null,
   selectedIndex: number,
 ): LeaderboardItemData {
-  if (!(Number.isFinite(v.baseValue) || v.baseValue === null)) {
+  const measureValue = v[measureName];
+  if (!(Number.isFinite(measureValue) || measureValue === null)) {
     console.warn(
       `Leaderboards only implemented for numeric baseValues or missing data (null). Got: ${JSON.stringify(
         v,
       )}`,
     );
   }
-  const value = finiteOrNull(v.baseValue);
+  const value = finiteOrNull(measureValue);
 
   return {
-    dimensionValue: v.dimensionValue,
+    dimensionValue: v[dimensionName],
     value,
     pctOfTotal: total !== null && value !== null ? value / total : null,
-    prevValue: finiteOrNull(v.comparisonValue),
-    deltaRel: finiteOrNull(v.deltaRel),
-    deltaAbs: finiteOrNull(v.deltaAbs),
+    prevValue: finiteOrNull(v[measureName + ComparisonDeltaPreviousSuffix]),
+    deltaRel: finiteOrNull(v[measureName + ComparisonDeltaRelativeSuffix]),
+    deltaAbs: finiteOrNull(v[measureName + ComparisonDeltaAbsoluteSuffix]),
     selectedIndex,
   };
 }
@@ -113,18 +121,14 @@ type ComparisonValueWithLabel = V1MetricsViewComparisonValue & {
   dimensionValue: string;
 };
 
-/**
- *
- * @param values
- * @param selectedValues
- * @param total: the total of the measure for the current period,
- * or null if the measure is not valid_percent_of_total
- * @returns
- */
 export function prepareLeaderboardItemData(
-  values: ComparisonValueWithLabel[],
+  values: V1MetricsViewAggregationResponseDataItem[],
+  dimensionName: string,
+  measureName: string,
   numberAboveTheFold: number,
   selectedValues: string[],
+  // The total of the measure for the current period,
+  // or null if the measure is not valid_percent_of_total
   total: number | null,
 ): {
   aboveTheFold: LeaderboardItemData[];
@@ -147,13 +151,19 @@ export function prepareLeaderboardItemData(
 
   values.forEach((v, i) => {
     const selectedIndex = selectedValues.findIndex((value) =>
-      compareLeaderboardValues(value, v.dimensionValue),
+      compareLeaderboardValues(value, v[dimensionName]),
     );
     // if we have found this selected value in the API results,
     // remove it from the selectedButNotInAPIResults array
     if (selectedIndex > -1) selectedButNotInAPIResults.delete(selectedIndex);
 
-    const cleanValue = cleanUpComparisonValue(v, total, selectedIndex);
+    const cleanValue = cleanUpComparisonValue(
+      v,
+      dimensionName,
+      measureName,
+      total,
+      selectedIndex,
+    );
 
     if (i < numberAboveTheFold) {
       aboveTheFold.push(cleanValue);

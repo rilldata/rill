@@ -1,13 +1,18 @@
+import {
+  ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaPreviousSuffix,
+  ComparisonDeltaRelativeSuffix,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
-  QueryServiceMetricsViewComparisonBody,
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   V1MetricsViewAggregationMeasure,
   V1Expression,
+  QueryServiceMetricsViewAggregationBody,
+  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
-import { getQuerySortType } from "./leaderboard/leaderboard-utils";
 import { SortType } from "./proto-state/derived-types";
 
 const countRegex = /count(?=[^(]*\()/i;
@@ -28,7 +33,7 @@ export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
 export function getDimensionColumn(
   dimension: MetricsViewSpecDimensionV2,
 ): string {
-  return dimension?.column || dimension?.name;
+  return (dimension?.column || dimension?.name) as string;
 }
 
 export function prepareSortedQueryBody(
@@ -41,18 +46,18 @@ export function prepareSortedQueryBody(
   sortAscending: boolean,
   whereFilterForDimension: V1Expression,
   limit: number,
-): QueryServiceMetricsViewComparisonBody {
-  let comparisonTimeRange = {
+): QueryServiceMetricsViewAggregationBody {
+  let comparisonTimeRange: V1TimeRange | undefined = {
     start: timeControls.comparisonTimeStart,
     end: timeControls.comparisonTimeEnd,
   };
 
-  // api now expects measure names for which comparison are calculated
-  // to keep current behaviour add sort measure name to comparison measures
-  let comparisonMeasures: string[] = [];
-  if (comparisonTimeRange.start && comparisonTimeRange.end && sortMeasureName) {
-    comparisonMeasures = [sortMeasureName];
-  }
+  const measures = measureNames.map(
+    (n) =>
+      <V1MetricsViewAggregationMeasure>{
+        name: n,
+      },
+  );
 
   // FIXME: As a temporary way of enabling sorting by dimension values,
   // Benjamin and Egor put in a patch that will allow us to use the
@@ -63,23 +68,42 @@ export function prepareSortedQueryBody(
     // note also that we need to remove the comparison time range
     // when sorting by dimension values, or the query errors
     comparisonTimeRange = undefined;
-    // and we need to remove the comparison measures
-    comparisonMeasures = [];
   }
 
-  const querySortType = getQuerySortType(sortType);
+  if (
+    comparisonTimeRange?.start &&
+    comparisonTimeRange?.end &&
+    sortMeasureName
+  ) {
+    measures.push(
+      {
+        name: sortMeasureName + ComparisonDeltaPreviousSuffix,
+        comparisonValue: {
+          measure: sortMeasureName,
+        },
+      },
+      {
+        name: sortMeasureName + ComparisonDeltaAbsoluteSuffix,
+        comparisonDelta: {
+          measure: sortMeasureName,
+        },
+      },
+      {
+        name: sortMeasureName + ComparisonDeltaRelativeSuffix,
+        comparisonRatio: {
+          measure: sortMeasureName,
+        },
+      },
+    );
+  }
 
   return {
-    dimension: {
-      name: dimensionName,
-    },
-    measures: measureNames.map(
-      (n) =>
-        <V1MetricsViewAggregationMeasure>{
-          name: n,
-        },
-    ),
-    comparisonMeasures: comparisonMeasures,
+    dimensions: [
+      {
+        name: dimensionName,
+      },
+    ],
+    measures,
     timeRange: {
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
@@ -89,7 +113,6 @@ export function prepareSortedQueryBody(
       {
         desc: !sortAscending,
         name: sortMeasureName,
-        sortType: querySortType,
       },
     ],
     where: sanitiseExpression(whereFilterForDimension, undefined),

@@ -8,16 +8,12 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import {
-    createQueryServiceMetricsViewComparison,
-    createQueryServiceMetricsViewTotals,
-  } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
 
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
   import {
     LeaderboardItemData,
-    getLabeledComparisonFromComparisonRow,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import { onMount } from "svelte";
@@ -68,7 +64,7 @@
     runtime,
   } = getStateManagers();
 
-  $: sortedQuery = createQueryServiceMetricsViewComparison(
+  $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
     $metricsViewName,
     $leaderboardSortedQueryBody(dimensionName),
@@ -83,14 +79,14 @@
     isFetching,
   } = $sortedQuery);
 
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
+  $: totalsQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
     $metricsViewName,
     $leaderboardDimensionTotalQueryBody(dimensionName),
     $leaderboardDimensionTotalQueryOptions(dimensionName),
   );
 
-  $: leaderboardTotal = $totalsQuery?.data?.data?.[$activeMeasureName];
+  $: leaderboardTotal = $totalsQuery?.data?.data?.[0]?.[$activeMeasureName];
 
   let aboveTheFold: LeaderboardItemData[] = [];
   let selectedBelowTheFold: LeaderboardItemData[] = [];
@@ -98,9 +94,9 @@
   let showExpandTable = false;
   $: if (sortedData && !isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
-      sortedData?.rows?.map((r) =>
-        getLabeledComparisonFromComparisonRow(r, $activeMeasureName),
-      ) ?? [],
+      sortedData?.data ?? [],
+      dimensionName,
+      $activeMeasureName,
       slice,
       $selectedDimensionValues(dimensionName),
       leaderboardTotal,

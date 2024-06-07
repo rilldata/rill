@@ -6,6 +6,8 @@ import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/qu
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
+  mapExprToMeasureFilter,
+  type MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
@@ -66,7 +68,10 @@ export async function getDashboardFromAggregationRequest({
       dashboard.dimensionThresholdFilters = [
         {
           name: dimension,
-          filter: createAndExpression([req.having.cond?.exprs?.[0]]),
+          filters:
+            req.having.cond?.exprs
+              ?.map(mapExprToMeasureFilter)
+              .filter(Boolean) ?? [],
         },
       ];
     }

@@ -1,10 +1,7 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { additionalMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type {
-  QueryServiceMetricsViewComparisonBody,
-  QueryServiceMetricsViewTotalsBody,
-} from "@rilldata/web-common/runtime-client";
+import type { QueryServiceMetricsViewAggregationBody } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { prepareSortedQueryBody } from "../../dashboard-utils";
 import {
@@ -27,29 +24,27 @@ import { dimensionTableSearchString } from "./dimension-table";
  */
 export function dimensionTableSortedQueryBody(
   dashData: DashboardDataSources,
-): () => QueryServiceMetricsViewComparisonBody {
-  return () => {
-    const dimensionName = dashData.dashboard.selectedDimensionName;
-    if (!dimensionName) {
-      return {};
-    }
-    let filters = getFiltersForOtherDimensions(dashData)(dimensionName);
-    const searchString = dimensionTableSearchString(dashData);
-    if (searchString !== undefined) {
-      filters = updateFilterOnSearch(filters, searchString, dimensionName);
-    }
+): QueryServiceMetricsViewAggregationBody {
+  const dimensionName = dashData.dashboard.selectedDimensionName;
+  if (!dimensionName) {
+    return {};
+  }
+  let filters = getFiltersForOtherDimensions(dashData)(dimensionName);
+  const searchString = dimensionTableSearchString(dashData);
+  if (searchString !== undefined) {
+    filters = updateFilterOnSearch(filters, searchString, dimensionName);
+  }
 
-    return prepareSortedQueryBody(
-      dimensionName,
-      measuresForDimensionTable(dashData),
-      timeControlsState(dashData),
-      sortingSelectors.sortMeasure(dashData),
-      sortingSelectors.sortType(dashData),
-      sortingSelectors.sortedAscending(dashData),
-      mergeMeasureFilters(dashData.dashboard, filters),
-      250,
-    );
-  };
+  return prepareSortedQueryBody(
+    dimensionName,
+    measuresForDimensionTable(dashData),
+    timeControlsState(dashData),
+    sortingSelectors.sortMeasure(dashData),
+    sortingSelectors.sortType(dashData),
+    sortingSelectors.sortedAscending(dashData),
+    mergeMeasureFilters(dashData.dashboard, filters),
+    250,
+  );
 }
 
 function measuresForDimensionTable(dashData: DashboardDataSources) {
@@ -62,14 +57,12 @@ function measuresForDimensionTable(dashData: DashboardDataSources) {
 
 export function dimensionTableTotalQueryBody(
   dashData: DashboardDataSources,
-): () => QueryServiceMetricsViewTotalsBody {
-  return () => {
-    const dimensionName = dashData.dashboard.selectedDimensionName;
-    if (!dimensionName) {
-      return {};
-    }
-    return leaderboardDimensionTotalQueryBody(dashData)(dimensionName);
-  };
+): QueryServiceMetricsViewAggregationBody {
+  const dimensionName = dashData.dashboard.selectedDimensionName;
+  if (!dimensionName) {
+    return {};
+  }
+  return leaderboardDimensionTotalQueryBody(dashData)(dimensionName);
 }
 
 /**
@@ -78,7 +71,7 @@ export function dimensionTableTotalQueryBody(
  */
 export function leaderboardSortedQueryBody(
   dashData: DashboardDataSources,
-): (dimensionName: string) => QueryServiceMetricsViewComparisonBody {
+): (dimensionName: string) => QueryServiceMetricsViewAggregationBody {
   return (dimensionName: string) =>
     prepareSortedQueryBody(
       dimensionName,
@@ -115,9 +108,9 @@ export function leaderboardSortedQueryOptions(
 
 export function leaderboardDimensionTotalQueryBody(
   dashData: DashboardDataSources,
-): (dimensionName: string) => QueryServiceMetricsViewTotalsBody {
+): (dimensionName: string) => QueryServiceMetricsViewAggregationBody {
   return (dimensionName: string) => ({
-    measureNames: [activeMeasureName(dashData)],
+    measures: [{ name: activeMeasureName(dashData) }],
     where: sanitiseExpression(
       mergeMeasureFilters(
         dashData.dashboard,

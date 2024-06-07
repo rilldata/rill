@@ -11,6 +11,7 @@
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
   import {
+    createQueryServiceMetricsViewAggregation,
     createQueryServiceMetricsViewComparison,
     createQueryServiceMetricsViewTotals,
   } from "@rilldata/web-common/runtime-client";
@@ -72,10 +73,10 @@
     dimensionName,
   );
 
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
+  $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     $metricsViewName,
-    $dimensionTableTotalQueryBody(),
+    $dimensionTableTotalQueryBody,
     {
       query: {
         enabled: $timeControlsStore.ready,
@@ -83,14 +84,14 @@
     },
   );
 
-  $: unfilteredTotal = $totalsQuery?.data?.data?.[$activeMeasureName] ?? 0;
+  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[$activeMeasureName] ?? 0;
 
   $: columns = $virtualizedTableColumns($totalsQuery);
 
-  $: sortedQuery = createQueryServiceMetricsViewComparison(
+  $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
     $metricsViewName,
-    $dimensionTableSortedQueryBody(),
+    $dimensionTableSortedQueryBody,
     {
       query: {
         enabled: $timeControlsStore.ready && !!filterSet,

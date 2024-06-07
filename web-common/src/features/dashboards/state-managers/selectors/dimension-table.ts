@@ -1,6 +1,7 @@
 import type {
   MetricsViewSpecDimensionV2,
   RpcStatus,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewComparisonResponse,
   V1MetricsViewTotalsResponse,
 } from "@rilldata/web-common/runtime-client";
@@ -76,7 +77,7 @@ export const prepareDimTableRows =
     dashData: DashboardDataSources,
   ): ((
     sortedQuery: QueryObserverResult<
-      V1MetricsViewComparisonResponse,
+      V1MetricsViewAggregationResponse,
       RpcStatus
     >,
     unfilteredTotal: number,
@@ -93,7 +94,7 @@ export const prepareDimTableRows =
     const measures = allMeasures(dashData);
 
     return prepareDimensionTableRows(
-      sortedQuery?.data?.rows ?? [],
+      sortedQuery?.data?.data ?? [],
       measures,
       leaderboardMeasureName,
       dimensionColumn,
