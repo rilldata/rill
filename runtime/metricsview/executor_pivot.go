@@ -2,6 +2,8 @@ package metricsview
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"strconv"
 	"strings"
@@ -18,12 +20,10 @@ func (e *Executor) executePivot(ctx context.Context, ast *AST, pivot *pivotAST) 
 
 	// If the dialect supports native pivoting, we can do it as a single query
 	if e.olap.Dialect().CanPivot() {
-		sql, err := pivot.SQL(ast, underlyingSQL)
+		sql, err := pivot.SQL(ast, underlyingSQL, true)
 		if err != nil {
 			return nil, err
 		}
-
-		// TODO: Applying the cell limits correctly?
 
 		res, err := e.olap.Execute(ctx, &drivers.Statement{
 			Query:            sql,
@@ -56,6 +56,9 @@ func (e *Executor) executePivot(ctx context.Context, ast *AST, pivot *pivotAST) 
 	}
 	defer res.Close()
 
+	// Apply the pivot cell limit
+	res.SetCap(pivot.underlyingRowCap)
+
 	// Transfer data to DuckDB
 	// TODO: Implement this
 
@@ -67,7 +70,7 @@ func (e *Executor) executePivot(ctx context.Context, ast *AST, pivot *pivotAST) 
 	}
 
 	// Pivot the data in DuckDB
-	sql, err := pivot.SQL(ast, "<tmp table>")
+	sql, err := pivot.SQL(ast, "<tmp table>", false)
 	if err != nil {
 		_ = cleanup()
 		return nil, err
@@ -194,12 +197,49 @@ type pivotAST struct {
 
 // SQL generates a query that outputs a pivoted table based on the pivot config and data in the underlying query.
 // As a convenience, it accepts the underlying AST and SQL separately, which enables pivoting in a different connector than the one that runs the actual underlying query.
-func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string) (string, error) {
+func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string, checkCap bool) (string, error) {
 	if !a.dialect.CanPivot() {
 		return "", fmt.Errorf("pivot queries not supported for dialect %q", a.dialect.String())
 	}
 
 	b := &strings.Builder{}
+
+	// Since we query the underlying data and do the pivot in a single query, we need to be creative to enforce the pivot cell limit.
+	// We leverage CTEs and DuckDB's ERROR function to enforce the limit.
+	// This is pretty DuckDB-specific, but that's also currently the only OLAP we use that supports pivoting.
+	// The query looks something like:
+	//
+	//   WITH t1 AS (<underlyingSQL>),
+	//   t2 AS (SELECT * FROM t1 WHERE IF(EXISTS (SELECT COUNT(*) count FROM t1 HAVING count > <limit>), ERROR('pivot query exceeds limit'), TRUE))
+	//   PIVOT t2 ON ...
+	if checkCap {
+		t1, err := randomString("t1", 8)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate random alias: %w", err)
+		}
+		t2, err := randomString("t2", 8)
+		if err != nil {
+			return "", fmt.Errorf("failed to generate random alias: %w", err)
+		}
+
+		b.WriteString("WITH ")
+		b.WriteString(t1)
+		b.WriteString(" AS (")
+		b.WriteString(underlyingSQL)
+		b.WriteString("), ")
+		b.WriteString(t2)
+		b.WriteString(" AS (SELECT * FROM ")
+		b.WriteString(t1)
+		b.WriteString(" WHERE IF(EXISTS (SELECT COUNT(*) count FROM ")
+		b.WriteString(t1)
+		b.WriteString(" HAVING count > ")
+		b.WriteString(strconv.FormatInt(a.underlyingRowCap, 10))
+		b.WriteString("), ERROR('pivot query exceeds limit of ")
+		b.WriteString(strconv.FormatInt(a.underlyingRowCap, 10))
+		b.WriteString(" cells'), TRUE)) ")
+
+		underlyingSQL = t2
+	}
 
 	// If we need to label some fields (in practice, this will be non-pivoted dims during exports),
 	// we emit a query like: SELECT d1 AS "L1", d2 AS "L2", * EXCLUDE (d1, d2) FROM (PIVOT ...)
@@ -295,6 +335,15 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string) (string, error)
 	}
 
 	return b.String(), nil
+}
+
+func randomString(prefix string, n int) (string, error) {
+	b := make([]byte, n)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+	return prefix + hex.EncodeToString(b), nil
 }
 
 func findField(n string, fs []FieldNode) (FieldNode, bool) {
