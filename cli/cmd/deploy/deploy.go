@@ -473,7 +473,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 
 	repoOwner := ""
 	if len(candidateOrgs) == 0 {
-		ch.PrintfWarn("\nRill app does not have permissions to create Github repository on any of your accounts. Visit %q to grant access.\n", pollRes.GrantAccessUrl)
+		ch.PrintfWarn("\nRill does not have permissions to create a repository on your Github account. Visit this URL to grant access: %s\n", pollRes.GrantAccessUrl)
 		return nil
 	} else if len(candidateOrgs) == 1 {
 		repoOwner = candidateOrgs[0]
