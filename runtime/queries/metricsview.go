@@ -945,6 +945,18 @@ func rewriteToMetricsResolverExpression(expr *runtimev1.Expression) *metricsview
 			Operator:    op,
 			Expressions: exprs,
 		}
+	case *runtimev1.Expression_Subquery:
+		measures := make([]metricsview.Measure, 0, len(e.Subquery.Measures))
+		for _, m := range e.Subquery.Measures {
+			measures = append(measures, metricsview.Measure{Name: m})
+		}
+
+		res.Subquery = &metricsview.Subquery{
+			Dimension: metricsview.Dimension{Name: e.Subquery.Dimension},
+			Measures:  measures,
+			Where:     rewriteToMetricsResolverExpression(e.Subquery.Where),
+			Having:    rewriteToMetricsResolverExpression(e.Subquery.Having),
+		}
 	}
 
 	return res

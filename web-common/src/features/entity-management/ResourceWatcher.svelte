@@ -5,9 +5,12 @@
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
+  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
 
   const fileWatcher = new WatchFilesClient().client;
   const resourceWatcher = new WatchResourcesClient().client;
+  const fileAttempts = fileWatcher.retryAttempts;
+  const resourceAttempts = resourceWatcher.retryAttempts;
 
   export let host: string;
   export let instanceId: string;
@@ -17,6 +20,8 @@
   $: resourceWatcher.watch(
     `${host}/v1/instances/${instanceId}/resources/-/watch`,
   );
+
+  $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;
 
   onMount(() => {
     const stopJavascriptErrorListeners =
@@ -43,4 +48,10 @@
 
 <svelte:window on:visibilitychange={handleVisibilityChange} />
 
-<slot />
+{#if failed}
+  <div class="h-screen w-screen">
+    <WorkspaceError message="Unable to connect to runtime" />
+  </div>
+{:else}
+  <slot />
+{/if}

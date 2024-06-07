@@ -1,34 +1,54 @@
 import {
   V1ListFilesResponse,
-  createRuntimeServiceListFiles,
   getRuntimeServiceListFilesQueryKey,
+  runtimeServiceGetInstance,
   runtimeServiceListFiles,
+  runtimeServiceUnpackEmpty,
 } from "@rilldata/web-common/runtime-client";
-import type { QueryClient } from "@tanstack/query-core";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { EMPTY_PROJECT_TITLE } from "./constants";
+import { writable } from "svelte/store";
 
-export function useIsProjectInitialized(instanceId: string) {
-  return createRuntimeServiceListFiles(instanceId, undefined, {
-    query: {
-      select: (data) => {
-        // Return true if `rill.yaml` exists, else false
-        return data.files?.some((file) => file.path === "/rill.yaml");
+export async function isProjectInitialized(instanceId: string) {
+  try {
+    const files = await queryClient.fetchQuery<V1ListFilesResponse>({
+      queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
+      queryFn: ({ signal }) => {
+        return runtimeServiceListFiles(instanceId, undefined, signal);
       },
-      refetchOnWindowFocus: true,
-    },
-  });
+    });
+
+    // Return true if `rill.yaml` exists, else false
+    return !!files.files?.some(({ path }) => path === "/rill.yaml");
+  } catch {
+    return false;
+  }
 }
 
-export async function isProjectInitialized(
-  queryClient: QueryClient,
+export async function handleUninitializedProject(
   instanceId: string,
-) {
-  const files = await queryClient.fetchQuery<V1ListFilesResponse>({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
-    queryFn: ({ signal }) => {
-      return runtimeServiceListFiles(instanceId, undefined, signal);
-    },
+): Promise<boolean> {
+  // If the project is not initialized, determine what page to route to dependent on the OLAP connector
+  const instance = await runtimeServiceGetInstance(instanceId, {
+    sensitive: true,
   });
+  const olapConnector = instance.instance?.olapConnector;
 
-  // Return true if `rill.yaml` exists, else false
-  return files.files?.some((file) => file.path === "/rill.yaml");
+  if (!olapConnector) {
+    throw new Error("OLAP connector is not defined");
+  }
+
+  // DuckDB-backed projects should head to the Welcome page for user-guided initialization
+  if (olapConnector === "duckdb") {
+    return true;
+  } else {
+    // Clickhouse and Druid-backed projects should be initialized immediately
+    await runtimeServiceUnpackEmpty(instanceId, {
+      title: EMPTY_PROJECT_TITLE,
+      force: true,
+    });
+    return false;
+  }
 }
+
+export const firstLoad = writable(true);

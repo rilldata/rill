@@ -3785,6 +3785,8 @@ definitions:
       val: {}
       cond:
         $ref: '#/definitions/v1Condition'
+      subquery:
+        $ref: '#/definitions/v1Subquery'
   v1FileEvent:
     type: string
     enum:
@@ -5384,6 +5386,19 @@ definitions:
           type: object
           $ref: '#/definitions/StructTypeField'
     title: StructType is a type composed of ordered, named and typed sub-fields
+  v1Subquery:
+    type: object
+    properties:
+      dimension:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
   v1TableCardinalityRequest:
     type: object
     properties:

@@ -544,12 +544,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -577,6 +571,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -655,6 +655,13 @@ export interface V1TableCardinalityRequest {
   databaseSchema?: string;
   tableName?: string;
   priority?: number;
+}
+
+export interface V1Subquery {
+  dimension?: string;
+  measures?: string[];
+  where?: V1Expression;
+  having?: V1Expression;
 }
 
 export interface V1StructType {
@@ -1560,6 +1567,7 @@ export interface V1Expression {
   ident?: string;
   val?: unknown;
   cond?: V1Condition;
+  subquery?: V1Subquery;
 }
 
 export interface V1ExportResponse {

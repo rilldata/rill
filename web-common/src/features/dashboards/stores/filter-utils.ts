@@ -202,12 +202,6 @@ export function filterIdentifiers(
   cb: (e: V1Expression, ident: string) => boolean,
 ) {
   return filterExpressions(expr, (e) => {
-    if (
-      e.cond?.op !== V1Operation.OPERATION_IN &&
-      e.cond?.op !== V1Operation.OPERATION_NIN
-    ) {
-      return true;
-    }
     const ident = e.cond?.exprs?.[0].ident;
     if (ident === undefined) {
       return true;

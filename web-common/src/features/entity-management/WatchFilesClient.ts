@@ -10,6 +10,8 @@ import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { invalidate } from "$app/navigation";
+import { firstLoad } from "../welcome/is-project-initialized";
 
 export class WatchFilesClient {
   public readonly client: WatchRequestClient<V1WatchFilesResponse>;
@@ -30,7 +32,7 @@ export class WatchFilesClient {
     });
   }
 
-  private handleWatchFileResponse(res: V1WatchFilesResponse) {
+  private async handleWatchFileResponse(res: V1WatchFilesResponse) {
     if (!res?.path || res.path.includes(".db")) return;
 
     const instanceId = get(runtime).instanceId;
@@ -45,11 +47,15 @@ export class WatchFilesClient {
             getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
           );
           void fileArtifacts.fileUpdated(res.path);
+
           if (res.path === "/rill.yaml") {
             // If it's a rill.yaml file, invalidate the dev JWT queries
             void queryClient.invalidateQueries(
               getRuntimeServiceIssueDevJWTQueryKey(),
             );
+
+            firstLoad.set(true);
+            await invalidate("init");
           }
           this.seenFiles.add(res.path);
           break;
@@ -60,6 +66,12 @@ export class WatchFilesClient {
           );
           fileArtifacts.fileDeleted(res.path);
           this.seenFiles.delete(res.path);
+
+          if (res.path === "/rill.yaml") {
+            firstLoad.set(true);
+            await invalidate("init");
+          }
+
           break;
       }
     }

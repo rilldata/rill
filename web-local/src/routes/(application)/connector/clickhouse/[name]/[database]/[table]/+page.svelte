@@ -7,8 +7,10 @@
 
   const { readOnly } = featureFlags;
 
+  $: name = $page.params.name;
   $: database = $page.params.database;
-  $: databaseSchema = $page.params.schema;
+  // ClickHouse does not have a database "schema" concept
+  // Rill considers the ClickHouse "database" as the "database schema"
   $: table = $page.params.table;
 
   onMount(() => {
@@ -22,4 +24,4 @@
   <title>Rill Developer | {table}</title>
 </svelte:head>
 
-<TablePreviewWorkspace connector="duckdb" {database} {databaseSchema} {table} />
+<TablePreviewWorkspace connector={name} databaseSchema={database} {table} />
