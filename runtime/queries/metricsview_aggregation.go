@@ -2899,11 +2899,6 @@ func (q *MetricsViewAggregation) trancationExpression(s string, timeGrain runtim
 }
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.MetricsViewSpec) (*metricsview.Query, bool, error) {
-	// Pivot not supported yet
-	if len(q.PivotOn) > 0 {
-		return nil, false, nil
-	}
-
 	// Time offset-based comparison joins not supported yet
 	if q.ComparisonTimeRange != nil && !isTimeRangeNil(q.ComparisonTimeRange) {
 		for _, d := range q.Dimensions {
@@ -2969,6 +2964,8 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 
 		qry.Measures = append(qry.Measures, res)
 	}
+
+	qry.PivotOn = q.PivotOn
 
 	for _, s := range q.Sort {
 		qry.Sort = append(qry.Sort, metricsview.Sort{
