@@ -51,7 +51,10 @@ func (e *Executor) executeExport(ctx context.Context, format, inputConnector str
 
 	me, ok := ic.AsModelExecutor(e.instanceID, opts)
 	if !ok {
-		return "", fmt.Errorf("connector %q can't export to file format %q", inputConnector, format)
+		me, ok = oc.AsModelExecutor(e.instanceID, opts)
+		if !ok {
+			return "", fmt.Errorf("cannot execute export: input connector %q and output connector %q are not compatible", opts.InputConnector, opts.OutputConnector)
+		}
 	}
 
 	_, err = me.Execute(ctx)

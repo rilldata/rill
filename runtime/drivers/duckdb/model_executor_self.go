@@ -28,6 +28,9 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	if err := inputProps.Validate(); err != nil {
 		return nil, fmt.Errorf("invalid input properties: %w", err)
 	}
+	if inputProps.PreExec != "" || inputProps.PostExec != "" {
+		return nil, fmt.Errorf("duckdb executor does not support pre_exec and post_exec properties")
+	}
 
 	outputProps := &ModelOutputProperties{}
 	if err := mapstructure.WeakDecode(e.opts.OutputProperties, outputProps); err != nil {
