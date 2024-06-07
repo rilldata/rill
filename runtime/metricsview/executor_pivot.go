@@ -70,7 +70,7 @@ func (e *Executor) executePivot(ctx context.Context, ast *AST, pivot *pivotAST) 
 	}
 
 	// Pivot the data in DuckDB
-	sql, err := pivot.SQL(ast, "<tmp table>", false)
+	sql, err := pivot.SQL(ast, "SELECT * FROM <tmp table>", false)
 	if err != nil {
 		_ = cleanup()
 		return nil, err
@@ -210,7 +210,7 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string, checkCap bool) 
 	// The query looks something like:
 	//
 	//   WITH t1 AS (<underlyingSQL>),
-	//   t2 AS (SELECT * FROM t1 WHERE IF(EXISTS (SELECT COUNT(*) count FROM t1 HAVING count > <limit>), ERROR('pivot query exceeds limit'), TRUE))
+	//   t2 AS (SELECT * FROM t1 WHERE IF(EXISTS (SELECT COUNT(*) AS count FROM t1 HAVING count > <limit>), ERROR('pivot query exceeds limit'), TRUE))
 	//   PIVOT t2 ON ...
 	if checkCap {
 		t1, err := randomString("t1", 8)
@@ -230,7 +230,7 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string, checkCap bool) 
 		b.WriteString(t2)
 		b.WriteString(" AS (SELECT * FROM ")
 		b.WriteString(t1)
-		b.WriteString(" WHERE IF(EXISTS (SELECT COUNT(*) count FROM ")
+		b.WriteString(" WHERE IF(EXISTS (SELECT COUNT(*) AS count FROM ")
 		b.WriteString(t1)
 		b.WriteString(" HAVING count > ")
 		b.WriteString(strconv.FormatInt(a.underlyingRowCap, 10))
@@ -238,7 +238,7 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string, checkCap bool) 
 		b.WriteString(strconv.FormatInt(a.underlyingRowCap, 10))
 		b.WriteString(" cells'), TRUE)) ")
 
-		underlyingSQL = t2
+		underlyingSQL = fmt.Sprintf("SELECT * FROM %s", t2)
 	}
 
 	// If we need to label some fields (in practice, this will be non-pivoted dims during exports),
