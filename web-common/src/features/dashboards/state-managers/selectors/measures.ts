@@ -52,26 +52,24 @@ export const isMeasureValidPercentOfTotal = ({
   };
 };
 
-export const filteredBasicMeasures = ({
+export const filteredSimpleMeasures = ({
   metricsSpecQueryResult,
-  dashboard,
 }: DashboardDataSources) => {
-  return (includeComparisonMeasure: boolean) => {
-    includeComparisonMeasure =
-      includeComparisonMeasure &&
-      !!dashboard.showTimeComparison &&
-      !!dashboard.selectedComparisonTimeRange;
+  return () => {
     return (
       metricsSpecQueryResult.data?.measures?.filter(
         (m) =>
           !m.window &&
-          (includeComparisonMeasure ||
-            m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON),
+          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
       ) ?? []
     );
   };
 };
 
+/**
+ * Selects measure valid for current dashboard selections.
+ * Also includes additional dimensions needed for any advanced measures.
+ */
 export const getFilteredMeasuresAndDimensions = ({
   dashboard,
 }: Pick<DashboardDataSources, "dashboard">) => {
@@ -169,7 +167,7 @@ export const measureSelectors = {
    */
   isMeasureValidPercentOfTotal,
 
-  filteredBasicMeasures,
+  filteredSimpleMeasures,
 
   getFilteredMeasuresAndDimensions,
 };

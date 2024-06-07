@@ -12,7 +12,7 @@ import {
 
 /**
  * Single use class to correct incorrect use of advanced measures.
- * Reason to use a class here is to avoid too many arguments in methods (especially measureMismatch).
+ * Reason to use a class here is to avoid too many arguments in methods (especially measureIsValidForComponent).
  */
 export class AdvancedMeasureCorrector {
   private measuresMap: Map<string, MetricsViewSpecMeasureV2>;
@@ -57,7 +57,7 @@ export class AdvancedMeasureCorrector {
     this.dashboard.dimensionThresholdFilters.forEach((dimensionThreshold) => {
       dimensionThreshold.filter = filterIdentifiers(
         dimensionThreshold.filter,
-        (_, ident) => !this.measureMismatch(ident, false, false),
+        (_, ident) => !this.measureIsValidForComponent(ident, false, false),
       ) as V1Expression;
     });
     this.dashboard.dimensionThresholdFilters =
@@ -69,14 +69,18 @@ export class AdvancedMeasureCorrector {
   private correctLeaderboards() {
     if (
       this.dashboard.leaderboardMeasureName &&
-      !this.measureMismatch(this.dashboard.leaderboardMeasureName, true, false)
+      !this.measureIsValidForComponent(
+        this.dashboard.leaderboardMeasureName,
+        true,
+        false,
+      )
     ) {
       return;
     }
 
     this.dashboard.leaderboardMeasureName = "";
     for (const measure of this.metricsViewSpec.measures ?? []) {
-      if (!this.measureMismatch(measure.name ?? "", true, false)) {
+      if (!this.measureIsValidForComponent(measure.name ?? "", true, false)) {
         this.dashboard.leaderboardMeasureName = measure.name ?? "";
         break;
       }
@@ -85,7 +89,7 @@ export class AdvancedMeasureCorrector {
 
   private correctTimeDimensionDetails() {
     if (
-      !this.measureMismatch(
+      !this.measureIsValidForComponent(
         this.dashboard.tdd.expandedMeasureName ?? "",
         true,
         false,
@@ -106,15 +110,20 @@ export class AdvancedMeasureCorrector {
   private correctPivot() {
     this.dashboard.pivot.columns.measure =
       this.dashboard.pivot.columns.measure.filter(
-        (m) => !this.measureMismatch(m.id, true, false),
+        (m) => !this.measureIsValidForComponent(m.id, true, false),
       );
     this.dashboard.pivot.sorting = this.dashboard.pivot.sorting.filter(
       (s) =>
-        !this.measuresMap.has(s.id) || !this.measureMismatch(s.id, true, false),
+        !this.measuresMap.has(s.id) ||
+        !this.measureIsValidForComponent(s.id, true, false),
     );
   }
 
-  private measureMismatch(
+  /**
+   * Checks if a measure is valid for the component based on dashboard selections and component support.
+   * Additional arguments indicate whether certain types of advanced measures are supported in the component or not.
+   */
+  private measureIsValidForComponent(
     measureName: string,
     supportsComparisonMeasure: boolean,
     supportsWindowedMeasure: boolean,

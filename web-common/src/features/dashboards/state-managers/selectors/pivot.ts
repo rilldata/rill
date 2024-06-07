@@ -1,4 +1,4 @@
-import { filteredBasicMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import { filteredSimpleMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { DashboardDataSources } from "./types";
 import { PivotChipType } from "../../pivot/types";
 
@@ -7,7 +7,7 @@ export const pivotSelectors = {
   rows: ({ dashboard }: DashboardDataSources) => dashboard.pivot.rows,
   columns: ({ dashboard }: DashboardDataSources) => dashboard.pivot.columns,
   measures: (dashData: DashboardDataSources) => {
-    const measures = filteredBasicMeasures(dashData)(false);
+    const measures = filteredSimpleMeasures(dashData)();
     const columns = dashData.dashboard.pivot.columns;
 
     return measures

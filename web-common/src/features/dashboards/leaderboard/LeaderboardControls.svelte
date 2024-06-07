@@ -19,7 +19,7 @@
 
   const {
     selectors: {
-      measures: { filteredBasicMeasures },
+      measures: { filteredSimpleMeasures },
     },
     actions: {
       contextCol: { setContextColumn },
@@ -29,7 +29,7 @@
 
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
-  $: measures = $filteredBasicMeasures(false);
+  $: measures = $filteredSimpleMeasures();
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];
