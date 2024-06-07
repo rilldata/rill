@@ -172,6 +172,7 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 	// This prevents the DB from scanning too much data before we can detect that the query will exceed the cell limit.
 	if e.instanceCfg.PivotCellLimit != 0 {
 		cols := int64(len(qry.Dimensions) + len(qry.Measures))
+		ast.underlyingCellCap = e.instanceCfg.PivotCellLimit
 		ast.underlyingRowCap = e.instanceCfg.PivotCellLimit / cols
 
 		tmp := ast.underlyingRowCap + 1
@@ -190,9 +191,10 @@ type pivotAST struct {
 	limit   *int64
 	offset  *int64
 
-	label            bool
-	dialect          drivers.Dialect
-	underlyingRowCap int64
+	label             bool
+	dialect           drivers.Dialect
+	underlyingCellCap int64
+	underlyingRowCap  int64
 }
 
 // SQL generates a query that outputs a pivoted table based on the pivot config and data in the underlying query.
@@ -235,7 +237,7 @@ func (a *pivotAST) SQL(underlyingAST *AST, underlyingSQL string, checkCap bool) 
 		b.WriteString(" HAVING count > ")
 		b.WriteString(strconv.FormatInt(a.underlyingRowCap, 10))
 		b.WriteString("), ERROR('pivot query exceeds limit of ")
-		b.WriteString(strconv.FormatInt(a.underlyingRowCap, 10))
+		b.WriteString(strconv.FormatInt(a.underlyingCellCap, 10))
 		b.WriteString(" cells'), TRUE)) ")
 
 		underlyingSQL = fmt.Sprintf("SELECT * FROM %s", t2)

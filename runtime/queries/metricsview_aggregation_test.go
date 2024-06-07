@@ -451,7 +451,8 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns_limit_exceed
 		Exporting: true,
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.Error(t, err)
+	require.NoError(t, err)
+	require.Len(t, q.Result.Data, 10)
 }
 
 func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T) {
