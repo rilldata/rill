@@ -12,6 +12,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/druid"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -105,9 +106,49 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 
 	if olap.Dialect() == drivers.DialectDruid {
 		return q.executeSearchInDruid(ctx, rt, instanceID, mv.Table)
-	} else {
-		return q.executeSearch(ctx)
 	}
+
+	sql, args, err := q.buildSearchQuerySQL(mv, olap.Dialect(), resolvedSecurity)
+	if err != nil {
+		return err
+	}
+
+	rows, err := olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         priority,
+		ExecutionTimeout: defaultExecutionTimeout,
+	})
+	if err != nil {
+		return nil
+	}
+	defer rows.Close()
+
+	q.Result = &runtimev1.MetricsViewSearchResponse{Results: make([]*runtimev1.MetricsViewSearchResponse_SearchResult, 0)}
+	for rows.Next() {
+		res := map[string]any{}
+		err := rows.MapScan(res)
+		if err != nil {
+			return err
+		}
+
+		dimName, ok := res["dimension"].(string)
+		if !ok {
+			return fmt.Errorf("unknown result dimension: %q", dimName)
+		}
+
+		v, err := structpb.NewValue(res["value"])
+		if err != nil {
+			return err
+		}
+
+		q.Result.Results = append(q.Result.Results, &runtimev1.MetricsViewSearchResponse_SearchResult{
+			Dimension: dimName,
+			Value:     v,
+		})
+	}
+
+	return nil
 }
 
 func (q *MetricsViewSearch) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
@@ -156,7 +197,51 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 	return nil
 }
 
-func (q *MetricsViewSearch) executeSearch(ctx context.Context) error {
-	// TODO: apply security filter
-	return nil
+func (q *MetricsViewSearch) buildSearchQuerySQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+	var baseWhereClause string
+	if policy != nil && policy.RowFilter != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	}
+
+	var args []any
+
+	unions := make([]string, len(q.Dimensions))
+	for i, dimName := range q.Dimensions {
+		var dim *runtimev1.MetricsViewSpec_DimensionV2
+		for _, d := range mv.Dimensions {
+			if d.Name == dimName {
+				dim = d
+				break
+			}
+		}
+		if dim == nil {
+			return "", nil, fmt.Errorf("dimension not found: %q", q.Dimensions[i])
+		}
+
+		expr, _, unnest := dialect.DimensionSelectPair(mv.Database, mv.DatabaseSchema, mv.Table, dim)
+		filterBuilder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+		}
+		clause, clauseArgs, err := filterBuilder.buildExpression(expressionpb.Like(expressionpb.Identifier(dimName), expressionpb.String(fmt.Sprintf("%%%s%%", q.Search))))
+		if err != nil {
+			return "", nil, err
+		}
+		if clause != "" {
+			clause = " AND " + clause
+			args = append(args, clauseArgs...)
+		}
+
+		unions[i] = fmt.Sprintf(
+			"SELECT %s as value, '%s' as dimension from %s %s WHERE 1=1 %s %s GROUP BY 1",
+			expr,
+			dimName,
+			mv.Table,
+			unnest,
+			baseWhereClause,
+			clause,
+		)
+	}
+
+	return strings.Join(unions, " UNION "), args, nil
 }
