@@ -58,6 +58,8 @@ type Result struct {
 	*sqlx.Rows
 	Schema    *runtimev1.StructType
 	cleanupFn func() error
+	cap       int64
+	rows      int64
 }
 
 // SetCleanupFunc sets a function, which will be called when the Result is closed.
@@ -66,6 +68,43 @@ func (r *Result) SetCleanupFunc(fn func() error) {
 		panic("cleanup function already set")
 	}
 	r.cleanupFn = fn
+}
+
+// SetCap caps the number of rows to return. If the number is exceeded, an error is returned.
+func (r *Result) SetCap(n int64) {
+	if r.cap > 0 {
+		panic("cap already set")
+	}
+	r.cap = n
+}
+
+// Next wraps rows.Next and enforces the cap set by SetCap.
+func (r *Result) Next() bool {
+	res := r.Rows.Next()
+	if !res {
+		return false
+	}
+
+	r.rows++
+	if r.cap > 0 && r.rows > r.cap {
+		return false
+	}
+
+	return true
+}
+
+// Err returns the error of the underlying rows.
+func (r *Result) Err() error {
+	err := r.Rows.Err()
+	if err != nil {
+		return err
+	}
+
+	if r.cap > 0 && r.rows > r.cap {
+		return fmt.Errorf("result cap exceeded: returned more than %d rows", r.cap)
+	}
+
+	return nil
 }
 
 // Close wraps rows.Close and calls the Result's cleanup function (if it is set).
@@ -219,6 +258,22 @@ func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.Metr
 	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
 }
 
+func (d Dialect) DimensionSelectPair(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (expr, alias, unnestClause string) {
+	colName := d.EscapeIdentifier(dim.Name)
+	if !dim.Unnest || d == DialectDruid {
+		return d.MetricsViewDimensionExpression(dim), colName, ""
+	}
+
+	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
+	unnestTableName := tempName("tbl")
+	if dim.Expression == "" {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
+		return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName)
+	}
+
+	return unnestColName, colName, fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName)
+}
+
 func (d Dialect) LateralUnnest(expr, tableAlias, colName string) (tbl string, auto bool, err error) {
 	if d == DialectDruid || d == DialectPinot {
 		return "", true, nil
@@ -242,10 +297,28 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	switch d {
 	case DialectDruid:
-		return fmt.Sprintf("SAFE_DIVIDE(%s, %s)", numExpr, denExpr)
+		return fmt.Sprintf("SAFE_DIVIDE(%s, CAST(%s AS DOUBLE))", numExpr, denExpr)
 	default:
-		return fmt.Sprintf("CAST((%s) AS DOUBLE)/%s", numExpr, denExpr)
+		return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
 	}
+}
+
+func (d Dialect) OrderByExpression(name string, desc bool) string {
+	res := d.EscapeIdentifier(name)
+	if desc {
+		res += " DESC"
+	}
+	if d == DialectDuckDB {
+		res += " NULLS LAST"
+	}
+	return res
+}
+
+func (d Dialect) JoinOnExpression(lhs, rhs string) string {
+	if d == DialectClickHouse {
+		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
+	}
+	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
 
 func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {
@@ -346,9 +419,9 @@ func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain
 
 		// TODO: Should this use date_trunc(grain, expr, tz) instead?
 		if shift == "" {
-			return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s')), '%s')", grain, expr, tz, tz), nil
+			return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s'))::TIMESTAMP, '%s')", specifier, expr, tz, tz), nil
 		}
-		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s') + INTERVAL %s) - INTERVAL %s, '%s')", grain, expr, tz, shift, shift, tz), nil
+		return fmt.Sprintf("toTimezone(date_trunc('%s', toTimezone(%s::TIMESTAMP, '%s') + INTERVAL %s)::TIMESTAMP - INTERVAL %s, '%s')", specifier, expr, tz, shift, shift, tz), nil
 	case DialectPinot:
 		// TODO: Handle tz instead of ignoring it.
 		// TODO: Handle firstDayOfWeek and firstMonthOfYear. NOTE: We currently error when configuring these for Pinot in runtime/validate.go.

@@ -1,18 +1,31 @@
-import { dev } from "$app/environment";
-import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-
 export const ssr = false;
 
-// When testing, we need to use the relative path to the server
-const HOST = dev ? "http://localhost:9009" : "";
-const INSTANCE_ID = "default";
+import { redirect } from "@sveltejs/kit";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import {
+  isProjectInitialized,
+  handleUninitializedProject,
+  firstLoad,
+} from "@rilldata/web-common/features/welcome/is-project-initialized";
+import { get } from "svelte/store";
 
-const runtimeInit = {
-  host: HOST,
-  instanceId: INSTANCE_ID,
-};
+export async function load({ url: { pathname }, depends }) {
+  depends("init");
 
-export function load() {
-  runtime.set(runtimeInit);
-  return runtimeInit;
+  // Remove this and untrack URL changes
+  // after upgrading to SvelteKit 2.0
+  if (!get(firstLoad)) return;
+  firstLoad.set(false);
+
+  const instanceId = get(runtime).instanceId;
+  const initialized = await isProjectInitialized(instanceId);
+
+  const onWelcomePage = pathname === "/welcome";
+
+  if (!initialized) {
+    const goToWelcomePage = await handleUninitializedProject(instanceId);
+    if (goToWelcomePage && !onWelcomePage) throw redirect(303, "/welcome");
+  } else if (onWelcomePage) {
+    throw redirect(303, "/");
+  }
 }

@@ -4,6 +4,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getConnectorServiceOLAPListTablesQueryKey,
+  getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
   V1ReconcileStatus,
@@ -21,10 +22,12 @@ import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matc
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
+import { getConnectorNameForResource } from "../connectors/utils";
 
 const MainResourceKinds: {
   [kind in ResourceKind]?: true;
 } = {
+  [ResourceKind.Connector]: true,
   [ResourceKind.Source]: true,
   [ResourceKind.Model]: true,
   [ResourceKind.MetricsView]: true,
@@ -143,10 +146,7 @@ export class WatchResourcesClient {
       void queryClient.invalidateQueries(
         getConnectorServiceOLAPListTablesQueryKey({
           instanceId: get(runtime).instanceId,
-          connector:
-            resource.source?.spec?.sinkConnector ??
-            resource.model?.spec?.outputConnector ??
-            "",
+          connector: getConnectorNameForResource(resource),
         }),
       );
     }
@@ -157,6 +157,11 @@ export class WatchResourcesClient {
     const name = resource.meta?.name?.name ?? "";
     let table: string | undefined;
     switch (resource.meta.name?.kind) {
+      case ResourceKind.Connector:
+        void queryClient.invalidateQueries(
+          getRuntimeServiceAnalyzeConnectorsQueryKey(instanceId),
+        );
+        return;
       case ResourceKind.Source:
       case ResourceKind.Model:
         table =
@@ -217,6 +222,10 @@ export class WatchResourcesClient {
   }
 
   private shouldInvalidateOLAPTables(resource: V1Resource) {
+    if (resource.meta?.name?.kind === ResourceKind.Connector) {
+      return true;
+    }
+
     if (
       resource.meta?.name?.kind !== ResourceKind.Source &&
       resource.meta?.name?.kind !== ResourceKind.Model

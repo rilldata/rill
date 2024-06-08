@@ -9164,6 +9164,8 @@ func (m *ConnectorSpec) validate(all bool) error {
 
 	// no validation rules for Properties
 
+	// no validation rules for PropertiesFromVariables
+
 	if len(errors) > 0 {
 		return ConnectorSpecMultiError(errors)
 	}
@@ -9263,6 +9265,8 @@ func (m *ConnectorState) validate(all bool) error {
 	}
 
 	var errors []error
+
+	// no validation rules for SpecHash
 
 	if len(errors) > 0 {
 		return ConnectorStateMultiError(errors)

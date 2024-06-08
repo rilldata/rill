@@ -15,12 +15,12 @@
   export let items: V1DashboardItem[];
   export let gap: number | undefined;
   export let showGrid = false;
-  export let snap = false;
+  export let snap = true;
   export let selectedChartName: string | null;
+  export let selectedIndex: number | null = null;
 
   let contentRect: DOMRectReadOnly = new DOMRectReadOnly(0, 0, 0, 0);
   let scrollOffset = 0;
-  let selectedIndex: number | null = null;
   let changing = false;
   let startMouse: Vector = [0, 0];
   let mousePosition: Vector = [0, 0];

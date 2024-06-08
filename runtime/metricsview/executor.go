@@ -10,6 +10,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+const defaultExecutionTimeout = time.Minute * 3
+
 // Executor is capable of executing queries and other operations against a metrics view.
 type Executor struct {
 	rt          *runtime.Runtime
@@ -69,7 +71,7 @@ func (e *Executor) ValidateQuery(qry *Query) error {
 // Watermark returns the current watermark of the metrics view.
 // If the watermark resolves to null, it defaults to the current time.
 func (e *Executor) Watermark(ctx context.Context) (time.Time, error) {
-	return e.resolveWatermark(ctx)
+	return e.loadWatermark(ctx, nil)
 }
 
 // Schema returns a schema for the metrics view's dimensions and measures.
@@ -111,7 +113,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	// Importantly, limit to 0 rows
-	zero := 0
+	zero := int64(0)
 	qry.Limit = &zero
 
 	// Execute the query to get the schema
@@ -126,9 +128,10 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     args,
-		Priority: e.priority,
+		Query:            sql,
+		Args:             args,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return nil, err
@@ -144,17 +147,29 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, runtime.ErrForbidden
 	}
 
-	if executionTime != nil {
-		e.watermark = *executionTime
+	export := qry.Label // TODO: Always set to false once separate exports are implemented
+	if err := e.rewriteQueryLimit(qry, export); err != nil {
+		return nil, false, err
 	}
 
-	err := e.rewriteQueryTimeRanges(ctx, qry)
-	if err != nil {
+	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+		return nil, false, err
+	}
+
+	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
 		return nil, false, err
 	}
 
 	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
+		return nil, false, err
+	}
+
+	if err := e.rewriteApproximateComparisons(ast); err != nil {
+		return nil, false, err
+	}
+
+	if err := e.rewriteDruidJoins(ast); err != nil {
 		return nil, false, err
 	}
 
@@ -164,12 +179,18 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 	}
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:    sql,
-		Args:     args,
-		Priority: e.priority,
+		Query:            sql,
+		Args:             args,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultExecutionTimeout,
 	})
 	if err != nil {
 		return nil, false, err
+	}
+
+	limitCap := e.queryLimitCap(export)
+	if limitCap > 0 {
+		res.SetCap(limitCap)
 	}
 
 	// TODO: Get from OLAP instead of hardcoding

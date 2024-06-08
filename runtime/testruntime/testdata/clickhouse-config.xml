@@ -1,3 +1,6 @@
 <clickhouse>
   <timezone>UTC</timezone>
+  <access_control_improvements>
+    <select_from_information_schema_requires_grant>true</select_from_information_schema_requires_grant>
+  </access_control_improvements>
 </clickhouse>

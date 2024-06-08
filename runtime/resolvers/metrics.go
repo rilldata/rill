@@ -104,11 +104,6 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
-	cfg, err := r.runtime.InstanceConfig(ctx, r.instanceID)
-	if err != nil {
-		return nil, err
-	}
-
 	res, cache, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
@@ -116,17 +111,16 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (*runtime.Reso
 	defer res.Close()
 
 	out := []map[string]any{}
-	for res.Rows.Next() {
-		if int64(len(out)) >= cfg.InteractiveSQLRowLimit {
-			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", cfg.InteractiveSQLRowLimit)
-		}
-
+	for res.Next() {
 		row := make(map[string]any)
-		err = res.Rows.MapScan(row)
+		err = res.MapScan(row)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, row)
+	}
+	if res.Err() != nil {
+		return nil, res.Rows.Err()
 	}
 
 	data, err := json.Marshal(out)

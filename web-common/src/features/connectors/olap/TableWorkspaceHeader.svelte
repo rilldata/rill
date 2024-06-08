@@ -12,7 +12,6 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { makeFullyQualifiedTableName } from "./olap-config";
 
   export let connector: string;
   export let database: string = "";
@@ -20,13 +19,6 @@
   export let table: string;
 
   const { ai } = featureFlags;
-
-  $: fullyQualifiedTableName = makeFullyQualifiedTableName(
-    connector,
-    database,
-    databaseSchema,
-    table,
-  );
 
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
@@ -48,12 +40,12 @@
   <WorkspaceHeader
     editable={false}
     showInspectorToggle={false}
-    titleInput={fullyQualifiedTableName}
+    titleInput={table}
   >
     <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}
       <PanelCTA side="right">
-        <Button on:click={createDashboardFromTable} type="brand">
+        <Button on:click={createDashboardFromTable} type="primary">
           <IconSpaceFixer pullLeft pullRight={collapse}>
             <Add />
           </IconSpaceFixer>

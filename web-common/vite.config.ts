@@ -1,10 +1,8 @@
 import { svelte } from "@sveltejs/vite-plugin-svelte";
-import { defineConfig, UserConfig } from "vitest/config";
+import { defineConfig } from "vitest/config";
+import type { Alias } from "vite";
 
-type Writeable<T> = { -readonly [P in keyof T]: T[P] };
-type Alias = Writeable<UserConfig["resolve"]["alias"]>;
-
-const alias: Alias = [
+const alias: Alias[] = [
   {
     find: "src",
     replacement: "/src",
