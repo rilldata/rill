@@ -29,7 +29,11 @@ export function getVegaSpecForTDD(
 ): VisualizationSpec {
   const temporalFields: ChartField[] = [{ name: "ts", label: "Time" }];
   const measureFields: ChartField[] = [
-    { name: expandedMeasureName, label: measureLabel },
+    {
+      name: expandedMeasureName,
+      label: measureLabel,
+      formatterFunction: "measureFormatter",
+    },
   ];
 
   let nominalFields: ChartField[] = [];
