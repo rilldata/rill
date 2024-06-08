@@ -32,6 +32,7 @@
         className="transform transition-transform text-gray-400 {showDatabaseSchemas
           ? 'rotate-0'
           : '-rotate-90'}"
+        size="14px"
       />
       <Database size="14px" class="shrink-0 text-gray-400" />
       <span class="truncate">

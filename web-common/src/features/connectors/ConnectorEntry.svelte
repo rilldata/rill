@@ -33,6 +33,7 @@
           className="transform transition-transform text-gray-400 {showDatabases
             ? 'rotate-0'
             : '-rotate-90'}"
+          size="14px"
         />
         <div class="flex-none">
           {#if connector.driver?.name}

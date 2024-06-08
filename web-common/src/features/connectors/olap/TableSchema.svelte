@@ -28,7 +28,7 @@
     </div>
   {:else if data && data.profileColumns}
     {#each data.profileColumns as column (column)}
-      <li class="table-schema-entry {database ? 'pl-[74px]' : 'pl-[58px]'}">
+      <li class="table-schema-entry {database ? 'pl-[78px]' : 'pl-[60px]'}">
         <Tooltip distance={4}>
           <span class="font-mono truncate">{column.name}</span>
           <TooltipContent slot="tooltip-content">
