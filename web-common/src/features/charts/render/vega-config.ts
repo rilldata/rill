@@ -13,6 +13,9 @@ const gridColor = "#d1d5db"; // gray-300
 const axisLabelColor = "#4b5563"; // gray-600
 
 export const getRillTheme: () => Config = () => ({
+  autosize: {
+    type: "fit-x",
+  },
   mark: {
     tooltip: true,
   },
