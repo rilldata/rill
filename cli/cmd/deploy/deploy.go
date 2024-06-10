@@ -35,6 +35,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -396,17 +397,9 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		}
 	}
 
-	// generate a upload URL
-	uploadURL, err := adminClient.CreateUploadSignedURL(ctx, &adminv1.CreateUploadSignedURLRequest{
-		OrganizationName: ch.Org,
-		ProjectName:      opts.Name,
-	})
-	if err != nil {
-		return err
-	}
-
 	// create a tar archive of the project and upload it
-	if err := uploadProject(ctx, localProjectPath, uploadURL.SignedUrl); err != nil {
+	uploadPath, err := uploadProject(ctx, ch, opts, localProjectPath)
+	if err != nil {
 		return err
 	}
 
@@ -421,7 +414,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		ProdOlapDsn:      opts.DBDSN,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
-		UploadPath:       uploadURL.UploadPath,
+		UploadPath:       uploadPath,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -1107,45 +1100,99 @@ func errMsgContains(err error, msg string) bool {
 	return false
 }
 
-func uploadProject(ctx context.Context, projectPath, uploadURL string) error {
-	fmt.Printf("signed url %q\n", uploadURL)
+func uploadProject(ctx context.Context, ch *cmdutil.Helper, opts *Options, projectPath string) (string, error) {
 	// get repo for current project
 	repo, _, err := cmdutil.RepoForProjectPath(projectPath)
 	if err != nil {
-		return err
+		return "", err
 	}
 
 	// create temp tar file destination
 	b := &bytes.Buffer{}
 	// list files
-	entries, err := repo.ListRecursive(ctx, "**", false)
+	entries, err := repo.ListRecursive(ctx, `**`, false)
+	if err != nil {
+		return "", err
+	}
+
+	// generate a tar ball
+	if err := createTarball(b, entries, repo.Root()); err != nil {
+		return "", err
+	}
+
+	adminClient, err := ch.Client()
+	if err != nil {
+		return "", err
+	}
+
+	// generate a upload URL
+	uploadURL, err := adminClient.CreateUploadSignedURL(ctx, &adminv1.CreateUploadSignedURLRequest{
+		OrganizationName: ch.Org,
+		ProjectName:      opts.Name,
+	})
+	if err != nil {
+		return "", err
+	}
+
+	// Create a put request
+	req, err := http.NewRequest(http.MethodPut, uploadURL.SignedUrl, b)
+	if err != nil {
+		return "", fmt.Errorf("failed to create request: %w", err)
+	}
+	req.Header.Set("Content-Type", "application/octet-stream")
+	req.Header.Set("x-goog-content-length-range", "1,104857600")
+
+	// Execute the request
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", fmt.Errorf("failed to execute request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	// Check the response
+	if resp.StatusCode == http.StatusOK {
+		printer.ColorGreenBold.Println("All files uploaded successfully.")
+	} else {
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("failed to upload file: status code %d, response %s", resp.StatusCode, string(body))
+	}
+	return uploadURL.UploadPath, nil
+}
+
+// borrowed from https://github.com/goreleaser/goreleaser/blob/main/pkg/archive/tar/tar.go with minor changes
+func createTarball(writer io.Writer, files []drivers.DirEntry, root string) error {
+	gw, err := gzip.NewWriterLevel(writer, gzip.BestCompression)
 	if err != nil {
 		return err
 	}
-
-	// write entries
-	gw, _ := gzip.NewWriterLevel(b, gzip.BestCompression)
 	defer gw.Close()
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
-	for _, entry := range entries {
-		fullPath := filepath.Join(repo.Root(), entry.Path)
+	for _, entry := range files {
+		if strings.EqualFold(entry.Path, "/.env") { // ignore .env
+			continue
+		}
+		fullPath := filepath.Join(root, entry.Path)
 		info, err := os.Lstat(fullPath)
 		if err != nil {
 			return fmt.Errorf("%s: %w", fullPath, err)
 		}
+		if info.Mode()&os.ModeSymlink != 0 {
+			return fmt.Errorf("%s: repo contains symlinks", entry.Path)
+		}
+
 		header, err := tar.FileInfoHeader(info, "")
 		if err != nil {
 			return fmt.Errorf("%s: %w", fullPath, err)
 		}
-		header.Name = strings.TrimPrefix(entry.Path, "/")
-
+		header.Name = entry.Path
 		if err = tw.WriteHeader(header); err != nil {
 			return fmt.Errorf("%s: %w", fullPath, err)
 		}
 		if info.IsDir() {
 			continue
 		}
+
 		file, err := os.Open(fullPath)
 		if err != nil {
 			return fmt.Errorf("%s: %w", fullPath, err)
@@ -1155,31 +1202,6 @@ func uploadProject(ctx context.Context, projectPath, uploadURL string) error {
 			return fmt.Errorf("%s: %w", fullPath, err)
 		}
 		file.Close()
-	}
-
-	tw.Close()
-	gw.Close()
-	// Create a put request
-	req, err := http.NewRequest(http.MethodPut, uploadURL, b)
-	if err != nil {
-		return fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/octet-stream")
-	// req.Header.Set("x-goog-content-length-range", fmt.Sprintf("%v, %v", req.ContentLength, req.ContentLength))
-
-	// Execute the request
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Check the response
-	if resp.StatusCode == http.StatusOK {
-		fmt.Println("File uploaded successfully.")
-	} else {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("failed to upload file: status code %d, response %s", resp.StatusCode, string(body))
 	}
 	return nil
 }

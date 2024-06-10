@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/c2h5oh/datasize"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -684,10 +685,10 @@ func untar(src, dest string) error {
 	tarReader := tar.NewReader(gz)
 	for {
 		header, err := tarReader.Next()
-		if err == io.EOF {
-			break // End of tar archive
-		}
 		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break // End of tar archive
+			}
 			return err
 		}
 
@@ -711,7 +712,10 @@ func untar(src, dest string) error {
 			if err != nil {
 				return err
 			}
-			if _, err := io.Copy(outFile, tarReader); err != nil {
+			// Setting a limit of 1GB to avoid G110: Potential DoS vulnerability via decompression bomb
+			// The max file size allowed via upload path is 100MB. Assume that 100MB tar file can't be decompressed to more than 1GB.
+			_, err = io.CopyN(outFile, tarReader, int64(datasize.GB))
+			if err != nil {
 				outFile.Close()
 				return err
 			}

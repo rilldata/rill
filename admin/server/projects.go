@@ -1122,7 +1122,7 @@ func (s *Server) CreateUploadSignedURL(ctx context.Context, req *adminv1.CreateU
 		Method: "PUT",
 		Headers: []string{
 			"Content-Type:application/octet-stream",
-			// "x-goog-content-length-range:0, 1048576",
+			"x-goog-content-length-range:1,104857600", // validates that the request body is between 1 byte to 100MB
 		},
 		Expires: time.Now().Add(15 * time.Minute),
 	}

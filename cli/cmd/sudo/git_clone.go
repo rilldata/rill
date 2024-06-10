@@ -11,7 +11,7 @@ import (
 
 func gitCloneCmd(_ *cmdutil.Helper) *cobra.Command {
 	return &cobra.Command{
-		Use:        "clone <org> <project>",
+		Use:        "git-clone <org> <project>",
 		Args:       cobra.ExactArgs(2),
 		Short:      "Create git clone token",
 		Deprecated: "Command is deprecated. Use `rill sudo clone <org> <project>` instead.",
