@@ -73,6 +73,7 @@ type App struct {
 	adminURL              string
 	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
 	ch                    *cmdutil.Helper
+	localURL              string
 }
 
 type AppOptions struct {
@@ -90,6 +91,7 @@ type AppOptions struct {
 	AdminURL    string
 	AdminToken  string
 	CMDHelper   *cmdutil.Helper
+	LocalURL    string
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -303,6 +305,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		adminURL:              opts.AdminURL,
 		pkceAuthenticators:    make(map[string]*pkce.Authenticator),
 		ch:                    opts.CMDHelper,
+		localURL:              opts.LocalURL,
 	}
 
 	// Collect and emit information about connectors at start time
@@ -476,9 +479,11 @@ func (a *App) emitStartEvent(ctx context.Context) error {
 		return err
 	}
 
-	connectors, err := parser.AnalyzeConnectors(ctx)
-	if err != nil {
-		return err
+	connectors := parser.AnalyzeConnectors(ctx)
+	for _, c := range connectors {
+		if c.Err != nil {
+			return err
+		}
 	}
 
 	var connectorNames []string

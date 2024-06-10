@@ -10,11 +10,12 @@ import type { TimeControlState } from "./time-controls/time-control-store";
 import { getQuerySortType } from "./leaderboard/leaderboard-utils";
 import { SortType } from "./proto-state/derived-types";
 
+const countRegex = /count(?=[^(]*\()/i;
+const sumRegex = /sum(?=[^(]*\()/i;
+
 export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
-  return (
-    measure?.expression.toLowerCase()?.includes("count(") ||
-    measure?.expression?.toLowerCase()?.includes("sum(")
-  );
+  const expression = measure.expression?.toLowerCase();
+  return !!(expression?.match(countRegex) || expression?.match(sumRegex));
 }
 
 /**

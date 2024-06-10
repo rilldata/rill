@@ -42,6 +42,7 @@ type Resource struct {
 	ComponentSpec   *runtimev1.ComponentSpec
 	DashboardSpec   *runtimev1.DashboardSpec
 	APISpec         *runtimev1.APISpec
+	ConnectorSpec   *runtimev1.ConnectorSpec
 }
 
 // ResourceName is a unique identifier for a resource
@@ -76,6 +77,7 @@ const (
 	ResourceKindComponent
 	ResourceKindDashboard
 	ResourceKindAPI
+	ResourceKindConnector
 )
 
 // ParseResourceKind maps a string to a ResourceKind.
@@ -104,6 +106,8 @@ func ParseResourceKind(kind string) (ResourceKind, error) {
 		return ResourceKindDashboard, nil
 	case "api":
 		return ResourceKindAPI, nil
+	case "connector":
+		return ResourceKindConnector, nil
 	default:
 		return ResourceKindUnspecified, fmt.Errorf("invalid resource type %q", kind)
 	}
@@ -133,6 +137,8 @@ func (k ResourceKind) String() string {
 		return "Dashboard"
 	case ResourceKindAPI:
 		return "API"
+	case ResourceKindConnector:
+		return "Connector"
 	default:
 		panic(fmt.Sprintf("unexpected resource type: %d", k))
 	}
@@ -195,31 +201,6 @@ func ParseRillYAML(ctx context.Context, repo drivers.RepoStore, instanceID strin
 	}
 
 	return p.RillYAML, nil
-}
-
-// ParseDotEnv parses only the .env file present in project's root.
-func ParseDotEnv(ctx context.Context, repo drivers.RepoStore, instanceID string) (map[string]string, error) {
-	files, err := repo.ListRecursive(ctx, ".env", true)
-	if err != nil {
-		return nil, fmt.Errorf("could not list project files: %w", err)
-	}
-
-	if len(files) == 0 {
-		return nil, nil
-	}
-
-	paths := make([]string, len(files))
-	for i, file := range files {
-		paths[i] = file.Path
-	}
-
-	p := Parser{Repo: repo, InstanceID: instanceID}
-	err = p.parsePaths(ctx, paths)
-	if err != nil {
-		return nil, err
-	}
-
-	return p.DotEnv, nil
 }
 
 // Parse creates a new parser and parses the entire project.
@@ -828,6 +809,8 @@ func (p *Parser) insertResource(kind ResourceKind, name string, paths []string, 
 		r.DashboardSpec = &runtimev1.DashboardSpec{}
 	case ResourceKindAPI:
 		r.APISpec = &runtimev1.APISpec{}
+	case ResourceKindConnector:
+		r.ConnectorSpec = &runtimev1.ConnectorSpec{}
 	default:
 		panic(fmt.Errorf("unexpected resource type: %s", kind.String()))
 	}
@@ -944,8 +927,8 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 // driverForConnector resolves a connector name to a connector driver.
 // It should not be invoked until after rill.yaml has been parsed.
 func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error) {
-	// Unless overridden in rill.yaml, the connector name is the driver name
-	driver := name
+	// Search rill.yaml and Connector resources for the connector's driver
+	var driver string
 	if p.RillYAML != nil {
 		for _, c := range p.RillYAML.Connectors {
 			if c.Name == name {
@@ -954,12 +937,28 @@ func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error)
 			}
 		}
 	}
-
-	connector, ok := drivers.Connectors[driver]
-	if !ok {
-		return "", nil, fmt.Errorf("unknown connector type %q", driver)
+	for _, c := range p.Resources {
+		if c.ConnectorSpec != nil && c.Name.Name == name {
+			driver = c.ConnectorSpec.Driver
+			break
+		}
 	}
-	return driver, connector, nil
+
+	// If we found a driver, return it
+	if driver != "" {
+		connector, ok := drivers.Connectors[driver]
+		if !ok {
+			return "", nil, fmt.Errorf("unknown connector type %q", driver)
+		}
+		return driver, connector, nil
+	}
+
+	// If the name matches a known driver, we consider it an implicitly defined connector
+	connector, ok := drivers.Connectors[name]
+	if !ok {
+		return "", nil, fmt.Errorf("unknown connector %q", name)
+	}
+	return name, connector, nil
 }
 
 // defaultOLAPConnector resolves the project's default OLAP connector.

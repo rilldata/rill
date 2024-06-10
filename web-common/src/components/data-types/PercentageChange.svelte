@@ -47,6 +47,7 @@
     // for percentages in the dimension table,
     // but this whole thing is a mess and needs to be cleaned up.
 
+    diffIsNegative = value < 0;
     intValue = Math.round(100 * value).toString();
     approxSign = Math.abs(value) < 0.005 ? "~" : "";
     negSign = "";
@@ -58,7 +59,7 @@
   {isNull}
   classes="{tabularNumber
     ? 'ui-copy-number'
-    : ''} font-normal w-full {customStyle} {inTable && 'block text-right'}"
+    : ''} w-full {customStyle} {inTable && 'block text-right'}"
   {dark}
 >
   <slot name="value">

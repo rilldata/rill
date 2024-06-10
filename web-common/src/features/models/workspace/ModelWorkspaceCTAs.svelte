@@ -112,7 +112,7 @@
 {:else if availableDashboards?.length === 1}
   <Tooltip distance={8} alignment="end">
     <Button
-      type="brand"
+      type="primary"
       on:click={async () => {
         if (availableDashboards[0]?.meta?.filePaths?.[0]) {
           await goto(
@@ -137,7 +137,7 @@
       distance={8}
       alignment="end"
     >
-      <Button on:click={toggleFloatingElement} type="brand">
+      <Button on:click={toggleFloatingElement} type="primary">
         <IconSpaceFixer pullLeft pullRight={collapse}>
           <Forward />
         </IconSpaceFixer>
