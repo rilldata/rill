@@ -824,6 +824,14 @@ func (m *CreateOrganizationRequest) validate(all bool) error {
 
 	// no validation rules for Description
 
+	if m.RillPlan != nil {
+		// no validation rules for RillPlan
+	}
+
+	if m.BillerPlan != nil {
+		// no validation rules for BillerPlan
+	}
+
 	if len(errors) > 0 {
 		return CreateOrganizationRequestMultiError(errors)
 	}
@@ -1274,12 +1282,55 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	// no validation rules for SubscriptionChangeEffective
+
 	if m.Description != nil {
 		// no validation rules for Description
 	}
 
 	if m.NewName != nil {
 		// no validation rules for NewName
+	}
+
+	if m.RillPlan != nil {
+		// no validation rules for RillPlan
+	}
+
+	if m.BillerPlan != nil {
+		// no validation rules for BillerPlan
+	}
+
+	if m.SubscriptionChangeDate != nil {
+
+		if all {
+			switch v := interface{}(m.GetSubscriptionChangeDate()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, UpdateOrganizationRequestValidationError{
+						field:  "SubscriptionChangeDate",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, UpdateOrganizationRequestValidationError{
+						field:  "SubscriptionChangeDate",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetSubscriptionChangeDate()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return UpdateOrganizationRequestValidationError{
+					field:  "SubscriptionChangeDate",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	}
 
 	if len(errors) > 0 {
@@ -8744,6 +8795,10 @@ func (m *SudoUpdateOrganizationQuotasRequest) validate(all bool) error {
 
 	// no validation rules for OrgName
 
+	// no validation rules for BillerCustomerId
+
+	// no validation rules for BillerSubscriptionId
+
 	if m.Projects != nil {
 		// no validation rules for Projects
 	}
@@ -8762,6 +8817,14 @@ func (m *SudoUpdateOrganizationQuotasRequest) validate(all bool) error {
 
 	if m.OutstandingInvites != nil {
 		// no validation rules for OutstandingInvites
+	}
+
+	if m.NumUsers != nil {
+		// no validation rules for NumUsers
+	}
+
+	if m.ManagedDataBytes != nil {
+		// no validation rules for ManagedDataBytes
 	}
 
 	if len(errors) > 0 {
@@ -21012,6 +21075,35 @@ func (m *Organization) validate(all bool) error {
 	}
 
 	if all {
+		switch v := interface{}(m.GetBillingMetadata()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, OrganizationValidationError{
+					field:  "BillingMetadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, OrganizationValidationError{
+					field:  "BillingMetadata",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetBillingMetadata()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return OrganizationValidationError{
+				field:  "BillingMetadata",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
@@ -21146,6 +21238,108 @@ var _ interface {
 	ErrorName() string
 } = OrganizationValidationError{}
 
+// Validate checks the field values on BillingMetadata with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *BillingMetadata) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on BillingMetadata with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// BillingMetadataMultiError, or nil if none found.
+func (m *BillingMetadata) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *BillingMetadata) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for CustomerId
+
+	if len(errors) > 0 {
+		return BillingMetadataMultiError(errors)
+	}
+
+	return nil
+}
+
+// BillingMetadataMultiError is an error wrapping multiple validation errors
+// returned by BillingMetadata.ValidateAll() if the designated constraints
+// aren't met.
+type BillingMetadataMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m BillingMetadataMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m BillingMetadataMultiError) AllErrors() []error { return m }
+
+// BillingMetadataValidationError is the validation error returned by
+// BillingMetadata.Validate if the designated constraints aren't met.
+type BillingMetadataValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e BillingMetadataValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e BillingMetadataValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e BillingMetadataValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e BillingMetadataValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e BillingMetadataValidationError) ErrorName() string { return "BillingMetadataValidationError" }
+
+// Error satisfies the builtin error interface
+func (e BillingMetadataValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sBillingMetadata.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = BillingMetadataValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = BillingMetadataValidationError{}
+
 // Validate checks the field values on UserQuotas with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.
@@ -21278,6 +21472,10 @@ func (m *OrganizationQuotas) validate(all bool) error {
 	// no validation rules for SlotsPerDeployment
 
 	// no validation rules for OutstandingInvites
+
+	// no validation rules for NumUsers
+
+	// no validation rules for ManagedDataBytes
 
 	if len(errors) > 0 {
 		return OrganizationQuotasMultiError(errors)

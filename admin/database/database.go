@@ -79,6 +79,7 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
+	UpdateProjectNextUsageReportingTime(ctx context.Context, id string, nextUsageReportingTime time.Time) error
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
 	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
@@ -238,6 +239,9 @@ type Organization struct {
 	QuotaSlotsTotal         int       `db:"quota_slots_total"`
 	QuotaSlotsPerDeployment int       `db:"quota_slots_per_deployment"`
 	QuotaOutstandingInvites int       `db:"quota_outstanding_invites"`
+	QuotaNumUsers           int       `db:"quota_num_users"`
+	QuotaManagedDataBytes   int64     `db:"quota_managed_data_bytes"`
+	BillingCustomerID       *string   `db:"billing_customer_id"` // review: should this be a struct to store more metadata
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -249,6 +253,9 @@ type InsertOrganizationOptions struct {
 	QuotaSlotsTotal         int
 	QuotaSlotsPerDeployment int
 	QuotaOutstandingInvites int
+	QuotaNumUsers           int
+	QuotaManagedDataBytes   int64
+	BillingCustomerID       *string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -260,32 +267,36 @@ type UpdateOrganizationOptions struct {
 	QuotaSlotsTotal         int
 	QuotaSlotsPerDeployment int
 	QuotaOutstandingInvites int
+	QuotaNumUsers           int
+	QuotaManagedDataBytes   int64
+	BillingCustomerID       *string
 }
 
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID                   string
-	OrganizationID       string `db:"org_id"`
-	Name                 string
-	Description          string
-	Public               bool
-	CreatedByUserID      *string `db:"created_by_user_id"`
-	Provisioner          string
-	GithubURL            *string           `db:"github_url"`
-	GithubInstallationID *int64            `db:"github_installation_id"`
-	Subpath              string            `db:"subpath"`
-	ProdVersion          string            `db:"prod_version"`
-	ProdBranch           string            `db:"prod_branch"`
-	ProdVariables        map[string]string `db:"prod_variables"`
-	ProdOLAPDriver       string            `db:"prod_olap_driver"`
-	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
-	ProdSlots            int               `db:"prod_slots"`
-	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID     *string           `db:"prod_deployment_id"`
-	Annotations          map[string]string `db:"annotations"`
-	CreatedOn            time.Time         `db:"created_on"`
-	UpdatedOn            time.Time         `db:"updated_on"`
+	ID                     string
+	OrganizationID         string `db:"org_id"`
+	Name                   string
+	Description            string
+	Public                 bool
+	CreatedByUserID        *string `db:"created_by_user_id"`
+	Provisioner            string
+	GithubURL              *string           `db:"github_url"`
+	GithubInstallationID   *int64            `db:"github_installation_id"`
+	Subpath                string            `db:"subpath"`
+	ProdVersion            string            `db:"prod_version"`
+	ProdBranch             string            `db:"prod_branch"`
+	ProdVariables          map[string]string `db:"prod_variables"`
+	ProdOLAPDriver         string            `db:"prod_olap_driver"`
+	ProdOLAPDSN            string            `db:"prod_olap_dsn"`
+	ProdSlots              int               `db:"prod_slots"`
+	ProdTTLSeconds         *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID       *string           `db:"prod_deployment_id"`
+	Annotations            map[string]string `db:"annotations"`
+	CreatedOn              time.Time         `db:"created_on"`
+	UpdatedOn              time.Time         `db:"updated_on"`
+	NextUsageReportingTime time.Time         `db:"next_usage_reporting_time"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.
@@ -693,6 +704,8 @@ const (
 	DefaultQuotaSlotsPerDeployment = 5
 	DefaultQuotaOutstandingInvites = 200
 	DefaultQuotaSingleuserOrgs     = 3
+	DefaultQuotaUsers              = 10
+	DefaultQuotaManagedDataBytes   = int64(5368709120)
 )
 
 type InsertOrganizationInviteOptions struct {

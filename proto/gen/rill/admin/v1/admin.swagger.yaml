@@ -237,6 +237,16 @@ paths:
                 type: string
               newName:
                 type: string
+              rillPlan:
+                type: string
+              billerPlan:
+                type: string
+              subscriptionChangeEffective:
+                $ref: '#/definitions/v1SubscriptionChangeEffective'
+              subscriptionChangeDate:
+                type: string
+                format: date-time
+                title: Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -2349,6 +2359,15 @@ definitions:
         type: array
         items:
           type: string
+  v1BillingMetadata:
+    type: object
+    properties:
+      customerId:
+        type: string
+      subscriptionIds:
+        type: array
+        items:
+          type: string
   v1Bookmark:
     type: object
     properties:
@@ -2435,6 +2454,10 @@ definitions:
       name:
         type: string
       description:
+        type: string
+      rillPlan:
+        type: string
+      billerPlan:
         type: string
   v1CreateOrganizationResponse:
     type: object
@@ -2824,6 +2847,8 @@ definitions:
         type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
+      billingMetadata:
+        $ref: '#/definitions/v1BillingMetadata'
       createdOn:
         type: string
         format: date-time
@@ -2865,6 +2890,12 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
+      numUsers:
+        type: integer
+        format: int64
+      managedDataBytes:
+        type: string
+        format: uint64
   v1PingResponse:
     type: object
     properties:
@@ -3100,6 +3131,14 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
+  v1SubscriptionChangeEffective:
+    type: string
+    enum:
+      - SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED
+      - SUBSCRIPTION_CHANGE_EFFECTIVE_NOW
+      - SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE
+      - SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
+    default: SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -3149,6 +3188,16 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
+      numUsers:
+        type: integer
+        format: int64
+      managedDataBytes:
+        type: string
+        format: uint64
+      billerCustomerId:
+        type: string
+      billerSubscriptionId:
+        type: string
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:

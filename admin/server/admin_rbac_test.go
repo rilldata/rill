@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/rilldata/rill/admin/billing"
 	"net"
 	"strconv"
 	"testing"
@@ -59,6 +60,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		emailClient,
 		github,
 		ai.NewNoop(),
+		billing.NewNoop(),
 	)
 	require.NoError(t, err)
 

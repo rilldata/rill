@@ -5,7 +5,9 @@ import (
 	"errors"
 	"math"
 	"strings"
+	"time"
 
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -13,6 +15,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -103,6 +106,12 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		attribute.String("args.org", req.Name),
 		attribute.String("args.description", req.Description),
 	)
+	if req.RillPlan != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.rill_plan", *req.RillPlan))
+	}
+	if req.BillerPlan != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan", *req.BillerPlan))
+	}
 
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
@@ -123,7 +132,18 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
 	}
 
-	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
+	var plan *billing.Plan
+	if req.RillPlan != nil || req.BillerPlan != nil {
+		rillPlan := valOrDefault(req.RillPlan, "")
+		billerPlan := valOrDefault(req.BillerPlan, "")
+		// support assigning plan by Rill ID or biller ID
+		plan, err = s.admin.Biller.GetPlan(ctx, rillPlan, billerPlan)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description, plan)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -151,6 +171,14 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	// cancel subscription
+	if org.BillingCustomerID != nil {
+		err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, *org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate, time.Time{})
+		if err != nil {
+			s.logger.Error("failed to cancel subscriptions", zap.String("org", org.Name), zap.Error(err))
+		}
+	}
+
 	return &adminv1.DeleteOrganizationResponse{}, nil
 }
 
@@ -161,6 +189,12 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
+	}
+	if req.RillPlan != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.rill_plan", *req.RillPlan))
+	}
+	if req.BillerPlan != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan", *req.BillerPlan))
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
@@ -175,6 +209,53 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 
 	nameChanged := req.NewName != nil && *req.NewName != org.Name
 
+	if req.RillPlan != nil || req.BillerPlan != nil {
+		plan, err := s.admin.Biller.GetPlan(ctx, valOrDefault(req.RillPlan, ""), valOrDefault(req.BillerPlan, ""))
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if plan == nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid plan")
+		}
+		if org.BillingCustomerID != nil {
+			// cancel current subscriptions if any
+			var cancelOption billing.SubscriptionCancellationOption
+			var cancelDate time.Time
+			switch req.SubscriptionChangeEffective {
+			case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW:
+				cancelOption = billing.SubscriptionCancellationOptionImmediate
+			case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
+				cancelOption = billing.SubscriptionCancellationOptionEndOfSubscriptionTerm
+			case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE:
+				cancelOption = billing.SubscriptionCancellationOptionRequestedDate
+				if req.SubscriptionChangeDate == nil {
+					return nil, status.Error(codes.InvalidArgument, "missing subscription change date")
+				}
+				cancelDate = req.SubscriptionChangeDate.AsTime()
+			case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED:
+				cancelOption = billing.SubscriptionCancellationOptionImmediate
+			default:
+				return nil, status.Error(codes.InvalidArgument, "invalid subscription change effective")
+			}
+			err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, *org.BillingCustomerID, cancelOption, cancelDate)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		} else {
+			// create new customer
+			customerID, err := s.admin.Biller.CreateCustomer(ctx, org)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			org.BillingCustomerID = &customerID
+		}
+		// create new subscription
+		_, err = s.admin.Biller.CreateSubscription(ctx, *org.BillingCustomerID, plan)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                    valOrDefault(req.NewName, org.Name),
 		Description:             valOrDefault(req.Description, org.Description),
@@ -183,6 +264,9 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		QuotaSlotsTotal:         org.QuotaSlotsTotal,
 		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
 		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
+		QuotaNumUsers:           org.QuotaNumUsers,
+		QuotaManagedDataBytes:   org.QuotaManagedDataBytes,
+		BillingCustomerID:       org.BillingCustomerID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -832,6 +916,8 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 		QuotaSlotsTotal:         int(valOrDefault(req.SlotsTotal, uint32(org.QuotaSlotsTotal))),
 		QuotaSlotsPerDeployment: int(valOrDefault(req.SlotsPerDeployment, uint32(org.QuotaSlotsPerDeployment))),
 		QuotaOutstandingInvites: int(valOrDefault(req.OutstandingInvites, uint32(org.QuotaOutstandingInvites))),
+		QuotaNumUsers:           int(valOrDefault(req.NumUsers, uint32(org.QuotaNumUsers))),
+		QuotaManagedDataBytes:   int64(valOrDefault(req.ManagedDataBytes, uint64(org.QuotaManagedDataBytes))),
 	}
 
 	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -855,6 +941,8 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 			SlotsTotal:         uint32(o.QuotaSlotsTotal),
 			SlotsPerDeployment: uint32(o.QuotaSlotsPerDeployment),
 			OutstandingInvites: uint32(o.QuotaOutstandingInvites),
+			NumUsers:           uint32(o.QuotaNumUsers),
+			ManagedDataBytes:   uint64(o.QuotaManagedDataBytes),
 		},
 		CreatedOn: timestamppb.New(o.CreatedOn),
 		UpdatedOn: timestamppb.New(o.UpdatedOn),

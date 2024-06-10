@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/admin/ai"
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -39,9 +40,10 @@ type Service struct {
 	VersionCommit    string
 	metricsProjectID string
 	AutoscalerCron   string
+	Biller           billing.Biller
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, biller billing.Biller) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -103,6 +105,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		VersionCommit:    opts.VersionCommit,
 		metricsProjectID: metricsProjectID,
 		AutoscalerCron:   opts.AutoscalerCron,
+		Biller:           biller,
 	}, nil
 }
 

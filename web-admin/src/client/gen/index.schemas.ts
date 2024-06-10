@@ -195,6 +195,10 @@ export type AdminServiceListOrganizationInvitesParams = {
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
+  rillPlan?: string;
+  billerPlan?: string;
+  subscriptionChangeEffective?: V1SubscriptionChangeEffective;
+  subscriptionChangeDate?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -359,6 +363,10 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
+  numUsers?: number;
+  managedDataBytes?: string;
+  billerCustomerId?: string;
+  billerSubscriptionId?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -382,6 +390,20 @@ export interface V1SudoGetResourceResponse {
   deployment?: V1Deployment;
   instance?: V1Deployment;
 }
+
+export type V1SubscriptionChangeEffective =
+  (typeof V1SubscriptionChangeEffective)[keyof typeof V1SubscriptionChangeEffective];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1SubscriptionChangeEffective = {
+  SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED:
+    "SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED",
+  SUBSCRIPTION_CHANGE_EFFECTIVE_NOW: "SUBSCRIPTION_CHANGE_EFFECTIVE_NOW",
+  SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
+    "SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE",
+  SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE:
+    "SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE",
+} as const;
 
 export interface V1SetSuperuserResponse {
   [key: string]: any;
@@ -543,6 +565,8 @@ export interface V1OrganizationQuotas {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
+  numUsers?: number;
+  managedDataBytes?: string;
 }
 
 export interface V1OrganizationPermissions {
@@ -560,6 +584,7 @@ export interface V1Organization {
   name?: string;
   description?: string;
   quotas?: V1OrganizationQuotas;
+  billingMetadata?: V1BillingMetadata;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -834,6 +859,8 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
+  rillPlan?: string;
+  billerPlan?: string;
 }
 
 export interface V1CreateBookmarkResponse {
@@ -881,6 +908,11 @@ export interface V1Bookmark {
   shared?: boolean;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1BillingMetadata {
+  customerId?: string;
+  subscriptionIds?: string[];
 }
 
 export interface V1AlertOptions {

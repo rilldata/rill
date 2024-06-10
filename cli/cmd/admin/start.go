@@ -14,6 +14,7 @@ import (
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
+	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -78,6 +79,7 @@ type Config struct {
 	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
 	MetricsProject           string                 `default:"" split_words:"true"`
 	AutoscalerCron           string                 `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
+	OrbAPIKey                string                 `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -234,6 +236,13 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				metricsProjectName = parts[1]
 			}
 
+			var biller billing.Biller
+			if conf.OrbAPIKey != "" {
+				biller = billing.NewOrb(conf.OrbAPIKey)
+			} else {
+				biller = billing.NewNoop()
+			}
+
 			// Init admin service
 			admOpts := &admin.Options{
 				DatabaseDriver:     conf.DatabaseDriver,
@@ -247,7 +256,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectName: metricsProjectName,
 				AutoscalerCron:     conf.AutoscalerCron,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, biller)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}

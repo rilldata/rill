@@ -557,6 +557,8 @@ message GetOrganizationResponse {
 message CreateOrganizationRequest {
   string name = 2 [(validate.rules).string.min_len = 1];
   string description = 3;
+  optional string rill_plan = 4;
+  optional string biller_plan = 5;
 }
 
 message CreateOrganizationResponse {
@@ -573,6 +575,17 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
+  optional string rill_plan = 4;
+  optional string biller_plan = 5;
+  SubscriptionChangeEffective subscription_change_effective = 6;
+  optional google.protobuf.Timestamp subscription_change_date = 7; // Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
+}
+
+enum SubscriptionChangeEffective {
+  SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED = 0;
+  SUBSCRIPTION_CHANGE_EFFECTIVE_NOW = 1;
+  SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE = 2;
+  SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE = 3;
 }
 
 message UpdateOrganizationResponse {
@@ -905,6 +918,10 @@ message SudoUpdateOrganizationQuotasRequest {
   optional uint32 slots_total = 4;
   optional uint32 slots_per_deployment = 5;
   optional uint32 outstanding_invites = 6;
+  optional uint32 num_users = 7;
+  optional uint64 managed_data_bytes = 8;
+  string biller_customer_id = 9;
+  string biller_subscription_id = 10;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -1392,8 +1409,14 @@ message Organization {
   string name = 2; // Globally unique
   string description = 3;
   OrganizationQuotas quotas = 4;
+  BillingMetadata billing_metadata = 7;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
+}
+
+message BillingMetadata {
+  string customer_id = 1;
+  repeated string subscription_ids = 2;
 }
 
 message UserQuotas {
@@ -1406,6 +1429,8 @@ message OrganizationQuotas {
   uint32 slots_total = 3;
   uint32 slots_per_deployment = 4;
   uint32 outstanding_invites = 5;
+  uint32 num_users = 6;
+  uint64 managed_data_bytes = 7;
 }
 
 message Project {
