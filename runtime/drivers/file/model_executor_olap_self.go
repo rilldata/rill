@@ -100,17 +100,17 @@ func writeCSV(res *drivers.Result, path string) error {
 	w := csv.NewWriter(f)
 
 	strs := make([]string, len(res.Schema.Fields))
-	vals := make([]any, len(res.Schema.Fields))
-	for i := range vals {
-		vals[i] = new(any)
-	}
-
 	for i, f := range res.Schema.Fields {
 		strs[i] = f.Name
 	}
 	err = w.Write(strs)
 	if err != nil {
 		return err
+	}
+
+	vals := make([]any, len(res.Schema.Fields))
+	for i := range vals {
+		vals[i] = new(any)
 	}
 
 	for res.Next() {
@@ -150,16 +150,16 @@ func writeXLSX(res *drivers.Result, path string) error {
 	}
 
 	row := make([]any, len(res.Schema.Fields))
-	vals := make([]any, len(res.Schema.Fields))
-	for i := range vals {
-		vals[i] = new(any)
-	}
-
 	for i, f := range res.Schema.Fields {
 		row[i] = f.Name
 	}
 	if err := sw.SetRow("A1", row, excelize.RowOpts{Height: 45, Hidden: false}); err != nil {
 		return err
+	}
+
+	vals := make([]any, len(res.Schema.Fields))
+	for i := range vals {
+		vals[i] = new(any)
 	}
 
 	idx := 2 // 1-based, and +1 for headers

@@ -148,7 +148,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, runtime.ErrForbidden
 	}
 
-	export := qry.Label // TODO: Always set to false once separate exports are implemented
+	export := qry.Label // TODO: Always set to false once all upstream code uses Export() for exports
 	if err := e.rewriteQueryLimit(qry, export); err != nil {
 		return nil, false, err
 	}
