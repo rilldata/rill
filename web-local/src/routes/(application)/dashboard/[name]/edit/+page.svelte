@@ -87,6 +87,8 @@
   let yaml = "";
   $: yaml = $fileQuery.data?.blob ?? yaml;
 
+  $: ({ hasUnsavedChanges } = fileArtifact);
+
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
@@ -140,6 +142,7 @@
       slot="header"
       showInspectorToggle={isModelingSupported}
       titleInput={fileName}
+      hasUnsavedChanges={$hasUnsavedChanges}
       on:change={onChangeCallback}
     >
       <div slot="cta" class="flex gap-x-2">

@@ -59,8 +59,6 @@
   $: isDotFile = fileName && fileName.startsWith(".");
   $: isProtectedFile = PROTECTED_FILES.includes(filePath);
 
-  $: ({ hasUnsavedChanges } = fileArtifact);
-
   $: hasErrors = fileArtifact.getHasErrors(queryClient, $runtime.instanceId);
 
   function fireTelemetry() {
@@ -92,7 +90,6 @@
     isDotFile
       ? 'text-gray-500 hover:text-gray-500'
       : 'text-gray-900 hover:text-gray-900'}"
-    class:opacity-50={$hasUnsavedChanges}
     href={`/files${filePath}`}
     {id}
     on:click={fireTelemetry}
