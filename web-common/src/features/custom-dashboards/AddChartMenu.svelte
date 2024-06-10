@@ -7,6 +7,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { runtime } from "../../runtime-client/runtime-store";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import { getNameFromFile } from "../entity-management/entity-mappers";
   // import { featureFlags } from "../feature-flags";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import { handleEntityCreate } from "../file-explorer/new-files";
@@ -29,7 +30,9 @@
   async function handleAddChart() {
     const newRoute = await handleEntityCreate(ResourceKind.Component);
 
-    const chartName = newRoute?.split("/").pop()?.split(".")[0];
+    if (!newRoute) return;
+
+    const chartName = getNameFromFile(newRoute);
 
     if (chartName) {
       addChart(chartName);
