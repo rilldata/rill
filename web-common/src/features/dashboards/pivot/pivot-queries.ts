@@ -204,6 +204,7 @@ export function getAxisQueryForMeasureTotals(
   anchorDimension: string,
   rowDimensionValues: string[],
   timeRange: TimeRangeString,
+  otherFilters: V1Expression | undefined = undefined,
 ) {
   let rowAxesQueryForMeasureTotals: Readable<PivotAxesData | null> =
     readable(null);
@@ -217,12 +218,19 @@ export function getAxisQueryForMeasureTotals(
       anchorDimension,
       rowDimensionValues,
     );
+
+    let mergedFilter: V1Expression | undefined = sortedRowFilters;
+
+    if (otherFilters) {
+      mergedFilter = mergeFilters(sortedRowFilters, otherFilters);
+    }
+
     rowAxesQueryForMeasureTotals = getAxisForDimensions(
       ctx,
       config,
       [anchorDimension],
       measuresBody,
-      sortedRowFilters,
+      mergedFilter ?? createAndExpression([]),
       [],
       timeRange,
     );
@@ -257,10 +265,9 @@ export function getTotalsRowQuery(
       createInExpression(dimension, colDimensionAxes[dimension]),
     );
 
-  const mergedFilter = mergeFilters(
-    createAndExpression(colFilters),
-    config.whereFilter,
-  );
+  const mergedFilter =
+    mergeFilters(createAndExpression(colFilters), config.whereFilter) ??
+    createAndExpression([]);
 
   const sortBy = [
     {

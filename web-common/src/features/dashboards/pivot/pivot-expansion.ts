@@ -207,7 +207,10 @@ export function queryExpandedRowMeasureValues(
           } else return true;
         });
 
-      const filterForRowDimensionAxes = createAndExpression(rowNestFilters);
+      let filterForRowDimensionAxes: V1Expression | undefined = undefined;
+      if (rowNestFilters.length) {
+        filterForRowDimensionAxes = createAndExpression(rowNestFilters);
+      }
 
       const {
         where: measureWhere,
@@ -215,9 +218,10 @@ export function queryExpandedRowMeasureValues(
         timeRange: timeRangeSortedCol,
       } = getSortForAccessor(anchorDimension, config, columnDimensionAxesData);
 
-      const mergeRowAndSortFilters = measureWhere
-        ? mergeFilters(filterForRowDimensionAxes, measureWhere)
-        : filterForRowDimensionAxes;
+      const mergeRowAndSortFilters = mergeFilters(
+        filterForRowDimensionAxes,
+        measureWhere,
+      );
 
       const timeRangeRow: TimeRangeString = getTimeForQuery(
         config.time,
@@ -232,12 +236,9 @@ export function queryExpandedRowMeasureValues(
           mergeRowAndSortFilters,
         );
 
-      const subTableMergedFilters = mergeFilters(
-        filterForRowDimensionAxes,
-        config.whereFilter,
-      );
-
-      console.log(config.whereFilter, subTableMergedFilters);
+      const subTableMergedFilters =
+        mergeFilters(filterForRowDimensionAxes, config.whereFilter) ??
+        createAndExpression([]);
 
       return derived(
         [
@@ -276,6 +277,7 @@ export function queryExpandedRowMeasureValues(
             anchorDimension,
             subRowDimensionValues,
             timeRangeRow,
+            subTableMergedFilters,
           );
 
           const subTableQuery = createSubTableCellQuery(
@@ -292,13 +294,12 @@ export function queryExpandedRowMeasureValues(
           return derived(
             [subRowAxesQueryForMeasureTotals, subTableQuery],
             ([subRowTotals, subTableData]) => {
-              if (subTableData?.isFetching) {
+              if (subRowTotals?.isFetching) {
                 return {
                   isFetching: true,
                   expandIndex,
-                  rowDimensionValues:
-                    subRowDimensions?.data?.[anchorDimension] || [],
-                  totals: subRowDimensions?.totals?.[anchorDimension] || [],
+                  rowDimensionValues: subRowDimensionValues,
+                  totals: [],
                   data: subTableData?.data?.data || [],
                 };
               }
@@ -309,6 +310,16 @@ export function queryExpandedRowMeasureValues(
                 subRowTotals?.data?.[anchorDimension] || [],
                 subRowTotals?.totals?.[anchorDimension] || [],
               );
+
+              if (subTableData?.isFetching) {
+                return {
+                  isFetching: true,
+                  expandIndex,
+                  rowDimensionValues: subRowDimensionValues,
+                  totals: mergedRowTotals,
+                  data: subTableData?.data?.data || [],
+                };
+              }
 
               return {
                 isFetching: false,

@@ -418,7 +418,7 @@ export function getFilterForMeasuresTotalsAxesQuery(
   config: PivotDataStoreConfig,
   anchorDimension: string,
   rowDimensionValues: string[],
-): V1Expression {
+): V1Expression | undefined {
   let rowFilters: V1Expression | undefined;
   if (anchorDimension) {
     rowFilters = createInExpression(anchorDimension, rowDimensionValues);

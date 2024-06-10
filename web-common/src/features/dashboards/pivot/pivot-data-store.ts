@@ -4,6 +4,7 @@ import { useMetricsView } from "@rilldata/web-common/features/dashboards/selecto
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
@@ -253,7 +254,9 @@ export function createTableCellQuery(
 
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
-  const mergedFilter = mergeFilters(filterForInitialTable, config.whereFilter);
+  const mergedFilter =
+    mergeFilters(filterForInitialTable, config.whereFilter) ??
+    createAndExpression([]);
 
   const sortBy = [
     {
