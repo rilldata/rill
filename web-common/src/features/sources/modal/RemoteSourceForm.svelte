@@ -122,6 +122,7 @@
               placeholder={property.placeholder}
               hint={property.hint}
               error={$errors[toYupFriendlyKey(property.key)]}
+              isSecret={property.secret}
               bind:value={$form[toYupFriendlyKey(property.key)]}
               on:input={onStringInputChange}
               on:change={handleChange}
