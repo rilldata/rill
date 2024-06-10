@@ -16,7 +16,7 @@ import (
 // This means it creates a ModelExecutor with the provided input connector and props as input,
 // and with the "file" driver as the output connector targeting a temporary output path.
 func (e *Executor) executeExport(ctx context.Context, format, inputConnector string, inputProps map[string]any) (string, error) {
-	path := e.rt.TempDir(e.instanceID, "pivot_export")
+	path := e.rt.TempDir(e.instanceID, "metrics_export")
 	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
 		return "", err
@@ -49,7 +49,7 @@ func (e *Executor) executeExport(ctx context.Context, format, inputConnector str
 				return e.rt.AcquireHandle(ctx, e.instanceID, name)
 			},
 		},
-		ModelName:        "pivot_export",
+		ModelName:        "metrics_export", // This isn't a real model; just setting for nicer log messages
 		InputHandle:      ic,
 		InputConnector:   inputConnector,
 		InputProperties:  inputProps,

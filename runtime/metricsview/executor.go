@@ -235,13 +235,13 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 			_ = os.Remove(path)
 			return nil, false, err
 		}
-		if releaseDuck != nil {
-			res.SetCleanupFunc(func() error {
+		res.SetCleanupFunc(func() error {
+			if releaseDuck != nil {
 				releaseDuck()
-				_ = os.Remove(path)
-				return nil
-			})
-		}
+			}
+			_ = os.Remove(path)
+			return nil
+		})
 	}
 
 	limitCap := e.queryLimitCap(export)
@@ -253,4 +253,56 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 	cache := e.olap.Dialect() == drivers.DialectDuckDB
 
 	return res, cache, nil
+}
+
+// Export executes and exports the provided query against the metrics view.
+// It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
+func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format string) (string, error) {
+	if e.security != nil && !e.security.Access {
+		return "", runtime.ErrForbidden
+	}
+
+	if err := e.rewriteQueryLimit(qry, true); err != nil {
+		return "", err
+	}
+
+	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
+	if err != nil {
+		return "", err
+	}
+
+	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+		return "", err
+	}
+
+	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
+		return "", err
+	}
+
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	if err != nil {
+		return "", err
+	}
+
+	if err := e.rewriteApproximateComparisons(ast); err != nil {
+		return "", err
+	}
+
+	if err := e.rewriteDruidJoins(ast); err != nil {
+		return "", err
+	}
+
+	if pivoting {
+		return e.executePivotExport(ctx, ast, pivotAST, format)
+	}
+
+	sql, args, err := ast.SQL()
+	if err != nil {
+		return "", err
+	}
+
+	return e.executeExport(ctx, format, e.metricsView.Connector, map[string]any{
+		"sql":  sql,
+		"args": args,
+	})
 }

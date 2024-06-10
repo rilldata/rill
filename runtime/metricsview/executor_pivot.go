@@ -3,6 +3,7 @@ package metricsview
 import (
 	"context"
 	"crypto/rand"
+	"database/sql"
 	"encoding/hex"
 	"fmt"
 	"os"
@@ -10,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
+	"go.uber.org/zap"
 )
 
 // rewriteQueryForPivot rewrites a query for pivoting if qry.PivotOn is not empty.
@@ -114,6 +116,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 		return "", err
 	}
 
+	// Currently, DuckdB is the only OLAP that supports pivoting.
 	// If the connector isn't DuckDB, we export the underlying (non-pivoted) data to a Parquet file, and handover to DuckDB to do the pivot.
 	var pivotConnector string
 	if e.olap.Dialect() == drivers.DialectDuckDB {
@@ -138,28 +141,58 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 
 	// Unfortunately, DuckDB does not support passing args to a PIVOT query.
 	// So we stage the underlying data in a temporary table and run the PIVOT against that table instead.
-	alias, err := randomString("t", 8)
+	olap, release, err := e.rt.OLAP(ctx, e.instanceID, pivotConnector)
 	if err != nil {
-		return "", fmt.Errorf("failed to generate random alias: %w", err)
+		return "", fmt.Errorf("failed to acquire OLAP for serving pivot: %w", err)
 	}
-	preExec := fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s)", alias, underlyingSQL)
-	postExec := fmt.Sprintf("DROP TEMPORARY TABLE %s", alias)
-	pivotSQL, err := pivot.SQL(ast, alias, true)
+	defer release()
+	var path string
+	err = olap.WithConnection(ctx, e.priority, false, false, func(wrappedCtx context.Context, ensuredCtx context.Context, conn *sql.Conn) error {
+		// Stage the underlying data in a temporary table
+		alias, err := randomString("t", 8)
+		if err != nil {
+			return fmt.Errorf("failed to generate random alias: %w", err)
+		}
+		err = olap.Exec(wrappedCtx, &drivers.Statement{
+			Query: fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s)", alias, underlyingSQL),
+			Args:  args,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to stage underlying data for pivot: %w", err)
+		}
+
+		// Defer cleanup of the temporary table
+		defer func() {
+			err = olap.Exec(ensuredCtx, &drivers.Statement{
+				Query: fmt.Sprintf("DROP TABLE %s", alias),
+			})
+			if err != nil {
+				l, err2 := e.rt.InstanceLogger(ctx, e.instanceID)
+				if err2 == nil {
+					l.Error("duckdb: failed to cleanup temporary table for pivot export", zap.Error(err))
+				}
+			}
+		}()
+
+		// Build the PIVOT query
+		pivotSQL, err := pivot.SQL(ast, alias, true)
+		if err != nil {
+			return err
+		}
+
+		// Execute the pivot export
+		path, err = e.executeExport(wrappedCtx, format, pivotConnector, map[string]any{
+			"sql": pivotSQL,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to execute pivot export: %w", err)
+		}
+
+		return nil
+	})
 	if err != nil {
 		return "", err
 	}
-
-	// Execute the export
-	path, err := e.executeExport(ctx, format, pivotConnector, map[string]any{
-		"pre_exec":      preExec,
-		"pre_exec_args": args,
-		"post_exec":     postExec,
-		"sql":           pivotSQL,
-	})
-	if err != nil {
-		return "", fmt.Errorf("failed to execute pivot export: %w", err)
-	}
-
 	return path, nil
 }
 
