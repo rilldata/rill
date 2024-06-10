@@ -14779,6 +14779,10 @@ func (m *GetGithubUserStatusResponse) validate(all bool) error {
 
 	// no validation rules for Account
 
+	// no validation rules for UserInstallationPermission
+
+	// no validation rules for OrganizationInstallationPermissions
+
 	if len(errors) > 0 {
 		return GetGithubUserStatusResponseMultiError(errors)
 	}

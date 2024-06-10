@@ -34,7 +34,7 @@ func (c *openAI) Complete(ctx context.Context, msgs []*adminv1.CompletionMessage
 	}
 
 	res, err := c.client.CreateChatCompletion(ctx, openai.ChatCompletionRequest{
-		Model:       openai.GPT3Dot5Turbo,
+		Model:       openai.GPT4o,
 		Messages:    reqMsgs,
 		Temperature: 0.2,
 	})

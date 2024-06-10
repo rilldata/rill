@@ -15,9 +15,9 @@ import {
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
+  V1ReconcileStatus,
   getRuntimeServiceGetResourceQueryKey,
   type V1ParseError,
-  V1ReconcileStatus,
   type V1Resource,
   type V1ResourceName,
   getRuntimeServiceGetFileQueryKey,
@@ -275,6 +275,7 @@ export class FileArtifacts {
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
         case ResourceKind.Source:
+        case ResourceKind.Connector:
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
         case ResourceKind.Component:

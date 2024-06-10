@@ -27,7 +27,7 @@
 
   $: if ($dashboardStateForAlert.data) {
     goto(
-      `/${organization}/${project}/${$dashboardStateForAlert.data.metricsView}?state=${$dashboardStateForAlert.data.state}`,
+      `/${organization}/${project}/${$dashboardStateForAlert.data.metricsView}?state=${encodeURIComponent($dashboardStateForAlert.data.state)}`,
     );
   }
 </script>

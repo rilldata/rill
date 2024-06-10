@@ -1,7 +1,10 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, getContext } from "svelte";
   import ColumnHeader from "../core/ColumnHeader.svelte";
-  import type { VirtualizedTableColumns } from "../types";
+  import type {
+    VirtualizedTableColumns,
+    VirtualizedTableConfig,
+  } from "../types";
 
   const dispatch = createEventDispatcher();
 
@@ -12,14 +15,21 @@
   export let showDataIcon = false;
   export let selectedColumn: string | null = null;
 
+  const config: VirtualizedTableConfig = getContext("config");
+
   const getColumnHeaderProps = (header) => {
     const column = columns[header.index];
     const name = column.label || column.name;
     const isEnableResizeDefined = "enableResize" in column;
     const enableResize = isEnableResizeDefined ? column.enableResize : true;
+    const enableSorting =
+      "enableSorting" in column
+        ? column.enableResize
+        : config.table === "DimensionTable";
     return {
       name,
       enableResize,
+      enableSorting,
       type: column.type,
       description: column.description || "",
       pinned: pinnedColumns.some((pinCol) => pinCol.name === column.name),

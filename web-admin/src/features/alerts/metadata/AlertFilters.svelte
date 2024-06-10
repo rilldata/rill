@@ -16,6 +16,7 @@
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
   export let timeRange: V1TimeRange | undefined;
+  export let comparisonTimeRange: V1TimeRange | undefined;
 
   // time range could be an empty object sometimes
   $: hasTimeRange = timeRange && Object.keys(timeRange).length > 0;
@@ -36,7 +37,9 @@
   <MetadataLabel>Filters ({filtersLength})</MetadataLabel>
   <div class="flex flex-wrap gap-2">
     {#if filtersLength}
-      {#if hasTimeRange}<TimeRangeReadOnly {timeRange} />{/if}
+      {#if hasTimeRange}
+        <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
+      {/if}
       {#each currentDimensionFilters as { name, label, selectedValues, isInclude } (name)}
         {@const dimension = dimensions.find((d) => d.name === name)}
         <div animate:flip={{ duration: 200 }}>

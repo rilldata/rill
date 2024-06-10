@@ -64,7 +64,7 @@
 <Button
   disabled={hasUnsavedChanges || hasErrors}
   on:click={() => dispatch("create-model")}
-  type="brand"
+  type="primary"
 >
   <ResponsiveButtonText {collapse}>Create model</ResponsiveButtonText>
   <IconSpaceFixer pullLeft pullRight={collapse}>

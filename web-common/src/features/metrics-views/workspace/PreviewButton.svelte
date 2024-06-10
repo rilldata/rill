@@ -40,7 +40,7 @@
     label="Preview"
     href={`/${type}/${dashboardName}`}
     on:click={viewDashboard}
-    type="brand"
+    type="primary"
     loading={!!$navigating}
   >
     <Play size="10px" />

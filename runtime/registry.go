@@ -537,11 +537,13 @@ func (r *registryCache) emitHeartbeats() {
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
 
-	r.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat",
-		attribute.String("instance_id", inst.ID),
-		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
-		attribute.Int64("data_dir_size_bytes", sizeOfDir(dataDir)),
-	)
+	// Add instance annotations as attributes to pass organization id, project id, etc.
+	attrs := instanceAnnotationsToAttribs(inst)
+	for k, v := range inst.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+
+	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 }
 
 // updateProjectConfig updates the project config for the given instance.
@@ -554,18 +556,22 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	}
 	defer release()
 
-	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
-	if err != nil {
-		if errors.Is(err, rillv1.ErrRillYAMLNotFound) { // empty project
-			return nil
-		}
-		return err
-	}
-	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)
+	instance, err := r.get(iwc.instanceID)
 	if err != nil {
 		return err
 	}
-	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, dotEnv, false)
+
+	p, err := rillv1.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
+	if err != nil {
+		return err
+	}
+
+	if p.RillYAML == nil {
+		// Empty project
+		return nil
+	}
+
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, p, false)
 }
 
 func sizeOfDir(path string) int64 {

@@ -5,11 +5,11 @@
   import { initBlankDashboardYAML } from "@rilldata/web-common/features/metrics-views/metrics-internal-store";
   import { useModels } from "@rilldata/web-common/features/models/selectors";
   import {
-    runtimeServicePutFile,
     V1Resource,
+    runtimeServicePutFile,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useIsModelingSupportedForCurrentOlapDriver } from "../../../tables/selectors";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "../../../connectors/olap/selectors";
   import { createDashboardFromTableInMetricsEditor } from "../../ai-generation/generateMetricsView";
 
   export let metricsName: string;
@@ -59,7 +59,7 @@
 </script>
 
 <div class="whitespace-normal">
-  {#if $isModelingSupportedForCurrentOlapDriver.data}
+  {#if $isModelingSupportedForCurrentOlapDriver}
     Auto-generate a <WithTogglableFloatingElement
       distance={8}
       inline
@@ -98,7 +98,7 @@
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
     }}
-    >{#if $isModelingSupportedForCurrentOlapDriver.data}s{:else}S{/if}tart with
-    a skeleton</button
+    >{#if $isModelingSupportedForCurrentOlapDriver}s{:else}S{/if}tart with a
+    skeleton</button
   >, or just start typing.
 </div>

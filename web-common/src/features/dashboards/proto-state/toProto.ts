@@ -289,6 +289,7 @@ function toPivotProto(pivotState: PivotState): PartialMessage<DashboardState> {
     // pivotExpanded: pivotState.expanded,
     pivotSort: pivotState.sorting,
     pivotColumnPage: pivotState.columnPage,
+    pivotEnableComparison: pivotState.enableComparison,
     pivotRowJoinType: ToProtoPivotRowJoinTypeMap[pivotState.rowJoinType],
   };
 }
