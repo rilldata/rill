@@ -253,9 +253,9 @@ export function queryExpandedRowMeasureValues(
             timeRange,
           ),
         ],
-        ([expandIndex, subRowDimensions], set) => {
+        ([expandIndex, subRowDimensions], axisSet) => {
           if (subRowDimensions?.isFetching) {
-            return set({
+            return axisSet({
               isFetching: true,
               expandIndex,
               rowDimensionValues: [],
@@ -329,7 +329,7 @@ export function queryExpandedRowMeasureValues(
                 data: subTableData?.data?.data || [],
               };
             },
-          ).subscribe(set);
+          ).subscribe(axisSet);
         },
       );
     }),
