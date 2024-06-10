@@ -10,7 +10,7 @@
     Grid,
   } from "@rilldata/web-common/components/data-graphic/guides";
   import { ScaleType } from "@rilldata/web-common/components/data-graphic/state";
-  import type { ScaleStore } from "@rilldata/web-common/components/data-graphic/state/types";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { tableInteractionStore } from "@rilldata/web-common/features/dashboards/time-dimension-details/time-dimension-data-store";
   import DimensionValueMouseover from "@rilldata/web-common/features/dashboards/time-series/DimensionValueMouseover.svelte";
@@ -23,6 +23,7 @@
     MetricsViewSpecMeasureV2,
     V1TimeGrain,
   } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { extent } from "d3-array";
   import { getContext } from "svelte";
   import { cubicOut } from "svelte/easing";
@@ -76,7 +77,7 @@
   $: numberKind = numberKindForMeasure(measure);
 
   const tweenProps = { duration: 400, easing: cubicOut };
-  const xScale = getContext(contexts.scale("x")) as ScaleStore;
+  const xScale = getContext(contexts.scale("x"));
 
   let hovered: boolean = false;
   let scrub;
@@ -163,6 +164,8 @@
   $: internalXMin = xMin || xExtentMin;
   $: internalXMax = xMax || xExtentMax;
 
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
+
   function inBounds(min, max, value) {
     return value >= min && value <= max;
   }
@@ -214,6 +217,7 @@
       timeRange,
       timeGrain,
       comparisonTimeRange,
+      $metricsView.data ?? {},
     );
   }
 

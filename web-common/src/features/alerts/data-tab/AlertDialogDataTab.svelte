@@ -1,6 +1,7 @@
 <script lang="ts">
   import DataPreview from "@rilldata/web-common/features/alerts/data-tab/DataPreview.svelte";
   import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import { MetricsViewSpecMeasureType } from "@rilldata/web-common/runtime-client";
   import { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
@@ -16,10 +17,16 @@
   $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
 
   $: measureOptions =
-    $metricsView.data?.measures?.map((m) => ({
-      value: m.name as string,
-      label: m.label?.length ? m.label : m.expression,
-    })) ?? [];
+    $metricsView.data?.measures
+      ?.filter(
+        (m) =>
+          !m.window &&
+          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+      )
+      .map((m) => ({
+        value: m.name as string,
+        label: m.label?.length ? m.label : m.expression,
+      })) ?? [];
   $: dimensionOptions = [
     {
       value: "",

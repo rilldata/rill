@@ -56,6 +56,7 @@
   let containerWidth: number;
   let containerHeight: number;
   let editorPercentage = 0.5;
+  let selectedIndex: number | null = null;
   let chartEditorPercentage = 0.4;
   let selectedChartName: string | null = null;
   let spec: V1DashboardSpec = {
@@ -182,11 +183,32 @@
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
+
+  async function deleteChart(index: number) {
+    const items = parsedDocument.get("items");
+
+    if (!items) return;
+
+    items.delete(index);
+
+    yaml = parsedDocument.toString();
+
+    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+  }
 </script>
 
 <svelte:head>
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
+
+<svelte:window
+  on:keydown={async (e) => {
+    if (e.target !== document.body || selectedIndex === null) return;
+    if (e.key === "Delete" || e.key === "Backspace") {
+      await deleteChart(selectedIndex);
+    }
+  }}
+/>
 
 <WorkspaceContainer
   bind:width={containerWidth}
@@ -299,6 +321,7 @@
         {columns}
         {showGrid}
         bind:selectedChartName
+        bind:selectedIndex
         on:update={handlePreviewUpdate}
       />
     {/if}
