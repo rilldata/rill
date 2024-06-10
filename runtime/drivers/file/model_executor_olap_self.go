@@ -52,8 +52,9 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 
 	// Execute the SQL
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query: inputProps.SQL,
-		Args:  inputProps.Args,
+		Query:    inputProps.SQL,
+		Args:     inputProps.Args,
+		Priority: e.opts.Priority,
 	})
 	if err != nil {
 		return nil, err

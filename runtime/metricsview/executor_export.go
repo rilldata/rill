@@ -16,6 +16,9 @@ import (
 // This means it creates a ModelExecutor with the provided input connector and props as input,
 // and with the "file" driver as the output connector targeting a temporary output path.
 func (e *Executor) executeExport(ctx context.Context, format, inputConnector string, inputProps map[string]any) (string, error) {
+	ctx, cancel := context.WithTimeout(ctx, defaultExportTimeout)
+	defer cancel()
+
 	path := e.rt.TempDir(e.instanceID, "metrics_export")
 	err := os.MkdirAll(path, os.ModePerm)
 	if err != nil {
@@ -59,6 +62,7 @@ func (e *Executor) executeExport(ctx context.Context, format, inputConnector str
 			"path":   path,
 			"format": format,
 		},
+		Priority: e.priority,
 	}
 
 	me, ok := ic.AsModelExecutor(e.instanceID, opts)

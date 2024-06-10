@@ -11,7 +11,11 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-const defaultExecutionTimeout = time.Minute * 3
+const (
+	defaultInteractiveTimeout = time.Minute * 3
+	defaultExportTimeout      = time.Minute * 5
+	defaultPivotExportTimeout = time.Minute * 5
+)
 
 // Executor is capable of executing queries and other operations against a metrics view.
 type Executor struct {
@@ -132,7 +136,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
+		ExecutionTimeout: defaultInteractiveTimeout,
 	})
 	if err != nil {
 		return nil, err
@@ -190,7 +194,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 			Query:            sql,
 			Args:             args,
 			Priority:         e.priority,
-			ExecutionTimeout: defaultExecutionTimeout,
+			ExecutionTimeout: defaultInteractiveTimeout,
 		})
 		if err != nil {
 			return nil, false, err
@@ -229,7 +233,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		res, err = duck.Execute(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf("SELECT * FROM '%s'", path),
 			Priority:         e.priority,
-			ExecutionTimeout: defaultExecutionTimeout,
+			ExecutionTimeout: defaultInteractiveTimeout,
 		})
 		if err != nil {
 			_ = os.Remove(path)
