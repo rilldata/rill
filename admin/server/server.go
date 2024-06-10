@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -60,21 +61,25 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
+	// UploadsBucket is the path on gcs where rill manages project artifacts are stored.
+	UploadsBucket             string
+	UploadsSvcAcctCredentials []byte
 }
 
 type Server struct {
 	adminv1.UnsafeAdminServiceServer
 	adminv1.UnsafeAIServiceServer
 	adminv1.UnsafeTelemetryServiceServer
-	logger        *zap.Logger
-	admin         *admin.Service
-	opts          *Options
-	cookies       *cookies.Store
-	authenticator *auth.Authenticator
-	issuer        *runtimeauth.Issuer
-	urls          *externalURLs
-	limiter       ratelimit.Limiter
-	activity      *activity.Client
+	logger           *zap.Logger
+	admin            *admin.Service
+	opts             *Options
+	cookies          *cookies.Store
+	authenticator    *auth.Authenticator
+	issuer           *runtimeauth.Issuer
+	urls             *externalURLs
+	limiter          ratelimit.Limiter
+	activity         *activity.Client
+	gcsStorageClient *storage.Client
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -130,16 +135,22 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		return nil, err
 	}
 
+	storageClient, err := storage.NewClient(context.Background())
+	if err != nil {
+		return nil, err
+	}
+
 	return &Server{
-		logger:        logger,
-		admin:         adm,
-		opts:          opts,
-		cookies:       cookieStore,
-		authenticator: authenticator,
-		issuer:        issuer,
-		urls:          newURLRegistry(opts),
-		limiter:       limiter,
-		activity:      activityClient,
+		logger:           logger,
+		admin:            adm,
+		opts:             opts,
+		cookies:          cookieStore,
+		authenticator:    authenticator,
+		issuer:           issuer,
+		urls:             newURLRegistry(opts),
+		limiter:          limiter,
+		activity:         activityClient,
+		gcsStorageClient: storageClient,
 	}, nil
 }
 

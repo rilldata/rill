@@ -593,6 +593,30 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/artifacts:
+    get:
+      summary: GetArtifactsURL returns credentials and other details for a project's Git repository or upload url if git repo is not configured.
+      operationId: AdminService_GetArtifactsURL
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetArtifactsURLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
     post:
       summary: GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -632,30 +656,6 @@ paths:
                 type: string
               attributes:
                 type: object
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/projects/{project}/git-credentials:
-    get:
-      summary: GetGitCredentials returns credentials and other details for a project's Git repository.
-      operationId: AdminService_GetGitCredentials
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetGitCredentialsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: project
-          in: path
-          required: true
-          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/iframe:
@@ -1350,6 +1350,14 @@ paths:
                 type: string
               githubUrl:
                 type: string
+                description: |-
+                  github_url is set for projects whose artifacts are stored in github. This is set to a github repo url.
+                  Either github_url or upload_path should be set.
+              uploadPath:
+                type: string
+                description: |-
+                  upload_path is set for projects whose artifacts are not stored in github but are managed by rill. This is set to a path in gcs.
+                  When upload_path is set github_url, prod_branch, subpath will be empty.
               variables:
                 type: object
                 additionalProperties:
@@ -1445,6 +1453,8 @@ paths:
                 type: string
               githubUrl:
                 type: string
+              uploadPath:
+                type: string
               prodSlots:
                 type: string
                 format: int64
@@ -1514,6 +1524,35 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organizationName}/projects/{projectName}/create_upload_signed_url:
+    post:
+      summary: CreateUploadSignedURL returns a one time signed upload URL
+      operationId: AdminService_CreateUploadSignedURL
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateUploadSignedURLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: projectName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
       tags:
         - AdminService
   /v1/organizations/{organizationName}/services:
@@ -2458,6 +2497,13 @@ definitions:
     properties:
       service:
         $ref: '#/definitions/v1Service'
+  v1CreateUploadSignedURLResponse:
+    type: object
+    properties:
+      signedUrl:
+        type: string
+      uploadPath:
+        type: string
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteAlertResponse:
@@ -2543,6 +2589,22 @@ definitions:
     properties:
       yaml:
         type: string
+  v1GetArtifactsURLResponse:
+    type: object
+    properties:
+      repoUrl:
+        type: string
+      username:
+        type: string
+      password:
+        type: string
+      subpath:
+        type: string
+      prodBranch:
+        type: string
+      uploadPath:
+        type: string
+        title: either upload_path or git related details will be set
   v1GetBookmarkResponse:
     type: object
     properties:
@@ -2567,19 +2629,6 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
-  v1GetGitCredentialsResponse:
-    type: object
-    properties:
-      repoUrl:
-        type: string
-      username:
-        type: string
-      password:
-        type: string
-      subpath:
-        type: string
-      prodBranch:
-        type: string
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
@@ -2660,6 +2709,11 @@ definitions:
         format: date-time
       gitSubpath:
         type: string
+      downloadUrl:
+        type: string
+        title: |-
+          download_url is set when repo is managed by Rill
+          either download_url or git related details will be set
   v1GetReportMetaResponse:
     type: object
     properties:

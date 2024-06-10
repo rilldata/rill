@@ -9,11 +9,20 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func gitCloneCmd(ch *cmdutil.Helper) *cobra.Command {
-	gitCloneCmd := &cobra.Command{
-		Use:   "git-clone <org> <project>",
+func gitCloneCmd(_ *cmdutil.Helper) *cobra.Command {
+	return &cobra.Command{
+		Use:        "clone <org> <project>",
+		Args:       cobra.ExactArgs(2),
+		Short:      "Create git clone token",
+		Deprecated: "Command is deprecated. Use `rill sudo clone <org> <project>` instead.",
+	}
+}
+
+func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
+	cloneCmd := &cobra.Command{
+		Use:   "clone <org> <project>",
 		Args:  cobra.ExactArgs(2),
-		Short: "Create git clone token",
+		Short: "Get clone instrunctions for a project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			ctx := cmd.Context()
 
@@ -22,12 +31,18 @@ func gitCloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			res, err := client.GetGitCredentials(ctx, &adminv1.GetGitCredentialsRequest{
+			res, err := client.GetArtifactsURL(ctx, &adminv1.GetArtifactsURLRequest{
 				Organization: args[0],
 				Project:      args[1],
 			})
 			if err != nil {
 				return err
+			}
+
+			fmt.Println("Clone command:")
+			if res.UploadPath != "" {
+				fmt.Printf("\tgsutil cp %s .\n\n", res.UploadPath)
+				return nil
 			}
 
 			ep, err := transport.NewEndpoint(res.RepoUrl)
@@ -38,7 +53,6 @@ func gitCloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			ep.Password = res.Password
 			cloneURL := ep.String()
 
-			fmt.Println("Clone command:")
 			fmt.Printf("\tgit clone %s\n\n", cloneURL)
 			fmt.Println("Full details:")
 			fmt.Printf("\tRepo URL: %s\n", res.RepoUrl)
@@ -52,5 +66,5 @@ func gitCloneCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	return gitCloneCmd
+	return cloneCmd
 }

@@ -93,6 +93,14 @@ service AdminService {
     };
   }
 
+  // CreateUploadSignedURL returns a one time signed upload URL
+  rpc CreateUploadSignedURL(CreateUploadSignedURLRequest) returns (CreateUploadSignedURLResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/projects/{project_name}/create_upload_signed_url",
+      body: "*"
+    };
+  }
+
   // TriggerReconcile triggers reconcile for the project's prod deployment
   rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
     option (google.api.http) = {
@@ -216,9 +224,9 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user"};
   }
 
-  // GetGitCredentials returns credentials and other details for a project's Git repository.
-  rpc GetGitCredentials(GetGitCredentialsRequest) returns (GetGitCredentialsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/git-credentials"};
+  // GetArtifactsURL returns credentials and other details for a project's Git repository or upload url if git repo is not configured.
+  rpc GetArtifactsURL(GetArtifactsURLRequest) returns (GetArtifactsURLResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/artifacts"};
   }
 
   // CreateWhitelistedDomain adds a domain to the whitelist
@@ -744,7 +752,12 @@ message CreateProjectRequest {
   int64 prod_slots = 8;
   string subpath = 12;
   string prod_branch = 9;
+  // github_url is set for projects whose artifacts are stored in github. This is set to a github repo url.
+  // Either github_url or upload_path should be set.
   string github_url = 10;
+  // upload_path is set for projects whose artifacts are not stored in github but are managed by rill. This is set to a path in gcs.
+  // When upload_path is set github_url, prod_branch, subpath will be empty.
+  string upload_path = 14;
   map<string, string> variables = 11;
   string prod_version = 13;
 }
@@ -767,6 +780,7 @@ message UpdateProjectRequest {
   optional bool public = 4;
   optional string prod_branch = 5;
   optional string github_url = 6;
+  optional string upload_path = 12;
   optional int64 prod_slots = 7;
   optional string provisioner = 8;
   optional string new_name = 9;
@@ -786,6 +800,16 @@ message UpdateProjectVariablesRequest {
 
 message UpdateProjectVariablesResponse {
   map<string, string> variables = 1;
+}
+
+message CreateUploadSignedURLRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string project_name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message CreateUploadSignedURLResponse {
+  string signed_url = 1;
+  string upload_path =2;
 }
 
 message TriggerReconcileRequest {
@@ -1138,17 +1162,19 @@ enum GithubPermission {
   GITHUB_PERMISSION_WRITE = 2;
 }
 
-message GetGitCredentialsRequest {
+message GetArtifactsURLRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
 }
 
-message GetGitCredentialsResponse {
+message GetArtifactsURLResponse {
   string repo_url = 1;
   string username = 2;
   string password = 3;
   string subpath = 4;
   string prod_branch = 5;
+  // either upload_path or git related details will be set
+  string upload_path = 6;
 }
 
 message CreateWhitelistedDomainRequest {
@@ -1209,6 +1235,9 @@ message GetRepoMetaResponse {
   string git_url = 1;
   google.protobuf.Timestamp git_url_expires_on = 2;
   string git_subpath = 3;
+  // download_url is set when repo is managed by Rill
+  // either download_url or git related details will be set
+  string download_url = 4;
 }
 
 message PullVirtualRepoRequest {

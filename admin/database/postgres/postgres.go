@@ -352,9 +352,9 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id, prod_ttl_seconds, prod_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, upload_path, github_url, github_installation_id, prod_ttl_seconds, prod_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.UploadPath, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
@@ -377,9 +377,9 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, prod_ttl_seconds=$11, annotations=$12, prod_version=$13, updated_on=now()
-		WHERE id=$14 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, upload_path=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, prod_ttl_seconds=$12, annotations=$13, prod_version=$14, updated_on=now()
+		WHERE id=$15 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.UploadPath, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)

@@ -81,6 +81,7 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  uploadPath?: string;
   prodSlots?: string;
   provisioner?: string;
   newName?: string;
@@ -102,7 +103,12 @@ export type AdminServiceCreateProjectBody = {
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;
+  /** github_url is set for projects whose artifacts are stored in github. This is set to a github repo url.
+Either github_url or upload_path should be set. */
   githubUrl?: string;
+  /** upload_path is set for projects whose artifacts are not stored in github but are managed by rill. This is set to a path in gcs.
+When upload_path is set github_url, prod_branch, subpath will be empty. */
+  uploadPath?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
   prodVersion?: string;
 };
@@ -668,6 +674,7 @@ export interface V1GetRepoMetaResponse {
   gitUrl?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
+  downloadUrl?: string;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
@@ -717,14 +724,6 @@ export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
 }
 
-export interface V1GetGitCredentialsResponse {
-  repoUrl?: string;
-  username?: string;
-  password?: string;
-  subpath?: string;
-  prodBranch?: string;
-}
-
 export interface V1GetDeploymentCredentialsResponse {
   runtimeHost?: string;
   instanceId?: string;
@@ -739,6 +738,15 @@ export interface V1GetCurrentUserResponse {
 
 export interface V1GetBookmarkResponse {
   bookmark?: V1Bookmark;
+}
+
+export interface V1GetArtifactsURLResponse {
+  repoUrl?: string;
+  username?: string;
+  password?: string;
+  subpath?: string;
+  prodBranch?: string;
+  uploadPath?: string;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -826,6 +834,11 @@ export interface V1DeleteAlertResponse {
 
 export interface V1CreateWhitelistedDomainResponse {
   [key: string]: any;
+}
+
+export interface V1CreateUploadSignedURLResponse {
+  signedUrl?: string;
+  uploadPath?: string;
 }
 
 export interface V1CreateServiceResponse {

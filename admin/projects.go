@@ -17,9 +17,11 @@ import (
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
-	// Check Github info is set (presently required for deployments)
-	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
-		return nil, fmt.Errorf("cannot create project without github info")
+	if opts.UploadPath == nil {
+		// Check Github info is set when upload URL is not set
+		if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
+			return nil, fmt.Errorf("cannot create project without github info if upload URL is not set")
+		}
 	}
 
 	// Get roles for initial setup
@@ -87,6 +89,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		UploadPath:           proj.UploadPath,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		Provisioner:          proj.Provisioner,
@@ -143,7 +146,8 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
-		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
+		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
+		!reflect.DeepEqual(proj.UploadPath, opts.GithubInstallationID))
 
 	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
@@ -270,6 +274,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		Description:          proj.Description,
 		Public:               proj.Public,
 		Provisioner:          proj.Provisioner,
+		UploadPath:           proj.UploadPath,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,

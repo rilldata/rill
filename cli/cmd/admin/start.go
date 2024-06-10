@@ -65,6 +65,7 @@ type Config struct {
 	GithubAppWebhookSecret   string                 `split_words:"true"`
 	GithubClientID           string                 `split_words:"true"`
 	GithubClientSecret       string                 `split_words:"true"`
+	UploadsBucket            string                 `default:"cloud-deploy-upload-test" split_words:"true"`
 	EmailSMTPHost            string                 `split_words:"true"`
 	EmailSMTPPort            int                    `split_words:"true"`
 	EmailSMTPUsername        string                 `split_words:"true"`
@@ -246,6 +247,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectOrg:  metricsProjectOrg,
 				MetricsProjectName: metricsProjectName,
 				AutoscalerCron:     conf.AutoscalerCron,
+				UploadsBucket:      conf.UploadsBucket,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
 			if err != nil {
@@ -300,6 +302,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
+					UploadsBucket:          conf.UploadsBucket,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

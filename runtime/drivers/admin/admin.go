@@ -1,13 +1,18 @@
 package admin
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -102,16 +107,18 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Handle struct {
-	config               *configProperties
-	logger               *zap.Logger
-	admin                *client.Client
-	repoMu               ctxsync.RWMutex
-	repoSF               *singleflight.Group
-	cloned               bool
-	repoPath             string
-	projPath             string
-	gitURL               string
-	gitURLExpiresOn      time.Time
+	config          *configProperties
+	logger          *zap.Logger
+	admin           *client.Client
+	repoMu          ctxsync.RWMutex
+	repoSF          *singleflight.Group
+	cloned          bool
+	repoPath        string
+	projPath        string
+	gitURL          string
+	gitURLExpiresOn time.Time
+	// downloadURL is set when repo is maintained by rill. Git related field will not be set.
+	downloadURL          string
 	virtualNextPageToken string
 	virtualStashPath     string
 	ignorePaths          []string
@@ -312,6 +319,13 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
+	if h.downloadURL != "" {
+		// download repo
+		if err := h.download(); err != nil {
+			return err
+		}
+		return h.pullVirtual(ctx)
+	}
 
 	if !h.cloned {
 		err := h.cloneGit()
@@ -340,7 +354,8 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 // checkHandshake checks and possibly renews the repo details handshake with the admin server.
 // Unsafe for concurrent use.
 func (h *Handle) checkHandshake(ctx context.Context) error {
-	if h.gitURLExpiresOn.After(time.Now()) {
+	// rill managed repos need to be downloaded again with new download URL
+	if h.downloadURL == "" && h.gitURLExpiresOn.After(time.Now()) {
 		return nil
 	}
 
@@ -368,6 +383,11 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 		h.projPath = h.repoPath
 	} else {
 		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
+	}
+
+	if meta.DownloadUrl != "" {
+		h.downloadURL = meta.DownloadUrl
+		return nil
 	}
 
 	h.gitURL = meta.GitUrl
@@ -572,6 +592,56 @@ func (h *Handle) unstashVirtual() error {
 	return nil
 }
 
+// download repo when downloadURL is set.
+// Unsafe for concurrent use.
+func (h *Handle) download() error {
+	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
+	defer cancel()
+
+	// Get the data with retries
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.downloadURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		// return ghinstallation.HTTPError for outer retry to not retry on 404
+		return &ghinstallation.HTTPError{Response: resp}
+	}
+	defer resp.Body.Close()
+
+	// generate a temporary file to copy repo tar directory
+	downloadDst, err := generateTmpPath(h.config.TempDir, "admin_driver_zipped_repo", ".tar.gz")
+	if err != nil {
+		return fmt.Errorf("download: %w", err)
+	}
+	defer os.Remove(downloadDst)
+	out, err := os.Create(downloadDst)
+	if err != nil {
+		return err
+	}
+
+	// Writer the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		out.Close()
+		return err
+	}
+	out.Close()
+
+	// untar to the project path
+	err = untar(downloadDst, filepath.Clean(h.projPath))
+	if err != nil {
+		return err
+	}
+	h.cloned = true
+	return nil
+}
+
 // generateVirtualPath generates a virtual path inside the project path.
 func generateVirtualPath(projPath string) string {
 	return filepath.Join(projPath, "__virtual__")
@@ -599,6 +669,60 @@ func generateTmpPath(dir, base, ext string) (string, error) {
 	return p, nil
 }
 
+func untar(src, dest string) error {
+	file, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	gz, err := gzip.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+	tarReader := tar.NewReader(gz)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break // End of tar archive
+		}
+		if err != nil {
+			return err
+		}
+
+		// Determine the proper path for the item
+		target, err := sanitizeArchivePath(dest, header.Name)
+		if err != nil {
+			return err
+		}
+		switch header.Typeflag {
+		case tar.TypeDir:
+			// Handle directory
+			if err := os.MkdirAll(target, header.FileInfo().Mode()); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			// Handle regular file
+			if err := os.MkdirAll(filepath.Dir(target), header.FileInfo().Mode()); err != nil {
+				return err
+			}
+			outFile, err := os.Create(target)
+			if err != nil {
+				return err
+			}
+			if _, err := io.Copy(outFile, tarReader); err != nil {
+				outFile.Close()
+				return err
+			}
+			outFile.Close()
+		default:
+			return fmt.Errorf("unsupported header type: %c", header.Typeflag)
+		}
+	}
+	return nil
+}
+
 // retryErrClassifier classifies Github request errors as retryable or not.
 type retryErrClassifier struct{}
 
@@ -621,4 +745,13 @@ func (retryErrClassifier) Classify(err error) retrier.Action {
 	}
 
 	return retrier.Retry
+}
+
+func sanitizeArchivePath(dest, tarPath string) (v string, err error) {
+	v = filepath.Join(dest, tarPath)
+	if strings.HasPrefix(v, dest) {
+		return v, nil
+	}
+
+	return "", fmt.Errorf("%s: %s", "content filepath is tainted", tarPath)
 }

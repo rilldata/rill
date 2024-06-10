@@ -48,9 +48,9 @@ import type {
   V1EditAlertResponse,
   V1UnsubscribeAlertResponse,
   V1GetAlertYAMLResponse,
+  V1GetArtifactsURLResponse,
   V1GetDeploymentCredentialsResponse,
   AdminServiceGetDeploymentCredentialsBody,
-  V1GetGitCredentialsResponse,
   V1GetIFrameResponse,
   AdminServiceGetIFrameBody,
   V1ListProjectInvitesResponse,
@@ -88,6 +88,7 @@ import type {
   V1GetProjectVariablesResponse,
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
+  V1CreateUploadSignedURLResponse,
   V1ListServicesResponse,
   V1CreateServiceResponse,
   AdminServiceCreateServiceParams,
@@ -1371,6 +1372,72 @@ export const createAdminServiceGetAlertYAML = <
 };
 
 /**
+ * @summary GetArtifactsURL returns credentials and other details for a project's Git repository or upload url if git repo is not configured.
+ */
+export const adminServiceGetArtifactsURL = (
+  organization: string,
+  project: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetArtifactsURLResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/artifacts`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetArtifactsURLQueryKey = (
+  organization: string,
+  project: string,
+) => [`/v1/organizations/${organization}/projects/${project}/artifacts`];
+
+export type AdminServiceGetArtifactsURLQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>
+>;
+export type AdminServiceGetArtifactsURLQueryError = RpcStatus;
+
+export const createAdminServiceGetArtifactsURL = <
+  TData = Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  project: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetArtifactsURLQueryKey(organization, project);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>
+  > = ({ signal }) =>
+    adminServiceGetArtifactsURL(organization, project, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
  */
 export const adminServiceGetDeploymentCredentials = (
@@ -1436,72 +1503,6 @@ export const createAdminServiceGetDeploymentCredentials = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!(organization && project),
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary GetGitCredentials returns credentials and other details for a project's Git repository.
- */
-export const adminServiceGetGitCredentials = (
-  organization: string,
-  project: string,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetGitCredentialsResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/git-credentials`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getAdminServiceGetGitCredentialsQueryKey = (
-  organization: string,
-  project: string,
-) => [`/v1/organizations/${organization}/projects/${project}/git-credentials`];
-
-export type AdminServiceGetGitCredentialsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetGitCredentials>>
->;
-export type AdminServiceGetGitCredentialsQueryError = RpcStatus;
-
-export const createAdminServiceGetGitCredentials = <
-  TData = Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
-  TError = RpcStatus,
->(
-  organization: string,
-  project: string,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetGitCredentialsQueryKey(organization, project);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetGitCredentials>>
-  > = ({ signal }) =>
-    adminServiceGetGitCredentials(organization, project, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
     TError,
     TData
   >({
@@ -3158,6 +3159,74 @@ export const createAdminServiceUpdateProjectVariables = <
       organizationName: string;
       name: string;
       data: AdminServiceUpdateProjectVariablesBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary CreateUploadSignedURL returns a one time signed upload URL
+ */
+export const adminServiceCreateUploadSignedURL = (
+  organizationName: string,
+  projectName: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1CreateUploadSignedURLResponse>({
+    url: `/v1/organizations/${organizationName}/projects/${projectName}/create_upload_signed_url`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceCreateUploadSignedURLMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateUploadSignedURL>>
+>;
+export type AdminServiceCreateUploadSignedURLMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceCreateUploadSignedURLMutationError = RpcStatus;
+
+export const createAdminServiceCreateUploadSignedURL = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateUploadSignedURL>>,
+    TError,
+    {
+      organizationName: string;
+      projectName: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateUploadSignedURL>>,
+    {
+      organizationName: string;
+      projectName: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organizationName, projectName, data } = props ?? {};
+
+    return adminServiceCreateUploadSignedURL(
+      organizationName,
+      projectName,
+      data,
+    );
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCreateUploadSignedURL>>,
+    TError,
+    {
+      organizationName: string;
+      projectName: string;
+      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);

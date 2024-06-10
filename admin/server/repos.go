@@ -3,8 +3,11 @@ package server
 import (
 	"context"
 	"errors"
+	"net/url"
+	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -39,6 +42,20 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 
 	if proj.ProdBranch != req.Branch {
 		return nil, status.Error(codes.InvalidArgument, "branch not found")
+	}
+
+	if proj.UploadPath != nil {
+		u, err := url.Parse(*proj.UploadPath)
+		if err != nil {
+			return nil, err
+		}
+		downloadURL, err := s.generateV4GetObjectSignedURL(strings.TrimPrefix(u.Path, "/"))
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		return &adminv1.GetRepoMetaResponse{
+			DownloadUrl: downloadURL,
+		}, nil
 	}
 
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
@@ -118,6 +135,20 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 		Files:         dtos,
 		NextPageToken: nextToken,
 	}, nil
+}
+
+func (s *Server) generateV4GetObjectSignedURL(object string) (string, error) {
+	opts := &storage.SignedURLOptions{
+		Scheme:  storage.SigningSchemeV4,
+		Method:  "GET",
+		Expires: time.Now().Add(15 * time.Minute),
+	}
+
+	u, err := s.gcsStorageClient.Bucket(s.opts.UploadsBucket).SignedURL(object, opts)
+	if err != nil {
+		return "", err
+	}
+	return u, nil
 }
 
 func virtualFileToDTO(vf *database.VirtualFile) *adminv1.VirtualFile {

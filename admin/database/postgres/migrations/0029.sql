@@ -1,0 +1,1 @@
+ALTER TABLE projects ADD COLUMN upload_path TEXT;

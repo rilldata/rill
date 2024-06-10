@@ -23,6 +23,7 @@ type Options struct {
 	MetricsProjectOrg  string
 	MetricsProjectName string
 	AutoscalerCron     string
+	UploadsBucket      string
 }
 
 type Service struct {
