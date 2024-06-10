@@ -10,6 +10,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
@@ -38,6 +39,7 @@ type MetricsViewComparison struct {
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 
 	// Internal
+	Exporting    bool                              `json:"-"`
 	measuresMeta map[string]metricsViewMeasureMeta `json:"-"`
 }
 
@@ -85,6 +87,92 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	if err != nil {
 		return err
 	}
+
+	err = q.calculateMeasuresMeta()
+	if err != nil {
+		return err
+	}
+
+	// Attempt to route to metricsview executor
+	qry, ok, err := q.rewriteToMetricsViewQuery()
+	if err != nil {
+		return fmt.Errorf("error rewriting to metrics query: %w", err)
+	}
+	if ok {
+		e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, priority)
+		if err != nil {
+			return err
+		}
+		defer e.Close()
+
+		res, _, err := e.Query(ctx, qry, nil)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		data, err := rowsToData(res)
+		if err != nil {
+			return err
+		}
+
+		var rows []*runtimev1.MetricsViewComparisonRow
+		for _, val := range data {
+			val := val.AsMap()
+
+			dv, err := pbutil.ToValue(val[q.DimensionName], safeFieldTypeName(res.Schema, q.DimensionName))
+			if err != nil {
+				return err
+			}
+
+			out := &runtimev1.MetricsViewComparisonRow{DimensionValue: dv}
+
+			for _, m := range q.Measures {
+				mv := &runtimev1.MetricsViewComparisonValue{MeasureName: m.Name}
+
+				bv := val[m.Name]
+				mv.BaseValue, err = pbutil.ToValue(bv, safeFieldTypeName(res.Schema, m.Name))
+				if err != nil {
+					return err
+				}
+
+				cv, ok := val[m.Name+"__previous"]
+				if ok {
+					mv.ComparisonValue, err = pbutil.ToValue(cv, safeFieldTypeName(res.Schema, m.Name+"__previous"))
+					if err != nil {
+						return err
+					}
+				}
+
+				da, ok := val[m.Name+"__delta_abs"]
+				if ok {
+					mv.DeltaAbs, err = pbutil.ToValue(da, safeFieldTypeName(res.Schema, m.Name+"__delta_abs"))
+					if err != nil {
+						return err
+					}
+				}
+
+				dr, ok := val[m.Name+"__delta_rel"]
+				if ok {
+					mv.DeltaRel, err = pbutil.ToValue(dr, safeFieldTypeName(res.Schema, m.Name+"__delta_rel"))
+					if err != nil {
+						return err
+					}
+				}
+
+				out.MeasureValues = append(out.MeasureValues, mv)
+			}
+
+			rows = append(rows, out)
+		}
+
+		q.Result = &runtimev1.MetricsViewComparisonResponse{
+			Rows: rows,
+		}
+
+		return nil
+	}
+	// Falling back to the old implementation
 
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
@@ -225,9 +313,12 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() error {
 
 	if len(q.ComparisonMeasures) == 0 && compare {
 		// backwards compatibility
-		q.ComparisonMeasures = make([]string, len(q.Measures))
-		for i, m := range q.Measures {
-			q.ComparisonMeasures[i] = m.Name
+		q.ComparisonMeasures = make([]string, 0, len(q.Measures))
+		for _, m := range q.Measures {
+			if m.BuiltinMeasure != runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED {
+				continue
+			}
+			q.ComparisonMeasures = append(q.ComparisonMeasures, m.Name)
 		}
 	}
 
@@ -1352,4 +1443,153 @@ func (q *MetricsViewComparison) isDeltaComparison() bool {
 
 func (q *MetricsViewComparison) isBase() bool {
 	return q.Sort[0].SortType == runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE
+}
+
+func (q *MetricsViewComparison) rewriteToMetricsViewQuery() (*metricsview.Query, bool, error) {
+	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
+
+	qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{Name: q.DimensionName})
+
+	for _, m := range q.Measures {
+		res := metricsview.Measure{Name: m.Name}
+		switch m.BuiltinMeasure {
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT:
+			res.Compute = &metricsview.MeasureCompute{Count: true}
+		case runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT_DISTINCT:
+			res.Compute = &metricsview.MeasureCompute{CountDistinct: &metricsview.MeasureComputeCountDistinct{
+				Dimension: m.BuiltinMeasureArgs[0].GetStringValue(),
+			}}
+		}
+
+		// Measure filters not supported yet
+		if m.Filter != nil {
+			return nil, false, nil
+		}
+
+		if m.Compute != nil {
+			switch c := m.Compute.(type) {
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+				res.Compute = &metricsview.MeasureCompute{ComparisonValue: &metricsview.MeasureComputeComparisonValue{
+					Measure: c.ComparisonValue.Measure,
+				}}
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+				res.Compute = &metricsview.MeasureCompute{ComparisonDelta: &metricsview.MeasureComputeComparisonDelta{
+					Measure: c.ComparisonDelta.Measure,
+				}}
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+				res.Compute = &metricsview.MeasureCompute{ComparisonRatio: &metricsview.MeasureComputeComparisonRatio{
+					Measure: c.ComparisonRatio.Measure,
+				}}
+			}
+		}
+
+		qry.Measures = append(qry.Measures, res)
+	}
+
+	for _, m := range q.ComparisonMeasures {
+		qry.Measures = append(qry.Measures, metricsview.Measure{
+			Name: q.aliasForMeasure(m, runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE),
+			Compute: &metricsview.MeasureCompute{
+				ComparisonValue: &metricsview.MeasureComputeComparisonValue{
+					Measure: m,
+				},
+			},
+		}, metricsview.Measure{
+			Name: q.aliasForMeasure(m, runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA),
+			Compute: &metricsview.MeasureCompute{
+				ComparisonDelta: &metricsview.MeasureComputeComparisonDelta{
+					Measure: m,
+				},
+			},
+		}, metricsview.Measure{
+			Name: q.aliasForMeasure(m, runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA),
+			Compute: &metricsview.MeasureCompute{
+				ComparisonRatio: &metricsview.MeasureComputeComparisonRatio{
+					Measure: m,
+				},
+			},
+		})
+	}
+
+	if q.TimeRange != nil {
+		res := &metricsview.TimeRange{}
+		if q.TimeRange.Start != nil {
+			res.Start = q.TimeRange.Start.AsTime()
+		}
+		if q.TimeRange.End != nil {
+			res.End = q.TimeRange.End.AsTime()
+		}
+		res.IsoDuration = q.TimeRange.IsoDuration
+		res.IsoOffset = q.TimeRange.IsoOffset
+		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
+		qry.TimeRange = res
+		qry.TimeZone = q.TimeRange.TimeZone
+	}
+
+	if q.ComparisonTimeRange != nil {
+		res := &metricsview.TimeRange{}
+		if q.ComparisonTimeRange.Start != nil {
+			res.Start = q.ComparisonTimeRange.Start.AsTime()
+		}
+		if q.ComparisonTimeRange.End != nil {
+			res.End = q.ComparisonTimeRange.End.AsTime()
+		}
+		res.IsoDuration = q.ComparisonTimeRange.IsoDuration
+		res.IsoOffset = q.ComparisonTimeRange.IsoOffset
+		res.RoundToGrain = metricsview.TimeGrainFromProto(q.ComparisonTimeRange.RoundToGrain)
+		qry.ComparisonTimeRange = res
+	}
+
+	if q.Limit != 0 {
+		qry.Limit = &q.Limit
+	}
+
+	if q.Offset != 0 {
+		qry.Offset = &q.Offset
+	}
+
+	for _, s := range q.Sort {
+		qry.Sort = append(qry.Sort, metricsview.Sort{
+			Name: q.aliasForMeasure(s.Name, s.SortType),
+			Desc: s.Desc,
+		})
+	}
+
+	if q.Filter != nil { // backwards backwards compatibility
+		if q.Where != nil {
+			return nil, false, fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
+	}
+
+	if q.Where != nil {
+		qry.Where = rewriteToMetricsResolverExpression(q.Where)
+	}
+
+	if q.Having != nil {
+		qry.Having = rewriteToMetricsResolverExpression(q.Having)
+	}
+
+	qry.Label = q.Exporting
+
+	return qry, true, nil
+}
+
+func (q *MetricsViewComparison) aliasForMeasure(name string, t runtimev1.MetricsViewComparisonMeasureType) string {
+	for _, a := range q.Aliases {
+		if a.Name == name && a.Type == t {
+			return a.Alias
+		}
+	}
+
+	switch t {
+	case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
+		return name + "__previous"
+	case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
+		return name + "__delta_abs"
+	case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
+		return name + "__delta_rel"
+	}
+
+	return name
 }
