@@ -7,7 +7,6 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
-  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
@@ -32,7 +31,7 @@ import {
 import {
   getTotalsRow,
   getTotalsRowSkeleton,
-  mergeRowTotals,
+  mergeRowTotalsInOrder,
   prepareNestedPivotData,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
@@ -40,6 +39,7 @@ import {
   canEnablePivotComparison,
   getFilterForPivotTable,
   getPivotConfigKey,
+  getSortFilteredMeasureBody,
   getSortForAccessor,
   getTimeForQuery,
   getTimeGrainFromDimension,
@@ -248,7 +248,6 @@ export function createTableCellQuery(
       columnDimensionAxesData,
       totalsRow,
       rowDimensionValues,
-      true,
       anchorDimension,
     );
 
@@ -376,23 +375,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           columnDimensionAxes?.data,
         );
 
-        let sortFilteredMeasureBody: V1MetricsViewAggregationMeasure[] =
-          measureBody;
-        let isMeasureSortAccessor = false;
-        let sortAccessor: string | undefined = undefined;
-
-        if (sortPivotBy.length && measureWhere) {
-          sortAccessor = sortPivotBy[0]?.name;
-
-          isMeasureSortAccessor = measureBody.some(
-            (m) => m.name === sortAccessor,
-          );
-          if (isMeasureSortAccessor && sortAccessor) {
-            sortFilteredMeasureBody = [
-              { name: sortAccessor, filter: measureWhere },
-            ];
-          }
-        }
+        const { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor } =
+          getSortFilteredMeasureBody(measureBody, sortPivotBy, measureWhere);
 
         const rowPage = config.pivot.rowPage;
         const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
@@ -495,6 +479,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               config,
               isMeasureSortAccessor,
               sortAccessor,
+              anchorDimension,
               rowDimensionValues,
               timeRange,
             );
@@ -550,7 +535,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   });
                 }
 
-                const mergedRowTotals = mergeRowTotals(
+                const mergedRowTotals = mergeRowTotalsInOrder(
                   rowDimensionValues,
                   axesRowTotals,
                   rowMeasureTotalsAxesQuery?.data?.[anchorDimension] || [],

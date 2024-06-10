@@ -13,14 +13,20 @@ import { Readable, derived, writable } from "svelte/store";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
+  getAxisQueryForMeasureTotals,
 } from "./pivot-queries";
-import { reduceTableCellDataIntoRows } from "./pivot-table-transformations";
+import {
+  mergeRowTotalsInOrder,
+  reduceTableCellDataIntoRows,
+} from "./pivot-table-transformations";
 import {
   getFilterForPivotTable,
+  getSortFilteredMeasureBody,
   getSortForAccessor,
   getTimeForQuery,
   getTimeGrainFromDimension,
   isTimeDimension,
+  mergeTimeStrings,
 } from "./pivot-utils";
 import type { PivotDataRow, PivotDataStoreConfig, TimeFilters } from "./types";
 
@@ -69,6 +75,7 @@ export function createSubTableCellQuery(
   anchorDimension: string,
   columnDimensionAxesData: Record<string, string[]> | undefined,
   totalsRow: PivotDataRow,
+  rowDimensionValues: string[],
   rowNestFilters: V1Expression,
   timeFilters: TimeFilters[],
 ) {
@@ -89,7 +96,13 @@ export function createSubTableCellQuery(
   const measureBody = config.measureNames.map((m) => ({ name: m }));
 
   const { filters: filterForSubTable, timeFilters: colTimeFilters } =
-    getFilterForPivotTable(config, columnDimensionAxesData, totalsRow);
+    getFilterForPivotTable(
+      config,
+      columnDimensionAxesData,
+      totalsRow,
+      rowDimensionValues,
+      anchorDimension,
+    );
 
   const timeRange: TimeRangeString = getTimeForQuery(
     time,
@@ -174,8 +187,7 @@ export function queryExpandedRowMeasureValues(
           totals: [],
         });
 
-      const timeFilters: TimeFilters[] = [];
-      // TODO: handle for already existing filters
+      const rowNestTimeFilters: TimeFilters[] = [];
       const rowNestFilters = values
         .map((value, index) =>
           createInExpression(rowDimensionNames[index], [value]),
@@ -185,7 +197,7 @@ export function queryExpandedRowMeasureValues(
           if (
             isTimeDimension(f.cond?.exprs?.[0].ident, config.time.timeDimension)
           ) {
-            timeFilters.push({
+            rowNestTimeFilters.push({
               timeStart: f.cond?.exprs?.[1].val as string,
               interval: getTimeGrainFromDimension(
                 f.cond?.exprs?.[0].ident as string,
@@ -197,28 +209,35 @@ export function queryExpandedRowMeasureValues(
 
       const filterForRowDimensionAxes = createAndExpression(rowNestFilters);
 
-      const { sortPivotBy } = getSortForAccessor(
-        anchorDimension,
-        config,
-        columnDimensionAxesData,
-      );
+      const {
+        where: measureWhere,
+        sortPivotBy,
+        timeRange: timeRangeSortedCol,
+      } = getSortForAccessor(anchorDimension, config, columnDimensionAxesData);
 
-      const timeRange: TimeRangeString = getTimeForQuery(
+      const mergeRowAndSortFilters = measureWhere
+        ? mergeFilters(filterForRowDimensionAxes, measureWhere)
+        : filterForRowDimensionAxes;
+
+      const timeRangeRow: TimeRangeString = getTimeForQuery(
         config.time,
-        timeFilters,
+        rowNestTimeFilters,
       );
+      const timeRange = mergeTimeStrings(timeRangeRow, timeRangeSortedCol);
 
-      // TODO: Not merging sort now as would lead to empty data
-      // on expansion for parent rows with no data for the sorted column
-      // const mergeRowAndSortFilters = mergeFilters(
-      //   filterForRowDimensionAxes,
-      //   sortWhere,
-      // );
+      const { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor } =
+        getSortFilteredMeasureBody(
+          measureBody,
+          sortPivotBy,
+          mergeRowAndSortFilters,
+        );
 
-      const allMergedFilters = mergeFilters(
+      const subTableMergedFilters = mergeFilters(
         filterForRowDimensionAxes,
         config.whereFilter,
       );
+
+      console.log(config.whereFilter, subTableMergedFilters);
 
       return derived(
         [
@@ -227,29 +246,79 @@ export function queryExpandedRowMeasureValues(
             ctx,
             config,
             [anchorDimension],
-            measureBody,
-            allMergedFilters,
+            sortFilteredMeasureBody,
+            subTableMergedFilters,
             sortPivotBy,
             timeRange,
           ),
-          createSubTableCellQuery(
+        ],
+        ([expandIndex, subRowDimensions], set) => {
+          if (subRowDimensions?.isFetching) {
+            return set({
+              isFetching: true,
+              expandIndex,
+              rowDimensionValues: [],
+              totals: [],
+              data: [],
+            });
+          }
+
+          const subRowDimensionValues =
+            subRowDimensions?.data?.[anchorDimension] || [];
+          const subRowDimensionTotals =
+            subRowDimensions?.totals?.[anchorDimension] || [];
+
+          const subRowAxesQueryForMeasureTotals = getAxisQueryForMeasureTotals(
+            ctx,
+            config,
+            isMeasureSortAccessor,
+            sortAccessor,
+            anchorDimension,
+            subRowDimensionValues,
+            timeRangeRow,
+          );
+
+          const subTableQuery = createSubTableCellQuery(
             ctx,
             config,
             anchorDimension,
             columnDimensionAxesData,
             totalsRow,
-            allMergedFilters,
-            timeFilters,
-          ),
-        ],
-        ([expandIndex, subRowDimensions, subTableData]) => {
-          return {
-            isFetching: subTableData?.isFetching,
-            expandIndex,
-            rowDimensionValues: subRowDimensions?.data?.[anchorDimension] || [],
-            totals: subRowDimensions?.totals?.[anchorDimension] || [],
-            data: subTableData?.data?.data || [],
-          };
+            subRowDimensionValues,
+            subTableMergedFilters,
+            rowNestTimeFilters,
+          );
+
+          return derived(
+            [subRowAxesQueryForMeasureTotals, subTableQuery],
+            ([subRowTotals, subTableData]) => {
+              if (subTableData?.isFetching) {
+                return {
+                  isFetching: true,
+                  expandIndex,
+                  rowDimensionValues:
+                    subRowDimensions?.data?.[anchorDimension] || [],
+                  totals: subRowDimensions?.totals?.[anchorDimension] || [],
+                  data: subTableData?.data?.data || [],
+                };
+              }
+
+              const mergedRowTotals = mergeRowTotalsInOrder(
+                subRowDimensionValues,
+                subRowDimensionTotals,
+                subRowTotals?.data?.[anchorDimension] || [],
+                subRowTotals?.totals?.[anchorDimension] || [],
+              );
+
+              return {
+                isFetching: false,
+                expandIndex,
+                rowDimensionValues: subRowDimensionValues,
+                totals: mergedRowTotals,
+                data: subTableData?.data?.data || [],
+              };
+            },
+          ).subscribe(set);
         },
       );
     }),

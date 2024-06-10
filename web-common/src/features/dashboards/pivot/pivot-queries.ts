@@ -201,6 +201,7 @@ export function getAxisQueryForMeasureTotals(
   config: PivotDataStoreConfig,
   isMeasureSortAccessor: boolean,
   sortAccessor: string | undefined,
+  anchorDimension: string,
   rowDimensionValues: string[],
   timeRange: TimeRangeString,
 ) {
@@ -208,17 +209,18 @@ export function getAxisQueryForMeasureTotals(
     readable(null);
 
   if (rowDimensionValues.length && isMeasureSortAccessor && sortAccessor) {
-    const { measureNames, rowDimensionNames } = config;
+    const { measureNames } = config;
     const measuresBody = measureNames.map((m) => ({ name: m }));
 
     const sortedRowFilters = getFilterForMeasuresTotalsAxesQuery(
       config,
+      anchorDimension,
       rowDimensionValues,
     );
     rowAxesQueryForMeasureTotals = getAxisForDimensions(
       ctx,
       config,
-      rowDimensionNames.slice(0, 1),
+      [anchorDimension],
       measuresBody,
       sortedRowFilters,
       [],
