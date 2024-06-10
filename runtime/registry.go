@@ -537,10 +537,16 @@ func (r *registryCache) emitHeartbeats() {
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
 
-	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)),
+	attrs := make([]attribute.KeyValue, 0, len(inst.Annotations)+2)
+	attrs = append(attrs,
 		attribute.String("instance_id", inst.ID),
-		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
-	)
+		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)))
+	// Add instance annotations as attributes to pass organization id, project id, etc.
+	for k, v := range inst.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+
+	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 }
 
 // updateProjectConfig updates the project config for the given instance.
