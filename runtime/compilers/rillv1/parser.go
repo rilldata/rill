@@ -927,8 +927,8 @@ func (p *Parser) addParseError(path string, err error, external bool) {
 // driverForConnector resolves a connector name to a connector driver.
 // It should not be invoked until after rill.yaml has been parsed.
 func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error) {
-	// Unless overridden in rill.yaml, the connector name is the driver name
-	driver := name
+	// Search rill.yaml and Connector resources for the connector's driver
+	var driver string
 	if p.RillYAML != nil {
 		for _, c := range p.RillYAML.Connectors {
 			if c.Name == name {
@@ -937,7 +937,6 @@ func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error)
 			}
 		}
 	}
-
 	for _, c := range p.Resources {
 		if c.ConnectorSpec != nil && c.Name.Name == name {
 			driver = c.ConnectorSpec.Driver
@@ -945,11 +944,21 @@ func (p *Parser) driverForConnector(name string) (string, drivers.Driver, error)
 		}
 	}
 
-	connector, ok := drivers.Connectors[driver]
-	if !ok {
-		return "", nil, fmt.Errorf("unknown connector type %q", driver)
+	// If we found a driver, return it
+	if driver != "" {
+		connector, ok := drivers.Connectors[driver]
+		if !ok {
+			return "", nil, fmt.Errorf("unknown connector type %q", driver)
+		}
+		return driver, connector, nil
 	}
-	return driver, connector, nil
+
+	// If the name matches a known driver, we consider it an implicitly defined connector
+	connector, ok := drivers.Connectors[name]
+	if !ok {
+		return "", nil, fmt.Errorf("unknown connector %q", name)
+	}
+	return name, connector, nil
 }
 
 // defaultOLAPConnector resolves the project's default OLAP connector.
