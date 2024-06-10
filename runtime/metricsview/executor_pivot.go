@@ -57,6 +57,12 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 		}
 	}
 
+	// Determine dialect for the PIVOT (in practice, this currently always becomes DuckDB because it's the only OLAP that supports pivoting)
+	dialect := e.olap.Dialect()
+	if !dialect.CanPivot() {
+		dialect = drivers.DialectDuckDB
+	}
+
 	// Build a pivotAST based on fields to apply during and after the pivot (instead of in the underlying query)
 	ast := &pivotAST{
 		keep:    nil, // Populated below
@@ -66,7 +72,7 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 		limit:   qry.Limit,
 		offset:  qry.Offset,
 		label:   qry.Label,
-		dialect: e.olap.Dialect(),
+		dialect: dialect,
 	}
 	for _, d := range qry.Dimensions {
 		var found bool
@@ -116,13 +122,9 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 		return "", err
 	}
 
-	// Currently, DuckdB is the only OLAP that supports pivoting.
-	// If the connector isn't DuckDB, we export the underlying (non-pivoted) data to a Parquet file, and handover to DuckDB to do the pivot.
-	var pivotConnector string
-	if e.olap.Dialect() == drivers.DialectDuckDB {
-		pivotConnector = e.metricsView.Connector
-	}
-	if pivotConnector == "" {
+	// If the metrics view's connector doesn't support pivoting, we export the underlying (non-pivoted) data to a Parquet file, and handover to DuckDB to do the pivot.
+	pivotConnector := e.metricsView.Connector
+	if !e.olap.Dialect().CanPivot() {
 		// Export non-pivoted data to a temporary Parquet file
 		path, err := e.executeExport(ctx, "parquet", e.metricsView.Connector, map[string]any{
 			"sql":  underlyingSQL,
@@ -137,6 +139,11 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 		pivotConnector = "duckdb"
 		underlyingSQL = fmt.Sprintf("SELECT * FROM '%s'", path)
 		args = nil
+
+		// Check for consistency with rewriteQueryForPivot
+		if pivot.dialect != drivers.DialectDuckDB {
+			return "", fmt.Errorf("cannot execute pivot: the pivot AST fell back to dialect %q, not DuckDB", pivot.dialect.String())
+		}
 	}
 
 	// Unfortunately, DuckDB does not support passing args to a PIVOT query.

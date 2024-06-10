@@ -31,16 +31,14 @@ var _ drivers.ModelExecutor = &olapToSelfExecutor{}
 func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
 	// Parse SQL from input properties
 	inputProps := &struct {
-		SQL string `mapstructure:"sql"`
+		SQL  string `mapstructure:"sql"`
+		Args []any  `mapstructure:"args"`
 	}{}
 	if err := mapstructure.WeakDecode(e.opts.InputProperties, inputProps); err != nil {
 		return nil, fmt.Errorf("failed to parse input properties: %w", err)
 	}
 	if inputProps.SQL == "" {
 		return nil, errors.New("missing SQL in input properties")
-	}
-	if len(e.opts.InputProperties) > 1 {
-		return nil, errors.New("olap-to-file executor received unexpected input properties")
 	}
 
 	// Parse output properties
@@ -55,6 +53,7 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	// Execute the SQL
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query: inputProps.SQL,
+		Args:  inputProps.Args,
 	})
 	if err != nil {
 		return nil, err

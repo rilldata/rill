@@ -64,10 +64,17 @@ type Result struct {
 
 // SetCleanupFunc sets a function, which will be called when the Result is closed.
 func (r *Result) SetCleanupFunc(fn func() error) {
-	if r.cleanupFn != nil {
-		panic("cleanup function already set")
+	if r.cleanupFn == nil {
+		r.cleanupFn = fn
+		return
 	}
-	r.cleanupFn = fn
+
+	prevFn := r.cleanupFn
+	r.cleanupFn = func() error {
+		err1 := prevFn()
+		err2 := fn()
+		return errors.Join(err1, err2)
+	}
 }
 
 // SetCap caps the number of rows to return. If the number is exceeded, an error is returned.

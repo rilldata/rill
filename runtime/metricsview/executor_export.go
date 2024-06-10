@@ -49,13 +49,16 @@ func (e *Executor) executeExport(ctx context.Context, format, inputConnector str
 				return e.rt.AcquireHandle(ctx, e.instanceID, name)
 			},
 		},
-		ModelName:        "metrics_export", // This isn't a real model; just setting for nicer log messages
-		InputHandle:      ic,
-		InputConnector:   inputConnector,
-		InputProperties:  inputProps,
-		OutputHandle:     oc,
-		OutputConnector:  "file",
-		OutputProperties: map[string]interface{}{"path": path, "format": format},
+		ModelName:       "metrics_export", // This isn't a real model; just setting for nicer log messages
+		InputHandle:     ic,
+		InputConnector:  inputConnector,
+		InputProperties: inputProps,
+		OutputHandle:    oc,
+		OutputConnector: "file",
+		OutputProperties: map[string]any{
+			"path":   path,
+			"format": format,
+		},
 	}
 
 	me, ok := ic.AsModelExecutor(e.instanceID, opts)
