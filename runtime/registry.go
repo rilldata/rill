@@ -537,11 +537,8 @@ func (r *registryCache) emitHeartbeats() {
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
 
-	attrs := make([]attribute.KeyValue, 0, len(inst.Annotations)+2)
-	attrs = append(attrs,
-		attribute.String("instance_id", inst.ID),
-		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)))
 	// Add instance annotations as attributes to pass organization id, project id, etc.
+	attrs := instanceAnnotationsToAttribs(inst)
 	for k, v := range inst.Annotations {
 		attrs = append(attrs, attribute.String(k, v))
 	}
