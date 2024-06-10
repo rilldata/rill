@@ -135,9 +135,9 @@
     if ($autoSave) await updateChartFile();
   }
 
-  async function addChart(e: CustomEvent<{ chartName: string }>) {
+  async function addChart(chartName: string) {
     const newChart = {
-      component: e.detail.chartName,
+      component: chartName,
       height: 4,
       width: 4,
       x: 0,
@@ -207,7 +207,7 @@
         </div>
       {/if}
 
-      <AddChartMenu on:add-chart={addChart} />
+      <AddChartMenu {addChart} />
 
       <PreviewButton
         dashboardName={customDashboardName}
