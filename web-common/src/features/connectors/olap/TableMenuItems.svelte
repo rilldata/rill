@@ -14,7 +14,7 @@
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromSource } from "../../sources/createModel";
+  import { createModelFromTable } from "./createModel";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
 
   const { ai } = featureFlags;
@@ -40,10 +40,11 @@
   async function handleCreateModel() {
     try {
       const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createModelFromSource(
+      const [newModelPath, newModelName] = await createModelFromTable(
+        connector,
+        database,
+        databaseSchema,
         table,
-        table,
-        "models",
       );
       await goto(`/files${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
