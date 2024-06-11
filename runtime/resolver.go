@@ -81,7 +81,7 @@ func (r *resolverResult) MarshalJSON() ([]byte, error) {
 	defer r.rows.Close()
 	var out []map[string]any
 	for r.rows.Next() {
-		if int64(len(out)) >= r.rowLimit {
+		if r.rowLimit != 0 && int64(len(out)) >= r.rowLimit {
 			return nil, fmt.Errorf("sql resolver: query limit exceeded: returned more than %d rows", r.rowLimit)
 		}
 

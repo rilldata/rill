@@ -104,17 +104,12 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	cfg, err := r.runtime.InstanceConfig(ctx, r.instanceID)
-	if err != nil {
-		return nil, err
-	}
-
 	res, cache, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
 	}
 
-	return runtime.NewResolverResult(res, cfg.InteractiveSQLRowLimit, cache), nil
+	return runtime.NewResolverResult(res, 0, cache), nil
 }
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {

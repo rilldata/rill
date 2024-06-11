@@ -55,7 +55,7 @@ func TestTemplateMetricsSQLAPI(t *testing.T) {
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 1, len(rows))
-	require.Equal(t, "3", rows[0]["measure_2"])
+	require.Equal(t, 3.0, rows[0]["measure_2"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
 	require.Equal(t, "Yahoo", rows[0]["publisher"])
 }
@@ -81,7 +81,7 @@ func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 1, len(rows))
-	require.Equal(t, "3", rows[0]["measure_2"])
+	require.Equal(t, 3.0, rows[0]["measure_2"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
 	require.Equal(t, "Yahoo", rows[0]["publisher"])
 }
@@ -106,7 +106,7 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	require.NoError(t, json.Unmarshal(res.Data, &rows))
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, nil, rows[0]["total volume"])
-	require.Equal(t, "3", rows[0]["total impressions"])
+	require.Equal(t, 3.0, rows[0]["total impressions"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
 	require.Equal(t, "YAHOO", rows[0]["publisher"])
 
@@ -126,8 +126,8 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 	var resp []map[string]interface{}
 	require.NoError(t, json.Unmarshal(res.Data, &resp))
 	require.Equal(t, 1, len(resp))
-	require.Equal(t, "11", resp[0]["total volume"])
-	require.Equal(t, "3", resp[0]["total impressions"])
+	require.Equal(t, 11.0, resp[0]["total volume"])
+	require.Equal(t, 3.0, resp[0]["total impressions"])
 	require.Equal(t, "msn.com", resp[0]["domain"])
 	require.Equal(t, nil, resp[0]["publisher"])
 }
