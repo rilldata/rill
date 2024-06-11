@@ -715,7 +715,7 @@ func untar(src, dest string) error {
 			// Setting a limit of 1GB to avoid G110: Potential DoS vulnerability via decompression bomb
 			// The max file size allowed via upload path is 100MB. Assume that 100MB tar file can't be decompressed to more than 1GB.
 			_, err = io.CopyN(outFile, tarReader, int64(datasize.GB))
-			if err != nil {
+			if err != nil && !errors.Is(err, io.EOF) {
 				outFile.Close()
 				return err
 			}

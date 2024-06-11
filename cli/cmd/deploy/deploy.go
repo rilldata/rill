@@ -1,16 +1,10 @@
 package deploy
 
 import (
-	"archive/tar"
-	"bytes"
-	"compress/gzip"
 	"context"
 	"errors"
 	"fmt"
-	"io"
-	"net/http"
 	"net/url"
-	"os"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -35,7 +29,6 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"github.com/spf13/cobra"
@@ -74,7 +67,7 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 	deployCmd.Flags().StringVar(&opts.ProdVersion, "prod-version", "latest", "Rill version (default: the latest release version)")
 	deployCmd.Flags().StringVar(&opts.ProdBranch, "prod-branch", "", "Git branch to deploy from (default: the default Git branch)")
 	deployCmd.Flags().IntVar(&opts.Slots, "prod-slots", 2, "Slots to allocate for production deployments")
-	deployCmd.Flags().BoolVar(&opts.Upload, "upload", false, "Upload project files to Rill managed storage instead of github")
+	deployCmd.Flags().BoolVarP(&opts.Upload, "upload", "u", false, "Upload project files to Rill managed storage instead of github")
 	if !ch.IsDev() {
 		if err := deployCmd.Flags().MarkHidden("prod-slots"); err != nil {
 			panic(err)
@@ -92,6 +85,9 @@ func DeployCmd(ch *cmdutil.Helper) *cobra.Command {
 		panic(err)
 	}
 
+	deployCmd.MarkFlagsMutuallyExclusive("upload", "subpath")
+	deployCmd.MarkFlagsMutuallyExclusive("upload", "remote")
+	deployCmd.MarkFlagsMutuallyExclusive("upload", "prod-branch")
 	return deployCmd
 }
 
@@ -343,7 +339,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 
 	// If no project name was provided, default to dir name
 	if opts.Name == "" {
-		opts.Name = filepath.Base(opts.GitPath)
+		opts.Name = filepath.Base(localProjectPath)
 	}
 
 	// Set a default org for the user if necessary
@@ -398,10 +394,17 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	}
 
 	// create a tar archive of the project and upload it
-	uploadPath, err := uploadProject(ctx, ch, opts, localProjectPath)
+	// get repo for current project
+	repo, _, err := cmdutil.RepoForProjectPath(localProjectPath)
 	if err != nil {
 		return err
 	}
+	printer.ColorGreenBold.Println("Starting upload.")
+	uploadPath, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
+	if err != nil {
+		return err
+	}
+	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
 
 	// Create the project (automatically deploys prod branch)
 	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
@@ -426,7 +429,6 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 
 	// Success!
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
-	ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
 
 	// we parse the project and check if credentials are available for the connectors used by the project.
 	variablesFlow(ctx, ch, localProjectPath, opts.SubPath, opts.Name)
@@ -1098,112 +1100,6 @@ func errMsgContains(err error, msg string) bool {
 		return strings.Contains(st.Message(), msg)
 	}
 	return false
-}
-
-func uploadProject(ctx context.Context, ch *cmdutil.Helper, opts *Options, projectPath string) (string, error) {
-	// get repo for current project
-	repo, _, err := cmdutil.RepoForProjectPath(projectPath)
-	if err != nil {
-		return "", err
-	}
-
-	// create temp tar file destination
-	b := &bytes.Buffer{}
-	// list files
-	entries, err := repo.ListRecursive(ctx, `**`, false)
-	if err != nil {
-		return "", err
-	}
-
-	// generate a tar ball
-	if err := createTarball(b, entries, repo.Root()); err != nil {
-		return "", err
-	}
-
-	adminClient, err := ch.Client()
-	if err != nil {
-		return "", err
-	}
-
-	// generate a upload URL
-	uploadURL, err := adminClient.CreateUploadSignedURL(ctx, &adminv1.CreateUploadSignedURLRequest{
-		OrganizationName: ch.Org,
-		ProjectName:      opts.Name,
-	})
-	if err != nil {
-		return "", err
-	}
-
-	// Create a put request
-	req, err := http.NewRequest(http.MethodPut, uploadURL.SignedUrl, b)
-	if err != nil {
-		return "", fmt.Errorf("failed to create request: %w", err)
-	}
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("x-goog-content-length-range", "1,104857600")
-
-	// Execute the request
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return "", fmt.Errorf("failed to execute request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	// Check the response
-	if resp.StatusCode == http.StatusOK {
-		printer.ColorGreenBold.Println("All files uploaded successfully.")
-	} else {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to upload file: status code %d, response %s", resp.StatusCode, string(body))
-	}
-	return uploadURL.UploadPath, nil
-}
-
-// borrowed from https://github.com/goreleaser/goreleaser/blob/main/pkg/archive/tar/tar.go with minor changes
-func createTarball(writer io.Writer, files []drivers.DirEntry, root string) error {
-	gw, err := gzip.NewWriterLevel(writer, gzip.BestCompression)
-	if err != nil {
-		return err
-	}
-	defer gw.Close()
-	tw := tar.NewWriter(gw)
-	defer tw.Close()
-	for _, entry := range files {
-		if strings.EqualFold(entry.Path, "/.env") { // ignore .env
-			continue
-		}
-		fullPath := filepath.Join(root, entry.Path)
-		info, err := os.Lstat(fullPath)
-		if err != nil {
-			return fmt.Errorf("%s: %w", fullPath, err)
-		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			return fmt.Errorf("%s: repo contains symlinks", entry.Path)
-		}
-
-		header, err := tar.FileInfoHeader(info, "")
-		if err != nil {
-			return fmt.Errorf("%s: %w", fullPath, err)
-		}
-		header.Name = entry.Path
-		if err = tw.WriteHeader(header); err != nil {
-			return fmt.Errorf("%s: %w", fullPath, err)
-		}
-		if info.IsDir() {
-			continue
-		}
-
-		file, err := os.Open(fullPath)
-		if err != nil {
-			return fmt.Errorf("%s: %w", fullPath, err)
-		}
-		if _, err := io.Copy(tw, file); err != nil {
-			file.Close()
-			return fmt.Errorf("%s: %w", fullPath, err)
-		}
-		file.Close()
-	}
-	return nil
 }
 
 const (

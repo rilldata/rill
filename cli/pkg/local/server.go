@@ -21,6 +21,7 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
@@ -419,41 +420,83 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 		return nil, err
 	}
 
-	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
-	if err != nil {
-		return nil, err
-	}
-	if !userStatus.HasAccess {
-		// generally this should not happen as IsGithubConnected should be true before deploying
-		return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
-	}
-
-	// check if project is a git repo
-	remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-	if err != nil {
-		if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
-			return nil, errors.New("project is not a valid git repository or not connected to a remote")
+	var projRequest *adminv1.CreateProjectRequest
+	if r.Msg.Upload { // upload repo to rill managed storage instead of github
+		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+		if err != nil {
+			return nil, err
 		}
-		return nil, err
-	}
+		defer release()
 
-	// check if there are uncommitted changes
-	// ignore errors since check is best effort and can fail in multiple cases
-	syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
-	if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
-		return nil, errors.New("project has uncommitted changes")
-	}
+		uploadPath, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		if err != nil {
+			return nil, err
+		}
 
-	// Get github repo status
-	repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-		GithubUrl: ghURL,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if !repoStatus.HasAccess {
-		// generally this should not happen as IsRepoAccessGranted should be true before deploying
-		return nil, fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
+		// create project request
+		projRequest = &adminv1.CreateProjectRequest{
+			OrganizationName: r.Msg.Org,
+			Name:             r.Msg.ProjectName,
+			Description:      "Auto created by Rill",
+			Provisioner:      "",
+			ProdVersion:      "",
+			ProdOlapDriver:   "",
+			ProdOlapDsn:      "",
+			ProdSlots:        2,
+			Public:           false,
+			UploadPath:       uploadPath,
+		}
+	} else {
+		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+		if err != nil {
+			return nil, err
+		}
+		if !userStatus.HasAccess {
+			// generally this should not happen as IsGithubConnected should be true before deploying
+			return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
+		}
+
+		// check if project is a git repo
+		remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+		if err != nil {
+			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
+				return nil, errors.New("project is not a valid git repository or not connected to a remote")
+			}
+			return nil, err
+		}
+
+		// check if there are uncommitted changes
+		// ignore errors since check is best effort and can fail in multiple cases
+		syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
+		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
+			return nil, errors.New("project has uncommitted changes")
+		}
+
+		// Get github repo status
+		repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+			GithubUrl: ghURL,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if !repoStatus.HasAccess {
+			// generally this should not happen as IsRepoAccessGranted should be true before deploying
+			return nil, fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
+		}
+		projRequest = &adminv1.CreateProjectRequest{
+			OrganizationName: r.Msg.Org,
+			Name:             r.Msg.ProjectName,
+			Description:      "Auto created by Rill",
+			Provisioner:      "",
+			ProdVersion:      "",
+			ProdOlapDriver:   "",
+			ProdOlapDsn:      "",
+			ProdSlots:        2,
+			Public:           false,
+			GithubUrl:        ghURL,
+			Subpath:          "",
+			ProdBranch:       repoStatus.DefaultBranch,
+		}
 	}
 
 	// check if rill org exists
@@ -484,20 +527,8 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 		if suffix > 0 {
 			name = fmt.Sprintf("%s-%d", r.Msg.ProjectName, suffix)
 		}
-		projResp, err = c.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: r.Msg.Org,
-			Name:             name,
-			Description:      "Auto created by Rill",
-			Provisioner:      "",
-			ProdVersion:      "",
-			ProdOlapDriver:   "",
-			ProdOlapDsn:      "",
-			ProdSlots:        2,
-			Subpath:          "",
-			ProdBranch:       repoStatus.DefaultBranch,
-			Public:           false,
-			GithubUrl:        ghURL,
-		})
+		projRequest.Name = name
+		projResp, err = c.CreateProject(ctx, projRequest)
 		suffix++
 		return err
 	})

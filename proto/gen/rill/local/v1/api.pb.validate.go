@@ -1174,6 +1174,8 @@ func (m *DeployRequest) validate(all bool) error {
 
 	// no validation rules for ProjectName
 
+	// no validation rules for Upload
+
 	if len(errors) > 0 {
 		return DeployRequestMultiError(errors)
 	}
