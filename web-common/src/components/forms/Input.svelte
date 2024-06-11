@@ -39,71 +39,73 @@
   });
 </script>
 
-{#if label}
-  <div class="label-wrapper">
-    <label for={id}>
-      {label}
-      {#if optional}
-        <span class="text-gray-500 text-sm">(optional)</span>
+<div class="flex flex-col gap-y-1">
+  {#if label}
+    <div class="label-wrapper">
+      <label for={id}>
+        {label}
+        {#if optional}
+          <span class="text-gray-500 text-sm">(optional)</span>
+        {/if}
+      </label>
+      {#if hint}
+        <Tooltip location="right" alignment="middle" distance={8}>
+          <div class="text-gray-500" style="transform:translateY(-.5px)">
+            <InfoCircle size="13px" />
+          </div>
+          <TooltipContent maxWidth="400px" slot="tooltip-content">
+            {@html hint}
+          </TooltipContent>
+        </Tooltip>
       {/if}
-    </label>
-    {#if hint}
-      <Tooltip location="right" alignment="middle" distance={8}>
-        <div class="text-gray-500" style="transform:translateY(-.5px)">
-          <InfoCircle size="13px" />
-        </div>
-        <TooltipContent maxWidth="400px" slot="tooltip-content">
-          {@html hint}
-        </TooltipContent>
-      </Tooltip>
+    </div>
+  {/if}
+
+  <div class="input-wrapper">
+    <input
+      {id}
+      {type}
+      {placeholder}
+      name={id}
+      autocomplete={autocomplete ? "on" : "off"}
+      bind:this={inputElement}
+      on:change={onChange}
+      on:input={(e) => {
+        value = e.currentTarget.value;
+        onInput(e);
+      }}
+      on:blur={() => (focus = false)}
+      on:focus={() => (focus = true)}
+    />
+    {#if secret}
+      <button
+        type="button"
+        aria-label={showPassword ? "Hide password" : "Show password"}
+        on:click={() => {
+          showPassword = !showPassword;
+        }}
+      >
+        {#if showPassword}
+          <EyeOffIcon size="14px" class="stroke-primary-600" />
+        {:else}
+          <EyeIcon size="14px" class="stroke-primary-600" />
+        {/if}
+      </button>
     {/if}
   </div>
-{/if}
 
-<div class="input-wrapper">
-  <input
-    {id}
-    name={id}
-    {type}
-    {placeholder}
-    autocomplete={autocomplete ? "on" : "off"}
-    bind:this={inputElement}
-    on:change={onChange}
-    on:input={(e) => {
-      value = e.currentTarget.value;
-      onInput(e);
-    }}
-    on:blur={() => (focus = false)}
-    on:focus={() => (focus = true)}
-  />
-  {#if secret}
-    <button
-      type="button"
-      aria-label={showPassword ? "Hide password" : "Show password"}
-      on:click={() => {
-        showPassword = !showPassword;
-      }}
-    >
-      {#if showPassword}
-        <EyeOffIcon size="14px" class="stroke-primary-600" />
-      {:else}
-        <EyeIcon size="14px" class="stroke-primary-600" />
-      {/if}
-    </button>
+  {#if error && (alwaysShowError || (!focus && value))}
+    <div in:slide={{ duration: 200 }} class="error">
+      {error}
+    </div>
   {/if}
 </div>
-
-{#if error && (alwaysShowError || (!focus && value))}
-  <div in:slide={{ duration: 200 }} class="error">
-    {error}
-  </div>
-{/if}
 
 <style lang="postcss">
   .label-wrapper {
     @apply flex items-center gap-x-1;
-    @apply pb-2;
   }
+
   label {
     @apply text-sm font-medium text-gray-800;
   }
@@ -111,6 +113,7 @@
   input {
     @apply size-full outline-none border-0;
   }
+
   .input-wrapper {
     @apply flex justify-center items-center overflow-hidden;
     @apply h-8 pl-2 w-full;
@@ -125,7 +128,6 @@
   }
 
   .error {
-    @apply pl-1 pt-1;
     @apply text-red-500 text-xs;
   }
 
