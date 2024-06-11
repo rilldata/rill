@@ -67,6 +67,7 @@
       {type}
       {placeholder}
       name={id}
+      value={value ?? ""}
       autocomplete={autocomplete ? "on" : "off"}
       bind:this={inputElement}
       on:change={onChange}
