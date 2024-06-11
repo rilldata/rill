@@ -31,6 +31,8 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import { Save } from "lucide-svelte";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -52,7 +54,7 @@
     removeLeadingSlash($page.params.file ?? "");
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: ({ name, hasUnsavedChanges } = fileArtifact);
+  $: ({ name, hasUnsavedChanges, saveLocalContent } = fileArtifact);
   $: resourceKind = $name?.kind as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
@@ -85,16 +87,16 @@
   aria-label="{filePath} Nav Entry"
   class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-slate-100"
   class:bg-slate-100={isCurrentFile}
+  class:opacity-50={$hasUnsavedChanges}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
     isDotFile
-      ? 'text-gray-400 hover:text-gray-400'
+      ? 'text-gray-500 hover:text-gray-500'
       : 'text-gray-900 hover:text-gray-900'}"
     href={`/files${filePath}`}
     {id}
     class:italic={$hasUnsavedChanges}
-    class:!text-gray-500={$hasUnsavedChanges}
     on:click={fireTelemetry}
     on:mousedown={handleMouseDown}
     style:padding-left="{padding}px"
@@ -149,6 +151,12 @@
             />
             <NavigationMenuSeparator />
           {/if}
+        {/if}
+        {#if $hasUnsavedChanges}
+          <NavigationMenuItem on:click={saveLocalContent}>
+            <Save slot="icon" size="12px" />
+            Save file
+          </NavigationMenuItem>
         {/if}
         <NavigationMenuItem on:click={() => onRename(filePath, false)}>
           <EditIcon slot="icon" />

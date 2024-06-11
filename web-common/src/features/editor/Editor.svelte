@@ -18,6 +18,7 @@
   export let disableAutoSave: boolean = false;
   export let editor: EditorView | null = null;
   export let forceLocalUpdates: boolean = false;
+  export let showSaveBar = true;
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
 
@@ -63,39 +64,41 @@
     {/key}
   </div>
 
-  <footer>
-    <div class="flex gap-x-3">
-      {#if !autoSave || disableAutoSave}
-        <Button type="subtle" disabled={!$hasUnsavedChanges} on:click={save}>
-          <Check size="14px" />
-          Save
-        </Button>
+  {#if showSaveBar}
+    <footer>
+      <div class="flex gap-x-3">
+        {#if !autoSave || disableAutoSave}
+          <Button type="subtle" disabled={!$hasUnsavedChanges} on:click={save}>
+            <Check size="14px" />
+            Save
+          </Button>
 
-        <Button
-          type="text"
-          disabled={!$hasUnsavedChanges}
-          on:click={revertContent}
-        >
-          <UndoIcon size="14px" />
-          Revert changes
-        </Button>
-      {/if}
-    </div>
-    <div
-      class="flex gap-x-1 items-center h-full bg-white rounded-full"
-      class:hidden={disableAutoSave}
-    >
-      <Switch
-        bind:checked={autoSave}
-        id="auto-save"
-        small
-        on:click={() => {
-          if (!autoSave) debounceSave();
-        }}
-      />
-      <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
-    </div>
-  </footer>
+          <Button
+            type="text"
+            disabled={!$hasUnsavedChanges}
+            on:click={revertContent}
+          >
+            <UndoIcon size="14px" />
+            Revert changes
+          </Button>
+        {/if}
+      </div>
+      <div
+        class="flex gap-x-1 items-center h-full bg-white rounded-full"
+        class:hidden={disableAutoSave}
+      >
+        <Switch
+          bind:checked={autoSave}
+          id="auto-save"
+          small
+          on:click={() => {
+            if (!autoSave) debounceSave();
+          }}
+        />
+        <Label class="font-normal text-xs" for="auto-save">Auto-save</Label>
+      </div>
+    </footer>
+  {/if}
 </section>
 
 <style lang="postcss">

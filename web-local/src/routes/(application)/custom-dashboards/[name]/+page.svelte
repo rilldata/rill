@@ -159,15 +159,17 @@
   }
 
   async function deleteChart(index: number) {
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+
     const items = parsedDocument.get("items");
 
     if (!items) return;
 
     items.delete(index);
 
-    yaml = parsedDocument.toString();
+    updateLocalContent(parsedDocument.toString(), true);
 
-    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+    if ($autoSave) await updateChartFile();
   }
 </script>
 
@@ -239,8 +241,8 @@
               <Editor
                 {fileArtifact}
                 extensions={FileExtensionToEditorExtension[".yaml"]}
-                bind:autoSave={$autoSave}
-                disableAutoSave={false}
+                autoSave
+                showSaveBar={false}
                 forceLocalUpdates
                 onRevert={() => {
                   spec = structuredClone(spec);

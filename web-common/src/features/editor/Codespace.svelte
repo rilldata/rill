@@ -112,6 +112,8 @@
   }
 
   function updateEditorContent(newContent: string) {
+    const existingSelection = editor?.state.selection.ranges[0];
+
     editor?.dispatch({
       changes: {
         from: 0,
@@ -119,7 +121,16 @@
         insert: newContent,
         newLength: newContent.length,
       },
-      selection: editor.state.selection,
+      selection: existingSelection && {
+        anchor:
+          existingSelection.from > newContent.length
+            ? newContent.length
+            : existingSelection.from,
+        head:
+          existingSelection.to > newContent.length
+            ? newContent.length
+            : existingSelection.to,
+      },
     });
   }
 </script>
