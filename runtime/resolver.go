@@ -98,6 +98,9 @@ func (r *resolverResult) MarshalJSON() ([]byte, error) {
 		}
 		out = append(out, row)
 	}
+	if r.rows.Err() != nil {
+		return nil, r.rows.Err()
+	}
 	return json.Marshal(out)
 }
 
