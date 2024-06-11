@@ -3342,6 +3342,11 @@ export class DashboardSpec extends Message<DashboardSpec> {
    */
   items: DashboardItem[] = [];
 
+  /**
+   * @generated from field: repeated rill.runtime.v1.DashboardVariable variables = 5;
+   */
+  variables: DashboardVariable[] = [];
+
   constructor(data?: PartialMessage<DashboardSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3354,6 +3359,7 @@ export class DashboardSpec extends Message<DashboardSpec> {
     { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "items", kind: "message", T: DashboardItem, repeated: true },
+    { no: 5, name: "variables", kind: "message", T: DashboardVariable, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardSpec {
@@ -3474,6 +3480,55 @@ export class DashboardItem extends Message<DashboardItem> {
 
   static equals(a: DashboardItem | PlainMessage<DashboardItem> | undefined, b: DashboardItem | PlainMessage<DashboardItem> | undefined): boolean {
     return proto3.util.equals(DashboardItem, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.DashboardVariable
+ */
+export class DashboardVariable extends Message<DashboardVariable> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string type = 2;
+   */
+  type = "";
+
+  /**
+   * @generated from field: string value = 3;
+   */
+  value = "";
+
+  constructor(data?: PartialMessage<DashboardVariable>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.DashboardVariable";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "value", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardVariable {
+    return new DashboardVariable().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DashboardVariable {
+    return new DashboardVariable().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DashboardVariable {
+    return new DashboardVariable().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DashboardVariable | PlainMessage<DashboardVariable> | undefined, b: DashboardVariable | PlainMessage<DashboardVariable> | undefined): boolean {
+    return proto3.util.equals(DashboardVariable, a, b);
   }
 }
 

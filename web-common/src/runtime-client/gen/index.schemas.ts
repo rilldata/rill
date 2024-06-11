@@ -770,6 +770,13 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -796,13 +803,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1275,6 +1275,25 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1291,27 +1310,6 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  having?: V1Expression;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
@@ -1353,23 +1351,25 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
+export interface V1MetricsViewAggregationRequest {
   instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
+  sort?: V1MetricsViewAggregationSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
   priority?: number;
-  exact?: boolean;
   filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -1416,27 +1416,6 @@ export interface V1ListFilesResponse {
 
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
-}
-
-/**
- * ConnectorDriver represents a connector driver available in the runtime.
- */
-export interface V1ConnectorDriver {
-  name?: string;
-  configProperties?: ConnectorDriverProperty[];
-  sourceProperties?: ConnectorDriverProperty[];
-  displayName?: string;
-  description?: string;
-  implementsRegistry?: boolean;
-  implementsCatalog?: boolean;
-  implementsRepo?: boolean;
-  implementsAdmin?: boolean;
-  implementsAi?: boolean;
-  implementsSqlStore?: boolean;
-  implementsOlap?: boolean;
-  implementsObjectStore?: boolean;
-  implementsFileStore?: boolean;
-  implementsNotifier?: boolean;
 }
 
 export interface V1ListConnectorDriversResponse {
@@ -1618,6 +1597,12 @@ export interface V1DeleteFileResponse {
   [key: string]: any;
 }
 
+export interface V1DashboardVariable {
+  name?: string;
+  type?: string;
+  value?: string;
+}
+
 export interface V1DashboardState {
   [key: string]: any;
 }
@@ -1637,6 +1622,7 @@ export interface V1DashboardSpec {
   columns?: number;
   gap?: number;
   items?: V1DashboardItem[];
+  variables?: V1DashboardVariable[];
 }
 
 export interface V1Dashboard {
@@ -1701,6 +1687,27 @@ export interface V1ConnectorSpec {
   /** properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
+}
+
+/**
+ * ConnectorDriver represents a connector driver available in the runtime.
+ */
+export interface V1ConnectorDriver {
+  name?: string;
+  configProperties?: ConnectorDriverProperty[];
+  sourceProperties?: ConnectorDriverProperty[];
+  displayName?: string;
+  description?: string;
+  implementsRegistry?: boolean;
+  implementsCatalog?: boolean;
+  implementsRepo?: boolean;
+  implementsAdmin?: boolean;
+  implementsAi?: boolean;
+  implementsSqlStore?: boolean;
+  implementsOlap?: boolean;
+  implementsObjectStore?: boolean;
+  implementsFileStore?: boolean;
+  implementsNotifier?: boolean;
 }
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };

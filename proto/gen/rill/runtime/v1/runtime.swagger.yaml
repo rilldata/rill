@@ -3675,8 +3675,22 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1DashboardItem'
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1DashboardVariable'
   v1DashboardState:
     type: object
+  v1DashboardVariable:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      value:
+        type: string
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile

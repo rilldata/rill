@@ -468,6 +468,7 @@ message DashboardSpec {
   uint32 columns = 2;
   uint32 gap = 3;
   repeated DashboardItem items = 4;
+  repeated DashboardVariable variables = 5;
 }
 
 message DashboardState {}
@@ -480,6 +481,12 @@ message DashboardItem {
   optional uint32 width = 4;
   optional uint32 height = 5;
   uint32 font_size = 7;
+}
+
+message DashboardVariable {
+  string name = 1;
+  string type = 2;
+  string value = 3;
 }
 
 // API defines a custom operation for querying data stored in Rill.

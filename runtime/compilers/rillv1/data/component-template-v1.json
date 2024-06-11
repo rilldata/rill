@@ -39,6 +39,17 @@
                 "x",
                 "y"
             ]
+        },
+        {
+            "additionalProperties": false,
+            "properties": {
+                "name": {
+                    "const": "input"
+                }
+            },
+            "required": [
+                "name"
+            ]
         }
-    ]    
+    ]
 }

@@ -14,7 +14,12 @@ type DashboardYAML struct {
 	Title      string           `yaml:"title"`
 	Columns    uint32           `yaml:"columns"`
 	Gap        uint32           `yaml:"gap"`
-	Items      []*struct {
+	Variables  []*struct {
+		Name  string `yaml:"name"`
+		Type  string `yaml:"type"`
+		Value string `yaml:"value"`
+	} `yaml:"variables"`
+	Items []*struct {
 		Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
 		X         *uint32   `yaml:"x"`
 		Y         *uint32   `yaml:"y"`
@@ -72,6 +77,18 @@ func (p *Parser) parseDashboard(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})
 	}
 
+	variables := make([]*runtimev1.DashboardVariable, len(tmp.Variables))
+	for i, v := range tmp.Variables {
+		if v == nil {
+			return fmt.Errorf("item at index %d is nil", i)
+		}
+		variables[i] = &runtimev1.DashboardVariable{
+			Name:  v.Name,
+			Type:  v.Type,
+			Value: v.Value,
+		}
+	}
+
 	// Track dashboard
 	r, err := p.insertResource(ResourceKindDashboard, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -83,6 +100,7 @@ func (p *Parser) parseDashboard(node *Node) error {
 	r.DashboardSpec.Columns = tmp.Columns
 	r.DashboardSpec.Gap = tmp.Gap
 	r.DashboardSpec.Items = items
+	r.DashboardSpec.Variables = variables
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {
