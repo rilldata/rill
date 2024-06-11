@@ -122,10 +122,22 @@ func writeCSV(res *drivers.Result, path string) error {
 
 		for i, v := range vals {
 			v := *(v.(*any))
-			strs[i], err = jsonval.ToString(v, res.Schema.Fields[i].Type)
+
+			v, err := jsonval.ToValue(v, res.Schema.Fields[i].Type)
 			if err != nil {
 				return fmt.Errorf("failed to convert to JSON value: %w", err)
 			}
+
+			var s string
+			if v != nil {
+				tmp, err := json.Marshal(v)
+				if err != nil {
+					return fmt.Errorf("failed to marshal JSON value: %w", err)
+				}
+				s = string(tmp)
+			}
+
+			strs[i] = s
 		}
 
 		err = w.Write(strs)

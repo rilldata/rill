@@ -15,24 +15,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-// ToString is similar to ToValue, but finally converts the value to a JSON string.
-func ToString(v any, t *runtimev1.Type) (string, error) {
-	v, err := ToValue(v, t)
-	if err != nil {
-		return "", err
-	}
-	if v == nil {
-		return "", nil
-	}
-	data, err := json.Marshal(v)
-	if err != nil {
-		return "", err
-	}
-	return string(data), nil
-}
-
 // ToValue converts a value scanned from a database/sql driver to a Go type that can be marshaled to JSON.
-// If v is a complex type, it may be changed in-place.
+// If v is a complex type, it may be mutated in-place.
 func ToValue(v any, t *runtimev1.Type) (any, error) {
 	switch v := v.(type) {
 	case nil:
