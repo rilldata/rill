@@ -9,7 +9,7 @@ import type {
   V1Expression,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
-import { Readable, derived, writable } from "svelte/store";
+import { Readable, derived, readable, writable } from "svelte/store";
 import {
   createPivotAggregationRowQuery,
   getAxisForDimensions,
@@ -152,7 +152,7 @@ export function queryExpandedRowMeasureValues(
 ): Readable<ExpandedRowMeasureValues[] | null> {
   const { rowDimensionNames } = config;
   const expanded = config.pivot.expanded;
-  if (!tableData || Object.keys(expanded).length == 0) return writable(null);
+  if (!tableData || Object.keys(expanded).length == 0) return readable(null);
 
   const measureBody = config.measureNames.map((m) => ({ name: m }));
   return derived(
@@ -160,7 +160,7 @@ export function queryExpandedRowMeasureValues(
       const nestLevel = expandIndex?.split(".")?.length;
 
       if (nestLevel >= rowDimensionNames.length)
-        return writable({
+        return readable({
           isFetching: false,
           expandIndex,
           rowDimensionValues: [],
@@ -179,7 +179,7 @@ export function queryExpandedRowMeasureValues(
         !values.length ||
         values.some((v) => v === undefined || v === "LOADING_CELL")
       )
-        return writable({
+        return readable({
           isFetching: true,
           expandIndex,
           rowDimensionValues: [],
@@ -255,13 +255,15 @@ export function queryExpandedRowMeasureValues(
         ],
         ([expandIndex, subRowDimensions], axisSet) => {
           if (subRowDimensions?.isFetching) {
-            return axisSet({
+            const rowMeasureValuesEmpty: ExpandedRowMeasureValues = {
               isFetching: true,
               expandIndex,
               rowDimensionValues: [],
               totals: [],
               data: [],
-            });
+            };
+
+            return axisSet(rowMeasureValuesEmpty);
           }
 
           const subRowDimensionValues =
@@ -295,13 +297,15 @@ export function queryExpandedRowMeasureValues(
             [subRowAxesQueryForMeasureTotals, subTableQuery],
             ([subRowTotals, subTableData]) => {
               if (subRowTotals?.isFetching) {
-                return {
-                  isFetching: true,
-                  expandIndex,
-                  rowDimensionValues: subRowDimensionValues,
-                  totals: [],
-                  data: subTableData?.data?.data || [],
-                };
+                const rowMeasureValueWithoutSubTable: ExpandedRowMeasureValues =
+                  {
+                    isFetching: true,
+                    expandIndex,
+                    rowDimensionValues: subRowDimensionValues,
+                    totals: [],
+                    data: subTableData?.data?.data || [],
+                  };
+                return rowMeasureValueWithoutSubTable;
               }
 
               const mergedRowTotals = mergeRowTotalsInOrder(
@@ -312,27 +316,30 @@ export function queryExpandedRowMeasureValues(
               );
 
               if (subTableData?.isFetching) {
-                return {
+                const rowMeasureValueWithTotals: ExpandedRowMeasureValues = {
                   isFetching: true,
                   expandIndex,
                   rowDimensionValues: subRowDimensionValues,
                   totals: mergedRowTotals,
                   data: subTableData?.data?.data || [],
                 };
+
+                return rowMeasureValueWithTotals;
               }
 
-              return {
+              const rowMeasureValue: ExpandedRowMeasureValues = {
                 isFetching: false,
                 expandIndex,
                 rowDimensionValues: subRowDimensionValues,
                 totals: mergedRowTotals,
                 data: subTableData?.data?.data || [],
               };
+              return rowMeasureValue;
             },
           ).subscribe(axisSet);
         },
       );
-    }),
+    }) ?? [],
     (combos) => {
       return combos;
     },
