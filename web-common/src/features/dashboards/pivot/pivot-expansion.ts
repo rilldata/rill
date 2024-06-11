@@ -340,7 +340,7 @@ export function queryExpandedRowMeasureValues(
         },
       );
     }) ?? [],
-    (combos) => {
+    (combos: ExpandedRowMeasureValues[]) => {
       return combos;
     },
   );
