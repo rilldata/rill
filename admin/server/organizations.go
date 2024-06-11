@@ -172,8 +172,8 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 	}
 
 	// cancel subscription
-	if org.BillingCustomerID != nil {
-		err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, *org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate, time.Time{})
+	if org.BillingCustomerID != "" {
+		err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate, time.Time{})
 		if err != nil {
 			s.logger.Error("failed to cancel subscriptions", zap.String("org", org.Name), zap.Error(err))
 		}
@@ -217,7 +217,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		if plan == nil {
 			return nil, status.Error(codes.InvalidArgument, "invalid plan")
 		}
-		if org.BillingCustomerID != nil {
+		if org.BillingCustomerID != "" {
 			// cancel current subscriptions if any
 			var cancelOption billing.SubscriptionCancellationOption
 			var cancelDate time.Time
@@ -237,7 +237,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 			default:
 				return nil, status.Error(codes.InvalidArgument, "invalid subscription change effective")
 			}
-			err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, *org.BillingCustomerID, cancelOption, cancelDate)
+			err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, cancelOption, cancelDate)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
@@ -247,10 +247,10 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			org.BillingCustomerID = &customerID
+			org.BillingCustomerID = customerID
 		}
 		// create new subscription
-		_, err = s.admin.Biller.CreateSubscription(ctx, *org.BillingCustomerID, plan)
+		_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

@@ -241,7 +241,7 @@ type Organization struct {
 	QuotaOutstandingInvites int       `db:"quota_outstanding_invites"`
 	QuotaNumUsers           int       `db:"quota_num_users"`
 	QuotaManagedDataBytes   int64     `db:"quota_managed_data_bytes"`
-	BillingCustomerID       *string   `db:"billing_customer_id"` // review: should this be a struct to store more metadata
+	BillingCustomerID       string    `db:"billing_customer_id"` // review: should this be a struct to store more metadata
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -255,7 +255,7 @@ type InsertOrganizationOptions struct {
 	QuotaOutstandingInvites int
 	QuotaNumUsers           int
 	QuotaManagedDataBytes   int64
-	BillingCustomerID       *string
+	BillingCustomerID       string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -269,7 +269,7 @@ type UpdateOrganizationOptions struct {
 	QuotaOutstandingInvites int
 	QuotaNumUsers           int
 	QuotaManagedDataBytes   int64
-	BillingCustomerID       *string
+	BillingCustomerID       string
 }
 
 // Project represents one Git connection.

@@ -1,6 +1,6 @@
-ALTER TABLE orgs ADD COLUMN billing_customer_id TEXT DEFAULT NULL;
+ALTER TABLE orgs ADD COLUMN billing_customer_id TEXT NOT NULL DEFAULT '';
 
-CREATE UNIQUE INDEX orgs_billing_customer_id_idx ON orgs (billing_customer_id) WHERE billing_customer_id IS NOT NULL;
+CREATE UNIQUE INDEX orgs_billing_customer_id_idx ON orgs (billing_customer_id) WHERE billing_customer_id <> '';
 
 ALTER TABLE orgs ADD COLUMN quota_num_users INTEGER NOT NULL DEFAULT -1; -- review: do we need quota on num admins as well
 ALTER TABLE orgs ADD COLUMN quota_managed_data_bytes BIGINT NOT NULL DEFAULT -1;

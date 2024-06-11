@@ -276,7 +276,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 			QuotaOutstandingInvites: quotaOutstandingInvites,
 			QuotaNumUsers:           quotaNumUsers,
 			QuotaManagedDataBytes:   quotaManagedDataBytes,
-			BillingCustomerID:       &customerID,
+			BillingCustomerID:       customerID,
 		})
 		if err != nil {
 			s.Logger.Error("failed to update organization with billing info", zap.String("org", orgName), zap.Error(err))

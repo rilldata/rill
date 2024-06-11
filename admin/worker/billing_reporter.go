@@ -213,10 +213,10 @@ func (w *Worker) reportProjectUsage(ctx context.Context, client *metrics.Client,
 }
 
 func (w *Worker) getReportableMetrics(ctx context.Context, org *database.Organization) ([]string, error) {
-	if org.BillingCustomerID == nil {
+	if org.BillingCustomerID == "" {
 		return nil, nil
 	}
-	subs, err := w.admin.Biller.GetSubscriptionsForCustomer(ctx, *org.BillingCustomerID)
+	subs, err := w.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, err
 	}
