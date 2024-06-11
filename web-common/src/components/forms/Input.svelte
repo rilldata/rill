@@ -25,7 +25,6 @@
   export let optional = false;
   export let onInput: (e: Event & InputEvent) => void = voidFunction;
   export let onChange: (e: Event & InputEvent) => void = voidFunction;
-  export let onEnter: (e: KeyboardEvent & InputEvent) => void = voidFunction;
 
   let showPassword = false;
   let inputElement: HTMLInputElement;
@@ -69,18 +68,10 @@
     {placeholder}
     autocomplete={autocomplete ? "on" : "off"}
     bind:this={inputElement}
-    on:change={(e) => {
-      onChange(e);
-    }}
+    on:change={onChange}
     on:input={(e) => {
       value = e.currentTarget.value;
       onInput(e);
-    }}
-    on:keydown={(e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        onEnter(e);
-      }
     }}
     on:blur={() => (focus = false)}
     on:focus={() => (focus = true)}
