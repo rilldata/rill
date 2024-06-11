@@ -111,6 +111,8 @@ import type {
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
+  V1SudoUpdateOrganizationBillingResponse,
+  V1SudoUpdateOrganizationBillingRequest,
   V1SudoUpdateAnnotationsResponse,
   V1SudoUpdateAnnotationsRequest,
   V1SearchProjectNamesResponse,
@@ -3991,6 +3993,57 @@ export const createAdminServiceSetSuperuser = <
     Awaited<ReturnType<typeof adminServiceSetSuperuser>>,
     TError,
     { data: V1SetSuperuserRequest },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary SudoUpdateOrganizationBilling update the quotas available for orgs
+ */
+export const adminServiceSudoUpdateOrganizationBilling = (
+  v1SudoUpdateOrganizationBillingRequest: V1SudoUpdateOrganizationBillingRequest,
+) => {
+  return httpClient<V1SudoUpdateOrganizationBillingResponse>({
+    url: `/v1/superuser/organization/billing`,
+    method: "patch",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoUpdateOrganizationBillingRequest,
+  });
+};
+
+export type AdminServiceSudoUpdateOrganizationBillingMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBilling>>
+  >;
+export type AdminServiceSudoUpdateOrganizationBillingMutationBody =
+  V1SudoUpdateOrganizationBillingRequest;
+export type AdminServiceSudoUpdateOrganizationBillingMutationError = RpcStatus;
+
+export const createAdminServiceSudoUpdateOrganizationBilling = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBilling>>,
+    TError,
+    { data: V1SudoUpdateOrganizationBillingRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBilling>>,
+    { data: V1SudoUpdateOrganizationBillingRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoUpdateOrganizationBilling(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoUpdateOrganizationBilling>>,
+    TError,
+    { data: V1SudoUpdateOrganizationBillingRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

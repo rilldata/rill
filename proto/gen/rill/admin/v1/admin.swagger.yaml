@@ -237,16 +237,6 @@ paths:
                 type: string
               newName:
                 type: string
-              rillPlan:
-                type: string
-              billerPlan:
-                type: string
-              subscriptionChangeEffective:
-                $ref: '#/definitions/v1SubscriptionChangeEffective'
-              subscriptionChangeDate:
-                type: string
-                format: date-time
-                title: Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -1899,6 +1889,27 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
+  /v1/superuser/organization/billing:
+    patch:
+      summary: SudoUpdateOrganizationBilling update the quotas available for orgs
+      operationId: AdminService_SudoUpdateOrganizationBilling
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingRequest'
+      tags:
+        - AdminService
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -2852,6 +2863,8 @@ definitions:
         type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
+      billingCustomerId:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -3142,6 +3155,7 @@ definitions:
       - SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE
       - SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
     default: SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED
+    title: 'review: may be don''t support this just cancel and assign new plan immediately'
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -3171,6 +3185,28 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1SudoUpdateOrganizationBillingRequest:
+    type: object
+    properties:
+      orgName:
+        type: string
+      billingCustomerId:
+        type: string
+      rillPlan:
+        type: string
+      billerPlan:
+        type: string
+      subscriptionChangeEffective:
+        $ref: '#/definitions/v1SubscriptionChangeEffective'
+      subscriptionChangeDate:
+        type: string
+        format: date-time
+        title: Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
+  v1SudoUpdateOrganizationBillingResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
@@ -3197,10 +3233,6 @@ definitions:
       managedDataBytes:
         type: string
         format: uint64
-      billerCustomerId:
-        type: string
-      billerSubscriptionId:
-        type: string
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:

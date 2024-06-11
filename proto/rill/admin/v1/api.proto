@@ -304,6 +304,14 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationBilling update the quotas available for orgs
+  rpc SudoUpdateOrganizationBilling(SudoUpdateOrganizationBillingRequest) returns (SudoUpdateOrganizationBillingResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/billing",
+      body: "*"
+    };
+  }
+
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
     option (google.api.http) = {
@@ -575,17 +583,6 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
-  optional string rill_plan = 4;
-  optional string biller_plan = 5;
-  SubscriptionChangeEffective subscription_change_effective = 6;
-  optional google.protobuf.Timestamp subscription_change_date = 7; // Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
-}
-
-enum SubscriptionChangeEffective {
-  SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED = 0;
-  SUBSCRIPTION_CHANGE_EFFECTIVE_NOW = 1;
-  SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE = 2;
-  SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE = 3;
 }
 
 message UpdateOrganizationResponse {
@@ -920,11 +917,30 @@ message SudoUpdateOrganizationQuotasRequest {
   optional uint32 outstanding_invites = 6;
   optional uint32 num_users = 7;
   optional uint64 managed_data_bytes = 8;
-  string biller_customer_id = 9;
-  string biller_subscription_id = 10;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
+  Organization organization = 1;
+}
+
+message SudoUpdateOrganizationBillingRequest {
+  string org_name = 1;
+  optional string billing_customer_id = 2;
+  optional string rill_plan = 4;
+  optional string biller_plan = 5;
+  optional SubscriptionChangeEffective subscription_change_effective = 6;
+  optional google.protobuf.Timestamp subscription_change_date = 7; // Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
+}
+
+// review: may be don't support this just cancel and assign new plan immediately
+enum SubscriptionChangeEffective {
+  SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED = 0;
+  SUBSCRIPTION_CHANGE_EFFECTIVE_NOW = 1;
+  SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE = 2;
+  SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE = 3;
+}
+
+message SudoUpdateOrganizationBillingResponse {
   Organization organization = 1;
 }
 
@@ -1418,6 +1434,7 @@ message Organization {
   string name = 2; // Globally unique
   string description = 3;
   OrganizationQuotas quotas = 4;
+  string billing_customer_id = 7;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }

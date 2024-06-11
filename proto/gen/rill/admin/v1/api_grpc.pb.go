@@ -66,6 +66,7 @@ const (
 	AdminService_SudoGetResource_FullMethodName                = "/rill.admin.v1.AdminService/SudoGetResource"
 	AdminService_SudoUpdateUserQuotas_FullMethodName           = "/rill.admin.v1.AdminService/SudoUpdateUserQuotas"
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName   = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
+	AdminService_SudoUpdateOrganizationBilling_FullMethodName  = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBilling"
 	AdminService_SudoUpdateAnnotations_FullMethodName          = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
@@ -201,6 +202,8 @@ type AdminServiceClient interface {
 	SudoUpdateUserQuotas(ctx context.Context, in *SudoUpdateUserQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(ctx context.Context, in *SudoUpdateOrganizationQuotasRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationQuotasResponse, error)
+	// SudoUpdateOrganizationBilling update the quotas available for orgs
+	SudoUpdateOrganizationBilling(ctx context.Context, in *SudoUpdateOrganizationBillingRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
@@ -747,6 +750,16 @@ func (c *adminServiceClient) SudoUpdateOrganizationQuotas(ctx context.Context, i
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoUpdateOrganizationBilling(ctx context.Context, in *SudoUpdateOrganizationBillingRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoUpdateOrganizationBillingResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoUpdateOrganizationBilling_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoUpdateAnnotationsResponse)
@@ -1177,6 +1190,8 @@ type AdminServiceServer interface {
 	SudoUpdateUserQuotas(context.Context, *SudoUpdateUserQuotasRequest) (*SudoUpdateUserQuotasResponse, error)
 	// SudoUpdateOrganizationQuotas update the quotas available for orgs
 	SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error)
+	// SudoUpdateOrganizationBilling update the quotas available for orgs
+	SudoUpdateOrganizationBilling(context.Context, *SudoUpdateOrganizationBillingRequest) (*SudoUpdateOrganizationBillingResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
@@ -1390,6 +1405,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateUserQuotas(context.Context, *Su
 }
 func (UnimplementedAdminServiceServer) SudoUpdateOrganizationQuotas(context.Context, *SudoUpdateOrganizationQuotasRequest) (*SudoUpdateOrganizationQuotasResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationQuotas not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBilling(context.Context, *SudoUpdateOrganizationBillingRequest) (*SudoUpdateOrganizationBillingResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateOrganizationBilling not implemented")
 }
 func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateAnnotations not implemented")
@@ -2349,6 +2367,24 @@ func _AdminService_SudoUpdateOrganizationQuotas_Handler(srv interface{}, ctx con
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoUpdateOrganizationBilling_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoUpdateOrganizationBillingRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationBilling(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoUpdateOrganizationBilling_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoUpdateOrganizationBilling(ctx, req.(*SudoUpdateOrganizationBillingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SudoUpdateAnnotations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SudoUpdateAnnotationsRequest)
 	if err := dec(in); err != nil {
@@ -3137,6 +3173,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateOrganizationQuotas",
 			Handler:    _AdminService_SudoUpdateOrganizationQuotas_Handler,
+		},
+		{
+			MethodName: "SudoUpdateOrganizationBilling",
+			Handler:    _AdminService_SudoUpdateOrganizationBilling_Handler,
 		},
 		{
 			MethodName: "SudoUpdateAnnotations",

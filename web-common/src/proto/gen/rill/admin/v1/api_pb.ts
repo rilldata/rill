@@ -8,6 +8,8 @@ import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protob
 import { ExportFormat } from "../../runtime/v1/export_format_pb.js";
 
 /**
+ * review: may be don't support this just cancel and assign new plan immediately
+ *
  * @generated from enum rill.admin.v1.SubscriptionChangeEffective
  */
 export enum SubscriptionChangeEffective {
@@ -516,28 +518,6 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
    */
   newName?: string;
 
-  /**
-   * @generated from field: optional string rill_plan = 4;
-   */
-  rillPlan?: string;
-
-  /**
-   * @generated from field: optional string biller_plan = 5;
-   */
-  billerPlan?: string;
-
-  /**
-   * @generated from field: rill.admin.v1.SubscriptionChangeEffective subscription_change_effective = 6;
-   */
-  subscriptionChangeEffective = SubscriptionChangeEffective.UNSPECIFIED;
-
-  /**
-   * Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
-   *
-   * @generated from field: optional google.protobuf.Timestamp subscription_change_date = 7;
-   */
-  subscriptionChangeDate?: Timestamp;
-
   constructor(data?: PartialMessage<UpdateOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -549,10 +529,6 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "rill_plan", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 5, name: "biller_plan", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 6, name: "subscription_change_effective", kind: "enum", T: proto3.getEnumType(SubscriptionChangeEffective) },
-    { no: 7, name: "subscription_change_date", kind: "message", T: Timestamp, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationRequest {
@@ -3242,16 +3218,6 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
    */
   managedDataBytes?: bigint;
 
-  /**
-   * @generated from field: string biller_customer_id = 9;
-   */
-  billerCustomerId = "";
-
-  /**
-   * @generated from field: string biller_subscription_id = 10;
-   */
-  billerSubscriptionId = "";
-
   constructor(data?: PartialMessage<SudoUpdateOrganizationQuotasRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3268,8 +3234,6 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
     { no: 6, name: "outstanding_invites", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 7, name: "num_users", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 8, name: "managed_data_bytes", kind: "scalar", T: 4 /* ScalarType.UINT64 */, opt: true },
-    { no: 9, name: "biller_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "biller_subscription_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationQuotasRequest {
@@ -3323,6 +3287,112 @@ export class SudoUpdateOrganizationQuotasResponse extends Message<SudoUpdateOrga
 
   static equals(a: SudoUpdateOrganizationQuotasResponse | PlainMessage<SudoUpdateOrganizationQuotasResponse> | undefined, b: SudoUpdateOrganizationQuotasResponse | PlainMessage<SudoUpdateOrganizationQuotasResponse> | undefined): boolean {
     return proto3.util.equals(SudoUpdateOrganizationQuotasResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoUpdateOrganizationBillingRequest
+ */
+export class SudoUpdateOrganizationBillingRequest extends Message<SudoUpdateOrganizationBillingRequest> {
+  /**
+   * @generated from field: string org_name = 1;
+   */
+  orgName = "";
+
+  /**
+   * @generated from field: optional string billing_customer_id = 2;
+   */
+  billingCustomerId?: string;
+
+  /**
+   * @generated from field: optional string rill_plan = 4;
+   */
+  rillPlan?: string;
+
+  /**
+   * @generated from field: optional string biller_plan = 5;
+   */
+  billerPlan?: string;
+
+  /**
+   * @generated from field: optional rill.admin.v1.SubscriptionChangeEffective subscription_change_effective = 6;
+   */
+  subscriptionChangeEffective?: SubscriptionChangeEffective;
+
+  /**
+   * Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
+   *
+   * @generated from field: optional google.protobuf.Timestamp subscription_change_date = 7;
+   */
+  subscriptionChangeDate?: Timestamp;
+
+  constructor(data?: PartialMessage<SudoUpdateOrganizationBillingRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationBillingRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "rill_plan", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 5, name: "biller_plan", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 6, name: "subscription_change_effective", kind: "enum", T: proto3.getEnumType(SubscriptionChangeEffective), opt: true },
+    { no: 7, name: "subscription_change_date", kind: "message", T: Timestamp, opt: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationBillingRequest {
+    return new SudoUpdateOrganizationBillingRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationBillingRequest {
+    return new SudoUpdateOrganizationBillingRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationBillingRequest {
+    return new SudoUpdateOrganizationBillingRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateOrganizationBillingRequest | PlainMessage<SudoUpdateOrganizationBillingRequest> | undefined, b: SudoUpdateOrganizationBillingRequest | PlainMessage<SudoUpdateOrganizationBillingRequest> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateOrganizationBillingRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoUpdateOrganizationBillingResponse
+ */
+export class SudoUpdateOrganizationBillingResponse extends Message<SudoUpdateOrganizationBillingResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Organization organization = 1;
+   */
+  organization?: Organization;
+
+  constructor(data?: PartialMessage<SudoUpdateOrganizationBillingResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoUpdateOrganizationBillingResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "message", T: Organization },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationBillingResponse {
+    return new SudoUpdateOrganizationBillingResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationBillingResponse {
+    return new SudoUpdateOrganizationBillingResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoUpdateOrganizationBillingResponse {
+    return new SudoUpdateOrganizationBillingResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoUpdateOrganizationBillingResponse | PlainMessage<SudoUpdateOrganizationBillingResponse> | undefined, b: SudoUpdateOrganizationBillingResponse | PlainMessage<SudoUpdateOrganizationBillingResponse> | undefined): boolean {
+    return proto3.util.equals(SudoUpdateOrganizationBillingResponse, a, b);
   }
 }
 
@@ -7564,6 +7634,11 @@ export class Organization extends Message<Organization> {
   quotas?: OrganizationQuotas;
 
   /**
+   * @generated from field: string billing_customer_id = 7;
+   */
+  billingCustomerId = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -7585,6 +7660,7 @@ export class Organization extends Message<Organization> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
+    { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);

@@ -190,12 +190,6 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
 	}
-	if req.RillPlan != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.rill_plan", *req.RillPlan))
-	}
-	if req.BillerPlan != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan", *req.BillerPlan))
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
@@ -208,54 +202,6 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	nameChanged := req.NewName != nil && *req.NewName != org.Name
-
-	if req.RillPlan != nil || req.BillerPlan != nil {
-		plan, err := s.admin.Biller.GetPlan(ctx, valOrDefault(req.RillPlan, ""), valOrDefault(req.BillerPlan, ""))
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		if plan == nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid plan")
-		}
-		if org.BillingCustomerID != "" {
-			// cancel current subscriptions if any
-			var cancelOption billing.SubscriptionCancellationOption
-			var cancelDate time.Time
-			switch req.SubscriptionChangeEffective {
-			case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW:
-				cancelOption = billing.SubscriptionCancellationOptionImmediate
-			case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
-				cancelOption = billing.SubscriptionCancellationOptionEndOfSubscriptionTerm
-			case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE:
-				cancelOption = billing.SubscriptionCancellationOptionRequestedDate
-				if req.SubscriptionChangeDate == nil {
-					return nil, status.Error(codes.InvalidArgument, "missing subscription change date")
-				}
-				cancelDate = req.SubscriptionChangeDate.AsTime()
-			case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED:
-				cancelOption = billing.SubscriptionCancellationOptionImmediate
-			default:
-				return nil, status.Error(codes.InvalidArgument, "invalid subscription change effective")
-			}
-			err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, cancelOption, cancelDate)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		} else {
-			// create new customer
-			customerID, err := s.admin.Biller.CreateCustomer(ctx, org)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			org.BillingCustomerID = customerID
-		}
-		// create new subscription
-		_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                    valOrDefault(req.NewName, org.Name),
 		Description:             valOrDefault(req.Description, org.Description),
@@ -930,6 +876,122 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	}, nil
 }
 
+func (s *Server) SudoUpdateOrganizationBilling(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingRequest) (*adminv1.SudoUpdateOrganizationBillingResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	if req.BillingCustomerId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.billing_customer_id", *req.BillingCustomerId))
+	}
+	if req.RillPlan != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.rill_plan", *req.RillPlan))
+	}
+	if req.BillerPlan != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan", *req.BillerPlan))
+	}
+	if req.SubscriptionChangeEffective != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.subscription_change_effective", req.SubscriptionChangeEffective.String()))
+	}
+	if req.SubscriptionChangeDate != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.subscription_change_date", req.SubscriptionChangeDate.AsTime().String()))
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage billing")
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	if err != nil {
+		return nil, err
+	}
+
+	if req.BillingCustomerId != nil {
+		if *req.BillingCustomerId == "" {
+			return nil, status.Error(codes.InvalidArgument, "missing billing customer ID")
+		}
+
+		if org.BillingCustomerID == *req.BillingCustomerId {
+			return &adminv1.SudoUpdateOrganizationBillingResponse{Organization: organizationToDTO(org)}, nil
+		}
+		org.BillingCustomerID = *req.BillingCustomerId
+	}
+
+	if req.RillPlan != nil || req.BillerPlan != nil {
+		plan, err := s.admin.Biller.GetPlan(ctx, valOrDefault(req.RillPlan, ""), valOrDefault(req.BillerPlan, ""))
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		if plan == nil {
+			return nil, status.Error(codes.InvalidArgument, "invalid plan")
+		}
+		if org.BillingCustomerID != "" {
+			subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+
+			for _, sub := range subs {
+				if sub.Plan.BillerID == plan.BillerID {
+					return nil, status.Error(codes.InvalidArgument, "plan already assigned to the organization")
+				}
+			}
+
+			// cancel current subscriptions if any, may be just support immediately cancelling and assining new plan
+			cancelOption := billing.SubscriptionCancellationOptionImmediate
+			var cancelDate time.Time
+			if req.SubscriptionChangeEffective != nil {
+				switch *req.SubscriptionChangeEffective {
+				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW:
+					cancelOption = billing.SubscriptionCancellationOptionImmediate
+				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
+					cancelOption = billing.SubscriptionCancellationOptionEndOfSubscriptionTerm
+				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE:
+					cancelOption = billing.SubscriptionCancellationOptionRequestedDate
+					if req.SubscriptionChangeDate == nil {
+						return nil, status.Error(codes.InvalidArgument, "missing subscription change date")
+					}
+					cancelDate = req.SubscriptionChangeDate.AsTime()
+				default:
+					return nil, status.Error(codes.InvalidArgument, "invalid subscription change effective")
+				}
+			}
+			err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, cancelOption, cancelDate)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+		} else {
+			// create new customer
+			customerID, err := s.admin.Biller.CreateCustomer(ctx, org)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			org.BillingCustomerID = customerID
+		}
+		// create new subscription
+		_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                    org.Name,
+		Description:             org.Description,
+		QuotaProjects:           org.QuotaProjects,
+		QuotaDeployments:        org.QuotaDeployments,
+		QuotaSlotsTotal:         org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
+		QuotaNumUsers:           org.QuotaNumUsers,
+		QuotaManagedDataBytes:   org.QuotaManagedDataBytes,
+		BillingCustomerID:       org.BillingCustomerID,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.SudoUpdateOrganizationBillingResponse{Organization: organizationToDTO(org)}, nil
+}
+
 func organizationToDTO(o *database.Organization) *adminv1.Organization {
 	return &adminv1.Organization{
 		Id:          o.ID,
@@ -944,8 +1006,9 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 			NumUsers:           uint32(o.QuotaNumUsers),
 			ManagedDataBytes:   uint64(o.QuotaManagedDataBytes),
 		},
-		CreatedOn: timestamppb.New(o.CreatedOn),
-		UpdatedOn: timestamppb.New(o.UpdatedOn),
+		BillingCustomerId: o.BillingCustomerID,
+		CreatedOn:         timestamppb.New(o.CreatedOn),
+		UpdatedOn:         timestamppb.New(o.UpdatedOn),
 	}
 }
 

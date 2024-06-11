@@ -195,10 +195,6 @@ export type AdminServiceListOrganizationInvitesParams = {
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
-  rillPlan?: string;
-  billerPlan?: string;
-  subscriptionChangeEffective?: V1SubscriptionChangeEffective;
-  subscriptionChangeDate?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -365,8 +361,19 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   outstandingInvites?: number;
   numUsers?: number;
   managedDataBytes?: string;
-  billerCustomerId?: string;
-  billerSubscriptionId?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingResponse {
+  organization?: V1Organization;
+}
+
+export interface V1SudoUpdateOrganizationBillingRequest {
+  orgName?: string;
+  billingCustomerId?: string;
+  rillPlan?: string;
+  billerPlan?: string;
+  subscriptionChangeEffective?: V1SubscriptionChangeEffective;
+  subscriptionChangeDate?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -584,6 +591,7 @@ export interface V1Organization {
   name?: string;
   description?: string;
   quotas?: V1OrganizationQuotas;
+  billingCustomerId?: string;
   createdOn?: string;
   updatedOn?: string;
 }
