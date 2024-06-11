@@ -53,17 +53,17 @@ type ResolverResult interface {
 
 func NewResolverResult(result *drivers.Result, rowLimit int64, cache bool) ResolverResult {
 	return &resolverResult{
-		rows:     result,
-		rowLimit: rowLimit,
-		cache:    cache,
+		rows:  result,
+		cache: cache,
 	}
 }
 
 type resolverResult struct {
-	rows     *drivers.Result
-	cache    bool
-	rowLimit int64
+	rows  *drivers.Result
+	cache bool
 }
+
+var _ ResolverResult = &resolverResult{}
 
 // Cache implements ResolverResult.
 func (r *resolverResult) Cache() bool {
@@ -81,22 +81,17 @@ func (r *resolverResult) MarshalJSON() ([]byte, error) {
 	defer r.rows.Close()
 	var out []map[string]any
 	for r.rows.Next() {
-		if r.rowLimit != 0 && int64(len(out)) >= r.rowLimit {
-			return nil, fmt.Errorf("sql resolver: query limit exceeded: returned more than %d rows", r.rowLimit)
-		}
-
 		row := make(map[string]any)
 		err := r.rows.MapScan(row)
 		if err != nil {
 			return nil, err
 		}
-		for _, field := range r.rows.Schema.Fields {
-			row[field.Name], err = jsonval.ToValue(row[field.Name], field.Type)
-			if err != nil {
-				return nil, err
-			}
+
+		ret, err := jsonval.ToValue(row, &runtimev1.Type{StructType: r.rows.Schema})
+		if err != nil {
+			return nil, err
 		}
-		out = append(out, row)
+		out = append(out, ret.(map[string]any))
 	}
 	if r.rows.Err() != nil {
 		return nil, r.rows.Err()
@@ -108,8 +103,6 @@ func (r *resolverResult) MarshalJSON() ([]byte, error) {
 func (r *resolverResult) Schema() *runtimev1.StructType {
 	return r.rows.Schema
 }
-
-var _ ResolverResult = &resolverResult{}
 
 // ResolverExportOptions are the options passed to a resolver's ResolveExport method.
 type ResolverExportOptions struct {

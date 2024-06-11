@@ -158,7 +158,9 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	if r.olap.Dialect() == drivers.DialectDuckDB {
 		cache = len(r.refs) != 0
 	}
-
+	if r.interactiveRowLimit != 0 {
+		res.SetCap(r.interactiveRowLimit)
+	}
 	return runtime.NewResolverResult(res, r.interactiveRowLimit, cache), nil
 }
 

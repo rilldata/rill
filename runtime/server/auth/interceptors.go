@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"net/url"
 	"strings"
 
 	"github.com/golang-jwt/jwt/v4"
@@ -42,7 +41,7 @@ func GetClaims(ctx context.Context) Claims {
 func UnaryServerInterceptor(aud *Audience) grpc.UnaryServerInterceptor {
 	return func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
 		authHeader := metautils.ExtractIncoming(ctx).Get("authorization")
-		newCtx, err := parseClaims(ctx, aud, authHeader)
+		newCtx, err := parseClaimsFromBearer(ctx, aud, authHeader)
 		if err != nil {
 			return nil, status.Error(codes.Unauthenticated, err.Error())
 		}
@@ -55,7 +54,7 @@ func UnaryServerInterceptor(aud *Audience) grpc.UnaryServerInterceptor {
 func StreamServerInterceptor(aud *Audience) grpc.StreamServerInterceptor {
 	return func(srv interface{}, ss grpc.ServerStream, info *grpc.StreamServerInfo, handler grpc.StreamHandler) error {
 		authHeader := metautils.ExtractIncoming(ss.Context()).Get("authorization")
-		newCtx, err := parseClaims(ss.Context(), aud, authHeader)
+		newCtx, err := parseClaimsFromBearer(ss.Context(), aud, authHeader)
 		if err != nil {
 			return status.Error(codes.Unauthenticated, err.Error())
 		}
@@ -72,7 +71,7 @@ func StreamServerInterceptor(aud *Audience) grpc.StreamServerInterceptor {
 func GatewayMiddleware(aud *Audience, next gateway.HandlerFunc) gateway.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request, pathParams map[string]string) {
 		authHeader := r.Header.Get("Authorization")
-		newCtx, err := parseClaims(r.Context(), aud, authHeader)
+		newCtx, err := parseClaimsFromBearer(r.Context(), aud, authHeader)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -87,7 +86,7 @@ func GatewayMiddleware(aud *Audience, next gateway.HandlerFunc) gateway.HandlerF
 func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		authHeader := r.Header.Get("Authorization")
-		newCtx, err := parseClaims(r.Context(), aud, authHeader)
+		newCtx, err := parseClaimsFromBearer(r.Context(), aud, authHeader)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusUnauthorized)
 			return
@@ -100,12 +99,7 @@ func HTTPMiddleware(aud *Audience, next http.Handler) http.Handler {
 // PSQLAuthHandler handles authentication for a PostgreSQL wire-compatible endpoint
 func PSQLAuthHandler(aud *Audience) func(ctx context.Context, username, password string) (context.Context, bool, error) {
 	return func(ctx context.Context, username, password string) (context.Context, bool, error) {
-		var err error
-		password, err = url.QueryUnescape(password)
-		if err != nil {
-			return nil, false, err
-		}
-		ctxWithClaim, err := parseClaims(ctx, aud, password)
+		ctxWithClaim, err := parseClaimsFromToken(ctx, aud, password)
 		if err != nil {
 			return ctx, false, fmt.Errorf("authentication failed: %w", err)
 		}
@@ -113,7 +107,7 @@ func PSQLAuthHandler(aud *Audience) func(ctx context.Context, username, password
 	}
 }
 
-func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
+func parseClaimsFromBearer(ctx context.Context, aud *Audience, authorizationHeader string) (context.Context, error) {
 	// When aud == nil, it means auth is disabled. Additionally, if auth header is not set then we set openClaims.
 	// If auth header is set then that means its running locally with some user context, so we set devJWTClaims.
 	if aud == nil {
@@ -152,8 +146,12 @@ func parseClaims(ctx context.Context, aud *Audience, authorizationHeader string)
 		return nil, errors.New("no bearer token found in authorization header")
 	}
 
+	return parseClaimsFromToken(ctx, aud, bearerToken)
+}
+
+func parseClaimsFromToken(ctx context.Context, aud *Audience, token string) (context.Context, error) {
 	// Parse, validate and set claims from JWT
-	claims, err := aud.ParseAndValidate(bearerToken)
+	claims, err := aud.ParseAndValidate(token)
 	if err != nil {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			// The JWT library appends the expiration duration to the error message, which looks messy/ungrouped in observability.

@@ -75,6 +75,7 @@ func ResolvePSQLQuery(ctx context.Context, opts *PSQLQueryOpts) ([][]any, *runti
 	if err != nil {
 		return nil, nil, err
 	}
+	defer db.Close()
 
 	// postgres's default schema is public
 	if _, err := db.ExecContext(ctx, "CREATE SCHEMA IF NOT EXISTS public"); err != nil {

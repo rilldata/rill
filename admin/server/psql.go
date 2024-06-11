@@ -31,7 +31,7 @@ func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt 
 		}
 	}()
 
-	if strings.Trim(query, " ") == "" {
+	if strings.TrimSpace(query) == "" {
 		return wire.Prepared(wire.NewStatement(func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
 			return writer.Empty()
 		})), nil
@@ -55,6 +55,8 @@ func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt 
 		return nil, err
 	}
 
+	c, _ := conn.Acquire(context.Background())
+	c.Conn().Prepare()
 	rows, err := conn.Query(ctx, query) // query to underlying host
 	if err != nil {
 		return nil, err
@@ -249,7 +251,7 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 		if err != nil {
 			return err
 		}
-		cc.Password = fmt.Sprintf("Bearer %s", jwt)
+		cc.Password = jwt
 		return nil
 	}
 
