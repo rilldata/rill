@@ -2,7 +2,6 @@ import type {
   MetricsViewSpecDimensionV2,
   RpcStatus,
   V1MetricsViewAggregationResponse,
-  V1MetricsViewComparisonResponse,
   V1MetricsViewTotalsResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";

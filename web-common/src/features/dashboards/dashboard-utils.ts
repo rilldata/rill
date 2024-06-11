@@ -4,6 +4,7 @@ import {
   ComparisonDeltaRelativeSuffix,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -73,6 +74,7 @@ export function prepareSortedQueryBody(
   if (
     comparisonTimeRange?.start &&
     comparisonTimeRange?.end &&
+    !!timeControls.selectedComparisonTimeRange &&
     sortMeasureName
   ) {
     measures.push(
@@ -95,6 +97,15 @@ export function prepareSortedQueryBody(
         },
       },
     );
+
+    switch (sortType) {
+      case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
+        sortMeasureName += ComparisonDeltaAbsoluteSuffix;
+        break;
+      case DashboardState_LeaderboardSortType.DELTA_PERCENT:
+        sortMeasureName += ComparisonDeltaRelativeSuffix;
+        break;
+    }
   }
 
   return {

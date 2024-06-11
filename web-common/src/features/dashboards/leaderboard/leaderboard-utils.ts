@@ -11,29 +11,6 @@ import {
 
 import { SortType } from "../proto-state/derived-types";
 
-/**
- * A `V1MetricsViewComparisonRow` basically represents a row of data
- * in the *dimension detail table*, NOT in the leaderboard. Therefore,
- * to convert to rows of leaderboard data, we need to extract a single
- * measure from the dimension table shaped data (namely, the active
- * measure in the leaderboard).
- */
-export function getLabeledComparisonFromComparisonRow(
-  row: V1MetricsViewAggregationResponseDataItem,
-  measureName: string | number,
-): ComparisonValueWithLabel {
-  const measure = row[measureName];
-  if (!measure) {
-    throw new Error(
-      `Could not find measure ${measureName} in row ${JSON.stringify(row)}`,
-    );
-  }
-  return {
-    dimensionValue: row.dimensionValue as string,
-    ...measure,
-  };
-}
-
 export type LeaderboardItemData = {
   /**
    *The dimension value label to be shown in the leaderboard

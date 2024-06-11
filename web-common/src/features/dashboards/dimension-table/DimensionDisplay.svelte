@@ -10,11 +10,7 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
-  import {
-    createQueryServiceMetricsViewAggregation,
-    createQueryServiceMetricsViewComparison,
-    createQueryServiceMetricsViewTotals,
-  } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
