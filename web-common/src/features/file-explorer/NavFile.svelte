@@ -31,7 +31,6 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import { Save } from "lucide-svelte";
 
   export let filePath: string;
