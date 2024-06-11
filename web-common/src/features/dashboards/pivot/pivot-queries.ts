@@ -222,7 +222,7 @@ export function getAxisQueryForMeasureTotals(
     let mergedFilter: V1Expression | undefined = sortedRowFilters;
 
     if (otherFilters) {
-      mergedFilter = mergeFilters(sortedRowFilters, otherFilters);
+      mergedFilter = mergeFilters(otherFilters, sortedRowFilters);
     }
 
     rowAxesQueryForMeasureTotals = getAxisForDimensions(

@@ -419,12 +419,13 @@ export function getFilterForMeasuresTotalsAxesQuery(
   anchorDimension: string,
   rowDimensionValues: string[],
 ): V1Expression | undefined {
-  let rowFilters: V1Expression | undefined;
-  if (anchorDimension) {
-    rowFilters = createInExpression(anchorDimension, rowDimensionValues);
+  if (isTimeDimension(anchorDimension, config.time.timeDimension)) {
+    return config.whereFilter;
   }
-
-  const mergedFilters = mergeFilters(config.whereFilter, rowFilters ?? {});
+  const rowFilters = createAndExpression([
+    createInExpression(anchorDimension, rowDimensionValues),
+  ]);
+  const mergedFilters = mergeFilters(rowFilters, config.whereFilter);
 
   return mergedFilters;
 }
