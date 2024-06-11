@@ -67,7 +67,8 @@ type rillYAML struct {
 	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
-	Features yaml.Node `yaml:"features"`
+	Features    yaml.Node `yaml:"features"`
+	PublicPaths []string  `yaml:"public_paths"`
 }
 
 // parseRillYAML parses rill.yaml

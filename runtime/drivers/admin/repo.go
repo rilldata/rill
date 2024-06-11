@@ -130,6 +130,14 @@ func (h *Handle) MakeDir(ctx context.Context, dirPath string) error {
 	return fmt.Errorf("make dir operation is unsupported")
 }
 
+func (h *Handle) SetCachedPaths(paths []string) error {
+	return fmt.Errorf("operation is unsupported") // todo
+}
+
+func (h *Handle) GetCachedPaths(paths []string) []string {
+	return []string{} // todo
+}
+
 func (h *Handle) Rename(ctx context.Context, fromPath, toPath string) error {
 	return fmt.Errorf("rename operation is unsupported")
 }

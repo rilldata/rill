@@ -143,6 +143,7 @@ type connection struct {
 	watcher      *watcher
 
 	ignorePaths []string
+	cachedPaths []string
 }
 
 // Config implements drivers.Connection.
