@@ -25,14 +25,15 @@ type NativeSearchSort struct {
 	Type string `json:"type"`
 }
 type NativeSearchQueryRequest struct {
-	Context          QueryContext      `json:"context"`
-	QueryType        string            `json:"queryType"`
-	DataSource       string            `json:"dataSource"`
-	SearchDimensions []string          `json:"searchDimensions"`
-	Limit            int               `json:"limit"`
-	Query            NativeSearchQuery `json:"query"`
-	Sort             NativeSearchSort  `json:"sort"`
-	Intervals        []string          `json:"intervals"`
+	Context          QueryContext           `json:"context"`
+	QueryType        string                 `json:"queryType"`
+	DataSource       string                 `json:"dataSource"`
+	SearchDimensions []string               `json:"searchDimensions"`
+	Limit            int                    `json:"limit"`
+	Query            NativeSearchQuery      `json:"query"`
+	Sort             NativeSearchSort       `json:"sort"`
+	Intervals        []string               `json:"intervals"`
+	Filter           map[string]interface{} `json:"filter"`
 }
 
 type NativeSearchQueryResponse []struct {
@@ -53,6 +54,12 @@ func NewNativeQuery(dsn string) NativeQuery {
 		client: &http.Client{},
 		dsn:    dsn,
 	}
+}
+
+type QueryPlan struct {
+	Query struct {
+		Filter *map[string]interface{} `json:"filter"`
+	} `json:"query"`
 }
 
 func (n *NativeQuery) Do(ctx context.Context, dr interface{}, res interface{}, queryID string) error {
@@ -98,7 +105,7 @@ func (n *NativeQuery) Do(ctx context.Context, dr interface{}, res interface{}, q
 	return nil
 }
 
-func NewNativeSearchQueryRequest(source, search string, dimensions []string, start, end time.Time) NativeSearchQueryRequest {
+func NewNativeSearchQueryRequest(source, search string, dimensions []string, start, end time.Time, filter map[string]interface{}) NativeSearchQueryRequest {
 	return NativeSearchQueryRequest{
 		Context: QueryContext{
 			QueryID: uuid.New().String(),
@@ -118,5 +125,6 @@ func NewNativeSearchQueryRequest(source, search string, dimensions []string, sta
 		Intervals: []string{
 			fmt.Sprintf("%s/%s", start.Format(time.RFC3339), end.Format(time.RFC3339)),
 		},
+		Filter: filter,
 	}
 }

@@ -105,7 +105,10 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 
 	if olap.Dialect() == drivers.DialectDruid {
-		return q.executeSearchInDruid(ctx, rt, instanceID, mv.Table)
+		ok, err := q.executeSearchInDruid(ctx, rt, instanceID, mv.Table, resolvedSecurity)
+		if err != nil || ok {
+			return err
+		}
 	}
 
 	sql, args, err := q.buildSearchQuerySQL(mv, olap.Dialect(), resolvedSecurity)
@@ -155,11 +158,60 @@ func (q *MetricsViewSearch) Export(ctx context.Context, rt *runtime.Runtime, ins
 	return nil
 }
 
-func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, instanceID, table string) error {
-	// TODO: apply security filter
+func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, instanceID, table string, policy *runtime.ResolvedMetricsViewSecurity) (bool, error) {
+	var query map[string]interface{}
+	if policy != nil && policy.RowFilter != "" {
+		druidolap, release, err := rt.OLAP(ctx, instanceID, "druid")
+		if err != nil {
+			return false, err
+		}
+		defer release()
+
+		rows, err := druidolap.Execute(ctx, &drivers.Statement{
+			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", table, policy.RowFilter),
+			Args:             nil,
+			DryRun:           false,
+			Priority:         0,
+			LongRunning:      false,
+			ExecutionTimeout: 0,
+		})
+		if err != nil {
+			return false, err
+		}
+
+		if !rows.Next() {
+			return false, fmt.Errorf("failed to parse policy filter")
+		}
+
+		var planRaw string
+		var resRaw string
+		var attrRaw string
+		err = rows.Scan(&planRaw, &resRaw, &attrRaw)
+		if err != nil {
+			return false, err
+		}
+
+		var plan []druid.QueryPlan
+		err = json.Unmarshal([]byte(planRaw), &plan)
+		if err != nil {
+			return false, err
+		}
+
+		if len(plan) == 0 {
+			return false, fmt.Errorf("failed to parse policy filter")
+		}
+		if plan[0].Query.Filter == nil {
+			// if we failed to parse a filter we return and run UNION query.
+			// this can happen when the row filter is complex
+			// TODO: iterate over this and integrate more parts like joins and subfilter in policy filter
+			return false, nil
+		}
+		query = *plan[0].Query.Filter
+	}
+
 	inst, err := rt.Instance(ctx, instanceID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	dsn := ""
@@ -169,15 +221,15 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 		}
 	}
 	if dsn == "" {
-		return fmt.Errorf("druid connector config not found in instance")
+		return false, fmt.Errorf("druid connector config not found in instance")
 	}
 
 	nq := druid.NewNativeQuery(strings.Replace(dsn, "/v2/sql/avatica-protobuf/", "/v2/", 1))
-	req := druid.NewNativeSearchQueryRequest(table, q.Search, q.Dimensions, q.TimeRange.Start.AsTime(), q.TimeRange.End.AsTime())
+	req := druid.NewNativeSearchQueryRequest(table, q.Search, q.Dimensions, q.TimeRange.Start.AsTime(), q.TimeRange.End.AsTime(), query)
 	var res druid.NativeSearchQueryResponse
 	err = nq.Do(ctx, req, &res, req.Context.QueryID)
 	if err != nil {
-		return err
+		return false, err
 	}
 
 	q.Result = &runtimev1.MetricsViewSearchResponse{Results: make([]*runtimev1.MetricsViewSearchResponse_SearchResult, 0)}
@@ -185,7 +237,7 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 		for _, r := range re.Result {
 			v, err := structpb.NewValue(r.Value)
 			if err != nil {
-				return err
+				return false, err
 			}
 			q.Result.Results = append(q.Result.Results, &runtimev1.MetricsViewSearchResponse_SearchResult{
 				Dimension: r.Dimension,
@@ -194,7 +246,7 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 		}
 	}
 
-	return nil
+	return true, nil
 }
 
 func (q *MetricsViewSearch) buildSearchQuerySQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
@@ -233,7 +285,7 @@ func (q *MetricsViewSearch) buildSearchQuerySQL(mv *runtimev1.MetricsViewSpec, d
 		}
 
 		unions[i] = fmt.Sprintf(
-			"SELECT %s as value, '%s' as dimension from %s %s WHERE 1=1 %s %s GROUP BY 1",
+			`SELECT %s as "value", '%s' as dimension from %s %s WHERE 1=1 %s %s GROUP BY 1`,
 			expr,
 			dimName,
 			mv.Table,
@@ -243,5 +295,5 @@ func (q *MetricsViewSearch) buildSearchQuerySQL(mv *runtimev1.MetricsViewSpec, d
 		)
 	}
 
-	return strings.Join(unions, " UNION "), args, nil
+	return strings.Join(unions, " UNION ALL "), args, nil
 }
