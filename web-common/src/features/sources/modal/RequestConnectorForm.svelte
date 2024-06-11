@@ -61,7 +61,7 @@
         placeholder="Your data source"
         error={$errors["request"]}
         bind:value={$form["request"]}
-        on:change={handleChange}
+        onChange={handleChange}
       />
     </div>
     <div class="pt-4 pb-5 text-slate-800">
@@ -71,7 +71,7 @@
         placeholder="Your email address"
         error={$errors["email"]}
         bind:value={$form["email"]}
-        on:change={handleChange}
+        onChange={handleChange}
       />
     </div>
   </form>

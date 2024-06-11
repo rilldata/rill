@@ -124,8 +124,8 @@
             hint={property.hint}
             error={$errors[toYupFriendlyKey(property.key)]}
             bind:value={$form[toYupFriendlyKey(property.key)]}
-            on:input={onStringInputChange}
-            on:change={handleChange}
+            onInput={onStringInputChange}
+            onChange={handleChange}
           />
         {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN && property.key !== undefined}
           <label for={property.key} class="flex items-center">
