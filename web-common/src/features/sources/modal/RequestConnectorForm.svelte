@@ -23,6 +23,7 @@
         request: string().required("Required"),
         email: string().email("Invalid email"),
       }),
+
       onSubmit: async (values) => {
         // Following the approach here: https://stackoverflow.com/questions/51995070/post-data-to-a-google-form-with-ajax
         const submitFormEndpoint = `${GOOGLE_FORM_ENDPOINT}/formResponse?${REQUEST_FIELD_ID}=${values.request}&${EMAIL_FIELD_ID}=${values.email}&submit=Submit`;

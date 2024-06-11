@@ -117,8 +117,10 @@
         {#if property.type === ConnectorDriverPropertyType.TYPE_STRING && property.key !== undefined}
           <Input
             id={toYupFriendlyKey(property.key)}
-            {label}
+            label={property.displayName}
             placeholder={property.placeholder}
+            optional={!property.required}
+            secret={property.secret}
             hint={property.hint}
             error={$errors[toYupFriendlyKey(property.key)]}
             bind:value={$form[toYupFriendlyKey(property.key)]}
