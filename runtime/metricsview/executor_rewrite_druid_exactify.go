@@ -76,7 +76,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
+		ExecutionTimeout: defaultInteractiveTimeout,
 	})
 	if err != nil {
 		return err
