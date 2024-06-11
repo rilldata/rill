@@ -21,7 +21,7 @@ import (
 )
 
 func TestOrganizationWorkflow(t *testing.T) {
-	t.Skip("Skipping test as it is failing on CI")
+	//t.Skip("Skipping test as it is failing on CI")
 	pg := pgtestcontainer.New(t)
 	defer pg.Terminate(t)
 

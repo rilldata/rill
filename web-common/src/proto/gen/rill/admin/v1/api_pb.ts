@@ -7564,11 +7564,6 @@ export class Organization extends Message<Organization> {
   quotas?: OrganizationQuotas;
 
   /**
-   * @generated from field: rill.admin.v1.BillingMetadata billing_metadata = 7;
-   */
-  billingMetadata?: BillingMetadata;
-
-  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -7590,7 +7585,6 @@ export class Organization extends Message<Organization> {
     { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
-    { no: 7, name: "billing_metadata", kind: "message", T: BillingMetadata },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
@@ -7609,49 +7603,6 @@ export class Organization extends Message<Organization> {
 
   static equals(a: Organization | PlainMessage<Organization> | undefined, b: Organization | PlainMessage<Organization> | undefined): boolean {
     return proto3.util.equals(Organization, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.BillingMetadata
- */
-export class BillingMetadata extends Message<BillingMetadata> {
-  /**
-   * @generated from field: string customer_id = 1;
-   */
-  customerId = "";
-
-  /**
-   * @generated from field: repeated string subscription_ids = 2;
-   */
-  subscriptionIds: string[] = [];
-
-  constructor(data?: PartialMessage<BillingMetadata>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.BillingMetadata";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "subscription_ids", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingMetadata {
-    return new BillingMetadata().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): BillingMetadata {
-    return new BillingMetadata().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): BillingMetadata {
-    return new BillingMetadata().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: BillingMetadata | PlainMessage<BillingMetadata> | undefined, b: BillingMetadata | PlainMessage<BillingMetadata> | undefined): boolean {
-    return proto3.util.equals(BillingMetadata, a, b);
   }
 }
 

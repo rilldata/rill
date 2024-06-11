@@ -1418,14 +1418,8 @@ message Organization {
   string name = 2; // Globally unique
   string description = 3;
   OrganizationQuotas quotas = 4;
-  BillingMetadata billing_metadata = 7;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
-}
-
-message BillingMetadata {
-  string customer_id = 1;
-  repeated string subscription_ids = 2;
 }
 
 message UserQuotas {

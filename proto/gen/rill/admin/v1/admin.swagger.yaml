@@ -2359,15 +2359,6 @@ definitions:
         type: array
         items:
           type: string
-  v1BillingMetadata:
-    type: object
-    properties:
-      customerId:
-        type: string
-      subscriptionIds:
-        type: array
-        items:
-          type: string
   v1Bookmark:
     type: object
     properties:
@@ -2861,8 +2852,6 @@ definitions:
         type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
-      billingMetadata:
-        $ref: '#/definitions/v1BillingMetadata'
       createdOn:
         type: string
         format: date-time

@@ -584,7 +584,6 @@ export interface V1Organization {
   name?: string;
   description?: string;
   quotas?: V1OrganizationQuotas;
-  billingMetadata?: V1BillingMetadata;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -925,11 +924,6 @@ export interface V1Bookmark {
   shared?: boolean;
   createdOn?: string;
   updatedOn?: string;
-}
-
-export interface V1BillingMetadata {
-  customerId?: string;
-  subscriptionIds?: string[];
 }
 
 export interface V1AlertOptions {

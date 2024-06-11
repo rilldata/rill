@@ -181,7 +181,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 }
 
 func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string, plan *billing.Plan) (*database.Organization, error) {
-	ctx, tx, err := s.DB.NewTx(ctx)
+	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	quotaNumUsers := database.DefaultQuotaUsers
 	quotaManagedDataBytes := database.DefaultQuotaManagedDataBytes
 
-	org, err := s.DB.InsertOrganization(ctx, &database.InsertOrganizationOptions{
+	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
 		Name:                    orgName,
 		Description:             description,
 		QuotaProjects:           quotaProjects,
@@ -210,7 +210,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 		return nil, err
 	}
 
-	org, err = s.prepareOrganization(ctx, org.ID, userID)
+	org, err = s.prepareOrganization(txCtx, org.ID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -222,6 +222,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
+	var updatedOrg *database.Organization
 	// create customer and subscription in the billing system, if it fails just log the error but don't fail the request
 	customerID, err := s.Biller.CreateCustomer(ctx, org)
 	if err == nil {
@@ -265,7 +266,7 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 			}
 		}
 
-		org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		updatedOrg, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 			Name:                    org.Name,
 			Description:             org.Description,
 			QuotaProjects:           quotaProjects,
@@ -279,12 +280,14 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 		})
 		if err != nil {
 			s.Logger.Error("failed to update organization with billing info", zap.String("org", orgName), zap.Error(err))
+			return org, nil
 		}
 	} else {
 		s.Logger.Error("failed to create customer in billing system for org", zap.String("org", orgName), zap.Error(err))
+		return org, nil
 	}
 
-	return org, nil
+	return updatedOrg, nil
 }
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
