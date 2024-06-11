@@ -8,8 +8,6 @@ import (
 
 // SQL builds a SQL query from the AST.
 // It returns the query and query arguments to be passed to the database driver.
-//
-// It does not produce a PIVOT query when PivotOn is set. See astpivot.go for functions to build PIVOT queries from an AST.
 func (a *AST) SQL() (string, []any, error) {
 	b := &sqlBuilder{
 		ast: a,
@@ -48,7 +46,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
-		b.out.WriteString(" as ")
+		b.out.WriteString(" AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
 	}
 
@@ -62,7 +60,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
-		b.out.WriteString(" as ")
+		b.out.WriteString(" AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
 	}
 
@@ -91,7 +89,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		b.out.WriteByte('(')
 		b.out.WriteString(expr)
-		b.out.WriteString(") as ")
+		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
@@ -102,7 +100,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		b.out.WriteByte('(')
 		b.out.WriteString(f.Expr)
-		b.out.WriteString(") as ")
+		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
@@ -195,21 +193,18 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			if i > 0 {
 				b.out.WriteString(", ")
 			}
-			b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
-			if f.Desc {
-				b.out.WriteString(" DESC")
-			}
+			b.out.WriteString(b.ast.dialect.OrderByExpression(f.Name, f.Desc))
 		}
 	}
 
 	if n.Limit != nil {
 		b.out.WriteString(" LIMIT ")
-		b.out.WriteString(strconv.Itoa(*n.Limit))
+		b.out.WriteString(strconv.FormatInt(*n.Limit, 10))
 	}
 
 	if n.Offset != nil {
 		b.out.WriteString(" OFFSET ")
-		b.out.WriteString(strconv.Itoa(*n.Offset))
+		b.out.WriteString(strconv.FormatInt(*n.Offset, 10))
 	}
 
 	return nil
@@ -239,14 +234,7 @@ func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNo
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
 		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
 		b.out.WriteByte('(')
-		b.out.WriteString(lhs)
-		b.out.WriteByte('=')
-		b.out.WriteString(rhs)
-		b.out.WriteString(" OR ")
-		b.out.WriteString(lhs)
-		b.out.WriteString(" IS NULL AND ")
-		b.out.WriteString(rhs)
-		b.out.WriteString(" IS NULL")
+		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')
 	}
 	return nil

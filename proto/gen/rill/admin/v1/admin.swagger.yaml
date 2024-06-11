@@ -2289,7 +2289,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -2600,10 +2600,17 @@ definitions:
         type: string
       account:
         type: string
+      userInstallationPermission:
+        $ref: '#/definitions/v1GithubPermission'
+      organizationInstallationPermissions:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1GithubPermission'
       organizations:
         type: array
         items:
           type: string
+        description: 'DEPRECATED: Use organization_installation_permissions instead.'
   v1GetIFrameResponse:
     type: object
     properties:
@@ -2667,6 +2674,13 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1GithubPermission:
+    type: string
+    enum:
+      - GITHUB_PERMISSION_UNSPECIFIED
+      - GITHUB_PERMISSION_READ
+      - GITHUB_PERMISSION_WRITE
+    default: GITHUB_PERMISSION_UNSPECIFIED
   v1IssueRepresentativeAuthTokenRequest:
     type: object
     properties:

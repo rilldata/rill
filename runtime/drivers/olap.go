@@ -58,14 +58,60 @@ type Result struct {
 	*sqlx.Rows
 	Schema    *runtimev1.StructType
 	cleanupFn func() error
+	cap       int64
+	rows      int64
 }
 
 // SetCleanupFunc sets a function, which will be called when the Result is closed.
 func (r *Result) SetCleanupFunc(fn func() error) {
-	if r.cleanupFn != nil {
-		panic("cleanup function already set")
+	if r.cleanupFn == nil {
+		r.cleanupFn = fn
+		return
 	}
-	r.cleanupFn = fn
+
+	prevFn := r.cleanupFn
+	r.cleanupFn = func() error {
+		err1 := prevFn()
+		err2 := fn()
+		return errors.Join(err1, err2)
+	}
+}
+
+// SetCap caps the number of rows to return. If the number is exceeded, an error is returned.
+func (r *Result) SetCap(n int64) {
+	if r.cap > 0 {
+		panic("cap already set")
+	}
+	r.cap = n
+}
+
+// Next wraps rows.Next and enforces the cap set by SetCap.
+func (r *Result) Next() bool {
+	res := r.Rows.Next()
+	if !res {
+		return false
+	}
+
+	r.rows++
+	if r.cap > 0 && r.rows > r.cap {
+		return false
+	}
+
+	return true
+}
+
+// Err returns the error of the underlying rows.
+func (r *Result) Err() error {
+	err := r.Rows.Err()
+	if err != nil {
+		return err
+	}
+
+	if r.cap > 0 && r.rows > r.cap {
+		return fmt.Errorf("result cap exceeded: returned more than %d rows", r.cap)
+	}
+
+	return nil
 }
 
 // Close wraps rows.Close and calls the Result's cleanup function (if it is set).
@@ -144,6 +190,10 @@ func (d Dialect) String() string {
 	default:
 		panic("not implemented")
 	}
+}
+
+func (d Dialect) CanPivot() bool {
+	return d == DialectDuckDB
 }
 
 // EscapeIdentifier returns an escaped SQL identifier in the dialect.
@@ -258,10 +308,28 @@ func (d Dialect) MetricsViewDimensionExpression(dimension *runtimev1.MetricsView
 func (d Dialect) SafeDivideExpression(numExpr, denExpr string) string {
 	switch d {
 	case DialectDruid:
-		return fmt.Sprintf("SAFE_DIVIDE(%s, %s)", numExpr, denExpr)
+		return fmt.Sprintf("SAFE_DIVIDE(%s, CAST(%s AS DOUBLE))", numExpr, denExpr)
 	default:
-		return fmt.Sprintf("CAST((%s) AS DOUBLE)/%s", numExpr, denExpr)
+		return fmt.Sprintf("(%s)/CAST(%s AS DOUBLE)", numExpr, denExpr)
 	}
+}
+
+func (d Dialect) OrderByExpression(name string, desc bool) string {
+	res := d.EscapeIdentifier(name)
+	if desc {
+		res += " DESC"
+	}
+	if d == DialectDuckDB {
+		res += " NULLS LAST"
+	}
+	return res
+}
+
+func (d Dialect) JoinOnExpression(lhs, rhs string) string {
+	if d == DialectClickHouse {
+		return fmt.Sprintf("isNotDistinctFrom(%s, %s)", lhs, rhs)
+	}
+	return fmt.Sprintf("%s IS NOT DISTINCT FROM %s", lhs, rhs)
 }
 
 func (d Dialect) DateTruncExpr(dim *runtimev1.MetricsViewSpec_DimensionV2, grain runtimev1.TimeGrain, tz string, firstDayOfWeek, firstMonthOfYear int) (string, error) {

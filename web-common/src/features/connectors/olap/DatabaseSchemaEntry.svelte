@@ -41,6 +41,7 @@
       className="transform transition-transform text-gray-400 {showTables
         ? 'rotate-0'
         : '-rotate-90'}"
+      size="14px"
     />
     <!-- Some databases do not have a full "database -> databaseSchema -> table" hierarchy. 
       When there are only two organizational levels,the API returns "databaseSchema -> table". 
@@ -56,11 +57,18 @@
   </button>
 
   {#if showTables}
-    {#if typedData && typedData.length > 0}
+    {#if connector?.errorMessage}
+      <div class="message">{connector.errorMessage}</div>
+    {:else if !connector.driver || !connector.driver.name}
+      <div class="message">Connector not found</div>
+    {:else if !typedData || typedData.length === 0}
+      <div class="message">No tables found</div>
+    {:else if typedData.length > 0}
       <ol>
         {#each typedData as tableInfo (tableInfo)}
           <TableEntry
-            connectorInstanceId={instanceId}
+            {instanceId}
+            driver={connector.driver.name}
             connector={connectorName}
             {database}
             {databaseSchema}
@@ -88,7 +96,8 @@
     @apply bg-slate-100;
   }
 
-  .database-schema-entry:not(.open) .database-schema-entry-header {
-    @apply bg-white;
+  .message {
+    @apply pl-2 pr-3.5 py-2;
+    @apply text-gray-500;
   }
 </style>

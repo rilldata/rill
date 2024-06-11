@@ -5,7 +5,7 @@ import type {
   V1WatchLogsResponse,
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client/index";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { runtime } from "./runtime-store";
 import { asyncWait } from "../lib/waitUtils";
 
@@ -40,7 +40,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
   private controller: AbortController | undefined;
   private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
   private outOfFocusThrottler = new Throttler(10000);
-  private retryAttempts = 0;
+  public retryAttempts = writable(0);
   private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
   private retryTimeout: ReturnType<typeof setTimeout> | undefined;
   private listeners: Listeners<Res> = new Map([
@@ -84,15 +84,16 @@ export class WatchRequestClient<Res extends WatchResponse> {
     // The stream was not cancelled, so don't reconnect
     if (this.controller && !this.controller.signal.aborted) return;
 
-    if (this.retryAttempts >= MAX_RETRIES)
-      throw new Error("Max retries exceeded");
+    const currentAttempts = get(this.retryAttempts);
 
-    if (this.retryAttempts > 0) {
-      const delay = BACKOFF_DELAY * 2 ** this.retryAttempts;
+    if (currentAttempts >= MAX_RETRIES) throw new Error("Max retries exceeded");
+
+    if (currentAttempts > 0) {
+      const delay = BACKOFF_DELAY * 2 ** currentAttempts;
       await asyncWait(delay);
     }
 
-    this.retryAttempts++;
+    this.retryAttempts.update((n) => n + 1);
     this.listen(true).catch(console.error);
   }
 
@@ -111,7 +112,7 @@ export class WatchRequestClient<Res extends WatchResponse> {
 
     try {
       this.retryTimeout = setTimeout(() => {
-        this.retryAttempts = 0;
+        this.retryAttempts.set(0);
       }, RETRY_COUNT_DELAY);
 
       if (reconnect) {

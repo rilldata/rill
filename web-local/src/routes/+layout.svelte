@@ -8,15 +8,13 @@
   import type { AxiosError } from "axios";
   import { runtimeServiceGetConfig } from "@rilldata/web-common/runtime-client/manual-clients";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import WelcomePageRedirect from "@rilldata/web-common/features/welcome/WelcomePageRedirect.svelte";
   import type { ApplicationBuildMetadata } from "@rilldata/web-common/layout/build-metadata";
   import { initMetrics } from "@rilldata/web-common/metrics/initMetrics";
   import { getContext, onMount } from "svelte";
   import type { Writable } from "svelte/store";
   import ResourceWatcher from "@rilldata/web-common/features/entity-management/ResourceWatcher.svelte";
-  import type { LayoutData } from "./$types";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   /** This function will initialize the existing node stores and will connect them
    * to the Node server.
    */
@@ -30,8 +28,6 @@
     query: Query,
   ) => errorEventHandler?.requestErrorEventHandler(error, query);
 
-  export let data: LayoutData;
-
   onMount(async () => {
     const config = await runtimeServiceGetConfig();
     await initMetrics(config);
@@ -44,17 +40,17 @@
       commitHash: config.build_commit,
     });
   });
+
+  $: ({ host, instanceId } = $runtime);
 </script>
 
 <RillTheme>
   <QueryClientProvider client={queryClient}>
-    <WelcomePageRedirect>
-      <ResourceWatcher host={data.host} instanceId={data.instanceId}>
-        <div class="body h-screen w-screen overflow-hidden absolute">
-          <slot />
-        </div>
-      </ResourceWatcher>
-    </WelcomePageRedirect>
+    <ResourceWatcher {host} {instanceId}>
+      <div class="body h-screen w-screen overflow-hidden absolute">
+        <slot />
+      </div>
+    </ResourceWatcher>
   </QueryClientProvider>
 </RillTheme>
 

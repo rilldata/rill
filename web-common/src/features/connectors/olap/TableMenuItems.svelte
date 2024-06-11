@@ -11,12 +11,10 @@
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { WandIcon } from "lucide-svelte";
-  import TableIcon from "../../../components/icons/TableIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
   import { createModelFromSource } from "../../sources/createModel";
-  import { makeTablePreviewHref } from "./olap-config";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
 
   const { ai } = featureFlags;
@@ -28,7 +26,6 @@
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
-  $: href = makeTablePreviewHref(connector, database, databaseSchema, table);
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     connector,
@@ -62,11 +59,7 @@
   }
 </script>
 
-<NavigationMenuItem {href}>
-  <TableIcon slot="icon" />
-  Preview table
-</NavigationMenuItem>
-{#if $isModelingSupportedForCurrentOlapDriver.data}
+{#if $isModelingSupportedForCurrentOlapDriver}
   <NavigationMenuItem on:click={handleCreateModel}>
     <Model slot="icon" />
     Create new model

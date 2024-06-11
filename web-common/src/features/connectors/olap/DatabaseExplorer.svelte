@@ -8,33 +8,30 @@
   export let instanceId: string;
   export let connector: V1AnalyzedConnector;
 
-  let dataBasesQuery: ReturnType<typeof useDatabases>;
-  $: if (connector.name) {
-    dataBasesQuery = useDatabases(instanceId, connector?.name);
-  }
+  $: connectorName = connector?.name as string;
+
+  $: dataBasesQuery = useDatabases(instanceId, connectorName);
 
   $: ({ data, error, isLoading } = $dataBasesQuery);
 </script>
 
-{#if connector && connector.name}
-  <div class="wrapper">
-    {#if error}
-      <span class="message">Error: {error.response.data.message}</span>
-    {:else if isLoading}
-      <span class="message">Loading databases...</span>
-    {:else if data}
-      {#if data.length === 0}
-        <span class="message">No databases found</span>
-      {:else}
-        <ol transition:slide={{ duration }}>
-          {#each data as database (database)}
-            <DatabaseEntry {instanceId} {connector} {database} />
-          {/each}
-        </ol>
-      {/if}
+<div class="wrapper">
+  {#if error}
+    <span class="message">Error: {error.response.data.message}</span>
+  {:else if isLoading}
+    <span class="message">Loading databases...</span>
+  {:else if data}
+    {#if data.length === 0}
+      <span class="message">No databases found</span>
+    {:else}
+      <ol transition:slide={{ duration }}>
+        {#each data as database (database)}
+          <DatabaseEntry {instanceId} {connector} {database} />
+        {/each}
+      </ol>
     {/if}
-  </div>
-{/if}
+  {/if}
+</div>
 
 <style lang="postcss">
   .wrapper {

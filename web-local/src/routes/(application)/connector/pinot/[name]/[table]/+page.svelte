@@ -7,6 +7,7 @@
 
   const { readOnly } = featureFlags;
 
+  $: name = $page.params.name;
   $: table = $page.params.table;
 
   onMount(() => {
@@ -20,4 +21,4 @@
   <title>Rill Developer | {table}</title>
 </svelte:head>
 
-<TablePreviewWorkspace connector="pinot" {table} />
+<TablePreviewWorkspace connector={name} {table} />

@@ -71,6 +71,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 	if err != nil {
 		return nil, err
 	}
+	defer executor.Close()
 
 	return &metricsResolver{
 		runtime:    opts.Runtime,

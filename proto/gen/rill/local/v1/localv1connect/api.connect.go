@@ -40,14 +40,25 @@ const (
 	LocalServiceGetMetadataProcedure = "/rill.local.v1.LocalService/GetMetadata"
 	// LocalServiceGetVersionProcedure is the fully-qualified name of the LocalService's GetVersion RPC.
 	LocalServiceGetVersionProcedure = "/rill.local.v1.LocalService/GetVersion"
+	// LocalServiceDeployValidationProcedure is the fully-qualified name of the LocalService's
+	// DeployValidation RPC.
+	LocalServiceDeployValidationProcedure = "/rill.local.v1.LocalService/DeployValidation"
+	// LocalServicePushToGithubProcedure is the fully-qualified name of the LocalService's PushToGithub
+	// RPC.
+	LocalServicePushToGithubProcedure = "/rill.local.v1.LocalService/PushToGithub"
+	// LocalServiceDeployProcedure is the fully-qualified name of the LocalService's Deploy RPC.
+	LocalServiceDeployProcedure = "/rill.local.v1.LocalService/Deploy"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
 var (
-	localServiceServiceDescriptor           = v1.File_rill_local_v1_api_proto.Services().ByName("LocalService")
-	localServicePingMethodDescriptor        = localServiceServiceDescriptor.Methods().ByName("Ping")
-	localServiceGetMetadataMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
-	localServiceGetVersionMethodDescriptor  = localServiceServiceDescriptor.Methods().ByName("GetVersion")
+	localServiceServiceDescriptor                = v1.File_rill_local_v1_api_proto.Services().ByName("LocalService")
+	localServicePingMethodDescriptor             = localServiceServiceDescriptor.Methods().ByName("Ping")
+	localServiceGetMetadataMethodDescriptor      = localServiceServiceDescriptor.Methods().ByName("GetMetadata")
+	localServiceGetVersionMethodDescriptor       = localServiceServiceDescriptor.Methods().ByName("GetVersion")
+	localServiceDeployValidationMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("DeployValidation")
+	localServicePushToGithubMethodDescriptor     = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
+	localServiceDeployMethodDescriptor           = localServiceServiceDescriptor.Methods().ByName("Deploy")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -58,6 +69,12 @@ type LocalServiceClient interface {
 	GetMetadata(context.Context, *connect.Request[v1.GetMetadataRequest]) (*connect.Response[v1.GetMetadataResponse], error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error)
+	// DeployValidation validates a deploy request.
+	DeployValidation(context.Context, *connect.Request[v1.DeployValidationRequest]) (*connect.Response[v1.DeployValidationResponse], error)
+	// PushToGithub create a Git repo from local project and pushed to users git account.
+	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
+	// Deploy deploys the local project to the Rill cloud.
+	Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -88,14 +105,35 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetVersionMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		deployValidation: connect.NewClient[v1.DeployValidationRequest, v1.DeployValidationResponse](
+			httpClient,
+			baseURL+LocalServiceDeployValidationProcedure,
+			connect.WithSchema(localServiceDeployValidationMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		pushToGithub: connect.NewClient[v1.PushToGithubRequest, v1.PushToGithubResponse](
+			httpClient,
+			baseURL+LocalServicePushToGithubProcedure,
+			connect.WithSchema(localServicePushToGithubMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
+		deploy: connect.NewClient[v1.DeployRequest, v1.DeployResponse](
+			httpClient,
+			baseURL+LocalServiceDeployProcedure,
+			connect.WithSchema(localServiceDeployMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
 // localServiceClient implements LocalServiceClient.
 type localServiceClient struct {
-	ping        *connect.Client[v1.PingRequest, v1.PingResponse]
-	getMetadata *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
-	getVersion  *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
+	ping             *connect.Client[v1.PingRequest, v1.PingResponse]
+	getMetadata      *connect.Client[v1.GetMetadataRequest, v1.GetMetadataResponse]
+	getVersion       *connect.Client[v1.GetVersionRequest, v1.GetVersionResponse]
+	deployValidation *connect.Client[v1.DeployValidationRequest, v1.DeployValidationResponse]
+	pushToGithub     *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
+	deploy           *connect.Client[v1.DeployRequest, v1.DeployResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -113,6 +151,21 @@ func (c *localServiceClient) GetVersion(ctx context.Context, req *connect.Reques
 	return c.getVersion.CallUnary(ctx, req)
 }
 
+// DeployValidation calls rill.local.v1.LocalService.DeployValidation.
+func (c *localServiceClient) DeployValidation(ctx context.Context, req *connect.Request[v1.DeployValidationRequest]) (*connect.Response[v1.DeployValidationResponse], error) {
+	return c.deployValidation.CallUnary(ctx, req)
+}
+
+// PushToGithub calls rill.local.v1.LocalService.PushToGithub.
+func (c *localServiceClient) PushToGithub(ctx context.Context, req *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error) {
+	return c.pushToGithub.CallUnary(ctx, req)
+}
+
+// Deploy calls rill.local.v1.LocalService.Deploy.
+func (c *localServiceClient) Deploy(ctx context.Context, req *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error) {
+	return c.deploy.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -121,6 +174,12 @@ type LocalServiceHandler interface {
 	GetMetadata(context.Context, *connect.Request[v1.GetMetadataRequest]) (*connect.Response[v1.GetMetadataResponse], error)
 	// GetVersion returns details about the current and latest available Rill versions.
 	GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error)
+	// DeployValidation validates a deploy request.
+	DeployValidation(context.Context, *connect.Request[v1.DeployValidationRequest]) (*connect.Response[v1.DeployValidationResponse], error)
+	// PushToGithub create a Git repo from local project and pushed to users git account.
+	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
+	// Deploy deploys the local project to the Rill cloud.
+	Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -147,6 +206,24 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetVersionMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceDeployValidationHandler := connect.NewUnaryHandler(
+		LocalServiceDeployValidationProcedure,
+		svc.DeployValidation,
+		connect.WithSchema(localServiceDeployValidationMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServicePushToGithubHandler := connect.NewUnaryHandler(
+		LocalServicePushToGithubProcedure,
+		svc.PushToGithub,
+		connect.WithSchema(localServicePushToGithubMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
+	localServiceDeployHandler := connect.NewUnaryHandler(
+		LocalServiceDeployProcedure,
+		svc.Deploy,
+		connect.WithSchema(localServiceDeployMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -155,6 +232,12 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceGetMetadataHandler.ServeHTTP(w, r)
 		case LocalServiceGetVersionProcedure:
 			localServiceGetVersionHandler.ServeHTTP(w, r)
+		case LocalServiceDeployValidationProcedure:
+			localServiceDeployValidationHandler.ServeHTTP(w, r)
+		case LocalServicePushToGithubProcedure:
+			localServicePushToGithubHandler.ServeHTTP(w, r)
+		case LocalServiceDeployProcedure:
+			localServiceDeployHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -174,4 +257,16 @@ func (UnimplementedLocalServiceHandler) GetMetadata(context.Context, *connect.Re
 
 func (UnimplementedLocalServiceHandler) GetVersion(context.Context, *connect.Request[v1.GetVersionRequest]) (*connect.Response[v1.GetVersionResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetVersion is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) DeployValidation(context.Context, *connect.Request[v1.DeployValidationRequest]) (*connect.Response[v1.DeployValidationResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.DeployValidation is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.PushToGithub is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.Deploy is not implemented"))
 }

@@ -50,10 +50,7 @@ export async function submitRemoteSourceForm(
   );
 
   // If project is uninitialized, initialize an empty project
-  const projectInitialized = await isProjectInitialized(
-    queryClient,
-    instanceId,
-  );
+  const projectInitialized = await isProjectInitialized(instanceId);
   if (!projectInitialized) {
     await runtimeServiceUnpackEmpty(instanceId, {
       title: EMPTY_PROJECT_TITLE,

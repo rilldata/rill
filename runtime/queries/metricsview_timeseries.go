@@ -100,6 +100,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		if err != nil {
 			return err
 		}
+		defer e.Close()
 
 		res, _, err := e.Query(ctx, qry, nil)
 		if err != nil {
@@ -630,13 +631,11 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery() (*metricsview.Query,
 	qry.TimeRange = res
 
 	if q.Limit != 0 {
-		tmp := int(q.Limit)
-		qry.Limit = &tmp
+		qry.Limit = &q.Limit
 	}
 
 	if q.Offset != 0 {
-		tmp := int(q.Offset)
-		qry.Offset = &tmp
+		qry.Offset = &q.Offset
 	}
 
 	for _, s := range q.Sort {

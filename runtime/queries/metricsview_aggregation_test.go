@@ -58,6 +58,33 @@ func Ignore_TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("TestMetricsViewAggregation_measure_filters", func(t *testing.T) { TestMetricsViewAggregation_measure_filters(t) })
 	t.Run("TestMetricsViewsAggregation_timezone", func(t *testing.T) { TestMetricsViewsAggregation_timezone(t) })
 	t.Run("TestMetricsViewAggregationClickhouseEnum", func(t *testing.T) { testMetricsViewAggregationClickhouseEnum(t) })
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_totals", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_limit", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_limit(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_having", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_having(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_pivot", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_pivot(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t)
+	})
 }
 
 func TestMetricsViewsAggregation(t *testing.T) {
@@ -424,7 +451,8 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns_limit_exceed
 		Exporting: true,
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.Error(t, err)
+	require.NoError(t, err)
+	require.Len(t, q.Result.Data, 10)
 }
 
 func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T) {
@@ -471,7 +499,7 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T
 
 	require.Equal(t, 5, len(q.Result.Schema.Fields))
 	require.Equal(t, "Publisher", q.Result.Schema.Fields[0].Name)
-	require.Equal(t, "day", q.Result.Schema.Fields[1].Name)
+	require.Equal(t, "day (day)", q.Result.Schema.Fields[1].Name)
 	require.Equal(t, "2022-01-01 00:00:00_Average bid price", q.Result.Schema.Fields[2].Name)
 	require.Equal(t, "2022-02-01 00:00:00_Average bid price", q.Result.Schema.Fields[3].Name)
 	require.Equal(t, "2022-03-01 00:00:00_Average bid price", q.Result.Schema.Fields[4].Name)
@@ -883,9 +911,9 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 	rows := q.Result.Data
 
 	require.Equal(t, q.Result.Schema.Fields[0].Name, "Domain")
-	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_google_Average bid price")
-	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-02-01 00:00:00_google_Average bid price")
-	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-03-01 00:00:00_google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_Google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-02-01 00:00:00_Google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-03-01 00:00:00_Google_Average bid price")
 
 	i := 0
 	require.Equal(t, "google.com", fieldsToString(rows[i], "Domain"))
