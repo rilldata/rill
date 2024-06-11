@@ -43,6 +43,7 @@
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
+  let name: Readable<V1ResourceName | undefined>;
 
   $: id = `${filePath}-nav-link`;
   $: fileName = filePath.split("/").pop();
@@ -50,8 +51,8 @@
     removeLeadingSlash(filePath) ===
     removeLeadingSlash($page.params.file ?? "");
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  let name: Readable<V1ResourceName | undefined>;
-  $: name = fileArtifact.name;
+
+  $: ({ name, hasUnsavedChanges } = fileArtifact);
   $: resourceKind = $name?.kind as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
@@ -88,10 +89,12 @@
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
     isDotFile
-      ? 'text-gray-500 hover:text-gray-500'
+      ? 'text-gray-400 hover:text-gray-400'
       : 'text-gray-900 hover:text-gray-900'}"
     href={`/files${filePath}`}
     {id}
+    class:italic={$hasUnsavedChanges}
+    class:!text-gray-500={$hasUnsavedChanges}
     on:click={fireTelemetry}
     on:mousedown={handleMouseDown}
     style:padding-left="{padding}px"
