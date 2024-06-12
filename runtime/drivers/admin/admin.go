@@ -121,15 +121,12 @@ type Handle struct {
 	ignorePaths          []string
 
 	// git related fields
+	// These will not be set if downloadURL is set
 	gitURL          string
 	gitURLExpiresOn time.Time
 
-	// fields for one time uploads. Git related fields will not be set when this is set.
+	// downloadURL is set when using one-time uploads
 	downloadURL string
-	// downloaded is set to true once repository is downloaded and set to false in Sync.
-	// In case upload object is changed admin will trigger EditInstance which will trigger controller restart.
-	// We sync the repo on controller restarts which will download file again.
-	downloaded bool
 }
 
 var _ drivers.Handle = &Handle{}
@@ -312,8 +309,9 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 // Unsafe for concurrent use.
 func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if h.cloned {
-		if h.downloaded {
-			// we just pull virtual files and return early.
+		if h.downloadURL != "" {
+			// in case of one-time uploads we edit instance and close handle when artifacts are updated
+			// so we just pull virtual files and return early.
 			return h.pullVirtual(ctx)
 		}
 		// Move the virtual directory out of the Git repository, and put it back after the pull.
@@ -370,7 +368,6 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	if h.gitURLExpiresOn.After(time.Now()) {
 		return nil
 	}
-	// in case of one-time uploads we re-fetch the details since we exit early if repo is downloaded and sync is not triggered.
 	meta, err := h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{
 		ProjectId: h.config.ProjectID,
 		Branch:    h.config.Branch,
@@ -653,7 +650,6 @@ func (h *Handle) download() error {
 		return err
 	}
 	h.cloned = true
-	h.downloaded = true
 	return nil
 }
 

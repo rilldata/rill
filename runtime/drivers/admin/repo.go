@@ -144,12 +144,6 @@ func (h *Handle) Delete(ctx context.Context, filePath string, force bool) error 
 }
 
 func (h *Handle) Sync(ctx context.Context) error {
-	if h.downloadURL != "" {
-		// mark downloaded as false to download files again
-		h.repoMu.Lock(ctx)
-		h.downloaded = false
-		h.repoMu.Unlock()
-	}
 	return h.cloneOrPull(ctx)
 }
 
