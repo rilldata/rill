@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -124,6 +125,7 @@ var _ drivers.Handle = &Handle{}
 // a smaller subset of relevant parts of rill.yaml
 type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
+	PublicPaths []string `yaml:"public_paths"`
 }
 
 // Driver implements drivers.Handle.
@@ -281,8 +283,36 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 			err = yaml.Unmarshal(rawYaml, yml)
 			if err == nil {
 				h.ignorePaths = yml.IgnorePaths
+				h.cachedPaths = yml.PublicPaths
 			}
 		}
+
+		cache := make(map[string][]byte)
+		for _, p := range h.cachedPaths {
+			p = filepath.Join(h.projPath, p)
+			err := filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
+				if err != nil {
+					return err
+				}
+				if !info.IsDir() {
+					b, err := os.ReadFile(path)
+					if err != nil {
+						return err
+					}
+
+					rel, err := filepath.Rel(c.root, path)
+					if err != nil {
+						return err
+					}
+					cache[strings.TrimLeft(rel, "/")] = b
+				}
+				return nil
+			})
+			if err != nil {
+				return nil, err
+			}
+		}
+		h.assetsCache = cache
 
 		return nil, nil
 	})

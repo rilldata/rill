@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
@@ -91,6 +92,16 @@ func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
 		return "", err
 	}
 	defer h.repoMu.RUnlock()
+
+	for _, p := range h.cachedPaths {
+		if strings.HasPrefix(strings.TrimLeft(filePath, "/"), strings.TrimLeft(p, "/")) {
+			b := h.assetsCache[strings.TrimLeft(filePath, "/")]
+			if b != nil {
+				return string(b), nil
+			}
+			break
+		}
+	}
 
 	filePath = filepath.Join(h.projPath, filePath)
 
