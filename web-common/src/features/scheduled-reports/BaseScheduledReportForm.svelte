@@ -30,7 +30,7 @@
   <span>Email recurring exports to recipients.</span>
   <Input
     bind:value={$form["title"]}
-    error={$errors["title"]}
+    errors={$errors["title"]}
     id="title"
     label="Report title"
     placeholder="My report"
@@ -82,7 +82,7 @@
   />
   <Input
     bind:value={$form["exportLimit"]}
-    error={$errors["exportLimit"]}
+    errors={$errors["exportLimit"]}
     id="exportLimit"
     label="Row limit"
     optional
