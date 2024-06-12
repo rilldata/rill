@@ -18,7 +18,6 @@ import { derived } from "svelte/store";
 export function createTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
-  dimensions: MetricsViewSpecDimensionSelector[],
   isComparison = false,
 ): CreateQueryResult<V1MetricsViewAggregationResponse> {
   return derived(
@@ -44,17 +43,18 @@ export function createTotalsForMeasure(
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
-          dimensions,
           where: sanitiseExpression(
             dashboard.whereFilter,
             measureFilterResolution.filter,
           ),
-          timeStart: isComparison
-            ? timeControls?.comparisonTimeStart
-            : timeControls.timeStart,
-          timeEnd: isComparison
-            ? timeControls?.comparisonTimeEnd
-            : timeControls.timeEnd,
+          timeRange: {
+            start: isComparison
+              ? timeControls?.comparisonTimeStart
+              : timeControls.timeStart,
+            end: isComparison
+              ? timeControls?.comparisonTimeEnd
+              : timeControls.timeEnd,
+          },
         },
         {
           query: {

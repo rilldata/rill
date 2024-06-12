@@ -253,7 +253,9 @@ export function prepareVirtualizedDimTableColumns(
   const dimensionColumn = getDimensionColumn(dimension);
 
   // copy column names so we don't mutate the original
-  const columnNames = [...dash.visibleMeasureKeys];
+  const columnNames = [...dash.visibleMeasureKeys].filter((m) =>
+    allMeasures.some((am) => am.name === m),
+  );
 
   // don't add context columns if sorting by dimension
   if (selectedMeasure && sortType !== SortType.DIMENSION) {
