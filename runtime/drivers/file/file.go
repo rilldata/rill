@@ -144,6 +144,7 @@ type connection struct {
 
 	ignorePaths []string
 	cachedPaths []string
+	assetsCache map[string][]byte
 }
 
 // Config implements drivers.Connection.

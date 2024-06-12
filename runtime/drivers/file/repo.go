@@ -74,6 +74,16 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 
 // Get implements drivers.RepoStore.
 func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
+	for _, p := range c.cachedPaths {
+		if strings.HasPrefix(filePath, p) {
+			b := c.assetsCache[filePath]
+			if b != nil {
+				return string(c.assetsCache[filePath]), nil
+			} else {
+				break
+			}
+		}
+	}
 	filePath = filepath.Join(c.root, filePath)
 
 	b, err := os.ReadFile(filePath)
@@ -168,6 +178,26 @@ func (c *connection) Delete(ctx context.Context, filePath string, force bool) er
 
 // Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context) error {
+	c.assetsCache = make(map[string][]byte)
+	for _, p := range c.cachedPaths {
+		err := filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
+			if err != nil {
+				return err
+			}
+			if !info.IsDir() {
+				b, err := os.ReadFile(path)
+				if err != nil {
+					return err
+				}
+
+				c.assetsCache[path] = b
+			}
+			return nil
+		})
+		if err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
