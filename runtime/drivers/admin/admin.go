@@ -300,7 +300,7 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 						return err
 					}
 
-					rel, err := filepath.Rel(c.root, path)
+					rel, err := filepath.Rel(h.projPath, path)
 					if err != nil {
 						return err
 					}
