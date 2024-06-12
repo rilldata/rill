@@ -1,10 +1,10 @@
 <script lang="ts">
+  import { EyeIcon, EyeOffIcon } from "lucide-svelte";
   import { onMount } from "svelte";
   import { slide } from "svelte/transition";
   import InfoCircle from "../icons/InfoCircle.svelte";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
-  import { EyeOffIcon, EyeIcon } from "lucide-svelte";
 
   type InputEvent = {
     currentTarget: EventTarget & HTMLInputElement;

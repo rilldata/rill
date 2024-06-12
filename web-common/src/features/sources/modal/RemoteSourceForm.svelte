@@ -111,40 +111,42 @@
     {/if}
 
     {#each connectorProperties as property (property.key)}
-      {@const label =
-        property.displayName + (property.required ? "" : " (optional)")}
-      <div class="py-1.5">
-        {#if property.type === ConnectorDriverPropertyType.TYPE_STRING && property.key !== undefined}
-          <Input
-            id={toYupFriendlyKey(property.key)}
-            label={property.displayName}
-            placeholder={property.placeholder}
-            optional={!property.required}
-            secret={property.secret}
-            hint={property.hint}
-            error={$errors[toYupFriendlyKey(property.key)]}
-            bind:value={$form[toYupFriendlyKey(property.key)]}
-            onInput={onStringInputChange}
-            onChange={handleChange}
-          />
-        {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN && property.key !== undefined}
-          <label for={property.key} class="flex items-center">
-            <input
-              id={property.key}
-              type="checkbox"
-              bind:checked={$form[property.key]}
-              class="h-5 w-5"
+      {#if property.key !== undefined}
+        {@const label =
+          property.displayName + (property.required ? "" : " (optional)")}
+        <div class="py-1.5">
+          {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+            <Input
+              id={toYupFriendlyKey(property.key)}
+              label={property.displayName}
+              placeholder={property.placeholder}
+              optional={!property.required}
+              secret={property.secret}
+              hint={property.hint}
+              error={$errors[toYupFriendlyKey(property.key)]}
+              bind:value={$form[toYupFriendlyKey(property.key)]}
+              onInput={onStringInputChange}
+              onChange={handleChange}
             />
-            <span class="ml-2 text-sm">{label}</span>
-          </label>
-        {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-          <InformationalField
-            description={property.description}
-            hint={property.hint}
-            href={property.docsUrl}
-          />
-        {/if}
-      </div>
+          {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+            <label for={property.key} class="flex items-center">
+              <input
+                id={property.key}
+                type="checkbox"
+                bind:checked={$form[property.key]}
+                class="h-5 w-5"
+              />
+              <span class="ml-2 text-sm">{label}</span>
+            </label>
+          {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+            <InformationalField
+              description={property.description}
+              hint={property.hint}
+              href={property.docsUrl}
+            />
+          {/if}
+        </div>
+      {/if}
     {/each}
   </form>
   <div class="flex items-center space-x-2">
