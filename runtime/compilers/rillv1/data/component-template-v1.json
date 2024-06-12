@@ -61,6 +61,9 @@
         {
           "additionalProperties": false,
           "properties": {
+            "comparison_range": {
+              "type": "string"
+            },
             "measure": {
               "type": "string"
             },
@@ -73,17 +76,14 @@
             },
             "time_range": {
               "type": "string"
-            },
-            "title": {
-              "type": "string"
             }
           },
           "required": [
+            "comparison_range",
             "measure",
             "metric_view",
             "name",
-            "time_range",
-            "title"
+            "time_range"
           ],
           "type": "object"
         },
