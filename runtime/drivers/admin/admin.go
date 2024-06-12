@@ -108,24 +108,28 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type Handle struct {
-	config          *configProperties
-	logger          *zap.Logger
-	admin           *client.Client
-	repoMu          ctxsync.RWMutex
-	repoSF          *singleflight.Group
-	cloned          bool
-	repoPath        string
-	projPath        string
-	gitURL          string
-	gitURLExpiresOn time.Time
-	// downloadURL is set when repo is maintained by rill. Git related field will not be set.
-	downloadURL string
-	// downloaded is set to true to skip generating signed URL again once repository is downloaded in case of uploads.
-	// This is set to false via Sync API for repostore.
-	downloaded           bool
+	config               *configProperties
+	logger               *zap.Logger
+	admin                *client.Client
+	repoMu               ctxsync.RWMutex
+	repoSF               *singleflight.Group
+	cloned               bool
+	repoPath             string
+	projPath             string
 	virtualNextPageToken string
 	virtualStashPath     string
 	ignorePaths          []string
+
+	// git related fields
+	gitURL          string
+	gitURLExpiresOn time.Time
+
+	// fields for one time uploads. Git related fields will not be set when this is set.
+	downloadURL string
+	// downloaded is set to true once repository is downloaded and set to false in Sync.
+	// In case upload object is changed admin will trigger EditInstance which will trigger controller restart.
+	// We sync the repo on controller restarts which will download file again.
+	downloaded bool
 }
 
 var _ drivers.Handle = &Handle{}
@@ -309,7 +313,7 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if h.cloned {
 		if h.downloaded {
-			// to avoid downloading tar file, we just pull virtual files and return early.
+			// we just pull virtual files and return early.
 			return h.pullVirtual(ctx)
 		}
 		// Move the virtual directory out of the Git repository, and put it back after the pull.
@@ -363,11 +367,10 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 // checkHandshake checks and possibly renews the repo details handshake with the admin server.
 // Unsafe for concurrent use.
 func (h *Handle) checkHandshake(ctx context.Context) error {
-	// rill managed repos need to be downloaded again with new download URL
-	if h.downloadURL == "" && h.gitURLExpiresOn.After(time.Now()) {
+	if h.gitURLExpiresOn.After(time.Now()) {
 		return nil
 	}
-
+	// in case of one-time uploads we re-fetch the details since we exit early if repo is downloaded and sync is not triggered.
 	meta, err := h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{
 		ProjectId: h.config.ProjectID,
 		Branch:    h.config.Branch,

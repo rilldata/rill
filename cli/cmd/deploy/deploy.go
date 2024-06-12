@@ -162,7 +162,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 				return deployWithUploadFlow(ctx, ch, opts)
 			}
 
-			// It's not a valid remote for Github. We still navigate user to login and then ask user to chhose either to create repo manually or let rill create one for them.
+			// It's not a valid remote for Github. We navigate user to login and then create repo for them.
 			silent := false
 			if !ch.IsAuthenticated() {
 				err := loginWithTelemetryAndGithubRedirect(ctx, ch, "")

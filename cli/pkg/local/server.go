@@ -569,9 +569,8 @@ func (s *Server) UpdateProject(ctx context.Context, r *connect.Request[localv1.U
 		if err != nil {
 			return nil, err
 		}
-
 	}
-	// Add other update project fields
+	// TODO : Add other update project fields
 	return connect.NewResponse(&localv1.UpdateProjectResponse{}), nil
 }
 
