@@ -1,8 +1,8 @@
+import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import {
   convertExprToToplist,
   fillTimeRange,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
-import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
@@ -57,10 +57,11 @@ export async function getDashboardFromAggregationRequest({
         req.having,
       );
       if (expr) {
-        dashboard.whereFilter = mergeFilters(
-          dashboard.whereFilter ?? createAndExpression([]),
-          createAndExpression([expr]),
-        );
+        dashboard.whereFilter =
+          mergeFilters(
+            dashboard.whereFilter ?? createAndExpression([]),
+            createAndExpression([expr]),
+          ) ?? createAndExpression([]);
       }
     } else {
       dashboard.dimensionThresholdFilters = [
