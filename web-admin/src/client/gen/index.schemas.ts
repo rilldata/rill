@@ -526,6 +526,7 @@ export interface V1Project {
   githubUrl?: string;
   subpath?: string;
   prodBranch?: string;
+  uploadPath?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;

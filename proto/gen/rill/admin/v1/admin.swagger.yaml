@@ -2967,6 +2967,8 @@ definitions:
         type: string
       prodBranch:
         type: string
+      uploadPath:
+        type: string
       prodOlapDriver:
         type: string
       prodOlapDsn:

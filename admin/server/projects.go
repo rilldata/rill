@@ -1171,6 +1171,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdBranch:       p.ProdBranch,
 		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
+		UploadPath:       safeStr(p.UploadPath),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,

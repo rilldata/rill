@@ -293,13 +293,12 @@ type Project struct {
 
 // InsertProjectOptions defines options for inserting a new Project.
 type InsertProjectOptions struct {
-	OrganizationID  string `validate:"required"`
-	Name            string `validate:"slug"`
-	Description     string
-	Public          bool
-	CreatedByUserID *string
-	Provisioner     string
-	// UploadPath is path of the file having project artifacts. Set when project is not connected to Github.
+	OrganizationID       string `validate:"required"`
+	Name                 string `validate:"slug"`
+	Description          string
+	Public               bool
+	CreatedByUserID      *string
+	Provisioner          string
 	UploadPath           *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`

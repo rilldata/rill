@@ -21648,6 +21648,8 @@ func (m *Project) validate(all bool) error {
 
 	// no validation rules for ProdBranch
 
+	// no validation rules for UploadPath
+
 	// no validation rules for ProdOlapDriver
 
 	// no validation rules for ProdOlapDsn

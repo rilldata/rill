@@ -1458,6 +1458,7 @@ message Project {
   string github_url = 8;
   string subpath = 17;
   string prod_branch = 9;
+  string upload_path = 23;
   string prod_olap_driver = 10;
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;

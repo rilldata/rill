@@ -544,6 +544,37 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 	}), nil
 }
 
+func (s *Server) UpdateProject(ctx context.Context, r *connect.Request[localv1.UpdateProjectRequest]) (*connect.Response[localv1.UpdateProjectResponse], error) {
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("user should be authenticated")
+	}
+	// Get admin client
+	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Msg.Reupload {
+		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+
+		uploadPath, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		if err != nil {
+			return nil, err
+		}
+		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{UploadPath: &uploadPath})
+		if err != nil {
+			return nil, err
+		}
+
+	}
+	// Add other update project fields
+	return connect.NewResponse(&localv1.UpdateProjectResponse{}), nil
+}
+
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
 func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 	scheme := "http"

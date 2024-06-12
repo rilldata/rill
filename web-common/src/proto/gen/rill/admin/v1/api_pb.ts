@@ -7793,6 +7793,11 @@ export class Project extends Message<Project> {
   prodBranch = "";
 
   /**
+   * @generated from field: string upload_path = 23;
+   */
+  uploadPath = "";
+
+  /**
    * @generated from field: string prod_olap_driver = 10;
    */
   prodOlapDriver = "";
@@ -7861,6 +7866,7 @@ export class Project extends Message<Project> {
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "upload_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

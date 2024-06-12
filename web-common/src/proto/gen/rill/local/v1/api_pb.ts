@@ -645,3 +645,83 @@ export class DeployResponse extends Message<DeployResponse> {
   }
 }
 
+/**
+ * @generated from message rill.local.v1.UpdateProjectRequest
+ */
+export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project_name = 2;
+   */
+  projectName = "";
+
+  /**
+   * @generated from field: bool reupload = 3;
+   */
+  reupload = false;
+
+  constructor(data?: PartialMessage<UpdateProjectRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.UpdateProjectRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectRequest {
+    return new UpdateProjectRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateProjectRequest {
+    return new UpdateProjectRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateProjectRequest {
+    return new UpdateProjectRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateProjectRequest | PlainMessage<UpdateProjectRequest> | undefined, b: UpdateProjectRequest | PlainMessage<UpdateProjectRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateProjectRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.UpdateProjectResponse
+ */
+export class UpdateProjectResponse extends Message<UpdateProjectResponse> {
+  constructor(data?: PartialMessage<UpdateProjectResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.UpdateProjectResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateProjectResponse {
+    return new UpdateProjectResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateProjectResponse {
+    return new UpdateProjectResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateProjectResponse {
+    return new UpdateProjectResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateProjectResponse | PlainMessage<UpdateProjectResponse> | undefined, b: UpdateProjectResponse | PlainMessage<UpdateProjectResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateProjectResponse, a, b);
+  }
+}
+
