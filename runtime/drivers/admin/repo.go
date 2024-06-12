@@ -131,11 +131,12 @@ func (h *Handle) MakeDir(ctx context.Context, dirPath string) error {
 }
 
 func (h *Handle) SetCachedPaths(paths []string) error {
-	return fmt.Errorf("operation is unsupported") // todo
+	h.cachedPaths = paths
+	return nil
 }
 
-func (h *Handle) GetCachedPaths(paths []string) []string {
-	return []string{} // todo
+func (h *Handle) GetCachedPaths() []string {
+	return h.cachedPaths
 }
 
 func (h *Handle) Rename(ctx context.Context, fromPath, toPath string) error {

@@ -290,7 +290,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return parseErrsErr
 	}
 
-	paths := parser.RillYAML.public_paths
+	paths := parser.RillYAML.PublicPaths
 	if len(paths) == 0 {
 		paths = []string{"public"}
 	}
@@ -299,7 +299,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return err
 	}
 	defer release()
-	repo.setCachedPaths(paths)
+	repo.SetCachedPaths(paths)
 
 	// not setting restartController=true when diff is actually nil prevents infinite restarts
 	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded

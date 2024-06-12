@@ -115,6 +115,8 @@ type Handle struct {
 	virtualNextPageToken string
 	virtualStashPath     string
 	ignorePaths          []string
+	cachedPaths          []string
+	assetsCache          map[string][]byte
 }
 
 var _ drivers.Handle = &Handle{}
