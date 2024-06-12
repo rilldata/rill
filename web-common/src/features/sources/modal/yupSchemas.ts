@@ -197,7 +197,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
       });
 
     default:
-      throw new Error(`Unknown connector: ${connector.name}`);
+      return yup.object().shape({});
   }
 }
 
