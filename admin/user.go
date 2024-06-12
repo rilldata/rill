@@ -7,7 +7,6 @@ import (
 	"net/mail"
 	"strings"
 
-	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"go.uber.org/zap"
 )
@@ -180,7 +179,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 	return user, nil
 }
 
-func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string, plan *billing.Plan) (*database.Organization, error) {
+func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string) (*database.Organization, error) {
 	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
 		return nil, err
@@ -227,35 +226,33 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	customerID, err := s.Biller.CreateCustomer(ctx, org)
 	if err == nil {
 		s.Logger.Info("created customer in billing system for org", zap.String("org", orgName), zap.String("customer_id", customerID))
-		// fetch default plan if needed
-		if plan == nil {
-			plan, err = s.Biller.GetDefaultPlan(ctx)
-			if err != nil {
-				s.Logger.Error("failed to get default plan from billing system, no subscription will be created", zap.String("org", orgName), zap.Error(err))
-			}
+		// fetch default plan
+		plan, err := s.Biller.GetDefaultPlan(ctx)
+		if err != nil {
+			s.Logger.Error("failed to get default plan from billing system, no subscription will be created", zap.String("org", orgName), zap.Error(err))
 		}
 
 		if plan != nil {
-			if plan.Quota.NumProjects != nil {
-				quotaProjects = *plan.Quota.NumProjects
+			if plan.Quotas.NumProjects != nil {
+				quotaProjects = *plan.Quotas.NumProjects
 			}
-			if plan.Quota.NumDeployments != nil {
-				quotaDeployments = *plan.Quota.NumDeployments
+			if plan.Quotas.NumDeployments != nil {
+				quotaDeployments = *plan.Quotas.NumDeployments
 			}
-			if plan.Quota.NumSlotsTotal != nil {
-				quotaSlotsTotal = *plan.Quota.NumSlotsTotal
+			if plan.Quotas.NumSlotsTotal != nil {
+				quotaSlotsTotal = *plan.Quotas.NumSlotsTotal
 			}
-			if plan.Quota.NumSlotsPerDeployment != nil {
-				quotaSlotsPerDeployment = *plan.Quota.NumSlotsPerDeployment
+			if plan.Quotas.NumSlotsPerDeployment != nil {
+				quotaSlotsPerDeployment = *plan.Quotas.NumSlotsPerDeployment
 			}
-			if plan.Quota.NumOutstandingInvites != nil {
-				quotaOutstandingInvites = *plan.Quota.NumOutstandingInvites
+			if plan.Quotas.NumOutstandingInvites != nil {
+				quotaOutstandingInvites = *plan.Quotas.NumOutstandingInvites
 			}
-			if plan.Quota.NumUsers != nil {
-				quotaNumUsers = *plan.Quota.NumUsers
+			if plan.Quotas.NumUsers != nil {
+				quotaNumUsers = *plan.Quotas.NumUsers
 			}
-			if plan.Quota.ManagedDataBytes != nil {
-				quotaManagedDataBytes = *plan.Quota.ManagedDataBytes
+			if plan.Quotas.ManagedDataBytes != nil {
+				quotaManagedDataBytes = *plan.Quotas.ManagedDataBytes
 			}
 
 			sub, err := s.Biller.CreateSubscription(ctx, customerID, plan)

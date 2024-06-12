@@ -25,13 +25,13 @@ type Biller interface {
 	CreateCustomer(ctx context.Context, organization *database.Organization) (string, error)
 
 	// CreateSubscription creates a subscription for the given organization.
-	// The subscription starts immediately. TODO - support starting at a future date.
+	// The subscription starts immediately.
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
-	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption, cancellationDate time.Time) error
+	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error
 	GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
 	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
 	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
-	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption, cancellationDate time.Time) error
+	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
 
 	ReportUsage(ctx context.Context, customerID string, usage []*Usage) error
 
@@ -45,12 +45,13 @@ type Plan struct {
 	Name              string
 	Description       string
 	TrialPeriodDays   int
-	Quota             Quota
+	Quotas            Quotas
 	ReportableMetrics []string // list of metric names that are reported to the billing system
 	Metadata          map[string]string
+	// TODO expose pricing information
 }
 
-type Quota struct {
+type Quotas struct {
 	ManagedDataBytes *int64
 	NumUsers         *int
 
@@ -63,15 +64,15 @@ type Quota struct {
 }
 
 type Subscription struct {
-	ID                      string
-	CustomerID              string
-	Plan                    *Plan
-	StartDate               time.Time
-	EndDate                 time.Time
-	CurrentBillingStartDate time.Time
-	CurrentBillingEndDate   time.Time
-	TrialEndDate            time.Time
-	Metadata                map[string]string
+	ID                           string
+	CustomerID                   string
+	Plan                         *Plan
+	StartDate                    time.Time
+	EndDate                      time.Time
+	CurrentBillingCycleStartDate time.Time
+	CurrentBillingCycleEndDate   time.Time
+	TrialEndDate                 time.Time
+	Metadata                     map[string]string
 }
 
 type Usage struct {
@@ -95,5 +96,4 @@ type SubscriptionCancellationOption int
 const (
 	SubscriptionCancellationOptionEndOfSubscriptionTerm SubscriptionCancellationOption = iota
 	SubscriptionCancellationOptionImmediate
-	SubscriptionCancellationOptionRequestedDate
 )

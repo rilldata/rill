@@ -2,7 +2,6 @@ package billing
 
 import (
 	"context"
-	"time"
 
 	"github.com/rilldata/rill/admin/database"
 )
@@ -39,7 +38,7 @@ func (n noop) CreateSubscription(ctx context.Context, customerID string, plan *P
 	return nil, nil
 }
 
-func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption, cancellationDate time.Time) error {
+func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error {
 	return nil
 }
 
@@ -47,7 +46,7 @@ func (n noop) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	return nil, nil
 }
 
-func (n noop) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption, cancellationDate time.Time) error {
+func (n noop) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error {
 	return nil
 }
 

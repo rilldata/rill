@@ -16,6 +16,8 @@ import (
 
 const requestTimeout = 10 * time.Second
 
+var ErrNotFound = errors.New("not found")
+
 var _ Biller = &Orb{}
 
 type Orb struct {
@@ -33,15 +35,15 @@ func (o *Orb) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 	if err != nil {
 		return nil, err
 	}
-	if len(plans) == 0 {
-		return nil, nil
-	}
 	for _, p := range plans {
 		if strings.EqualFold(p.RillID, DefaultPlanID) {
 			return p, nil
 		}
+		if strings.EqualFold(p.Metadata["default"], "true") {
+			return p, nil
+		}
 	}
-	return nil, nil
+	return nil, ErrNotFound
 }
 
 func (o *Orb) GetPlans(ctx context.Context) ([]*Plan, error) {
@@ -72,14 +74,14 @@ func (o *Orb) GetPlan(ctx context.Context, rillPlanID, billerPlanID string) (*Pl
 			return p, nil
 		}
 	}
-	return nil, nil
+	return nil, ErrNotFound
 }
 
 func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization) (string, error) {
 	customer, err := o.client.Customers.New(ctx, orb.CustomerNewParams{
 		Email:              orb.String(SupportEmail),
 		Name:               orb.String(organization.Name),
-		ExternalCustomerID: orb.String(organization.Name),
+		ExternalCustomerID: orb.String(organization.ID),
 		Timezone:           orb.String(DefaultTimeZone),
 	})
 	if err != nil {
@@ -99,15 +101,15 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 	}
 
 	return &Subscription{
-		ID:                      sub.ID,
-		CustomerID:              sub.Customer.ExternalCustomerID,
-		Plan:                    plan,
-		StartDate:               sub.StartDate,
-		EndDate:                 sub.EndDate,
-		CurrentBillingStartDate: sub.CurrentBillingPeriodStartDate,
-		CurrentBillingEndDate:   sub.CurrentBillingPeriodEndDate,
-		TrialEndDate:            sub.TrialInfo.EndDate,
-		Metadata:                sub.Metadata,
+		ID:                           sub.ID,
+		CustomerID:                   sub.Customer.ExternalCustomerID,
+		Plan:                         plan,
+		StartDate:                    sub.StartDate,
+		EndDate:                      sub.EndDate,
+		CurrentBillingCycleStartDate: sub.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   sub.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 sub.TrialInfo.EndDate,
+		Metadata:                     sub.Metadata,
 	}, nil
 }
 
@@ -119,13 +121,9 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	if err != nil {
 		return nil, err
 	}
-	if len(sub.Data) == 0 {
-		return nil, nil
-	}
 
 	var subscriptions []*Subscription
-	l := len(sub.Data)
-	for i := 0; i < l; i++ {
+	for i := 0; i < len(sub.Data); i++ {
 		s := sub.Data[i]
 		plan, err := getBillingPlanFromOrbPlan(&s.Plan)
 		if err != nil {
@@ -133,21 +131,21 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 		}
 
 		subscriptions = append(subscriptions, &Subscription{
-			ID:                      s.ID,
-			CustomerID:              s.Customer.ExternalCustomerID,
-			Plan:                    plan,
-			StartDate:               s.StartDate,
-			EndDate:                 s.EndDate,
-			CurrentBillingStartDate: s.CurrentBillingPeriodStartDate,
-			CurrentBillingEndDate:   s.CurrentBillingPeriodEndDate,
-			TrialEndDate:            s.TrialInfo.EndDate,
-			Metadata:                s.Metadata,
+			ID:                           s.ID,
+			CustomerID:                   s.Customer.ExternalCustomerID,
+			Plan:                         plan,
+			StartDate:                    s.StartDate,
+			EndDate:                      s.EndDate,
+			CurrentBillingCycleStartDate: s.CurrentBillingPeriodStartDate,
+			CurrentBillingCycleEndDate:   s.CurrentBillingPeriodEndDate,
+			TrialEndDate:                 s.TrialInfo.EndDate,
+			Metadata:                     s.Metadata,
 		})
 	}
 	return subscriptions, nil
 }
 
-func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption, cancellationDate time.Time) error {
+func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error {
 	var cancelParams orb.SubscriptionCancelParams
 	switch cancelOption {
 	case SubscriptionCancellationOptionEndOfSubscriptionTerm:
@@ -157,11 +155,6 @@ func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, can
 	case SubscriptionCancellationOptionImmediate:
 		cancelParams = orb.SubscriptionCancelParams{
 			CancelOption: orb.F(orb.SubscriptionCancelParamsCancelOptionImmediate),
-		}
-	case SubscriptionCancellationOptionRequestedDate:
-		cancelParams = orb.SubscriptionCancelParams{
-			CancelOption:     orb.F(orb.SubscriptionCancelParamsCancelOptionRequestedDate),
-			CancellationDate: orb.F(cancellationDate),
 		}
 	}
 
@@ -172,7 +165,7 @@ func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, can
 	return nil
 }
 
-func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption, cancellationDate time.Time) error {
+func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error {
 	var cancelParams orb.SubscriptionCancelParams
 	switch cancelOption {
 	case SubscriptionCancellationOptionEndOfSubscriptionTerm:
@@ -182,11 +175,6 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 	case SubscriptionCancellationOptionImmediate:
 		cancelParams = orb.SubscriptionCancelParams{
 			CancelOption: orb.F(orb.SubscriptionCancelParamsCancelOptionImmediate),
-		}
-	case SubscriptionCancellationOptionRequestedDate:
-		cancelParams = orb.SubscriptionCancelParams{
-			CancelOption:     orb.F(orb.SubscriptionCancelParamsCancelOptionRequestedDate),
-			CancellationDate: orb.F(cancellationDate),
 		}
 	}
 
@@ -204,6 +192,10 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 }
 
 func (o *Orb) ReportUsage(ctx context.Context, customerID string, usage []*Usage) error {
+	if len(usage) == 0 {
+		return nil
+	}
+
 	var orbUsage []orb.EventIngestParamsEvent
 	for _, u := range usage {
 		eventName := u.MetricName + "_" + string(u.ReportingGran)
@@ -270,7 +262,7 @@ func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
 
 func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 	// Convert orb.Plan to billing.Plan
-	q := &Quota{}
+	q := &Quotas{}
 	v, ok := p.Metadata["managed_data_bytes"]
 	if ok {
 		m, err := strconv.ParseInt(v, 10, 64)
@@ -340,8 +332,17 @@ func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 		reportableMetrics = strings.Split(v, ",")
 		// trim spaces, remove empty strings, and convert to lower case
 		for i := 0; i < len(reportableMetrics); i++ {
-			reportableMetrics[i] = strings.ToLower(strings.TrimSpace(reportableMetrics[i]))
+			m := strings.TrimSpace(reportableMetrics[i])
+			if m == "" {
+				continue
+			}
+			reportableMetrics[i] = strings.ToLower(m)
 		}
+	}
+
+	trialPeriodDays := 0
+	if p.TrialConfig.TrialPeriodUnit == orb.PlanTrialConfigTrialPeriodUnitDays {
+		trialPeriodDays = int(p.TrialConfig.TrialPeriod)
 	}
 
 	billingPlan := &Plan{
@@ -349,8 +350,8 @@ func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 		RillID:            p.ExternalPlanID,
 		Name:              p.Name,
 		Description:       p.Description,
-		TrialPeriodDays:   int(p.TrialConfig.TrialPeriod),
-		Quota:             *q,
+		TrialPeriodDays:   trialPeriodDays,
+		Quotas:            *q,
 		ReportableMetrics: reportableMetrics,
 		Metadata:          p.Metadata,
 	}

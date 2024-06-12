@@ -192,6 +192,12 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
+export type AdminServiceUpdateOrganizationBillingPlanBody = {
+  rillPlanId?: string;
+  billerPlanId?: string;
+  subscriptionChangeEffective?: V1SubscriptionChangeEffective;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
@@ -296,6 +302,11 @@ export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1UpdateOrganizationBillingPlanResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1UpdateBookmarkResponse {
   [key: string]: any;
 }
@@ -363,17 +374,14 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   managedDataBytes?: string;
 }
 
-export interface V1SudoUpdateOrganizationBillingResponse {
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
-export interface V1SudoUpdateOrganizationBillingRequest {
+export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
-  rillPlan?: string;
-  billerPlan?: string;
-  subscriptionChangeEffective?: V1SubscriptionChangeEffective;
-  subscriptionChangeDate?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -408,9 +416,17 @@ export const V1SubscriptionChangeEffective = {
   SUBSCRIPTION_CHANGE_EFFECTIVE_NOW: "SUBSCRIPTION_CHANGE_EFFECTIVE_NOW",
   SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
     "SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE",
-  SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE:
-    "SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE",
 } as const;
+
+export interface V1Subscription {
+  planId?: string;
+  planName?: string;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
+}
 
 export interface V1SetSuperuserResponse {
   [key: string]: any;
@@ -511,6 +527,16 @@ export type V1RecordEventsRequestEventsItem = { [key: string]: any };
 
 export interface V1RecordEventsRequest {
   events?: V1RecordEventsRequestEventsItem[];
+}
+
+export interface V1Quotas {
+  projects?: string;
+  deployments?: string;
+  slotsTotal?: string;
+  slotsPerDeployment?: string;
+  outstandingInvites?: string;
+  numUsers?: string;
+  managedDataBytes?: string;
 }
 
 export interface V1PullVirtualRepoResponse {
@@ -621,6 +647,10 @@ export interface V1ListServiceAuthTokensResponse {
   tokens?: V1ServiceToken[];
 }
 
+export interface V1ListPublicBillingPlansResponse {
+  plans?: V1BillingPlan[];
+}
+
 export interface V1ListProjectsForOrganizationResponse {
   projects?: V1Project[];
   nextPageToken?: string;
@@ -643,6 +673,11 @@ export interface V1ListProjectInvitesResponse {
 export interface V1ListOrganizationsResponse {
   organizations?: V1Organization[];
   nextPageToken?: string;
+}
+
+export interface V1ListOrganizationSubscriptionsResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1ListOrganizationMembersResponse {
@@ -883,8 +918,6 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
-  rillPlan?: string;
-  billerPlan?: string;
 }
 
 export interface V1CreateBookmarkResponse {
@@ -932,6 +965,15 @@ export interface V1Bookmark {
   shared?: boolean;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1BillingPlan {
+  billerId?: string;
+  rillId?: string;
+  name?: string;
+  description?: string;
+  trialPeriodDays?: number;
+  quotas?: V1Quotas;
 }
 
 export interface V1AlertOptions {

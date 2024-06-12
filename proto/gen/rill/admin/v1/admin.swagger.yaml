@@ -32,6 +32,21 @@ paths:
             $ref: '#/definitions/v1CompleteRequest'
       tags:
         - AIService
+  /v1/billing/plans:
+    get:
+      summary: ListPublicBillingPlans lists all public billing plans
+      operationId: AdminService_ListPublicBillingPlans
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListPublicBillingPlansResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
   /v1/deployments/{deploymentId}/reconcile:
     post:
       summary: TriggerReconcile triggers reconcile for the project's prod deployment
@@ -237,6 +252,58 @@ paths:
                 type: string
               newName:
                 type: string
+      tags:
+        - AdminService
+  /v1/organizations/{orgName}/billing/plan:
+    patch:
+      summary: UpdateOrganizationBillingPlan updates the billing plan for the organization
+      operationId: AdminService_UpdateOrganizationBillingPlan
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateOrganizationBillingPlanResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              rillPlanId:
+                type: string
+              billerPlanId:
+                type: string
+              subscriptionChangeEffective:
+                $ref: '#/definitions/v1SubscriptionChangeEffective'
+      tags:
+        - AdminService
+  /v1/organizations/{orgName}/billing/subscriptions:
+    get:
+      summary: ListOrganizationSubscriptions list all the subscriptions for the organization
+      operationId: AdminService_ListOrganizationSubscriptions
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationSubscriptionsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -1889,15 +1956,15 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
-  /v1/superuser/organization/billing:
+  /v1/superuser/organization/billing/customer_id:
     patch:
-      summary: SudoUpdateOrganizationBilling update the quotas available for orgs
-      operationId: AdminService_SudoUpdateOrganizationBilling
+      summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+      operationId: AdminService_SudoUpdateOrganizationBillingCustomer
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SudoUpdateOrganizationBillingResponse'
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1907,7 +1974,7 @@ paths:
           in: body
           required: true
           schema:
-            $ref: '#/definitions/v1SudoUpdateOrganizationBillingRequest'
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
       tags:
         - AdminService
   /v1/superuser/projects/annotations:
@@ -2370,6 +2437,23 @@ definitions:
         type: array
         items:
           type: string
+  v1BillingPlan:
+    type: object
+    properties:
+      billerId:
+        type: string
+      rillId:
+        type: string
+      name:
+        type: string
+      description:
+        type: string
+      trialPeriodDays:
+        type: integer
+        format: int64
+      quotas:
+        $ref: '#/definitions/v1Quotas'
+        title: TODO expose pricing information
   v1Bookmark:
     type: object
     properties:
@@ -2456,10 +2540,6 @@ definitions:
       name:
         type: string
       description:
-        type: string
-      rillPlan:
-        type: string
-      billerPlan:
         type: string
   v1CreateOrganizationResponse:
     type: object
@@ -2754,6 +2834,16 @@ definitions:
           $ref: '#/definitions/v1Member'
       nextPageToken:
         type: string
+  v1ListOrganizationSubscriptionsResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscriptions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Subscription'
   v1ListOrganizationsResponse:
     type: object
     properties:
@@ -2802,6 +2892,14 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+  v1ListPublicBillingPlansResponse:
+    type: object
+    properties:
+      plans:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1BillingPlan'
   v1ListServiceAuthTokensResponse:
     type: object
     properties:
@@ -3013,6 +3111,23 @@ definitions:
           $ref: '#/definitions/v1VirtualFile'
       nextPageToken:
         type: string
+  v1Quotas:
+    type: object
+    properties:
+      projects:
+        type: string
+      deployments:
+        type: string
+      slotsTotal:
+        type: string
+      slotsPerDeployment:
+        type: string
+      outstandingInvites:
+        type: string
+      numUsers:
+        type: string
+      managedDataBytes:
+        type: string
   v1RecordEventsRequest:
     type: object
     properties:
@@ -3147,15 +3262,35 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
+  v1Subscription:
+    type: object
+    properties:
+      planId:
+        type: string
+      planName:
+        type: string
+      startDate:
+        type: string
+        format: date-time
+      endDate:
+        type: string
+        format: date-time
+      currentBillingCycleStartDate:
+        type: string
+        format: date-time
+      currentBillingCycleEndDate:
+        type: string
+        format: date-time
+      trialEndDate:
+        type: string
+        format: date-time
   v1SubscriptionChangeEffective:
     type: string
     enum:
       - SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED
       - SUBSCRIPTION_CHANGE_EFFECTIVE_NOW
       - SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE
-      - SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
     default: SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED
-    title: 'review: may be don''t support this just cancel and assign new plan immediately'
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -3185,28 +3320,23 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
-  v1SudoUpdateOrganizationBillingRequest:
+  v1SudoUpdateOrganizationBillingCustomerRequest:
     type: object
     properties:
       orgName:
         type: string
       billingCustomerId:
         type: string
-      rillPlan:
-        type: string
-      billerPlan:
-        type: string
-      subscriptionChangeEffective:
-        $ref: '#/definitions/v1SubscriptionChangeEffective'
-      subscriptionChangeDate:
-        type: string
-        format: date-time
-        title: Only used if subscription_change_effective is SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE
-  v1SudoUpdateOrganizationBillingResponse:
+  v1SudoUpdateOrganizationBillingCustomerResponse:
     type: object
     properties:
       organization:
         $ref: '#/definitions/v1Organization'
+      subscriptions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Subscription'
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
@@ -3293,6 +3423,16 @@ definitions:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object
+  v1UpdateOrganizationBillingPlanResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscriptions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Subscription'
   v1UpdateOrganizationResponse:
     type: object
     properties:

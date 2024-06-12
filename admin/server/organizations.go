@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"math"
+	"strconv"
 	"strings"
-	"time"
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
@@ -106,12 +106,6 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		attribute.String("args.org", req.Name),
 		attribute.String("args.description", req.Description),
 	)
-	if req.RillPlan != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.rill_plan", *req.RillPlan))
-	}
-	if req.BillerPlan != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan", *req.BillerPlan))
-	}
 
 	// Check the request is made by an authenticated user
 	claims := auth.GetClaims(ctx)
@@ -132,18 +126,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
 	}
 
-	var plan *billing.Plan
-	if req.RillPlan != nil || req.BillerPlan != nil {
-		rillPlan := valOrDefault(req.RillPlan, "")
-		billerPlan := valOrDefault(req.BillerPlan, "")
-		// support assigning plan by Rill ID or biller ID
-		plan, err = s.admin.Biller.GetPlan(ctx, rillPlan, billerPlan)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-
-	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description, plan)
+	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -173,7 +156,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 
 	// cancel subscription
 	if org.BillingCustomerID != "" {
-		err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate, time.Time{})
+		err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
 		if err != nil {
 			s.logger.Error("failed to cancel subscriptions", zap.String("org", org.Name), zap.Error(err))
 		}
@@ -227,6 +210,153 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 
 	return &adminv1.UpdateOrganizationResponse{
 		Organization: organizationToDTO(org),
+	}, nil
+}
+
+func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1.UpdateOrganizationBillingPlanRequest) (*adminv1.UpdateOrganizationBillingPlanResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+	if req.RillPlanId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.rill_plan_id", *req.RillPlanId))
+	}
+	if req.BillerPlanId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan_id", *req.BillerPlanId))
+	}
+	if req.SubscriptionChangeEffective != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.subscription_change_effective", req.SubscriptionChangeEffective.String()))
+	}
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to update org billing plan")
+	}
+
+	if req.RillPlanId == nil && req.BillerPlanId == nil {
+		return nil, status.Error(codes.InvalidArgument, "rill or biller plan id must be provided")
+	}
+
+	plan, err := s.admin.Biller.GetPlan(ctx, valOrDefault(req.RillPlanId, ""), valOrDefault(req.BillerPlanId, ""))
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if org.BillingCustomerID == "" {
+		// create new customer
+		customerID, err := s.admin.Biller.CreateCustomer(ctx, org)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		org.BillingCustomerID = customerID
+	} else {
+		subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		if len(subs) > 0 {
+			for _, sub := range subs {
+				if sub.Plan.BillerID == plan.BillerID {
+					return nil, status.Error(codes.InvalidArgument, "plan already assigned to the organization")
+				}
+			}
+
+			if req.SubscriptionChangeEffective != nil && *req.SubscriptionChangeEffective == adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE {
+				return nil, status.Error(codes.InvalidArgument, "plan changes can only be effective immediately")
+			}
+
+			// cancel current subscriptions
+			cancelOption := billing.SubscriptionCancellationOptionImmediate
+			if req.SubscriptionChangeEffective != nil {
+				switch *req.SubscriptionChangeEffective {
+				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW:
+					cancelOption = billing.SubscriptionCancellationOptionImmediate
+				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
+					cancelOption = billing.SubscriptionCancellationOptionEndOfSubscriptionTerm
+				default:
+					return nil, status.Error(codes.InvalidArgument, "invalid subscription change effective")
+				}
+			}
+			for _, sub := range subs {
+				err = s.admin.Biller.CancelSubscription(ctx, sub.ID, cancelOption)
+				if err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+			}
+		}
+	}
+
+	// create new subscription
+	_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                    org.Name,
+		Description:             org.Description,
+		QuotaProjects:           org.QuotaProjects,
+		QuotaDeployments:        org.QuotaDeployments,
+		QuotaSlotsTotal:         org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
+		QuotaNumUsers:           org.QuotaNumUsers,
+		QuotaManagedDataBytes:   org.QuotaManagedDataBytes,
+		BillingCustomerID:       org.BillingCustomerID,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	var subscriptions []*adminv1.Subscription
+	for _, sub := range subs {
+		subscriptions = append(subscriptions, subscriptionToDTO(sub))
+	}
+
+	return &adminv1.UpdateOrganizationBillingPlanResponse{
+		Organization:  organizationToDTO(org),
+		Subscriptions: subscriptions,
+	}, nil
+}
+
+func (s *Server) ListOrganizationSubscriptions(ctx context.Context, req *adminv1.ListOrganizationSubscriptionsRequest) (*adminv1.ListOrganizationSubscriptionsResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org subscriptions")
+	}
+
+	if org.BillingCustomerID == "" {
+		return &adminv1.ListOrganizationSubscriptionsResponse{Organization: organizationToDTO(org)}, nil
+	}
+
+	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	var subscriptions []*adminv1.Subscription
+	for _, sub := range subs {
+		subscriptions = append(subscriptions, subscriptionToDTO(sub))
+	}
+
+	return &adminv1.ListOrganizationSubscriptionsResponse{
+		Organization:  organizationToDTO(org),
+		Subscriptions: subscriptions,
 	}, nil
 }
 
@@ -876,27 +1006,18 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	}, nil
 }
 
-func (s *Server) SudoUpdateOrganizationBilling(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingRequest) (*adminv1.SudoUpdateOrganizationBillingResponse, error) {
+// SudoUpdateOrganizationBillingCustomer updates the billing customer id for an organization. May be useful if customer is initialized manually in billing system
+func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req *adminv1.SudoUpdateOrganizationBillingCustomerRequest) (*adminv1.SudoUpdateOrganizationBillingCustomerResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
-	if req.BillingCustomerId != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.billing_customer_id", *req.BillingCustomerId))
-	}
-	if req.RillPlan != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.rill_plan", *req.RillPlan))
-	}
-	if req.BillerPlan != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan", *req.BillerPlan))
-	}
-	if req.SubscriptionChangeEffective != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.subscription_change_effective", req.SubscriptionChangeEffective.String()))
-	}
-	if req.SubscriptionChangeDate != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.subscription_change_date", req.SubscriptionChangeDate.AsTime().String()))
-	}
+	observability.AddRequestAttributes(ctx, attribute.String("args.billing_customer_id", req.BillingCustomerId))
 
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "only superusers can manage billing")
+		return nil, status.Error(codes.PermissionDenied, "only superusers can manage billing customer")
+	}
+
+	if req.BillingCustomerId == "" {
+		return nil, status.Error(codes.InvalidArgument, "billing customer id is required")
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
@@ -904,77 +1025,8 @@ func (s *Server) SudoUpdateOrganizationBilling(ctx context.Context, req *adminv1
 		return nil, err
 	}
 
-	if req.BillingCustomerId != nil {
-		if *req.BillingCustomerId == "" {
-			return nil, status.Error(codes.InvalidArgument, "missing billing customer ID")
-		}
-
-		if org.BillingCustomerID == *req.BillingCustomerId {
-			return &adminv1.SudoUpdateOrganizationBillingResponse{Organization: organizationToDTO(org)}, nil
-		}
-		org.BillingCustomerID = *req.BillingCustomerId
-	}
-
-	if req.RillPlan != nil || req.BillerPlan != nil {
-		plan, err := s.admin.Biller.GetPlan(ctx, valOrDefault(req.RillPlan, ""), valOrDefault(req.BillerPlan, ""))
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		if plan == nil {
-			return nil, status.Error(codes.InvalidArgument, "invalid plan")
-		}
-		if org.BillingCustomerID != "" {
-			subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-
-			for _, sub := range subs {
-				if sub.Plan.BillerID == plan.BillerID {
-					return nil, status.Error(codes.InvalidArgument, "plan already assigned to the organization")
-				}
-			}
-
-			// cancel current subscriptions if any, may be just support immediately cancelling and assining new plan
-			cancelOption := billing.SubscriptionCancellationOptionImmediate
-			var cancelDate time.Time
-			if req.SubscriptionChangeEffective != nil {
-				switch *req.SubscriptionChangeEffective {
-				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW:
-					cancelOption = billing.SubscriptionCancellationOptionImmediate
-				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
-					cancelOption = billing.SubscriptionCancellationOptionEndOfSubscriptionTerm
-				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_SPECIFIED_DATE:
-					cancelOption = billing.SubscriptionCancellationOptionRequestedDate
-					if req.SubscriptionChangeDate == nil {
-						return nil, status.Error(codes.InvalidArgument, "missing subscription change date")
-					}
-					cancelDate = req.SubscriptionChangeDate.AsTime()
-				default:
-					return nil, status.Error(codes.InvalidArgument, "invalid subscription change effective")
-				}
-			}
-			err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, cancelOption, cancelDate)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		} else {
-			// create new customer
-			customerID, err := s.admin.Biller.CreateCustomer(ctx, org)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			org.BillingCustomerID = customerID
-		}
-		// create new subscription
-		_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-	}
-
-	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                    org.Name,
+	opts := &database.UpdateOrganizationOptions{
+		Name:                    req.OrgName,
 		Description:             org.Description,
 		QuotaProjects:           org.QuotaProjects,
 		QuotaDeployments:        org.QuotaDeployments,
@@ -983,13 +1035,48 @@ func (s *Server) SudoUpdateOrganizationBilling(ctx context.Context, req *adminv1
 		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
 		QuotaNumUsers:           org.QuotaNumUsers,
 		QuotaManagedDataBytes:   org.QuotaManagedDataBytes,
-		BillingCustomerID:       org.BillingCustomerID,
-	})
+		BillingCustomerID:       req.BillingCustomerId,
+	}
+
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
+	if err != nil {
+		return nil, err
+	}
+
+	// get subscriptions if present
+	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.SudoUpdateOrganizationBillingResponse{Organization: organizationToDTO(org)}, nil
+	var subscriptions []*adminv1.Subscription
+	for _, sub := range subs {
+		subscriptions = append(subscriptions, subscriptionToDTO(sub))
+	}
+
+	return &adminv1.SudoUpdateOrganizationBillingCustomerResponse{
+		Organization:  organizationToDTO(org),
+		Subscriptions: subscriptions,
+	}, nil
+}
+
+func (s *Server) ListPublicBillingPlans(ctx context.Context, req *adminv1.ListPublicBillingPlansRequest) (*adminv1.ListPublicBillingPlansResponse, error) {
+	observability.AddRequestAttributes(ctx)
+
+	// no permissions required to list public billing plans
+	plans, err := s.admin.Biller.GetPublicPlans(ctx)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	var dtos []*adminv1.BillingPlan
+	for _, plan := range plans {
+		dtos = append(dtos, billingPlanToDTO(plan))
+	}
+
+	return &adminv1.ListPublicBillingPlansResponse{
+		Plans: dtos,
+	}, nil
 }
 
 func organizationToDTO(o *database.Organization) *adminv1.Organization {
@@ -1010,6 +1097,51 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 		CreatedOn:         timestamppb.New(o.CreatedOn),
 		UpdatedOn:         timestamppb.New(o.UpdatedOn),
 	}
+}
+
+func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
+	return &adminv1.Subscription{
+		PlanId:                       sub.Plan.BillerID,
+		PlanName:                     sub.Plan.Name,
+		StartDate:                    timestamppb.New(sub.StartDate),
+		EndDate:                      timestamppb.New(sub.EndDate),
+		CurrentBillingCycleStartDate: timestamppb.New(sub.CurrentBillingCycleStartDate),
+		CurrentBillingCycleEndDate:   timestamppb.New(sub.CurrentBillingCycleStartDate),
+		TrialEndDate:                 timestamppb.New(sub.TrialEndDate),
+	}
+}
+
+func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
+	return &adminv1.BillingPlan{
+		BillerId:        plan.BillerID,
+		RillId:          plan.RillID,
+		Name:            plan.Name,
+		Description:     plan.Description,
+		TrialPeriodDays: uint32(plan.TrialPeriodDays),
+		Quotas: &adminv1.Quotas{
+			Projects:           valOrEmptyString(plan.Quotas.NumProjects),
+			Deployments:        valOrEmptyString(plan.Quotas.NumDeployments),
+			SlotsTotal:         valOrEmptyString(plan.Quotas.NumSlotsTotal),
+			SlotsPerDeployment: valOrEmptyString(plan.Quotas.NumSlotsPerDeployment),
+			OutstandingInvites: valOrEmptyString(plan.Quotas.NumOutstandingInvites),
+			NumUsers:           valOrEmptyString(plan.Quotas.NumUsers),
+			ManagedDataBytes:   val64OrEmptyString(plan.Quotas.ManagedDataBytes),
+		},
+	}
+}
+
+func valOrEmptyString(v *int) string {
+	if v != nil {
+		return strconv.Itoa(*v)
+	}
+	return ""
+}
+
+func val64OrEmptyString(v *int64) string {
+	if v != nil {
+		return strconv.FormatInt(*v, 10)
+	}
+	return ""
 }
 
 func whitelistedDomainToPB(a *database.OrganizationWhitelistedDomainWithJoinedRoleNames) *adminv1.WhitelistedDomain {

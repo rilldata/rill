@@ -102,9 +102,9 @@ func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offs
 }
 
 type ProjectUsageAvailability struct {
-	ProjectName string    `json:"project_name"`
-	MinTime     time.Time `json:"min_time"`
-	MaxTime     time.Time `json:"max_time"`
+	ProjectID string    `json:"project_id"`
+	MinTime   time.Time `json:"min_time"`
+	MaxTime   time.Time `json:"max_time"`
 }
 
 type Usage struct {
@@ -112,7 +112,7 @@ type Usage struct {
 	Amount     float64 `json:"amount"`
 }
 
-func (c *Client) GetProjectUsageAvailability(ctx context.Context, orgName string, projectNames []string, lowerTimeBound, upperTimeBound time.Time) ([]ProjectUsageAvailability, error) {
+func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []string, lowerTimeBound, upperTimeBound time.Time) ([]ProjectUsageAvailability, error) {
 	// Create the URL for the request
 	var runtimeHost string
 
@@ -130,17 +130,16 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, orgName string
 
 	uri.Path = path.Join("/v1/instances", c.InstanceID, "/api/project-usage-availability")
 	/*  api query -
-	select project_id, min(__time) as min_time, max(__time) as max_time
-	from druid-metrics where org_name='' and project_name IN ('','',...) and __time >= '<lower-bound>' and __time < '<upper-bound>' group by 1
+	select project_id, min(time) as min_time, max(time) as max_time
+	from rill-metrics where project_id IN ('','',...) and time >= '<lower-bound>' and time < '<upper-bound>' group by 1
 	*/
 
 	// Add URL query parameters
 	qry := uri.Query()
-	qry.Add("org_name", orgName)
 	qry.Add("lower_time_bound", lowerTimeBound.Format(TimeBoundFormat))
 	qry.Add("upper_time_bound", upperTimeBound.Format(TimeBoundFormat))
-	for _, id := range projectNames {
-		qry.Add("project_name", id)
+	for _, id := range projectIDs {
+		qry.Add("project_id", id)
 	}
 
 	uri.RawQuery = qry.Encode()
@@ -179,7 +178,7 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, orgName string
 	return availability, nil
 }
 
-func (c *Client) GetProjectUsageMetrics(ctx context.Context, orgName, projectName string, lowerTimeBound, upperTimeBound time.Time, metricNames []string) ([]Usage, error) {
+func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, lowerTimeBound, upperTimeBound time.Time, metricNames []string) ([]Usage, error) {
 	// Create the URL for the request
 	var runtimeHost string
 
@@ -200,14 +199,13 @@ func (c *Client) GetProjectUsageMetrics(ctx context.Context, orgName, projectNam
 		// metric name is the api name
 		uri.Path = path.Join("/v1/instances", c.InstanceID, fmt.Sprintf("/api/%s", metric))
 		/*  api query -
-		select metric, AGG_FUNC(metric_value) as usage
-		from druid-metrics where org_name='' and project_name ='' and __time >= '<lower-bound>' and __time < '<upper-bound>' and metric = 'metric' group by 1
+		select event_name, AGG_FUNC(metric_value) as usage
+		from rill-metrics where project_id ='' and time >= '<lower-bound>' and time < '<upper-bound>' and event_name = '<metric>' group by 1
 		*/
 
 		// Add URL query parameters
 		qry := uri.Query()
-		qry.Add("org_name", orgName)
-		qry.Add("project_name", projectName)
+		qry.Add("project_id", projectID)
 		qry.Add("lower_time_bound", lowerTimeBound.Format(TimeBoundFormat))
 		qry.Add("upper_time_bound", upperTimeBound.Format(TimeBoundFormat))
 

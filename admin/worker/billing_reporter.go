@@ -10,7 +10,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var defaultReportableMetrics = []string{"data_bytes"} // TODO - check the metric name
+var defaultReportableMetrics = []string{"data_dir_size_bytes"}
 
 func (w *Worker) reportUsage(ctx context.Context) error {
 	// Get reporting granularity
@@ -49,6 +49,17 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 	}
 
 	for _, org := range orgs {
+		// Get reportable metrics for the org
+		reportableMetrics, err := w.getReportableMetrics(ctx, org)
+		if err != nil {
+			w.logger.Error("failed to report usage: unable to get reportable metrics", zap.String("org", org.Name), zap.Error(err))
+			return err
+		}
+		if len(reportableMetrics) == 0 {
+			w.logger.Warn("skipping usage reporting for org: no reportable metrics found", zap.String("org", org.Name))
+			continue
+		}
+
 		// Get all projects for the org
 		projects, err := w.admin.DB.FindProjectsForOrganization(ctx, org.ID, "", 100000)
 		if err != nil {
@@ -75,8 +86,8 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 				continue
 			}
 
-			reportableProjects = append(reportableProjects, project.Name)
-			remaining[project.Name] = project
+			reportableProjects = append(reportableProjects, project.ID)
+			remaining[project.ID] = project
 			if project.NextUsageReportingTime.IsZero() {
 				continue
 			} else if project.NextUsageReportingTime.Before(validationLowerTimeBound) {
@@ -89,32 +100,25 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 			continue
 		}
 
-		// Get reportable metrics for the org
-		reportableMetrics, err := w.getReportableMetrics(ctx, org)
-		if err != nil {
-			w.logger.Error("failed to report usage: unable to get reportable metrics", zap.String("org", org.Name), zap.Error(err))
-			return err
-		}
-
 		// add grace period buffer to lower and upper bound to ensure correct comparison
 		validationLowerTimeBound = validationLowerTimeBound.Add(-validationGracePeriod)
 		validationUpperTimeBound := workerTimeBucketEnd.Add(validationGracePeriod)
 
 		// Get availability
-		availability, err := client.GetProjectUsageAvailability(ctx, org.Name, reportableProjects, validationLowerTimeBound, validationUpperTimeBound)
+		availability, err := client.GetProjectUsageAvailability(ctx, reportableProjects, validationLowerTimeBound, validationUpperTimeBound)
 		if err != nil {
 			w.logger.Error("failed to report usage: unable to get availability", zap.String("org", org.Name), zap.Error(err))
 			continue
 		}
 
 		for _, av := range availability {
-			proj := remaining[av.ProjectName]
+			proj := remaining[av.ProjectID]
 			if proj == nil {
 				// cannot happen, but just in case
-				w.logger.Error("failed to report usage: project id mismatch", zap.String("org", org.Name), zap.String("project", av.ProjectName))
+				w.logger.Error("failed to report usage: project id mismatch", zap.String("org", org.Name), zap.String("project", av.ProjectID))
 				continue
 			}
-			delete(remaining, av.ProjectName)
+			delete(remaining, av.ProjectID)
 
 			projectReportingStartTime := workerTimeBucketStart
 			projectReportingEndTime := workerTimeBucketEnd
@@ -127,7 +131,7 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 				// note - reporting window will shift to next granularity, so we may miss reporting for this granularity which is a rare corner case
 				if av.MinTime.Before(projectReportingEndTime) {
 					// report usage and update next reporting time to reporting end time
-					err = w.reportProjectUsage(ctx, client, org.Name, proj.Name, projectReportingStartTime, projectReportingEndTime, granularity, reportableMetrics)
+					err = w.reportProjectUsage(ctx, client, org.ID, proj.ID, projectReportingStartTime, projectReportingEndTime, granularity, reportableMetrics)
 					if err != nil {
 						w.logger.Error("failed to report usage", zap.String("org", org.Name), zap.String("project", proj.Name), zap.Error(err))
 						return err
@@ -141,8 +145,8 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 					w.logger.Warn("skipping usage reporting for project: no usage available", zap.String("org", org.Name), zap.String("project", proj.Name), zap.Time("min_time", av.MinTime), zap.Time("max_time", av.MaxTime), zap.Time("reporting_start_time", projectReportingStartTime), zap.Time("reporting_end_time", projectReportingEndTime), zap.Time("next_usage_reporting_time", proj.NextUsageReportingTime))
 				}
 			} else if proj.ProdDeploymentID == nil {
-				// hibernating project - don't perform any validation, just report whatever is available and update last reported time to projectReportingEndTime
-				err = w.reportProjectUsage(ctx, client, org.Name, proj.Name, projectReportingStartTime, projectReportingEndTime, granularity, reportableMetrics)
+				// hibernating project - don't perform any validation, just report whatever is available and update next reporting time to projectReportingEndTime
+				err = w.reportProjectUsage(ctx, client, org.ID, proj.ID, projectReportingStartTime, projectReportingEndTime, granularity, reportableMetrics)
 				if err != nil {
 					w.logger.Error("failed to report usage of hibernating project", zap.String("org", org.Name), zap.String("project", proj.Name), zap.Error(err))
 					return err
@@ -154,7 +158,7 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 				if av.MinTime.After(projectReportingStartTime) || projectReportingEndTime.After(av.MaxTime) {
 					w.logger.Warn("skipping usage reporting for project: availability mismatch", zap.String("org", org.Name), zap.String("project", proj.Name), zap.Time("min_time", av.MinTime), zap.Time("max_time", av.MaxTime), zap.Time("reporting_start_time", projectReportingStartTime), zap.Time("reporting_end_time", projectReportingEndTime), zap.Time("next_usage_reporting_time", proj.NextUsageReportingTime))
 				} else {
-					err = w.reportProjectUsage(ctx, client, org.Name, proj.Name, projectReportingStartTime, projectReportingEndTime, granularity, reportableMetrics)
+					err = w.reportProjectUsage(ctx, client, org.ID, proj.ID, projectReportingStartTime, projectReportingEndTime, granularity, reportableMetrics)
 					if err != nil {
 						w.logger.Error("failed to report usage", zap.String("org", org.Name), zap.String("project", proj.Name), zap.Error(err))
 						return err
@@ -177,9 +181,8 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 	return nil
 }
 
-func (w *Worker) reportProjectUsage(ctx context.Context, client *metrics.Client, orgName, projectName string, start, end time.Time, gran time.Duration, metricNames []string) error {
-	usageMetadata := map[string]interface{}{"org": orgName, "project": projectName}
-
+func (w *Worker) reportProjectUsage(ctx context.Context, client *metrics.Client, orgID, projectID string, start, end time.Time, gran time.Duration, metricNames []string) error {
+	usageMetadata := map[string]interface{}{"org_id": orgID, "project_id": projectID}
 	// generally start and end time should align with time gran but any ways doing basic checks
 	for start.Before(end) {
 		upperBound := start.Add(gran)
@@ -187,7 +190,7 @@ func (w *Worker) reportProjectUsage(ctx context.Context, client *metrics.Client,
 		if upperBound.After(end) {
 			upperBound = end
 		}
-		usage, err := client.GetProjectUsageMetrics(ctx, orgName, projectName, start, upperBound, metricNames)
+		usage, err := client.GetProjectUsageMetrics(ctx, projectID, start, upperBound, metricNames)
 		if err != nil {
 			return err
 		}
@@ -203,7 +206,7 @@ func (w *Worker) reportProjectUsage(ctx context.Context, client *metrics.Client,
 				Metadata:      usageMetadata,
 			})
 		}
-		err = w.admin.Biller.ReportUsage(ctx, orgName, reportableUsage)
+		err = w.admin.Biller.ReportUsage(ctx, orgID, reportableUsage)
 		if err != nil {
 			return err
 		}
