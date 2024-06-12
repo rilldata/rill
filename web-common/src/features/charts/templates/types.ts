@@ -2,6 +2,10 @@ interface TemplateSpecProperties {
   name: string;
 }
 
+interface DataProperties {
+  metric_view: string;
+}
+
 interface ChartProperties {
   x: string;
   y: string;
@@ -17,16 +21,19 @@ interface BarChart extends ChartProperties {
   name: "bar";
 }
 
-interface KPITemplate {
+interface KPITemplate extends DataProperties {
   name: "kpi";
+  time_range: string;
   measure: string;
   title: string;
 }
 
-interface TableTemplate {
+interface TableTemplate extends DataProperties {
   name: "table";
-  columns: string[];
-  rows: string[];
+  time_range: string;
+  measures: string[];
+  row_dimensions: string[];
+  col_dimensions: string[];
 }
 
 type ChartTemplates = LineChart | BarChart;

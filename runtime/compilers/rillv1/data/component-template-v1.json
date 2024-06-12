@@ -64,8 +64,14 @@
             "measure": {
               "type": "string"
             },
+            "metric_view": {
+              "type": "string"
+            },
             "name": {
               "const": "kpi",
+              "type": "string"
+            },
+            "time_range": {
               "type": "string"
             },
             "title": {
@@ -74,7 +80,9 @@
           },
           "required": [
             "measure",
+            "metric_view",
             "name",
+            "time_range",
             "title"
           ],
           "type": "object"
@@ -82,27 +90,42 @@
         {
           "additionalProperties": false,
           "properties": {
-            "columns": {
+            "col_dimensions": {
               "items": {
                 "type": "string"
               },
               "type": "array"
+            },
+            "measures": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "metric_view": {
+              "type": "string"
             },
             "name": {
               "const": "table",
               "type": "string"
             },
-            "rows": {
+            "row_dimensions": {
               "items": {
                 "type": "string"
               },
               "type": "array"
+            },
+            "time_range": {
+              "type": "string"
             }
           },
           "required": [
-            "columns",
+            "col_dimensions",
+            "measures",
+            "metric_view",
             "name",
-            "rows"
+            "row_dimensions",
+            "time_range"
           ],
           "type": "object"
         }
