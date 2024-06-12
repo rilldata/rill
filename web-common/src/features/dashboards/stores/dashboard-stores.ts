@@ -332,7 +332,12 @@ const metricViewReducers = {
 
   setPivotSort(name: string, sorting: SortingState) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting, rowPage: 1 };
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        sorting,
+        rowPage: 1,
+        expanded: {},
+      };
     });
   },
 
