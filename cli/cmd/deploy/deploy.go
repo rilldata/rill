@@ -398,7 +398,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	}
 
 	// create a tar archive of the project and upload it
-	ch.Printer.Print("Starting upload.")
+	ch.Printer.Println("Starting upload.")
 	uploadPath, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 	if err != nil {
 		return err

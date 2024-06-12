@@ -66,22 +66,22 @@ type Config struct {
 	GithubClientID         string                 `split_words:"true"`
 	GithubClientSecret     string                 `split_words:"true"`
 	UploadsBucket          string                 `split_words:"true"`
-	// UploadsSvcAcctCredentials is only required to be set for local development.
+	// UploadsSvcCreds is only required to be set for local development.
 	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
-	UploadsSvcAcctCredentials string `split_words:"true"`
-	EmailSMTPHost             string `split_words:"true"`
-	EmailSMTPPort             int    `split_words:"true"`
-	EmailSMTPUsername         string `split_words:"true"`
-	EmailSMTPPassword         string `split_words:"true"`
-	EmailSenderEmail          string `split_words:"true"`
-	EmailSenderName           string `split_words:"true"`
-	EmailBCC                  string `split_words:"true"`
-	OpenAIAPIKey              string `envconfig:"openai_api_key"`
-	ActivitySinkType          string `default:"" split_words:"true"`
-	ActivitySinkKafkaBrokers  string `default:"" split_words:"true"`
-	ActivityUISinkKafkaTopic  string `default:"" split_words:"true"`
-	MetricsProject            string `default:"" split_words:"true"`
-	AutoscalerCron            string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
+	UploadsSvcCreds          string `split_words:"true"`
+	EmailSMTPHost            string `split_words:"true"`
+	EmailSMTPPort            int    `split_words:"true"`
+	EmailSMTPUsername        string `split_words:"true"`
+	EmailSMTPPassword        string `split_words:"true"`
+	EmailSenderEmail         string `split_words:"true"`
+	EmailSenderName          string `split_words:"true"`
+	EmailBCC                 string `split_words:"true"`
+	OpenAIAPIKey             string `envconfig:"openai_api_key"`
+	ActivitySinkType         string `default:"" split_words:"true"`
+	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
+	ActivityUISinkKafkaTopic string `default:"" split_words:"true"`
+	MetricsProject           string `default:"" split_words:"true"`
+	AutoscalerCron           string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -290,22 +290,22 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
 				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
-					HTTPPort:                  conf.HTTPPort,
-					GRPCPort:                  conf.GRPCPort,
-					ExternalURL:               conf.ExternalURL,
-					FrontendURL:               conf.FrontendURL,
-					AllowedOrigins:            conf.AllowedOrigins,
-					SessionKeyPairs:           keyPairs,
-					ServePrometheus:           conf.MetricsExporter == observability.PrometheusExporter,
-					AuthDomain:                conf.AuthDomain,
-					AuthClientID:              conf.AuthClientID,
-					AuthClientSecret:          conf.AuthClientSecret,
-					GithubAppName:             conf.GithubAppName,
-					GithubAppWebhookSecret:    conf.GithubAppWebhookSecret,
-					GithubClientID:            conf.GithubClientID,
-					GithubClientSecret:        conf.GithubClientSecret,
-					UploadsBucket:             conf.UploadsBucket,
-					UploadsSvcAcctCredentials: conf.UploadsSvcAcctCredentials,
+					HTTPPort:               conf.HTTPPort,
+					GRPCPort:               conf.GRPCPort,
+					ExternalURL:            conf.ExternalURL,
+					FrontendURL:            conf.FrontendURL,
+					AllowedOrigins:         conf.AllowedOrigins,
+					SessionKeyPairs:        keyPairs,
+					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
+					AuthDomain:             conf.AuthDomain,
+					AuthClientID:           conf.AuthClientID,
+					AuthClientSecret:       conf.AuthClientSecret,
+					GithubAppName:          conf.GithubAppName,
+					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
+					GithubClientID:         conf.GithubClientID,
+					GithubClientSecret:     conf.GithubClientSecret,
+					UploadsBucket:          conf.UploadsBucket,
+					UploadsSvcCreds:        conf.UploadsSvcCreds,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

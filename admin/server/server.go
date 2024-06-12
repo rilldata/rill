@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -64,8 +63,8 @@ type Options struct {
 	GithubClientID         string
 	GithubClientSecret     string
 	// UploadsBucket is the path on gcs where rill managed project artifacts are stored.
-	UploadsBucket             string
-	UploadsSvcAcctCredentials string
+	UploadsBucket   string
+	UploadsSvcCreds string
 }
 
 type Server struct {
@@ -138,12 +137,8 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	}
 
 	var clientOpts []option.ClientOption
-	if opts.UploadsSvcAcctCredentials != "" {
-		creds, err := json.Marshal(opts.UploadsSvcAcctCredentials)
-		if err != nil {
-			return nil, err
-		}
-		clientOpts = append(clientOpts, option.WithCredentialsJSON(creds))
+	if opts.UploadsSvcCreds != "" {
+		clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(opts.UploadsSvcCreds)))
 	}
 	storageClient, err := storage.NewClient(context.Background(), clientOpts...)
 	if err != nil {
