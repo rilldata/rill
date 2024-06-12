@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"regexp"
 	"strings"
 	"time"
 
@@ -158,6 +159,8 @@ func (q *MetricsViewSearch) Export(ctx context.Context, rt *runtime.Runtime, ins
 	return nil
 }
 
+var druidDnsFixer = regexp.MustCompile(`/v2/sql(?:/avatica-protobuf)?/?`)
+
 func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, instanceID, table string, policy *runtime.ResolvedMetricsViewSecurity) (bool, error) {
 	var query map[string]interface{}
 	if policy != nil && policy.RowFilter != "" {
@@ -217,14 +220,15 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 	dsn := ""
 	for _, c := range inst.Connectors {
 		if c.Name == "druid" {
-			dsn = c.Config["dsn"]
+			dsn, err = druid.GetDSN(c.Config)
+			break
 		}
 	}
 	if dsn == "" {
 		return false, fmt.Errorf("druid connector config not found in instance")
 	}
 
-	nq := druid.NewNativeQuery(strings.Replace(dsn, "/v2/sql/avatica-protobuf/", "/v2/", 1))
+	nq := druid.NewNativeQuery(druidDnsFixer.ReplaceAllString(dsn, "/v2/"))
 	req := druid.NewNativeSearchQueryRequest(table, q.Search, q.Dimensions, q.TimeRange.Start.AsTime(), q.TimeRange.End.AsTime(), query)
 	var res druid.NativeSearchQueryResponse
 	err = nq.Do(ctx, req, &res, req.Context.QueryID)

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/pkg/errors"
 )
 
 type QueryContext struct {
@@ -62,10 +61,10 @@ type QueryPlan struct {
 	} `json:"query"`
 }
 
-func (n *NativeQuery) Do(ctx context.Context, dr interface{}, res interface{}, queryID string) error {
+func (n *NativeQuery) Do(ctx context.Context, dr, res interface{}, queryID string) error {
 	b, err := json.Marshal(dr)
 	if err != nil {
-		return errors.Wrap(err, "json:marshal")
+		return err
 	}
 
 	bodyReader := bytes.NewReader(b)
@@ -100,7 +99,7 @@ func (n *NativeQuery) Do(ctx context.Context, dr interface{}, res interface{}, q
 	err = dec.Decode(&res)
 	if err != nil {
 		resp.Body.Close()
-		return errors.Wrap(err, "json:decode")
+		return err
 	}
 	return nil
 }
