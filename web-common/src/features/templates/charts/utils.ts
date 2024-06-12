@@ -1,5 +1,5 @@
 import { VisualizationSpec } from "svelte-vega";
-import { ChartType } from "../types";
+import { ChartType } from "../../charts/types";
 import { buildVegaLiteSpec } from "./build-template";
 
 export function singleLayerBaseSpec() {

@@ -1,4 +1,5 @@
 <script lang="ts" context="module">
+  import TemplateRenderer from "@rilldata/web-common/features/templates/TemplateRenderer.svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import type { ComponentType } from "svelte";
   import { onMount } from "svelte";
@@ -17,8 +18,6 @@
 </script>
 
 <script lang="ts">
-  import TemplateRenderer from "@rilldata/web-common/features/charts/templates/TemplateRenderer.svelte";
-
   export let i: number;
   export let builders: Builder[] = [];
   export let left: number;

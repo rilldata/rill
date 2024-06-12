@@ -21,14 +21,14 @@ interface BarChart extends ChartProperties {
   name: "bar";
 }
 
-interface KPITemplate extends DataProperties {
+export interface KPITemplateT extends DataProperties {
   name: "kpi";
   time_range: string;
+  comparison_range: string;
   measure: string;
-  title: string;
 }
 
-interface TableTemplate extends DataProperties {
+export interface TableTemplateT extends DataProperties {
   name: "table";
   time_range: string;
   measures: string[];
@@ -38,6 +38,6 @@ interface TableTemplate extends DataProperties {
 
 type ChartTemplates = LineChart | BarChart;
 
-type TemplateRenderes = ChartTemplates | KPITemplate | TableTemplate;
+type TemplateRenderes = ChartTemplates | KPITemplateT | TableTemplateT;
 
 export type TemplateSpec = TemplateSpecProperties & TemplateRenderes;
