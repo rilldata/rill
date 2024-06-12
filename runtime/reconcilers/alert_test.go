@@ -13,6 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	_ "github.com/rilldata/rill/runtime/resolvers"
 )
 
 func TestLegacyAlert(t *testing.T) {
@@ -323,6 +325,242 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 	require.Len(t, emails, 1)
 	require.Equal(t, emails[0].ToEmail, "somebody@example.com")
 	require.Contains(t, emails[0].Body, "Denmark")
+}
+
+func TestAlertDataYAMLSQL(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+-- @materialize: true
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+`,
+		"/alerts/a1.yaml": `
+type: alert
+title: Test Alert
+refs:
+- type: Model
+  name: bar
+watermark: inherit
+intervals:
+  duration: P1D
+  check_unclosed: true
+data:
+  sql: |-
+    select * from bar where country <> 'Denmark'
+notify:
+  email:
+    recipients:
+      - somebody@example.com
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	a1 := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: "a1"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindModel, Name: "bar"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/alerts/a1.yaml"},
+		},
+		Resource: &runtimev1.Resource_Alert{
+			Alert: &runtimev1.Alert{
+				Spec: &runtimev1.AlertSpec{
+					Title:                  "Test Alert",
+					RefreshSchedule:        &runtimev1.Schedule{RefUpdate: true},
+					WatermarkInherit:       true,
+					IntervalsIsoDuration:   "P1D",
+					IntervalsCheckUnclosed: true,
+					Resolver:               "sql",
+					ResolverProperties:     must(structpb.NewStruct(map[string]any{"connector": "", "sql": "select * from bar where country <> 'Denmark'"})),
+					NotifyOnRecover:        false,
+					NotifyOnFail:           true,
+					NotifyOnError:          false,
+					Renotify:               false,
+					RenotifyAfterSeconds:   0,
+					Notifiers:              []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"somebody@example.com"}}))}},
+				},
+				State: &runtimev1.AlertState{
+					ExecutionCount: 1,
+					ExecutionHistory: []*runtimev1.AlertExecution{
+						{
+							Result:        &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS},
+							ExecutionTime: nil,
+						},
+					},
+				},
+			},
+		},
+	}
+	testruntime.RequireResource(t, rt, id, a1)
+
+	// Extract alert state
+	as1 := a1.GetAlert().State
+
+	// Add data for two more days, check it executes for each day (all passing)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+UNION ALL
+SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+UNION ALL
+SELECT '2024-01-03T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+	`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	as1.ExecutionCount = 2
+	as1.ExecutionHistory = slices.Insert(as1.ExecutionHistory, 0,
+		&runtimev1.AlertExecution{
+			Result:        &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS},
+			ExecutionTime: nil,
+		},
+	)
+	testruntime.RequireResource(t, rt, id, a1)
+
+	// Add data for another day such that the assertion fails
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+UNION ALL
+SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+UNION ALL
+SELECT '2024-01-03T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+UNION ALL
+SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
+	`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	as1.ExecutionCount = 3
+	as1.ExecutionHistory = slices.Insert(as1.ExecutionHistory, 0,
+		&runtimev1.AlertExecution{
+			Result: &runtimev1.AssertionResult{
+				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+				FailRow: must(structpb.NewStruct(map[string]any{
+					"country": "Sweden",
+					"__time":  "2024-01-04T00:00:00Z",
+				})),
+			},
+			SentNotifications: true,
+			ExecutionTime:     nil,
+		},
+	)
+	testruntime.RequireResource(t, rt, id, a1)
+
+	// Check that the alert was sent
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 1)
+	require.Equal(t, emails[0].ToEmail, "somebody@example.com")
+	require.Contains(t, emails[0].Body, "Sweden")
+}
+
+func TestAlertDataYAMLMetricsSQL(t *testing.T) {
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+`,
+		"/dashboards/mv1.yaml": `
+title: mv1
+model: bar
+timeseries: __time
+dimensions:
+- column: country
+measures:
+- expression: count(*)
+`,
+		"/alerts/a1.yaml": `
+type: alert
+title: Test Alert
+refs:
+- type: MetricsView
+  name: mv1
+watermark: inherit
+intervals:
+  duration: P1D
+data:
+  metrics_sql: |-
+    select measure_0 from mv1 where country <> 'Denmark' having measure_0 > 0
+notify:
+  email:
+    recipients:
+      - somebody@example.com
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
+
+	_, metricsRes := newMetricsView("mv1", "bar", "__time", []string{"count(*)"}, []string{"country"})
+	testruntime.RequireResource(t, rt, id, metricsRes)
+
+	a1 := &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindAlert, Name: "a1"},
+			Refs:      []*runtimev1.ResourceName{{Kind: runtime.ResourceKindMetricsView, Name: "mv1"}},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/alerts/a1.yaml"},
+		},
+		Resource: &runtimev1.Resource_Alert{
+			Alert: &runtimev1.Alert{
+				Spec: &runtimev1.AlertSpec{
+					Title:                "Test Alert",
+					RefreshSchedule:      &runtimev1.Schedule{RefUpdate: true},
+					WatermarkInherit:     true,
+					IntervalsIsoDuration: "P1D",
+					Resolver:             "metrics_sql",
+					ResolverProperties:   must(structpb.NewStruct(map[string]any{"sql": "select measure_0 from mv1 where country <> 'Denmark' having measure_0 > 0"})),
+					NotifyOnRecover:      false,
+					NotifyOnFail:         true,
+					NotifyOnError:        false,
+					Renotify:             false,
+					RenotifyAfterSeconds: 0,
+					Notifiers:            []*runtimev1.Notifier{{Connector: "email", Properties: must(structpb.NewStruct(map[string]any{"recipients": []any{"somebody@example.com"}}))}},
+				},
+				State: &runtimev1.AlertState{
+					ExecutionCount: 1,
+					ExecutionHistory: []*runtimev1.AlertExecution{
+						{
+							Result:        &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS},
+							ExecutionTime: timestamppb.New(time.Date(2024, 1, 1, 0, 0, 0, 0, time.UTC)),
+						},
+					},
+				},
+			},
+		},
+	}
+	testruntime.RequireResource(t, rt, id, a1)
+
+	// Extract alert state
+	as1 := a1.GetAlert().State
+
+	// Add data for another day such that the assertion fails
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/models/bar.sql": `
+SELECT '2024-01-01T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
+UNION ALL
+SELECT '2024-01-02T00:00:00Z'::TIMESTAMP as __time, 'Sweden' as country
+	`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	as1.ExecutionCount = 2
+	as1.ExecutionHistory = slices.Insert(as1.ExecutionHistory, 0,
+		&runtimev1.AlertExecution{
+			Result: &runtimev1.AssertionResult{
+				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
+				FailRow: must(structpb.NewStruct(map[string]any{
+					"measure_0": 1,
+				})),
+			},
+			SentNotifications: true,
+			ExecutionTime:     timestamppb.New(time.Date(2024, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+	)
+	testruntime.RequireResource(t, rt, id, a1)
+
+	// Check that the alert was sent
+	emails := rt.Email.Sender.(*email.TestSender).Emails
+	require.Len(t, emails, 1)
+	require.Equal(t, emails[0].ToEmail, "somebody@example.com")
+	require.Contains(t, emails[0].Body, "measure_0")
 }
 
 func newMetricsView(name, table, timeDim string, measures, dimensions []string) (*runtimev1.MetricsViewV2, *runtimev1.Resource) {

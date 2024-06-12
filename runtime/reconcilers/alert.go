@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -537,6 +538,37 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, error) {
 	// Log
 	r.C.Logger.Debug("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+
+	if a.Spec.Resolver != "" {
+		res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+			InstanceID:         r.C.InstanceID,
+			Resolver:           a.Spec.Resolver,
+			ResolverProperties: a.Spec.ResolverProperties.AsMap(),
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve alert: %w", err)
+		}
+
+		var tmp []map[string]any
+		err = json.Unmarshal(res.Data, &tmp)
+		if err != nil {
+			return nil, fmt.Errorf("alert state resolver produced invalid JSON: %w", err)
+		}
+
+		if len(tmp) == 0 {
+			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
+		}
+
+		r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+
+		// Return fail row
+		failRow, err := structpb.NewStruct(tmp[0])
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
+		}
+		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, FailRow: failRow}, nil
+	}
 
 	// Build query proto
 	qpb, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)

@@ -346,6 +346,8 @@ message AlertSpec {
   uint32 renotify_after_seconds = 19;
   repeated Notifier notifiers = 21;
   map<string, string> annotations = 20;
+  string resolver = 22;
+  google.protobuf.Struct resolver_properties = 23;
 }
 
 message Notifier {

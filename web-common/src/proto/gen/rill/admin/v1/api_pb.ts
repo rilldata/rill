@@ -8582,6 +8582,16 @@ export class AlertOptions extends Message<AlertOptions> {
    */
   slackWebhooks: string[] = [];
 
+  /**
+   * @generated from field: string resolver = 12;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_props = 13;
+   */
+  resolverProps?: Struct;
+
   constructor(data?: PartialMessage<AlertOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -8601,6 +8611,8 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "resolver_props", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {

@@ -25,7 +25,8 @@ type AlertYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string `yaml:"timeout"`
+	Timeout string    `yaml:"timeout"`
+	Data    *DataYAML `yaml:"data"`
 	Query   struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
@@ -116,58 +117,70 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 	}
 
-	// Query name
-	if tmp.Query.Name == "" {
-		return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
-	}
-
-	// Query args
-	if tmp.Query.ArgsJSON != "" {
-		// Validate JSON
-		if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
-			return errors.New(`failed to parse "query.args_json" as JSON`)
-		}
-	} else {
-		// Fall back to query.args if query.args_json is not set
-		data, err := json.Marshal(tmp.Query.Args)
-		if err != nil {
-			return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
-		}
-		tmp.Query.ArgsJSON = string(data)
-	}
-	if tmp.Query.ArgsJSON == "" {
-		return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
-	}
-
-	// Query for: validate only one of user_id, user_email, or attributes is set
-	n := 0
+	// Data and query
+	var resolver string
+	var resolverProps *structpb.Struct
 	var queryForUserID, queryForUserEmail string
 	var queryForAttributes *structpb.Struct
-	if tmp.Query.For.UserID != "" {
-		n++
-		queryForUserID = tmp.Query.For.UserID
-	}
-	if tmp.Query.For.UserEmail != "" {
-		n++
-		_, err := mail.ParseAddress(tmp.Query.For.UserEmail)
+	if tmp.Data != nil {
+		var refs []ResourceName
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data)
 		if err != nil {
-			return fmt.Errorf(`invalid value %q for property "query.for.user_email"`, tmp.Query.For.UserEmail)
+			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
-		queryForUserEmail = tmp.Query.For.UserEmail
-	}
-	if len(tmp.Query.For.Attributes) > 0 {
-		n++
-		queryForAttributes, err = structpb.NewStruct(tmp.Query.For.Attributes)
-		if err != nil {
-			return fmt.Errorf(`failed to serialize property "query.for.attributes": %w`, err)
+		node.Refs = append(node.Refs, refs...)
+	} else {
+		// Query name
+		if tmp.Query.Name == "" {
+			return fmt.Errorf(`invalid value %q for property "query.name"`, tmp.Query.Name)
 		}
-	}
-	if n > 1 {
-		return fmt.Errorf(`only one of "query.for.user_id", "query.for.user_email", or "query.for.attributes" may be set`)
-	}
 
-	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
-		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
+		// Query args
+		if tmp.Query.ArgsJSON != "" {
+			// Validate JSON
+			if !json.Valid([]byte(tmp.Query.ArgsJSON)) {
+				return errors.New(`failed to parse "query.args_json" as JSON`)
+			}
+		} else {
+			// Fall back to query.args if query.args_json is not set
+			data, err := json.Marshal(tmp.Query.Args)
+			if err != nil {
+				return fmt.Errorf(`failed to serialize "query.args" to JSON: %w`, err)
+			}
+			tmp.Query.ArgsJSON = string(data)
+		}
+		if tmp.Query.ArgsJSON == "" {
+			return errors.New(`missing query args (must set either "query.args" or "query.args_json")`)
+		}
+
+		// Query for: validate only one of user_id, user_email, or attributes is set
+		n := 0
+		if tmp.Query.For.UserID != "" {
+			n++
+			queryForUserID = tmp.Query.For.UserID
+		}
+		if tmp.Query.For.UserEmail != "" {
+			n++
+			_, err := mail.ParseAddress(tmp.Query.For.UserEmail)
+			if err != nil {
+				return fmt.Errorf(`invalid value %q for property "query.for.user_email"`, tmp.Query.For.UserEmail)
+			}
+			queryForUserEmail = tmp.Query.For.UserEmail
+		}
+		if len(tmp.Query.For.Attributes) > 0 {
+			n++
+			queryForAttributes, err = structpb.NewStruct(tmp.Query.For.Attributes)
+			if err != nil {
+				return fmt.Errorf(`failed to serialize property "query.for.attributes": %w`, err)
+			}
+		}
+		if n > 1 {
+			return fmt.Errorf(`only one of "query.for.user_id", "query.for.user_email", or "query.for.attributes" may be set`)
+		}
+
+		if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
+			return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
+		}
 	}
 
 	isLegacySyntax := len(tmp.Email.Recipients) > 0
@@ -227,6 +240,9 @@ func (p *Parser) parseAlert(node *Node) error {
 	}
 	r.AlertSpec.QueryName = tmp.Query.Name
 	r.AlertSpec.QueryArgsJson = tmp.Query.ArgsJSON
+
+	r.AlertSpec.Resolver = resolver
+	r.AlertSpec.ResolverProperties = resolverProps
 
 	// Note: have already validated that at most one of the cases match
 	if queryForUserID != "" {

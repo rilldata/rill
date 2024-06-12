@@ -457,6 +457,17 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
+	// Data options
+	switch opts.Resolver {
+	case "sql":
+		res.Data.Connector = opts.ResolverProps.AsMap()["connector"].(string)
+		res.Data.SQL = opts.ResolverProps.AsMap()["sql"].(string)
+	case "metrics_sql":
+		res.Data.SQL = opts.ResolverProps.AsMap()["sql"].(string)
+	case "api":
+		res.Data.API = opts.ResolverProps.AsMap()["api"].(string)
+		res.Data.Args = opts.ResolverProps.AsMap()["args"].(map[string]any)
+	}
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
@@ -491,6 +502,17 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
+	// Data options
+	switch opts.Resolver {
+	case "sql":
+		res.Data.Connector = opts.ResolverProps.AsMap()["connector"].(string)
+		res.Data.SQL = opts.ResolverProps.AsMap()["sql"].(string)
+	case "metrics_sql":
+		res.Data.SQL = opts.ResolverProps.AsMap()["sql"].(string)
+	case "api":
+		res.Data.API = opts.ResolverProps.AsMap()["api"].(string)
+		res.Data.Args = opts.ResolverProps.AsMap()["args"].(map[string]any)
+	}
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	// Notification options
@@ -577,6 +599,13 @@ type alertYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
+	Data struct {
+		Connector  string         `yaml:"connector"`
+		SQL        string         `yaml:"sql"`
+		MetricsSQL string         `yaml:"metrics_sql"`
+		API        string         `yaml:"api"`
+		Args       map[string]any `yaml:"args"`
+	} `yaml:"data"`
 	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`

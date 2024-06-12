@@ -1564,4 +1564,6 @@ message AlertOptions {
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;
+  string resolver = 12;
+  google.protobuf.Struct resolver_props = 13;
 }
