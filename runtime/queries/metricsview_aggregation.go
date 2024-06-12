@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -96,6 +97,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		if err != nil {
 			return err
 		}
+		defer e.Close()
 
 		res, _, err := e.Query(ctx, qry, nil)
 		if err != nil {
@@ -805,17 +807,74 @@ func toData(rows *sqlx.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, 
 
 func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	q.Exporting = true
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
+	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
+		filename += "_filtered"
+	}
+
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
+	if err != nil {
+		return err
+	}
+
+	// Attempt to route to metricsview executor
+	qry, ok, err := q.rewriteToMetricsViewQuery(mv)
+	if err != nil {
+		return fmt.Errorf("error rewriting to metrics query: %w", err)
+	}
+	if ok {
+		e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, opts.Priority)
+		if err != nil {
+			return err
+		}
+		defer e.Close()
+
+		var format string
+		switch opts.Format {
+		case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+			format = "csv"
+		case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+			format = "xlsx"
+		case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+			format = "parquet"
+		default:
+			return fmt.Errorf("unsupported format: %s", opts.Format.String())
+		}
+
+		path, err := e.Export(ctx, qry, nil, format)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = os.Remove(path) }()
+
+		err = opts.PreWriteHook(filename)
+		if err != nil {
+			return err
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		_, err = io.Copy(w, f)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+	// Falling back to the old implementation
+
+	err = q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return fmt.Errorf("timeout exceeded")
 		}
 		return err
-	}
-
-	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
-	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
-		filename += "_filtered"
 	}
 
 	meta := structTypeToMetricsViewColumn(q.Result.Schema)
@@ -2898,11 +2957,6 @@ func (q *MetricsViewAggregation) trancationExpression(s string, timeGrain runtim
 }
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.MetricsViewSpec) (*metricsview.Query, bool, error) {
-	// Pivot not supported yet
-	if len(q.PivotOn) > 0 {
-		return nil, false, nil
-	}
-
 	// Time offset-based comparison joins not supported yet
 	if q.ComparisonTimeRange != nil && !isTimeRangeNil(q.ComparisonTimeRange) {
 		for _, d := range q.Dimensions {
@@ -2968,6 +3022,8 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 
 		qry.Measures = append(qry.Measures, res)
 	}
+
+	qry.PivotOn = q.PivotOn
 
 	for _, s := range q.Sort {
 		qry.Sort = append(qry.Sort, metricsview.Sort{

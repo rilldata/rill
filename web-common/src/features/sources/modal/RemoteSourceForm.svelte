@@ -118,14 +118,15 @@
           {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
             <Input
               id={toYupFriendlyKey(property.key)}
-              {label}
+              label={property.displayName}
               placeholder={property.placeholder}
+              optional={!property.required}
+              secret={property.secret}
               hint={property.hint}
               error={$errors[toYupFriendlyKey(property.key)]}
-              isSecret={property.secret}
               bind:value={$form[toYupFriendlyKey(property.key)]}
-              on:input={onStringInputChange}
-              on:change={handleChange}
+              onInput={onStringInputChange}
+              onChange={handleChange}
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
             <label for={property.key} class="flex items-center">

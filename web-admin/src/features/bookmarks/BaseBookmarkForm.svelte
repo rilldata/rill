@@ -7,7 +7,7 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
@@ -50,13 +50,13 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
     /* Switch was triggering this causing clicking on them submitting the form */
   }}
 >
-  <InputV2
+  <Input
     bind:value={$form["displayName"]}
     error={$errors["displayName"]}
     id="displayName"
     label="Name"
   />
-  <InputV2
+  <Input
     bind:value={$form["description"]}
     error={$errors["description"]}
     id="description"
