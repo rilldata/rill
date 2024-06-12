@@ -26,6 +26,11 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 		return "", err
 	}
 	defer h.repoMu.RUnlock()
+	if h.downloadURL != "" {
+		// use downloadURL as a proxy for CommitHash for one-time uploads
+		// It will change when new data is uploaded
+		return h.downloadURL, nil
+	}
 
 	repo, err := git.PlainOpen(h.repoPath)
 	if err != nil {
@@ -139,6 +144,8 @@ func (h *Handle) Delete(ctx context.Context, filePath string, force bool) error 
 }
 
 func (h *Handle) Sync(ctx context.Context) error {
+	// mark downloaded as false to download files again
+	h.downloaded = false
 	return h.cloneOrPull(ctx)
 }
 

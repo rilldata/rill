@@ -119,7 +119,10 @@ type Handle struct {
 	gitURL          string
 	gitURLExpiresOn time.Time
 	// downloadURL is set when repo is maintained by rill. Git related field will not be set.
-	downloadURL          string
+	downloadURL string
+	// downloaded is set to true to skip generating signed URL again once repository is downloaded in case of uploads.
+	// This is set to false via Sync API for repostore.
+	downloaded           bool
 	virtualNextPageToken string
 	virtualStashPath     string
 	ignorePaths          []string
@@ -305,6 +308,10 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 // Unsafe for concurrent use.
 func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if h.cloned {
+		if h.downloaded {
+			// to avoid downloading tar file, we just pull virtual files and return early.
+			return h.pullVirtual(ctx)
+		}
 		// Move the virtual directory out of the Git repository, and put it back after the pull.
 		// See stashVirtual for details on why this is needed.
 		err := h.stashVirtual()
@@ -320,6 +327,7 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
 	}
+
 	if h.downloadURL != "" {
 		// download repo
 		if err := h.download(); err != nil {
@@ -599,7 +607,6 @@ func (h *Handle) download() error {
 	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
 	defer cancel()
 
-	// Get the data with retries
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.downloadURL, http.NoBody)
 	if err != nil {
 		return err
@@ -634,12 +641,16 @@ func (h *Handle) download() error {
 	}
 	out.Close()
 
+	// clean the projPath first to remove any files from previous download
+	_ = os.RemoveAll(h.projPath)
+
 	// untar to the project path
 	err = untar(downloadDst, filepath.Clean(h.projPath))
 	if err != nil {
 		return err
 	}
 	h.cloned = true
+	h.downloaded = true
 	return nil
 }
 

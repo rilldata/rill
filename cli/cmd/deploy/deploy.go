@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/url"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -36,7 +37,10 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-var errInvalidProject = errors.New("invalid project")
+var (
+	errInvalidProject = errors.New("invalid project")
+	nonSlugRegex      = regexp.MustCompile(`[^\w-]`)
+)
 
 const (
 	pollTimeout  = 10 * time.Minute
@@ -109,6 +113,10 @@ type Options struct {
 }
 
 func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
+	// user chhose one-time uploads specifically
+	if opts.Upload {
+		return deployWithUploadFlow(ctx, ch, opts)
+	}
 	// The gitPath can be either a local path or a remote .git URL.
 	// Determine which it is.
 	var isLocalGitPath bool
@@ -137,18 +145,12 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 			return err
 		}
 
-		// user chhose one-time uploads specifically
-		if opts.Upload {
-			opts.GitPath = localProjectPath
-			return deployWithUploadFlow(ctx, ch, opts)
-		}
 		// Extract the Git remote and infer the githubURL.
 		var remote *gitutil.Remote
 		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 		if err != nil {
 			// first check if user wants to connect to Github or use one time uploads
 			ch.Print("No git remote was found.\n")
-			ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
 			ch.Print("You can connect to Github or use one-time uploads to deploy your project.\n")
 			// TODO : add a link to docs that explains difference between one time upload and github connection.
 			ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to use one-time uploads?", "", true)
@@ -346,9 +348,9 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		if err != nil {
 			return err
 		}
-		// keep it simple and consider text before first @ as username
 		// email can have other characters like . and + what to do ?
 		username, _, _ := strings.Cut(user.User.Email, "@")
+		username = nonSlugRegex.ReplaceAllString(username, "-")
 		err = createOrgFlow(ctx, ch, username)
 		if err != nil {
 			return fmt.Errorf("org creation failed with error: %w", err)
@@ -370,7 +372,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		return err
 	}
 	if projectExists {
-		printer.ColorGreenBold.Println("Found existing project. Starting re-upload.")
+		ch.Printer.Println("Found existing project. Starting re-upload.")
 		uploadPath, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 		if err != nil {
 			return err
@@ -396,7 +398,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	}
 
 	// create a tar archive of the project and upload it
-	printer.ColorGreenBold.Println("Starting upload.")
+	ch.Printer.Print("Starting upload.")
 	uploadPath, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 	if err != nil {
 		return err
@@ -605,17 +607,6 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	// Emit success telemetry
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedSuccess)
 
-	// TODO : May be just let Rill create the repo in all cases ?
-	ch.Print("You can continue here and Rill can create a Github Repository for you or you can exit the command and create a repository manually.\n\n")
-	ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-	if err != nil {
-		return err
-	}
-	if !ok {
-		ch.PrintfBold(githubSetupMsg)
-		return nil
-	}
-
 	// get orgs on which rill github app is installed with write permission
 	var candidateOrgs []string
 	if pollRes.UserInstallationPermission == adminv1.GithubPermission_GITHUB_PERMISSION_WRITE {
@@ -633,7 +624,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		return nil
 	} else if len(candidateOrgs) == 1 {
 		repoOwner = candidateOrgs[0]
-		ok, err = cmdutil.ConfirmPrompt(fmt.Sprintf("Rill will create a new repository in the Github account %q. Do you want to continue?", repoOwner), "", true)
+		ok, err := cmdutil.ConfirmPrompt(fmt.Sprintf("Rill will create a new repository in the Github account %q. Do you want to continue?", repoOwner), "", true)
 		if err != nil {
 			return err
 		}
@@ -1096,36 +1087,3 @@ func errMsgContains(err error, msg string) bool {
 	}
 	return false
 }
-
-const (
-	githubSetupMsg = `Follow these steps to push your project to Github.
-
-1. Initialize git
-
-	git init
-
-2. Add and commit files
-
-	git add .
-	git commit -m 'initial commit'
-
-3. Create a new GitHub repository on https://github.com/new
-
-4. Link git to the remote repository
-
-	git remote add origin https://github.com/your-account/your-repo.git
-
-5. Rename master branch to main
-
-	git branch -M main
-
-6. Push your repository
-
-	git push -u origin main
-
-7. Deploy Rill to your repository
-
-	rill deploy
-
-`
-)

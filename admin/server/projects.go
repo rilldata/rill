@@ -837,8 +837,12 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 func (s *Server) GetArtifactsURL(ctx context.Context, req *adminv1.GetArtifactsURLRequest) (*adminv1.GetArtifactsURLResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get git credentials")
+		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get artifacts url")
 	}
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
 	if err != nil {
