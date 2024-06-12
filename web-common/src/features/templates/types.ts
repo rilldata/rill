@@ -23,9 +23,9 @@ interface BarChart extends ChartProperties {
 
 export interface KPITemplateT extends DataProperties {
   name: "kpi";
-  time_range: string;
-  comparison_range: string;
   measure: string;
+  time_range: string;
+  comparison_range?: string;
 }
 
 export interface TableTemplateT extends DataProperties {
