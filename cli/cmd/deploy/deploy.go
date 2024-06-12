@@ -109,9 +109,6 @@ type Options struct {
 }
 
 func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
-	if opts.Upload {
-		return deployWithUploadFlow(ctx, ch, opts)
-	}
 	// The gitPath can be either a local path or a remote .git URL.
 	// Determine which it is.
 	var isLocalGitPath bool
@@ -140,10 +137,29 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 			return err
 		}
 
+		// user chhose one-time uploads specifically
+		if opts.Upload {
+			opts.GitPath = localProjectPath
+			return deployWithUploadFlow(ctx, ch, opts)
+		}
 		// Extract the Git remote and infer the githubURL.
 		var remote *gitutil.Remote
 		remote, githubURL, err = gitutil.ExtractGitRemote(localGitPath, opts.RemoteName, false)
 		if err != nil {
+			// first check if user wants to connect to Github or use one time uploads
+			ch.Print("No git remote was found.\n")
+			ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
+			ch.Print("You can connect to Github or use one-time uploads to deploy your project.\n")
+			// TODO : add a link to docs that explains difference between one time upload and github connection.
+			ok, confirmErr := cmdutil.ConfirmPrompt("Do you want to use one-time uploads?", "", true)
+			if confirmErr != nil {
+				return confirmErr
+			}
+			if ok {
+				opts.GitPath = localProjectPath
+				return deployWithUploadFlow(ctx, ch, opts)
+			}
+
 			// It's not a valid remote for Github. We still navigate user to login and then ask user to chhose either to create repo manually or let rill create one for them.
 			silent := false
 			if !ch.IsAuthenticated() {
@@ -240,35 +256,15 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	}
 
 	// Check if a project matching githubURL already exists in this org
-	projectNameExists := false
-	projects, err := ch.ProjectNamesByGithubURL(ctx, ch.Org, githubURL)
+	projects, err := ch.ProjectNamesByGithubURL(ctx, ch.Org, githubURL, opts.SubPath)
 	if err == nil && len(projects) != 0 { // ignoring error since this is just for a confirmation prompt
 		for _, p := range projects {
 			if strings.EqualFold(opts.Name, p) {
-				projectNameExists = true
-				break
+				ch.PrintfWarn("Can't deploy project %q.", opts.Name)
+				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q", githubURL)
+				ch.PrintfWarn("If you want to deploy to a new project, use `rill deploy --name new-name`")
+				return nil
 			}
-		}
-
-		ch.PrintfWarn("Another project %q already deploys from %q.\n", projects[0], githubURL)
-		ch.PrintfBold("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
-		ch.PrintfBold("- To delete the existing project, press 'n' and run `rill project delete`\n")
-		ch.PrintfBold("- To deploy the repository as a new project under another name, press 'y' or enter\n")
-		ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			ch.PrintfWarn("Aborted\n")
-			return nil
-		}
-	}
-
-	// If the project name already exists, prompt for another name
-	if projectNameExists {
-		opts.Name, err = projectNamePrompt(ctx, ch, ch.Org)
-		if err != nil {
-			return err
 		}
 	}
 
@@ -320,22 +316,11 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	// If user is not authenticated, run login flow.
 	if !ch.IsAuthenticated() {
-		if err := loginWithTelemetryAndGithubRedirect(ctx, ch, ""); err != nil {
+		if err := loginWithTelemetry(ctx, ch, ""); err != nil {
 			return err
 		}
 	}
-	adminClient, err := ch.Client()
-	if err != nil {
-		return err
-	}
-
-	_, localProjectPath, err := validateLocalProject(ctx, ch, opts)
-	if err != nil {
-		if errors.Is(err, errInvalidProject) {
-			return nil
-		}
-		return err
-	}
+	localProjectPath := opts.GitPath
 
 	// If no project name was provided, default to dir name
 	if opts.Name == "" {
@@ -343,7 +328,11 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	}
 
 	// Set a default org for the user if necessary
-	// (If user is not in an org, we'll create one based on their Github account later in the flow.)
+	// (If user is not in an org, we'll create one based on their user name later in the flow.)
+	adminClient, err := ch.Client()
+	if err != nil {
+		return err
+	}
 	if ch.Org == "" {
 		if err := setDefaultOrg(ctx, adminClient, ch); err != nil {
 			return err
@@ -369,36 +358,44 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
 
-	// check if the project with inferred name already exists
-	projectExists, err := projectExists(ctx, ch, ch.Org, opts.Name)
-	if err != nil {
-		return err
-	}
-	if projectExists {
-		ch.PrintfWarn("Another project with name %q already exists in the org %q.\n", opts.Name, ch.Org)
-		ch.PrintfBold("- To force the existing project to rebuild, press 'n' and run `rill project reconcile --reset`\n")
-		ch.PrintfBold("- To delete the existing project, press 'n' and run `rill project delete`\n")
-		ch.PrintfBold("- To deploy the repository as a new project under another name, press 'y' or enter\n")
-		ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
-		if err != nil {
-			return err
-		}
-		if !ok {
-			ch.PrintfWarn("Aborted\n")
-			return nil
-		}
-		opts.Name, err = projectNamePrompt(ctx, ch, ch.Org)
-		if err != nil {
-			return err
-		}
-	}
-
-	// create a tar archive of the project and upload it
 	// get repo for current project
 	repo, _, err := cmdutil.RepoForProjectPath(localProjectPath)
 	if err != nil {
 		return err
 	}
+
+	// check if the project with name already exists
+	projectExists, err := projectExists(ctx, ch, ch.Org, opts.Name)
+	if err != nil {
+		return err
+	}
+	if projectExists {
+		printer.ColorGreenBold.Println("Found existing project. Starting re-upload.")
+		uploadPath, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
+		if err != nil {
+			return err
+		}
+		printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
+		// Update the project
+		// Silently ignores other flags like description etc which are handled with project update.
+		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+			OrganizationName: ch.Org,
+			Name:             opts.Name,
+			UploadPath:       &uploadPath,
+		})
+		if err != nil {
+			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
+				ch.PrintfError("You do not have the permissions needed to update a project in org %q. Please reach out to your Rill admin.\n", ch.Org)
+				return nil
+			}
+			return fmt.Errorf("update project failed with error %w", err)
+		}
+		ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
+		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, res.Project.Name)
+		return nil
+	}
+
+	// create a tar archive of the project and upload it
 	printer.ColorGreenBold.Println("Starting upload.")
 	uploadPath, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 	if err != nil {
@@ -406,8 +403,8 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	}
 	printer.ColorGreenBold.Printf("All files uploaded successfully.\n\n")
 
-	// Create the project (automatically deploys prod branch)
-	res, err := createProjectFlow(ctx, ch, &adminv1.CreateProjectRequest{
+	// Create the project
+	res, err := adminClient.CreateProject(ctx, &adminv1.CreateProjectRequest{
 		OrganizationName: ch.Org,
 		Name:             opts.Name,
 		Description:      opts.Description,
@@ -608,9 +605,7 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 	// Emit success telemetry
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventGithubConnectedSuccess)
 
-	ch.Print("No git remote was found.\n")
-	ch.Print("Rill projects deploy continuously when you push changes to Github.\n")
-	ch.Print("Therefore, your project must be on Github before you deploy it to Rill.\n")
+	// TODO : May be just let Rill create the repo in all cases ?
 	ch.Print("You can continue here and Rill can create a Github Repository for you or you can exit the command and create a repository manually.\n\n")
 	ok, err := cmdutil.ConfirmPrompt("Do you want to continue?", "", true)
 	if err != nil {

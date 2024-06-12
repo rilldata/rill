@@ -17,11 +17,9 @@ import (
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
-	if opts.UploadPath == nil {
-		// Check Github info is set when upload URL is not set
-		if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
-			return nil, fmt.Errorf("cannot create project without github info if upload URL is not set")
-		}
+	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
+	if (opts.UploadPath == nil) == isGitInfoEmpty {
+		return nil, fmt.Errorf("either github info or upload path must be set")
 	}
 
 	// Get roles for initial setup
@@ -147,7 +145,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.UploadPath, opts.GithubInstallationID))
+		!reflect.DeepEqual(proj.UploadPath, opts.UploadPath))
 
 	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {

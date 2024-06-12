@@ -37,48 +37,51 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver           string                 `default:"postgres" split_words:"true"`
-	DatabaseURL              string                 `split_words:"true"`
-	RedisURL                 string                 `default:"" split_words:"true"`
-	ProvisionerSetJSON       string                 `split_words:"true"`
-	DefaultProvisioner       string                 `split_words:"true"`
-	Jobs                     []string               `split_words:"true"`
-	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
-	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
-	TracesExporter           observability.Exporter `default:"" split_words:"true"`
-	HTTPPort                 int                    `default:"8080" split_words:"true"`
-	GRPCPort                 int                    `default:"9090" split_words:"true"`
-	DebugPort                int                    `split_words:"true"`
-	ExternalURL              string                 `default:"http://localhost:8080" split_words:"true"`
-	ExternalGRPCURL          string                 `envconfig:"external_grpc_url"`
-	FrontendURL              string                 `default:"http://localhost:3000" split_words:"true"`
-	AllowedOrigins           []string               `default:"*" split_words:"true"`
-	SessionKeyPairs          []string               `split_words:"true"`
-	SigningJWKS              string                 `split_words:"true"`
-	SigningKeyID             string                 `split_words:"true"`
-	AuthDomain               string                 `split_words:"true"`
-	AuthClientID             string                 `split_words:"true"`
-	AuthClientSecret         string                 `split_words:"true"`
-	GithubAppID              int64                  `split_words:"true"`
-	GithubAppName            string                 `split_words:"true"`
-	GithubAppPrivateKey      string                 `split_words:"true"`
-	GithubAppWebhookSecret   string                 `split_words:"true"`
-	GithubClientID           string                 `split_words:"true"`
-	GithubClientSecret       string                 `split_words:"true"`
-	UploadsBucket            string                 `default:"cloud-deploy-upload-test" split_words:"true"`
-	EmailSMTPHost            string                 `split_words:"true"`
-	EmailSMTPPort            int                    `split_words:"true"`
-	EmailSMTPUsername        string                 `split_words:"true"`
-	EmailSMTPPassword        string                 `split_words:"true"`
-	EmailSenderEmail         string                 `split_words:"true"`
-	EmailSenderName          string                 `split_words:"true"`
-	EmailBCC                 string                 `split_words:"true"`
-	OpenAIAPIKey             string                 `envconfig:"openai_api_key"`
-	ActivitySinkType         string                 `default:"" split_words:"true"`
-	ActivitySinkKafkaBrokers string                 `default:"" split_words:"true"`
-	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
-	MetricsProject           string                 `default:"" split_words:"true"`
-	AutoscalerCron           string                 `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
+	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
+	DatabaseURL            string                 `split_words:"true"`
+	RedisURL               string                 `default:"" split_words:"true"`
+	ProvisionerSetJSON     string                 `split_words:"true"`
+	DefaultProvisioner     string                 `split_words:"true"`
+	Jobs                   []string               `split_words:"true"`
+	LogLevel               zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter         observability.Exporter `default:"" split_words:"true"`
+	HTTPPort               int                    `default:"8080" split_words:"true"`
+	GRPCPort               int                    `default:"9090" split_words:"true"`
+	DebugPort              int                    `split_words:"true"`
+	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
+	ExternalGRPCURL        string                 `envconfig:"external_grpc_url"`
+	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
+	AllowedOrigins         []string               `default:"*" split_words:"true"`
+	SessionKeyPairs        []string               `split_words:"true"`
+	SigningJWKS            string                 `split_words:"true"`
+	SigningKeyID           string                 `split_words:"true"`
+	AuthDomain             string                 `split_words:"true"`
+	AuthClientID           string                 `split_words:"true"`
+	AuthClientSecret       string                 `split_words:"true"`
+	GithubAppID            int64                  `split_words:"true"`
+	GithubAppName          string                 `split_words:"true"`
+	GithubAppPrivateKey    string                 `split_words:"true"`
+	GithubAppWebhookSecret string                 `split_words:"true"`
+	GithubClientID         string                 `split_words:"true"`
+	GithubClientSecret     string                 `split_words:"true"`
+	UploadsBucket          string                 `split_words:"true"`
+	// UploadsSvcAcctCredentials is only required to be set for local development.
+	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
+	UploadsSvcAcctCredentials string `split_words:"true"`
+	EmailSMTPHost             string `split_words:"true"`
+	EmailSMTPPort             int    `split_words:"true"`
+	EmailSMTPUsername         string `split_words:"true"`
+	EmailSMTPPassword         string `split_words:"true"`
+	EmailSenderEmail          string `split_words:"true"`
+	EmailSenderName           string `split_words:"true"`
+	EmailBCC                  string `split_words:"true"`
+	OpenAIAPIKey              string `envconfig:"openai_api_key"`
+	ActivitySinkType          string `default:"" split_words:"true"`
+	ActivitySinkKafkaBrokers  string `default:"" split_words:"true"`
+	ActivityUISinkKafkaTopic  string `default:"" split_words:"true"`
+	MetricsProject            string `default:"" split_words:"true"`
+	AutoscalerCron            string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -247,7 +250,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectOrg:  metricsProjectOrg,
 				MetricsProjectName: metricsProjectName,
 				AutoscalerCron:     conf.AutoscalerCron,
-				UploadsBucket:      conf.UploadsBucket,
 			}
 			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
 			if err != nil {
@@ -288,21 +290,22 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
 				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
-					HTTPPort:               conf.HTTPPort,
-					GRPCPort:               conf.GRPCPort,
-					ExternalURL:            conf.ExternalURL,
-					FrontendURL:            conf.FrontendURL,
-					AllowedOrigins:         conf.AllowedOrigins,
-					SessionKeyPairs:        keyPairs,
-					ServePrometheus:        conf.MetricsExporter == observability.PrometheusExporter,
-					AuthDomain:             conf.AuthDomain,
-					AuthClientID:           conf.AuthClientID,
-					AuthClientSecret:       conf.AuthClientSecret,
-					GithubAppName:          conf.GithubAppName,
-					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
-					GithubClientID:         conf.GithubClientID,
-					GithubClientSecret:     conf.GithubClientSecret,
-					UploadsBucket:          conf.UploadsBucket,
+					HTTPPort:                  conf.HTTPPort,
+					GRPCPort:                  conf.GRPCPort,
+					ExternalURL:               conf.ExternalURL,
+					FrontendURL:               conf.FrontendURL,
+					AllowedOrigins:            conf.AllowedOrigins,
+					SessionKeyPairs:           keyPairs,
+					ServePrometheus:           conf.MetricsExporter == observability.PrometheusExporter,
+					AuthDomain:                conf.AuthDomain,
+					AuthClientID:              conf.AuthClientID,
+					AuthClientSecret:          conf.AuthClientSecret,
+					GithubAppName:             conf.GithubAppName,
+					GithubAppWebhookSecret:    conf.GithubAppWebhookSecret,
+					GithubClientID:            conf.GithubClientID,
+					GithubClientSecret:        conf.GithubClientSecret,
+					UploadsBucket:             conf.UploadsBucket,
+					UploadsSvcAcctCredentials: conf.UploadsSvcAcctCredentials,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

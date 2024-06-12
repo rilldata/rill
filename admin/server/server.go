@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -31,6 +32,7 @@ import (
 	"github.com/rs/cors"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -61,9 +63,9 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
-	// UploadsBucket is the path on gcs where rill manages project artifacts are stored.
+	// UploadsBucket is the path on gcs where rill managed project artifacts are stored.
 	UploadsBucket             string
-	UploadsSvcAcctCredentials []byte
+	UploadsSvcAcctCredentials string
 }
 
 type Server struct {
@@ -135,7 +137,15 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		return nil, err
 	}
 
-	storageClient, err := storage.NewClient(context.Background())
+	var clientOpts []option.ClientOption
+	if opts.UploadsSvcAcctCredentials != "" {
+		creds, err := json.Marshal(opts.UploadsSvcAcctCredentials)
+		if err != nil {
+			return nil, err
+		}
+		clientOpts = append(clientOpts, option.WithCredentialsJSON(creds))
+	}
+	storageClient, err := storage.NewClient(context.Background(), clientOpts...)
 	if err != nil {
 		return nil, err
 	}
