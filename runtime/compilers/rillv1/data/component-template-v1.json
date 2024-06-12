@@ -79,7 +79,6 @@
             }
           },
           "required": [
-            "comparison_range",
             "measure",
             "metric_view",
             "name",
