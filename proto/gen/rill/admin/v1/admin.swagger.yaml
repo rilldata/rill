@@ -1167,7 +1167,7 @@ paths:
               dashboard:
                 type: string
                 description: Dashboard the token will provide access to.
-              presetFilter:
+              filter:
                 $ref: '#/definitions/v1Expression'
                 description: Optional filter to apply to all queries to the dashboard.
               excludeFields:
@@ -2958,7 +2958,7 @@ definitions:
         format: date-time
       dashboard:
         type: string
-      presetFilter:
+      filter:
         $ref: '#/definitions/v1Expression'
       excludeFields:
         type: array

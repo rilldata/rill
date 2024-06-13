@@ -44,8 +44,8 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	}
 
 	var filterJSON string
-	if req.PresetFilter != nil {
-		res, err := protojson.Marshal(req.PresetFilter)
+	if req.Filter != nil {
+		res, err := protojson.Marshal(req.Filter)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}

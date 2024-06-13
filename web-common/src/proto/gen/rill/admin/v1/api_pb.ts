@@ -5050,9 +5050,9 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   /**
    * Optional filter to apply to all queries to the dashboard.
    *
-   * @generated from field: rill.runtime.v1.Expression preset_filter = 4;
+   * @generated from field: rill.runtime.v1.Expression filter = 4;
    */
-  presetFilter?: Expression;
+  filter?: Expression;
 
   /**
    * Names of dimensions and measures to exclude from the dashboard.
@@ -5079,7 +5079,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "preset_filter", kind: "message", T: Expression },
+    { no: 4, name: "filter", kind: "message", T: Expression },
     { no: 5, name: "exclude_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 6, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
   ]);
@@ -8672,9 +8672,9 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   dashboard = "";
 
   /**
-   * @generated from field: rill.runtime.v1.Expression preset_filter = 6;
+   * @generated from field: rill.runtime.v1.Expression filter = 6;
    */
-  presetFilter?: Expression;
+  filter?: Expression;
 
   /**
    * @generated from field: repeated string exclude_fields = 7;
@@ -8694,7 +8694,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 3, name: "created_on", kind: "message", T: Timestamp },
     { no: 4, name: "expires_on", kind: "message", T: Timestamp },
     { no: 5, name: "dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "preset_filter", kind: "message", T: Expression },
+    { no: 6, name: "filter", kind: "message", T: Expression },
     { no: 7, name: "exclude_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 

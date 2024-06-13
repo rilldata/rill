@@ -1137,7 +1137,7 @@ message IssueMagicAuthTokenRequest {
   // Dashboard the token will provide access to.
   string dashboard = 3;
   // Optional filter to apply to all queries to the dashboard.
-  rill.runtime.v1.Expression preset_filter = 4;
+  rill.runtime.v1.Expression filter = 4;
   // Names of dimensions and measures to exclude from the dashboard.
   repeated string exclude_fields = 5;
   // TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
@@ -1592,7 +1592,7 @@ message MagicAuthToken {
   google.protobuf.Timestamp created_on = 3;
   google.protobuf.Timestamp expires_on = 4;
   string dashboard = 5;
-  rill.runtime.v1.Expression preset_filter = 6;
+  rill.runtime.v1.Expression filter = 6;
   repeated string exclude_fields = 7;
 }
 

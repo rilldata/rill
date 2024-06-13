@@ -121,7 +121,7 @@ export type AdminServiceSearchProjectUsersParams = {
 export type AdminServiceIssueMagicAuthTokenBody = {
   /** Dashboard the token will provide access to. */
   dashboard?: string;
-  presetFilter?: V1Expression;
+  filter?: V1Expression;
   /** Names of dimensions and measures to exclude from the dashboard. */
   excludeFields?: string[];
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
@@ -624,7 +624,7 @@ export interface V1MagicAuthToken {
   createdOn?: string;
   expiresOn?: string;
   dashboard?: string;
-  presetFilter?: V1Expression;
+  filter?: V1Expression;
   excludeFields?: string[];
 }
 
