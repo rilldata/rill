@@ -38,7 +38,6 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
     rowDimensionNames,
     measureNames,
     whereFilter,
-    measureFilter,
     enableComparison,
     comparisonTime,
     pivot,
@@ -48,13 +47,12 @@ export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
-  const measureFilterKey = JSON.stringify(measureFilter);
   const comparisonTimeKey = JSON.stringify(comparisonTime);
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${measureFilterKey}_${enableComparison}_${comparisonTimeKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}`;
 }
 
 /**
@@ -88,7 +86,7 @@ export function getTimeForQuery(
       duration,
       TimeOffsetType.ADD,
       timeZone,
-    ) as Date;
+    );
 
     if (startTimeDt > new Date(timeStart as string)) {
       timeStart = filter.timeStart;
