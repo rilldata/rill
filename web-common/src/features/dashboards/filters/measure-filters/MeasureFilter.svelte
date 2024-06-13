@@ -8,14 +8,9 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
-  import {
-    mapExprToMeasureFilter,
-    mapMeasureFilterToExpr,
-    MeasureFilterEntry,
-  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilterBody from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterBody.svelte";
   import MeasureFilterMenu from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterMenu.svelte";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import { fly } from "svelte/transition";
 
@@ -23,23 +18,19 @@
   export let name: string;
   export let label: string | undefined = undefined;
   export let colors: ChipColors = measureChipColors;
-  export let expr: V1Expression | undefined = undefined;
+  export let filter: MeasureFilterEntry | undefined = undefined;
 
   const dispatch = createEventDispatcher();
 
-  let active = !expr;
+  let active = !filter;
 
   function handleDismiss() {
-    if (!expr) {
+    if (!filter) {
       dispatch("remove");
     } else {
       active = false;
     }
   }
-
-  // TODO: in the next round of refactor update upstream to use MeasureFilterEntry
-  let filter: MeasureFilterEntry | undefined;
-  $: filter = mapExprToMeasureFilter(expr);
 </script>
 
 <DropdownMenu.Root
@@ -104,7 +95,7 @@
       dispatch("apply", {
         dimension,
         oldDimension,
-        expr: mapMeasureFilterToExpr(filter),
+        filter,
       })}
     open={active}
   />

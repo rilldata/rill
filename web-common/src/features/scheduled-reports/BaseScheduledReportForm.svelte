@@ -2,7 +2,7 @@
   import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
   import TimePicker from "@rilldata/web-common/components/forms/TimePicker.svelte";
   import { V1ExportFormat } from "@rilldata/web-common/runtime-client";
-  import InputV2 from "../../components/forms/InputV2.svelte";
+  import Input from "../../components/forms/Input.svelte";
   import Select from "../../components/forms/Select.svelte";
   import { runtime } from "../../runtime-client/runtime-store";
   import { useDashboard } from "../dashboards/selectors";
@@ -28,7 +28,7 @@
   on:submit|preventDefault={handleSubmit}
 >
   <span>Email recurring exports to recipients.</span>
-  <InputV2
+  <Input
     bind:value={$form["title"]}
     error={$errors["title"]}
     id="title"
@@ -80,7 +80,7 @@
       { value: V1ExportFormat.EXPORT_FORMAT_XLSX, label: "XLSX" },
     ]}
   />
-  <InputV2
+  <Input
     bind:value={$form["exportLimit"]}
     error={$errors["exportLimit"]}
     id="exportLimit"

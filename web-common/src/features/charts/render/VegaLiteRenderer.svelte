@@ -51,7 +51,7 @@
 <div
   bind:contentRect
   class:bg-white={customDashboard}
-  class:px-8={customDashboard}
+  class:px-4={customDashboard}
   class:pb-2={customDashboard}
   class="overflow-hidden size-full flex flex-col items-center justify-center"
 >

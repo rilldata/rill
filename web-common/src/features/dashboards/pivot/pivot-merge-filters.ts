@@ -18,9 +18,13 @@ function valueIntersection(
 }
 
 export function mergeFilters(
-  filter1: V1Expression,
-  filter2: V1Expression,
-): V1Expression {
+  filter1: V1Expression | undefined,
+  filter2: V1Expression | undefined,
+): V1Expression | undefined {
+  if (!filter1 && !filter2) return undefined;
+  if (!filter1) return filter2;
+  if (!filter2) return filter1;
+
   const inExprMap = new Map<string, V1Expression>();
   const likeExprMap = new Map<string, V1Expression>();
 

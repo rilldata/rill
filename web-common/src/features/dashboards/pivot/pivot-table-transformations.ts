@@ -169,7 +169,7 @@ export function getTotalsRow(
   return totalsRow;
 }
 
-export function mergeRowTotals(
+export function mergeRowTotalsInOrder(
   rowValues: string[],
   sortedRowTotals: V1MetricsViewAggregationResponseDataItem[],
   unsortedRowValues: string[],
