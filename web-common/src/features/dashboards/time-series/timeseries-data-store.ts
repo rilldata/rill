@@ -1,6 +1,9 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
-import { getFilteredMeasuresAndDimensions } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
+import {
+  getFilteredMeasuresAndDimensions,
+  getIndependentMeasures,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -125,10 +128,13 @@ export function createTimeSeriesDataStore(
           ? [...dashboardStore.visibleMeasureKeys]
           : [];
       }
-      const { measures: filteredMeasures, dimensions } =
-        getFilteredMeasuresAndDimensions({
-          dashboard: dashboardStore,
-        })(metricsView.data ?? {}, measures);
+      const { measures: filteredMeasures } = getFilteredMeasuresAndDimensions({
+        dashboard: dashboardStore,
+      })(metricsView.data ?? {}, measures);
+      const independentMeasures = getIndependentMeasures(
+        metricsView.data ?? {},
+        measures,
+      );
 
       const primaryTimeSeries = createMetricsViewTimeSeries(
         ctx,
@@ -137,8 +143,7 @@ export function createTimeSeriesDataStore(
       );
       const primaryTotals = createTotalsForMeasure(
         ctx,
-        filteredMeasures,
-        dimensions,
+        independentMeasures,
         false,
       );
 
@@ -149,7 +154,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         unfilteredTotals = createUnfilteredTotalsForMeasure(
           ctx,
-          filteredMeasures,
+          independentMeasures,
           dashboardStore?.selectedComparisonDimension,
         );
       }
@@ -167,8 +172,7 @@ export function createTimeSeriesDataStore(
         );
         comparisonTotals = createTotalsForMeasure(
           ctx,
-          filteredMeasures,
-          dimensions,
+          independentMeasures,
           true,
         );
       }

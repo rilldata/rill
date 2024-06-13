@@ -145,7 +145,7 @@ func (e *Executor) loadWatermark(ctx context.Context, executionTime *time.Time) 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
 		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
+		ExecutionTimeout: defaultInteractiveTimeout,
 	})
 	if err != nil {
 		return time.Time{}, err

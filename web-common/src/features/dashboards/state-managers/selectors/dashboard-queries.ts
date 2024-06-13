@@ -1,5 +1,6 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { additionalMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
+import { getIndependentMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { QueryServiceMetricsViewAggregationBody } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
@@ -52,7 +53,9 @@ function measuresForDimensionTable(dashData: DashboardDataSources) {
     ...selectedMeasureNames(dashData),
     ...additionalMeasures(dashData),
   ]);
-  return [...allMeasures];
+  return getIndependentMeasures(dashData.metricsSpecQueryResult.data ?? {}, [
+    ...allMeasures,
+  ]);
 }
 
 export function dimensionTableTotalQueryBody(
@@ -75,7 +78,10 @@ export function leaderboardSortedQueryBody(
   return (dimensionName: string) =>
     prepareSortedQueryBody(
       dimensionName,
-      additionalMeasures(dashData),
+      getIndependentMeasures(
+        dashData.metricsSpecQueryResult.data ?? {},
+        additionalMeasures(dashData),
+      ),
       timeControlsState(dashData),
       sortingSelectors.sortMeasure(dashData),
       sortingSelectors.sortType(dashData),

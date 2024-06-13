@@ -50,7 +50,10 @@ export const virtualizedTableColumns =
 
     if (!dimension) return [];
 
-    const measures = visibleMeasures(dashData);
+    // temporary filter for advanced measures
+    const measures = visibleMeasures(dashData).filter(
+      (m) => !m.window && !m.requiredDimensions?.length,
+    );
 
     const measureTotals: { [key: string]: number } = {};
     if (totalsQuery?.data?.data) {

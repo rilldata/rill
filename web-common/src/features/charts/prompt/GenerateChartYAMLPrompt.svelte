@@ -1,7 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import ChartPromptHistoryDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptHistoryDisplay.svelte";
   import { createFullChartGenerator } from "@rilldata/web-common/features/charts/prompt/generateChart";
   import { useAllFileNames } from "@rilldata/web-common/features/entity-management/file-selectors";
@@ -40,7 +40,7 @@
     Generate chart yaml for "{table || metricsView}" using AI
   </svelte:fragment>
   <svelte:fragment slot="body">
-    <InputV2 bind:value={prompt} error="" label="Prompt" />
+    <Input bind:value={prompt} label="Prompt" />
     <ChartPromptHistoryDisplay
       entityName={table || metricsView}
       on:reuse-prompt={({ detail }) => {
