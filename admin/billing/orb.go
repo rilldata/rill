@@ -249,8 +249,7 @@ func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
 	})
 
 	var billingPlans []*Plan
-	l := len(plans.Data)
-	for i := 0; i < l; i++ {
+	for i := 0; i < len(plans.Data); i++ {
 		billingPlan, err := getBillingPlanFromOrbPlan(&plans.Data[i])
 		if err != nil {
 			return nil, err

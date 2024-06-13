@@ -11,9 +11,7 @@ import (
 	"time"
 )
 
-const TimeBoundFormat = "2006-01-02T15:04:050Z"
-
-// It can be used for such use cases as autoscaling, health checks, breached quotas, and usage calculations for billing.
+// Client can be used for such use cases as autoscaling, health checks, breached quotas, and usage calculations for billing.
 type Client struct {
 	RuntimeHost string
 	InstanceID  string
@@ -112,7 +110,7 @@ type Usage struct {
 	Amount     float64 `json:"amount"`
 }
 
-func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []string, lowerTimeBound, upperTimeBound time.Time) ([]ProjectUsageAvailability, error) {
+func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []string, start, end time.Time) ([]ProjectUsageAvailability, error) {
 	// Create the URL for the request
 	var runtimeHost string
 
@@ -129,18 +127,23 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []s
 	}
 
 	uri.Path = path.Join("/v1/instances", c.InstanceID, "/api/project-usage-availability")
-	/*  api query -
-	select project_id, min(time) as min_time, max(time) as max_time
-	from rill-metrics where project_id IN ('','',...) and time >= '<lower-bound>' and time < '<upper-bound>' group by 1
+	/*  sql api  -
+	  SELECT
+		project_id,
+		MIN(time) as min_time,
+		MAX(time) as max_time
+	  FROM rill-metrics
+	  WHERE
+		project_id IN ({{ .args.project_ids }}) and time >= '{{ .args.start }}' and time < '{{ .args.end }}'
+	  GROUP BY 1
 	*/
 
 	// Add URL query parameters
 	qry := uri.Query()
-	qry.Add("lower_time_bound", lowerTimeBound.Format(TimeBoundFormat))
-	qry.Add("upper_time_bound", upperTimeBound.Format(TimeBoundFormat))
-	for _, id := range projectIDs {
-		qry.Add("project_id", id)
-	}
+	qry.Add("start", start.Format(time.RFC3339))
+	qry.Add("end", end.Format(time.RFC3339))
+	// create a comma separated string of projectIDs with single quotes around each projectID
+	qry.Add("project_ids", fmt.Sprintf("'%s'", strings.Join(projectIDs, "','")))
 
 	uri.RawQuery = qry.Encode()
 	apiURL := uri.String()
@@ -178,7 +181,7 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []s
 	return availability, nil
 }
 
-func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, lowerTimeBound, upperTimeBound time.Time, metricNames []string) ([]Usage, error) {
+func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, start, end time.Time, metricNames []string) ([]Usage, error) {
 	// Create the URL for the request
 	var runtimeHost string
 
@@ -197,17 +200,22 @@ func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, l
 	var usage []Usage
 	for _, metric := range metricNames {
 		// metric name is the api name
-		uri.Path = path.Join("/v1/instances", c.InstanceID, fmt.Sprintf("/api/%s", metric))
-		/*  api query -
-		select event_name, AGG_FUNC(metric_value) as usage
-		from rill-metrics where project_id ='' and time >= '<lower-bound>' and time < '<upper-bound>' and event_name = '<metric>' group by 1
+		uri.Path = path.Join("/v1/instances", c.InstanceID, fmt.Sprintf("/api/%s", metric+"-usage"))
+		/*  sql api -
+		  SELECT
+			'<event>' AS metric_name,
+			MAX(value) AS usage
+		  FROM rill-metrics
+		  WHERE
+			project_id ='{{ .args.project_id }}' AND time >= '{{ .args.start }}' AND time < '{{ .args.end }}'
+		  GROUP BY 1
 		*/
 
 		// Add URL query parameters
 		qry := uri.Query()
 		qry.Add("project_id", projectID)
-		qry.Add("lower_time_bound", lowerTimeBound.Format(TimeBoundFormat))
-		qry.Add("upper_time_bound", upperTimeBound.Format(TimeBoundFormat))
+		qry.Add("start", start.Format(time.RFC3339))
+		qry.Add("end", end.Format(time.RFC3339))
 
 		uri.RawQuery = qry.Encode()
 		apiURL := uri.String()
