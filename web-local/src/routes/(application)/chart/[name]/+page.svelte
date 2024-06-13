@@ -8,6 +8,7 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
     ResourceKind,
@@ -25,7 +26,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { CATALOG_ENTRY_NOT_FOUND } from "@rilldata/web-local/lib/errors/messages";
   import { error } from "@sveltejs/kit";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
@@ -35,18 +35,20 @@
   let tablePercentage = 0.45;
   let filePath: string;
   let chartName: string;
-
-  $: workspace = workspaces.get(filePath);
-  $: autoSave = workspace.editor.autoSave;
+  let fileArtifact: FileArtifact;
 
   if (data.fileArtifact) {
+    fileArtifact = data.fileArtifact;
     filePath = data.fileArtifact.path;
     chartName = data.fileArtifact.getEntityName();
   } else {
     // needed for backwards compatibility for now
     chartName = $page.params.name;
     filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
+    fileArtifact = fileArtifacts.getFileArtifact(filePath);
   }
+
+  $: ({ autoSave } = fileArtifact);
 
   $: fileQuery = createRuntimeServiceGetFile(
     instanceId,

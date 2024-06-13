@@ -15,7 +15,7 @@ import {
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, get } from "svelte/store";
+import { derived, get, writable } from "svelte/store";
 import { FileArtifact } from "./file-artifact";
 
 export class FileArtifacts {
@@ -23,6 +23,7 @@ export class FileArtifacts {
    * Map of all files and its individual store
    */
   private readonly artifacts: Record<string, FileArtifact> = {};
+  readonly unsavedFiles = writable(new Set<string>());
 
   // Actions
 

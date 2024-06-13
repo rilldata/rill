@@ -2,7 +2,7 @@
   import type { Extension } from "@codemirror/state";
   import { EditorState, Compartment } from "@codemirror/state";
   import { EditorView } from "@codemirror/view";
-  import { onMount, onDestroy } from "svelte";
+  import { onMount } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
   import { FileArtifact } from "../entity-management/file-artifact";
   import { get } from "svelte/store";
@@ -15,7 +15,6 @@
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
   export let autoSave: boolean = true;
-  export let disableAutoSave: boolean = false;
   export let forceLocalUpdates: boolean = false;
   export let editor: EditorView | null = null;
   export let debounceSave: () => void;
@@ -37,9 +36,7 @@
     onLocalContentChange,
   } = fileArtifact);
 
-  onMount(async () => {
-    await fileArtifact.ready;
-
+  onMount(() => {
     // Check if the file artifact has a local content
     // If it does, we want to use that as the initial content
     // Otherwise, we'll use the remote content
@@ -49,13 +46,15 @@
         extensions: [
           baseExtensions(),
           extensionCompartment.of([]),
-          EditorView.updateListener.of(({ docChanged, state: { doc } }) => {
-            if (editor?.hasFocus && docChanged) {
-              updateLocalContent(doc.toString());
+          EditorView.updateListener.of(
+            ({ docChanged, state: { doc }, view: { hasFocus } }) => {
+              if (hasFocus && docChanged) {
+                updateLocalContent(doc.toString());
 
-              if (!disableAutoSave && autoSave) debounceSave();
-            }
-          }),
+                if (autoSave) debounceSave();
+              }
+            },
+          ),
         ],
       }),
       parent,
@@ -64,9 +63,12 @@
     const unsubscribeRemoteContent = onRemoteContentChange(
       (newRemoteContent) => {
         if (editor && !editor.hasFocus && newRemoteContent !== null) {
+          const local = get(localContent);
+          if (editor.state.doc.toString() === newRemoteContent) return;
+
           if (!get(localContent)) {
             updateEditorContent(newRemoteContent);
-          } else {
+          } else if (local !== newRemoteContent) {
             showWarning = true;
           }
         }
@@ -94,11 +96,11 @@
       unsubscribeLocalContent,
       unsubscribeHighlighter,
     );
-  });
 
-  onDestroy(() => {
-    editor?.destroy();
-    unsubscribers.forEach((unsub) => unsub());
+    return () => {
+      editor?.destroy();
+      unsubscribers.forEach((unsub) => unsub());
+    };
   });
 
   $: if (editor) updateEditorExtensions(extensions);

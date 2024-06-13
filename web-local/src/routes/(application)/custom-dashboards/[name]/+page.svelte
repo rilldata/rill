@@ -27,7 +27,6 @@
   import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
@@ -52,11 +51,6 @@
     items: [],
   };
 
-  $: workspace = workspaces.get(filePath);
-  $: autoSave = workspace.editor.autoSave;
-  $: chartWorkspace = workspaces.get(selectedChartFilePath ?? "");
-  $: chartAutoSave = chartWorkspace.editor.autoSave;
-
   $: if (data.fileArtifact) {
     fileArtifact = data.fileArtifact;
     filePath = fileArtifact.path;
@@ -78,7 +72,7 @@
 
   $: [, fileName] = splitFolderAndName(filePath);
 
-  $: ({ saveLocalContent: updateChartFile } = fileArtifact);
+  $: ({ saveLocalContent: updateChartFile, autoSave } = fileArtifact);
 
   $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
     ResourceKind.Component,
@@ -285,10 +279,7 @@
             {#if showChartEditor}
               <div class="size-full overflow-hidden">
                 {#if selectedChartFilePath}
-                  <ChartsEditor
-                    filePath={selectedChartFilePath}
-                    bind:autoSave={$chartAutoSave}
-                  />
+                  <ChartsEditor filePath={selectedChartFilePath} />
                 {/if}
               </div>
             {/if}

@@ -4,10 +4,6 @@
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
-  import {
-    DIRECTORIES_WITHOUT_AUTOSAVE,
-    FILES_WITHOUT_AUTOSAVE,
-  } from "@rilldata/web-common/features/editor/config";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
@@ -19,7 +15,6 @@
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
@@ -32,7 +27,7 @@
 
   $: filePath = addLeadingSlash($page.params.file);
   $: fileExtension = extractFileExtension(filePath);
-  $: [folderName, fileName] = splitFolderAndName(filePath);
+  $: [, fileName] = splitFolderAndName(filePath);
   $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
 
   $: fileQuery = createRuntimeServiceGetFile(
@@ -58,6 +53,8 @@
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
 
+  $: ({ autoSave } = fileArtifact);
+
   onMount(() => {
     expandDirectory(filePath);
 
@@ -75,13 +72,6 @@
 
   let localContent: string | null = null;
   $: hasUnsavedChanges = localContent !== null && localContent !== blob;
-
-  $: pathname = $page.url.pathname;
-  $: workspace = workspaces.get(pathname);
-  $: autoSave = workspace.editor.autoSave;
-  $: disableAutoSave =
-    FILES_WITHOUT_AUTOSAVE.includes(filePath) ||
-    DIRECTORIES_WITHOUT_AUTOSAVE.includes(folderName);
 
   // TODO: move this logic into the DirectoryState
   // TODO: expand all directories in the path, not just the last one
@@ -124,7 +114,6 @@
         <Editor
           {fileArtifact}
           extensions={getExtensionsForFile(filePath)}
-          {disableAutoSave}
           bind:autoSave={$autoSave}
         />
       </WorkspaceEditorContainer>

@@ -5,7 +5,6 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import UndoIcon from "@rilldata/web-common/components/icons/UndoIcon.svelte";
   import type { Extension } from "@codemirror/state";
-
   import { EditorView } from "@codemirror/view";
   import { debounce } from "../../lib/create-debouncer";
   import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
@@ -14,16 +13,21 @@
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
-  export let autoSave: boolean = true;
-  export let disableAutoSave: boolean = false;
+  export let autoSave = true;
   export let editor: EditorView | null = null;
-  export let forceLocalUpdates: boolean = false;
+  export let forceLocalUpdates = false;
+  export let forceDisableAutoSave = false;
   export let showSaveBar = true;
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
 
-  $: ({ hasUnsavedChanges, saveLocalContent, revert, localContent } =
-    fileArtifact);
+  $: ({
+    hasUnsavedChanges,
+    saveLocalContent,
+    revert,
+    localContent,
+    disableAutoSave,
+  } = fileArtifact);
 
   $: debounceSave = debounce(save, FILE_SAVE_DEBOUNCE_TIME);
 
@@ -57,8 +61,7 @@
         {debounceSave}
         {forceLocalUpdates}
         {fileArtifact}
-        {autoSave}
-        {disableAutoSave}
+        autoSave={!forceDisableAutoSave && !disableAutoSave && autoSave}
         bind:editor
       />
     {/key}
@@ -67,7 +70,7 @@
   {#if showSaveBar}
     <footer>
       <div class="flex gap-x-3">
-        {#if !autoSave || disableAutoSave}
+        {#if !autoSave || disableAutoSave || forceDisableAutoSave}
           <Button type="subtle" disabled={!$hasUnsavedChanges} on:click={save}>
             <Check size="14px" />
             Save
@@ -85,7 +88,7 @@
       </div>
       <div
         class="flex gap-x-1 items-center h-full bg-white rounded-full"
-        class:hidden={disableAutoSave}
+        class:hidden={disableAutoSave || forceDisableAutoSave}
       >
         <Switch
           bind:checked={autoSave}

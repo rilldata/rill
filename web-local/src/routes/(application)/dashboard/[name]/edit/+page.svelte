@@ -63,9 +63,6 @@
 
   $: name = fileArtifact?.name;
   $: metricViewName = $name?.name ?? "";
-  $: pathname = $page.url.pathname;
-  $: workspace = workspaces.get(pathname);
-  $: autoSave = workspace.editor.autoSave;
 
   $: instanceId = $runtime.instanceId;
   $: initLocalUserPreferenceStore(metricViewName);
@@ -87,7 +84,7 @@
   let yaml = "";
   $: yaml = $fileQuery.data?.blob ?? yaml;
 
-  $: ({ hasUnsavedChanges } = fileArtifact);
+  $: ({ hasUnsavedChanges, autoSave } = fileArtifact);
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;

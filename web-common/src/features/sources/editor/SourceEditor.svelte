@@ -35,7 +35,7 @@
       {fileArtifact}
       extensions={FileExtensionToEditorExtension[".yaml"]}
       bind:editor
-      disableAutoSave
+      forceDisableAutoSave
       onSave={handleUpdate}
     />
   </div>

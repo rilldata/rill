@@ -90,7 +90,6 @@
 
   $: pathname = $page.url.pathname;
   $: workspace = workspaces.get(pathname);
-  $: autoSave = workspace.editor.autoSave;
   $: tableVisible = workspace.table.visible;
 
   $: instanceId = $runtime.instanceId;
@@ -108,7 +107,7 @@
   let blob = "";
   $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
-  $: ({ hasUnsavedChanges } = fileArtifact);
+  $: ({ hasUnsavedChanges, autoSave } = fileArtifact);
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);

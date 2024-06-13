@@ -1,6 +1,7 @@
 import {
   extractFileName,
   extractFileExtension,
+  splitFolderAndName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 
 import {
@@ -29,6 +30,12 @@ import {
 } from "svelte/store";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
 import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
+import { fileArtifacts } from "./file-artifacts";
+import {
+  DIRECTORIES_WITHOUT_AUTOSAVE,
+  FILES_WITHOUT_AUTOSAVE,
+} from "../editor/config";
+import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 
 const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
@@ -49,25 +56,43 @@ export class FileArtifact {
 
   readonly localContent: Writable<string | null> = writable(null);
   readonly remoteContent: Writable<string | null> = writable(null);
-  hasUnsavedChanges = derived(this.localContent, (localContent) => {
-    return localContent !== null;
-  });
+  readonly hasUnsavedChanges = writable(false);
   readonly fileExtension: string;
   readonly fileQuery: Readable<
     QueryObserverResult<V1GetFileResponse, HTTPError>
   >;
   readonly ready: Promise<boolean>;
+  readonly fileTypeUnsupported: boolean;
+  readonly folderName: string;
+  readonly fileName: string;
+  readonly disableAutoSave: boolean;
+  readonly autoSave: Writable<boolean>;
 
   private remoteCallbacks = new Set<(content: string) => void>();
   private localCallbacks = new Set<(content: string | null) => void>();
 
   constructor(filePath: string) {
+    const [folderName, fileName] = splitFolderAndName(filePath);
+
+    this.path = filePath;
+    this.folderName = folderName;
+    this.fileName = fileName;
+
+    this.disableAutoSave =
+      FILES_WITHOUT_AUTOSAVE.includes(filePath) ||
+      DIRECTORIES_WITHOUT_AUTOSAVE.includes(folderName);
     this.path = filePath;
 
     this.fileExtension = extractFileExtension(filePath);
     const fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
       this.fileExtension,
     );
+
+    if (this.disableAutoSave) {
+      this.autoSave = writable(false);
+    } else {
+      this.autoSave = localStorageStore<boolean>(`autoSave::${filePath}`, true);
+    }
 
     const queryKey = getRuntimeServiceGetFileQueryKey(get(runtime).instanceId, {
       path: filePath,
@@ -105,7 +130,25 @@ export class FileArtifact {
   };
 
   updateLocalContent = (content: string | null, alert = false) => {
+    const hasUnsavedChanges = get(this.hasUnsavedChanges);
+    const autoSave = get(this.autoSave);
+
+    if (content === null) {
+      this.hasUnsavedChanges.set(false);
+      fileArtifacts.unsavedFiles.update((files) => {
+        files.delete(this.path);
+        return files;
+      });
+    } else if (!hasUnsavedChanges && !autoSave) {
+      this.hasUnsavedChanges.set(true);
+      fileArtifacts.unsavedFiles.update((files) => {
+        files.add(this.path);
+        return files;
+      });
+    }
+
     this.localContent.set(content);
+
     if (alert) {
       for (const callback of this.localCallbacks) {
         callback(content);
@@ -142,12 +185,16 @@ export class FileArtifact {
       blob,
     });
 
-    await runtimeServicePutFile(instanceId, {
-      path: this.path,
-      blob: local,
-    }).catch(console.error);
+    try {
+      await runtimeServicePutFile(instanceId, {
+        path: this.path,
+        blob: local,
+      }).catch(console.error);
 
-    this.localContent.set(null);
+      this.updateLocalContent(null);
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   updateAll(resource: V1Resource) {

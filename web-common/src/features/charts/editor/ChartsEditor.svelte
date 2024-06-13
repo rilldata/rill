@@ -9,12 +9,13 @@
   import Editor from "../../editor/Editor.svelte";
 
   export let filePath: string;
-  export let autoSave: boolean;
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
     path: filePath,
   });
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+
+  $: ({ autoSave } = fileArtifact);
 
   // get the yaml blob from the file.
   $: yaml = $fileQuery.data?.blob || "";
@@ -31,7 +32,6 @@
   <Editor
     {fileArtifact}
     extensions={[customYAMLwithJSONandSQL]}
-    bind:autoSave
-    disableAutoSave={false}
+    bind:autoSave={$autoSave}
   />
 </ChartsEditorContainer>
