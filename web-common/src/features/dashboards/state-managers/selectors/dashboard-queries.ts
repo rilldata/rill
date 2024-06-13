@@ -1,11 +1,8 @@
-import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { additionalMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
 import { getIndependentMeasures } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type {
-  QueryServiceMetricsViewComparisonBody,
-  QueryServiceMetricsViewTotalsBody,
-} from "@rilldata/web-common/runtime-client";
+import type { QueryServiceMetricsViewAggregationBody } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 import { prepareSortedQueryBody } from "../../dashboard-utils";
 import {
@@ -28,32 +25,27 @@ import { dimensionTableSearchString } from "./dimension-table";
  */
 export function dimensionTableSortedQueryBody(
   dashData: DashboardDataSources,
-): (
-  resolvedMeasureFilter: ResolvedMeasureFilter,
-) => QueryServiceMetricsViewComparisonBody {
-  return (resolvedMeasureFilter: ResolvedMeasureFilter) => {
-    const dimensionName = dashData.dashboard.selectedDimensionName;
-    if (!dimensionName) {
-      return {};
-    }
-    let filters = getFiltersForOtherDimensions(dashData)(dimensionName);
-    const searchString = dimensionTableSearchString(dashData);
-    if (searchString !== undefined) {
-      filters = updateFilterOnSearch(filters, searchString, dimensionName);
-    }
+): QueryServiceMetricsViewAggregationBody {
+  const dimensionName = dashData.dashboard.selectedDimensionName;
+  if (!dimensionName) {
+    return {};
+  }
+  let filters = getFiltersForOtherDimensions(dashData)(dimensionName);
+  const searchString = dimensionTableSearchString(dashData);
+  if (searchString !== undefined) {
+    filters = updateFilterOnSearch(filters, searchString, dimensionName);
+  }
 
-    return prepareSortedQueryBody(
-      dimensionName,
-      measuresForDimensionTable(dashData),
-      timeControlsState(dashData),
-      sortingSelectors.sortMeasure(dashData),
-      sortingSelectors.sortType(dashData),
-      sortingSelectors.sortedAscending(dashData),
-      filters,
-      resolvedMeasureFilter.filter,
-      250,
-    );
-  };
+  return prepareSortedQueryBody(
+    dimensionName,
+    measuresForDimensionTable(dashData),
+    timeControlsState(dashData),
+    sortingSelectors.sortMeasure(dashData),
+    sortingSelectors.sortType(dashData),
+    sortingSelectors.sortedAscending(dashData),
+    mergeMeasureFilters(dashData.dashboard, filters),
+    250,
+  );
 }
 
 function measuresForDimensionTable(dashData: DashboardDataSources) {
@@ -68,19 +60,12 @@ function measuresForDimensionTable(dashData: DashboardDataSources) {
 
 export function dimensionTableTotalQueryBody(
   dashData: DashboardDataSources,
-): (
-  resolvedMeasureFilter: ResolvedMeasureFilter,
-) => QueryServiceMetricsViewTotalsBody {
-  return (resolvedMeasureFilter: ResolvedMeasureFilter) => {
-    const dimensionName = dashData.dashboard.selectedDimensionName;
-    if (!dimensionName) {
-      return {};
-    }
-    return leaderboardDimensionTotalQueryBody(dashData)(
-      dimensionName,
-      resolvedMeasureFilter,
-    );
-  };
+): QueryServiceMetricsViewAggregationBody {
+  const dimensionName = dashData.dashboard.selectedDimensionName;
+  if (!dimensionName) {
+    return {};
+  }
+  return leaderboardDimensionTotalQueryBody(dashData)(dimensionName);
 }
 
 /**
@@ -89,14 +74,8 @@ export function dimensionTableTotalQueryBody(
  */
 export function leaderboardSortedQueryBody(
   dashData: DashboardDataSources,
-): (
-  dimensionName: string,
-  resolvedMeasureFilter: ResolvedMeasureFilter,
-) => QueryServiceMetricsViewComparisonBody {
-  return (
-    dimensionName: string,
-    resolvedMeasureFilter: ResolvedMeasureFilter,
-  ) =>
+): (dimensionName: string) => QueryServiceMetricsViewAggregationBody {
+  return (dimensionName: string) =>
     prepareSortedQueryBody(
       dimensionName,
       getIndependentMeasures(
@@ -107,8 +86,10 @@ export function leaderboardSortedQueryBody(
       sortingSelectors.sortMeasure(dashData),
       sortingSelectors.sortType(dashData),
       sortingSelectors.sortedAscending(dashData),
-      getFiltersForOtherDimensions(dashData)(dimensionName),
-      resolvedMeasureFilter.filter,
+      mergeMeasureFilters(
+        dashData.dashboard,
+        getFiltersForOtherDimensions(dashData)(dimensionName),
+      ),
       8,
     );
 }
@@ -117,20 +98,15 @@ export function leaderboardSortedQueryOptions(
   dashData: DashboardDataSources,
 ): (
   dimensionName: string,
-  resolvedMeasureFilter: ResolvedMeasureFilter,
   enabled: boolean,
 ) => { query: { enabled: boolean } } {
-  return (
-    dimensionName: string,
-    resolvedMeasureFilter: ResolvedMeasureFilter,
-    enabled: boolean,
-  ) => {
+  return (dimensionName: string, enabled: boolean) => {
     const sortedQueryEnabled =
       timeControlsState(dashData).ready === true &&
       !!getFiltersForOtherDimensions(dashData)(dimensionName);
     return {
       query: {
-        enabled: enabled && sortedQueryEnabled && resolvedMeasureFilter.ready,
+        enabled: enabled && sortedQueryEnabled,
       },
     };
   };
@@ -138,18 +114,15 @@ export function leaderboardSortedQueryOptions(
 
 export function leaderboardDimensionTotalQueryBody(
   dashData: DashboardDataSources,
-): (
-  dimensionName: string,
-  resolvedMeasureFilter: ResolvedMeasureFilter,
-) => QueryServiceMetricsViewTotalsBody {
-  return (
-    dimensionName: string,
-    resolvedMeasureFilter: ResolvedMeasureFilter,
-  ) => ({
-    measureNames: [activeMeasureName(dashData)],
+): (dimensionName: string) => QueryServiceMetricsViewAggregationBody {
+  return (dimensionName: string) => ({
+    measures: [{ name: activeMeasureName(dashData) }],
     where: sanitiseExpression(
-      getFiltersForOtherDimensions(dashData)(dimensionName),
-      resolvedMeasureFilter.filter,
+      mergeMeasureFilters(
+        dashData.dashboard,
+        getFiltersForOtherDimensions(dashData)(dimensionName),
+      ),
+      undefined,
     ),
     timeStart: timeControlsState(dashData).timeStart,
     timeEnd: timeControlsState(dashData).timeEnd,
@@ -158,21 +131,14 @@ export function leaderboardDimensionTotalQueryBody(
 
 export function leaderboardDimensionTotalQueryOptions(
   dashData: DashboardDataSources,
-): (
-  dimensionName: string,
-  resolvedMeasureFilter: ResolvedMeasureFilter,
-) => { query: { enabled: boolean } } {
-  return (
-    dimensionName: string,
-    resolvedMeasureFilter: ResolvedMeasureFilter,
-  ) => {
+): (dimensionName: string) => { query: { enabled: boolean } } {
+  return (dimensionName: string) => {
     return {
       query: {
         enabled:
           isAnyMeasureSelected(dashData) &&
           isTimeControlReady(dashData) &&
-          !!getFiltersForOtherDimensions(dashData)(dimensionName) &&
-          resolvedMeasureFilter.ready,
+          !!getFiltersForOtherDimensions(dashData)(dimensionName),
       },
     };
   };

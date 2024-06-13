@@ -1,61 +1,28 @@
 import { getMeasureDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-import { prepareMeasureFilterResolutions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { timeControlsState } from "@rilldata/web-common/features/dashboards/state-managers/selectors/time-range";
+import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { DashboardDataSources } from "@rilldata/web-common/features/dashboards/state-managers/selectors/types";
 import type { AtLeast } from "@rilldata/web-common/features/dashboards/state-managers/types";
-import {
-  forEachExpression,
-  matchExpressionByName,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import type {
-  MetricsViewSpecMeasureV2,
-  V1Expression,
-} from "@rilldata/web-common/runtime-client";
-
-export const getMeasureFilterForDimensionIndex = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  return (dimensionName: string) =>
-    dashData.dashboard.dimensionThresholdFilters.findIndex(
-      (dtf) => dtf.name === dimensionName,
-    );
-};
+import { type MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
 
 export const additionalMeasures = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
   const measures = new Set<string>([dashData.dashboard.leaderboardMeasureName]);
-  dashData.dashboard.dimensionThresholdFilters.forEach(({ filter }) => {
-    forEachExpression(filter, (e) => {
-      if (e.ident) {
-        measures.add(e.ident);
-      }
+  dashData.dashboard.dimensionThresholdFilters.forEach(({ filters }) => {
+    filters.forEach((filter) => {
+      measures.add(filter.measure);
     });
   });
   return [...measures];
 };
 
-const matchHavingExpressionByName = (e: V1Expression, name: string) =>
-  matchExpressionByName(e, name) ||
-  (e.cond?.exprs?.length && matchExpressionByName(e.cond?.exprs[0], name));
-
-export const getHavingFilterExpression = (filter: V1Expression, name: string) =>
-  filter?.cond?.exprs?.find((e) => matchHavingExpressionByName(e, name));
-
-export const getHavingFilterExpressionIndex = (
-  filter: V1Expression,
-  name: string,
-) =>
-  filter?.cond?.exprs?.findIndex((e) => matchHavingExpressionByName(e, name)) ??
-  -1;
-
 export const measureHasFilter = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
 ) => {
   return (measureName: string) =>
-    dashData.dashboard.dimensionThresholdFilters.some(
-      (dtf) => getHavingFilterExpression(dtf.filter, measureName) !== undefined,
+    dashData.dashboard.dimensionThresholdFilters.some((dtf) =>
+      dtf.filters.some((f) => f.measure === measureName),
     );
 };
 
@@ -63,7 +30,7 @@ export type MeasureFilterItem = {
   dimensionName: string;
   name: string;
   label: string;
-  expr?: V1Expression;
+  filter?: MeasureFilterEntry;
 };
 export const getMeasureFilterItems = (
   dashData: AtLeast<DashboardDataSources, "dashboard">,
@@ -87,7 +54,7 @@ export function getMeasureFilters(
     filteredMeasures.push(
       ...getMeasureFilterForDimension(
         measureIdMap,
-        dtf.filter,
+        dtf.filters,
         dtf.name,
         addedMeasure,
       ),
@@ -99,37 +66,29 @@ export function getMeasureFilters(
 
 export function getMeasureFilterForDimension(
   measureIdMap: Map<string, MetricsViewSpecMeasureV2>,
-  filter: V1Expression | undefined,
+  filters: MeasureFilterEntry[],
   name = "",
   addedMeasure = new Set<string>(),
 ) {
-  if (!filter) return [];
+  if (!filters.length) return [];
 
   const filteredMeasures = new Array<MeasureFilterItem>();
 
-  forEachExpression(filter, (e, depth) => {
-    if (depth > 0 || !e.cond?.exprs?.length) {
+  filters.forEach((filter) => {
+    if (addedMeasure.has(filter.measure)) {
       return;
     }
-    const ident =
-      e.cond?.exprs?.[0].ident ?? e.cond?.exprs?.[0].cond?.exprs?.[0].ident;
-    if (
-      ident === undefined ||
-      addedMeasure.has(ident) ||
-      !measureIdMap.has(ident)
-    ) {
-      return;
-    }
-    const measure = measureIdMap.get(ident);
+
+    const measure = measureIdMap.get(filter.measure);
     if (!measure) {
       return;
     }
-    addedMeasure.add(ident);
+    addedMeasure.add(filter.measure);
     filteredMeasures.push({
       dimensionName: name,
-      name: ident,
-      label: measure.label || measure.expression || ident,
-      expr: e,
+      name: filter.measure,
+      label: measure.label || measure.expression || filter.measure,
+      filter,
     });
   });
 
@@ -163,28 +122,8 @@ export const getAllMeasureFilterItems = (
   };
 };
 
-export const getResolvedFilterForMeasureFilters = (
-  dashData: DashboardDataSources,
-) => {
-  return prepareMeasureFilterResolutions(
-    dashData.dashboard,
-    timeControlsState(dashData),
-    dashData.queryClient,
-  );
-};
-
-export const hasAtLeastOneMeasureFilter = (
-  dashData: AtLeast<DashboardDataSources, "dashboard">,
-) => {
-  return dashData.dashboard.dimensionThresholdFilters.some(
-    (dtf) => dtf.filter.cond?.exprs?.length,
-  );
-};
-
 export const measureFilterSelectors = {
   measureHasFilter,
   getMeasureFilterItems,
   getAllMeasureFilterItems,
-  getResolvedFilterForMeasureFilters,
-  hasAtLeastOneMeasureFilter,
 };

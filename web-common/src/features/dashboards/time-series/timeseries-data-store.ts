@@ -1,4 +1,4 @@
-import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import {
   getFilteredMeasuresAndDimensions,
@@ -60,26 +60,16 @@ export function createMetricsViewTimeSeries(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      measureFilterResolutionsStore(ctx),
     ],
-    (
-      [
-        runtime,
-        metricViewName,
-        dashboardStore,
-        timeControls,
-        measureFilterResolution,
-      ],
-      set,
-    ) =>
+    ([runtime, metricViewName, dashboardStore, timeControls], set) =>
       createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricViewName,
         {
           measureNames: measures,
           where: sanitiseExpression(
-            dashboardStore?.whereFilter,
-            measureFilterResolution.filter,
+            mergeMeasureFilters(dashboardStore),
+            undefined,
           ),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
@@ -98,8 +88,7 @@ export function createMetricsViewTimeSeries(
               !!timeControls.ready &&
               !!ctx.dashboardStore &&
               // in case of comparison, we need to wait for the comparison start time to be available
-              (!isComparison || !!timeControls.comparisonAdjustedStart) &&
-              measureFilterResolution.ready,
+              (!isComparison || !!timeControls.comparisonAdjustedStart),
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },

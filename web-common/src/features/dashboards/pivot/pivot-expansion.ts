@@ -122,7 +122,6 @@ export function createSubTableCellQuery(
     measureBody,
     dimensionBody,
     filterForSubTable,
-    config.measureFilter,
     sortBy,
     "5000",
     "0",
