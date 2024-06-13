@@ -20,5 +20,9 @@ func (w *Worker) deleteExpiredAuthTokens(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	err = w.admin.DB.DeleteExpiredMagicAuthTokens(ctx, retention)
+	if err != nil {
+		return err
+	}
 	return nil
 }

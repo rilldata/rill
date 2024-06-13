@@ -20,6 +20,7 @@ const (
 	OwnerTypeUser       OwnerType = "user"
 	OwnerTypeService    OwnerType = "service"
 	OwnerTypeDeployment OwnerType = "deployment"
+	OwnerTypeMagicToken OwnerType = "magic_token"
 )
 
 // Claims resolves permissions for a requester.
@@ -108,6 +109,8 @@ func (c *authTokenClaims) OwnerType() OwnerType {
 		return OwnerTypeService
 	case authtoken.TypeDeployment:
 		return OwnerTypeDeployment
+	case authtoken.TypeMagic:
+		return OwnerTypeMagicToken
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
 	}
@@ -130,6 +133,9 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 		return false
 	case authtoken.TypeDeployment:
 		// deployments can't be superusers
+		return false
+	case authtoken.TypeMagic:
+		// magic tokens can't be superusers
 		return false
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))

@@ -134,6 +134,46 @@ func (s *Service) IssueDeploymentAuthToken(ctx context.Context, deploymentID str
 	return &deploymentAuthToken{model: dat, token: tkn}, nil
 }
 
+// magicAuthToken implements AuthToken for magic tokens belonging to a project.
+type magicAuthToken struct {
+	model *database.MagicAuthToken
+	token *authtoken.Token
+}
+
+func (t *magicAuthToken) Token() *authtoken.Token {
+	return t.token
+}
+
+func (t *magicAuthToken) OwnerID() string {
+	return t.model.ID
+}
+
+// IssueMagicAuthToken generates and persists a new magic auth token for a project.
+func (s *Service) IssueMagicAuthToken(ctx context.Context, projectID string, ttl *time.Duration, dashboard string, filterJSON string, excludeFields []string) (AuthToken, error) {
+	tkn := authtoken.NewRandom(authtoken.TypeDeployment)
+
+	var expiresOn *time.Time
+	if ttl != nil {
+		t := time.Now().Add(*ttl)
+		expiresOn = &t
+	}
+
+	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
+		ID:            tkn.ID.String(),
+		SecretHash:    tkn.SecretHash(),
+		ProjectID:     projectID,
+		ExpiresOn:     expiresOn,
+		Dashboard:     dashboard,
+		FilterJSON:    filterJSON,
+		ExcludeFields: excludeFields,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return &magicAuthToken{model: dat, token: tkn}, nil
+}
+
 // ValidateAuthToken validates an auth token against persistent storage.
 func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToken, error) {
 	parsed, err := authtoken.FromString(token)
@@ -196,6 +236,23 @@ func (s *Service) ValidateAuthToken(ctx context.Context, token string) (AuthToke
 		s.Used.Deployment(dat.DeploymentID)
 
 		return &deploymentAuthToken{model: dat, token: parsed}, nil
+	case authtoken.TypeMagic:
+		mat, err := s.DB.FindMagicAuthToken(ctx, parsed.ID.String())
+		if err != nil {
+			return nil, err
+		}
+
+		if mat.ExpiresOn != nil && mat.ExpiresOn.Before(time.Now()) {
+			return nil, fmt.Errorf("auth token is expired")
+		}
+
+		if !bytes.Equal(mat.SecretHash, parsed.SecretHash()) {
+			return nil, fmt.Errorf("invalid auth token")
+		}
+
+		s.Used.MagicAuthToken(mat.ID)
+
+		return &magicAuthToken{model: mat, token: parsed}, nil
 	default:
 		return nil, fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}

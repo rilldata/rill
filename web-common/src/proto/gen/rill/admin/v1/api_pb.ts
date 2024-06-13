@@ -5,6 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
+import { Expression } from "../../runtime/v1/expression_pb.js";
 import { ExportFormat } from "../../runtime/v1/export_format_pb.js";
 
 /**
@@ -5022,6 +5023,288 @@ export class ListServiceAuthTokensResponse extends Message<ListServiceAuthTokens
 }
 
 /**
+ * @generated from message rill.admin.v1.IssueMagicAuthTokenRequest
+ */
+export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenRequest> {
+  /**
+   * Organization that owns the project.
+   *
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * Project to create the magic auth token in.
+   *
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * Dashboard the token will provide access to.
+   *
+   * @generated from field: string dashboard = 3;
+   */
+  dashboard = "";
+
+  /**
+   * Optional filter to apply to all queries to the dashboard.
+   *
+   * @generated from field: rill.runtime.v1.Expression preset_filter = 4;
+   */
+  presetFilter?: Expression;
+
+  /**
+   * Names of dimensions and measures to exclude from the dashboard.
+   *
+   * @generated from field: repeated string exclude_fields = 5;
+   */
+  excludeFields: string[] = [];
+
+  /**
+   * TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
+   *
+   * @generated from field: int64 ttl_minutes = 6;
+   */
+  ttlMinutes = protoInt64.zero;
+
+  constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.IssueMagicAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "preset_filter", kind: "message", T: Expression },
+    { no: 5, name: "exclude_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 6, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
+    return new IssueMagicAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): IssueMagicAuthTokenRequest {
+    return new IssueMagicAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): IssueMagicAuthTokenRequest {
+    return new IssueMagicAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: IssueMagicAuthTokenRequest | PlainMessage<IssueMagicAuthTokenRequest> | undefined, b: IssueMagicAuthTokenRequest | PlainMessage<IssueMagicAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(IssueMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.IssueMagicAuthTokenResponse
+ */
+export class IssueMagicAuthTokenResponse extends Message<IssueMagicAuthTokenResponse> {
+  /**
+   * @generated from field: string token = 1;
+   */
+  token = "";
+
+  constructor(data?: PartialMessage<IssueMagicAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.IssueMagicAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenResponse {
+    return new IssueMagicAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): IssueMagicAuthTokenResponse {
+    return new IssueMagicAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): IssueMagicAuthTokenResponse {
+    return new IssueMagicAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: IssueMagicAuthTokenResponse | PlainMessage<IssueMagicAuthTokenResponse> | undefined, b: IssueMagicAuthTokenResponse | PlainMessage<IssueMagicAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(IssueMagicAuthTokenResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListMagicAuthTokensRequest
+ */
+export class ListMagicAuthTokensRequest extends Message<ListMagicAuthTokensRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
+  constructor(data?: PartialMessage<ListMagicAuthTokensRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListMagicAuthTokensRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMagicAuthTokensRequest {
+    return new ListMagicAuthTokensRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListMagicAuthTokensRequest {
+    return new ListMagicAuthTokensRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListMagicAuthTokensRequest {
+    return new ListMagicAuthTokensRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListMagicAuthTokensRequest | PlainMessage<ListMagicAuthTokensRequest> | undefined, b: ListMagicAuthTokensRequest | PlainMessage<ListMagicAuthTokensRequest> | undefined): boolean {
+    return proto3.util.equals(ListMagicAuthTokensRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListMagicAuthTokensResponse
+ */
+export class ListMagicAuthTokensResponse extends Message<ListMagicAuthTokensResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.MagicAuthToken tokens = 1;
+   */
+  tokens: MagicAuthToken[] = [];
+
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
+  constructor(data?: PartialMessage<ListMagicAuthTokensResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListMagicAuthTokensResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "tokens", kind: "message", T: MagicAuthToken, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListMagicAuthTokensResponse {
+    return new ListMagicAuthTokensResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListMagicAuthTokensResponse {
+    return new ListMagicAuthTokensResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListMagicAuthTokensResponse {
+    return new ListMagicAuthTokensResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListMagicAuthTokensResponse | PlainMessage<ListMagicAuthTokensResponse> | undefined, b: ListMagicAuthTokensResponse | PlainMessage<ListMagicAuthTokensResponse> | undefined): boolean {
+    return proto3.util.equals(ListMagicAuthTokensResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RevokeMagicAuthTokenRequest
+ */
+export class RevokeMagicAuthTokenRequest extends Message<RevokeMagicAuthTokenRequest> {
+  /**
+   * @generated from field: string token_id = 1;
+   */
+  tokenId = "";
+
+  constructor(data?: PartialMessage<RevokeMagicAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RevokeMagicAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevokeMagicAuthTokenRequest {
+    return new RevokeMagicAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevokeMagicAuthTokenRequest {
+    return new RevokeMagicAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevokeMagicAuthTokenRequest {
+    return new RevokeMagicAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevokeMagicAuthTokenRequest | PlainMessage<RevokeMagicAuthTokenRequest> | undefined, b: RevokeMagicAuthTokenRequest | PlainMessage<RevokeMagicAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(RevokeMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RevokeMagicAuthTokenResponse
+ */
+export class RevokeMagicAuthTokenResponse extends Message<RevokeMagicAuthTokenResponse> {
+  constructor(data?: PartialMessage<RevokeMagicAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RevokeMagicAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RevokeMagicAuthTokenResponse {
+    return new RevokeMagicAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RevokeMagicAuthTokenResponse {
+    return new RevokeMagicAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RevokeMagicAuthTokenResponse {
+    return new RevokeMagicAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RevokeMagicAuthTokenResponse | PlainMessage<RevokeMagicAuthTokenResponse> | undefined, b: RevokeMagicAuthTokenResponse | PlainMessage<RevokeMagicAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(RevokeMagicAuthTokenResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetGithubRepoStatusRequest
  */
 export class GetGithubRepoStatusRequest extends Message<GetGithubRepoStatusRequest> {
@@ -8356,6 +8639,79 @@ export class ServiceToken extends Message<ServiceToken> {
 
   static equals(a: ServiceToken | PlainMessage<ServiceToken> | undefined, b: ServiceToken | PlainMessage<ServiceToken> | undefined): boolean {
     return proto3.util.equals(ServiceToken, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.MagicAuthToken
+ */
+export class MagicAuthToken extends Message<MagicAuthToken> {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: string project_id = 2;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: google.protobuf.Timestamp created_on = 3;
+   */
+  createdOn?: Timestamp;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp expires_on = 4;
+   */
+  expiresOn?: Timestamp;
+
+  /**
+   * @generated from field: string dashboard = 5;
+   */
+  dashboard = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression preset_filter = 6;
+   */
+  presetFilter?: Expression;
+
+  /**
+   * @generated from field: repeated string exclude_fields = 7;
+   */
+  excludeFields: string[] = [];
+
+  constructor(data?: PartialMessage<MagicAuthToken>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.MagicAuthToken";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "created_on", kind: "message", T: Timestamp },
+    { no: 4, name: "expires_on", kind: "message", T: Timestamp },
+    { no: 5, name: "dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "preset_filter", kind: "message", T: Expression },
+    { no: 7, name: "exclude_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {
+    return new MagicAuthToken().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MagicAuthToken {
+    return new MagicAuthToken().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MagicAuthToken {
+    return new MagicAuthToken().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: MagicAuthToken | PlainMessage<MagicAuthToken> | undefined, b: MagicAuthToken | PlainMessage<MagicAuthToken> | undefined): boolean {
+    return proto3.util.equals(MagicAuthToken, a, b);
   }
 }
 

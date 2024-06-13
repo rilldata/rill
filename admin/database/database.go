@@ -146,6 +146,13 @@ type DB interface {
 	UpdateDeploymentAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error
 
+	FindMagicAuthTokens(ctx context.Context, projectID, afterID string, limit int) ([]*MagicAuthToken, error)
+	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
+	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
+	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
+	DeleteMagicAuthToken(ctx context.Context, id string) error
+	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
@@ -505,6 +512,30 @@ type InsertDeploymentAuthTokenOptions struct {
 	SecretHash   []byte
 	DeploymentID string
 	ExpiresOn    *time.Time
+}
+
+// MagicAuthToken is a persistent API token for accessing a filtered dashboard in a project.
+type MagicAuthToken struct {
+	ID            string
+	SecretHash    []byte     `db:"secret"`
+	ProjectID     string     `db:"project_id"`
+	CreatedOn     time.Time  `db:"created_on"`
+	ExpiresOn     *time.Time `db:"expires_on"`
+	UsedOn        time.Time  `db:"used_on"`
+	Dashboard     string     `db:"dashboard"`
+	FilterJSON    string     `db:"filter_json"`
+	ExcludeFields []string   `db:"exclude_fields"`
+}
+
+// InsertMagicAuthTokenOptions defines options for creating a MagicAuthToken.
+type InsertMagicAuthTokenOptions struct {
+	ID            string
+	SecretHash    []byte
+	ProjectID     string `validate:"required"`
+	ExpiresOn     *time.Time
+	Dashboard     string `validate:"required"`
+	FilterJSON    string
+	ExcludeFields []string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.

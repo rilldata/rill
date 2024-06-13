@@ -962,6 +962,59 @@ func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, rete
 	return parseErr("deployment auth token", err)
 }
 
+func (c *connection) FindMagicAuthTokens(ctx context.Context, projectID, afterID string, limit int) ([]*database.MagicAuthToken, error) {
+	var res []*database.MagicAuthToken
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM magic_auth_tokens t WHERE t.project_id=$1 AND t.id>$2 ORDER BY t.id", projectID, afterID)
+	if err != nil {
+		return nil, parseErr("magic auth tokens", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*database.MagicAuthToken, error) {
+	res := &database.MagicAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM magic_auth_tokens t WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.MagicAuthToken{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, dashboard, filter_json, exclude_fields)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.Dashboard, opts.FilterJSON, opts.ExcludeFields,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE magic_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("magic auth token", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=$1", id)
+	return checkDeleteRow("magic auth token", res, err)
+}
+
+func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("magic auth token", err)
+}
+
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE device_code = $1", deviceCode).StructScan(authCode)
