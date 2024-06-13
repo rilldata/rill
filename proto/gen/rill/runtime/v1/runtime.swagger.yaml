@@ -3479,6 +3479,12 @@ definitions:
         type: boolean
       subtitle:
         type: string
+      input:
+        type: array
+        items:
+          type: string
+      output:
+        type: string
   v1ComponentState:
     type: object
   v1Condition:

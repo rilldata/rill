@@ -3210,6 +3210,16 @@ export class ComponentSpec extends Message<ComponentSpec> {
    */
   subtitle = "";
 
+  /**
+   * @generated from field: repeated string input = 8;
+   */
+  input: string[] = [];
+
+  /**
+   * @generated from field: string output = 9;
+   */
+  output = "";
+
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3225,6 +3235,8 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 5, name: "renderer_properties", kind: "message", T: Struct },
     { no: 6, name: "defined_in_dashboard", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "input", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 9, name: "output", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {

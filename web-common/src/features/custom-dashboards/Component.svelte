@@ -3,12 +3,15 @@
   import type ResizeHandle from "./ResizeHandle.svelte";
   import type { ComponentType } from "svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
+  import { load } from "js-yaml";
   import Chart from "./Chart.svelte";
   import Markdown from "./Markdown.svelte";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createRuntimeServiceGetParsedComponent } from "@rilldata/web-common/runtime-client/manual-clients";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -41,6 +44,17 @@
     ResourceKind.Component,
   );
 
+  $: parsedResourceQuery = createRuntimeServiceGetParsedComponent(
+    queryClient,
+    instanceId,
+    componentName,
+    {
+      test: "test",
+    },
+  );
+  $: data = $parsedResourceQuery?.data;
+  $: parsedComponent = load(data.content);
+  $: data, console.log(parsedComponent);
   $: ({ data: componentResource } = $resourceQuery);
 
   $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
@@ -105,7 +119,7 @@
         {/if}
         <Chart
           {chartView}
-          vegaSpec={rendererProperties?.spec}
+          vegaSpec={parsedComponent?.vega_lite}
           chartName={componentName}
           {resolverProperties}
         />

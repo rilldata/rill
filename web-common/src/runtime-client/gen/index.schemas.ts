@@ -1743,6 +1743,8 @@ export interface V1ComponentSpec {
   rendererProperties?: V1ComponentSpecRendererProperties;
   definedInDashboard?: boolean;
   subtitle?: string;
+  input?: string[];
+  output?: string;
 }
 
 export interface V1Component {

@@ -79,6 +79,9 @@
     queryClient,
     instanceId,
     chartName,
+    {
+      test: "test",
+    },
     resolverProperties,
   );
 

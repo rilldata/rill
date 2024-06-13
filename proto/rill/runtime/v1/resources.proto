@@ -454,6 +454,8 @@ message ComponentSpec {
   google.protobuf.Struct renderer_properties = 5;
   bool defined_in_dashboard = 6;
   string subtitle = 7;
+  repeated string input = 8;
+  string output = 9;
 }
 
 message ComponentState {}

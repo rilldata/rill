@@ -31,6 +31,8 @@ type ComponentYAML struct {
 	Markdown   *string          `yaml:"markdown"`
 	Image      *string          `yaml:"image"`
 	Template   map[string]any   `yaml:"template"`
+	Input      []string         `yaml:"input,omitempty"`
+	Output     string           `yaml:"output,omitempty"`
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -138,6 +140,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		ResolverProperties: resolverProps,
 		Renderer:           renderer,
 		RendererProperties: rendererProps,
+		Input:              tmp.Input,
 	}
 
 	return spec, refs, nil

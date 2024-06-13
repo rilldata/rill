@@ -28,6 +28,9 @@
     queryClient,
     $runtime.instanceId,
     chartName,
+    {
+      test: "test",
+    },
     resolverProperties,
   );
 

@@ -7405,6 +7405,8 @@ func (m *ComponentSpec) validate(all bool) error {
 
 	// no validation rules for Subtitle
 
+	// no validation rules for Output
+
 	if len(errors) > 0 {
 		return ComponentSpecMultiError(errors)
 	}
