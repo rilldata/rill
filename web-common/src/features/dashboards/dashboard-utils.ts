@@ -71,12 +71,48 @@ export function prepareSortedQueryBody(
     comparisonTimeRange = undefined;
   }
 
-  if (
-    comparisonTimeRange?.start &&
-    comparisonTimeRange?.end &&
-    !!timeControls.selectedComparisonTimeRange &&
-    sortMeasureName
-  ) {
+  const { sortMeasureName: apiSortName, measures: apiMeasures } =
+    getMeasureNames(
+      sortMeasureName,
+      sortType,
+      !!comparisonTimeRange?.start &&
+        !!comparisonTimeRange?.end &&
+        !!timeControls.selectedComparisonTimeRange,
+    );
+  measures.push(...apiMeasures);
+
+  return {
+    dimensions: [
+      {
+        name: dimensionName,
+      },
+    ],
+    measures,
+    timeRange: {
+      start: timeControls.timeStart,
+      end: timeControls.timeEnd,
+    },
+    comparisonTimeRange,
+    sort: [
+      {
+        desc: !sortAscending,
+        name: apiSortName,
+      },
+    ],
+    where: sanitiseExpression(whereFilterForDimension, undefined),
+    limit: limit.toString(),
+    offset: "0",
+  };
+}
+
+export function getMeasureNames(
+  sortMeasureName: string,
+  sortType: DashboardState_LeaderboardSortType,
+  hasComparisonTimeRange: boolean,
+) {
+  const measures: V1MetricsViewAggregationMeasure[] = [];
+
+  if (hasComparisonTimeRange && sortMeasureName) {
     measures.push(
       {
         name: sortMeasureName + ComparisonDeltaPreviousSuffix,
@@ -108,26 +144,5 @@ export function prepareSortedQueryBody(
     }
   }
 
-  return {
-    dimensions: [
-      {
-        name: dimensionName,
-      },
-    ],
-    measures,
-    timeRange: {
-      start: timeControls.timeStart,
-      end: timeControls.timeEnd,
-    },
-    comparisonTimeRange,
-    sort: [
-      {
-        desc: !sortAscending,
-        name: sortMeasureName,
-      },
-    ],
-    where: sanitiseExpression(whereFilterForDimension, undefined),
-    limit: limit.toString(),
-    offset: "0",
-  };
+  return { measures, sortMeasureName };
 }

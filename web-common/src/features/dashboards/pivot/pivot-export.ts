@@ -1,17 +1,20 @@
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
-import type {
+import {
   V1ExportFormat,
   V1TimeGrain,
   createQueryServiceExport,
+  V1TimeRange,
+  V1MetricsViewAggregationRequest,
 } from "@rilldata/web-common/runtime-client";
 import { derived, get } from "svelte/store";
 import { runtime } from "../../../runtime-client/runtime-store";
 import type { StateManagers } from "../state-managers/state-managers";
-import { PivotChipType } from "./types";
+import { PivotChipType, PivotColumns, PivotRows } from "./types";
 
 export default async function exportPivot({
   ctx,
@@ -25,7 +28,7 @@ export default async function exportPivot({
   timeDimension: string | undefined;
 }) {
   const instanceId = get(runtime).instanceId;
-  const metricsView = get(ctx.metricsViewName);
+  const metricsViewName = get(ctx.metricsViewName);
   const dashboard = get(ctx.dashboardStore);
   const selectedTimeRange = get(
     ctx.selectors.timeRangeSelectors.selectedTimeRangeState,
@@ -38,6 +41,72 @@ export default async function exportPivot({
     end: selectedTimeRange?.end.toISOString(),
   };
 
+  const request = getPivotAggregationRequest(
+    metricsViewName,
+    timeDimension ?? "",
+    dashboard,
+    timeRange,
+    rows,
+    columns,
+  );
+
+  const result = await get(query).mutateAsync({
+    instanceId,
+    data: {
+      format,
+      query: {
+        metricsViewAggregationRequest: request,
+      },
+    },
+  });
+
+  const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
+
+  window.open(downloadUrl, "_self");
+}
+
+export function getPivotExportArgs(ctx: StateManagers) {
+  return derived(
+    [
+      ctx.metricsViewName,
+      useMetricsView(ctx),
+      useTimeControlStore(ctx),
+      ctx.dashboardStore,
+      ctx.selectors.pivot.rows,
+      ctx.selectors.pivot.columns,
+    ],
+    ([
+      metricsViewName,
+      metricsView,
+      timeControlState,
+      dashboardState,
+      rows,
+      columns,
+    ]) => {
+      const metricsViewSpec = metricsView.data ?? {};
+      const timeRange = mapTimeRange(timeControlState, metricsViewSpec);
+      if (!timeRange) return undefined;
+
+      return getPivotAggregationRequest(
+        metricsViewName,
+        metricsViewSpec.timeDimension ?? "",
+        dashboardState,
+        timeRange,
+        rows,
+        columns,
+      );
+    },
+  );
+}
+
+export function getPivotAggregationRequest(
+  metricsView: string,
+  timeDimension: string,
+  dashboardState: MetricsExplorerEntity,
+  timeRange: V1TimeRange,
+  rows: PivotRows,
+  columns: PivotColumns,
+): undefined | V1MetricsViewAggregationRequest {
   const measures = columns.measure.map((m) => {
     return {
       name: m.id,
@@ -49,7 +118,7 @@ export default async function exportPivot({
       ? {
           name: timeDimension,
           timeGrain: d.id as V1TimeGrain,
-          timeZone: dashboard.selectedTimezone,
+          timeZone: dashboardState.selectedTimezone,
           alias: `Time ${d.title}`,
         }
       : {
@@ -66,7 +135,7 @@ export default async function exportPivot({
       ? {
           name: timeDimension,
           timeGrain: d.id as V1TimeGrain,
-          timeZone: dashboard.selectedTimezone,
+          timeZone: dashboardState.selectedTimezone,
           alias: `Time ${d.title}`,
         }
       : {
@@ -88,122 +157,15 @@ export default async function exportPivot({
     };
   });
 
-  const result = await get(query).mutateAsync({
-    instanceId,
-    data: {
-      format,
-      query: {
-        metricsViewAggregationRequest: {
-          instanceId,
-          metricsView,
-          timeRange,
-          measures,
-          dimensions: allDimensions,
-          where: sanitiseExpression(mergeMeasureFilters(dashboard), undefined),
-          pivotOn,
-          sort,
-          offset: "0",
-          limit: undefined, // the backend handles export limits
-        },
-      },
-    },
-  });
-
-  const downloadUrl = `${get(runtime).host}${result.downloadUrlPath}`;
-
-  window.open(downloadUrl, "_self");
-}
-
-export function getPivotExportArgs(ctx: StateManagers) {
-  return derived(
-    [
-      ctx.metricsViewName,
-      ctx.dashboardStore,
-      ctx.selectors.pivot.rows,
-      ctx.selectors.pivot.columns,
-      useTimeControlStore(ctx),
-      useMetricsView(ctx),
-    ],
-    ([
-      metricsViewName,
-      dashboardState,
-      rows,
-      columns,
-      timeControlState,
-      metricsView,
-    ]) => {
-      if (!metricsView.data || !timeControlState.ready) return undefined;
-
-      const timeRange = mapTimeRange(timeControlState, metricsView.data);
-      if (!timeRange) return undefined;
-
-      const timeDimension = metricsView.data.timeDimension ?? "";
-
-      const measures = columns.measure.map((m) => {
-        return {
-          name: m.id,
-        };
-      });
-
-      const allDimensions = [...rows.dimension, ...columns.dimension].map(
-        (d) =>
-          d.type === PivotChipType.Time
-            ? {
-                name: timeDimension,
-                timeGrain: d.id as V1TimeGrain,
-                timeZone: dashboardState.selectedTimezone,
-                alias: `Time ${d.title}`,
-              }
-            : {
-                name: d.id,
-              },
-      );
-
-      const pivotOn = columns.dimension.map((d) =>
-        d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
-      );
-
-      const rowDimensions = [...rows.dimension].map((d) =>
-        d.type === PivotChipType.Time
-          ? {
-              name: timeDimension,
-              timeGrain: d.id as V1TimeGrain,
-              timeZone: dashboardState.selectedTimezone,
-              alias: `Time ${d.title}`,
-            }
-          : {
-              name: d.id,
-            },
-      );
-
-      // Sort by the dimensions in the pivot's rows
-      const sort = rowDimensions.map((d) => {
-        if (d.alias) {
-          return {
-            name: d.alias,
-            desc: false,
-          };
-        }
-        return {
-          name: d.name,
-          desc: false,
-        };
-      });
-
-      return {
-        instanceId: get(runtime).instanceId,
-        metricsViewName,
-        timeRange,
-        measures,
-        dimensions: allDimensions,
-        where: sanitiseExpression(
-          mergeMeasureFilters(dashboardState),
-          undefined,
-        ),
-        pivotOn,
-        sort,
-        offset: "0",
-      };
-    },
-  );
+  return {
+    instanceId: get(runtime).instanceId,
+    metricsView,
+    timeRange,
+    measures,
+    dimensions: allDimensions,
+    where: sanitiseExpression(mergeMeasureFilters(dashboardState), undefined),
+    pivotOn,
+    sort,
+    offset: "0",
+  };
 }
