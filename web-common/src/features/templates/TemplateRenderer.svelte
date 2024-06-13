@@ -11,8 +11,6 @@
   export let componentName: string;
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let resolverProperties: V1ComponentSpecResolverProperties;
-
-  $: console.log(componentName, rendererProperties, resolverProperties);
 </script>
 
 {#if rendererProperties?.name === "kpi"}

@@ -1,17 +1,17 @@
-import type { ScaleLinear, ScaleTime } from "d3-scale";
 import { bisector } from "d3-array";
-import { timeFormat } from "d3-time-format";
+import type { ScaleLinear, ScaleTime } from "d3-scale";
 import { area, curveLinear, curveStep, line } from "d3-shape";
+import { timeFormat } from "d3-time-format";
 import { getContext } from "svelte";
 import { derived, writable } from "svelte/store";
 import { contexts } from "./constants";
 import { curveStepExtended } from "./marks/curveStepExtended";
+import { ScaleType } from "./state";
 import type {
   GraphicScale,
   ScaleStore,
   SimpleConfigurationStore,
 } from "./state/types";
-import { ScaleType } from "./state";
 
 /**
  * Creates a string to be fed into the d attribute of a path,
