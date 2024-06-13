@@ -290,6 +290,15 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		cache := make(map[string][]byte)
 		for _, p := range h.cachedPaths {
 			p = filepath.Join(h.projPath, p)
+			_, err = os.Stat(p)
+			if err != nil {
+				if os.IsNotExist(err) {
+					continue
+				} else {
+					return nil, err
+				}
+			}
+
 			err := filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
 				if err != nil {
 					return err

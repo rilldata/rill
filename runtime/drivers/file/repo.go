@@ -183,7 +183,15 @@ func (c *connection) Sync(ctx context.Context) error {
 	cache := make(map[string][]byte)
 	for _, p := range c.cachedPaths {
 		p = filepath.Join(c.root, p)
-		err := filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
+		_, err := os.Stat(p)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			} else {
+				return err
+			}
+		}
+		err = filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
