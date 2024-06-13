@@ -9,7 +9,7 @@
   import metricsSchema from "./metrics-schema.json";
   import { JSONSchema7 } from "json-schema";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
-  import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";

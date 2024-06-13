@@ -13,7 +13,7 @@
   import { useAllSourceColumns } from "../../sources/selectors";
   import { useAllModelColumns } from "../selectors";
   import Editor from "../../editor/Editor.svelte";
-  import { FileArtifact } from "../../entity-management/file-artifacts";
+  import { FileArtifact } from "../../entity-management/file-artifact";
 
   const schema: { [table: string]: string[] } = {};
 

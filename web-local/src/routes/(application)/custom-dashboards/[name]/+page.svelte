@@ -9,10 +9,8 @@
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import {
-    FileArtifact,
-    fileArtifacts,
-  } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";

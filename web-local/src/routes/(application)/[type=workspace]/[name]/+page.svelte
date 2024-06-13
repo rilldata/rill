@@ -4,10 +4,8 @@
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import {
-    FileArtifact,
-    fileArtifacts,
-  } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
     ResourceKind,

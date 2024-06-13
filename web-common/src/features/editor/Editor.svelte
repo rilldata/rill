@@ -9,7 +9,7 @@
   import { EditorView } from "@codemirror/view";
   import { debounce } from "../../lib/create-debouncer";
   import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
-  import { FileArtifact } from "../entity-management/file-artifacts";
+  import { FileArtifact } from "../entity-management/file-artifact";
   import Codespace from "./Codespace.svelte";
 
   export let fileArtifact: FileArtifact;

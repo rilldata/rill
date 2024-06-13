@@ -5,7 +5,7 @@
   import { mapParseErrorsToLines } from "../../metrics-views/errors";
   import Editor from "../../editor/Editor.svelte";
   import { FileExtensionToEditorExtension } from "../../editor/getExtensionsForFile";
-  import { FileArtifact } from "../../entity-management/file-artifacts";
+  import { FileArtifact } from "../../entity-management/file-artifact";
 
   export let allErrors: V1ParseError[];
   export let fileArtifact: FileArtifact;

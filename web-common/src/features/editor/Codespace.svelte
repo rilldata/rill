@@ -4,7 +4,7 @@
   import { EditorView } from "@codemirror/view";
   import { onMount, onDestroy } from "svelte";
   import { base as baseExtensions } from "../../components/editor/presets/base";
-  import { FileArtifact } from "../entity-management/file-artifacts";
+  import { FileArtifact } from "../entity-management/file-artifact";
   import { get } from "svelte/store";
   import Dialog from "@rilldata/web-common/components/modal/dialog/Dialog.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
