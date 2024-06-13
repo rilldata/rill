@@ -26,7 +26,7 @@ type RepoStore interface {
 	Delete(ctx context.Context, path string, force bool) error
 	Sync(ctx context.Context) error
 	Watch(ctx context.Context, cb WatchCallback) error
-	SetCachedPaths(paths []string) error
+	SetCachedPaths(paths []string)
 	GetCachedPaths() []string
 }
 
