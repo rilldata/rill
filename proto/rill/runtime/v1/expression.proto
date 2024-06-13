@@ -9,6 +9,7 @@ message Expression {
     string ident = 1;
     google.protobuf.Value val = 2;
     Condition cond = 3;
+    Subquery subquery = 4;
   }
 }
 
@@ -31,4 +32,11 @@ enum Operation {
   OPERATION_NIN = 10;
   OPERATION_LIKE = 11;
   OPERATION_NLIKE = 12;
+}
+
+message Subquery {
+  string dimension = 1;
+  repeated string measures = 2;
+  Expression where = 3;
+  Expression having = 4;
 }

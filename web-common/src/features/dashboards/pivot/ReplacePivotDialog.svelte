@@ -28,7 +28,7 @@
     <div class="flex gap-x-2">
       <div class="grow" />
       <Button type="secondary" on:click={onClose}>Close</Button>
-      <Button type="brand" on:click={onReplace}>Replace</Button>
+      <Button type="primary" on:click={onReplace}>Replace</Button>
     </div>
   </svelte:fragment>
 </Dialog>

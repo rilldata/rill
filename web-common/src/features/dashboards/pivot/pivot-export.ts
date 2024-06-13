@@ -1,11 +1,6 @@
-import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
-import {
-  createAndExpression,
-  createSubQueryExpression,
-  filterExpressions,
-  sanitiseExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import { mapTimeRange } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
 import type {
@@ -62,8 +57,6 @@ export default async function exportPivot({
         },
   );
 
-  const measureFilters = await getResolvedMeasureFilters(ctx);
-
   const pivotOn = columns.dimension.map((d) =>
     d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
   );
@@ -106,7 +99,7 @@ export default async function exportPivot({
           timeRange,
           measures,
           dimensions: allDimensions,
-          where: sanitiseExpression(dashboard.whereFilter, measureFilters),
+          where: sanitiseExpression(mergeMeasureFilters(dashboard), undefined),
           pivotOn,
           sort,
           offset: "0",
@@ -197,22 +190,16 @@ export function getPivotExportArgs(ctx: StateManagers) {
         };
       });
 
-      const where =
-        filterExpressions(dashboardState.whereFilter, () => true) ??
-        createAndExpression([]);
-      where.cond?.exprs?.push(
-        ...dashboardState.dimensionThresholdFilters.map((dt) =>
-          createSubQueryExpression(dt.name, undefined, dt.filter),
-        ),
-      );
-
       return {
         instanceId: get(runtime).instanceId,
         metricsViewName,
         timeRange,
         measures,
         dimensions: allDimensions,
-        where: sanitiseExpression(where, undefined),
+        where: sanitiseExpression(
+          mergeMeasureFilters(dashboardState),
+          undefined,
+        ),
         pivotOn,
         sort,
         offset: "0",

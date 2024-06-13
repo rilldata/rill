@@ -8,8 +8,6 @@ import (
 
 // SQL builds a SQL query from the AST.
 // It returns the query and query arguments to be passed to the database driver.
-//
-// It does not produce a PIVOT query when PivotOn is set. See astpivot.go for functions to build PIVOT queries from an AST.
 func (a *AST) SQL() (string, []any, error) {
 	b := &sqlBuilder{
 		ast: a,
@@ -48,7 +46,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
-		b.out.WriteString(" as ")
+		b.out.WriteString(" AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
 	}
 
@@ -62,7 +60,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
-		b.out.WriteString(" as ")
+		b.out.WriteString(" AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
 	}
 
@@ -91,7 +89,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		b.out.WriteByte('(')
 		b.out.WriteString(expr)
-		b.out.WriteString(") as ")
+		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
@@ -102,7 +100,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		b.out.WriteByte('(')
 		b.out.WriteString(f.Expr)
-		b.out.WriteString(") as ")
+		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 

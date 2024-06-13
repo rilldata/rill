@@ -644,6 +644,16 @@ export interface V1IssueRepresentativeAuthTokenRequest {
   ttlMinutes?: string;
 }
 
+export type V1GithubPermission =
+  (typeof V1GithubPermission)[keyof typeof V1GithubPermission];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1GithubPermission = {
+  GITHUB_PERMISSION_UNSPECIFIED: "GITHUB_PERMISSION_UNSPECIFIED",
+  GITHUB_PERMISSION_READ: "GITHUB_PERMISSION_READ",
+  GITHUB_PERMISSION_WRITE: "GITHUB_PERMISSION_WRITE",
+} as const;
+
 export interface V1GetUserResponse {
   user?: V1User;
 }
@@ -686,11 +696,18 @@ export interface V1GetIFrameResponse {
   ttlSeconds?: number;
 }
 
+export type V1GetGithubUserStatusResponseOrganizationInstallationPermissions = {
+  [key: string]: V1GithubPermission;
+};
+
 export interface V1GetGithubUserStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;
   accessToken?: string;
   account?: string;
+  userInstallationPermission?: V1GithubPermission;
+  organizationInstallationPermissions?: V1GetGithubUserStatusResponseOrganizationInstallationPermissions;
+  /** DEPRECATED: Use organization_installation_permissions instead. */
   organizations?: string[];
 }
 
@@ -915,7 +932,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

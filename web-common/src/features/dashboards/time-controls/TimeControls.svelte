@@ -149,11 +149,15 @@
     start: Date,
     end: Date,
   ) {
-    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
-      name,
-      start,
-      end,
-    });
+    metricsExplorerStore.setSelectedComparisonRange(
+      metricViewName,
+      {
+        name,
+        start,
+        end,
+      },
+      $metricsView.data ?? {},
+    );
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
@@ -170,6 +174,7 @@
       timeRange,
       timeGrain,
       comparisonTimeRange,
+      $metricsView.data ?? {},
     );
   }
 </script>

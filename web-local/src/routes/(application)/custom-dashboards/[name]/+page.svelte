@@ -52,11 +52,11 @@
   let customDashboardName: string;
   let selectedView = "split";
   let showGrid = true;
-  let snap = false;
   let showChartEditor = false;
   let containerWidth: number;
   let containerHeight: number;
   let editorPercentage = 0.5;
+  let selectedIndex: number | null = null;
   let chartEditorPercentage = 0.4;
   let selectedChartName: string | null = null;
   let spec: V1DashboardSpec = {
@@ -162,9 +162,9 @@
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
-  async function addChart(e: CustomEvent<{ chartName: string }>) {
+  async function addChart(chartName: string) {
     const newChart = {
-      component: e.detail.chartName,
+      component: chartName,
       height: 4,
       width: 4,
       x: 0,
@@ -183,11 +183,32 @@
 
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
+
+  async function deleteChart(index: number) {
+    const items = parsedDocument.get("items");
+
+    if (!items) return;
+
+    items.delete(index);
+
+    yaml = parsedDocument.toString();
+
+    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+  }
 </script>
 
 <svelte:head>
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
+
+<svelte:window
+  on:keydown={async (e) => {
+    if (e.target !== document.body || selectedIndex === null) return;
+    if (e.key === "Delete" || e.key === "Backspace") {
+      await deleteChart(selectedIndex);
+    }
+  }}
+/>
 
 <WorkspaceContainer
   bind:width={containerWidth}
@@ -203,13 +224,6 @@
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />
 
-      <div
-        class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
-      >
-        <Switch bind:checked={snap} id="snap" small />
-        <Label class="font-normal text-xs" for="snap">Snap on change</Label>
-      </div>
-
       {#if selectedView === "split" || selectedView === "viz"}
         <div
           class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
@@ -219,7 +233,7 @@
         </div>
       {/if}
 
-      <AddChartMenu on:add-chart={addChart} />
+      <AddChartMenu {addChart} />
 
       <PreviewButton
         dashboardName={customDashboardName}
@@ -302,12 +316,12 @@
 
     {#if selectedView == "viz" || selectedView == "split"}
       <CustomDashboardPreview
-        {snap}
         {gap}
         {items}
         {columns}
         {showGrid}
         bind:selectedChartName
+        bind:selectedIndex
         on:update={handlePreviewUpdate}
       />
     {/if}

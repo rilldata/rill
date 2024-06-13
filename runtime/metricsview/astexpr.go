@@ -72,9 +72,43 @@ func (b *sqlExprBuilder) writeValue(val any) error {
 	return nil
 }
 
-func (b *sqlExprBuilder) writeSubquery(_ *Subquery) error {
-	// TODO: Implement
-	return fmt.Errorf("subqueries in expressions are not supported")
+func (b *sqlExprBuilder) writeSubquery(sub *Subquery) error {
+	// We construct a Query that combines the parent Query's contextual info with that of the Subquery.
+	outer := b.ast.query
+	inner := &Query{
+		MetricsView:         outer.MetricsView,
+		Dimensions:          []Dimension{sub.Dimension},
+		Measures:            sub.Measures,
+		PivotOn:             nil,
+		Sort:                nil,
+		TimeRange:           outer.TimeRange,
+		ComparisonTimeRange: outer.ComparisonTimeRange,
+		Where:               sub.Where,
+		Having:              sub.Having,
+		Limit:               nil,
+		Offset:              nil,
+		TimeZone:            outer.TimeZone,
+		Label:               false,
+	}
+
+	// Generate SQL for the subquery
+	innerAST, err := NewAST(b.ast.metricsView, b.ast.security, inner, b.ast.dialect)
+	if err != nil {
+		return fmt.Errorf("failed to create AST for subquery: %w", err)
+	}
+	sql, args, err := innerAST.SQL()
+	if err != nil {
+		return fmt.Errorf("failed to generate SQL for subquery: %w", err)
+	}
+
+	// Output: (SELECT <dimension> FROM (<subquery>))
+	b.writeString("(SELECT ")
+	b.writeString(b.ast.dialect.EscapeIdentifier(sub.Dimension.Name))
+	b.writeString(" FROM (")
+	b.writeString(sql)
+	b.writeString("))")
+	b.args = append(b.args, args...)
+	return nil
 }
 
 func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
@@ -114,11 +148,14 @@ func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner stri
 }
 
 func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
-	// Backwards compatibility: For IN and NIN, the right hand side may not be a list.
+	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
 	if op == OperatorIn || op == OperatorNin {
 		if len(exprs) == 2 {
-			if _, ok := exprs[1].Value.([]any); !ok {
-				exprs[1] = &Expression{Value: []any{exprs[1].Value}}
+			rhs := exprs[1]
+			_, isListVal := rhs.Value.([]any)
+			if rhs.Name == "" && !isListVal && rhs.Condition == nil && rhs.Subquery == nil {
+				// Convert the right hand side to a list
+				exprs[1] = &Expression{Value: []any{rhs.Value}}
 			}
 		}
 		if len(exprs) > 2 {
@@ -333,14 +370,39 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 }
 
 func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride string, not bool) error {
-	if right.Value == nil {
-		return fmt.Errorf("the right expression must be a value for an IN condition")
-	}
-	vals, ok := right.Value.([]any)
-	if !ok {
-		return fmt.Errorf("the right expression must be a list of values for an IN condition")
+	if right.Value != nil {
+		vals, ok := right.Value.([]any)
+		if !ok {
+			return fmt.Errorf("the right value must be a list of values for an IN condition")
+		}
+
+		return b.writeInConditionForValues(left, leftOverride, vals, not)
 	}
 
+	if leftOverride != "" {
+		b.writeParenthesizedString(leftOverride)
+	} else {
+		err := b.writeExpression(left)
+		if err != nil {
+			return err
+		}
+	}
+
+	if not {
+		b.writeString(" NOT IN ")
+	} else {
+		b.writeString(" IN ")
+	}
+
+	err := b.writeExpression(right)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverride string, vals []any, not bool) error {
 	var hasNull bool
 	for _, v := range vals {
 		if v == nil {

@@ -65,12 +65,12 @@ The main feature-set component for dashboard filters
     {/each}
   {/if}
   {#if measureFilters.length > 0}
-    {#each measureFilters as { name, label, dimensionName, expr } (name)}
+    {#each measureFilters as { name, label, dimensionName, filter } (name)}
       <div animate:flip={{ duration: 200 }}>
         <MeasureFilterReadOnlyChip
           label={label ?? name}
           {dimensionName}
-          {expr}
+          {filter}
         />
       </div>
     {/each}

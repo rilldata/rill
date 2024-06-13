@@ -47,7 +47,9 @@
         </span>
       {:else if data?.connectors}
         {#if data.connectors.length === 0}
-          <span class="message">No connectors found</span>
+          <span class="message"
+            >No connectors found. Add data to get started!</span
+          >
         {:else}
           <ol transition:slide={{ duration }}>
             {#each data.connectors as connector (connector.name)}
@@ -86,7 +88,7 @@
 
   .message {
     @apply pl-2 pr-3.5 py-2;
+    @apply flex;
     @apply text-gray-500;
-    @apply text-wrap;
   }
 </style>

@@ -1,7 +1,7 @@
 import type {
   MetricsViewSpecDimensionV2,
   RpcStatus,
-  V1MetricsViewComparisonResponse,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewTotalsResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
@@ -50,7 +50,10 @@ export const virtualizedTableColumns =
 
     if (!dimension) return [];
 
-    const measures = visibleMeasures(dashData);
+    // temporary filter for advanced measures
+    const measures = visibleMeasures(dashData).filter(
+      (m) => !m.window && !m.requiredDimensions?.length,
+    );
 
     const measureTotals: { [key: string]: number } = {};
     if (totalsQuery?.data?.data) {
@@ -76,7 +79,7 @@ export const prepareDimTableRows =
     dashData: DashboardDataSources,
   ): ((
     sortedQuery: QueryObserverResult<
-      V1MetricsViewComparisonResponse,
+      V1MetricsViewAggregationResponse,
       RpcStatus
     >,
     unfilteredTotal: number,
@@ -93,7 +96,7 @@ export const prepareDimTableRows =
     const measures = allMeasures(dashData);
 
     return prepareDimensionTableRows(
-      sortedQuery?.data?.rows ?? [],
+      sortedQuery?.data?.data ?? [],
       measures,
       leaderboardMeasureName,
       dimensionColumn,

@@ -215,7 +215,7 @@ export class WatchResourcesClient {
   }
 
   private invalidateAllResources() {
-    return queryClient.refetchQueries({
+    return queryClient.invalidateQueries({
       predicate: (query) =>
         query.queryHash.includes(`v1/instances/${get(runtime).instanceId}`),
     });
