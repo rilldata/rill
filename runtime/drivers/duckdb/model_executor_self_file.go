@@ -49,6 +49,7 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 
 	err = olap.Exec(ctx, &drivers.Statement{
 		Query:    sql,
+		Args:     inputProps.Args,
 		Priority: e.opts.Priority,
 	})
 	if err != nil {
