@@ -41,6 +41,7 @@
     editable={false}
     showInspectorToggle={false}
     titleInput={table}
+    hasUnsavedChanges={false}
   >
     <svelte:fragment let:width={headerWidth} slot="cta">
       {@const collapse = isHeaderWidthSmall(headerWidth)}

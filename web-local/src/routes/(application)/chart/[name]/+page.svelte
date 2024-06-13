@@ -48,7 +48,7 @@
     fileArtifact = fileArtifacts.getFileArtifact(filePath);
   }
 
-  $: ({ autoSave } = fileArtifact);
+  $: ({ autoSave, hasUnsavedChanges } = fileArtifact);
 
   $: fileQuery = createRuntimeServiceGetFile(
     instanceId,
@@ -103,7 +103,7 @@
     bind:width={containerWidth}
     bind:height={containerHeight}
   >
-    <ChartsHeader slot="header" {filePath} />
+    <ChartsHeader slot="header" {filePath} {hasUnsavedChanges} />
     <div slot="body" class="flex size-full">
       <div
         style:width="{editorPercentage * 100}%"

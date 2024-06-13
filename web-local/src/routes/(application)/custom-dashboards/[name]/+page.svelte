@@ -103,7 +103,8 @@
     if (newRoute) await goto(newRoute);
   }
 
-  $: ({ updateLocalContent, localContent, remoteContent } = fileArtifact);
+  $: ({ updateLocalContent, localContent, remoteContent, hasUnsavedChanges } =
+    fileArtifact);
 
   async function handlePreviewUpdate(
     e: CustomEvent<{
@@ -188,6 +189,7 @@
     showInspectorToggle={false}
     slot="header"
     titleInput={fileName}
+    hasUnsavedChanges={$hasUnsavedChanges}
   >
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />

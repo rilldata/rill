@@ -53,7 +53,7 @@
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
 
-  $: ({ autoSave } = fileArtifact);
+  $: ({ autoSave, hasUnsavedChanges } = fileArtifact);
 
   onMount(() => {
     expandDirectory(filePath);
@@ -66,12 +66,6 @@
 
     // TODO: Focus on the code editor
   });
-
-  let blob = "";
-  $: blob = $fileQuery.data?.blob ?? blob;
-
-  let localContent: string | null = null;
-  $: hasUnsavedChanges = localContent !== null && localContent !== blob;
 
   // TODO: move this logic into the DirectoryState
   // TODO: expand all directories in the path, not just the last one
@@ -103,7 +97,7 @@
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader
       filePath={$page.params.file}
-      {hasUnsavedChanges}
+      hasUnsavedChanges={$hasUnsavedChanges}
       slot="header"
     />
     <div
