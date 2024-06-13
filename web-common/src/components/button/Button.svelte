@@ -131,7 +131,7 @@
     @apply bg-primary-800;
   }
 
-  .primary.disabled {
+  .primary:disabled {
     @apply bg-slate-400;
   }
 

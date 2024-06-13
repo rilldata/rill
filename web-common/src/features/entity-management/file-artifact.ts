@@ -20,7 +20,11 @@ import {
   runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type { QueryClient, QueryObserverResult } from "@tanstack/svelte-query";
+import type {
+  QueryClient,
+  QueryFunction,
+  QueryObserverResult,
+} from "@tanstack/svelte-query";
 import {
   derived,
   get,
@@ -36,6 +40,7 @@ import {
   FILES_WITHOUT_AUTOSAVE,
 } from "../editor/config";
 import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
+import { parseKindAndNameFromFile } from "./file-content-utils";
 
 const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
@@ -81,12 +86,6 @@ export class FileArtifact {
     this.disableAutoSave =
       FILES_WITHOUT_AUTOSAVE.includes(filePath) ||
       DIRECTORIES_WITHOUT_AUTOSAVE.includes(folderName);
-    this.path = filePath;
-
-    this.fileExtension = extractFileExtension(filePath);
-    const fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
-      this.fileExtension,
-    );
 
     if (this.disableAutoSave) {
       this.autoSave = writable(false);
@@ -94,30 +93,10 @@ export class FileArtifact {
       this.autoSave = localStorageStore<boolean>(`autoSave::${filePath}`, true);
     }
 
-    const queryKey = getRuntimeServiceGetFileQueryKey(get(runtime).instanceId, {
-      path: filePath,
-    });
-
-    // Initial data fetch
-    this.ready = fileTypeUnsupported
-      ? Promise.resolve(false)
-      : queryClient
-          .fetchQuery({
-            queryKey,
-            queryFn: () =>
-              runtimeServiceGetFile(get(runtime).instanceId, {
-                path: filePath,
-              }),
-          })
-          .then(({ blob }) => {
-            if (blob === undefined) return false;
-            this.updateRemoteContent(blob, false);
-            return true;
-          })
-          .catch((e) => {
-            console.error(e);
-            return false;
-          });
+    this.fileExtension = extractFileExtension(filePath);
+    this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
+      this.fileExtension,
+    );
   }
 
   updateRemoteContent = (content: string, alert = true) => {
@@ -128,6 +107,33 @@ export class FileArtifact {
       }
     }
   };
+
+  async initRemoteContent() {
+    const instanceId = get(runtime).instanceId;
+    const queryParams = {
+      path: this.path,
+    };
+    const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, queryParams);
+
+    const queryFn: QueryFunction<
+      Awaited<ReturnType<typeof runtimeServiceGetFile>>
+    > = ({ signal }) => runtimeServiceGetFile(instanceId, queryParams, signal);
+
+    const { blob } = await queryClient.fetchQuery({
+      queryKey,
+      queryFn,
+    });
+
+    if (blob === undefined) {
+      throw new Error("Content undefined");
+    }
+
+    const newName = parseKindAndNameFromFile(this.path, blob);
+
+    if (newName) this.name.set(newName);
+
+    this.updateRemoteContent(blob, false);
+  }
 
   updateLocalContent = (content: string | null, alert = false) => {
     const hasUnsavedChanges = get(this.hasUnsavedChanges);

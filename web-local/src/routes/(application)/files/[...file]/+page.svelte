@@ -1,48 +1,26 @@
 <script lang="ts">
   import { afterNavigate } from "$app/navigation";
-  import { page } from "$app/stores";
-  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
-  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import {
-    extractFileExtension,
-    splitFolderAndName,
-  } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
   import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
   import ChartPage from "../../chart/[name]/+page.svelte";
   import CustomDashboardPage from "../../custom-dashboards/[name]/+page.svelte";
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
 
-  const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
+  export let data;
 
-  $: filePath = addLeadingSlash($page.params.file);
-  $: fileExtension = extractFileExtension(filePath);
-  $: [, fileName] = splitFolderAndName(filePath);
-  $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
+  $: ({ filePath } = data);
 
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    { path: filePath },
-    {
-      query: {
-        enabled: !fileTypeUnsupported,
-      },
-    },
-  );
-  $: fileError = !!$fileQuery.error;
-  $: fileErrorMessage = $fileQuery.error?.response.data.message;
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  $: name = fileArtifact.name;
+  $: ({ autoSave, hasUnsavedChanges, fileName, name } = fileArtifact);
+
   $: resourceKind = $name?.kind;
 
   $: isSource = resourceKind === ResourceKind.Source;
@@ -52,8 +30,6 @@
   $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
   $: isOther =
     !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
-
-  $: ({ autoSave, hasUnsavedChanges } = fileArtifact);
 
   onMount(() => {
     expandDirectory(filePath);
@@ -79,16 +55,12 @@
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
-{#if fileTypeUnsupported}
-  <WorkspaceError message="Unsupported file type." />
-{:else if fileError}
-  <WorkspaceError message={`Error loading file: ${fileErrorMessage}`} />
-{:else if isSource || isModel}
+{#if isSource || isModel}
   <SourceModelPage data={{ fileArtifact }} />
 {:else if isDashboard}
   <DashboardPage data={{ fileArtifact }} />
 {:else if isChart}
-  {#key $page.params.file}
+  {#key filePath}
     <ChartPage data={{ fileArtifact }} />
   {/key}
 {:else if isCustomDashboard}
@@ -96,7 +68,7 @@
 {:else if isOther}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader
-      filePath={$page.params.file}
+      {filePath}
       hasUnsavedChanges={$hasUnsavedChanges}
       slot="header"
     />

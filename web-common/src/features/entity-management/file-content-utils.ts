@@ -8,7 +8,9 @@ import {
   ResourceShortNameToKind,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
-import { parse } from "yaml";
+import y from "yaml";
+
+const { parse } = y;
 
 export function parseKindAndNameFromFile(
   filePath: string,

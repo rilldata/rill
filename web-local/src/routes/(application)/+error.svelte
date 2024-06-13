@@ -1,11 +1,11 @@
 <script lang="ts">
   import { page } from "$app/stores";
+
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
+
+  $: statusCode = $page.status;
+  $: header = ($page.error && $page.error.message) || "An error occurred";
+  $: body = "";
 </script>
 
-<div class="w-full h-full items-center flex justify-center">
-  {#if $page.error?.message}
-    <p class="error">{$page.status}: {$page.error?.message}</p>
-  {:else}
-    <p class="error">Encountered a {$page.status} error</p>
-  {/if}
-</div>
+<ErrorPage {statusCode} {header} {body} />
