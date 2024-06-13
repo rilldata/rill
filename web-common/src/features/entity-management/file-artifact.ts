@@ -33,28 +33,31 @@ import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
-  public readonly path: string;
+  readonly path: string;
 
-  public readonly name = writable<V1ResourceName | undefined>(undefined);
+  readonly name = writable<V1ResourceName | undefined>(undefined);
 
-  public readonly reconciling = writable<boolean>(false);
+  readonly reconciling = writable<boolean>(false);
 
   /**
    * Last time the state of the resource `kind/name` was updated.
    * This is updated in watch-resources and is used there to avoid unnecessary calls to GetResource API.
    */
-  public lastStateUpdatedOn: string | undefined;
+  lastStateUpdatedOn: string | undefined;
 
-  public deleted = false;
+  deleted = false;
 
-  public localContent: Writable<string | null> = writable(null);
-  public remoteContent: Writable<string | null> = writable(null);
-  public hasUnsavedChanges = derived(this.localContent, (localContent) => {
+  readonly localContent: Writable<string | null> = writable(null);
+  readonly remoteContent: Writable<string | null> = writable(null);
+  hasUnsavedChanges = derived(this.localContent, (localContent) => {
     return localContent !== null;
   });
-  public fileExtension: string;
-  public fileQuery: Readable<QueryObserverResult<V1GetFileResponse, HTTPError>>;
-  public ready: Promise<boolean>;
+  readonly fileExtension: string;
+  readonly fileQuery: Readable<
+    QueryObserverResult<V1GetFileResponse, HTTPError>
+  >;
+  readonly ready: Promise<boolean>;
+
   private remoteCallbacks = new Set<(content: string) => void>();
   private localCallbacks = new Set<(content: string | null) => void>();
 
@@ -92,7 +95,7 @@ export class FileArtifact {
           });
   }
 
-  public updateRemoteContent = (content: string, alert = true) => {
+  updateRemoteContent = (content: string, alert = true) => {
     this.remoteContent.set(content);
     if (alert) {
       for (const callback of this.remoteCallbacks) {
@@ -101,7 +104,7 @@ export class FileArtifact {
     }
   };
 
-  public updateLocalContent = (content: string | null, alert = false) => {
+  updateLocalContent = (content: string | null, alert = false) => {
     this.localContent.set(content);
     if (alert) {
       for (const callback of this.localCallbacks) {
@@ -110,23 +113,21 @@ export class FileArtifact {
     }
   };
 
-  public onRemoteContentChange = (callback: (content: string) => void) => {
+  onRemoteContentChange = (callback: (content: string) => void) => {
     this.remoteCallbacks.add(callback);
     return () => this.remoteCallbacks.delete(callback);
   };
 
-  public onLocalContentChange = (
-    callback: (content: string | null) => void,
-  ) => {
+  onLocalContentChange = (callback: (content: string | null) => void) => {
     this.localCallbacks.add(callback);
     return () => this.localCallbacks.delete(callback);
   };
 
-  public revert = () => {
+  revert = () => {
     this.updateLocalContent(null, true);
   };
 
-  public saveLocalContent = async () => {
+  saveLocalContent = async () => {
     const local = get(this.localContent);
     if (local === null) return;
 
@@ -149,7 +150,7 @@ export class FileArtifact {
     this.localContent.set(null);
   };
 
-  public updateAll(resource: V1Resource) {
+  updateAll(resource: V1Resource) {
     this.updateNameIfChanged(resource);
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
     this.reconciling.set(
@@ -159,7 +160,7 @@ export class FileArtifact {
     this.deleted = false;
   }
 
-  public updateReconciling(resource: V1Resource) {
+  updateReconciling(resource: V1Resource) {
     this.updateNameIfChanged(resource);
     this.reconciling.set(
       resource.meta?.reconcileStatus ===
@@ -167,16 +168,16 @@ export class FileArtifact {
     );
   }
 
-  public updateLastUpdated(resource: V1Resource) {
+  updateLastUpdated(resource: V1Resource) {
     this.updateNameIfChanged(resource);
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
-  public softDeleteResource() {
+  softDeleteResource() {
     this.reconciling.set(false);
   }
 
-  public getResource(queryClient: QueryClient, instanceId: string) {
+  getResource(queryClient: QueryClient, instanceId: string) {
     return derived(this.name, (name, set) =>
       useResource(
         instanceId,
@@ -188,7 +189,7 @@ export class FileArtifact {
     ) as ReturnType<typeof useResource<V1Resource>>;
   }
 
-  public getAllErrors = (
+  getAllErrors = (
     queryClient: QueryClient,
     instanceId: string,
   ): Readable<V1ParseError[]> => {
@@ -229,14 +230,14 @@ export class FileArtifact {
     return store;
   };
 
-  public getHasErrors(queryClient: QueryClient, instanceId: string) {
+  getHasErrors(queryClient: QueryClient, instanceId: string) {
     return derived(
       this.getAllErrors(queryClient, instanceId),
       (errors) => errors.length > 0,
     );
   }
 
-  public getEntityName() {
+  getEntityName() {
     return get(this.name)?.name ?? extractFileName(this.path);
   }
 
