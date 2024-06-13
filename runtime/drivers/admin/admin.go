@@ -294,9 +294,8 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 			if err != nil {
 				if os.IsNotExist(err) {
 					continue
-				} else {
-					return nil, err
 				}
+				return nil, err
 			}
 
 			err := filepath.Walk(p, func(path string, info os.FileInfo, err error) error {

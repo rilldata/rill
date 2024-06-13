@@ -141,9 +141,8 @@ func (h *Handle) MakeDir(ctx context.Context, dirPath string) error {
 	return fmt.Errorf("make dir operation is unsupported")
 }
 
-func (h *Handle) SetCachedPaths(paths []string) error {
+func (h *Handle) SetCachedPaths(paths []string) {
 	h.cachedPaths = paths
-	return nil
 }
 
 func (h *Handle) GetCachedPaths() []string {

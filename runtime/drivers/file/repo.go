@@ -145,9 +145,8 @@ func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
 	return nil
 }
 
-func (c *connection) SetCachedPaths(paths []string) error {
+func (c *connection) SetCachedPaths(paths []string) {
 	c.cachedPaths = paths
-	return nil
 }
 
 func (c *connection) GetCachedPaths() []string {
@@ -187,9 +186,8 @@ func (c *connection) Sync(ctx context.Context) error {
 		if err != nil {
 			if os.IsNotExist(err) {
 				continue
-			} else {
-				return err
 			}
+			return err
 		}
 		err = filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
