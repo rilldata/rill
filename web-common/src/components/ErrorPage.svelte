@@ -8,7 +8,7 @@
 
   export let statusCode: number | undefined = undefined;
   export let header: string;
-  export let body: string;
+  export let body: string = "";
 </script>
 
 <CtaLayoutContainer>
