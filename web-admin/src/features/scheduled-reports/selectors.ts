@@ -35,6 +35,8 @@ export function useReportDashboardName(instanceId: string, name: string) {
           return (
             queryArgsJson?.metrics_view_name ??
             queryArgsJson?.metricsViewName ??
+            queryArgsJson?.metrics_view ??
+            queryArgsJson?.metricsView ??
             null
           );
         },
