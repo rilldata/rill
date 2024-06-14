@@ -15,34 +15,34 @@
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
   import type { EditorView } from "@codemirror/view";
 
+  const pages = new Map([
+    [ResourceKind.Source, SourceModelPage],
+    [ResourceKind.Model, SourceModelPage],
+    [ResourceKind.MetricsView, DashboardPage],
+    [ResourceKind.Component, ChartPage],
+    [ResourceKind.Dashboard, CustomDashboardPage],
+    [undefined, null],
+  ]);
+
   export let data;
 
   let editor: EditorView;
 
   $: ({ filePath } = data);
-
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
   $: ({ autoSave, hasUnsavedChanges, fileName, name } = fileArtifact);
 
-  $: resourceKind = $name?.kind;
+  $: resourceKind = <ResourceKind | undefined>$name?.kind;
 
-  $: isSource = resourceKind === ResourceKind.Source;
-  $: isModel = resourceKind === ResourceKind.Model;
-  $: isDashboard = resourceKind === ResourceKind.MetricsView;
-  $: isChart = resourceKind === ResourceKind.Component;
-  $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
-  $: isOther =
-    !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
+  $: page = pages.get(resourceKind);
 
   onMount(() => {
     expandDirectory(filePath);
-
     // TODO: Focus on the code editor
   });
 
   afterNavigate(() => {
     expandDirectory(filePath);
-
     // TODO: Focus on the code editor
   });
 
@@ -58,35 +58,22 @@
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
-{#if isSource || isModel}
-  <SourceModelPage {data} />
-{:else if isDashboard}
-  <DashboardPage {data} />
-{:else if isChart}
-  {#key filePath}
-    <ChartPage {data} />
-  {/key}
-{:else if isCustomDashboard}
-  <CustomDashboardPage {data} />
-{:else if isOther}
+{#if page}
+  <svelte:component this={page} {data} />
+{:else}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader
+      slot="header"
       {filePath}
       hasUnsavedChanges={$hasUnsavedChanges}
-      slot="header"
     />
-    <div
-      slot="body"
-      class="editor-pane size-full overflow-hidden flex flex-col"
-    >
-      <WorkspaceEditorContainer>
-        <Editor
-          bind:editor
-          {fileArtifact}
-          extensions={getExtensionsForFile(filePath)}
-          bind:autoSave={$autoSave}
-        />
-      </WorkspaceEditorContainer>
-    </div>
+    <WorkspaceEditorContainer slot="body">
+      <Editor
+        {fileArtifact}
+        extensions={getExtensionsForFile(filePath)}
+        bind:editor
+        bind:autoSave={$autoSave}
+      />
+    </WorkspaceEditorContainer>
   </WorkspaceContainer>
 {/if}
