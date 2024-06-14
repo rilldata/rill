@@ -158,7 +158,7 @@
       {metricViewName}
     />
 
-    <MetricsInspector {filePath} slot="inspector" />
+    <MetricsInspector yaml={$remoteContent ?? ""} slot="inspector" />
   </WorkspaceContainer>
 {/if}
 

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import {
     getFileAPIPathFromNameAndType,
@@ -42,10 +41,9 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
-  import {
-    createRuntimeServiceGetFile,
-    type V1ModelV2,
-    type V1SourceV2,
+  import type {
+    V1ModelV2,
+    V1SourceV2,
   } from "@rilldata/web-common/runtime-client";
   import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
   import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
@@ -59,7 +57,6 @@
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
-  let fileNotFound = false;
   let type: "model" | "source";
 
   onMount(async () => {
@@ -85,20 +82,13 @@
 
   $: instanceId = $runtime.instanceId;
 
-  $: fileQuery = createRuntimeServiceGetFile(
-    instanceId,
-    { path: filePath },
-    {
-      query: {
-        onError: () => (fileNotFound = true),
-      },
-    },
-  );
-
-  let blob = "";
-  $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
-
-  $: ({ hasUnsavedChanges, autoSave, path: filePath, fileName } = fileArtifact);
+  $: ({
+    hasUnsavedChanges,
+    autoSave,
+    path: filePath,
+    fileName,
+    remoteContent,
+  } = fileArtifact);
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
@@ -212,114 +202,103 @@
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
-{#if fileNotFound}
-  <WorkspaceError message="File not found." />
-{:else}
-  <WorkspaceContainer>
-    <WorkspaceHeader
-      slot="header"
-      titleInput={fileName}
-      showTableToggle
-      hasUnsavedChanges={$hasUnsavedChanges}
-      on:change={handleNameChange}
-    >
-      <svelte:fragment slot="workspace-controls">
-        <p
-          class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
-          transition:fade={{ duration: 200 }}
-        >
-          {#if refreshedOn}
-            {verb} on {formatRefreshedOn(refreshedOn)}
-          {/if}
-        </p>
-      </svelte:fragment>
-
-      <svelte:fragment slot="cta" let:width>
-        {@const collapse = width < 800}
-
-        <div class="flex gap-x-2 items-center">
-          {#if type === "source"}
-            <SourceCTAs
-              hasUnsavedChanges={$hasUnsavedChanges}
-              {collapse}
-              hasErrors={$hasErrors}
-              {isLocalFileConnector}
-              on:save-source={fileArtifact.saveLocalContent}
-              on:refresh-source={refresh}
-              on:replace-source={replaceSource}
-              on:create-model={handleCreateModelFromSource}
-            />
-          {:else}
-            <ModelWorkspaceCtAs
-              {collapse}
-              modelHasError={$hasErrors}
-              modelName={assetName}
-            />
-          {/if}
-        </div>
-      </svelte:fragment>
-    </WorkspaceHeader>
-
-    <div
-      slot="body"
-      class="editor-pane size-full overflow-hidden flex flex-col"
-    >
-      <WorkspaceEditorContainer>
-        {#key assetName}
-          {#if type === "source"}
-            <SourceEditor {fileArtifact} {allErrors} onSave={save} />
-          {:else}
-            <ModelEditor
-              {fileArtifact}
-              bind:autoSave={$autoSave}
-              onSave={save}
-            />
-          {/if}
-        {/key}
-      </WorkspaceEditorContainer>
-
-      {#if $tableVisible}
-        <WorkspaceTableContainer fade={type === "source" && $hasUnsavedChanges}>
-          {#if type === "source" && allErrors[0]?.message}
-            <ErrorPane {filePath} errorMessage={allErrors[0].message} />
-          {:else if !allErrors.length}
-            <ConnectedPreviewTable
-              {connector}
-              table={tableName ?? ""}
-              loading={resourceIsReconciling}
-            />
-          {/if}
-          <svelte:fragment slot="error">
-            {#if type === "model"}
-              {#if allErrors.length > 0}
-                <div
-                  transition:slide={{ duration: 200 }}
-                  class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
-                >
-                  {#each allErrors as error (error.message)}
-                    <div>{error.message}</div>
-                  {/each}
-                </div>
-              {/if}
-            {/if}
-          </svelte:fragment>
-        </WorkspaceTableContainer>
-      {/if}
-    </div>
-
-    <svelte:fragment slot="inspector">
-      {#if tableName && resource}
-        <WorkspaceInspector
-          {tableName}
-          hasErrors={$hasErrors}
-          hasUnsavedChanges={$hasUnsavedChanges}
-          {...{
-            [type]: resource,
-          }}
-          isEmpty={!blob.length}
-          sourceIsReconciling={resourceIsReconciling}
-        />
-      {/if}
+<WorkspaceContainer>
+  <WorkspaceHeader
+    slot="header"
+    titleInput={fileName}
+    showTableToggle
+    hasUnsavedChanges={$hasUnsavedChanges}
+    on:change={handleNameChange}
+  >
+    <svelte:fragment slot="workspace-controls">
+      <p
+        class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
+        transition:fade={{ duration: 200 }}
+      >
+        {#if refreshedOn}
+          {verb} on {formatRefreshedOn(refreshedOn)}
+        {/if}
+      </p>
     </svelte:fragment>
-  </WorkspaceContainer>
-{/if}
+
+    <svelte:fragment slot="cta" let:width>
+      {@const collapse = width < 800}
+
+      <div class="flex gap-x-2 items-center">
+        {#if type === "source"}
+          <SourceCTAs
+            hasUnsavedChanges={$hasUnsavedChanges}
+            {collapse}
+            hasErrors={$hasErrors}
+            {isLocalFileConnector}
+            on:save-source={fileArtifact.saveLocalContent}
+            on:refresh-source={refresh}
+            on:replace-source={replaceSource}
+            on:create-model={handleCreateModelFromSource}
+          />
+        {:else}
+          <ModelWorkspaceCtAs
+            {collapse}
+            modelHasError={$hasErrors}
+            modelName={assetName}
+          />
+        {/if}
+      </div>
+    </svelte:fragment>
+  </WorkspaceHeader>
+
+  <div slot="body" class="editor-pane size-full overflow-hidden flex flex-col">
+    <WorkspaceEditorContainer>
+      {#key assetName}
+        {#if type === "source"}
+          <SourceEditor {fileArtifact} {allErrors} onSave={save} />
+        {:else}
+          <ModelEditor {fileArtifact} bind:autoSave={$autoSave} onSave={save} />
+        {/if}
+      {/key}
+    </WorkspaceEditorContainer>
+
+    {#if $tableVisible}
+      <WorkspaceTableContainer fade={type === "source" && $hasUnsavedChanges}>
+        {#if type === "source" && allErrors[0]?.message}
+          <ErrorPane {filePath} errorMessage={allErrors[0].message} />
+        {:else if !allErrors.length}
+          <ConnectedPreviewTable
+            {connector}
+            table={tableName ?? ""}
+            loading={resourceIsReconciling}
+          />
+        {/if}
+        <svelte:fragment slot="error">
+          {#if type === "model"}
+            {#if allErrors.length > 0}
+              <div
+                transition:slide={{ duration: 200 }}
+                class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
+              >
+                {#each allErrors as error (error.message)}
+                  <div>{error.message}</div>
+                {/each}
+              </div>
+            {/if}
+          {/if}
+        </svelte:fragment>
+      </WorkspaceTableContainer>
+    {/if}
+  </div>
+
+  <svelte:fragment slot="inspector">
+    {#if tableName && resource}
+      <WorkspaceInspector
+        {tableName}
+        hasErrors={$hasErrors}
+        hasUnsavedChanges={$hasUnsavedChanges}
+        {...{
+          [type]: resource,
+        }}
+        isEmpty={!$remoteContent?.length}
+        sourceIsReconciling={resourceIsReconciling}
+      />
+    {/if}
+  </svelte:fragment>
+</WorkspaceContainer>
