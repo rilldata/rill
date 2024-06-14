@@ -133,6 +133,7 @@
         <Input
           bind:value={$superform.newName}
           claimFocusOnMount
+          alwaysShowError
           errors={$errors.newName?.[0]}
           id={isDir ? "folder-name" : "file-name"}
           label={isDir ? "Folder name" : "File name"}
