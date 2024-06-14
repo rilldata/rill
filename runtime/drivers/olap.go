@@ -204,6 +204,10 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
 }
 
+func (d Dialect) EscapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}
+
 func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {
 	var str string
 	switch grain {

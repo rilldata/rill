@@ -2735,7 +2735,12 @@ definitions:
         title: Dashboard level access condition
       rowFilter:
         type: string
-        title: row level access condition
+        title: SQL expression to apply in a WHERE clause against the underlying table
+      queryFilter:
+        $ref: '#/definitions/v1Expression'
+        description: |-
+          Dimension filter to apply to queries against the metrics view.
+          Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
       include:
         type: array
         items:

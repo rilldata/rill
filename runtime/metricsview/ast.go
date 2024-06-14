@@ -485,10 +485,29 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 	}
 
 	if a.security != nil && a.security.RowFilter != "" {
-		if expr == "" {
-			expr = a.security.RowFilter
+		var secExpr string
+		var secArgs []any
+
+		if a.security.QueryFilter != nil {
+			e := NewExpressionFromProto(a.security.QueryFilter)
+			secExpr, secArgs, err = a.sqlForExpression(e, nil, false)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile the security policy's query filter: %w", err)
+			}
+		}
+
+		if secExpr == "" {
+			secExpr = a.security.RowFilter
 		} else {
-			expr = fmt.Sprintf("(%s) AND (%s)", a.security.RowFilter, expr)
+			secExpr = fmt.Sprintf("(%s) AND (%s)", secExpr, a.security.RowFilter)
+		}
+
+		if expr == "" {
+			expr = secExpr
+			args = secArgs
+		} else if secExpr != "" {
+			expr = fmt.Sprintf("(%s) AND (%s)", expr, secExpr)
+			args = append(args, secArgs...)
 		}
 	}
 

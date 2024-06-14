@@ -15,6 +15,7 @@ import (
 	"github.com/MicahParks/keyfunc"
 	"github.com/go-jose/go-jose/v3"
 	"github.com/golang-jwt/jwt/v4"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.uber.org/zap"
 )
 
@@ -112,6 +113,7 @@ type TokenOptions struct {
 	SystemPermissions   []Permission
 	InstancePermissions map[string][]Permission
 	Attributes          map[string]any
+	Security            *runtimev1.MetricsViewSpec_SecurityV2
 }
 
 // NewToken issues a new JWT based on the provided options.
@@ -129,6 +131,7 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 		System:    opts.SystemPermissions,
 		Instances: opts.InstancePermissions,
 		Attrs:     opts.Attributes,
+		Security:  opts.Security,
 	}
 
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(i.signingKey.Algorithm), claims)
