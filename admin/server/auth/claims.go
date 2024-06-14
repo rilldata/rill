@@ -29,6 +29,7 @@ type Claims interface {
 	OwnerType() OwnerType
 	OwnerID() string
 	AuthTokenID() string
+	AuthTokenModel() any
 	Superuser(ctx context.Context) bool
 	OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions
 	ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions
@@ -64,6 +65,10 @@ func (c anonClaims) OwnerID() string {
 
 func (c anonClaims) AuthTokenID() string {
 	return ""
+}
+
+func (c anonClaims) AuthTokenModel() any {
+	return nil
 }
 
 func (c anonClaims) Superuser(ctx context.Context) bool {
@@ -123,6 +128,10 @@ func (c *authTokenClaims) OwnerID() string {
 
 func (c *authTokenClaims) AuthTokenID() string {
 	return c.token.Token().ID.String()
+}
+
+func (c *authTokenClaims) AuthTokenModel() any {
+	return c.token.TokenModel()
 }
 
 func (c *authTokenClaims) Superuser(ctx context.Context) bool {
