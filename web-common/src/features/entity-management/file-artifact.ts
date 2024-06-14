@@ -15,15 +15,10 @@ import {
   type V1Resource,
   type V1ResourceName,
   getRuntimeServiceGetFileQueryKey,
-  V1GetFileResponse,
   runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import type {
-  QueryClient,
-  QueryFunction,
-  QueryObserverResult,
-} from "@tanstack/svelte-query";
+import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
 import {
   derived,
   get,
@@ -32,7 +27,6 @@ import {
   type Writable,
 } from "svelte/store";
 import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
-import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import { fileArtifacts } from "./file-artifacts";
 import {
   DIRECTORIES_WITHOUT_AUTOSAVE,
@@ -45,26 +39,12 @@ const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
   readonly path: string;
-
   readonly name = writable<V1ResourceName | undefined>(undefined);
-
-  readonly reconciling = writable<boolean>(false);
-
-  /**
-   * Last time the state of the resource `kind/name` was updated.
-   * This is updated in watch-resources and is used there to avoid unnecessary calls to GetResource API.
-   */
-  lastStateUpdatedOn: string | undefined;
-
-  deleted = false;
-
+  readonly reconciling = writable(false);
   readonly localContent: Writable<string | null> = writable(null);
   readonly remoteContent: Writable<string | null> = writable(null);
   readonly hasUnsavedChanges = writable(false);
   readonly fileExtension: string;
-  readonly fileQuery: Readable<
-    QueryObserverResult<V1GetFileResponse, HTTPError>
-  >;
   readonly ready: Promise<boolean>;
   readonly fileTypeUnsupported: boolean;
   readonly folderName: string;
@@ -74,6 +54,13 @@ export class FileArtifact {
 
   private remoteCallbacks = new Set<(content: string) => void>();
   private localCallbacks = new Set<(content: string | null) => void>();
+
+  // Last time the state of the resource `kind/name` was updated.
+  // This is updated in watch-resources and is used there to avoid
+  // unnecessary calls to GetResource API.
+  lastStateUpdatedOn: string | undefined;
+
+  deleted = false;
 
   constructor(filePath: string) {
     const [folderName, fileName] = splitFolderAndName(filePath);
