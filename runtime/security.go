@@ -189,6 +189,8 @@ func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment stri
 			}
 
 			resolved.Access = resolved.Access && access
+		} else {
+			resolved.Access = false
 		}
 
 		if policy.RowFilter != "" {
@@ -287,4 +289,49 @@ func mergeIncludeExcludes(resolved *ResolvedMetricsViewSecurity, include []strin
 		return
 	}
 
+	if len(resolved.Include) == 0 && len(include) == 0 {
+		resolved.Exclude = append(resolved.Exclude, exclude...)
+		return
+	}
+
+	// Build a new include list that is the intersection of resolved.Include and include, minus any fields in exclude.
+	var newInclude []string
+	for _, f := range include {
+		// Check it's also in resolved.Include
+		found := false
+		for _, f2 := range resolved.Include {
+			if f == f2 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			break
+		}
+
+		// Check it's not in resolved.Exclude
+		found = false
+		for _, f2 := range resolved.Exclude {
+			if f == f2 {
+				found = true
+				break
+			}
+		}
+		if found {
+			break
+		}
+
+		// Can add to newInclude
+		newInclude = append(newInclude, f)
+	}
+
+	// If newInclude is empty, exclude all fields
+	if len(newInclude) == 0 {
+		resolved.Include = nil
+		resolved.Exclude = nil
+		resolved.ExcludeAll = true
+	} else {
+		resolved.Include = newInclude
+		resolved.Exclude = nil
+	}
 }
