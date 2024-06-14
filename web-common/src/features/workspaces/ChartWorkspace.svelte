@@ -1,22 +1,16 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     ResourceKind,
     useResource,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import {
-    EntityStatus,
-    EntityType,
-  } from "@rilldata/web-common/features/entity-management/types";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
@@ -24,7 +18,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 
-  export let data: { fileArtifact?: FileArtifact } = {};
+  export let fileArtifact: FileArtifact;
 
   let containerWidth: number;
   let containerHeight: number;
@@ -33,9 +27,7 @@
 
   $: ({ instanceId } = $runtime);
 
-  $: fileArtifact = data.fileArtifact ?? getLegacyFileArtifact();
-
-  $: ({ hasUnsavedChanges, path: filePath, fileName } = fileArtifact);
+  $: ({ hasUnsavedChanges, path: filePath } = fileArtifact);
   $: chartName = getNameFromFile(filePath);
 
   $: editorWidth = editorPercentage * containerWidth;
@@ -55,17 +47,7 @@
   );
 
   $: ({ isFetching: chartDataFetching, data: chartData } = $chartDataQuery);
-
-  function getLegacyFileArtifact() {
-    const chartName = $page.params.name;
-    const filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
-    return fileArtifacts.getFileArtifact(filePath);
-  }
 </script>
-
-<svelte:head>
-  <title>Rill Developer | {fileName}</title>
-</svelte:head>
 
 <WorkspaceContainer
   inspector={false}

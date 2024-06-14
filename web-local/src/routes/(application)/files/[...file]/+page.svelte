@@ -3,24 +3,24 @@
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
   import { onMount } from "svelte";
-  import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
-  import ChartPage from "../../chart/[name]/+page.svelte";
-  import CustomDashboardPage from "../../custom-dashboards/[name]/+page.svelte";
-  import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
   import type { EditorView } from "@codemirror/view";
+  import SourceWorkspace from "@rilldata/web-common/features/workspaces/SourceWorkspace.svelte";
+  import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
+  import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
+  import ChartWorkspace from "@rilldata/web-common/features/workspaces/ChartWorkspace.svelte";
+  import CustomDashboardWorkspace from "@rilldata/web-common/features/workspaces/CustomDashboardWorkspace.svelte";
 
-  const pages = new Map([
-    [ResourceKind.Source, SourceModelPage],
-    [ResourceKind.Model, SourceModelPage],
-    [ResourceKind.MetricsView, DashboardPage],
-    [ResourceKind.Component, ChartPage],
-    [ResourceKind.Dashboard, CustomDashboardPage],
+  const workspaces = new Map([
+    [ResourceKind.Source, SourceWorkspace],
+    [ResourceKind.Model, ModelWorkspace],
+    [ResourceKind.MetricsView, MetricsWorkspace],
+    [ResourceKind.Component, ChartWorkspace],
+    [ResourceKind.Dashboard, CustomDashboardWorkspace],
     [undefined, null],
   ]);
 
@@ -28,13 +28,12 @@
 
   let editor: EditorView;
 
-  $: ({ filePath } = data);
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: ({ filePath, fileArtifact } = data);
   $: ({ autoSave, hasUnsavedChanges, fileName, name } = fileArtifact);
 
   $: resourceKind = <ResourceKind | undefined>$name?.kind;
 
-  $: page = pages.get(resourceKind);
+  $: workspace = workspaces.get(resourceKind);
 
   onMount(() => {
     expandDirectory(filePath);
@@ -58,8 +57,8 @@
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
-{#if page}
-  <svelte:component this={page} {data} />
+{#if workspace}
+  <svelte:component this={workspace} {fileArtifact} />
 {:else}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader

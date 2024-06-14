@@ -1,6 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
@@ -8,14 +7,10 @@
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
-  import {
-    getFileAPIPathFromNameAndType,
-    getNameFromFile,
-  } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -34,7 +29,7 @@
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import type { EditorView } from "@codemirror/view";
 
-  export let data: { fileArtifact?: FileArtifact } = {};
+  export let fileArtifact: FileArtifact;
 
   let customDashboardName: string;
   let selectedView = "split";
@@ -55,15 +50,7 @@
 
   $: customDashboardName = getNameFromFile(filePath);
 
-  $: fileArtifact = data.fileArtifact ?? getLegacyFileArtifact();
-
-  function getLegacyFileArtifact() {
-    const chartName = $page.params.name;
-    const filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
-    return fileArtifacts.getFileArtifact(filePath);
-  }
-
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   $: errorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: errors = $errorsQuery;
@@ -73,6 +60,10 @@
     autoSave,
     path: filePath,
     fileName,
+    updateLocalContent,
+    localContent,
+    remoteContent,
+    hasUnsavedChanges,
   } = fileArtifact);
 
   $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
@@ -104,9 +95,6 @@
     if (newRoute) await goto(newRoute);
   }
 
-  $: ({ updateLocalContent, localContent, remoteContent, hasUnsavedChanges } =
-    fileArtifact);
-
   async function handlePreviewUpdate(
     e: CustomEvent<{
       index: number;
@@ -115,9 +103,9 @@
     }>,
   ) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
-    const sequence = parsedDocument.get("items");
+    const items = parsedDocument.get("items") as any;
 
-    const node = sequence.get(e.detail.index);
+    const node = items.get(e.detail.index);
 
     node.set("width", e.detail.dimensions[0]);
     node.set("height", e.detail.dimensions[1]);
@@ -139,7 +127,7 @@
     };
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
-    const items = parsedDocument.get("items");
+    const items = parsedDocument.get("items") as any;
 
     if (!items) {
       parsedDocument.set("items", [newChart]);
@@ -155,7 +143,7 @@
   async function deleteChart(index: number) {
     const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
-    const items = parsedDocument.get("items");
+    const items = parsedDocument.get("items") as any;
 
     if (!items) return;
 
@@ -166,10 +154,6 @@
     if ($autoSave) await updateChartFile();
   }
 </script>
-
-<svelte:head>
-  <title>Rill Developer | {fileName}</title>
-</svelte:head>
 
 <svelte:window
   on:keydown={async (e) => {
