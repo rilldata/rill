@@ -533,6 +533,8 @@ export interface V1ProjectPermissions {
   manageReports?: boolean;
   createAlerts?: boolean;
   manageAlerts?: boolean;
+  createBookmarks?: boolean;
+  manageBookmarks?: boolean;
 }
 
 export type V1ProjectAnnotations = { [key: string]: string };

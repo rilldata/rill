@@ -1546,6 +1546,8 @@ message ProjectPermissions {
   bool manage_reports = 12;
   bool create_alerts = 13;
   bool manage_alerts = 14;
+  bool create_bookmarks = 17;
+  bool manage_bookmarks = 18;
 }
 
 message Member {

@@ -47,6 +47,8 @@ There are two roles available at the project-level: **Viewer** and **Admin**.
 | `manage_reports`           | Edit and change scheduled reports created by others        |        |     ✔ |
 | `create_alerts`            | Create and edit new alerts                                 |      ✔ |     ✔ |
 | `manage_alerts`            | Edit and change alerts created by others                   |        |     ✔ |
+| `create_bookmarks`         | Create and edit new bookmarks                              |      ✔ |     ✔ |
+| `manage_bookmarks`         | Edit and change bookmarks created by others                |        |     ✔ |
 <!--
 | `read_dev`                 | View dashboards deployed from non-production branches      |        |     ✔ |
 | `read_dev_status`          | View logs for non-production deployments                   |        |     ✔ |

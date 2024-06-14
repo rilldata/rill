@@ -638,6 +638,8 @@ type ProjectRole struct {
 	ManageReports         bool `db:"manage_reports"`
 	CreateAlerts          bool `db:"create_alerts"`
 	ManageAlerts          bool `db:"manage_alerts"`
+	CreateBookmarks       bool `db:"create_bookmarks"`
+	ManageBookmarks       bool `db:"manage_bookmarks"`
 }
 
 // Member is a convenience type used for display-friendly representation of an org or project member.

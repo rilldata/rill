@@ -22650,6 +22650,10 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	// no validation rules for ManageAlerts
 
+	// no validation rules for CreateBookmarks
+
+	// no validation rules for ManageBookmarks
+
 	if len(errors) > 0 {
 		return ProjectPermissionsMultiError(errors)
 	}

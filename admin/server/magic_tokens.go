@@ -20,6 +20,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const magicAuthTokenMetricsViewFilterMaxSize = 1024
+
 func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagicAuthTokenRequest) (*adminv1.IssueMagicAuthTokenResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
@@ -74,6 +76,11 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
+
+		if len(val) > magicAuthTokenMetricsViewFilterMaxSize {
+			return nil, status.Errorf(codes.InvalidArgument, "metrics view filter size exceeds limit (got %d bytes, but the limit is %d bytes)", len(val), magicAuthTokenMetricsViewFilterMaxSize)
+		}
+
 		opts.MetricsViewFilterJSON = string(val)
 	}
 

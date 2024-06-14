@@ -20,3 +20,9 @@ UPDATE project_roles SET create_magic_auth_tokens = manage_project_members;
 
 ALTER TABLE project_roles ADD manage_magic_auth_tokens BOOLEAN DEFAULT false NOT NULL;
 UPDATE project_roles SET manage_magic_auth_tokens = manage_project_members;
+
+ALTER TABLE project_roles ADD create_bookmarks BOOLEAN DEFAULT false NOT NULL;
+UPDATE project_roles SET create_bookmarks = read_project;
+
+ALTER TABLE project_roles ADD manage_bookmarks BOOLEAN DEFAULT false NOT NULL;
+UPDATE project_roles SET manage_bookmarks = manage_project;

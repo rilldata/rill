@@ -3155,6 +3155,10 @@ definitions:
         type: boolean
       manageAlerts:
         type: boolean
+      createBookmarks:
+        type: boolean
+      manageBookmarks:
+        type: boolean
   v1PullVirtualRepoResponse:
     type: object
     properties:
