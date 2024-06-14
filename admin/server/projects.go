@@ -163,7 +163,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			Access: fmt.Sprintf("'{{ .self.meta.name.name }}' = %s", drivers.DialectDuckDB.EscapeStringValue(mdl.MetricsView)),
 		}
 
-		if len(mdl.MetricsViewFilterJSON) > 0 {
+		if mdl.MetricsViewFilterJSON != "" {
 			expr := &runtimev1.Expression{}
 			err := protojson.Unmarshal([]byte(mdl.MetricsViewFilterJSON), expr)
 			if err != nil {

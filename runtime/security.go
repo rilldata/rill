@@ -271,7 +271,7 @@ func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment stri
 	return resolved, nil
 }
 
-func mergeIncludeExcludes(resolved *ResolvedMetricsViewSecurity, include []string, exclude []string, excludeAll bool) {
+func mergeIncludeExcludes(resolved *ResolvedMetricsViewSecurity, include, exclude []string, excludeAll bool) {
 	if resolved.ExcludeAll {
 		return
 	}
