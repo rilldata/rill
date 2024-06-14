@@ -26,6 +26,12 @@ export const load = async ({ params: { file } }) => {
       fileArtifact,
     };
   } catch (e) {
-    throw error(404, "File not found: " + path);
+    const statusCode = e.response.status;
+
+    if (statusCode === 404 || statusCode === 400) {
+      throw error(404, "File not found: " + path);
+    } else {
+      throw error(e.response.status, e.response.data.message);
+    }
   }
 };
