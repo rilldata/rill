@@ -5041,32 +5041,33 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   project = "";
 
   /**
-   * Dashboard the token will provide access to.
-   *
-   * @generated from field: string dashboard = 3;
-   */
-  dashboard = "";
-
-  /**
-   * Optional filter to apply to all queries to the dashboard.
-   *
-   * @generated from field: rill.runtime.v1.Expression filter = 4;
-   */
-  filter?: Expression;
-
-  /**
-   * Names of dimensions and measures to exclude from the dashboard.
-   *
-   * @generated from field: repeated string exclude_fields = 5;
-   */
-  excludeFields: string[] = [];
-
-  /**
    * TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
    *
-   * @generated from field: int64 ttl_minutes = 6;
+   * @generated from field: int64 ttl_minutes = 3;
    */
   ttlMinutes = protoInt64.zero;
+
+  /**
+   * Metrics view the token will provide access to.
+   *
+   * @generated from field: string metrics_view = 4;
+   */
+  metricsView = "";
+
+  /**
+   * Optional filter to apply to all queries to the metrics view.
+   *
+   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 5;
+   */
+  metricsViewFilter?: Expression;
+
+  /**
+   * Optional list of names of dimensions and measures to limit access to.
+   * If empty, all dimensions and measures are accessible.
+   *
+   * @generated from field: repeated string metrics_view_fields = 6;
+   */
+  metricsViewFields: string[] = [];
 
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
@@ -5078,10 +5079,10 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "filter", kind: "message", T: Expression },
-    { no: 5, name: "exclude_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 6, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 3, name: "ttl_minutes", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 4, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "metrics_view_filter", kind: "message", T: Expression },
+    { no: 6, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -8271,6 +8272,16 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
   manageProjectMembers = false;
 
   /**
+   * @generated from field: bool create_magic_auth_tokens = 15;
+   */
+  createMagicAuthTokens = false;
+
+  /**
+   * @generated from field: bool manage_magic_auth_tokens = 16;
+   */
+  manageMagicAuthTokens = false;
+
+  /**
    * @generated from field: bool create_reports = 11;
    */
   createReports = false;
@@ -8308,6 +8319,8 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
     { no: 8, name: "manage_dev", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 9, name: "read_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 10, name: "manage_project_members", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 15, name: "create_magic_auth_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 16, name: "manage_magic_auth_tokens", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 11, name: "create_reports", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 12, name: "manage_reports", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 13, name: "create_alerts", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
@@ -8667,19 +8680,34 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   expiresOn?: Timestamp;
 
   /**
-   * @generated from field: string dashboard = 5;
+   * @generated from field: google.protobuf.Timestamp used_on = 5;
    */
-  dashboard = "";
+  usedOn?: Timestamp;
 
   /**
-   * @generated from field: rill.runtime.v1.Expression filter = 6;
+   * @generated from field: string created_by_user_id = 6;
    */
-  filter?: Expression;
+  createdByUserId = "";
 
   /**
-   * @generated from field: repeated string exclude_fields = 7;
+   * @generated from field: google.protobuf.Struct attributes = 7;
    */
-  excludeFields: string[] = [];
+  attributes?: Struct;
+
+  /**
+   * @generated from field: string metrics_view = 8;
+   */
+  metricsView = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 9;
+   */
+  metricsViewFilter?: Expression;
+
+  /**
+   * @generated from field: repeated string metrics_view_fields = 10;
+   */
+  metricsViewFields: string[] = [];
 
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
@@ -8693,9 +8721,12 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 2, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "created_on", kind: "message", T: Timestamp },
     { no: 4, name: "expires_on", kind: "message", T: Timestamp },
-    { no: 5, name: "dashboard", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "filter", kind: "message", T: Expression },
-    { no: 7, name: "exclude_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 5, name: "used_on", kind: "message", T: Timestamp },
+    { no: 6, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "attributes", kind: "message", T: Struct },
+    { no: 8, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "metrics_view_filter", kind: "message", T: Expression },
+    { no: 10, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {

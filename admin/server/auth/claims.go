@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"go.uber.org/zap"
@@ -16,11 +17,11 @@ import (
 type OwnerType string
 
 const (
-	OwnerTypeAnon       OwnerType = "anon"
-	OwnerTypeUser       OwnerType = "user"
-	OwnerTypeService    OwnerType = "service"
-	OwnerTypeDeployment OwnerType = "deployment"
-	OwnerTypeMagicToken OwnerType = "magic_token"
+	OwnerTypeAnon           OwnerType = "anon"
+	OwnerTypeUser           OwnerType = "user"
+	OwnerTypeService        OwnerType = "service"
+	OwnerTypeDeployment     OwnerType = "deployment"
+	OwnerTypeMagicAuthToken OwnerType = "magic_auth_token" // nolint:gosec // It's not a credential
 )
 
 // Claims resolves permissions for a requester.
@@ -110,7 +111,7 @@ func (c *authTokenClaims) OwnerType() OwnerType {
 	case authtoken.TypeDeployment:
 		return OwnerTypeDeployment
 	case authtoken.TypeMagic:
-		return OwnerTypeMagicToken
+		return OwnerTypeMagicAuthToken
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
 	}
@@ -191,6 +192,13 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 		perm, err = c.admin.ProjectPermissionsForService(ctx, projectID, c.token.OwnerID(), orgPerms)
 	case authtoken.TypeDeployment:
 		perm, err = c.admin.ProjectPermissionsForDeployment(ctx, projectID, c.token.OwnerID(), orgPerms)
+	case authtoken.TypeMagic:
+		mdl, ok := c.token.TokenModel().(*database.MagicAuthToken)
+		if ok {
+			perm, err = c.admin.ProjectPermissionsForMagicAuthToken(ctx, projectID, mdl)
+		} else {
+			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
+		}
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}
@@ -221,6 +229,13 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 		perm, err = c.admin.OrganizationPermissionsForService(ctx, orgID, c.token.OwnerID())
 	case authtoken.TypeDeployment:
 		perm, err = c.admin.OrganizationPermissionsForDeployment(ctx, orgID, c.token.OwnerID())
+	case authtoken.TypeMagic:
+		mdl, ok := c.token.TokenModel().(*database.MagicAuthToken)
+		if ok {
+			perm, err = c.admin.OrganizationPermissionsForMagicAuthToken(ctx, orgID, mdl.ProjectID)
+		} else {
+			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
+		}
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}

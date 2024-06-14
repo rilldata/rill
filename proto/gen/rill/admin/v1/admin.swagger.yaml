@@ -1164,21 +1164,23 @@ paths:
           schema:
             type: object
             properties:
-              dashboard:
-                type: string
-                description: Dashboard the token will provide access to.
-              filter:
-                $ref: '#/definitions/v1Expression'
-                description: Optional filter to apply to all queries to the dashboard.
-              excludeFields:
-                type: array
-                items:
-                  type: string
-                description: Names of dimensions and measures to exclude from the dashboard.
               ttlMinutes:
                 type: string
                 format: int64
                 description: TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
+              metricsView:
+                type: string
+                description: Metrics view the token will provide access to.
+              metricsViewFilter:
+                $ref: '#/definitions/v1Expression'
+                description: Optional filter to apply to all queries to the metrics view.
+              metricsViewFields:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Optional list of names of dimensions and measures to limit access to.
+                  If empty, all dimensions and measures are accessible.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/users/search:
@@ -2956,11 +2958,18 @@ definitions:
       expiresOn:
         type: string
         format: date-time
-      dashboard:
+      usedOn:
         type: string
-      filter:
+        format: date-time
+      createdByUserId:
+        type: string
+      attributes:
+        type: object
+      metricsView:
+        type: string
+      metricsViewFilter:
         $ref: '#/definitions/v1Expression'
-      excludeFields:
+      metricsViewFields:
         type: array
         items:
           type: string
@@ -3133,6 +3142,10 @@ definitions:
       readProjectMembers:
         type: boolean
       manageProjectMembers:
+        type: boolean
+      createMagicAuthTokens:
+        type: boolean
+      manageMagicAuthTokens:
         type: boolean
       createReports:
         type: boolean

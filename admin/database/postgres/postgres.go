@@ -962,22 +962,29 @@ func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, rete
 	return parseErr("deployment auth token", err)
 }
 
-func (c *connection) FindMagicAuthTokens(ctx context.Context, projectID, afterID string, limit int) ([]*database.MagicAuthToken, error) {
-	var res []*database.MagicAuthToken
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM magic_auth_tokens t WHERE t.project_id=$1 AND t.id>$2 ORDER BY t.id", projectID, afterID)
-	if err != nil {
-		return nil, parseErr("magic auth tokens", err)
+func (c *connection) FindMagicAuthTokens(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*database.MagicAuthToken, error) {
+	var res []*magicAuthTokenDTO
+	if createdByUserID == nil {
+		err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM magic_auth_tokens t WHERE t.project_id=$1 AND t.id>$2 ORDER BY t.id", projectID, afterID)
+		if err != nil {
+			return nil, parseErr("magic auth tokens", err)
+		}
+	} else {
+		err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM magic_auth_tokens t WHERE t.project_id=$1 AND t.created_by_user_id=$2 AND t.id>$3 ORDER BY t.id", projectID, *createdByUserID, afterID)
+		if err != nil {
+			return nil, parseErr("magic auth tokens", err)
+		}
 	}
-	return res, nil
+	return magicAuthTokensFromDTOs(res)
 }
 
 func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*database.MagicAuthToken, error) {
-	res := &database.MagicAuthToken{}
+	res := &magicAuthTokenDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM magic_auth_tokens t WHERE t.id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res, nil
+	return res.AsMagicAuthToken()
 }
 
 func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
@@ -985,16 +992,16 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 		return nil, err
 	}
 
-	res := &database.MagicAuthToken{}
+	res := &magicAuthTokenDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, dashboard, filter_json, exclude_fields)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.Dashboard, opts.FilterJSON, opts.ExcludeFields,
+		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res, nil
+	return res.AsMagicAuthToken()
 }
 
 func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -1549,6 +1556,33 @@ func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
 	for i, dto := range dtos {
 		var err error
 		res[i], err = dto.AsProject()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+// magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
+type magicAuthTokenDTO struct {
+	*database.MagicAuthToken
+	Attributes pgtype.JSON `db:"attributes"`
+}
+
+func (m *magicAuthTokenDTO) AsMagicAuthToken() (*database.MagicAuthToken, error) {
+	err := m.Attributes.AssignTo(&m.MagicAuthToken.Attributes)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.MagicAuthToken, nil
+}
+
+func magicAuthTokensFromDTOs(dtos []*magicAuthTokenDTO) ([]*database.MagicAuthToken, error) {
+	res := make([]*database.MagicAuthToken, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsMagicAuthToken()
 		if err != nil {
 			return nil, err
 		}

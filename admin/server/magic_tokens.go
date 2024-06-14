@@ -6,14 +6,17 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -21,7 +24,7 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.organization", req.Organization),
 		attribute.String("args.project", req.Project),
-		attribute.String("args.dashboard", req.Dashboard),
+		attribute.String("args.metrics_view", req.MetricsView),
 	)
 
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -33,26 +36,48 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+	projPerms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !projPerms.CreateMagicAuthTokens {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to create a magic auth token")
 	}
 
-	var ttl *time.Duration
-	if req.TtlMinutes != 0 {
-		ttlVal := time.Duration(req.TtlMinutes) * time.Minute
-		ttl = &ttlVal
+	opts := &admin.IssueMagicAuthTokenOptions{
+		ProjectID:         proj.ID,
+		MetricsView:       req.MetricsView,
+		MetricsViewFields: req.MetricsViewFields,
 	}
 
-	var filterJSON string
-	if req.Filter != nil {
-		res, err := protojson.Marshal(req.Filter)
+	if req.TtlMinutes != 0 {
+		ttl := time.Duration(req.TtlMinutes) * time.Minute
+		opts.TTL = &ttl
+	}
+
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		opts.CreatedByUserID = claims.OwnerID()
+
+		// Generate JWT attributes based on the creating user's, but with limited project-level permissions.
+		// We store these attributes with the magic token, so it can simulate the creating user (even if the creating user is later deleted or their permissions change).
+		//
+		// NOTE: A problem with this approach is that if we change the built-in format of JWT attributes, these will remain as they were when captured.
+		attrs, err := s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, &adminv1.ProjectPermissions{
+			ReadProject:    true,
+			ReadProdStatus: true,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		opts.Attributes = attrs
+	}
+
+	if req.MetricsViewFilter != nil {
+		val, err := protojson.Marshal(req.MetricsViewFilter)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		filterJSON = string(res)
+		opts.MetricsViewFilterJSON = string(val)
 	}
 
-	token, err := s.admin.IssueMagicAuthToken(ctx, proj.ID, ttl, req.Dashboard, filterJSON, req.ExcludeFields)
+	token, err := s.admin.IssueMagicAuthToken(ctx, opts)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -83,23 +108,35 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+	projPerms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !projPerms.CreateMagicAuthTokens && !projPerms.ManageMagicAuthTokens {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to manage magic auth tokens")
 	}
 
-	tokens, err := s.admin.DB.FindMagicAuthTokens(ctx, proj.ID, token.Val, pageSize)
+	var createdByUserID *string
+	if !projPerms.ManageMagicAuthTokens {
+		id := claims.OwnerID()
+		createdByUserID = &id
+	}
+
+	tokens, err := s.admin.DB.FindMagicAuthTokens(ctx, proj.ID, createdByUserID, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
 
-	nextToken := ""
+	nextPageToken := ""
 	if len(tokens) >= pageSize {
-		nextToken = marshalPageToken(tokens[len(tokens)-1].ID)
+		nextPageToken = marshalPageToken(tokens[len(tokens)-1].ID)
+	}
+
+	pbs, err := magicAuthTokensToPB(tokens)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	return &adminv1.ListMagicAuthTokensResponse{
-		Tokens:        magicAuthTokensToPB(tokens),
-		NextPageToken: nextToken,
+		Tokens:        pbs,
+		NextPageToken: nextPageToken,
 	}, nil
 }
 
@@ -119,8 +156,12 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to manage magic auth tokens")
+	projPerms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !projPerms.ManageMagicAuthTokens {
+		// If they don't have manage permissions, they can only revoke tokens they created themselves.
+		if !projPerms.CreateMagicAuthTokens || claims.OwnerID() != tkn.CreatedByUserID {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to revoke this magic auth token")
+		}
 	}
 
 	err = s.admin.DB.DeleteMagicAuthToken(ctx, tkn.ID)
@@ -131,21 +172,42 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 	return &adminv1.RevokeMagicAuthTokenResponse{}, nil
 }
 
-func magicAuthTokenToPB(tkn *database.MagicAuthToken) *adminv1.MagicAuthToken {
-	return &adminv1.MagicAuthToken{
-		Id: tkn.ID,
-
-		// TODO:
-
-		CreatedOn: timestamppb.New(tkn.CreatedOn),
-		ExpiresOn: timestamppb.New(safeTime(tkn.ExpiresOn)),
-	}
-}
-
-func magicAuthTokensToPB(tkns []*database.MagicAuthToken) []*adminv1.MagicAuthToken {
+func magicAuthTokensToPB(tkns []*database.MagicAuthToken) ([]*adminv1.MagicAuthToken, error) {
 	var pbs []*adminv1.MagicAuthToken
 	for _, tkn := range tkns {
-		pbs = append(pbs, magicAuthTokenToPB(tkn))
+		pb, err := magicAuthTokenToPB(tkn)
+		if err != nil {
+			return nil, err
+		}
+		pbs = append(pbs, pb)
 	}
-	return pbs
+	return pbs, nil
+}
+
+func magicAuthTokenToPB(tkn *database.MagicAuthToken) (*adminv1.MagicAuthToken, error) {
+	attrs, err := structpb.NewStruct(tkn.Attributes)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert attributes to structpb: %w", err)
+	}
+
+	var metricsViewFilter *runtimev1.Expression
+	if tkn.MetricsViewFilterJSON != "" {
+		err := protojson.Unmarshal([]byte(tkn.MetricsViewFilterJSON), metricsViewFilter)
+		if err != nil {
+			return nil, fmt.Errorf("failed to unmarshal metrics view filter: %w", err)
+		}
+	}
+
+	return &adminv1.MagicAuthToken{
+		Id:                tkn.ID,
+		ProjectId:         tkn.ProjectID,
+		CreatedOn:         timestamppb.New(tkn.CreatedOn),
+		ExpiresOn:         timestamppb.New(safeTime(tkn.ExpiresOn)),
+		UsedOn:            timestamppb.New(tkn.UsedOn),
+		CreatedByUserId:   tkn.CreatedByUserID,
+		Attributes:        attrs,
+		MetricsView:       tkn.MetricsView,
+		MetricsViewFilter: metricsViewFilter,
+		MetricsViewFields: tkn.MetricsViewFields,
+	}, nil
 }

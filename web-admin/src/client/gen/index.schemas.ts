@@ -119,13 +119,14 @@ export type AdminServiceSearchProjectUsersParams = {
 };
 
 export type AdminServiceIssueMagicAuthTokenBody = {
-  /** Dashboard the token will provide access to. */
-  dashboard?: string;
-  filter?: V1Expression;
-  /** Names of dimensions and measures to exclude from the dashboard. */
-  excludeFields?: string[];
   /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
   ttlMinutes?: string;
+  /** Metrics view the token will provide access to. */
+  metricsView?: string;
+  metricsViewFilter?: V1Expression;
+  /** Optional list of names of dimensions and measures to limit access to.
+If empty, all dimensions and measures are accessible. */
+  metricsViewFields?: string[];
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
@@ -526,6 +527,8 @@ export interface V1ProjectPermissions {
   manageDev?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+  createMagicAuthTokens?: boolean;
+  manageMagicAuthTokens?: boolean;
   createReports?: boolean;
   manageReports?: boolean;
   createAlerts?: boolean;
@@ -618,14 +621,19 @@ export interface V1Member {
   updatedOn?: string;
 }
 
+export type V1MagicAuthTokenAttributes = { [key: string]: any };
+
 export interface V1MagicAuthToken {
   id?: string;
   projectId?: string;
   createdOn?: string;
   expiresOn?: string;
-  dashboard?: string;
-  filter?: V1Expression;
-  excludeFields?: string[];
+  usedOn?: string;
+  createdByUserId?: string;
+  attributes?: V1MagicAuthTokenAttributes;
+  metricsView?: string;
+  metricsViewFilter?: V1Expression;
+  metricsViewFields?: string[];
 }
 
 export interface V1ListWhitelistedDomainsResponse {

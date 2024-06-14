@@ -1134,14 +1134,15 @@ message IssueMagicAuthTokenRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   // Project to create the magic auth token in.
   string project = 2 [(validate.rules).string.min_len = 1];
-  // Dashboard the token will provide access to.
-  string dashboard = 3;
-  // Optional filter to apply to all queries to the dashboard.
-  rill.runtime.v1.Expression filter = 4;
-  // Names of dimensions and measures to exclude from the dashboard.
-  repeated string exclude_fields = 5;
   // TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
-  int64 ttl_minutes = 6;
+  int64 ttl_minutes = 3;
+  // Metrics view the token will provide access to.
+  string metrics_view = 4;
+  // Optional filter to apply to all queries to the metrics view.
+  rill.runtime.v1.Expression metrics_view_filter = 5;
+  // Optional list of names of dimensions and measures to limit access to.
+  // If empty, all dimensions and measures are accessible.
+  repeated string metrics_view_fields = 6;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1539,6 +1540,8 @@ message ProjectPermissions {
   bool manage_dev = 8;
   bool read_project_members = 9;
   bool manage_project_members = 10;
+  bool create_magic_auth_tokens = 15;
+  bool manage_magic_auth_tokens = 16;
   bool create_reports = 11;
   bool manage_reports = 12;
   bool create_alerts = 13;
@@ -1591,9 +1594,12 @@ message MagicAuthToken {
   string project_id = 2;
   google.protobuf.Timestamp created_on = 3;
   google.protobuf.Timestamp expires_on = 4;
-  string dashboard = 5;
-  rill.runtime.v1.Expression filter = 6;
-  repeated string exclude_fields = 7;
+  google.protobuf.Timestamp used_on = 5;
+  string created_by_user_id = 6;
+  google.protobuf.Struct attributes = 7;
+  string metrics_view = 8;
+  rill.runtime.v1.Expression metrics_view_filter = 9;
+  repeated string metrics_view_fields = 10;
 }
 
 message VirtualFile {

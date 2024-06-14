@@ -13,6 +13,7 @@ import (
 // AuthToken is the interface package admin uses to provide a consolidated view of a token string and its DB model.
 type AuthToken interface {
 	Token() *authtoken.Token
+	TokenModel() any
 	OwnerID() string
 }
 
@@ -24,6 +25,10 @@ type userAuthToken struct {
 
 func (t *userAuthToken) Token() *authtoken.Token {
 	return t.token
+}
+
+func (t *userAuthToken) TokenModel() any {
+	return t.model
 }
 
 func (t *userAuthToken) OwnerID() string {
@@ -70,6 +75,10 @@ func (t *serviceAuthToken) Token() *authtoken.Token {
 	return t.token
 }
 
+func (t *serviceAuthToken) TokenModel() any {
+	return t.model
+}
+
 func (t *serviceAuthToken) OwnerID() string {
 	return t.model.ServiceID
 }
@@ -105,6 +114,10 @@ type deploymentAuthToken struct {
 
 func (t *deploymentAuthToken) Token() *authtoken.Token {
 	return t.token
+}
+
+func (t *deploymentAuthToken) TokenModel() any {
+	return t.model
 }
 
 func (t *deploymentAuthToken) OwnerID() string {
@@ -144,28 +157,45 @@ func (t *magicAuthToken) Token() *authtoken.Token {
 	return t.token
 }
 
+func (t *magicAuthToken) TokenModel() any {
+	return t.model
+}
+
 func (t *magicAuthToken) OwnerID() string {
 	return t.model.ID
 }
 
+// IssueMagicAuthTokenOptions provides options for IssueMagicAuthToken.
+type IssueMagicAuthTokenOptions struct {
+	ProjectID             string
+	TTL                   *time.Duration
+	CreatedByUserID       string
+	Attributes            map[string]any
+	MetricsView           string
+	MetricsViewFilterJSON string
+	MetricsViewFields     []string
+}
+
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
-func (s *Service) IssueMagicAuthToken(ctx context.Context, projectID string, ttl *time.Duration, dashboard string, filterJSON string, excludeFields []string) (AuthToken, error) {
+func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthTokenOptions) (AuthToken, error) {
 	tkn := authtoken.NewRandom(authtoken.TypeDeployment)
 
 	var expiresOn *time.Time
-	if ttl != nil {
-		t := time.Now().Add(*ttl)
+	if opts.TTL != nil {
+		t := time.Now().Add(*opts.TTL)
 		expiresOn = &t
 	}
 
 	dat, err := s.DB.InsertMagicAuthToken(ctx, &database.InsertMagicAuthTokenOptions{
-		ID:            tkn.ID.String(),
-		SecretHash:    tkn.SecretHash(),
-		ProjectID:     projectID,
-		ExpiresOn:     expiresOn,
-		Dashboard:     dashboard,
-		FilterJSON:    filterJSON,
-		ExcludeFields: excludeFields,
+		ID:                    tkn.ID.String(),
+		SecretHash:            tkn.SecretHash(),
+		ProjectID:             opts.ProjectID,
+		ExpiresOn:             expiresOn,
+		CreatedByUserID:       opts.CreatedByUserID,
+		Attributes:            opts.Attributes,
+		MetricsView:           opts.MetricsView,
+		MetricsViewFilterJSON: opts.MetricsViewFilterJSON,
+		MetricsViewFields:     opts.MetricsViewFields,
 	})
 	if err != nil {
 		return nil, err
@@ -271,6 +301,8 @@ func (s *Service) RevokeAuthToken(ctx context.Context, token string) error {
 		return s.DB.DeleteServiceAuthToken(ctx, parsed.ID.String())
 	case authtoken.TypeDeployment:
 		return fmt.Errorf("deployment auth tokens cannot be revoked")
+	case authtoken.TypeMagic:
+		return s.DB.DeleteMagicAuthToken(ctx, parsed.ID.String())
 	default:
 		return fmt.Errorf("unknown auth token type %q", parsed.Type)
 	}

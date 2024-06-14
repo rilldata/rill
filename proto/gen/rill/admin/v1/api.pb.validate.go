@@ -14478,14 +14478,16 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	// no validation rules for Dashboard
+	// no validation rules for TtlMinutes
+
+	// no validation rules for MetricsView
 
 	if all {
-		switch v := interface{}(m.GetFilter()).(type) {
+		switch v := interface{}(m.GetMetricsViewFilter()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
-					field:  "Filter",
+					field:  "MetricsViewFilter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -14493,23 +14495,21 @@ func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
-					field:  "Filter",
+					field:  "MetricsViewFilter",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetMetricsViewFilter()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return IssueMagicAuthTokenRequestValidationError{
-				field:  "Filter",
+				field:  "MetricsViewFilter",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
 		}
 	}
-
-	// no validation rules for TtlMinutes
 
 	if len(errors) > 0 {
 		return IssueMagicAuthTokenRequestMultiError(errors)
@@ -22638,6 +22638,10 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	// no validation rules for ManageProjectMembers
 
+	// no validation rules for CreateMagicAuthTokens
+
+	// no validation rules for ManageMagicAuthTokens
+
 	// no validation rules for CreateReports
 
 	// no validation rules for ManageReports
@@ -23521,14 +23525,12 @@ func (m *MagicAuthToken) validate(all bool) error {
 		}
 	}
 
-	// no validation rules for Dashboard
-
 	if all {
-		switch v := interface{}(m.GetFilter()).(type) {
+		switch v := interface{}(m.GetUsedOn()).(type) {
 		case interface{ ValidateAll() error }:
 			if err := v.ValidateAll(); err != nil {
 				errors = append(errors, MagicAuthTokenValidationError{
-					field:  "Filter",
+					field:  "UsedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
@@ -23536,16 +23538,78 @@ func (m *MagicAuthToken) validate(all bool) error {
 		case interface{ Validate() error }:
 			if err := v.Validate(); err != nil {
 				errors = append(errors, MagicAuthTokenValidationError{
-					field:  "Filter",
+					field:  "UsedOn",
 					reason: "embedded message failed validation",
 					cause:  err,
 				})
 			}
 		}
-	} else if v, ok := interface{}(m.GetFilter()).(interface{ Validate() error }); ok {
+	} else if v, ok := interface{}(m.GetUsedOn()).(interface{ Validate() error }); ok {
 		if err := v.Validate(); err != nil {
 			return MagicAuthTokenValidationError{
-				field:  "Filter",
+				field:  "UsedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for CreatedByUserId
+
+	if all {
+		switch v := interface{}(m.GetAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MagicAuthTokenValidationError{
+				field:  "Attributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for MetricsView
+
+	if all {
+		switch v := interface{}(m.GetMetricsViewFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "MetricsViewFilter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "MetricsViewFilter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMetricsViewFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MagicAuthTokenValidationError{
+				field:  "MetricsViewFilter",
 				reason: "embedded message failed validation",
 				cause:  err,
 			}
