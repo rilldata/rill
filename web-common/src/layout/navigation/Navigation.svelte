@@ -67,7 +67,7 @@
     </div>
     <div class="scroll-container">
       <div class="nav-wrapper" bind:clientHeight={navWrapperHeight}>
-        <FileExplorer />
+        <FileExplorer hasUnsaved={unsavedFileCount > 0} />
         <div class="grow" />
         {#if navWrapperHeight}
           <ConnectorExplorer startingHeight={navWrapperHeight / 2} />

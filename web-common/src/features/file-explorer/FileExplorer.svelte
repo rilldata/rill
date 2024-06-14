@@ -24,6 +24,8 @@
   import { findDirectory, transformFileList } from "./transform-file-list";
   import { fileArtifacts } from "../entity-management/file-artifacts";
 
+  export let hasUnsaved: boolean;
+
   $: instanceId = $runtime.instanceId;
   $: getFileTree = createRuntimeServiceListFiles(instanceId, undefined, {
     query: {
@@ -150,7 +152,7 @@
 
 <svelte:window
   on:beforeunload={(event) => {
-    if (fileArtifacts.hasUnsaved()) {
+    if (hasUnsaved) {
       event.preventDefault();
       return confirm(
         "Are you sure you want to leave? Unsaved changes will be lost.",

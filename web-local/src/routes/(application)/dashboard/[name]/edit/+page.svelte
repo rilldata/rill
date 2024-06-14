@@ -119,7 +119,7 @@
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
-<svelte:window on:focus={fileArtifact.refetch} />
+<svelte:window on:focus={() => fileArtifact.fetchContent(true)} />
 
 {#if fileNotFound}
   <WorkspaceError message="File not found." />

@@ -7,7 +7,6 @@ test.describe("Metrics editor", () => {
   useDashboardFlowTestSetup();
 
   test("Metrics editor", async ({ page }) => {
-    test.slow();
     await updateCodeEditor(page, "");
 
     // the inspector should be empty.

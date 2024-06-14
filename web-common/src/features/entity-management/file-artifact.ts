@@ -60,8 +60,6 @@ export class FileArtifact {
   // unnecessary calls to GetResource API.
   lastStateUpdatedOn: string | undefined;
 
-  deleted = false;
-
   constructor(filePath: string) {
     const [folderName, fileName] = splitFolderAndName(filePath);
 
@@ -94,20 +92,14 @@ export class FileArtifact {
     }
   };
 
-  refetch = async () => {
-    await queryClient.invalidateQueries(
-      getRuntimeServiceGetFileQueryKey(get(runtime).instanceId, {
-        path: this.path,
-      }),
-    );
-  };
-
-  async initRemoteContent() {
+  async fetchContent(invalidate = false) {
     const instanceId = get(runtime).instanceId;
     const queryParams = {
       path: this.path,
     };
     const queryKey = getRuntimeServiceGetFileQueryKey(instanceId, queryParams);
+
+    if (invalidate) await queryClient.invalidateQueries(queryKey);
 
     const queryFn: QueryFunction<
       Awaited<ReturnType<typeof runtimeServiceGetFile>>
@@ -127,7 +119,7 @@ export class FileArtifact {
 
     if (newName) this.name.set(newName);
 
-    this.updateRemoteContent(blob, false);
+    this.updateRemoteContent(blob, true);
   }
 
   updateLocalContent = (content: string | null, alert = false) => {
@@ -205,7 +197,6 @@ export class FileArtifact {
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
-    this.deleted = false;
   }
 
   updateReconciling(resource: V1Resource) {

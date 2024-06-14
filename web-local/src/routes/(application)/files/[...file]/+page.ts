@@ -12,7 +12,7 @@ export const load = async ({ params: { file } }) => {
   }
 
   try {
-    await fileArtifact.initRemoteContent();
+    await fileArtifact.fetchContent();
 
     return {
       filePath: path,
