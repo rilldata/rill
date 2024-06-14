@@ -6,7 +6,7 @@ CREATE TABLE magic_auth_tokens (
     expires_on TIMESTAMPTZ,
     used_on TIMESTAMPTZ DEFAULT now() NOT NULL,
     created_by_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
-    attributes DEFAULT '{}'::JSONB NOT NULL,
+    attributes JSONB DEFAULT '{}'::JSONB NOT NULL,
     metrics_view TEXT NOT NULL,
     metrics_view_filter_json TEXT NOT NULL,
     metrics_view_fields TEXT[] NOT NULL
@@ -15,8 +15,8 @@ CREATE TABLE magic_auth_tokens (
 CREATE INDEX magic_auth_tokens_project_id_idx ON magic_auth_tokens (project_id);
 CREATE INDEX magic_auth_tokens_created_by_user_id_idx ON magic_auth_tokens (created_by_user_id) WHERE created_by_user_id IS NOT NULL;
 
-ALTER TABLE project_roles ADD create_magic_auth_tokens BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE project_roles ADD create_magic_auth_tokens BOOLEAN DEFAULT false NOT NULL;
 UPDATE project_roles SET create_magic_auth_tokens = manage_project_members;
 
-ALTER TABLE project_roles ADD manage_magic_auth_tokens BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE project_roles ADD manage_magic_auth_tokens BOOLEAN DEFAULT false NOT NULL;
 UPDATE project_roles SET manage_magic_auth_tokens = manage_project_members;
