@@ -14,7 +14,7 @@
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
   export let autoSave = true;
-  export let editor: EditorView | null = null;
+  export let editor: EditorView;
   export let forceLocalUpdates = false;
   export let forceDisableAutoSave = false;
   export let showSaveBar = true;

@@ -8,10 +8,12 @@
   import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/connectors/olap/selectors";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getNameFromFile,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
     ResourceKind,
     resourceIsLoading,
@@ -25,7 +27,6 @@
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
 
@@ -34,56 +35,26 @@
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
-  let filePath: string;
-  let fileArtifact: FileArtifact;
-  let metricViewName: string;
   let fileNotFound = false;
   let showDeployModal = false;
   let previewStatus: string[] = [];
 
-  onMount(() => {
-    if ($readOnly) {
-      fileNotFound = true;
-    }
-  });
+  $: fileArtifact = data?.fileArtifact ?? getLegacyFileArtifact();
 
-  $: if (data.fileArtifact) {
-    fileArtifact = data.fileArtifact;
-    filePath = fileArtifact.path;
-  } else {
-    fileArtifact = fileArtifacts.getFileArtifact(filePath);
-    metricViewName = $page.params.name;
-    filePath = getFileAPIPathFromNameAndType(
-      metricViewName,
-      EntityType.MetricsDefinition,
-    );
-  }
-  $: [, fileName] = splitFolderAndName(filePath);
+  $: metricViewName = getNameFromFile(filePath);
 
-  $: name = fileArtifact?.name;
-  $: metricViewName = $name?.name ?? "";
-
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
   $: initLocalUserPreferenceStore(metricViewName);
   $: isModelingSupportedQuery = canModel(instanceId);
   $: isModelingSupported = $isModelingSupportedQuery;
 
-  $: fileQuery = createRuntimeServiceGetFile(
-    instanceId,
-    { path: filePath },
-    {
-      query: {
-        onError: () => (fileNotFound = true),
-        // this will ensure that any changes done outside our app is pulled in.
-        refetchOnWindowFocus: true,
-        keepPreviousData: true,
-      },
-    },
-  );
-  let yaml = "";
-  $: yaml = $fileQuery.data?.blob ?? yaml;
-
-  $: ({ hasUnsavedChanges, autoSave } = fileArtifact);
+  $: ({
+    hasUnsavedChanges,
+    autoSave,
+    path: filePath,
+    remoteContent,
+    fileName,
+  } = fileArtifact);
 
   $: allErrorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: allErrors = $allErrorsQuery;
@@ -92,9 +63,12 @@
   $: isResourceLoading = resourceIsLoading(resourceData);
 
   $: previewDisabled =
-    !yaml.length || !!allErrors?.length || isResourceLoading || isFetching;
+    !$remoteContent?.length ||
+    !!allErrors?.length ||
+    isResourceLoading ||
+    isFetching;
 
-  $: if (!yaml?.length) {
+  $: if (!$remoteContent?.length) {
     previewStatus = [
       "Your metrics definition is empty. Get started by trying one of the options in the editor.",
     ];
@@ -105,6 +79,12 @@
     // preview is available
     previewStatus = ["Explore your metrics dashboard"];
   }
+
+  onMount(() => {
+    if ($readOnly) {
+      fileNotFound = true;
+    }
+  });
 
   beforeNavigate(() => {
     fileNotFound = false;
@@ -119,16 +99,27 @@
       instanceId,
       e.currentTarget,
       filePath,
-      metricViewName,
+      fileName,
       fileArtifacts.getNamesForKind(ResourceKind.MetricsView),
     );
     if (newRoute) await goto(newRoute);
+  }
+
+  function getLegacyFileArtifact() {
+    const metricViewName = $page.params.name;
+    const filePath = getFileAPIPathFromNameAndType(
+      metricViewName,
+      EntityType.MetricsDefinition,
+    );
+    return fileArtifacts.getFileArtifact(filePath);
   }
 </script>
 
 <svelte:head>
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
+
+<svelte:window on:focus={fileArtifact.refetch} />
 
 {#if fileNotFound}
   <WorkspaceError message="File not found." />
@@ -159,9 +150,9 @@
     </WorkspaceHeader>
 
     <MetricsEditor
+      slot="body"
       bind:autoSave={$autoSave}
       {fileArtifact}
-      slot="body"
       {filePath}
       {allErrors}
       {metricViewName}

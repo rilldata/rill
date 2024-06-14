@@ -3,7 +3,6 @@ import {
   extractFileExtension,
   splitFolderAndName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
-
 import {
   ResourceKind,
   useProjectParser,
@@ -108,6 +107,14 @@ export class FileArtifact {
     }
   };
 
+  refetch = async () => {
+    await queryClient.invalidateQueries(
+      getRuntimeServiceGetFileQueryKey(get(runtime).instanceId, {
+        path: this.path,
+      }),
+    );
+  };
+
   async initRemoteContent() {
     const instanceId = get(runtime).instanceId;
     const queryParams = {
@@ -122,6 +129,7 @@ export class FileArtifact {
     const { blob } = await queryClient.fetchQuery({
       queryKey,
       queryFn,
+      staleTime: Infinity,
     });
 
     if (blob === undefined) {
@@ -230,7 +238,7 @@ export class FileArtifact {
     this.reconciling.set(false);
   }
 
-  getResource(queryClient: QueryClient, instanceId: string) {
+  getResource = (queryClient: QueryClient, instanceId: string) => {
     return derived(this.name, (name, set) =>
       useResource(
         instanceId,
@@ -240,7 +248,7 @@ export class FileArtifact {
         queryClient,
       ).subscribe(set),
     ) as ReturnType<typeof useResource<V1Resource>>;
-  }
+  };
 
   getAllErrors = (
     queryClient: QueryClient,

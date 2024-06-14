@@ -7,8 +7,11 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import Editor from "../../editor/Editor.svelte";
+  import type { EditorView } from "@codemirror/view";
 
   export let filePath: string;
+
+  let editor: EditorView;
 
   $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
     path: filePath,
@@ -32,6 +35,7 @@
   <Editor
     {fileArtifact}
     extensions={[customYAMLwithJSONandSQL]}
+    bind:editor
     bind:autoSave={$autoSave}
   />
 </ChartsEditorContainer>

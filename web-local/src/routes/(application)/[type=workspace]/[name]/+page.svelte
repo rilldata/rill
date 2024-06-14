@@ -3,10 +3,12 @@
   import { page } from "$app/stores";
   import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getNameFromFile,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
     ResourceKind,
     resourceIsLoading,
@@ -53,38 +55,27 @@
   import { get } from "svelte/store";
   import { fade, slide } from "svelte/transition";
 
-  export let data: { fileArtifact?: FileArtifact } = {};
-
-  let filePath: string;
-  let assetName: string;
-  let type: "model" | "source";
-  let entity: EntityType;
-  let fileArtifact: FileArtifact;
-
-  $: if (data.fileArtifact) {
-    fileArtifact = data.fileArtifact;
-    filePath = fileArtifact.path;
-    assetName = fileArtifact.getEntityName();
-    type =
-      get(fileArtifact.name)?.kind === ResourceKind.Model ? "model" : "source";
-    entity = type === "model" ? EntityType.Model : EntityType.Table;
-  } else {
-    // needed for backwards compatibility for now
-    assetName = $page.params.name;
-    type = $page.params.type as "model" | "source";
-    entity = type === "model" ? EntityType.Model : EntityType.Table;
-    filePath = getFileAPIPathFromNameAndType(assetName, entity);
-    fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  }
-  $: [, fileName] = splitFolderAndName(filePath);
-
   const { readOnly } = featureFlags;
 
+  export let data: { fileArtifact?: FileArtifact } = {};
+
   let fileNotFound = false;
+  let type: "model" | "source";
 
   onMount(async () => {
     if ($readOnly) await goto("/");
   });
+
+  $: type = data.fileArtifact
+    ? get(fileArtifact.name)?.kind === ResourceKind.Model
+      ? "model"
+      : "source"
+    : ($page.params.type as "model" | "source");
+  $: entity = type === "model" ? EntityType.Model : EntityType.Table;
+
+  $: assetName = getNameFromFile(filePath);
+
+  $: fileArtifact = data?.fileArtifact ?? getLegacyFileArtifact();
 
   $: verb = type === "source" ? "Ingested" : "Computed";
 
@@ -107,7 +98,7 @@
   let blob = "";
   $: blob = ($fileQuery.isFetching ? blob : $fileQuery.data?.blob) ?? "";
 
-  $: ({ hasUnsavedChanges, autoSave } = fileArtifact);
+  $: ({ hasUnsavedChanges, autoSave, path: filePath, fileName } = fileArtifact);
 
   $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
   $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
@@ -162,7 +153,7 @@
       instanceId,
       e.currentTarget,
       filePath,
-      assetName,
+      fileName,
       [
         ...fileArtifacts.getNamesForKind(ResourceKind.Source),
         ...fileArtifacts.getNamesForKind(ResourceKind.Model),
@@ -208,6 +199,12 @@
       hour: "numeric",
       minute: "numeric",
     });
+  }
+
+  function getLegacyFileArtifact() {
+    const assetName = $page.params.name;
+    const filePath = getFileAPIPathFromNameAndType(assetName, entity);
+    return fileArtifacts.getFileArtifact(filePath);
   }
 </script>
 

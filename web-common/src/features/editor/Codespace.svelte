@@ -26,7 +26,7 @@
   let saving = false;
   let unsubscribers: Array<() => void> = [];
 
-  $: ({
+  const {
     updateLocalContent,
     localContent,
     saveLocalContent,
@@ -34,7 +34,7 @@
     revert,
     onRemoteContentChange,
     onLocalContentChange,
-  } = fileArtifact);
+  } = fileArtifact;
 
   onMount(() => {
     // Check if the file artifact has a local content

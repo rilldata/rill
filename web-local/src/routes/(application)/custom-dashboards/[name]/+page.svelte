@@ -8,10 +8,12 @@
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import {
+    getFileAPIPathFromNameAndType,
+    getNameFromFile,
+  } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -30,11 +32,10 @@
   import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
+  import type { EditorView } from "@codemirror/view";
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
-  let fileArtifact: FileArtifact;
-  let filePath: string;
   let customDashboardName: string;
   let selectedView = "split";
   let showGrid = true;
@@ -42,6 +43,7 @@
   let containerWidth: number;
   let containerHeight: number;
   let editorPercentage = 0.5;
+  let editor: EditorView;
   let selectedIndex: number | null = null;
   let chartEditorPercentage = 0.4;
   let selectedChartName: string | null = null;
@@ -51,28 +53,27 @@
     items: [],
   };
 
-  $: if (data.fileArtifact) {
-    fileArtifact = data.fileArtifact;
-    filePath = fileArtifact.path;
-  } else {
-    customDashboardName = $page.params.name;
-    filePath = getFileAPIPathFromNameAndType(
-      customDashboardName,
-      EntityType.Dashboard,
-    );
-    fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: customDashboardName = getNameFromFile(filePath);
+
+  $: fileArtifact = data.fileArtifact ?? getLegacyFileArtifact();
+
+  function getLegacyFileArtifact() {
+    const chartName = $page.params.name;
+    const filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
+    return fileArtifacts.getFileArtifact(filePath);
   }
-  $: name = fileArtifact?.name;
-  $: customDashboardName = $name?.name ?? "";
 
   $: instanceId = $runtime.instanceId;
 
   $: errorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: errors = $errorsQuery;
 
-  $: [, fileName] = splitFolderAndName(filePath);
-
-  $: ({ saveLocalContent: updateChartFile, autoSave } = fileArtifact);
+  $: ({
+    saveLocalContent: updateChartFile,
+    autoSave,
+    path: filePath,
+    fileName,
+  } = fileArtifact);
 
   $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
     ResourceKind.Component,
@@ -233,6 +234,7 @@
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
             <ChartsEditorContainer error={errors[0]}>
               <Editor
+                bind:editor
                 {fileArtifact}
                 extensions={FileExtensionToEditorExtension[".yaml"]}
                 autoSave

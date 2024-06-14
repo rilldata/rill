@@ -13,8 +13,11 @@
   import ChartPage from "../../chart/[name]/+page.svelte";
   import CustomDashboardPage from "../../custom-dashboards/[name]/+page.svelte";
   import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
+  import type { EditorView } from "@codemirror/view";
 
   export let data;
+
+  let editor: EditorView;
 
   $: ({ filePath } = data);
 
@@ -56,15 +59,15 @@
 </svelte:head>
 
 {#if isSource || isModel}
-  <SourceModelPage data={{ fileArtifact }} />
+  <SourceModelPage {data} />
 {:else if isDashboard}
-  <DashboardPage data={{ fileArtifact }} />
+  <DashboardPage {data} />
 {:else if isChart}
   {#key filePath}
-    <ChartPage data={{ fileArtifact }} />
+    <ChartPage {data} />
   {/key}
 {:else if isCustomDashboard}
-  <CustomDashboardPage data={{ fileArtifact }} />
+  <CustomDashboardPage {data} />
 {:else if isOther}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader
@@ -78,6 +81,7 @@
     >
       <WorkspaceEditorContainer>
         <Editor
+          bind:editor
           {fileArtifact}
           extensions={getExtensionsForFile(filePath)}
           bind:autoSave={$autoSave}

@@ -9,7 +9,6 @@
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import {
     ResourceKind,
     useResource,
@@ -21,11 +20,9 @@
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { WorkspaceContainer } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { CATALOG_ENTRY_NOT_FOUND } from "@rilldata/web-local/lib/errors/messages";
-  import { error } from "@sveltejs/kit";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 
   export let data: { fileArtifact?: FileArtifact } = {};
 
@@ -33,45 +30,14 @@
   let containerHeight: number;
   let editorPercentage = 0.55;
   let tablePercentage = 0.45;
-  let filePath: string;
-  let chartName: string;
-  let fileArtifact: FileArtifact;
-
-  if (data.fileArtifact) {
-    fileArtifact = data.fileArtifact;
-    filePath = data.fileArtifact.path;
-    chartName = data.fileArtifact.getEntityName();
-  } else {
-    // needed for backwards compatibility for now
-    chartName = $page.params.name;
-    filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
-    fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  }
-
-  $: ({ autoSave, hasUnsavedChanges } = fileArtifact);
-
-  $: fileQuery = createRuntimeServiceGetFile(
-    instanceId,
-    {
-      path: filePath,
-    },
-    {
-      query: {
-        onError: (err) => {
-          if (err.response?.data?.message.includes(CATALOG_ENTRY_NOT_FOUND)) {
-            throw error(404, "Dashboard not found");
-          }
-
-          throw error(err.response?.status || 500, err.message);
-        },
-        refetchOnWindowFocus: false,
-      },
-    },
-  );
 
   $: ({ instanceId } = $runtime);
 
-  $: yaml = $fileQuery.data?.blob || "";
+  $: fileArtifact = data.fileArtifact ?? getLegacyFileArtifact();
+
+  $: ({ hasUnsavedChanges, path: filePath, fileName } = fileArtifact);
+  $: chartName = getNameFromFile(filePath);
+
   $: editorWidth = editorPercentage * containerWidth;
   $: tableHeight = tablePercentage * containerHeight;
 
@@ -90,82 +56,86 @@
 
   $: ({ isFetching: chartDataFetching, data: chartData } = $chartDataQuery);
 
-  $: [, fileName] = splitFolderAndName(filePath);
+  function getLegacyFileArtifact() {
+    const chartName = $page.params.name;
+    const filePath = getFileAPIPathFromNameAndType(chartName, EntityType.Chart);
+    return fileArtifacts.getFileArtifact(filePath);
+  }
 </script>
 
 <svelte:head>
   <title>Rill Developer | {fileName}</title>
 </svelte:head>
 
-{#if $fileQuery.data && yaml !== undefined}
-  <WorkspaceContainer
-    inspector={false}
-    bind:width={containerWidth}
-    bind:height={containerHeight}
-  >
-    <ChartsHeader slot="header" {filePath} {hasUnsavedChanges} />
-    <div slot="body" class="flex size-full">
+<WorkspaceContainer
+  inspector={false}
+  bind:width={containerWidth}
+  bind:height={containerHeight}
+>
+  <ChartsHeader
+    slot="header"
+    {filePath}
+    hasUnsavedChanges={$hasUnsavedChanges}
+  />
+  <div slot="body" class="flex size-full">
+    <div
+      style:width="{editorPercentage * 100}%"
+      class="relative flex-none border-r"
+    >
+      <Resizer
+        direction="EW"
+        side="right"
+        dimension={editorWidth}
+        min={300}
+        max={0.65 * containerWidth}
+        onUpdate={(width) => (editorPercentage = width / containerWidth)}
+      />
+      <ChartsEditor {filePath} />
+    </div>
+    <div class="size-full flex-col flex overflow-hidden">
+      <ChartPromptStatusDisplay {chartName}>
+        <CustomDashboardEmbed
+          chartView
+          gap={8}
+          columns={10}
+          items={[{ width: 10, height: 10, x: 0, y: 0, component: chartName }]}
+        />
+      </ChartPromptStatusDisplay>
+
       <div
-        style:width="{editorPercentage * 100}%"
-        class="relative flex-none border-r"
+        class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
+        style:height="{tablePercentage * 100}%"
       >
         <Resizer
-          direction="EW"
-          side="right"
-          dimension={editorWidth}
-          min={300}
-          max={0.65 * containerWidth}
-          onUpdate={(width) => (editorPercentage = width / containerWidth)}
+          direction="NS"
+          dimension={tableHeight}
+          min={100}
+          max={0.65 * containerHeight}
+          onUpdate={(height) => (tablePercentage = height / containerHeight)}
         />
-        <ChartsEditor {filePath} bind:autoSave={$autoSave} />
-      </div>
-      <div class="size-full flex-col flex overflow-hidden">
-        <ChartPromptStatusDisplay {chartName}>
-          <CustomDashboardEmbed
-            chartView
-            gap={8}
-            columns={10}
-            items={[
-              { width: 10, height: 10, x: 0, y: 0, component: chartName },
-            ]}
-          />
-        </ChartPromptStatusDisplay>
 
-        <div
-          class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
-          style:height="{tablePercentage * 100}%"
-        >
-          <Resizer
-            direction="NS"
-            dimension={tableHeight}
-            min={100}
-            max={0.65 * containerHeight}
-            onUpdate={(height) => (tablePercentage = height / containerHeight)}
+        {#if chartDataFetching}
+          <div
+            class="flex flex-col gap-y-2 size-full justify-center items-center"
+          >
+            <Spinner size="2em" status={EntityStatus.Running} />
+            <div>Loading chart data</div>
+          </div>
+        {:else if chartData}
+          <PreviewTable
+            rows={chartData}
+            name={chartName}
+            columnNames={Object.keys(chartData[0]).map((key) => ({
+              type: "VARCHAR",
+              name: key,
+            }))}
           />
-
-          {#if chartDataFetching}
-            <div
-              class="flex flex-col gap-y-2 size-full justify-center items-center"
-            >
-              <Spinner size="2em" status={EntityStatus.Running} />
-              <div>Loading chart data</div>
-            </div>
-          {:else if chartData}
-            <PreviewTable
-              rows={chartData}
-              name={chartName}
-              columnNames={Object.keys(chartData[0]).map((key) => ({
-                type: "VARCHAR",
-                name: key,
-              }))}
-            />
-          {:else}
-            <p class="text-lg size-full grid place-content-center">
-              Update YAML to view chart data
-            </p>
-          {/if}
-        </div>
+        {:else}
+          <p class="text-lg size-full grid place-content-center">
+            Update YAML to view chart data
+          </p>
+        {/if}
       </div>
     </div>
-  </WorkspaceContainer>
-{/if}
+  </div>
+</WorkspaceContainer>
