@@ -122,7 +122,7 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 
 	res := &database.Organization{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
 		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
