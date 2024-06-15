@@ -36,6 +36,7 @@ export function useProjectRuntime(orgName: string, projName: string) {
   return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
       queryKey: getProjectRuntimeQueryKey(orgName, projName),
+      cacheTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
       refetchInterval: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2, // Proactively refetch the JWT before it expires
       refetchOnMount: true,
       refetchOnReconnect: true,
