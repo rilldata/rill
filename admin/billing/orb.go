@@ -39,8 +39,15 @@ func (o *Orb) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 		if strings.EqualFold(p.RillID, DefaultPlanID) {
 			return p, nil
 		}
-		if strings.EqualFold(p.Metadata["default"], "true") {
-			return p, nil
+
+		if v, ok := p.Metadata["default"]; ok {
+			def, err := strconv.ParseBool(v)
+			if err != nil {
+				return nil, err
+			}
+			if def {
+				return p, nil
+			}
 		}
 	}
 	return nil, ErrNotFound
@@ -57,8 +64,14 @@ func (o *Orb) GetPublicPlans(ctx context.Context) ([]*Plan, error) {
 	}
 	var publicPlans []*Plan
 	for _, p := range all {
-		if v, ok := p.Metadata["public"]; ok && strings.EqualFold(v, "true") {
-			publicPlans = append(publicPlans, p)
+		if v, ok := p.Metadata["public"]; ok {
+			public, err := strconv.ParseBool(v)
+			if err != nil {
+				return nil, err
+			}
+			if public {
+				publicPlans = append(publicPlans, p)
+			}
 		}
 	}
 	return publicPlans, nil
@@ -145,6 +158,36 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	return subscriptions, nil
 }
 
+func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
+	var changeParams orb.SubscriptionSchedulePlanChangeParams
+	switch changeOption {
+	case SubscriptionChangeOptionEndOfSubscriptionTerm:
+		changeParams = orb.SubscriptionSchedulePlanChangeParams{
+			ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionEndOfSubscriptionTerm),
+		}
+	case SubscriptionChangeOptionImmediate:
+		changeParams = orb.SubscriptionSchedulePlanChangeParams{
+			ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate),
+		}
+	}
+
+	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, changeParams)
+	if err != nil {
+		return nil, err
+	}
+	return &Subscription{
+		ID:                           s.ID,
+		CustomerID:                   s.Customer.ExternalCustomerID,
+		Plan:                         plan,
+		StartDate:                    s.StartDate,
+		EndDate:                      s.EndDate,
+		CurrentBillingCycleStartDate: s.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   s.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 s.TrialInfo.EndDate,
+		Metadata:                     s.Metadata,
+	}, nil
+}
+
 func (o *Orb) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error {
 	var cancelParams orb.SubscriptionCancelParams
 	switch cancelOption {
@@ -198,7 +241,7 @@ func (o *Orb) ReportUsage(ctx context.Context, customerID string, usage []*Usage
 
 	var orbUsage []orb.EventIngestParamsEvent
 	for _, u := range usage {
-		eventName := u.MetricName + "_" + string(u.ReportingGran)
+		eventName := u.MetricName + "_" + string(u.ReportingGrain)
 		// use end time minus 1 second to make sure the event is attributed to the current time bucket
 		eventTime := u.EndTime.Add(-1 * time.Second)
 		// generate idempotency key using customer id, timestamp, event name and metadata
@@ -262,13 +305,13 @@ func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
 func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 	// Convert orb.Plan to billing.Plan
 	q := &Quotas{}
-	v, ok := p.Metadata["managed_data_bytes"]
+	v, ok := p.Metadata["storage_limit_bytes_per_deployment"]
 	if ok {
 		m, err := strconv.ParseInt(v, 10, 64)
 		if err != nil {
 			return nil, err
 		}
-		q.ManagedDataBytes = &m
+		q.StorageLimitBytesPerDeployment = &m
 	}
 
 	v, ok = p.Metadata["num_projects"]
@@ -278,15 +321,6 @@ func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 			return nil, err
 		}
 		q.NumProjects = &m
-	}
-
-	v, ok = p.Metadata["num_users"]
-	if ok {
-		m, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, err
-		}
-		q.NumUsers = &m
 	}
 
 	v, ok = p.Metadata["num_deployments"]

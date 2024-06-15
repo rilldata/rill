@@ -186,16 +186,15 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 
 	nameChanged := req.NewName != nil && *req.NewName != org.Name
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                    valOrDefault(req.NewName, org.Name),
-		Description:             valOrDefault(req.Description, org.Description),
-		QuotaProjects:           org.QuotaProjects,
-		QuotaDeployments:        org.QuotaDeployments,
-		QuotaSlotsTotal:         org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
-		QuotaNumUsers:           org.QuotaNumUsers,
-		QuotaManagedDataBytes:   org.QuotaManagedDataBytes,
-		BillingCustomerID:       org.BillingCustomerID,
+		Name:                                valOrDefault(req.NewName, org.Name),
+		Description:                         valOrDefault(req.Description, org.Description),
+		QuotaProjects:                       org.QuotaProjects,
+		QuotaDeployments:                    org.QuotaDeployments,
+		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		BillingCustomerID:                   org.BillingCustomerID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -251,6 +250,12 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 		org.BillingCustomerID = customerID
+
+		// create new subscription
+		_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
 	} else {
 		subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 		if err != nil {
@@ -264,24 +269,39 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 				}
 			}
 
-			if req.SubscriptionChangeEffective != nil && *req.SubscriptionChangeEffective == adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE {
-				return nil, status.Error(codes.InvalidArgument, "plan changes can only be effective immediately")
-			}
-
-			// cancel current subscriptions
-			cancelOption := billing.SubscriptionCancellationOptionImmediate
+			changeOption := billing.SubscriptionChangeOptionImmediate
 			if req.SubscriptionChangeEffective != nil {
 				switch *req.SubscriptionChangeEffective {
 				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW:
-					cancelOption = billing.SubscriptionCancellationOptionImmediate
+					changeOption = billing.SubscriptionChangeOptionImmediate
 				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
-					cancelOption = billing.SubscriptionCancellationOptionEndOfSubscriptionTerm
+					changeOption = billing.SubscriptionChangeOptionEndOfSubscriptionTerm
 				default:
 					return nil, status.Error(codes.InvalidArgument, "invalid subscription change effective")
 				}
 			}
-			for _, sub := range subs {
-				err = s.admin.Biller.CancelSubscription(ctx, sub.ID, cancelOption)
+
+			if len(subs) == 1 {
+				// schedule plan change
+				_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, changeOption)
+				if err != nil {
+					return nil, status.Error(codes.Internal, err.Error())
+				}
+			} else {
+				// multiple subscriptions, cancel them first immediately and assign new plan
+				if req.SubscriptionChangeEffective != nil && *req.SubscriptionChangeEffective != adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW {
+					return nil, status.Error(codes.InvalidArgument, "cannot change effective date for multiple subscriptions")
+				}
+
+				for _, sub := range subs {
+					err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
+					if err != nil {
+						return nil, status.Error(codes.Internal, err.Error())
+					}
+				}
+
+				// create new subscription
+				_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
 				}
@@ -289,23 +309,16 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 		}
 	}
 
-	// create new subscription
-	_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-		Name:                    org.Name,
-		Description:             org.Description,
-		QuotaProjects:           org.QuotaProjects,
-		QuotaDeployments:        org.QuotaDeployments,
-		QuotaSlotsTotal:         org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
-		QuotaNumUsers:           org.QuotaNumUsers,
-		QuotaManagedDataBytes:   org.QuotaManagedDataBytes,
-		BillingCustomerID:       org.BillingCustomerID,
+		Name:                                org.Name,
+		Description:                         org.Description,
+		QuotaProjects:                       org.QuotaProjects,
+		QuotaDeployments:                    org.QuotaDeployments,
+		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		BillingCustomerID:                   org.BillingCustomerID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -985,15 +998,14 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	}
 
 	opts := &database.UpdateOrganizationOptions{
-		Name:                    req.OrgName,
-		Description:             org.Description,
-		QuotaProjects:           int(valOrDefault(req.Projects, uint32(org.QuotaProjects))),
-		QuotaDeployments:        int(valOrDefault(req.Deployments, uint32(org.QuotaDeployments))),
-		QuotaSlotsTotal:         int(valOrDefault(req.SlotsTotal, uint32(org.QuotaSlotsTotal))),
-		QuotaSlotsPerDeployment: int(valOrDefault(req.SlotsPerDeployment, uint32(org.QuotaSlotsPerDeployment))),
-		QuotaOutstandingInvites: int(valOrDefault(req.OutstandingInvites, uint32(org.QuotaOutstandingInvites))),
-		QuotaNumUsers:           int(valOrDefault(req.NumUsers, uint32(org.QuotaNumUsers))),
-		QuotaManagedDataBytes:   int64(valOrDefault(req.ManagedDataBytes, uint64(org.QuotaManagedDataBytes))),
+		Name:                                req.OrgName,
+		Description:                         org.Description,
+		QuotaProjects:                       int(valOrDefault(req.Projects, uint32(org.QuotaProjects))),
+		QuotaDeployments:                    int(valOrDefault(req.Deployments, uint32(org.QuotaDeployments))),
+		QuotaSlotsTotal:                     int(valOrDefault(req.SlotsTotal, uint32(org.QuotaSlotsTotal))),
+		QuotaSlotsPerDeployment:             int(valOrDefault(req.SlotsPerDeployment, uint32(org.QuotaSlotsPerDeployment))),
+		QuotaOutstandingInvites:             int(valOrDefault(req.OutstandingInvites, uint32(org.QuotaOutstandingInvites))),
+		QuotaStorageLimitBytesPerDeployment: int64(valOrDefault(req.StorageLimitBytesPerDeployment, uint64(org.QuotaStorageLimitBytesPerDeployment))),
 	}
 
 	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -1026,16 +1038,15 @@ func (s *Server) SudoUpdateOrganizationBillingCustomer(ctx context.Context, req 
 	}
 
 	opts := &database.UpdateOrganizationOptions{
-		Name:                    req.OrgName,
-		Description:             org.Description,
-		QuotaProjects:           org.QuotaProjects,
-		QuotaDeployments:        org.QuotaDeployments,
-		QuotaSlotsTotal:         org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment: org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites: org.QuotaOutstandingInvites,
-		QuotaNumUsers:           org.QuotaNumUsers,
-		QuotaManagedDataBytes:   org.QuotaManagedDataBytes,
-		BillingCustomerID:       req.BillingCustomerId,
+		Name:                                req.OrgName,
+		Description:                         org.Description,
+		QuotaProjects:                       org.QuotaProjects,
+		QuotaDeployments:                    org.QuotaDeployments,
+		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
+		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		BillingCustomerID:                   req.BillingCustomerId,
 	}
 
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -1085,13 +1096,12 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 		Name:        o.Name,
 		Description: o.Description,
 		Quotas: &adminv1.OrganizationQuotas{
-			Projects:           uint32(o.QuotaProjects),
-			Deployments:        uint32(o.QuotaDeployments),
-			SlotsTotal:         uint32(o.QuotaSlotsTotal),
-			SlotsPerDeployment: uint32(o.QuotaSlotsPerDeployment),
-			OutstandingInvites: uint32(o.QuotaOutstandingInvites),
-			NumUsers:           uint32(o.QuotaNumUsers),
-			ManagedDataBytes:   uint64(o.QuotaManagedDataBytes),
+			Projects:                       uint32(o.QuotaProjects),
+			Deployments:                    uint32(o.QuotaDeployments),
+			SlotsTotal:                     uint32(o.QuotaSlotsTotal),
+			SlotsPerDeployment:             uint32(o.QuotaSlotsPerDeployment),
+			OutstandingInvites:             uint32(o.QuotaOutstandingInvites),
+			StorageLimitBytesPerDeployment: uint64(o.QuotaStorageLimitBytesPerDeployment),
 		},
 		BillingCustomerId: o.BillingCustomerID,
 		CreatedOn:         timestamppb.New(o.CreatedOn),
@@ -1119,13 +1129,12 @@ func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 		Description:     plan.Description,
 		TrialPeriodDays: uint32(plan.TrialPeriodDays),
 		Quotas: &adminv1.Quotas{
-			Projects:           valOrEmptyString(plan.Quotas.NumProjects),
-			Deployments:        valOrEmptyString(plan.Quotas.NumDeployments),
-			SlotsTotal:         valOrEmptyString(plan.Quotas.NumSlotsTotal),
-			SlotsPerDeployment: valOrEmptyString(plan.Quotas.NumSlotsPerDeployment),
-			OutstandingInvites: valOrEmptyString(plan.Quotas.NumOutstandingInvites),
-			NumUsers:           valOrEmptyString(plan.Quotas.NumUsers),
-			ManagedDataBytes:   val64OrEmptyString(plan.Quotas.ManagedDataBytes),
+			Projects:                       valOrEmptyString(plan.Quotas.NumProjects),
+			Deployments:                    valOrEmptyString(plan.Quotas.NumDeployments),
+			SlotsTotal:                     valOrEmptyString(plan.Quotas.NumSlotsTotal),
+			SlotsPerDeployment:             valOrEmptyString(plan.Quotas.NumSlotsPerDeployment),
+			OutstandingInvites:             valOrEmptyString(plan.Quotas.NumOutstandingInvites),
+			StorageLimitBytesPerDeployment: val64OrEmptyString(plan.Quotas.StorageLimitBytesPerDeployment),
 		},
 	}
 }

@@ -11,7 +11,7 @@ import (
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org, email string
 	var singleUser, projects, deployments, slotsTotal, slotsPerDeployment, outstandingInvites, numUsers uint32
-	var managedDataBytes uint64
+	var storageLimitBytesPerDeployment uint64
 	setCmd := &cobra.Command{
 		Use:   "set",
 		Args:  cobra.NoArgs,
@@ -44,11 +44,8 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				if cmd.Flags().Changed("outstanding-invites") {
 					req.OutstandingInvites = &outstandingInvites
 				}
-				if cmd.Flags().Changed("num-users") {
-					req.NumUsers = &numUsers
-				}
-				if cmd.Flags().Changed("managed-data-bytes") {
-					req.ManagedDataBytes = &managedDataBytes
+				if cmd.Flags().Changed("storage-limit-bytes-per-deployment") {
+					req.StorageLimitBytesPerDeployment = &storageLimitBytesPerDeployment
 				}
 
 				res, err := client.SudoUpdateOrganizationQuotas(ctx, req)
@@ -64,8 +61,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				fmt.Printf("Slots total: %d\n", orgQuotas.SlotsTotal)
 				fmt.Printf("Slots per deployment: %d\n", orgQuotas.SlotsPerDeployment)
 				fmt.Printf("Outstanding invites: %d\n", orgQuotas.OutstandingInvites)
-				fmt.Printf("Number of users: %d\n", orgQuotas.NumUsers)
-				fmt.Printf("Managed data bytes: %d\n", orgQuotas.ManagedDataBytes)
+				fmt.Printf("Storage limit bytes per deployment: %d\n", orgQuotas.StorageLimitBytesPerDeployment)
 			} else if email != "" {
 				req := &adminv1.SudoUpdateUserQuotasRequest{
 					Email: email,
@@ -102,6 +98,6 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	setCmd.Flags().Uint32Var(&slotsPerDeployment, "slots-per-deployment", 0, "Quota slots per deployment")
 	setCmd.Flags().Uint32Var(&outstandingInvites, "outstanding-invites", 0, "Quota outstanding invites")
 	setCmd.Flags().Uint32Var(&numUsers, "num-users", 0, "Number of users")
-	setCmd.Flags().Uint64Var(&managedDataBytes, "managed-data-bytes", 0, "Quota managed data bytes")
+	setCmd.Flags().Uint64Var(&storageLimitBytesPerDeployment, "storage-limit-bytes-per-deployment", 0, "Quota storage limit bytes per deployment")
 	return setCmd
 }

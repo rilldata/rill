@@ -370,8 +370,7 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
-  numUsers?: number;
-  managedDataBytes?: string;
+  storageLimitBytesPerDeployment?: string;
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
@@ -535,8 +534,7 @@ export interface V1Quotas {
   slotsTotal?: string;
   slotsPerDeployment?: string;
   outstandingInvites?: string;
-  numUsers?: string;
-  managedDataBytes?: string;
+  storageLimitBytesPerDeployment?: string;
 }
 
 export interface V1PullVirtualRepoResponse {
@@ -598,8 +596,7 @@ export interface V1OrganizationQuotas {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
-  numUsers?: number;
-  managedDataBytes?: string;
+  storageLimitBytesPerDeployment?: string;
 }
 
 export interface V1OrganizationPermissions {

@@ -9326,12 +9326,8 @@ func (m *SudoUpdateOrganizationQuotasRequest) validate(all bool) error {
 		// no validation rules for OutstandingInvites
 	}
 
-	if m.NumUsers != nil {
-		// no validation rules for NumUsers
-	}
-
-	if m.ManagedDataBytes != nil {
-		// no validation rules for ManagedDataBytes
+	if m.StorageLimitBytesPerDeployment != nil {
+		// no validation rules for StorageLimitBytesPerDeployment
 	}
 
 	if len(errors) > 0 {
@@ -22386,9 +22382,7 @@ func (m *OrganizationQuotas) validate(all bool) error {
 
 	// no validation rules for OutstandingInvites
 
-	// no validation rules for NumUsers
-
-	// no validation rules for ManagedDataBytes
+	// no validation rules for StorageLimitBytesPerDeployment
 
 	if len(errors) > 0 {
 		return OrganizationQuotasMultiError(errors)
@@ -24568,9 +24562,7 @@ func (m *Quotas) validate(all bool) error {
 
 	// no validation rules for OutstandingInvites
 
-	// no validation rules for NumUsers
-
-	// no validation rules for ManagedDataBytes
+	// no validation rules for StorageLimitBytesPerDeployment
 
 	if len(errors) > 0 {
 		return QuotasMultiError(errors)

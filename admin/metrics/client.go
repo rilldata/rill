@@ -110,7 +110,7 @@ type Usage struct {
 	Amount     float64 `json:"amount"`
 }
 
-func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []string, start, end time.Time) ([]ProjectUsageAvailability, error) {
+func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []string, startTime, endTime time.Time) ([]*ProjectUsageAvailability, error) {
 	// Create the URL for the request
 	var runtimeHost string
 
@@ -134,14 +134,14 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []s
 		MAX(time) as max_time
 	  FROM rill-metrics
 	  WHERE
-		project_id IN ({{ .args.project_ids }}) and time >= '{{ .args.start }}' and time < '{{ .args.end }}'
+		project_id IN ({{ .args.project_ids }}) and time >= '{{ .args.start_time }}' and time < '{{ .args.end_time }}'
 	  GROUP BY 1
 	*/
 
 	// Add URL query parameters
 	qry := uri.Query()
-	qry.Add("start", start.Format(time.RFC3339))
-	qry.Add("end", end.Format(time.RFC3339))
+	qry.Add("start_time", startTime.Format(time.RFC3339))
+	qry.Add("end_time", endTime.Format(time.RFC3339))
 	// create a comma separated string of projectIDs with single quotes around each projectID
 	qry.Add("project_ids", fmt.Sprintf("'%s'", strings.Join(projectIDs, "','")))
 
@@ -172,7 +172,7 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []s
 	}
 
 	// Decode the JSON response into ProjectUsageAvailability structs
-	var availability []ProjectUsageAvailability
+	var availability []*ProjectUsageAvailability
 	err = json.NewDecoder(resp.Body).Decode(&availability)
 	if err != nil {
 		return nil, err
@@ -181,7 +181,7 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []s
 	return availability, nil
 }
 
-func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, start, end time.Time, metricNames []string) ([]Usage, error) {
+func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, startTime, endTime time.Time, metricNames []string) ([]Usage, error) {
 	// Create the URL for the request
 	var runtimeHost string
 
@@ -207,15 +207,15 @@ func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, s
 			MAX(value) AS usage
 		  FROM rill-metrics
 		  WHERE
-			project_id ='{{ .args.project_id }}' AND time >= '{{ .args.start }}' AND time < '{{ .args.end }}'
+			project_id ='{{ .args.project_id }}' AND time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}'
 		  GROUP BY 1
 		*/
 
 		// Add URL query parameters
 		qry := uri.Query()
 		qry.Add("project_id", projectID)
-		qry.Add("start", start.Format(time.RFC3339))
-		qry.Add("end", end.Format(time.RFC3339))
+		qry.Add("start_time", startTime.Format(time.RFC3339))
+		qry.Add("end_time", endTime.Format(time.RFC3339))
 
 		uri.RawQuery = qry.Encode()
 		apiURL := uri.String()

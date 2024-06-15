@@ -3367,14 +3367,9 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
   outstandingInvites?: number;
 
   /**
-   * @generated from field: optional uint32 num_users = 7;
+   * @generated from field: optional uint64 storage_limit_bytes_per_deployment = 7;
    */
-  numUsers?: number;
-
-  /**
-   * @generated from field: optional uint64 managed_data_bytes = 8;
-   */
-  managedDataBytes?: bigint;
+  storageLimitBytesPerDeployment?: bigint;
 
   constructor(data?: PartialMessage<SudoUpdateOrganizationQuotasRequest>) {
     super();
@@ -3390,8 +3385,7 @@ export class SudoUpdateOrganizationQuotasRequest extends Message<SudoUpdateOrgan
     { no: 4, name: "slots_total", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 5, name: "slots_per_deployment", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 6, name: "outstanding_invites", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 7, name: "num_users", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 8, name: "managed_data_bytes", kind: "scalar", T: 4 /* ScalarType.UINT64 */, opt: true },
+    { no: 7, name: "storage_limit_bytes_per_deployment", kind: "scalar", T: 4 /* ScalarType.UINT64 */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoUpdateOrganizationQuotasRequest {
@@ -7960,14 +7954,9 @@ export class OrganizationQuotas extends Message<OrganizationQuotas> {
   outstandingInvites = 0;
 
   /**
-   * @generated from field: uint32 num_users = 6;
+   * @generated from field: uint64 storage_limit_bytes_per_deployment = 6;
    */
-  numUsers = 0;
-
-  /**
-   * @generated from field: uint64 managed_data_bytes = 7;
-   */
-  managedDataBytes = protoInt64.zero;
+  storageLimitBytesPerDeployment = protoInt64.zero;
 
   constructor(data?: PartialMessage<OrganizationQuotas>) {
     super();
@@ -7982,8 +7971,7 @@ export class OrganizationQuotas extends Message<OrganizationQuotas> {
     { no: 3, name: "slots_total", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 4, name: "slots_per_deployment", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 5, name: "outstanding_invites", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 6, name: "num_users", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 7, name: "managed_data_bytes", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
+    { no: 6, name: "storage_limit_bytes_per_deployment", kind: "scalar", T: 4 /* ScalarType.UINT64 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OrganizationQuotas {
@@ -9180,14 +9168,9 @@ export class Quotas extends Message<Quotas> {
   outstandingInvites = "";
 
   /**
-   * @generated from field: string num_users = 6;
+   * @generated from field: string storage_limit_bytes_per_deployment = 6;
    */
-  numUsers = "";
-
-  /**
-   * @generated from field: string managed_data_bytes = 7;
-   */
-  managedDataBytes = "";
+  storageLimitBytesPerDeployment = "";
 
   constructor(data?: PartialMessage<Quotas>) {
     super();
@@ -9202,8 +9185,7 @@ export class Quotas extends Message<Quotas> {
     { no: 3, name: "slots_total", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "slots_per_deployment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "outstanding_invites", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "num_users", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "managed_data_bytes", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "storage_limit_bytes_per_deployment", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Quotas {

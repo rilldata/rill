@@ -3004,10 +3004,7 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
-      numUsers:
-        type: integer
-        format: int64
-      managedDataBytes:
+      storageLimitBytesPerDeployment:
         type: string
         format: uint64
   v1PingResponse:
@@ -3124,9 +3121,7 @@ definitions:
         type: string
       outstandingInvites:
         type: string
-      numUsers:
-        type: string
-      managedDataBytes:
+      storageLimitBytesPerDeployment:
         type: string
   v1RecordEventsRequest:
     type: object
@@ -3357,10 +3352,7 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
-      numUsers:
-        type: integer
-        format: int64
-      managedDataBytes:
+      storageLimitBytesPerDeployment:
         type: string
         format: uint64
   v1SudoUpdateOrganizationQuotasResponse:

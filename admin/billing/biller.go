@@ -29,6 +29,7 @@ type Biller interface {
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
 	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error
 	GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
+	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error)
 	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
 	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
@@ -48,12 +49,11 @@ type Plan struct {
 	Quotas            Quotas
 	ReportableMetrics []string // list of metric names that are reported to the billing system
 	Metadata          map[string]string
-	// TODO expose pricing information
+	// TODO do we need to expose pricing information
 }
 
 type Quotas struct {
-	ManagedDataBytes *int64
-	NumUsers         *int
+	StorageLimitBytesPerDeployment *int64
 
 	// Existing quotas
 	NumProjects           *int
@@ -76,18 +76,19 @@ type Subscription struct {
 }
 
 type Usage struct {
-	MetricName    string
-	Amount        float64
-	ReportingGran UsageReportingGranularity
-	StartTime     time.Time // Start time of the usage period
-	EndTime       time.Time // End time of the usage period
-	Metadata      map[string]interface{}
+	CustomerID     string
+	MetricName     string
+	Amount         float64
+	ReportingGrain UsageReportingGranularity
+	StartTime      time.Time // Start time of the usage period
+	EndTime        time.Time // End time of the usage period
+	Metadata       map[string]interface{}
 }
 
 type UsageReportingGranularity string
 
 const (
-	UsageReportingGranularityNone UsageReportingGranularity = "none"
+	UsageReportingGranularityNone UsageReportingGranularity = ""
 	UsageReportingGranularityHour UsageReportingGranularity = "hour"
 )
 
@@ -96,4 +97,11 @@ type SubscriptionCancellationOption int
 const (
 	SubscriptionCancellationOptionEndOfSubscriptionTerm SubscriptionCancellationOption = iota
 	SubscriptionCancellationOptionImmediate
+)
+
+type SubscriptionChangeOption int
+
+const (
+	SubscriptionChangeOptionEndOfSubscriptionTerm SubscriptionChangeOption = iota
+	SubscriptionChangeOptionImmediate
 )

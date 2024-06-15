@@ -191,19 +191,17 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	quotaSlotsTotal := database.DefaultQuotaSlotsTotal
 	quotaSlotsPerDeployment := database.DefaultQuotaSlotsPerDeployment
 	quotaOutstandingInvites := database.DefaultQuotaOutstandingInvites
-	quotaNumUsers := database.DefaultQuotaUsers
-	quotaManagedDataBytes := database.DefaultQuotaManagedDataBytes
+	quotaStorageLimitBytesPerDeployment := database.DefaultQuotaStorageLimitBytesPerDeployment
 
 	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
-		Name:                    orgName,
-		Description:             description,
-		QuotaProjects:           quotaProjects,
-		QuotaDeployments:        quotaDeployments,
-		QuotaSlotsTotal:         quotaSlotsTotal,
-		QuotaSlotsPerDeployment: quotaSlotsPerDeployment,
-		QuotaOutstandingInvites: quotaOutstandingInvites,
-		QuotaNumUsers:           quotaNumUsers,
-		QuotaManagedDataBytes:   quotaManagedDataBytes,
+		Name:                                orgName,
+		Description:                         description,
+		QuotaProjects:                       quotaProjects,
+		QuotaDeployments:                    quotaDeployments,
+		QuotaSlotsTotal:                     quotaSlotsTotal,
+		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             quotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
 	})
 	if err != nil {
 		return nil, err
@@ -223,64 +221,61 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 
 	var updatedOrg *database.Organization
 	// create customer and subscription in the billing system, if it fails just log the error but don't fail the request
+	// TODO run this in a background job
 	customerID, err := s.Biller.CreateCustomer(ctx, org)
-	if err == nil {
-		s.Logger.Info("created customer in billing system for org", zap.String("org", orgName), zap.String("customer_id", customerID))
-		// fetch default plan
-		plan, err := s.Biller.GetDefaultPlan(ctx)
-		if err != nil {
-			s.Logger.Error("failed to get default plan from billing system, no subscription will be created", zap.String("org", orgName), zap.Error(err))
-		}
-
-		if plan != nil {
-			if plan.Quotas.NumProjects != nil {
-				quotaProjects = *plan.Quotas.NumProjects
-			}
-			if plan.Quotas.NumDeployments != nil {
-				quotaDeployments = *plan.Quotas.NumDeployments
-			}
-			if plan.Quotas.NumSlotsTotal != nil {
-				quotaSlotsTotal = *plan.Quotas.NumSlotsTotal
-			}
-			if plan.Quotas.NumSlotsPerDeployment != nil {
-				quotaSlotsPerDeployment = *plan.Quotas.NumSlotsPerDeployment
-			}
-			if plan.Quotas.NumOutstandingInvites != nil {
-				quotaOutstandingInvites = *plan.Quotas.NumOutstandingInvites
-			}
-			if plan.Quotas.NumUsers != nil {
-				quotaNumUsers = *plan.Quotas.NumUsers
-			}
-			if plan.Quotas.ManagedDataBytes != nil {
-				quotaManagedDataBytes = *plan.Quotas.ManagedDataBytes
-			}
-
-			sub, err := s.Biller.CreateSubscription(ctx, customerID, plan)
-			if err != nil {
-				s.Logger.Error("failed to create subscription in billing system for org", zap.String("org", orgName), zap.Error(err))
-			} else {
-				s.Logger.Info("created subscription in billing system for org", zap.String("org", orgName), zap.String("subscription_id", sub.ID))
-			}
-		}
-
-		updatedOrg, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-			Name:                    org.Name,
-			Description:             org.Description,
-			QuotaProjects:           quotaProjects,
-			QuotaDeployments:        quotaDeployments,
-			QuotaSlotsTotal:         quotaSlotsTotal,
-			QuotaSlotsPerDeployment: quotaSlotsPerDeployment,
-			QuotaOutstandingInvites: quotaOutstandingInvites,
-			QuotaNumUsers:           quotaNumUsers,
-			QuotaManagedDataBytes:   quotaManagedDataBytes,
-			BillingCustomerID:       customerID,
-		})
-		if err != nil {
-			s.Logger.Error("failed to update organization with billing info", zap.String("org", orgName), zap.Error(err))
-			return org, nil
-		}
-	} else {
+	if err != nil {
 		s.Logger.Error("failed to create customer in billing system for org", zap.String("org", orgName), zap.Error(err))
+		return org, nil
+	}
+
+	s.Logger.Info("created customer in billing system for org", zap.String("org", orgName), zap.String("customer_id", customerID))
+	// fetch default plan
+	plan, err := s.Biller.GetDefaultPlan(ctx)
+	if err != nil {
+		s.Logger.Error("failed to get default plan from billing system, no subscription will be created", zap.String("org", orgName), zap.Error(err))
+	}
+
+	if plan != nil {
+		if plan.Quotas.NumProjects != nil {
+			quotaProjects = *plan.Quotas.NumProjects
+		}
+		if plan.Quotas.NumDeployments != nil {
+			quotaDeployments = *plan.Quotas.NumDeployments
+		}
+		if plan.Quotas.NumSlotsTotal != nil {
+			quotaSlotsTotal = *plan.Quotas.NumSlotsTotal
+		}
+		if plan.Quotas.NumSlotsPerDeployment != nil {
+			quotaSlotsPerDeployment = *plan.Quotas.NumSlotsPerDeployment
+		}
+		if plan.Quotas.NumOutstandingInvites != nil {
+			quotaOutstandingInvites = *plan.Quotas.NumOutstandingInvites
+		}
+		if plan.Quotas.StorageLimitBytesPerDeployment != nil {
+			quotaStorageLimitBytesPerDeployment = *plan.Quotas.StorageLimitBytesPerDeployment
+		}
+
+		sub, err := s.Biller.CreateSubscription(ctx, customerID, plan)
+		if err != nil {
+			s.Logger.Error("failed to create subscription in billing system for org", zap.String("org", orgName), zap.Error(err))
+		} else {
+			s.Logger.Info("created subscription in billing system for org", zap.String("org", orgName), zap.String("subscription_id", sub.ID))
+		}
+	}
+
+	updatedOrg, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		Description:                         org.Description,
+		QuotaProjects:                       quotaProjects,
+		QuotaDeployments:                    quotaDeployments,
+		QuotaSlotsTotal:                     quotaSlotsTotal,
+		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             quotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
+		BillingCustomerID:                   customerID,
+	})
+	if err != nil {
+		s.Logger.Error("failed to update organization with billing info", zap.String("org", orgName), zap.Error(err))
 		return org, nil
 	}
 

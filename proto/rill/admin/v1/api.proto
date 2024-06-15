@@ -958,8 +958,7 @@ message SudoUpdateOrganizationQuotasRequest {
   optional uint32 slots_total = 4;
   optional uint32 slots_per_deployment = 5;
   optional uint32 outstanding_invites = 6;
-  optional uint32 num_users = 7;
-  optional uint64 managed_data_bytes = 8;
+  optional uint64 storage_limit_bytes_per_deployment = 7;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -1491,8 +1490,7 @@ message OrganizationQuotas {
   uint32 slots_total = 3;
   uint32 slots_per_deployment = 4;
   uint32 outstanding_invites = 5;
-  uint32 num_users = 6;
-  uint64 managed_data_bytes = 7;
+  uint64 storage_limit_bytes_per_deployment = 6;
 }
 
 message Project {
@@ -1666,6 +1664,5 @@ message Quotas {
   string slots_total = 3;
   string slots_per_deployment = 4;
   string outstanding_invites = 5;
-  string num_users = 6;
-  string managed_data_bytes = 7;
+  string storage_limit_bytes_per_deployment = 6;
 }
