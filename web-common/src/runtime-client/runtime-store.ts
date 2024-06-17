@@ -21,6 +21,7 @@ const createRuntimeStore = () => {
 
   return {
     subscribe,
+    update,
     set, // backwards-compatibility for web-local (where there's no JWT)
     setRuntime: (host: string, instanceId: string, jwt?: string) => {
       update((current) => {
