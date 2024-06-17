@@ -2,7 +2,6 @@
   import { DataTypeIcon } from "@rilldata/web-common/components/data-types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Pin from "@rilldata/web-common/components/icons/Pin.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import StackingWord from "@rilldata/web-common/components/tooltip/StackingWord.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -11,9 +10,9 @@
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
   import {
-    createShiftClickAction,
+    copyToClipboard,
     isClipboardApiSupported,
-  } from "@rilldata/web-common/lib/actions/shift-click-action";
+  } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { createEventDispatcher, getContext } from "svelte";
   import { fly } from "svelte/transition";
   import TooltipDescription from "../../tooltip/TooltipDescription.svelte";
@@ -30,6 +29,7 @@
   export let header;
   export let position: HeaderPosition = "top";
   export let enableResize = true;
+  export let enableSorting = true;
   export let isSelected = false;
   export let highlight = false;
   export let sorted: SortDirection | undefined = undefined;
@@ -37,12 +37,11 @@
   const config: VirtualizedTableConfig = getContext("config");
   const dispatch = createEventDispatcher();
 
-  const { shiftClickAction } = createShiftClickAction();
-
   let showMore = false;
 
   $: isDimensionTable = config.table === "DimensionTable";
-  $: isDimensionColumn = isDimensionTable && type === "VARCHAR";
+  $: isDimensionColumn =
+    isDimensionTable && (type === "VARCHAR" || type === "CODE_STRING");
 
   $: textAlignment = isDimensionColumn ? "text-left pl-1" : "text-right pr-1";
 
@@ -75,18 +74,14 @@
   on:blur={() => {
     showMore = false;
   }}
-  on:click={() => {
+  onClick={() => {
     dispatch("click-column");
+  }}
+  onShiftClick={() => {
+    copyToClipboard(name, `copied column name "${name}" to clipboard`);
   }}
 >
   <div
-    use:shiftClickAction
-    on:shift-click={async () => {
-      await navigator.clipboard.writeText(name);
-      notifications.send({
-        message: `copied column name "${name}" to clipboard`,
-      });
-    }}
     class=" 
            flex
            justify-stretch
@@ -99,9 +94,8 @@
       <div
         class="
         grid
-        items-center cursor-pointer w-full
-        {isSelected ? '' : 'gap-x-2'}
-        "
+        items-center cursor-pointer w-full"
+        class:gap-x-2={!isSelected}
         style:grid-template-columns={isDimensionTable
           ? ""
           : `max-content auto ${!noPin && showMore ? "max-content" : ""}`}
@@ -144,7 +138,7 @@
         {/if}
         {#if isDimensionTable || isClipboardApiSupported()}
           <TooltipShortcutContainer>
-            {#if isDimensionTable}
+            {#if enableSorting}
               <div>Sort column</div>
               <Shortcut>Click</Shortcut>
             {/if}

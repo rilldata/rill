@@ -451,7 +451,7 @@ func (s *Server) GetAlertYAML(ctx context.Context, req *adminv1.GetAlertYAMLRequ
 
 func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID string) ([]byte, error) {
 	res := alertYAML{}
-	res.Kind = "alert"
+	res.Type = "alert"
 	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.Title = opts.Title
@@ -485,7 +485,7 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	}
 
 	res := alertYAML{}
-	res.Kind = "alert"
+	res.Type = "alert"
 	// Trigger the alert when the metrics view refreshes.
 	res.Refs = []string{fmt.Sprintf("MetricsView/%s", opts.MetricsViewName)}
 	res.Title = opts.Title
@@ -570,7 +570,7 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.
 type alertYAML struct {
-	Kind      string   `yaml:"kind"`
+	Type      string   `yaml:"type"`
 	Refs      []string `yaml:"refs"`
 	Title     string   `yaml:"title"`
 	Watermark string   `yaml:"watermark"`

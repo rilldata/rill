@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -22,7 +23,7 @@ type RepoStore interface {
 	Put(ctx context.Context, path string, reader io.Reader) error
 	MakeDir(ctx context.Context, path string) error
 	Rename(ctx context.Context, fromPath string, toPath string) error
-	Delete(ctx context.Context, path string) error
+	Delete(ctx context.Context, path string, force bool) error
 	Sync(ctx context.Context) error
 	Watch(ctx context.Context, cb WatchCallback) error
 }
@@ -45,4 +46,35 @@ var ErrFileAlreadyExists = errors.New("file already exists")
 type DirEntry struct {
 	Path  string
 	IsDir bool
+}
+
+// ignoredPaths is a list of paths that are ignored by the parser.
+var ignoredPaths = []string{
+	"/tmp",
+	"/.git",
+	"/node_modules",
+	"/.DS_Store",
+	"/.vscode",
+	"/.idea",
+}
+
+// IsIgnored returns true if the path (and any files in nested directories) should be ignored.
+func IsIgnored(path string, ignorePathsConfig []string) bool {
+	for _, dir := range ignoredPaths {
+		if path == dir {
+			return true
+		}
+		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
+			return true
+		}
+	}
+	for _, dir := range ignorePathsConfig {
+		if path == dir {
+			return true
+		}
+		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
+			return true
+		}
+	}
+	return false
 }

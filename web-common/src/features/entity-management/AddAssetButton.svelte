@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
   import { Folder, PlusCircleIcon } from "lucide-svelte";
@@ -17,6 +18,7 @@
     createRuntimeServicePutFile,
   } from "../../runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import { useIsModelingSupportedForCurrentOlapDriver } from "../connectors/olap/selectors";
   import { featureFlags } from "../feature-flags";
   import { directoryState } from "../file-explorer/directory-store";
   import { handleEntityCreate } from "../file-explorer/new-files";
@@ -29,6 +31,8 @@
   import { getName } from "./name-utils";
   import { resourceIconMapping } from "./resource-icon-mapping";
   import { ResourceKind } from "./resource-selectors";
+
+  let active = false;
 
   const createFile = createRuntimeServicePutFile();
   const createFolder = createRuntimeServiceCreateDirectory();
@@ -48,6 +52,9 @@
     instanceId,
     currentDirectory,
   );
+
+  $: isModelingSupportedForCurrentOlapDriver =
+    useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
 
   async function wrapNavigation(toPath: string | undefined) {
     if (!toPath) return;
@@ -106,10 +113,8 @@
 
     await $createFolder.mutateAsync({
       instanceId: instanceId,
-      path: path,
       data: {
-        create: true,
-        createOnly: true,
+        path: path,
       },
     });
 
@@ -134,8 +139,8 @@
 
     await $createFile.mutateAsync({
       instanceId: instanceId,
-      path: path,
       data: {
+        path,
         blob: undefined,
         create: true,
         createOnly: true,
@@ -148,16 +153,16 @@
   /**
    * Put an example API file in the `apis` directory
    */
-  // async function handleAddAPI() {
-  //   const newRoute = await handleEntityCreate(ResourceKind.API);
-  //   if (newRoute) await goto(newRoute);
-  // }
+  async function handleAddAPI() {
+    const newRoute = await handleEntityCreate(ResourceKind.API);
+    if (newRoute) await goto(newRoute);
+  }
 
   /**
    * Put an example Chart file in the `charts` directory
    */
   async function handleAddChart() {
-    const newRoute = await handleEntityCreate(ResourceKind.Chart);
+    const newRoute = await handleEntityCreate(ResourceKind.Component);
     await wrapNavigation(newRoute);
   }
 
@@ -194,24 +199,26 @@
   // }
 </script>
 
-<div class="p-2">
-  <DropdownMenu.Root>
-    <DropdownMenu.Trigger asChild let:builder>
-      <button
-        {...builder}
-        aria-label="Add Asset"
-        class="p-2 bg-primary-50 hover:bg-primary-100 text-primary-700 hover:text-primary-800 w-full flex gap-x-2 items-center font-medium h-7 rounded-sm justify-center"
-        class:open
-        use:builder.action
-      >
-        <PlusCircleIcon size="14px" />
-        <div class="flex gap-x-1 items-center">
-          Add
+<DropdownMenu.Root bind:open={active}>
+  <DropdownMenu.Trigger asChild let:builder>
+    <Button
+      builders={[builder]}
+      label="Add Asset"
+      class="w-full"
+      type="subtle"
+      selected={active}
+    >
+      <PlusCircleIcon size="14px" />
+      <div class="flex gap-x-1 items-center">
+        Add
+        <span class="transition-transform" class:-rotate-180={active}>
           <CaretDownIcon size="10px" />
-        </div>
-      </button>
-    </DropdownMenu.Trigger>
-    <DropdownMenu.Content align="start" class="w-[240px]">
+        </span>
+      </div>
+    </Button>
+  </DropdownMenu.Trigger>
+  <DropdownMenu.Content align="start" class="w-[240px]">
+    {#if $isModelingSupportedForCurrentOlapDriver}
       <DropdownMenu.Item
         aria-label="Add Source"
         class="flex gap-x-2"
@@ -222,7 +229,7 @@
           className="text-gray-900"
           size="16px"
         />
-        Source
+        Data
       </DropdownMenu.Item>
       <DropdownMenu.Item
         aria-label="Add Model"
@@ -236,69 +243,69 @@
         />
         Model
       </DropdownMenu.Item>
-      <DropdownMenu.Item
-        aria-label="Add Dashboard"
-        class="flex gap-x-2"
-        on:click={handleAddDashboard}
-      >
-        <svelte:component
-          this={resourceIconMapping[ResourceKind.MetricsView]}
-          className="text-gray-900"
-          size="16px"
-        />
-        Dashboard
-      </DropdownMenu.Item>
-      <DropdownMenu.Sub>
-        <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
-        <DropdownMenu.SubContent class="w-[240px]">
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
-            <Folder size="16px" /> Folder
-          </DropdownMenu.Item>
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
-            <File size="16px" /> Blank file
-          </DropdownMenu.Item>
+    {/if}
+    <DropdownMenu.Item
+      aria-label="Add Dashboard"
+      class="flex gap-x-2"
+      on:click={handleAddDashboard}
+    >
+      <svelte:component
+        this={resourceIconMapping[ResourceKind.MetricsView]}
+        className="text-gray-900"
+        size="16px"
+      />
+      Dashboard
+    </DropdownMenu.Item>
+    <DropdownMenu.Sub>
+      <DropdownMenu.SubTrigger>More</DropdownMenu.SubTrigger>
+      <DropdownMenu.SubContent class="w-[240px]">
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddFolder}>
+          <Folder size="16px" /> Folder
+        </DropdownMenu.Item>
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddBlankFile}>
+          <File size="16px" /> Blank file
+        </DropdownMenu.Item>
+        <DropdownMenu.Separator />
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.API]}
+            className="text-gray-900"
+            size="16px"
+          />
+          API
           <DropdownMenu.Separator />
-          <!-- Temporarily hide API option -->
-          <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddAPI}>
+        </DropdownMenu.Item>
+        {#if $customDashboards}
+          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
             <svelte:component
-              this={resourceIconMapping[ResourceKind.API]}
+              this={resourceIconMapping[ResourceKind.Component]}
               className="text-gray-900"
               size="16px"
             />
-            API
-            <DropdownMenu.Separator />
-          </DropdownMenu.Item> -->
-          {#if $customDashboards}
-            <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddChart}>
-              <svelte:component
-                this={resourceIconMapping[ResourceKind.Chart]}
-                className="text-gray-900"
-                size="16px"
-              />
-              Chart
-            </DropdownMenu.Item>
-            <DropdownMenu.Item
-              class="flex gap-x-2"
-              on:click={handleAddCustomDashboard}
-            >
-              <svelte:component
-                this={resourceIconMapping[ResourceKind.Dashboard]}
-                className="text-gray-900"
-                size="16px"
-              />
-              Custom Dashboard
-            </DropdownMenu.Item>
-          {/if}
-          <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
-            <svelte:component
-              this={resourceIconMapping[ResourceKind.Theme]}
-              className="text-gray-900"
-              size="16px"
-            />
-            Theme
+            Chart
           </DropdownMenu.Item>
-          <!-- Temporarily hide Report and Alert options -->
-          <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
+          <DropdownMenu.Item
+            class="flex gap-x-2"
+            on:click={handleAddCustomDashboard}
+          >
+            <svelte:component
+              this={resourceIconMapping[ResourceKind.Dashboard]}
+              className="text-gray-900"
+              size="16px"
+            />
+            Custom Dashboard
+          </DropdownMenu.Item>
+        {/if}
+        <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddTheme}>
+          <svelte:component
+            this={resourceIconMapping[ResourceKind.Theme]}
+            className="text-gray-900"
+            size="16px"
+          />
+          Theme
+        </DropdownMenu.Item>
+        <!-- Temporarily hide Report and Alert options -->
+        <!-- <DropdownMenu.Item class="flex gap-x-2" on:click={handleAddReport}>
             <svelte:component
               this={resourceIconMapping[ResourceKind.Report]}
               className="text-gray-900"
@@ -314,8 +321,7 @@
             />
             Alert
           </DropdownMenu.Item> -->
-        </DropdownMenu.SubContent>
-      </DropdownMenu.Sub>
-    </DropdownMenu.Content>
-  </DropdownMenu.Root>
-</div>
+      </DropdownMenu.SubContent>
+    </DropdownMenu.Sub>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>

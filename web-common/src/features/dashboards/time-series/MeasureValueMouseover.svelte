@@ -220,7 +220,7 @@
 
   <MultiMetricMouseoverLabel
     direction="right"
-    flipAtEdge={false}
+    flipAtEdge="body"
     formatValue={mouseoverFormat}
     point={pointSet || []}
   />

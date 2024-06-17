@@ -6,10 +6,10 @@ import {
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import type {
-  MetricsViewDimension,
+  MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   RpcStatus,
-  V1MetricsView,
+  V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, get } from "svelte/store";
@@ -29,7 +29,7 @@ export type ShowHideSelectorStore = Readable<ShowHideSelectorState> &
 
 function createShowHideStore<Item>(
   metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
+  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
   type: "dimensions" | "measures",
   labelSelector: (i: Item) => string,
 ) {
@@ -158,7 +158,7 @@ function createShowHideStore<Item>(
 
 export function createShowHideMeasuresStore(
   metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
+  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
 ) {
   return createShowHideStore<MetricsViewSpecMeasureV2>(
     metricsViewName,
@@ -175,9 +175,9 @@ export function createShowHideMeasuresStore(
 
 export function createShowHideDimensionsStore(
   metricsViewName: string,
-  metricsView: CreateQueryResult<V1MetricsView, RpcStatus>,
+  metricsView: CreateQueryResult<V1MetricsViewSpec, RpcStatus>,
 ) {
-  return createShowHideStore<MetricsViewDimension>(
+  return createShowHideStore<MetricsViewSpecDimensionV2>(
     metricsViewName,
     metricsView,
     "dimensions",

@@ -9,11 +9,11 @@ web-admin/src/features/dashboards/listing/selectors.ts: error TS2345
 web-admin/src/features/dashboards/listing/selectors.ts: error TS2769
 web-admin/src/features/errors/error-utils.ts: error TS18048
 web-admin/src/features/errors/error-utils.ts: error TS2322
+web-admin/src/features/help/initPylonChat.ts: error TS2322
+web-admin/src/features/help/initPylonWidget.ts: error TS18047
 web-admin/src/features/projects/selectors.ts: error TS18048
-web-admin/src/features/scheduled-reports/get-dashboard-state-for-report.ts: error TS18048
-web-admin/src/features/scheduled-reports/get-dashboard-state-for-report.ts: error TS2322
-web-admin/src/features/scheduled-reports/get-dashboard-state-for-report.ts: error TS2345
-web-admin/src/features/scheduled-reports/get-dashboard-state-for-report.ts: error TS2769
+web-admin/src/features/dashboards/query-mappers/mapQueryToDashboard.ts: error TS2322
+web-admin/src/features/dashboards/query-mappers/getDashboardFromAggregationRequest.ts: error TS2322
 web-admin/src/features/scheduled-reports/selectors.ts: error TS18048
 web-admin/src/features/scheduled-reports/selectors.ts: error TS2345
 web-admin/src/features/view-as-user/clearViewedAsUser.ts: error TS18047
@@ -119,8 +119,6 @@ web-common/src/features/sources/selectors.ts: error TS2322
 web-common/src/features/sources/selectors.ts: error TS2345
 web-common/src/features/welcome/is-project-initialized.ts: error TS18048
 web-common/src/layout/navigation/navigation-utils.ts: error TS2345
-web-common/src/lib/actions/command-click-action.ts: error TS2345
-web-common/src/lib/actions/shift-click-action.ts: error TS2345
 web-common/src/lib/actions/truncate-middle-text.ts: error TS18047
 web-common/src/lib/actions/truncate-middle-text.ts: error TS2345
 web-common/src/lib/formatters.ts: error TS18046

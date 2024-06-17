@@ -9,28 +9,34 @@ import {
 } from "../../../metrics/service/BehaviourEventTypes";
 import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
 import {
+  V1ConnectorDriver,
   runtimeServicePutFile,
   runtimeServiceUnpackEmpty,
 } from "../../../runtime-client";
 import { runtime } from "../../../runtime-client/runtime-store";
+import {
+  compileConnectorYAML,
+  updateDotEnvWithSecrets,
+  updateRillYAMLWithOlapConnector,
+} from "../../connectors/code-utils";
 import {
   getFileAPIPathFromNameAndType,
   getFilePathFromNameAndType,
 } from "../../entity-management/entity-mappers";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-import { isProjectInitializedV2 } from "../../welcome/is-project-initialized";
+import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileCreateSourceYAML } from "../sourceUtils";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
 export interface RemoteSourceFormValues {
-  sourceName: string;
+  // sourceName: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: any;
 }
 
 export async function submitRemoteSourceForm(
   queryClient: QueryClient,
-  connectorName: string,
+  connector: V1ConnectorDriver,
   values: RemoteSourceFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
@@ -44,11 +50,8 @@ export async function submitRemoteSourceForm(
   );
 
   // If project is uninitialized, initialize an empty project
-  const isProjectInitialized = await isProjectInitializedV2(
-    queryClient,
-    instanceId,
-  );
-  if (!isProjectInitialized) {
+  const projectInitialized = await isProjectInitialized(instanceId);
+  if (!projectInitialized) {
     await runtimeServiceUnpackEmpty(instanceId, {
       title: EMPTY_PROJECT_TITLE,
     });
@@ -70,44 +73,59 @@ export async function submitRemoteSourceForm(
       }
     }),
   );
-  const yaml = compileCreateSourceYAML(formValues, connectorName);
 
-  // Attempt to create & import the source
-  await runtimeServicePutFile(
-    instanceId,
-    getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
-    {
-      blob: yaml,
+  /**
+   * Sources
+   */
+
+  if (!connector.implementsOlap) {
+    // Make a new <source>.yaml file
+    await runtimeServicePutFile(instanceId, {
+      path: getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+      blob: compileCreateSourceYAML(formValues, connector.name as string),
       create: true,
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
-    },
-  );
-  checkSourceImported(
-    queryClient,
-    getFilePathFromNameAndType(values.sourceName, EntityType.Table),
-  );
+    });
 
-  // TODO: telemetry
-  // Emit telemetry
-  // const hasSourceYAMLErrors = resp.errors.length > 0;
-  // if (hasSourceYAMLErrors) {
-  //   // Error
-  //   const sourceError = getSourceError(resp.errors, values.sourceName);
-  //   emitSourceErrorTelemetry(
-  //     MetricsEventSpace.Modal,
-  //     get(appScreen),
-  //     sourceError?.message,
-  //     connectorToSourceConnectionType[connectorName],
-  //     formValues?.uri || ""
-  //   );
-  // } else {
-  //   // Success
-  //   emitSourceSuccessTelemetry(
-  //     MetricsEventSpace.Modal,
-  //     get(appScreen),
-  //     BehaviourEventMedium.Button,
-  //     connectorToSourceConnectionType[connectorName],
-  //     formValues?.uri || ""
-  //   );
-  // }
+    await checkSourceImported(
+      queryClient,
+      getFilePathFromNameAndType(values.sourceName, EntityType.Table),
+    );
+
+    return;
+  }
+
+  /**
+   * Connectors
+   */
+
+  // Make a new `<connector>.yaml` file
+  await runtimeServicePutFile(instanceId, {
+    path: getFileAPIPathFromNameAndType(
+      connector.name as string,
+      EntityType.Connector,
+    ),
+    blob: compileConnectorYAML(connector, formValues),
+    create: true,
+    createOnly: false,
+  });
+
+  // Update the `.env` file
+  await runtimeServicePutFile(instanceId, {
+    path: ".env",
+    blob: await updateDotEnvWithSecrets(queryClient, connector, formValues),
+    create: true,
+    createOnly: false,
+  });
+
+  // Update the `rill.yaml` file
+  await runtimeServicePutFile(instanceId, {
+    path: "rill.yaml",
+    blob: await updateRillYAMLWithOlapConnector(
+      queryClient,
+      connector.name as string,
+    ),
+    create: true,
+    createOnly: false,
+  });
 }

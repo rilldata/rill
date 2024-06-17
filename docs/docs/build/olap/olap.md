@@ -25,6 +25,7 @@ Rill supports the use of several different OLAP engines to power your dashboards
 - [DuckDB](/reference/olap-engines/duckdb.md)
 - [Druid](/reference/olap-engines/druid.md)
 - [ClickHouse](/reference/olap-engines/clickhouse.md)
+- [Pinot](/reference/olap-engines/pinot.md)
 
 :::note Additional OLAP Engines
 
@@ -60,4 +61,12 @@ When ClickHouse has been configured as the [default OLAP engine](../../reference
 
 <div className="center-content">
 ![External ClickHouse tables](/img/build/connect/external-tables/external-clickhouse-table.png)
+</div>
+
+## Pinot
+
+When Pinot has been configured as the [default OLAP engine](../../reference/project-files/rill-yaml.md#configuring-the-default-olap-engine) for your project, any existing external tables that Rill can read and query should be shown through the Rill Developer UI under `Tables` section in left pane. You can then create dashboards using these external Pinot tables.
+
+<div className="center-content">
+![External Pinot tables](/img/build/connect/external-tables/external-pinot-table.png)
 </div>

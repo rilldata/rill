@@ -1,12 +1,12 @@
 import { FolderToResourceKind } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import {
+  extractFileName,
+  splitFolderAndName,
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
+import {
   ResourceKind,
   ResourceShortNameToKind,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  extractFileName,
-  splitFolderAndName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
 import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
 import { parse } from "yaml";
 
@@ -21,7 +21,8 @@ export function parseKindAndNameFromFile(
   if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
     return tryParseYaml(kind, name, fileContents);
   } else if (filePath.endsWith(".sql")) {
-    return tryParseSql(kind, name, fileContents);
+    // .sql is defaulted to Model
+    return tryParseSql(ResourceKind.Model, name, fileContents);
   }
   return undefined;
 }
@@ -36,14 +37,21 @@ function tryParseYaml(
 
   try {
     const yaml = parse(fileContents);
-    if (yaml.kind) {
+
+    // Get `type` (or `kind`, for backwards-compatibility) from yaml file
+    // We try `kind` first to avoid picking up old Sources' `type` field
+    if (yaml?.kind) {
       kind = ResourceShortNameToKind[yaml.kind as string];
+    } else if (yaml?.type) {
+      kind = ResourceShortNameToKind[yaml.type as string];
     }
-    if (yaml.name) {
+
+    // Get `name` from yaml file
+    if (yaml?.name) {
       name = yaml.name as string;
     }
   } catch (err) {
-    const kindMatches = /^kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
+    const kindMatches = /^type\s*:\s*(.+?)\s*$/gm.exec(fileContents);
     if (kindMatches?.[1]) {
       kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
     }
@@ -68,7 +76,7 @@ function tryParseSql(
   let kind = kindFromFolder;
   let name = nameFromFolder;
 
-  const kindMatches = /^--\s*@kind\s*:\s*(.+?)\s*$/gm.exec(fileContents);
+  const kindMatches = /^--\s*@type\s*:\s*(.+?)\s*$/gm.exec(fileContents);
   if (kindMatches?.[1]) {
     kind = ResourceShortNameToKind[kindMatches?.[1] ?? ""];
   }

@@ -19,14 +19,14 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import {
-  MetricsViewDimension,
+  MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   RpcStatus,
+  TypeCode,
   V1Expression,
   V1MetricsViewSpec,
   type V1StructType,
   V1TimeGrain,
-  V1TypeCode,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryObserverResult } from "@tanstack/query-core";
 import { QueryClient } from "@tanstack/svelte-query";
@@ -39,6 +39,9 @@ export const AD_BIDS_SOURCE_NAME = "AdBids_Source";
 export const AD_BIDS_MIRROR_NAME = "AdBids_mirror";
 
 export const AD_BIDS_IMPRESSIONS_MEASURE = "impressions";
+export const AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN = "impressions_no_grain";
+export const AD_BIDS_IMPRESSIONS_MEASURE_DAY_GRAIN = "impressions_day_grain";
+export const AD_BIDS_IMPRESSIONS_MEASURE_WINDOW = "impressions_window";
 export const AD_BIDS_BID_PRICE_MEASURE = "bid_price";
 export const AD_BIDS_PUBLISHER_COUNT_MEASURE = "publisher_count";
 export const AD_BIDS_PUBLISHER_DIMENSION = "publisher";
@@ -69,6 +72,36 @@ export const AD_BIDS_THREE_MEASURES = [
   {
     name: AD_BIDS_PUBLISHER_COUNT_MEASURE,
     expression: "count_distinct(publisher)",
+  },
+];
+export const AD_BIDS_ADVANCED_MEASURES = [
+  {
+    name: AD_BIDS_IMPRESSIONS_MEASURE,
+    expression: "count(*)",
+  },
+  {
+    name: AD_BIDS_IMPRESSIONS_MEASURE_DAY_GRAIN,
+    requiredDimensions: [
+      {
+        name: AD_BIDS_TIMESTAMP_DIMENSION,
+        timeGrain: V1TimeGrain.TIME_GRAIN_DAY,
+      },
+    ],
+  },
+  {
+    name: AD_BIDS_IMPRESSIONS_MEASURE_NO_GRAIN,
+    requiredDimensions: [
+      {
+        name: AD_BIDS_TIMESTAMP_DIMENSION,
+        timeGrain: V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+      },
+    ],
+  },
+  {
+    name: AD_BIDS_IMPRESSIONS_MEASURE_WINDOW,
+    window: {
+      partition: true,
+    },
   },
 ];
 export const AD_BIDS_INIT_DIMENSIONS = [
@@ -178,37 +211,37 @@ export const AD_BIDS_SCHEMA: V1StructType = {
     {
       name: AD_BIDS_PUBLISHER_DIMENSION,
       type: {
-        code: V1TypeCode.CODE_STRING,
+        code: TypeCode.CODE_STRING,
       },
     },
     {
       name: AD_BIDS_DOMAIN_DIMENSION,
       type: {
-        code: V1TypeCode.CODE_STRING,
+        code: TypeCode.CODE_STRING,
       },
     },
     {
       name: AD_BIDS_COUNTRY_DIMENSION,
       type: {
-        code: V1TypeCode.CODE_STRING,
+        code: TypeCode.CODE_STRING,
       },
     },
     {
       name: AD_BIDS_PUBLISHER_IS_NULL_DOMAIN,
       type: {
-        code: V1TypeCode.CODE_BOOL,
+        code: TypeCode.CODE_BOOL,
       },
     },
     {
       name: AD_BIDS_IMPRESSIONS_MEASURE,
       type: {
-        code: V1TypeCode.CODE_INT64,
+        code: TypeCode.CODE_INT64,
       },
     },
     {
       name: AD_BIDS_BID_PRICE_MEASURE,
       type: {
-        code: V1TypeCode.CODE_FLOAT64,
+        code: TypeCode.CODE_FLOAT64,
       },
     },
   ],
@@ -274,7 +307,7 @@ export function createMetricsMetaQueryMock(
   shouldInit = true,
 ): CreateQueryResult<V1MetricsViewSpec, RpcStatus> & {
   setMeasures: (measures: Array<MetricsViewSpecMeasureV2>) => void;
-  setDimensions: (dimensions: Array<MetricsViewDimension>) => void;
+  setDimensions: (dimensions: Array<MetricsViewSpecDimensionV2>) => void;
 } {
   const { update, subscribe } = writable<
     QueryObserverResult<V1MetricsViewSpec, RpcStatus>
@@ -296,7 +329,7 @@ export function createMetricsMetaQueryMock(
         value.data.measures = measures;
         return value;
       }),
-    setDimensions: (dimensions: Array<MetricsViewDimension>) =>
+    setDimensions: (dimensions: Array<MetricsViewSpecDimensionV2>) =>
       update((value) => {
         value.isSuccess = true;
         value.data ??= {

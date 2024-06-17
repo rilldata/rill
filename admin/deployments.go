@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +24,6 @@ type createDeploymentOptions struct {
 	ProjectID      string
 	Provisioner    string
 	Annotations    DeploymentAnnotations
-	VersionNumber  string
 	ProdBranch     string
 	ProdVariables  map[string]string
 	ProdOLAPDriver string
@@ -49,19 +49,17 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		return nil, fmt.Errorf("provisioner: %q is not in the provisioner set", opts.Provisioner)
 	}
 
-	// Resolve runtime version
 	runtimeVersion := opts.ProdVersion
-	if runtimeVersion == "latest" && opts.VersionNumber != "" {
-		// Resolve latest version from config
-		runtimeVersion = opts.VersionNumber
+
+	// Resolve 'latest' version
+	if runtimeVersion == "latest" {
+		runtimeVersion = s.ResolveLatestRuntimeVersion()
 	}
 
-	// Verify version is a valid SemVer or 'latest'
-	if runtimeVersion != "latest" {
-		_, err := version.NewVersion(runtimeVersion)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse version %q: %w", runtimeVersion, err)
-		}
+	// Verify version is valid
+	err := s.ValidateRuntimeVersion(runtimeVersion)
+	if err != nil {
+		return nil, err
 	}
 
 	// Create instance ID and use the same ID for the provision ID
@@ -137,9 +135,10 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	err = p.AwaitReady(ctx, provisionID)
 	if err != nil {
 		s.Logger.Error("provisioner: failed awaiting runtime to be ready", zap.String("project_id", opts.ProjectID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
+		err2 := p.Deprovision(ctx, provisionID)
 		// Mark deployment error
-		_, err2 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
-		return nil, multierr.Combine(err, err2)
+		_, err3 := s.DB.UpdateDeploymentStatus(ctx, depl.ID, database.DeploymentStatusError, err.Error())
+		return nil, multierr.Combine(err, err2, err3)
 	}
 
 	// Open a runtime client
@@ -216,7 +215,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 
 	// Update the provisioned runtime if the version has changed
-	if opts.Version != depl.RuntimeVersion {
+	if opts.Version != "" && opts.Version != depl.RuntimeVersion {
 		// Get provisioner from the set
 		p, ok := s.ProvisionerSet[depl.Provisioner]
 		if !ok {
@@ -256,7 +255,10 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	}
 	defer rt.Close()
 
-	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{InstanceId: depl.RuntimeInstanceID})
+	res, err := rt.GetInstance(ctx, &runtimev1.GetInstanceRequest{
+		InstanceId: depl.RuntimeInstanceID,
+		Sensitive:  true,
+	})
 	if err != nil {
 		return err
 	}
@@ -316,7 +318,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	for _, depl := range depls {
 		proj, err := s.DB.FindProject(ctx, depl.ProjectID)
 		if err != nil {
-			s.Logger.Error("hibernate: find project error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
+			s.Logger.Error("hibernate: find project error", zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
 		}
 
@@ -355,19 +357,24 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deployment) error {
-	// Connect to the deployment's runtime
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	// Delete the deployment
+	err := s.DB.DeleteDeployment(ctx, depl.ID)
 	if err != nil {
 		return err
 	}
-	defer rt.Close()
 
-	// Delete the instance
-	_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
-		InstanceId: depl.RuntimeInstanceID,
-	})
+	// Connect to the deployment's runtime and delete the instance
+	rt, err := s.openRuntimeClientForDeployment(depl)
 	if err != nil {
-		return err
+		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+	} else {
+		defer rt.Close()
+		_, err = rt.DeleteInstance(ctx, &runtimev1.DeleteInstanceRequest{
+			InstanceId: depl.RuntimeInstanceID,
+		})
+		if err != nil {
+			s.Logger.Error("failed to delete instance", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
+		}
 	}
 
 	// Get provisioner and deprovision, skip if the provisioner is no longer defined in the provisioner set
@@ -375,16 +382,10 @@ func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deploym
 	if ok {
 		err = p.Deprovision(ctx, depl.ProvisionID)
 		if err != nil {
-			return err
+			s.Logger.Error("provisioner: failed to deprovision", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
 		}
 	} else {
 		s.Logger.Warn("provisioner: deprovisioning skipped, provisioner not found", zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.Error(err), observability.ZapCtx(ctx))
-	}
-
-	// Delete the deployment
-	err = s.DB.DeleteDeployment(ctx, depl.ID)
-	if err != nil {
-		return err
 	}
 
 	return nil
@@ -428,6 +429,35 @@ func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *dat
 		projName:        proj.Name,
 		projAnnotations: proj.Annotations,
 	}
+}
+
+func (s *Service) ResolveLatestRuntimeVersion() string {
+	if s.VersionNumber != "" {
+		return s.VersionNumber
+	}
+	if s.VersionCommit != "" {
+		return s.VersionCommit
+	}
+	return "latest"
+}
+
+func (s *Service) ValidateRuntimeVersion(ver string) error {
+	// Verify version is a valid SemVer, a full Git commit hash or 'latest'
+	if ver != "latest" {
+		_, err := version.NewVersion(ver)
+		if err != nil {
+			// Not a valid SemVer, try as a full commit hash
+			matched, err := regexp.MatchString(`\b([a-f0-9]{40})\b`, ver)
+			if err != nil {
+				return err
+			}
+			if !matched {
+				return fmt.Errorf("not a valid version %q", ver)
+			}
+		}
+	}
+
+	return nil
 }
 
 func (da *DeploymentAnnotations) toMap() map[string]string {

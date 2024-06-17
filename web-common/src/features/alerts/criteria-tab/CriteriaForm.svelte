@@ -1,14 +1,22 @@
 <script lang="ts">
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
+  import { AlertFormValues } from "@rilldata/web-common/features/alerts/form-utils";
+  import {
+    MeasureFilterBaseTypeOptions,
+    MeasureFilterComparisonTypeOptions,
+    MeasureFilterType,
+  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+  import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
+  import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
 
-  export let formState: any; // svelte-forms-lib's FormState
+  export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;
 
   const { form, errors, validateField } = formState;
@@ -28,23 +36,52 @@
     },
   ];
 
+  $: hasComparison =
+    $form.comparisonTimeRange?.isoDuration ||
+    $form.comparisonTimeRange?.isoOffset;
+  $: comparisonLabel = $form.comparisonTimeRange
+    ? getComparisonLabel($form.comparisonTimeRange).toLowerCase()
+    : "";
+  $: typeOptions = hasComparison
+    ? MeasureFilterComparisonTypeOptions.map((o) => {
+        if (
+          o.value !== MeasureFilterType.AbsoluteChange &&
+          o.value !== MeasureFilterType.PercentChange
+        )
+          return o;
+        return {
+          ...o,
+          label: `${o.label} ${comparisonLabel}`,
+        };
+      })
+    : MeasureFilterBaseTypeOptions;
+
   // Debounce the update of value. This avoid constant refetches
-  let value: string = $form["criteria"][index].value;
+  let value: string = $form["criteria"][index].value1;
   const valueUpdater = debounce(() => {
-    $form["criteria"][index].value = value;
-    validateField("criteria");
+    $form["criteria"][index].value1 = value;
+    void validateField("criteria");
   }, 500);
 
   $: groupErr = parseCriteriaError($errors["criteria"], index);
 </script>
 
-<div class="grid grid-cols-2 flex-wrap gap-2">
+<div class="flex flex-row gap-2">
   <Select
-    bind:value={$form["criteria"][index].field}
+    bind:value={$form["criteria"][index].measure}
     id="field"
     label=""
     options={measureOptions}
     placeholder="Measure"
+    className="w-[160px]"
+  />
+  <Select
+    bind:value={$form["criteria"][index].type}
+    id="type"
+    label=""
+    options={typeOptions}
+    placeholder="type"
+    className="w-[256px]"
   />
   <Select
     bind:value={$form["criteria"][index].operation}
@@ -52,20 +89,14 @@
     label=""
     options={CriteriaOperationOptions}
     placeholder="Operator"
+    className="w-[70px]"
   />
-  <Select
-    id="compareWith"
-    label=""
-    options={[{ value: "Value" }]}
-    placeholder="compare with"
-    value={"Value"}
-  />
-  <InputV2
+  <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
+  <Input
     alwaysShowError
     bind:value
-    error={$errors["criteria"][index]?.value}
     id="value"
-    on:input={valueUpdater}
+    onInput={valueUpdater}
     placeholder={"0"}
   />
 </div>

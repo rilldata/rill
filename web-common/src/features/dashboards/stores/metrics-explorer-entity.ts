@@ -1,3 +1,4 @@
+import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import type { PivotState } from "@rilldata/web-common/features/dashboards/pivot/types";
 import type {
@@ -14,7 +15,7 @@ import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export interface DimensionThresholdFilter {
   name: string;
-  filter: V1Expression;
+  filters: MeasureFilterEntry[];
 }
 
 export interface MetricsExplorerEntity {

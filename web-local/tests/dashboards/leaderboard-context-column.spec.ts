@@ -1,43 +1,23 @@
 import { expect } from "@playwright/test";
+import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
+import { clickMenuButton } from "../utils/commonHelpers";
 import {
-  createDashboardFromModel,
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
-  updateAndWaitForDashboard,
 } from "../utils/dashboardHelpers";
-import { createAdBidsModel } from "../utils/dataSpecifcHelpers";
 import { test } from "../utils/test";
-import { clickMenuButton } from "../utils/commonHelpers";
+import { useDashboardFlowTestSetup } from "./dashboard-flow-test-setup";
 
 test.describe("leaderboard context column", () => {
-  test.beforeEach(async ({ page }) => {
-    test.setTimeout(60000);
-
-    // disable animations
-    await page.addStyleTag({
-      content: `
-        *, *::before, *::after {
-          animation-duration: 0s !important;
-          transition-duration: 0s !important;
-        }
-      `,
-    });
-    await createAdBidsModel(page);
-    await createDashboardFromModel(page, "AdBids_model.sql");
-
-    // Close the navigation sidebar to give the code editor more space
-    await page.getByRole("button", { name: "Close sidebar" }).click();
-  });
+  useDashboardFlowTestSetup();
 
   test("Leaderboard context column", async ({ page }) => {
-    /*
-     * SUBFLOW: setup state for the leaderboard context column tests
-     */
+    const watcher = new ResourceWatcher(page);
 
     // reset metrics, and add a metric with `valid_percent_of_total: true`
     const metricsWithValidPercentOfTotal = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
 
-  kind: metrics_view
+  type: metrics_view
   title: "AdBids_model_dashboard"
   model: "AdBids_model"
   default_time_range: ""
@@ -63,7 +43,7 @@ test.describe("leaderboard context column", () => {
       column: domain
       description: ""
       `;
-    await updateAndWaitForDashboard(page, metricsWithValidPercentOfTotal);
+    await watcher.updateAndWaitForDashboard(metricsWithValidPercentOfTotal);
 
     async function clickMenuItem(itemName: string, wait = true) {
       await clickMenuButton(page, itemName);

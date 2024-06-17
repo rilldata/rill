@@ -98,8 +98,7 @@ function prepareDimensionData(
   isAllTime: boolean,
   pinIndex: number,
 ): TableData | undefined {
-  if (!data || !totalsData || !measure || data?.length < selectedValues.length)
-    return undefined;
+  if (!data || !totalsData || !measure) return undefined;
 
   const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name as string;
@@ -116,7 +115,7 @@ function prepareDimensionData(
   // Prepare Row order
   let orderedData: DimensionDataItem[] = [];
 
-  if (pinIndex > -1 && selectedValues.length) {
+  if (pinIndex > -1 && selectedValues.length && data.length) {
     const selectedValuesIndex = selectedValues
       .slice(0, pinIndex + 1)
       .map((v) => data.findIndex((d) => d.value === v))
@@ -491,7 +490,8 @@ export const tableInteractionStore = writable<HighlightedCell>({
 });
 
 export const chartInteractionColumn = writable<ChartInteractionColumns>({
-  hover: undefined,
+  yHover: undefined,
+  xHover: undefined,
   scrubStart: undefined,
   scrubEnd: undefined,
 });

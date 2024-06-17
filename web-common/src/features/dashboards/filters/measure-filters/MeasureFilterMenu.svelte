@@ -1,15 +1,13 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
-  import {
-    MeasureFilterComparisonType,
-    MeasureFilterEntry,
-  } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import {
     MeasureFilterOperation,
-    MeasureFilterOptions,
+    MeasureFilterOperationOptions,
+    MeasureFilterType,
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createEventDispatcher } from "svelte";
@@ -31,7 +29,7 @@
 
   const initialValues = {
     dimension: dimensionName,
-    operation: filter?.operation ?? MeasureFilterOptions[0].value,
+    operation: filter?.operation ?? MeasureFilterOperationOptions[0].value,
     value1: filter?.value1 ?? "",
     value2: filter?.value2 ?? "",
   };
@@ -60,7 +58,7 @@
           filter: <MeasureFilterEntry>{
             measure: name,
             operation: values.operation,
-            comparison: MeasureFilterComparisonType.None,
+            type: MeasureFilterType.Value,
             value1: values.value1,
             value2: values.value2,
           },
@@ -122,26 +120,22 @@
       itemsClass="absolute left-4.5"
       label="Threshold"
       on:change={handleSubmit}
-      options={MeasureFilterOptions}
+      options={MeasureFilterOperationOptions}
     />
-    <InputV2
+    <Input
       bind:value={$form["value1"]}
-      error={$errors["value1"]}
+      errors={$errors["value1"]}
       id="value1"
-      on:change={(e) => {
-        handleSubmit(e);
-      }}
-      on:enter-pressed={handleSubmit}
+      onChange={handleSubmit}
       placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
     />
     {#if isBetweenExpression}
-      <InputV2
+      <Input
         bind:value={$form["value2"]}
-        error={$errors["value2"]}
+        errors={$errors["value2"]}
         id="value2"
         placeholder="Higher Value"
-        on:change={handleSubmit}
-        on:enter-pressed={handleSubmit}
+        onChange={handleSubmit}
       />
     {/if}
   </form>

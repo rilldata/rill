@@ -31,7 +31,7 @@ type sqlResolver struct {
 }
 
 type sqlProps struct {
-	Connector string `mapstructure:"connectors"`
+	Connector string `mapstructure:"connector"`
 	SQL       string `mapstructure:"sql"`
 }
 
@@ -155,18 +155,21 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (*runtime.Resolver
 	}
 	defer res.Close()
 
-	var out []map[string]any
-	for res.Rows.Next() {
-		if int64(len(out)) >= r.interactiveRowLimit {
-			return nil, fmt.Errorf("sql resolver: interactive query limit exceeded: returned more than %d rows", r.interactiveRowLimit)
-		}
+	if r.interactiveRowLimit != 0 {
+		res.SetCap(r.interactiveRowLimit)
+	}
 
+	var out []map[string]any
+	for res.Next() {
 		row := make(map[string]any)
-		err = res.Rows.MapScan(row)
+		err = res.MapScan(row)
 		if err != nil {
 			return nil, err
 		}
 		out = append(out, row)
+	}
+	if res.Err() != nil {
+		return nil, res.Err()
 	}
 
 	data, err := json.Marshal(out)

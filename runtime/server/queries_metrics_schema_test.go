@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"log"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -20,9 +21,14 @@ func TestMetricsViewSchema(t *testing.T) {
 	)
 	require.NoError(t, err)
 	types := res.Schema.Fields
-	require.Len(t, types, 10)
+	log.Printf("MetricsViewSchema: %v", types)
+	require.Len(t, types, 12)
 
 	i := 0
+	require.Equal(t, types[i].Name, "timestamp")
+	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_TIMESTAMP)
+
+	i++
 	require.Equal(t, types[i].Name, "pub")
 	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_STRING)
 
@@ -60,6 +66,10 @@ func TestMetricsViewSchema(t *testing.T) {
 
 	i++
 	require.Equal(t, types[i].Name, "m1")
+	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_FLOAT64)
+
+	i++
+	require.Equal(t, types[i].Name, "bid_price")
 	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_FLOAT64)
 
 }

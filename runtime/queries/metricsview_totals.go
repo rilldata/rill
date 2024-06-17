@@ -69,7 +69,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 	defer release()
 
-	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse {
+	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectDruid && olap.Dialect() != drivers.DialectClickHouse && olap.Dialect() != drivers.DialectPinot {
 		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
 	}
 
@@ -141,7 +141,11 @@ func (q *MetricsViewTotals) buildMetricsTotalsSQL(mv *runtimev1.MetricsViewSpec,
 	}
 
 	if q.Where != nil {
-		clause, clauseArgs, err := buildExpression(mv, q.Where, nil, dialect)
+		builder := &ExpressionBuilder{
+			mv:      mv,
+			dialect: dialect,
+		}
+		clause, clauseArgs, err := builder.buildExpression(q.Where)
 		if err != nil {
 			return "", nil, err
 		}

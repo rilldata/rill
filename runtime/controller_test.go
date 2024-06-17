@@ -3,6 +3,7 @@ package runtime_test
 import (
 	"context"
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -24,7 +25,7 @@ func TestComplete(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `
@@ -69,7 +70,6 @@ measures:
 	testruntime.RequireOLAPTableCount(t, rt, id, "foo", 3)
 
 	// Verify the model
-	falsy := false
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
 			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: "bar"},
@@ -80,14 +80,16 @@ measures:
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					Connector:       "duckdb",
-					Sql:             "SELECT * FROM foo",
-					Materialize:     &falsy,
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:  "duckdb",
+					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+					OutputConnector: "duckdb",
 				},
 				State: &runtimev1.ModelState{
-					Connector: "duckdb",
-					Table:     "bar",
+					ExecutorConnector: "duckdb",
+					ResultConnector:   "duckdb",
+					ResultProperties:  must(structpb.NewStruct(map[string]any{"table": "bar", "used_model_name": true, "view": true})),
+					ResultTable:       "bar",
 				},
 			},
 		},
@@ -100,7 +102,7 @@ measures:
 		Connector:  "duckdb",
 		Table:      "bar",
 		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
-		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)"}},
+		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
@@ -122,7 +124,7 @@ measures:
 	// Add syntax error in source, check downstream resources error
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path
 `,
 	})
@@ -140,10 +142,10 @@ path
 		Resource: &runtimev1.Resource_Model{
 			Model: &runtimev1.ModelV2{
 				Spec: &runtimev1.ModelSpec{
-					Connector:       "duckdb",
-					Sql:             "SELECT * FROM foo",
-					Materialize:     &falsy,
 					RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+					InputConnector:  "duckdb",
+					InputProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT * FROM foo"})),
+					OutputConnector: "duckdb",
 				},
 				State: &runtimev1.ModelState{},
 			},
@@ -171,7 +173,7 @@ path
 	// Fix source, check downstream resources succeed
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -189,7 +191,7 @@ func TestSource(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -247,7 +249,7 @@ path: data/foo.csv
 	// Change the source so it errors
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -258,7 +260,7 @@ path: data/bar.csv
 	// Restore the source, verify it works again
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -326,7 +328,7 @@ func TestCacheInvalidation(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -358,7 +360,7 @@ func TestSourceRefreshSchedule(t *testing.T) {
 1,2,3,4,5
 1,2,3,4,5`,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 refresh:
   every: 1
@@ -395,7 +397,7 @@ func TestSourceAndModelNameCollission(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -406,8 +408,8 @@ path: data/foo.csv
 	// Create a source with same name within a different folder
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/other_folder/foo.yaml": `
-kind: source
-type: local_file
+type: source
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -425,7 +427,7 @@ path: data/foo.csv
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo_1.yaml": `
 name: foo
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -504,7 +506,7 @@ func TestModelCTE(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -521,17 +523,17 @@ path: data/foo.csv
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	model.Spec.Sql = `with CTEAlias as (select * from foo) select * from CTEAlias`
+	model.Spec.InputProperties = must(structpb.NewStruct(map[string]any{"sql": `with CTEAlias as (select * from foo) select * from CTEAlias`}))
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar")
 
 	// Update model to have a CTE with alias same as the source
 	testruntime.PutFiles(t, rt, id, map[string]string{
-		"/models/bar.sql": `with foo as (select * from foo) select * from foo`,
+		"/models/bar.sql": `with foo as (select * from memory.foo) select * from foo`,
 	})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
-	model.Spec.Sql = `with foo as (select * from foo) select * from foo`
+	model.Spec.InputProperties = must(structpb.NewStruct(map[string]any{"sql": `with foo as (select * from memory.foo) select * from foo`}))
 	modelRes.Meta.Refs = []*runtimev1.ResourceName{}
 	testruntime.RequireResource(t, rt, id, modelRes)
 	// Refs are removed but the model is valid.
@@ -552,7 +554,7 @@ func TestRename(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -569,7 +571,8 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	modelRes.Meta.Name.Name = "bar_new"
 	modelRes.Meta.FilePaths[0] = "/models/bar_new.sql"
-	model.State.Table = "bar_new"
+	model.State.ResultProperties = must(structpb.NewStruct(map[string]any{"table": "bar_new", "used_model_name": true, "view": true}))
+	model.State.ResultTable = "bar_new"
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "bar_new")
 	testruntime.RequireNoOLAPTable(t, rt, id, "bar")
@@ -580,7 +583,8 @@ path: data/foo.csv
 	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
 	modelRes.Meta.Name.Name = "Bar_New"
 	modelRes.Meta.FilePaths[0] = "/models/Bar_New.sql"
-	model.State.Table = "Bar_New"
+	model.State.ResultProperties = must(structpb.NewStruct(map[string]any{"table": "Bar_New", "used_model_name": true, "view": true}))
+	model.State.ResultTable = "Bar_New"
 	testruntime.RequireResource(t, rt, id, modelRes)
 	testruntime.RequireOLAPTable(t, rt, id, "Bar_New")
 
@@ -612,7 +616,7 @@ func TestRenameToOther(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM foo limit 1`,
@@ -632,6 +636,36 @@ path: data/foo.csv
 	testruntime.RequireOLAPTableCount(t, rt, id, "bar3", 2)
 }
 
+func TestRenameReconciling(t *testing.T) {
+	adbidsPath, err := filepath.Abs("testruntime/testdata/ad_bids/data/AdBids.csv.gz")
+	require.NoError(t, err)
+
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"/sources/foo.yaml": `
+connector: local_file
+path: ` + adbidsPath,
+	})
+
+	// Trigger a reconcile, but don't wait for it to complete
+	ctrl, err := rt.Controller(context.Background(), id)
+	require.NoError(t, err)
+	err = ctrl.Reconcile(context.Background(), runtime.GlobalProjectParserName)
+	require.NoError(t, err)
+
+	// Imperfect way to wait until the reconcile is in progress, but not completed (AdBids seems to take about 100ms to ingest).
+	// This seems good enough in practice, and if there's a bug, it will at least identify it some of the time!
+	time.Sleep(5 * time.Millisecond)
+
+	// Rename the resource while the reconcile is still running
+	testruntime.RenameFile(t, rt, id, "/sources/foo.yaml", "/sources/bar.yaml")
+
+	// Wait for it to complete and verify the output is stable
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 2, 0, 0)
+	testruntime.RequireOLAPTable(t, rt, id, "bar")
+}
+
 func TestInterdependence(t *testing.T) {
 	// Test D -> C, D -> A, C -> A,B (-> = refs)
 	// Test error propagation on source error
@@ -645,7 +679,7 @@ func TestInterdependence(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM foo`,
@@ -673,7 +707,7 @@ measures:
 	// Update the source to invalid file
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -744,7 +778,7 @@ func TestCyclesWithThreeModels(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar1.sql": `SELECT * FROM bar2`,
@@ -796,7 +830,7 @@ func TestMetricsView(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -977,7 +1011,7 @@ func TestStageChanges(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -992,8 +1026,7 @@ measures:
 - expression: avg(a)
 `,
 	})
-	model, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
-	model.Spec.StageChanges = true
+	_, modelRes := newModel("SELECT * FROM foo", "bar", "foo")
 	_, metricsRes := newMetricsView("dash", "bar", []string{"count(*)", "avg(a)"}, []string{"b", "c"})
 	testruntime.ReconcileParserAndWait(t, rt, id)
 	testruntime.RequireReconcileState(t, rt, id, 4, 0, 0)
@@ -1003,7 +1036,7 @@ measures:
 	// Invalid source
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/bar.csv
 `,
 	})
@@ -1052,7 +1085,7 @@ func TestWatch(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 	})
@@ -1099,7 +1132,7 @@ func TestDashboardTheme(t *testing.T) {
 1,2,3,4,5
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -1113,7 +1146,7 @@ measures:
 - expression: count(*)
 `,
 		`themes/t1.yaml`: `
-kind: theme
+type: theme
 colors:
   primary: red
   secondary: grey
@@ -1157,7 +1190,7 @@ colors:
 	// make the theme invalid
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		`themes/t1.yaml`: `
-kind: theme
+type: theme
 colors:
   primary: xxx
   secondary: xxx
@@ -1172,7 +1205,7 @@ colors:
 	// make the theme valid
 	testruntime.PutFiles(t, rt, id, map[string]string{
 		`themes/t1.yaml`: `
-kind: theme
+type: theme
 colors:
   primary: red
   secondary: grey
@@ -1194,7 +1227,7 @@ func TestAlert(t *testing.T) {
 2024-01-01T00:00:00Z,Denmark
 `,
 		"/sources/foo.yaml": `
-type: local_file
+connector: local_file
 path: data/foo.csv
 `,
 		"/models/bar.sql": `SELECT * FROM foo`,
@@ -1241,17 +1274,18 @@ func newSource(name, path string) (*runtimev1.SourceV2, *runtimev1.Resource) {
 }
 
 func newModel(query, name, source string) (*runtimev1.ModelV2, *runtimev1.Resource) {
-	falsy := false
 	model := &runtimev1.ModelV2{
 		Spec: &runtimev1.ModelSpec{
-			Connector:       "duckdb",
-			Sql:             query,
-			Materialize:     &falsy,
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
+			InputConnector:  "duckdb",
+			InputProperties: must(structpb.NewStruct(map[string]any{"sql": query})),
+			OutputConnector: "duckdb",
 		},
 		State: &runtimev1.ModelState{
-			Connector: "duckdb",
-			Table:     name,
+			ExecutorConnector: "duckdb",
+			ResultConnector:   "duckdb",
+			ResultProperties:  must(structpb.NewStruct(map[string]any{"table": name, "used_model_name": true, "view": true})),
+			ResultTable:       name,
 		},
 	}
 	modelRes := &runtimev1.Resource{
@@ -1291,10 +1325,12 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {
@@ -1319,6 +1355,59 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		},
 	}
 	return metrics, metricsRes
+}
+
+func TestDedicatedConnector(t *testing.T) {
+	// Add source, model, and dashboard
+	rt, id := testruntime.NewInstance(t)
+	testruntime.PutFiles(t, rt, id, map[string]string{
+		"rill.yaml": `
+connectors:
+- name: s3-integrated
+  type: s3
+`,
+		// Dedicated S3 connector
+		"/connectors/s3-dedicated.yaml": `
+driver: s3
+name: s3-dedicated
+region: us-west-2
+`,
+		// Dedicated GCS connector with a custom name
+		"/connectors/gcs-dedicated.yaml": `
+driver: gcs
+name: my-gcs
+`,
+	})
+	testruntime.ReconcileParserAndWait(t, rt, id)
+	testruntime.RequireReconcileState(t, rt, id, 3, 0, 0)
+
+	// Verify the dedicated connectors
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: "s3-dedicated"},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/connectors/s3-dedicated.yaml"},
+		},
+		Resource: &runtimev1.Resource_Connector{
+			Connector: &runtimev1.ConnectorV2{
+				Spec:  &runtimev1.ConnectorSpec{Driver: "s3", Properties: map[string]string{"region": "us-west-2"}},
+				State: &runtimev1.ConnectorState{},
+			},
+		},
+	})
+	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
+		Meta: &runtimev1.ResourceMeta{
+			Name:      &runtimev1.ResourceName{Kind: runtime.ResourceKindConnector, Name: "my-gcs"},
+			Owner:     runtime.GlobalProjectParserName,
+			FilePaths: []string{"/connectors/gcs-dedicated.yaml"},
+		},
+		Resource: &runtimev1.Resource_Connector{
+			Connector: &runtimev1.ConnectorV2{
+				Spec:  &runtimev1.ConnectorSpec{Driver: "gcs"},
+				State: &runtimev1.ConnectorState{},
+			},
+		},
+	})
 }
 
 func must[T any](v T, err error) T {

@@ -13,6 +13,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/fileutil"
 	"go.uber.org/zap"
+	"gopkg.in/yaml.v3"
 )
 
 func init() {
@@ -54,6 +55,11 @@ type configProperties struct {
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
+// a smaller subset of relevant parts of rill.yaml
+type rillYAML struct {
+	IgnorePaths []string `yaml:"ignore_paths"`
+}
+
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("file driver can't be shared")
@@ -84,6 +90,17 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 	if err := c.checkRoot(); err != nil {
 		return nil, err
 	}
+
+	// Read rill.yaml and fill in `ignore_paths`
+	rawYaml, err := c.Get(context.Background(), "/rill.yaml")
+	if err == nil {
+		yml := &rillYAML{}
+		err = yaml.Unmarshal([]byte(rawYaml), yml)
+		if err == nil {
+			c.ignorePaths = yml.IgnorePaths
+		}
+	}
+
 	return c, nil
 }
 
@@ -124,6 +141,8 @@ type connection struct {
 	watcherMu    sync.Mutex
 	watcherCount int
 	watcher      *watcher
+
+	ignorePaths []string
 }
 
 // Config implements drivers.Connection.
@@ -180,6 +199,21 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 
 // AsObjectStore implements drivers.Connection.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
+	return nil, false
+}
+
+// AsModelExecutor implements drivers.Handle.
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.OutputHandle == c {
+		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
+			return &olapToSelfExecutor{c, olap, opts}, true
+		}
+	}
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
 	return nil, false
 }
 

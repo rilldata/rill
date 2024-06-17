@@ -4,7 +4,7 @@ title: rill user whitelist list
 ---
 ## rill user whitelist list
 
-List whitelisted email domains for the org
+List whitelisted email domains for the org or project
 
 ```
 rill user whitelist list [flags]
@@ -13,7 +13,8 @@ rill user whitelist list [flags]
 ### Flags
 
 ```
-      --org string   Organization
+      --org string       Organization
+      --project string   Project
 ```
 
 ### Global flags

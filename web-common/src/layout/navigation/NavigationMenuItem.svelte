@@ -2,10 +2,12 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
 
   export let disabled = false;
+  export let href: string | undefined = undefined;
 </script>
 
 {#key disabled}
   <DropdownMenu.Item
+    {href}
     class="data-[highlighted]:bg-gray-600 dark gap-2"
     aria-disabled={disabled}
     {disabled}

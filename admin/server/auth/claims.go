@@ -144,7 +144,10 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 
 	user, err := c.admin.DB.FindUser(ctx, c.token.OwnerID())
 	if err != nil {
-		panic(fmt.Errorf("failed to get user info: %w", err))
+		if !errors.Is(err, ctx.Err()) {
+			c.admin.Logger.Error("failed to get superuser info", zap.Error(err))
+		}
+		return false
 	}
 
 	c.superuser = &user.Superuser

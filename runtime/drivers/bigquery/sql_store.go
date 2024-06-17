@@ -322,7 +322,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 		if err != nil {
 			if errors.Is(err, iterator.Done) {
 				if !init {
-					return fmt.Errorf("no results found for the query")
+					return drivers.ErrNoRows
 				}
 				return nil
 			}

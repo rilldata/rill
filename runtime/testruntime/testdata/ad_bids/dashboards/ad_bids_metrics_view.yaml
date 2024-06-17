@@ -1,5 +1,7 @@
-# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+# Dashboard YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards
 
+type: metrics_view
 title: Ad Bids
 model: ad_bids
 timeseries: timestamp
@@ -35,3 +37,21 @@ available_time_zones:
   - Asia/Shanghai
   - Asia/Tokyo
   - Australia/Sydney
+available_time_ranges:
+  - PT6H
+  - PT24H
+  - P7D
+  - P14D
+  - P4W
+  - P3M
+  - P12M
+  - rill-TD
+  - rill-WTD
+  - rill-MTD
+  - rill-QTD
+  - rill-YTD
+  - rill-PDC
+  - rill-PWC
+  - rill-PMC
+  - rill-PQC
+  - rill-PYC

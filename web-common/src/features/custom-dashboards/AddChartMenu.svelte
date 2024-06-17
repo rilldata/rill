@@ -1,71 +1,84 @@
 <script lang="ts">
+  import {
+    ResourceKind,
+    useClientFilteredResources,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { ChevronDown, Plus } from "lucide-svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { runtime } from "../../runtime-client/runtime-store";
-  import { createEventDispatcher } from "svelte";
-  import { useChartFileNames } from "../charts/selectors";
   import Search from "@rilldata/web-common/components/search/Search.svelte";
+  import { getNameFromFile } from "../entity-management/entity-mappers";
+  // import { featureFlags } from "../feature-flags";
+  import Button from "@rilldata/web-common/components/button/Button.svelte";
+  import { handleEntityCreate } from "../file-explorer/new-files";
 
-  const dispatch = createEventDispatcher();
+  // const { ai } = featureFlags;
+
+  export let addChart: (chartName: string) => void;
+
   let open = false;
   let value = "";
 
-  $: chartFileNamesQuery = useChartFileNames($runtime.instanceId);
-  $: chartFileNames = $chartFileNamesQuery.data ?? [];
+  // We want to get only valid charts here. Hence using ListResources API
+  $: chartsQuery = useClientFilteredResources(
+    $runtime.instanceId,
+    ResourceKind.Component,
+  );
+  $: chartFileNames =
+    $chartsQuery.data?.map((c) => c.meta?.name?.name ?? "") ?? [];
+
+  async function handleAddChart() {
+    const newRoute = await handleEntityCreate(ResourceKind.Component);
+
+    if (!newRoute) return;
+
+    const chartName = getNameFromFile(newRoute);
+
+    if (chartName) {
+      addChart(chartName);
+    }
+  }
 </script>
 
 <DropdownMenu.Root bind:open typeahead={false}>
   <DropdownMenu.Trigger asChild let:builder>
-    <button {...builder} use:builder.action class:open>
-      <Plus size="16px" class="flex items-center justify-center" />
+    <Button builders={[builder]} type="secondary">
+      <Plus class="flex items-center justify-center" size="16px" />
       <div class="flex gap-x-1 items-center">
-        Add Chart
+        Add chart
         <ChevronDown size="14px" />
       </div>
-    </button>
+    </Button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content class="flex flex-col gap-y-1 ">
     <DropdownMenu.Group>
-      <DropdownMenu.Item disabled>Generate chart with AI</DropdownMenu.Item>
-      <DropdownMenu.Item disabled>Specify new chart</DropdownMenu.Item>
+      <!-- <DropdownMenu.Item disabled>
+        Generate chart
+        {#if $ai}
+          with AI
+          <WandIcon class="w-3 h-3" />
+        {/if}
+      </DropdownMenu.Item> -->
+      <DropdownMenu.Item on:click={handleAddChart}>
+        Create new chart
+      </DropdownMenu.Item>
     </DropdownMenu.Group>
+
     <DropdownMenu.Separator />
     <div class="px-1">
       <Search bind:value />
     </div>
     <DropdownMenu.Separator />
+
     <DropdownMenu.Label class="text-[11px] text-gray-500 py-0">
       EXISTING CHARTS
     </DropdownMenu.Label>
     <DropdownMenu.Group>
       {#each chartFileNames.filter( (n) => n.startsWith(value), ) as chartName (chartName)}
-        <DropdownMenu.Item
-          on:click={() => {
-            dispatch("add-chart", { chartName });
-          }}
-        >
+        <DropdownMenu.Item on:click={() => addChart(chartName)}>
           {chartName}
         </DropdownMenu.Item>
       {/each}
     </DropdownMenu.Group>
   </DropdownMenu.Content>
 </DropdownMenu.Root>
-
-<style lang="postcss">
-  button {
-    @apply w-fit h-8;
-    @apply text-primary-600;
-    @apply border-primary-300 border-2;
-    @apply rounded-sm px-3 font-medium;
-    @apply flex gap-x-2 items-center justify-center;
-  }
-
-  button:hover {
-    @apply bg-primary-50;
-  }
-
-  button.open,
-  button:active {
-    @apply bg-primary-100;
-  }
-</style>

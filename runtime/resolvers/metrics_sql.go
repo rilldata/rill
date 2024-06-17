@@ -18,6 +18,11 @@ type metricsSQLProps struct {
 	SQL string `mapstructure:"sql"`
 }
 
+type metricsSQLArgs struct {
+	Priority int `mapstructure:"priority"`
+	// NOTE: Not exhaustive. Any other args are passed to the "args" property of sqlResolverOpts.
+}
+
 // newMetricsSQL creates a resolver for evaluating metrics SQL.
 // It wraps the regular SQL resolver and compiles the metrics SQL to a regular SQL query first.
 // The compiler preserves templating in the SQL, allowing the regular SQL resolver to handle SQL templating rules.
@@ -47,7 +52,12 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.UserAttributes)
+	sqlArgs := &metricsSQLArgs{}
+	if err := mapstructure.Decode(opts.Args, sqlArgs); err != nil {
+		return nil, err
+	}
+
+	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.UserAttributes, sqlArgs.Priority)
 	sql, connector, refs, err := compiler.Compile(ctx, props.SQL)
 	if err != nil {
 		return nil, err

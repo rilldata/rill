@@ -41,9 +41,13 @@
   export let isRowsEmpty = false;
 
   const dispatch = createEventDispatcher();
-  const { adminServer } = featureFlags;
+  const { adminServer, exports } = featureFlags;
 
   const {
+    selectors: {
+      measures: { measureLabel },
+      dimensions: { getDimensionDisplayName },
+    },
     actions: {
       dimensionsFilter: { toggleDimensionFilterMode },
     },
@@ -132,7 +136,7 @@
       ? [
           {
             id: dimensionName,
-            title: dimensionName,
+            title: $getDimensionDisplayName(dimensionName),
             type: PivotChipType.Dimension,
           },
         ]
@@ -151,7 +155,7 @@
         measure: [
           {
             id: expandedMeasureName,
-            title: expandedMeasureName,
+            title: $measureLabel(expandedMeasureName),
             type: PivotChipType.Measure,
           },
         ],
@@ -243,8 +247,12 @@
         </TooltipContent>
       </Tooltip>
 
-      <TDDExportButton {metricViewName} includeScheduledReport={$adminServer} />
-
+      {#if $exports}
+        <TDDExportButton
+          {metricViewName}
+          includeScheduledReport={$adminServer}
+        />
+      {/if}
       <Button
         compact
         type="text"
@@ -268,8 +276,6 @@
 
 <style lang="postcss">
   .tdd-header {
-    @apply grid justify-between grid-flow-col items-center mr-4;
-    @apply bg-slate-50 py-2 px-4 h-11;
-    @apply border border-slate-100 rounded-sm;
+    @apply grid justify-between grid-flow-col items-center mr-4 py-2 px-4 h-11;
   }
 </style>

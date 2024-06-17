@@ -10,6 +10,8 @@
   } from "@rilldata/web-common/runtime-client";
   import { onMount } from "svelte";
   import AmazonS3 from "../../../components/icons/connectors/AmazonS3.svelte";
+  import ApacheDruid from "../../../components/icons/connectors/ApacheDruid.svelte";
+  import ApachePinot from "../../../components/icons/connectors/ApachePinot.svelte";
   import ClickHouse from "../../../components/icons/connectors/ClickHouse.svelte";
   import DuckDB from "../../../components/icons/connectors/DuckDB.svelte";
   import GoogleBigQuery from "../../../components/icons/connectors/GoogleBigQuery.svelte";
@@ -27,12 +29,11 @@
     BehaviourEventMedium,
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
-  import ClickHouseInstructions from "./ClickHouseInstructions.svelte";
+  import { duplicateSourceName } from "../sources-store";
+  import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
   import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
-  import { duplicateSourceName } from "../sources-store";
-  import DuplicateSource from "./DuplicateSource.svelte";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
@@ -42,11 +43,9 @@
     "gcs",
     "s3",
     "azure",
-    // duckdb
     "bigquery",
     "athena",
     "redshift",
-    "duckdb",
     "postgres",
     "mysql",
     "sqlite",
@@ -55,17 +54,19 @@
     "local_file",
     "https",
     "clickhouse",
+    "druid",
+    "duckdb",
+    // "motherduck",
+    "pinot",
   ];
 
   const ICONS = {
     gcs: GoogleCloudStorage,
     s3: AmazonS3,
     azure: MicrosoftAzureBlobStorage,
-    // duckdb: DuckDB,
     bigquery: GoogleBigQuery,
     athena: AmazonAthena,
     redshift: AmazonRedshift,
-    duckdb: DuckDB,
     postgres: Postgres,
     mysql: MySQL,
     sqlite: SQLite,
@@ -74,6 +75,9 @@
     local_file: LocalFile,
     https: Https,
     clickhouse: ClickHouse,
+    druid: ApacheDruid,
+    duckdb: DuckDB,
+    pinot: ApachePinot,
   };
 
   const connectors = createRuntimeServiceListConnectorDrivers({
@@ -152,11 +156,14 @@
 
 {#if step >= 1 || $duplicateSourceName}
   <!-- This precise width fits exactly 3 connectors per line  -->
-  <Dialog open on:close={onCancelDialog} widthOverride="w-[560px]">
+  <Dialog
+    open
+    on:close={onCancelDialog}
+    widthOverride="w-[560px]"
+    titleMarginBottomOverride={step === 1 ? "mb-0" : "mb-2"}
+  >
     <div slot="title">
-      {#if step === 1}
-        Add a source
-      {:else}
+      {#if step === 2}
         <h2 class="flex gap-x-1 items-center">
           <span>
             {#if $duplicateSourceName !== null}
@@ -174,21 +181,44 @@
       {#if $duplicateSourceName}
         <DuplicateSource on:cancel={resetModal} on:complete={resetModal} />
       {:else if step === 1}
-        {#if $connectors.data}
-          <div class="grid grid-cols-3 gap-4">
-            {#each $connectors?.data?.connectors ?? [] as connector}
-              {#if connector.name}
-                <button
-                  id={connector.name}
-                  on:click={() => goToConnectorForm(connector)}
-                  class="w-40 h-20 rounded border border-gray-300 justify-center items-center gap-2.5 inline-flex hover:bg-gray-100 cursor-pointer"
-                >
-                  <svelte:component this={ICONS[connector.name]} />
-                </button>
-              {/if}
-            {/each}
-          </div>
+        {#if $connectors.data && $connectors.data?.connectors}
+          <!-- Direct sources -->
+          <section>
+            <h2>Add a source</h2>
+            <div class="connector-grid">
+              {#each $connectors.data.connectors.filter((c) => !c.implementsOlap) as connector (connector.name)}
+                {#if connector.name}
+                  <button
+                    id={connector.name}
+                    on:click={() => goToConnectorForm(connector)}
+                    class="connector-tile-button"
+                  >
+                    <svelte:component this={ICONS[connector.name]} />
+                  </button>
+                {/if}
+              {/each}
+            </div>
+          </section>
+
+          <!-- OLAP connectors -->
+          <section>
+            <h2>Connect an OLAP engine</h2>
+            <div class="connector-grid">
+              {#each $connectors.data.connectors.filter((c) => c.implementsOlap) as connector (connector.name)}
+                {#if connector.name}
+                  <button
+                    id={connector.name}
+                    on:click={() => goToConnectorForm(connector)}
+                    class="connector-tile-button"
+                  >
+                    <svelte:component this={ICONS[connector.name]} />
+                  </button>
+                {/if}
+              {/each}
+            </div>
+          </section>
         {/if}
+
         <div class="text-slate-500">
           Don't see what you're looking for?
           <button
@@ -202,9 +232,7 @@
         {#if selectedConnector}
           {#if selectedConnector.name === "local_file"}
             <LocalSourceUpload on:close={resetModal} on:back={back} />
-          {:else if selectedConnector.name === "clickhouse"}
-            <ClickHouseInstructions on:back={back} />
-          {:else}
+          {:else if selectedConnector}
             <RemoteSourceForm
               connector={selectedConnector}
               on:close={resetModal}
@@ -220,3 +248,23 @@
     </div>
   </Dialog>
 {/if}
+
+<style lang="postcss">
+  h2 {
+    @apply text-gray-900 font-semibold text-base mb-2;
+  }
+
+  .connector-grid {
+    @apply grid grid-cols-3 gap-4;
+  }
+
+  .connector-tile-button {
+    @apply w-40 h-20 border border-gray-300 rounded;
+    @apply justify-center items-center gap-2.5 inline-flex;
+    @apply cursor-pointer;
+  }
+
+  .connector-tile-button:hover {
+    @apply bg-gray-100;
+  }
+</style>

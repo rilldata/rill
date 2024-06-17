@@ -4,9 +4,11 @@ import type { QueryFunction } from "@tanstack/svelte-query";
 import { error } from "@sveltejs/kit";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
+import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+import { get } from "svelte/store";
 
-export async function load({ parent, params, depends }) {
-  const { instanceId } = await parent();
+export const load = async ({ params, depends }) => {
+  const { instanceId } = get(runtime);
 
   const dashboardName = params.name;
 
@@ -48,4 +50,4 @@ export async function load({ parent, params, depends }) {
     console.error(e);
     throw error(404, "Dashboard not found");
   }
-}
+};

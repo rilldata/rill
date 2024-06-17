@@ -18,7 +18,7 @@ export async function createAdBidsModel(page: Page) {
     uploadFile(page, "AdBids.csv"),
   ]);
 
-  await createModel(page, "/models/AdBids_model.sql");
+  await createModel(page, "AdBids_model.sql");
   await Promise.all([
     waitForProfiling(page, "AdBids_model", [
       "publisher",

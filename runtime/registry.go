@@ -11,6 +11,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/logbuffer"
@@ -124,6 +125,22 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	}
 
 	return nil
+}
+
+// DataDir returns the path to a persistent data directory for the given instance.
+// Storage usage in the returned directory will be reported in the instance's heartbeat events.
+func (r *Runtime) DataDir(instanceID string, elem ...string) string {
+	elem = append([]string{r.opts.DataDir, instanceID}, elem...)
+	return filepath.Join(elem...)
+}
+
+// TempDir returns the path to a temporary directory for the given instance.
+// The TempDir is a fixed location. The caller is responsible for using a unique subdirectory name and cleaning up after use.
+// The TempDir may be cleared after restarts.
+// Storage usage in the returned directory will be reported in the instance's heartbeat events.
+func (r *Runtime) TempDir(instanceID string, elem ...string) string {
+	elem = append([]string{r.opts.DataDir, instanceID, "tmp"}, elem...)
+	return filepath.Join(elem...)
 }
 
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
@@ -417,6 +434,9 @@ func (r *registryCache) restartController(iwc *instanceWithController) {
 			}
 
 			// Start controller
+			if err := r.updateProjectConfig(iwc); err != nil {
+				iwc.logger.Warn("failed to parse and update the project config before starting the controller", zap.Error(err))
+			}
 			iwc.logger.Debug("controller starting")
 			ctrl, err := NewController(iwc.ctx, r.rt, iwc.instanceID, iwc.logger, r.activity)
 			if err == nil {
@@ -533,11 +553,41 @@ func (r *registryCache) emitHeartbeats() {
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
 
-	r.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat",
-		attribute.String("instance_id", inst.ID),
-		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
-		attribute.Int64("data_dir_size_bytes", sizeOfDir(dataDir)),
-	)
+	// Add instance annotations as attributes to pass organization id, project id, etc.
+	attrs := instanceAnnotationsToAttribs(inst)
+	for k, v := range inst.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+
+	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
+}
+
+// updateProjectConfig updates the project config for the given instance.
+// This does the same operation as ProjectParserReconciler's reconcileProjectConfig and is done before starting the controller
+// to ensure that when controller first starts, it doesn’t immediately restart due to changed variables
+func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
+	repo, release, err := r.rt.Repo(iwc.ctx, iwc.instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	instance, err := r.get(iwc.instanceID)
+	if err != nil {
+		return err
+	}
+
+	p, err := rillv1.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
+	if err != nil {
+		return err
+	}
+
+	if p.RillYAML == nil {
+		// Empty project
+		return nil
+	}
+
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, p, false)
 }
 
 func sizeOfDir(path string) int64 {

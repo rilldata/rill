@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"maps"
-	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -200,10 +199,23 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	}
 
 	// Search for connector definition in rill.yaml
+	vars := inst.ResolveVariables()
 	for _, c := range inst.ProjectConnectors {
 		if c.Name == name {
 			res.Driver = c.Type
-			res.Project = maps.Clone(c.Config) // Cloning because Project may be mutated later, but the inst object is shared.
+			if c.Config != nil {
+				res.Project = maps.Clone(c.Config) // Cloning because Project may be mutated later, but the inst object is shared.
+			} else {
+				res.Project = make(map[string]string)
+			}
+			// Resolve properties obtained from connectors that depend on an env variable
+			for k, v := range c.ConfigFromVariables {
+				var ok bool
+				res.Project[k], ok = vars[v]
+				if !ok {
+					return nil, fmt.Errorf("variable %q referenced in connector property %q not found", v, k)
+				}
+			}
 			break
 		}
 	}
@@ -222,7 +234,6 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	}
 
 	// Build res.Env config based on instance variables matching the format "connector.name.var"
-	vars := inst.ResolveVariables()
 	prefix := fmt.Sprintf("connector.%s.", name)
 	for k, v := range vars {
 		if after, found := strings.CutPrefix(k, prefix); found {
@@ -268,10 +279,10 @@ func (r *Runtime) ConnectorConfig(ctx context.Context, instanceID, name string) 
 	// Apply built-in system-wide config
 	res.setPreset("allow_host_access", strconv.FormatBool(r.opts.AllowHostAccess), true)
 	// data_dir stores persistent data
-	res.setPreset("data_dir", filepath.Join(r.opts.DataDir, instanceID, name), true)
+	res.setPreset("data_dir", r.DataDir(instanceID, name), true)
 	// temp_dir stores temporary data. The logic that creates any temporary file here should also delete them.
 	// The contents will also be deleted on runtime restarts.
-	res.setPreset("temp_dir", filepath.Join(r.opts.DataDir, instanceID, "tmp"), true)
+	res.setPreset("temp_dir", r.TempDir(instanceID), true)
 
 	// Done
 	return res, nil

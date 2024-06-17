@@ -19,6 +19,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/xuri/excelize/v2"
@@ -127,6 +128,7 @@ func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineM
 				ms[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 					Name:       m.Name,
 					Expression: m.Expression,
+					Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 				}
 				found = true
 				break
@@ -228,49 +230,67 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 	return res
 }
 
-func columnIdentifierExpression(mv *runtimev1.MetricsViewSpec, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, name string) (string, bool) {
+type ExpressionBuilder struct {
+	mv       *runtimev1.MetricsViewSpec
+	aliases  []*runtimev1.MetricsViewComparisonMeasureAlias
+	dialect  drivers.Dialect
+	measures []*runtimev1.MetricsViewAggregationMeasure
+	having   bool
+}
+
+func (builder *ExpressionBuilder) columnIdentifierExpression(name string) (string, bool) {
 	// check if identifier is a dimension
-	for _, dim := range mv.Dimensions {
+	for _, dim := range builder.mv.Dimensions {
 		if dim.Name == name {
-			return metricsViewDimensionExpression(dim), true
+			return builder.dialect.MetricsViewDimensionExpression(dim), true
 		}
 	}
 
 	// check if identifier is passed as an alias
-	for _, alias := range aliases {
+	for _, alias := range builder.aliases {
 		if alias.Alias == name {
 			switch alias.Type {
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_UNSPECIFIED,
 				runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE:
 				splits := strings.Split(alias.Name, ".")
 				if len(splits) > 1 {
-					return safeName(splits[0]) + "." + safeName(splits[1]), true
+					return builder.dialect.EscapeIdentifier(splits[0]) + "." + builder.dialect.EscapeIdentifier(splits[1]), true
 				}
-				return safeName(alias.Name), true
+				return builder.dialect.EscapeIdentifier(alias.Name), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_COMPARISON_VALUE:
-				return safeName(alias.Name + "__previous"), true
+				return builder.dialect.EscapeIdentifier(alias.Name + "__previous"), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_ABS_DELTA:
-				return safeName(alias.Name + "__delta_abs"), true
+				return builder.dialect.EscapeIdentifier(alias.Name + "__delta_abs"), true
 			case runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
-				return safeName(alias.Name + "__delta_rel"), true
+				return builder.dialect.EscapeIdentifier(alias.Name + "__delta_rel"), true
 			}
 		}
 	}
 
 	// check if identifier is measure but not passed as alias
-	for _, mes := range mv.Measures {
+	for _, mes := range builder.mv.Measures {
 		if mes.Name == name {
-			return safeName(mes.Name), true
+			if !builder.having {
+				return safeName(mes.Name), true
+			}
+
+			return mes.Expression, true
+		}
+	}
+
+	for _, m := range builder.measures {
+		if m.Name == name {
+			return safeName(name), true
 		}
 	}
 
 	return "", false
 }
 
-func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression) bool {
+func (builder *ExpressionBuilder) identifierIsUnnest(expr *runtimev1.Expression) bool {
 	ident, isIdent := expr.Expression.(*runtimev1.Expression_Ident)
 	if isIdent {
-		for _, dim := range mv.Dimensions {
+		for _, dim := range builder.mv.Dimensions {
 			if dim.Name == ident.Ident {
 				return dim.Unnest
 			}
@@ -279,23 +299,7 @@ func identifierIsUnnest(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expressio
 	return false
 }
 
-func dimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2, dialect drivers.Dialect) (dimSelect, unnestClause string) {
-	colName := safeName(dim.Name)
-	if !dim.Unnest || dialect == drivers.DialectDruid {
-		return fmt.Sprintf(`(%s) as %s`, metricsViewDimensionExpression(dim), colName), ""
-	}
-
-	unnestColName := safeName(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
-	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
-	if dim.Expression == "" {
-		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl("unnested_colName") ...
-		return sel, fmt.Sprintf(`, LATERAL UNNEST(%s.%s) tbl(%s)`, dialect.EscapeTable(db, dbSchema, table), colName, unnestColName)
-	}
-
-	return sel, fmt.Sprintf(`, LATERAL UNNEST(%s) tbl(%s)`, dim.Expression, unnestColName)
-}
-
-func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
+func (builder *ExpressionBuilder) buildExpression(expr *runtimev1.Expression) (string, []any, error) {
 	if expr == nil {
 		return "", nil, nil
 	}
@@ -309,40 +313,40 @@ func buildExpression(mv *runtimev1.MetricsViewSpec, expr *runtimev1.Expression, 
 		return "?", []any{arg}, nil
 
 	case *runtimev1.Expression_Ident:
-		expr, isIdent := columnIdentifierExpression(mv, aliases, e.Ident)
+		expr, isIdent := builder.columnIdentifierExpression(e.Ident)
 		if !isIdent {
 			return "", nil, fmt.Errorf("unknown column filter: %s", e.Ident)
 		}
 		return expr, nil, nil
 
 	case *runtimev1.Expression_Cond:
-		return buildConditionExpression(mv, e.Cond, aliases, dialect)
+		return builder.buildConditionExpression(e.Cond)
 	}
 
 	return "", nil, nil
 }
 
-func buildConditionExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
+func (builder *ExpressionBuilder) buildConditionExpression(cond *runtimev1.Condition) (string, []any, error) {
 	switch cond.Op {
 	case runtimev1.Operation_OPERATION_LIKE, runtimev1.Operation_OPERATION_NLIKE:
-		return buildLikeExpression(mv, cond, aliases, dialect)
+		return builder.buildLikeExpression(cond)
 
 	case runtimev1.Operation_OPERATION_IN, runtimev1.Operation_OPERATION_NIN:
-		return buildInExpression(mv, cond, aliases, dialect)
+		return builder.buildInExpression(cond)
 
 	case runtimev1.Operation_OPERATION_AND:
-		return buildAndOrExpressions(mv, cond, aliases, dialect, " AND ")
+		return builder.buildAndOrExpressions(cond, " AND ")
 
 	case runtimev1.Operation_OPERATION_OR:
-		return buildAndOrExpressions(mv, cond, aliases, dialect, " OR ")
+		return builder.buildAndOrExpressions(cond, " OR ")
 
 	default:
-		leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
+		leftExpr, args, err := builder.buildExpression(cond.Exprs[0])
 		if err != nil {
 			return "", nil, err
 		}
 
-		rightExpr, subArgs, err := buildExpression(mv, cond.Exprs[1], aliases, dialect)
+		rightExpr, subArgs, err := builder.buildExpression(cond.Exprs[1])
 		if err != nil {
 			return "", nil, err
 		}
@@ -352,17 +356,17 @@ func buildConditionExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Con
 	}
 }
 
-func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
+func (builder *ExpressionBuilder) buildLikeExpression(cond *runtimev1.Condition) (string, []any, error) {
 	if len(cond.Exprs) != 2 {
 		return "", nil, fmt.Errorf("like/not like expression should have exactly 2 sub expressions")
 	}
 
-	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
+	leftExpr, args, err := builder.buildExpression(cond.Exprs[0])
 	if err != nil {
 		return "", nil, err
 	}
 
-	rightExpr, subArgs, err := buildExpression(mv, cond.Exprs[1], aliases, dialect)
+	rightExpr, subArgs, err := builder.buildExpression(cond.Exprs[1])
 	if err != nil {
 		return "", nil, err
 	}
@@ -374,15 +378,15 @@ func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Conditio
 	}
 
 	// identify if immediate identifier has unnest
-	unnest := identifierIsUnnest(mv, cond.Exprs[0])
+	unnest := builder.identifierIsUnnest(cond.Exprs[0])
 
 	var clause string
 	// Build [NOT] len(list_filter("dim", x -> x ILIKE ?)) > 0
-	if unnest && dialect != drivers.DialectDruid {
+	if unnest && builder.dialect != drivers.DialectDruid && builder.dialect != drivers.DialectPinot {
 		clause = fmt.Sprintf("%s len(list_filter((%s), x -> x ILIKE %s)) > 0", notKeyword, leftExpr, rightExpr)
 	} else {
-		if dialect == drivers.DialectDruid {
-			// Druid does not support ILIKE
+		if builder.dialect == drivers.DialectDruid || builder.dialect == drivers.DialectPinot {
+			// Druid and Pinot does not support ILIKE
 			clause = fmt.Sprintf("LOWER(%s) %s LIKE LOWER(CAST(%s AS VARCHAR))", leftExpr, notKeyword, rightExpr)
 		} else {
 			clause = fmt.Sprintf("(%s) %s ILIKE %s", leftExpr, notKeyword, rightExpr)
@@ -398,12 +402,12 @@ func buildLikeExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Conditio
 	return clause, args, nil
 }
 
-func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect) (string, []any, error) {
+func (builder *ExpressionBuilder) buildInExpression(cond *runtimev1.Condition) (string, []any, error) {
 	if len(cond.Exprs) <= 1 {
 		return "", nil, fmt.Errorf("in/not in expression should have at least 2 sub expressions")
 	}
 
-	leftExpr, args, err := buildExpression(mv, cond.Exprs[0], aliases, dialect)
+	leftExpr, args, err := builder.buildExpression(cond.Exprs[0])
 	if err != nil {
 		return "", nil, err
 	}
@@ -424,7 +428,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 				continue // Handled later using "dim IS [NOT] NULL" clause
 			}
 		}
-		inVal, subArgs, err := buildExpression(mv, subExpr, aliases, dialect)
+		inVal, subArgs, err := builder.buildExpression(subExpr)
 		if err != nil {
 			return "", nil, err
 		}
@@ -433,7 +437,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 	}
 
 	// identify if immediate identifier has unnest
-	unnest := identifierIsUnnest(mv, cond.Exprs[0])
+	unnest := builder.identifierIsUnnest(cond.Exprs[0])
 
 	clauses := make([]string, 0)
 
@@ -442,7 +446,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 		questionMarks := strings.Join(valClauses, ",")
 		var clause string
 		// Build [NOT] list_has_any("dim", ARRAY[?, ?, ...])
-		if unnest && dialect != drivers.DialectDruid {
+		if unnest && builder.dialect != drivers.DialectDruid {
 			clause = fmt.Sprintf("%s list_has_any((%s), ARRAY[%s])", notKeyword, leftExpr, questionMarks)
 		} else {
 			clause = fmt.Sprintf("(%s) %s IN (%s)", leftExpr, notKeyword, questionMarks)
@@ -471,7 +475,7 @@ func buildInExpression(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition,
 	return condsClause, args, nil
 }
 
-func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condition, aliases []*runtimev1.MetricsViewComparisonMeasureAlias, dialect drivers.Dialect, joiner string) (string, []any, error) {
+func (builder *ExpressionBuilder) buildAndOrExpressions(cond *runtimev1.Condition, joiner string) (string, []any, error) {
 	if len(cond.Exprs) == 0 {
 		return "", nil, fmt.Errorf("or/and expression should have at least 1 sub expression")
 	}
@@ -479,7 +483,7 @@ func buildAndOrExpressions(mv *runtimev1.MetricsViewSpec, cond *runtimev1.Condit
 	clauses := make([]string, 0)
 	var args []any
 	for _, expr := range cond.Exprs {
-		clause, subArgs, err := buildExpression(mv, expr, aliases, dialect)
+		clause, subArgs, err := builder.buildExpression(expr)
 		if err != nil {
 			return "", nil, err
 		}
@@ -628,18 +632,6 @@ func metricsViewDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runti
 		}
 	}
 	return nil, fmt.Errorf("dimension %s not found", dimName)
-}
-
-func metricsViewDimensionExpression(dimension *runtimev1.MetricsViewSpec_DimensionV2) string {
-	if dimension.Expression != "" {
-		return dimension.Expression
-	}
-	if dimension.Column != "" {
-		return safeName(dimension.Column)
-	}
-	// backwards compatibility for older projects that have not run reconcile on this dashboard
-	// in that case `column` will not be present
-	return safeName(dimension.Name)
 }
 
 func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {
@@ -899,4 +891,73 @@ func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsViewSpec) string
 		filename += "_filtered"
 	}
 	return filename
+}
+
+func rewriteToMetricsResolverExpression(expr *runtimev1.Expression) *metricsview.Expression {
+	if expr == nil {
+		return nil
+	}
+
+	res := &metricsview.Expression{}
+
+	switch e := expr.Expression.(type) {
+	case *runtimev1.Expression_Ident:
+		res.Name = e.Ident
+	case *runtimev1.Expression_Val:
+		res.Value = e.Val.AsInterface()
+	case *runtimev1.Expression_Cond:
+		var op metricsview.Operator
+		switch e.Cond.Op {
+		case runtimev1.Operation_OPERATION_UNSPECIFIED:
+			op = metricsview.OperatorUnspecified
+		case runtimev1.Operation_OPERATION_EQ:
+			op = metricsview.OperatorEq
+		case runtimev1.Operation_OPERATION_NEQ:
+			op = metricsview.OperatorNeq
+		case runtimev1.Operation_OPERATION_LT:
+			op = metricsview.OperatorLt
+		case runtimev1.Operation_OPERATION_LTE:
+			op = metricsview.OperatorLte
+		case runtimev1.Operation_OPERATION_GT:
+			op = metricsview.OperatorGt
+		case runtimev1.Operation_OPERATION_GTE:
+			op = metricsview.OperatorGte
+		case runtimev1.Operation_OPERATION_OR:
+			op = metricsview.OperatorOr
+		case runtimev1.Operation_OPERATION_AND:
+			op = metricsview.OperatorAnd
+		case runtimev1.Operation_OPERATION_IN:
+			op = metricsview.OperatorIn
+		case runtimev1.Operation_OPERATION_NIN:
+			op = metricsview.OperatorNin
+		case runtimev1.Operation_OPERATION_LIKE:
+			op = metricsview.OperatorIlike
+		case runtimev1.Operation_OPERATION_NLIKE:
+			op = metricsview.OperatorNilike
+		}
+
+		exprs := make([]*metricsview.Expression, 0, len(e.Cond.Exprs))
+		for _, e := range e.Cond.Exprs {
+			exprs = append(exprs, rewriteToMetricsResolverExpression(e))
+		}
+
+		res.Condition = &metricsview.Condition{
+			Operator:    op,
+			Expressions: exprs,
+		}
+	case *runtimev1.Expression_Subquery:
+		measures := make([]metricsview.Measure, 0, len(e.Subquery.Measures))
+		for _, m := range e.Subquery.Measures {
+			measures = append(measures, metricsview.Measure{Name: m})
+		}
+
+		res.Subquery = &metricsview.Subquery{
+			Dimension: metricsview.Dimension{Name: e.Subquery.Dimension},
+			Measures:  measures,
+			Where:     rewriteToMetricsResolverExpression(e.Subquery.Where),
+			Having:    rewriteToMetricsResolverExpression(e.Subquery.Having),
+		}
+	}
+
+	return res
 }

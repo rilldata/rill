@@ -19,7 +19,10 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/duckdb/extensions"
+	"github.com/rilldata/rill/runtime/drivers/file"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -48,14 +51,6 @@ var spec = drivers.Spec{
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "DuckDB SQL query.",
-			Placeholder: "select * from read_csv('data/file.csv', header=true);",
-		},
 		{
 			Key:         "db",
 			Type:        drivers.StringPropertyType,
@@ -90,6 +85,11 @@ type Driver struct {
 func (d Driver) Open(instanceID string, cfgMap map[string]any, ac *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("duckdb driver can't be shared")
+	}
+
+	err := extensions.InstallExtensionsOnce()
+	if err != nil {
+		logger.Warn("failed to install embedded DuckDB extensions, let DuckDB download them", zap.Error(err))
 	}
 
 	cfg, err := newConfig(cfgMap)
@@ -366,6 +366,35 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 // Use OLAPStore instead.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false
+}
+
+// AsModelExecutor implements drivers.Handle.
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.InputHandle == c && opts.OutputHandle == c {
+		return &selfToSelfExecutor{c, opts}, true
+	}
+	if opts.OutputHandle == c {
+		if sqlstore, ok := opts.InputHandle.AsSQLStore(); ok {
+			return &sqlStoreToSelfExecutor{c, sqlstore, opts}, true
+		}
+	}
+	if opts.InputHandle == c {
+		if opts.OutputHandle.Driver() == "file" {
+			outputProps := &file.ModelOutputProperties{}
+			if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+				return nil, false
+			}
+			if supportsExportFormat(outputProps.Format) {
+				return &selfToFileExecutor{c, opts}, true
+			}
+		}
+	}
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	return c, true
 }
 
 // AsTransporter implements drivers.Connection.

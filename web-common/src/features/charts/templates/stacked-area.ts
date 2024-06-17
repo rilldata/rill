@@ -1,11 +1,16 @@
 import { ChartField } from "./build-template";
-import { multiLayerBaseSpec } from "./utils";
+import {
+  multiLayerBaseSpec,
+  sanitizeValueForVega,
+  sanitizeValuesForSpec,
+} from "./utils";
 
 /** Temporary solution for the lack of vega lite type exports */
 interface TooltipValue {
   title?: string;
   field: string;
   format?: string;
+  formatType?: string;
   type: "quantitative" | "temporal" | "nominal" | "ordinal";
 }
 export function buildStackedArea(
@@ -19,6 +24,7 @@ export function buildStackedArea(
     {
       title: quantitativeField.label,
       field: quantitativeField.name,
+      formatType: "measureFormatter",
       type: "quantitative",
     },
     {
@@ -35,12 +41,11 @@ export function buildStackedArea(
   ];
 
   const multiValueTooltipChannel: TooltipValue[] | undefined =
-    nominalField?.values?.map((value) => {
-      return {
-        field: value === null ? "null" : value,
-        type: "quantitative",
-      };
-    });
+    nominalField?.values?.map((value) => ({
+      field: sanitizeValueForVega(value),
+      type: "quantitative",
+      formatType: "measureFormatter",
+    }));
 
   if (multiValueTooltipChannel?.length) {
     multiValueTooltipChannel.unshift({
@@ -60,6 +65,21 @@ export function buildStackedArea(
     },
     color: { field: nominalField?.name, type: "nominal", legend: null },
   };
+
+  if (nominalField?.values?.length) {
+    const values = sanitizeValuesForSpec(nominalField.values);
+    baseSpec.transform = [
+      {
+        calculate: `indexof([${values
+          ?.map((v) => `'${v}'`)
+          .reverse()
+          .join(",")}], datum.${nominalField?.name})`,
+        as: "order",
+      },
+    ];
+    baseSpec.encoding.order = { field: "order", type: "ordinal" };
+  }
+
   baseSpec.layer = [
     {
       mark: { type: "area", clip: true, opacity: 0.7 },
@@ -85,7 +105,7 @@ export function buildStackedArea(
       encoding: {
         color: {
           condition: {
-            param: "x-hover",
+            param: "hover",
             empty: false,
             value: "var(--color-primary-300)",
           },
@@ -99,7 +119,7 @@ export function buildStackedArea(
       },
       params: [
         {
-          name: "x_hover",
+          name: "hover",
           select: {
             type: "point",
             encodings: ["x"],
@@ -111,7 +131,7 @@ export function buildStackedArea(
       ],
     },
     {
-      transform: [{ filter: { param: "x-hover", empty: false } }],
+      transform: [{ filter: { param: "hover", empty: false } }],
       mark: {
         type: "point",
         filled: true,

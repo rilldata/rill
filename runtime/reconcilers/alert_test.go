@@ -31,10 +31,10 @@ measures:
 - expression: count(*)
 `,
 		"/alerts/a1.yaml": `
-kind: alert
+type: alert
 title: Test Alert
 refs:
-- kind: MetricsView
+- type: MetricsView
   name: mv1
 watermark: inherit
 intervals:
@@ -155,7 +155,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
 					"country":   "Denmark",
-					"measure_0": 4,
+					"measure_0": "4",
 				})),
 			},
 			SentNotifications: true,
@@ -187,10 +187,10 @@ measures:
 - expression: count(*)
 `,
 		"/alerts/a1.yaml": `
-kind: alert
+type: alert
 title: Test Alert
 refs:
-- kind: MetricsView
+- type: MetricsView
   name: mv1
 watermark: inherit
 intervals:
@@ -309,7 +309,7 @@ SELECT '2024-01-04T00:00:00Z'::TIMESTAMP as __time, 'Denmark' as country
 				Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL,
 				FailRow: must(structpb.NewStruct(map[string]any{
 					"country":   "Denmark",
-					"measure_0": 4,
+					"measure_0": "4",
 				})),
 			},
 			SentNotifications: true,
@@ -350,10 +350,12 @@ func newMetricsView(name, table, timeDim string, measures, dimensions []string) 
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {

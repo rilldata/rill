@@ -1,21 +1,21 @@
-import { notifications } from "@rilldata/web-common/components/notifications";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   extractFileName,
   getTopLevelFolder,
-} from "@rilldata/web-common/features/sources/extract-file-name";
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
+import { fileIsMainEntity } from "@rilldata/web-common/features/entity-management/file-selectors";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import {
   runtimeServiceDeleteFile,
   runtimeServiceRenameFile,
 } from "@rilldata/web-common/runtime-client";
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+import { get } from "svelte/store";
 import {
-  addLeadingSlash,
   FolderToResourceKind,
+  addLeadingSlash,
   removeLeadingSlash,
 } from "./entity-mappers";
-import { get } from "svelte/store";
 
 export async function renameFileArtifact(
   instanceId: string,
@@ -56,27 +56,35 @@ export async function renameFileArtifact(
       fromResName?.kind &&
       topLevelFromFolder !== topLevelToFolder &&
       FolderToResourceKind[removeLeadingSlash(topLevelFromFolder)] ===
-        fromResName?.kind
+        fromResName?.kind &&
+      !toPath.endsWith(".sql")
     ) {
-      notifications.send({
-        message: `Moving ${fromName} out of native folder. Please make sure to add "kind" key to denote the type.`,
+      eventBus.emit("notification", {
+        message: `Moving ${fromName} out of its native folder. Make sure to specify the resource type with the "type" key.`,
       });
     }
   } catch (err) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: `Failed to rename ${fromName} to ${toName}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
     });
   }
 }
 
-export async function deleteFileArtifact(instanceId: string, filePath: string) {
+export async function deleteFileArtifact(
+  instanceId: string,
+  filePath: string,
+  force = false,
+) {
   const name = extractFileName(filePath);
   try {
-    await runtimeServiceDeleteFile(instanceId, removeLeadingSlash(filePath));
+    await runtimeServiceDeleteFile(instanceId, {
+      path: filePath,
+      force,
+    });
 
     httpRequestQueue.removeByName(name);
   } catch (err) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: `Failed to delete ${name}: ${extractMessage(err.response?.data?.message ?? err.message)}`,
     });
   }

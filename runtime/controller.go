@@ -57,7 +57,7 @@ var ReconcilerInitializers = make(map[string]ReconcilerInitializer)
 // RegisterReconciler registers a reconciler initializer for a specific resource kind
 func RegisterReconcilerInitializer(resourceKind string, initializer ReconcilerInitializer) {
 	if ReconcilerInitializers[resourceKind] != nil {
-		panic(fmt.Errorf("reconciler already registered for resource kind %q", resourceKind))
+		panic(fmt.Errorf("reconciler already registered for resource type %q", resourceKind))
 	}
 	ReconcilerInitializers[resourceKind] = initializer
 }
@@ -800,7 +800,7 @@ func (c *Controller) reconciler(resourceKind string) Reconciler {
 
 	initializer := ReconcilerInitializers[resourceKind]
 	if initializer == nil {
-		panic(fmt.Errorf("no reconciler registered for resource kind %q", resourceKind))
+		panic(fmt.Errorf("no reconciler registered for resource type %q", resourceKind))
 	}
 
 	reconciler = initializer(c)
@@ -1108,7 +1108,7 @@ func (c *Controller) markPending(n *runtimev1.ResourceName) (skip bool, err erro
 			return false, err
 		}
 		if !r.Meta.Hidden {
-			logArgs := []zap.Field{zap.String("name", n.Name), zap.String("kind", unqualifiedKind(n.Kind)), zap.Any("error", errCyclicDependency)}
+			logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", unqualifiedKind(n.Kind)), zap.Any("error", errCyclicDependency)}
 			c.Logger.Warn("Skipping resource", logArgs...)
 		}
 		return true, nil
@@ -1203,6 +1203,19 @@ func (c *Controller) trySchedule(n *runtimev1.ResourceName) (success bool, err e
 		}
 	}
 
+	// If the resource was renamed and an invocation for its former name is currently running, it means the resource was renamed while it was reconciling.
+	// It is not possible that the running invocation is for a new resource because we always run rename reconciles before regular reconciles.
+	// It is also not possible that the running invocation is for another renamed resource because safeRename turns such cases into creates.
+	//
+	// In this case, we add the new name to the waitlist of the running invocation and return true.
+	if r.Meta.RenamedFrom != nil {
+		inv, ok := c.invocations[nameStr(r.Meta.RenamedFrom)]
+		if ok {
+			inv.addToWaitlist(n, r.Meta.SpecVersion)
+			return true, nil
+		}
+	}
+
 	// We want deletes to run before renames or regular reconciles.
 	// And we want renames to run before regular reconciles.
 	// Return false if there are deleted or renamed resources, and this isn't one of them.
@@ -1249,7 +1262,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 
 	// Log invocation
 	if !inv.isHidden {
-		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("kind", unqualifiedKind(n.Kind))}
+		logArgs := []zap.Field{zap.String("name", n.Name), zap.String("type", unqualifiedKind(n.Kind))}
 		if inv.isDelete {
 			logArgs = append(logArgs, zap.Bool("deleted", inv.isDelete))
 		}
@@ -1268,7 +1281,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 			if r := recover(); r != nil {
 				stack := make([]byte, 64<<10)
 				stack = stack[:runtime.Stack(stack, false)]
-				c.Logger.Error("panic in reconciler", zap.String("name", n.Name), zap.String("kind", n.Kind), zap.Any("error", r), zap.String("stack", string(stack)))
+				c.Logger.Error("panic in reconciler", zap.String("name", n.Name), zap.String("type", n.Kind), zap.Any("error", r), zap.String("stack", string(stack)))
 
 				inv.result = ReconcileResult{Err: fmt.Errorf("panic: %v", r)}
 				if inv.holdsLock {
@@ -1285,7 +1298,7 @@ func (c *Controller) invoke(r *runtimev1.Resource) error {
 		tracerAttrs := []attribute.KeyValue{
 			attribute.String("instance_id", c.InstanceID),
 			attribute.String("name", n.Name),
-			attribute.String("kind", unqualifiedKind(n.Kind)),
+			attribute.String("type", unqualifiedKind(n.Kind)),
 		}
 		if inv.isDelete {
 			tracerAttrs = append(tracerAttrs, attribute.Bool("deleted", inv.isDelete))
@@ -1318,7 +1331,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 	// Log result
 	logArgs := []zap.Field{
 		zap.String("name", inv.name.Name),
-		zap.String("kind", unqualifiedKind(inv.name.Kind)),
+		zap.String("type", unqualifiedKind(inv.name.Kind)),
 	}
 	elapsed := time.Since(inv.startedOn).Round(time.Millisecond)
 	if elapsed > 0 {
@@ -1343,12 +1356,14 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 
 	r, err := c.catalog.get(inv.name, true, false)
 	if err != nil {
-		// Self-deletes are immediately hard deletes. So only return the error if it's not a self-delete.
-		if !(inv.deletedSelf && errors.Is(err, drivers.ErrResourceNotFound)) {
+		if !errors.Is(err, drivers.ErrResourceNotFound) {
 			return err
 		}
+		// There are two cases where the resource no longer exists:
+		// 1. Self-deletes, which are immediately hard deletes.
+		// 2. When a resource was renamed while reconciling.
 	}
-	// NOTE: Due to self-deletes, r may be nil!
+	// NOTE: Due to self-deletes and renames, r may be nil!
 
 	if inv.isDelete {
 		// Extra checks in case item was re-created during deletion, or deleted during a normal reconciling (in which case this is just a cancellation of the normal reconcile, not the result of deletion)
@@ -1431,7 +1446,7 @@ func (c *Controller) processCompletedInvocation(inv *invocation) error {
 
 	// Re-enqueue children if:
 	if !inv.reschedule && // Not rescheduling  (since then the children would be blocked anyway)
-		r != nil && // Not a hard delete (children were already enqueued when the soft delete happened)
+		r != nil && // Not a hard delete or cancelled due to rename (children were already enqueued when the soft delete or rename happened)
 		r.Meta.DeletedOn == nil && // Not a soft delete (children were already enqueued when c.Delete(...) was called)
 		!c.catalog.isCyclic(inv.name) && // Hasn't become cyclic (since DAG access is not safe for cyclic names)
 		true {

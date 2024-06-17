@@ -80,6 +80,11 @@ type DB interface {
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
+	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
+	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
+	FindProjectWhitelistedDomainsForDomain(ctx context.Context, domain string) ([]*ProjectWhitelistedDomain, error)
+	InsertProjectWhitelistedDomain(ctx context.Context, opts *InsertProjectWhitelistedDomainOptions) (*ProjectWhitelistedDomain, error)
+	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
@@ -107,6 +112,7 @@ type DB interface {
 	FindSuperusers(ctx context.Context) ([]*User, error)
 	UpdateSuperuser(ctx context.Context, userID string, superuser bool) error
 	CheckUserIsAnOrganizationMember(ctx context.Context, userID, orgID string) (bool, error)
+	CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
@@ -146,6 +152,11 @@ type DB interface {
 	DeleteDeviceAuthCode(ctx context.Context, deviceCode string) error
 	UpdateDeviceAuthCode(ctx context.Context, id, userID string, state DeviceAuthCodeState) error
 	DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error
+
+	FindAuthorizationCode(ctx context.Context, code string) (*AuthorizationCode, error)
+	InsertAuthorizationCode(ctx context.Context, code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiration time.Time) (*AuthorizationCode, error)
+	DeleteAuthorizationCode(ctx context.Context, code string) error
+	DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error
 
 	FindOrganizationRole(ctx context.Context, name string) (*OrganizationRole, error)
 	FindProjectRole(ctx context.Context, name string) (*ProjectRole, error)
@@ -259,6 +270,7 @@ type Project struct {
 	Name                 string
 	Description          string
 	Public               bool
+	CreatedByUserID      *string `db:"created_by_user_id"`
 	Provisioner          string
 	GithubURL            *string           `db:"github_url"`
 	GithubInstallationID *int64            `db:"github_installation_id"`
@@ -282,6 +294,7 @@ type InsertProjectOptions struct {
 	Name                 string `validate:"slug"`
 	Description          string
 	Public               bool
+	CreatedByUserID      *string
 	Provisioner          string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
@@ -504,9 +517,10 @@ type AuthClient struct {
 
 // Hard-coded auth client IDs (created in the migrations).
 const (
-	AuthClientIDRillWeb     = "12345678-0000-0000-0000-000000000001"
-	AuthClientIDRillCLI     = "12345678-0000-0000-0000-000000000002"
-	AuthClientIDRillSupport = "12345678-0000-0000-0000-000000000003"
+	AuthClientIDRillWeb      = "12345678-0000-0000-0000-000000000001"
+	AuthClientIDRillCLI      = "12345678-0000-0000-0000-000000000002"
+	AuthClientIDRillSupport  = "12345678-0000-0000-0000-000000000003"
+	AuthClientIDRillWebLocal = "12345678-0000-0000-0000-000000000004"
 )
 
 // DeviceAuthCodeState is an enum representing the approval state of a DeviceAuthCode
@@ -530,6 +544,20 @@ type DeviceAuthCode struct {
 	UserID        *string             `db:"user_id"`
 	CreatedOn     time.Time           `db:"created_on"`
 	UpdatedOn     time.Time           `db:"updated_on"`
+}
+
+// AuthorizationCode represents an authorization code used for OAuth2 PKCE auth flow.
+type AuthorizationCode struct {
+	ID                  string    `db:"id"`
+	Code                string    `db:"code"`
+	UserID              string    `db:"user_id"`
+	ClientID            string    `db:"client_id"`
+	RedirectURI         string    `db:"redirect_uri"`
+	CodeChallenge       string    `db:"code_challenge"`
+	CodeChallengeMethod string    `db:"code_challenge_method"`
+	Expiration          time.Time `db:"expires_on"`
+	CreatedOn           time.Time `db:"created_on"`
+	UpdatedOn           time.Time `db:"updated_on"`
 }
 
 // Constants for known role names (created in migrations).
@@ -634,6 +662,26 @@ type InsertOrganizationWhitelistedDomainOptions struct {
 
 // OrganizationWhitelistedDomainWithJoinedRoleNames convenience type used for display-friendly representation of an OrganizationWhitelistedDomain.
 type OrganizationWhitelistedDomainWithJoinedRoleNames struct {
+	Domain   string
+	RoleName string `db:"name"`
+}
+
+type ProjectWhitelistedDomain struct {
+	ID            string
+	ProjectID     string `db:"project_id"`
+	ProjectRoleID string `db:"project_role_id"`
+	Domain        string
+	CreatedOn     time.Time `db:"created_on"`
+	UpdatedOn     time.Time `db:"updated_on"`
+}
+
+type InsertProjectWhitelistedDomainOptions struct {
+	ProjectID     string `validate:"required"`
+	ProjectRoleID string `validate:"required"`
+	Domain        string `validate:"domain"`
+}
+
+type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 	Domain   string
 	RoleName string `db:"name"`
 }

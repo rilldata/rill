@@ -2,27 +2,24 @@ package worker
 
 import (
 	"context"
+	"time"
 
-	"github.com/hashicorp/go-version"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.uber.org/zap"
 )
 
-func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
-	// Resolve latest version
-	latestVersion := "latest"
-	if w.admin.VersionNumber != "" {
-		latestVersion = w.admin.VersionNumber
-	}
+const upgradeLatestVersionForProjectTimeout = 5 * time.Minute
 
-	// Verify latest version is a valid SemVer or 'latest'
-	if latestVersion != "latest" {
-		_, err := version.NewVersion(latestVersion)
-		if err != nil {
-			return err
-		}
+func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
+	// Resolve 'latest' version
+	latestVersion := w.admin.ResolveLatestRuntimeVersion()
+
+	// Verify version is valid
+	err := w.admin.ValidateRuntimeVersion(latestVersion)
+	if err != nil {
+		return err
 	}
 
 	// Iterate over batches of projects with 'latest' version
@@ -47,7 +44,7 @@ func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
 			err := w.upgradeAllDeploymentsForProject(ctx, proj, latestVersion)
 			if err != nil {
 				// We log the error, but continues to the next deployment
-				w.logger.Error("upgrade latest version projects: failed to upgrade project deployments", zap.String("project_id", proj.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
+				w.logger.Error("upgrade latest version projects: failed to upgrade project deployments", zap.String("project_id", proj.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx), zap.Error(err))
 			}
 		}
 	}
@@ -56,6 +53,10 @@ func (w *Worker) upgradeLatestVersionProjects(ctx context.Context) error {
 }
 
 func (w *Worker) upgradeAllDeploymentsForProject(ctx context.Context, proj *database.Project, latestVersion string) error {
+	// Apply timeout
+	ctx, cancel := context.WithTimeout(ctx, upgradeLatestVersionForProjectTimeout)
+	defer cancel()
+
 	// Get all project deployments
 	depls, err := w.admin.DB.FindDeploymentsForProject(ctx, proj.ID)
 	if err != nil {
@@ -81,7 +82,7 @@ func (w *Worker) upgradeAllDeploymentsForProject(ctx context.Context, proj *data
 				EvictCachedRepo: false,
 			})
 			if err != nil {
-				w.logger.Error("upgrade latest version projects: failed to upgrade deployment", zap.String("deployment_id", depl.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx))
+				w.logger.Error("upgrade latest version projects: failed to upgrade deployment", zap.String("deployment_id", depl.ID), zap.String("version", latestVersion), observability.ZapCtx(ctx), zap.Error(err))
 				return err
 			}
 

@@ -1,20 +1,20 @@
 import { expect } from "@playwright/test";
-import { splitFolderAndName } from "@rilldata/web-common/features/sources/extract-file-name";
 import type { Page } from "playwright";
-import { renameEntityUsingTitle } from "./commonHelpers";
-import { waitForFileEntry } from "./waitHelpers";
+import { renameFileUsingTitle } from "./commonHelpers";
+import { waitForFileNavEntry } from "./waitHelpers";
 
-export async function createModel(page: Page, filePath: string) {
-  const [folder, fileName] = splitFolderAndName(filePath);
-
+export async function createModel(page: Page, modelFileName: string) {
   // add asset button
   await page.getByLabel("Add Asset").click();
   // add model menu item
   await page.getByLabel("Add Model").click();
 
-  await waitForFileEntry(page, `${folder}/model.sql`, true);
-  await renameEntityUsingTitle(page, fileName);
-  await waitForFileEntry(page, filePath, true);
+  // Wait for default model
+  await waitForFileNavEntry(page, "/models/model.sql", true);
+
+  // Rename model
+  await renameFileUsingTitle(page, modelFileName);
+  await waitForFileNavEntry(page, `/models/${modelFileName}`, true);
 }
 
 export async function modelHasError(page: Page, hasError: boolean, error = "") {

@@ -1,13 +1,10 @@
 import { filterExpressions } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import { getRouteFromName } from "@rilldata/web-common/features/entity-management/entity-mappers";
-import { useMainEntityFiles } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
   ResourceKind,
-  useFilteredResourceNames,
+  useClientFilteredResources,
   useFilteredResources,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { EntityType } from "@rilldata/web-common/features/entity-management/types";
 import {
   V1Expression,
   V1MetricsViewSpec,
@@ -21,27 +18,12 @@ import type {
 } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
-export function useDashboardNames(instanceId: string) {
-  return useFilteredResourceNames(instanceId, ResourceKind.MetricsView);
-}
-
-export function useDashboardFileNames(instanceId: string) {
-  return useMainEntityFiles(instanceId, "dashboards");
-}
-
-export function useDashboardRoutes(instanceId: string) {
-  return useMainEntityFiles(
-    instanceId,
-    "dashboards",
-    (name) => getRouteFromName(name, EntityType.MetricsDefinition) + "/edit",
-  );
-}
-
 export function useDashboard(instanceId: string, metricViewName: string) {
   return useResource(instanceId, metricViewName, ResourceKind.MetricsView);
 }
 
 export function useValidDashboards(instanceId: string) {
+  // This is used in cloud as well so do not use "useClientFilteredResources"
   return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
     data?.resources?.filter((res) => !!res.metricsView?.state?.validSpec),
   );
@@ -161,7 +143,9 @@ export const useGetDashboardsForModel = (
   instanceId: string,
   modelName: string,
 ) => {
-  return useFilteredResources(instanceId, ResourceKind.MetricsView, (data) =>
-    data.resources.filter((res) => res.metricsView?.spec?.table === modelName),
+  return useClientFilteredResources(
+    instanceId,
+    ResourceKind.MetricsView,
+    (res) => res.metricsView?.spec?.table === modelName,
   );
 };

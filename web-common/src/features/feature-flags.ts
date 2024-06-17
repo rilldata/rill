@@ -1,30 +1,26 @@
-import type { BeforeNavigate } from "@sveltejs/kit";
-import type { Readable } from "svelte/store";
-import { writable } from "svelte/store";
-import { parse } from "yaml";
-import { createRuntimeServiceGetFile } from "../runtime-client";
-import { runtime } from "../runtime-client/runtime-store";
-import { debounce } from "../lib/create-debouncer";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-
-export type DerivedReadables<T> = {
-  [K in keyof T]: Readable<T[K]>;
-};
+import { writable } from "svelte/store";
+import { debounce } from "../lib/create-debouncer";
+import {
+  createRuntimeServiceGetInstance,
+  V1InstanceFeatureFlags,
+} from "../runtime-client";
+import { runtime } from "../runtime-client/runtime-store";
 
 class FeatureFlag {
-  private _system = false;
+  private _internal = false;
   private state = writable(false);
+  subscribe = this.state.subscribe;
 
-  constructor(scope: "user" | "system" = "user", initial = false) {
-    this._system = scope === "system";
+  constructor(scope: "user" | "rill", initial: boolean) {
+    this._internal = scope === "rill";
     this.set(initial);
   }
 
-  get system() {
-    return this._system;
+  get internalOnly() {
+    return this._internal;
   }
 
-  subscribe = this.state.subscribe;
   toggle = () => this.state.update((n) => !n);
   set = (n: boolean) => this.state.set(n);
 }
@@ -32,53 +28,36 @@ class FeatureFlag {
 type FeatureFlagKey = keyof Omit<FeatureFlags, "set">;
 
 class FeatureFlags {
-  adminServer = new FeatureFlag("system");
-  readOnly = new FeatureFlag("system");
-  ai = new FeatureFlag("system", true);
-  pivot = new FeatureFlag();
-  cloudDataViewer = new FeatureFlag();
-  customDashboards = new FeatureFlag();
+  adminServer = new FeatureFlag("rill", false);
+  readOnly = new FeatureFlag("rill", false);
+
+  ai = new FeatureFlag("user", !import.meta.env.VITE_PLAYWRIGHT_TEST);
+  exports = new FeatureFlag("user", true);
+  cloudDataViewer = new FeatureFlag("user", false);
+  customDashboards = new FeatureFlag("user", false);
+  dimensionSearch = new FeatureFlag("user", false);
+  clickhouseModeling = new FeatureFlag("user", false);
 
   constructor() {
-    const urlParams = new URLSearchParams(window.location.search);
-    const urlFlags = (urlParams.get("features") ?? "").split(",");
-
-    const localFlags = (localStorage.getItem("features") ?? "").split(",");
-
-    const staticFlags = [...urlFlags, ...localFlags];
-
-    const updateFlags = debounce((userFlags: Set<string>) => {
-      Object.keys(this).forEach((key) => {
-        const flag = this[key] as FeatureFlag;
-        if (flag.system) return;
-        if (userFlags.has(key)) flag.set(true);
-      });
+    const updateFlags = debounce((userFlags: V1InstanceFeatureFlags) => {
+      for (const key in userFlags) {
+        const flag = this[key] as FeatureFlag | undefined;
+        if (!flag || flag.internalOnly) return;
+        flag.set(userFlags[key]);
+      }
     }, 400);
 
     // Responsively update flags based rill.yaml
     runtime.subscribe((runtime) => {
       if (!runtime?.instanceId) return;
 
-      createRuntimeServiceGetFile(runtime.instanceId, "rill.yaml", {
+      createRuntimeServiceGetInstance(runtime.instanceId, undefined, {
         query: {
-          select: (data) => {
-            let features: string[] = [];
-            try {
-              const projectData = parse(data?.blob ?? "") as {
-                features?: string[];
-              };
-              features = projectData?.features ?? [];
-            } catch (e) {
-              console.error(e);
-            }
-            return features;
-          },
+          select: (data) => data?.instance?.featureFlags,
           queryClient,
         },
       }).subscribe((features) => {
-        if (!Array.isArray(features?.data)) return;
-        const yamlFlags = features.data;
-        updateFlags(new Set([...staticFlags, ...yamlFlags]));
+        if (features.data) updateFlags(features.data);
       });
     });
   }
@@ -95,9 +74,3 @@ class FeatureFlags {
 }
 
 export const featureFlags = new FeatureFlags();
-
-export function retainFeaturesFlags(navigation: BeforeNavigate) {
-  const featureFlags = navigation?.from?.url?.searchParams.get("features");
-  if (!featureFlags) return;
-  navigation?.to?.url.searchParams.set("features", featureFlags);
-}

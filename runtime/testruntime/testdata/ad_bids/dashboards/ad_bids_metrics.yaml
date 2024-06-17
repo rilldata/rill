@@ -43,4 +43,9 @@ measures:
     expression: avg(bid_price)
     description: ""
     format_preset: ""
+  - name: bid_price 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+
 

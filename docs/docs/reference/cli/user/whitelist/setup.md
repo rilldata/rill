@@ -4,7 +4,7 @@ title: rill user whitelist setup
 ---
 ## rill user whitelist setup
 
-Whitelist an email domain for the org
+Whitelist an email domain for the org or project
 
 ```
 rill user whitelist setup <email-domain> [flags]
@@ -13,8 +13,9 @@ rill user whitelist setup <email-domain> [flags]
 ### Flags
 
 ```
-      --org string    Organization
-      --role string   Role of the user [admin, viewer] (default "viewer")
+      --org string       Organization
+      --project string   Project name
+      --role string      Role of the user (default "viewer")
 ```
 
 ### Global flags

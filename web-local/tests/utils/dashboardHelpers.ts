@@ -3,18 +3,21 @@ import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
 import {
   clickMenuButton,
-  openEntityMenu,
+  openFileNavEntryContextMenu,
   updateCodeEditor,
   waitForValidResource,
 } from "./commonHelpers";
 
-export async function createDashboardFromSource(page: Page, source: string) {
-  await openEntityMenu(page, source);
+export async function createDashboardFromSource(
+  page: Page,
+  sourcePath: string,
+) {
+  await openFileNavEntryContextMenu(page, sourcePath);
   await clickMenuButton(page, "Generate dashboard");
 }
 
-export async function createDashboardFromModel(page: Page, model: string) {
-  await openEntityMenu(page, model);
+export async function createDashboardFromModel(page: Page, modelPath: string) {
+  await openFileNavEntryContextMenu(page, modelPath);
   await clickMenuButton(page, "Generate dashboard");
 }
 
@@ -26,8 +29,8 @@ export async function assertLeaderboards(
   }>,
 ) {
   for (const { label, values } of leaderboards) {
-    const leaderboardBlock = page.locator("svelte-virtual-list-row", {
-      hasText: label,
+    const leaderboardBlock = page.getByRole("grid", {
+      name: `${label} leaderboard`,
     });
     await expect(leaderboardBlock).toBeVisible();
 
@@ -36,19 +39,6 @@ export async function assertLeaderboards(
       .allInnerTexts();
     expect(actualValues).toEqual(values);
   }
-}
-
-export async function clickOnFilter(
-  page: Page,
-  dimensionLabel: string,
-  value: string,
-) {
-  await page
-    .locator("svelte-virtual-list-row", {
-      hasText: dimensionLabel,
-    })
-    .getByText(value)
-    .click();
 }
 
 export type RequestMatcher = (response: Response) => boolean;
@@ -99,21 +89,24 @@ export async function waitForTopLists(
  * Waits for a set of top list queries to end.
  * Optionally takes a filter matcher: {@link metricsViewRequestFilterMatcher}.
  */
-export async function waitForComparisonTopLists(
+export async function waitForAggregationTopLists(
   page: Page,
   metricsView: string,
   dimensions: Array<string>,
   filterMatcher?: RequestMatcher,
 ) {
   const topListUrlRegex = new RegExp(
-    `/metrics-views/${metricsView}/compare-toplist`,
+    `/metrics-views/${metricsView}/aggregation`,
   );
   await Promise.all(
     dimensions.map((dimension) =>
       page.waitForResponse(
         (response) =>
           topListUrlRegex.test(response.url()) &&
-          response.request().postDataJSON().dimension.name === dimension &&
+          !!response
+            .request()
+            .postDataJSON()
+            ?.dimensions?.find((n) => n.name === dimension) &&
           (filterMatcher ? filterMatcher(response) : true),
       ),
     ),

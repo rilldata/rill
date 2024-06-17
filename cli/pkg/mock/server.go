@@ -44,6 +44,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		DefaultProvisioner: "static",
 		ExternalURL:        "http://localhost:9090",
 		VersionNumber:      "",
+		VersionCommit:      "",
 	}
 
 	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop())

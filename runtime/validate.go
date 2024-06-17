@@ -98,6 +98,11 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		validateIndividualDimensionsAndMeasures(ctx, olap, t, mv, fields, res)
 	}
 
+	// Pinot does have any native support for time shift using time grain specifiers
+	if olap.Dialect() == drivers.DialectPinot && (mv.FirstDayOfWeek > 1 || mv.FirstMonthOfYear > 1) {
+		res.OtherErrs = append(res.OtherErrs, fmt.Errorf("time shift not supported for Pinot dialect, so FirstDayOfWeek and FirstMonthOfYear should be 1"))
+	}
+
 	// Check the default theme exists
 	if mv.DefaultTheme != "" {
 		_, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: ResourceKindTheme, Name: mv.DefaultTheme}, false)
@@ -114,18 +119,23 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 
 // validateAllDimensionsAndMeasures validates all dimensions and measures with one query. It returns an error if any of the expressions are invalid.
 func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, mv *runtimev1.MetricsViewSpec) error {
+	dialect := olap.Dialect()
 	var dimExprs []string
+	var unnestClauses []string
 	var groupIndexes []string
 	for idx, d := range mv.Dimensions {
-		if d.Column != "" {
-			dimExprs = append(dimExprs, olap.Dialect().EscapeIdentifier(d.Column))
-		} else {
-			dimExprs = append(dimExprs, "("+d.Expression+")")
+		dimExpr, unnestClause := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
+		dimExprs = append(dimExprs, dimExpr)
+		if unnestClause != "" {
+			unnestClauses = append(unnestClauses, unnestClause)
 		}
 		groupIndexes = append(groupIndexes, strconv.Itoa(idx+1))
 	}
 	var metricExprs []string
 	for _, m := range mv.Measures {
+		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil { // TODO: Validate advanced measures
+			continue
+		}
 		metricExprs = append(metricExprs, "("+m.Expression+")")
 	}
 	var query string
@@ -138,9 +148,22 @@ func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStor
 		query = fmt.Sprintf("SELECT 1, %s FROM %s GROUP BY 1", strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name))
 	} else if len(metricExprs) == 0 {
 		// No metrics
-		query = fmt.Sprintf("SELECT %s FROM %s GROUP BY %s", strings.Join(dimExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name), strings.Join(groupIndexes, ","))
+		query = fmt.Sprintf(
+			"SELECT %s FROM %s %s GROUP BY %s",
+			strings.Join(dimExprs, ","),
+			olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name),
+			strings.Join(unnestClauses, ""),
+			strings.Join(groupIndexes, ","),
+		)
 	} else {
-		query = fmt.Sprintf("SELECT %s, %s FROM %s GROUP BY %s", strings.Join(dimExprs, ","), strings.Join(metricExprs, ","), olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name), strings.Join(groupIndexes, ","))
+		query = fmt.Sprintf(
+			"SELECT %s, %s FROM %s %s GROUP BY %s",
+			strings.Join(dimExprs, ","),
+			strings.Join(metricExprs, ","),
+			olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name),
+			strings.Join(unnestClauses, ""),
+			strings.Join(groupIndexes, ","),
+		)
 	}
 	err := olap.Exec(ctx, &drivers.Statement{
 		Query:  query,
@@ -181,6 +204,10 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 
 	// Check measure expressions are valid
 	for idx, m := range mv.Measures {
+		if m.Type != runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE || m.Window != nil { // TODO: Validate advanced measures
+			continue
+		}
+
 		idx := idx
 		m := m
 		grp.Go(func() error {
@@ -213,12 +240,18 @@ func validateDimension(ctx context.Context, olap drivers.OLAPStore, t *drivers.T
 		if _, isColumn := fields[strings.ToLower(d.Column)]; !isColumn {
 			return fmt.Errorf("failed to validate dimension %q: column %q not found in table", d.Name, d.Column)
 		}
-		return nil
+		if !d.Unnest {
+			// for dimensions that have column and no unnest skip the expr validation since the above validation is enough
+			return nil
+		}
 	}
+
+	dialect := olap.Dialect()
+	expr, unnestClause := dialect.DimensionSelect(t.Database, t.DatabaseSchema, t.Name, d)
 
 	// Validate with a query if it's an expression
 	err := olap.Exec(ctx, &drivers.Statement{
-		Query:  fmt.Sprintf("SELECT (%s) FROM %s GROUP BY 1", d.Expression, olap.Dialect().EscapeTable(t.Database, t.DatabaseSchema, t.Name)),
+		Query:  fmt.Sprintf("SELECT %s FROM %s %s GROUP BY 1", expr, dialect.EscapeTable(t.Database, t.DatabaseSchema, t.Name), unnestClause),
 		DryRun: true,
 	})
 	if err != nil {

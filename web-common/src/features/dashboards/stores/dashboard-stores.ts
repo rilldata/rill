@@ -2,6 +2,7 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import {
   getDefaultMetricsExplorerEntity,
   restorePersistedDashboardState,
@@ -22,7 +23,6 @@ import type {
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
   V1Expression,
-  V1MetricsView,
   V1MetricsViewSpec,
   V1MetricsViewTimeRangeResponse,
   V1TimeGrain,
@@ -76,7 +76,7 @@ function includeExcludeModeFromFilters(filters: V1Expression | undefined) {
 }
 
 function syncMeasures(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
 ) {
   const measuresMap = getMapFromArray(
@@ -134,7 +134,7 @@ function syncMeasures(
 }
 
 function syncDimensions(
-  metricsView: V1MetricsView,
+  metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
 ) {
   // Having a map here improves the lookup for existing dimension name
@@ -198,7 +198,7 @@ const metricViewReducers = {
   syncFromUrl(
     name: string,
     urlState: string,
-    metricsView: V1MetricsView,
+    metricsView: V1MetricsViewSpec,
     schema: V1StructType,
   ) {
     if (!urlState || !metricsView) return;
@@ -218,10 +218,11 @@ const metricViewReducers = {
       }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.whereFilter);
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
     });
   },
 
-  sync(name: string, metricsView: V1MetricsView) {
+  sync(name: string, metricsView: V1MetricsViewSpec) {
     if (!name || !metricsView || !metricsView.measures) return;
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       // remove references to non existent measures
@@ -325,9 +326,20 @@ const metricViewReducers = {
     });
   },
 
+  setPivotComparison(name: string, enableComparison: boolean) {
+    updateMetricsExplorerByName(name, (metricsExplorer) => {
+      metricsExplorer.pivot = { ...metricsExplorer.pivot, enableComparison };
+    });
+  },
+
   setPivotSort(name: string, sorting: SortingState) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting, rowPage: 1 };
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        sorting,
+        rowPage: 1,
+        expanded: {},
+      };
     });
   },
 
@@ -446,10 +458,12 @@ const metricViewReducers = {
   setSelectedComparisonRange(
     name: string,
     comparisonTimeRange: DashboardTimeControls,
+    metricsViewSpec: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setDisplayComparison(metricsExplorer, true);
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
   },
 
@@ -479,6 +493,7 @@ const metricViewReducers = {
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
     comparisonTimeRange: DashboardTimeControls | undefined,
+    metricsViewSpec: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       if (!timeRange.name) return;
@@ -498,6 +513,8 @@ const metricViewReducers = {
         metricsExplorer.selectedComparisonTimeRange !== undefined &&
           metricsExplorer.selectedComparisonDimension === undefined,
       );
+
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
   },
 

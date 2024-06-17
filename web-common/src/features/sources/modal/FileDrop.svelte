@@ -3,26 +3,21 @@
   import Overlay from "@rilldata/web-common/components/overlay/Overlay.svelte";
   import { getFilePathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { EntityType } from "@rilldata/web-common/features/entity-management/types";
-  import { useModelFileNames } from "@rilldata/web-common/features/models/selectors";
-  import { useSourceFileNames } from "@rilldata/web-common/features/sources/selectors";
   import { checkSourceImported } from "@rilldata/web-common/features/sources/source-imported-utils";
   import { createRuntimeServiceUnpackEmpty } from "@rilldata/web-common/runtime-client";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
+  import { isProjectInitialized } from "../../welcome/is-project-initialized";
 
   export let showDropOverlay: boolean;
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: sourceNames = useSourceFileNames(runtimeInstanceId);
-  $: modelNames = useModelFileNames(runtimeInstanceId);
-  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
+  $: ({ instanceId } = $runtime);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
@@ -34,17 +29,15 @@
     // no-op if no files are dropped
     if (files === undefined) return;
 
-    const uploadedFiles = uploadTableFiles(
-      Array.from(files),
-      [$sourceNames?.data ?? [], $modelNames?.data ?? []],
-      $runtime.instanceId,
-    );
+    const uploadedFiles = uploadTableFiles(Array.from(files), instanceId);
+
+    const initialized = await isProjectInitialized(instanceId);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
-        if (!$isProjectInitialized.data) {
+        if (!initialized) {
           $unpackEmptyProject.mutate({
-            instanceId: $runtime.instanceId,
+            instanceId,
             data: {
               title: EMPTY_PROJECT_TITLE,
             },
@@ -58,7 +51,7 @@
           },
           "local_file",
         );
-        await createSource(runtimeInstanceId, tableName, yaml);
+        await createSource(instanceId, tableName, yaml);
         const newFilePath = getFilePathFromNameAndType(
           tableName,
           EntityType.Table,

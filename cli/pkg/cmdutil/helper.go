@@ -155,16 +155,7 @@ func (h *Helper) Telemetry(ctx context.Context) *activity.Client {
 		// (Remember, this telemetry client will only be used on local.)
 		sink := activity.NewFilterSink(intakeSink, func(e activity.Event) bool {
 			// Omit metrics events (since they are quite chatty and potentially sensitive).
-			if e.EventType == activity.EventTypeMetric {
-				return false
-			}
-
-			// Omit instance heartbeats
-			if e.EventType == activity.EventTypeLog && e.EventName == "instance_heartbeat" {
-				return false
-			}
-
-			return true
+			return e.EventType != activity.EventTypeMetric
 		})
 
 		// Create the telemetry client with metadata about the current environment.
@@ -261,7 +252,7 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL str
 	}
 
 	if len(names) == 0 {
-		return nil, fmt.Errorf("no project with githubURL %q exist in org %q", githubURL, org)
+		return nil, fmt.Errorf("no project with github URL %q exists in org %q", githubURL, org)
 	}
 
 	return names, nil

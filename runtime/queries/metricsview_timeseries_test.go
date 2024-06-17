@@ -3,6 +3,7 @@ package queries_test
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"testing"
 
@@ -15,6 +16,7 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestMetricsViewsTimeseriesAgainstClickHouse(t *testing.T) {
@@ -804,8 +806,82 @@ func TestMetricsViewTimeSeries_having_clause(t *testing.T) {
 	require.NotNil(t, q.Result.Data[i].Records.AsMap()["sum_imps"])
 }
 
+func TestMetricsTimeseries_measure_filters_same_name(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	ctr := &queries.ColumnTimeRange{
+		TableName:  "ad_bids",
+		ColumnName: "timestamp",
+	}
+	err := ctr.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+
+	ctrl, err := rt.Controller(context.Background(), instanceID)
+	require.NoError(t, err)
+	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
+	require.NoError(t, err)
+	mv := r.GetMetricsView()
+
+	lmt := int64(25)
+	q := &queries.MetricsViewTimeSeries{
+		MetricsViewName: "ad_bids_metrics",
+		MeasureNames:    []string{"bid_price"},
+		MetricsView:     mv.Spec,
+		TimeStart:       timestamppb.New(ctr.Result.Min.AsTime().Truncate(time.Hour)),
+		TimeEnd:         ctr.Result.Max,
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		Having: &runtimev1.Expression{
+			Expression: &runtimev1.Expression_Cond{
+				Cond: &runtimev1.Condition{
+					Op: runtimev1.Operation_OPERATION_LTE,
+					Exprs: []*runtimev1.Expression{
+						{
+							Expression: &runtimev1.Expression_Ident{
+								Ident: "bid_price",
+							},
+						},
+						{
+							Expression: &runtimev1.Expression_Val{
+								Val: structpb.NewNumberValue(3),
+							},
+						},
+					},
+				},
+			},
+		},
+		Limit: lmt,
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	outputResult(q.Result.Meta, q.Result.Data)
+	i := 0
+	require.Equal(t, "null", fieldsToString(q.Result.Data[i].Records, "bid_price"))
+	i++
+	require.Equal(t, "null", fieldsToString(q.Result.Data[i].Records, "bid_price"))
+	i++
+	require.Equal(t, "3", fieldsToString(q.Result.Data[i].Records, "bid_price"))
+	i++
+	require.Equal(t, "3", fieldsToString(q.Result.Data[i].Records, "bid_price"))
+
+}
+
 func toStructpbValue(t *testing.T, v any) *structpb.Value {
 	sv, err := structpb.NewValue(v)
 	require.NoError(t, err)
 	return sv
+}
+
+func outputResult(schema []*runtimev1.MetricsViewColumn, data []*runtimev1.TimeSeriesValue) {
+	for _, s := range schema {
+		fmt.Printf("%v,", s.Name)
+	}
+	fmt.Println()
+	for i, row := range data {
+		for _, s := range schema {
+			fmt.Printf("%s %v,", row.Ts.AsTime().Format(time.RFC3339), row.Records.Fields[s.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+	}
 }

@@ -21,7 +21,7 @@ import {
   TimeRangePreset,
 } from "@rilldata/web-common/lib/time/types";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-import type { V1MetricsView } from "@rilldata/web-common/runtime-client";
+import type { V1MetricsViewSpec } from "@rilldata/web-common/runtime-client";
 import { V1TimeGrain } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { render } from "@testing-library/svelte";
@@ -176,7 +176,11 @@ describe("time-control-store", () => {
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
     });
-    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {} as any);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_NAME,
+      {} as any,
+      AD_BIDS_INIT_WITH_TIME,
+    );
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to default comparison
@@ -193,7 +197,11 @@ describe("time-control-store", () => {
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_DAY,
     });
-    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {} as any);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_NAME,
+      {} as any,
+      AD_BIDS_INIT_WITH_TIME,
+    );
     expect(get(timeControlsStore).showComparison).toBeFalsy();
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
@@ -202,7 +210,11 @@ describe("time-control-store", () => {
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_DAY,
     });
-    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {} as any);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_NAME,
+      {} as any,
+      AD_BIDS_INIT_WITH_TIME,
+    );
     assertComparisonStartAndEnd(
       get(timeControlsStore),
       // Sets to the one selected
@@ -242,7 +254,11 @@ describe("time-control-store", () => {
       end: undefined,
       interval: V1TimeGrain.TIME_GRAIN_HOUR,
     });
-    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {} as any);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_NAME,
+      {} as any,
+      AD_BIDS_INIT_WITH_TIME,
+    );
     assertStartAndEnd(
       get(timeControlsStore),
       "2022-03-30T00:30:00.000Z",
@@ -273,9 +289,13 @@ describe("time-control-store", () => {
     );
     await waitForUpdate(timeControlsStore, "2022-01-01T00:00:00.000Z");
     metricsExplorerStore.displayTimeComparison(AD_BIDS_NAME, true);
-    metricsExplorerStore.setSelectedComparisonRange(AD_BIDS_NAME, {
-      name: TimeComparisonOption.MONTH,
-    } as any);
+    metricsExplorerStore.setSelectedComparisonRange(
+      AD_BIDS_NAME,
+      {
+        name: TimeComparisonOption.MONTH,
+      } as any,
+      AD_BIDS_INIT_WITH_TIME,
+    );
 
     metricsExplorerStore.setSelectedScrubRange(AD_BIDS_NAME, {
       name: AD_BIDS_NAME,
@@ -373,7 +393,7 @@ describe("time-control-store", () => {
     unmount();
   });
 
-  function initTimeControlStoreTest(resp: V1MetricsView) {
+  function initTimeControlStoreTest(resp: V1MetricsViewSpec) {
     const { stateManagers, queryClient } = initStateManagers(
       dashboardFetchMocks,
       resp,

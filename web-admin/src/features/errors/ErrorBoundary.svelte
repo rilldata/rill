@@ -5,8 +5,8 @@
    */
 
   import { afterNavigate } from "$app/navigation";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { errorStore, isErrorStoreEmpty } from "./error-store";
-  import ErrorPage from "./ErrorPage.svelte";
 
   afterNavigate(() => {
     // Checks to see if we're on the error page (and navigating away)

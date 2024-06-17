@@ -23,11 +23,11 @@
     TimeSeriesDatum,
     useTimeSeriesDataStore,
   } from "@rilldata/web-common/features/dashboards/time-series/timeseries-data-store";
-  import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -36,13 +36,17 @@
   import MeasureChart from "./MeasureChart.svelte";
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
+  import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
 
   const {
     selectors: {
-      measures: { isMeasureValidPercentOfTotal },
+      measures: {
+        isMeasureValidPercentOfTotal,
+        getFilteredMeasuresAndDimensions,
+      },
       dimensionFilters: { includedDimensionValues },
     },
   } = getStateManagers();
@@ -74,7 +78,9 @@
   $: expandedMeasureName = $dashboardStore?.tdd?.expandedMeasureName;
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
-  $: showComparison = !comparisonDimension && $timeControlsStore.showComparison;
+  $: showComparison = Boolean(
+    !comparisonDimension && $timeControlsStore.showComparison,
+  );
   $: tddChartType = $dashboardStore?.tdd?.chartType;
   $: interval =
     $timeControlsStore.selectedTimeRange?.interval ??
@@ -91,11 +97,22 @@
   $: isAlternateChart = tddChartType != TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
-  $: renderedMeasures = $metricsView.data?.measures?.filter(
-    expandedMeasureName
-      ? (measure) => measure.name === expandedMeasureName
-      : (_, i) => $showHideMeasures.selectedItems[i],
-  );
+  let renderedMeasures: MetricsViewSpecMeasureV2[];
+  $: {
+    renderedMeasures =
+      $metricsView.data?.measures?.filter(
+        expandedMeasureName
+          ? (measure) => measure.name === expandedMeasureName
+          : (_, i) => $showHideMeasures.selectedItems[i],
+      ) ?? [];
+    const { measures } = $getFilteredMeasuresAndDimensions(
+      $metricsView.data ?? {},
+      renderedMeasures.map((m) => m.name ?? ""),
+    );
+    renderedMeasures = renderedMeasures.filter((rm) =>
+      measures.includes(rm.name ?? ""),
+    );
+  }
 
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
@@ -152,7 +169,8 @@
       );
 
       return {
-        hover: isScrubbing ? undefined : state.hover,
+        yHover: isScrubbing ? undefined : state.yHover,
+        xHover: isScrubbing ? undefined : state.xHover,
         scrubStart: startPos,
         scrubEnd: endPos,
       };
@@ -182,25 +200,12 @@
     $timeControlsStore.selectedTimeRange &&
     !isScrubbing
   ) {
-    if (!mouseoverValue?.x || !(mouseoverValue.x instanceof Date)) {
-      chartInteractionColumn.update((state) => ({
-        ...state,
-        hover: undefined,
-      }));
-    } else {
-      const { position: columnNum } = bisectData(
-        mouseoverValue.x,
-        "center",
-        "ts_position",
-        isAllTime ? formattedData?.slice(1) : formattedData?.slice(1, -1),
-      );
-
-      if ($chartInteractionColumn?.hover !== columnNum)
-        chartInteractionColumn.update((state) => ({
-          ...state,
-          hover: columnNum,
-        }));
-    }
+    updateChartInteractionStore(
+      mouseoverValue?.x,
+      undefined,
+      isAllTime,
+      formattedData,
+    );
   }
 
   const toggleMeasureVisibility = (e) => {
@@ -220,14 +225,16 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div
-    class:tdd-chart-header={isInTimeDimensionView}
-    class:mb-6={isAlternateChart}
-    class="flex pl-1"
-  >
+  <div class:mb-6={isAlternateChart} class="flex pl-1">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
-      <ChartTypeSelector {metricViewName} chartType={tddChartType} />
+      <ChartTypeSelector
+        hasComparison={Boolean(
+          showComparison || includedValuesForDimension.length,
+        )}
+        {metricViewName}
+        chartType={tddChartType}
+      />
     {:else}
       <SearchableFilterButton
         label="Measures"
@@ -317,6 +324,16 @@
               {dimensionData}
               xMin={startValue}
               xMax={endValue}
+              isTimeComparison={showComparison}
+              on:chart-hover={(e) => {
+                const { dimension, ts } = e.detail;
+                updateChartInteractionStore(
+                  ts,
+                  dimension,
+                  isAllTime,
+                  formattedData,
+                );
+              }}
             />
           {:else if formattedData && interval}
             <MeasureChart
@@ -361,10 +378,3 @@
     </div>
   {/if}
 </TimeSeriesChartContainer>
-
-<style lang="postcss">
-  .tdd-chart-header {
-    @apply bg-slate-50 pl-2 items-center;
-    @apply border border-slate-100 rounded-sm;
-  }
-</style>

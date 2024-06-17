@@ -7,7 +7,7 @@
   import { createForm } from "svelte-forms-lib";
   import * as yup from "yup";
   import { Button } from "../../components/button";
-  import { notifications } from "../../components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import {
     getRuntimeServiceGetResourceQueryKey,
     getRuntimeServiceListResourcesQueryKey,
@@ -114,7 +114,7 @@
           getRuntimeServiceListResourcesQueryKey($runtime.instanceId),
         );
         dispatch("close");
-        notifications.send({
+        eventBus.emit("notification", {
           message: "Report edited",
           type: "success",
         });

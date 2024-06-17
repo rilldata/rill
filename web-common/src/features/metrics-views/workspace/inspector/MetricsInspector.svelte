@@ -14,8 +14,9 @@
 
   export let filePath: string;
 
-  // Get model/table name from YAML
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, filePath);
+  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
+    path: filePath,
+  });
   $: yaml = $fileQuery.data?.blob || "";
   $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
   $: tableName = getTableOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
@@ -26,9 +27,9 @@
   }
 </script>
 
-{#if modelName && $modelQuery.data && $modelQuery.data?.model?.state?.connector}
+{#if modelName && $modelQuery.data && $modelQuery.data?.model?.state?.resultConnector}
   <WorkspaceInspector
-    connector={$modelQuery.data?.model?.state?.connector}
+    connector={$modelQuery.data?.model?.state?.resultConnector}
     tableName={modelName}
     model={$modelQuery.data?.model}
     hasErrors={false}

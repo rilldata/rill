@@ -7,6 +7,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/conncache"
@@ -107,6 +108,95 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	}
 
 	return instanceAnnotationsToAttribs(instance)
+}
+
+func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, parser *rillv1.Parser, restartController bool) error {
+	if parser.RillYAML == nil {
+		return errors.New("rill.yaml is required to update an instance")
+	}
+
+	rillYAML := parser.RillYAML
+	dotEnv := parser.DotEnv
+
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	// Shallow clone for editing
+	tmp := *inst
+	inst = &tmp
+
+	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
+
+	// Dedupe connectors
+	connMap := make(map[string]*runtimev1.Connector)
+	for _, c := range rillYAML.Connectors {
+		connMap[c.Name] = &runtimev1.Connector{
+			Type:   c.Type,
+			Name:   c.Name,
+			Config: c.Defaults,
+		}
+	}
+	for _, r := range parser.Resources {
+		if r.ConnectorSpec != nil {
+			connMap[r.Name.Name] = &runtimev1.Connector{
+				Name:                r.Name.Name,
+				Type:                r.ConnectorSpec.Driver,
+				Config:              r.ConnectorSpec.Properties,
+				ConfigFromVariables: r.ConnectorSpec.PropertiesFromVariables,
+			}
+		}
+	}
+
+	conns := make([]*runtimev1.Connector, 0, len(connMap))
+	for _, c := range connMap {
+		conns = append(conns, c)
+	}
+	inst.ProjectConnectors = conns
+
+	vars := make(map[string]string)
+	for _, v := range rillYAML.Variables {
+		vars[v.Name] = v.Default
+	}
+	for k, v := range dotEnv {
+		vars[k] = v
+	}
+	inst.ProjectVariables = vars
+	inst.FeatureFlags = rillYAML.FeatureFlags
+	return r.EditInstance(ctx, inst, restartController)
+}
+
+// UpdateInstanceConnector upserts or removes a connector from an instance
+// If connector is nil, the connector is removed; otherwise, it is upserted
+func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name string, connector *runtimev1.ConnectorSpec) error {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	// remove the connector if it exists
+	for i, c := range inst.ProjectConnectors {
+		if c.Name == name {
+			inst.ProjectConnectors = append(inst.ProjectConnectors[:i], inst.ProjectConnectors[i+1:]...)
+			break
+		}
+	}
+
+	if connector == nil {
+		// connector should be removed
+		return r.EditInstance(ctx, inst, false)
+	}
+
+	// append the new/updated connector
+	inst.ProjectConnectors = append(inst.ProjectConnectors, &runtimev1.Connector{
+		Name:                name,
+		Type:                connector.Driver,
+		Config:              connector.Properties,
+		ConfigFromVariables: connector.PropertiesFromVariables,
+	})
+
+	return r.EditInstance(ctx, inst, false)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

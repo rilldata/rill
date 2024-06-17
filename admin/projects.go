@@ -16,7 +16,7 @@ import (
 // TODO: The functions in this file are not truly fault tolerant. They should be refactored to run as idempotent, retryable background tasks.
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
-func (s *Service) CreateProject(ctx context.Context, org *database.Organization, userID string, opts *database.InsertProjectOptions) (*database.Project, error) {
+func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
 	// Check Github info is set (presently required for deployments)
 	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
 		return nil, fmt.Errorf("cannot create project without github info")
@@ -46,9 +46,11 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	}
 
 	// The creating user becomes project admin
-	err = s.DB.InsertProjectMemberUser(txCtx, proj.ID, userID, adminRole.ID)
-	if err != nil {
-		return nil, err
+	if opts.CreatedByUserID != nil {
+		err = s.DB.InsertProjectMemberUser(txCtx, proj.ID, *opts.CreatedByUserID, adminRole.ID)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	// All org members as a group get viewer role
@@ -68,7 +70,6 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		ProjectID:      proj.ID,
 		Provisioner:    proj.Provisioner,
 		Annotations:    s.NewDeploymentAnnotations(org, proj),
-		VersionNumber:  s.VersionNumber,
 		ProdBranch:     proj.ProdBranch,
 		ProdVariables:  proj.ProdVariables,
 		ProdOLAPDriver: proj.ProdOLAPDriver,
@@ -104,7 +105,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	}
 
 	// Log project creation
-	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.String("user_id", userID))
+	s.Logger.Info("created project", zap.String("id", proj.ID), zap.String("name", proj.Name), zap.String("org", org.Name), zap.Any("user_id", opts.CreatedByUserID))
 
 	return res, nil
 }

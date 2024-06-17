@@ -1,5 +1,4 @@
 import {
-  createConnectorServiceOLAPGetTable,
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
   getRuntimeServiceListResourcesQueryKey,
@@ -9,31 +8,36 @@ import {
   V1Resource,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived } from "svelte/store";
 
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
   Source = "rill.runtime.v1.Source",
+  Connector = "rill.runtime.v1.Connector",
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
   Report = "rill.runtime.v1.Report",
   Alert = "rill.runtime.v1.Alert",
   Theme = "rill.runtime.v1.Theme",
-  Chart = "rill.runtime.v1.Chart",
+  Component = "rill.runtime.v1.Component",
   Dashboard = "rill.runtime.v1.Dashboard",
   API = "rill.runtime.v1.API",
 }
+export type UserFacingResourceKinds = Exclude<
+  ResourceKind,
+  ResourceKind.ProjectParser
+>;
 export const SingletonProjectParserName = "parser";
 export const ResourceShortNameToKind: Record<string, ResourceKind> = {
   source: ResourceKind.Source,
   model: ResourceKind.Model,
   metricsview: ResourceKind.MetricsView,
   metrics_view: ResourceKind.MetricsView,
-  chart: ResourceKind.Chart,
+  component: ResourceKind.Component,
   dashboard: ResourceKind.Dashboard,
   report: ResourceKind.Report,
   alert: ResourceKind.Alert,
   theme: ResourceKind.Theme,
+  api: ResourceKind.API,
 };
 
 // In the UI, we shouldn't show the `rill.runtime.v1` prefix
@@ -94,40 +98,23 @@ export function useFilteredResources<T = Array<V1Resource>>(
   );
 }
 
-export function useFilteredResourceNames(
+/**
+ * Fetches all resources and filters them client side.
+ * This is to improve network requests since we need the full list all the time as well.
+ */
+export function useClientFilteredResources(
   instanceId: string,
   kind: ResourceKind,
+  filter: (res: V1Resource) => boolean = () => true,
 ) {
-  return useFilteredResources<Array<string>>(instanceId, kind, (data) =>
-    data.resources.map((res) => res.meta.name.name),
-  );
-}
-
-export function createSchemaForTable(
-  instanceId: string,
-  resourceName: string,
-  resourceKind: ResourceKind,
-  queryClient?: QueryClient,
-) {
-  return derived(
-    useResource(instanceId, resourceName, resourceKind, undefined, queryClient),
-    (res, set) => {
-      const tableSpec = res.data?.source ?? res.data?.model;
-      return createConnectorServiceOLAPGetTable(
-        {
-          instanceId,
-          table: tableSpec?.state?.table,
-          connector: tableSpec?.state?.connector,
-        },
-        {
-          query: {
-            enabled: !!tableSpec?.state?.table && !!tableSpec?.state?.connector,
-            queryClient,
-          },
-        },
-      ).subscribe(set);
+  return createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      select: (data) =>
+        data.resources?.filter(
+          (res) => res.meta?.name?.kind === kind && filter(res),
+        ) ?? [],
     },
-  ) as ReturnType<typeof createConnectorServiceOLAPGetTable>;
+  });
 }
 
 export function resourceIsLoading(resource?: V1Resource) {

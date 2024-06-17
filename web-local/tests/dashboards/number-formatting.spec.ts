@@ -1,8 +1,8 @@
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
+import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import {
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
-  updateAndWaitForDashboard,
 } from "../utils/dashboardHelpers";
 import { expect } from "@playwright/test";
 import { test } from "../utils/test";
@@ -11,8 +11,11 @@ test.describe("smoke tests for number formatting", () => {
   useDashboardFlowTestSetup();
 
   test("smoke tests for number formatting", async ({ page }) => {
+    const watcher = new ResourceWatcher(page);
+
     // This is a metrics spec with all available formatting options
-    const formatterFlowDashboard = `# Visit https://title: "AdBids_model_dashboard"
+    const formatterFlowDashboard = `# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.
+title: "AdBids_model_dashboard"
 model: "AdBids_model"
 default_time_range: ""
 smallest_time_grain: ""
@@ -64,16 +67,11 @@ dimensions:
 `;
 
     // update the code editor with the new spec
-    await updateAndWaitForDashboard(page, formatterFlowDashboard);
+    await watcher.updateAndWaitForDashboard(formatterFlowDashboard);
 
-    // make the viewport big enough to see the whole dashboard
-    await page.setViewportSize({ width: 1920, height: 1200 });
+    const previewButton = page.getByRole("button", { name: "Preview" });
 
-    // Preview
-    await page.getByRole("button", { name: "Preview" }).click();
-
-    // wait a tick for the dash to update
-    await page.waitForTimeout(50);
+    await previewButton.click();
 
     /******************
      * check big nums
@@ -94,9 +92,9 @@ dimensions:
       // hover over btn_name
       await page.getByRole("button", { name: `${name} ${bignum}` }).hover();
       // wait for a moment for the tooltip to appear
-      await page.waitForTimeout(50);
-      // check tooltip has correct format
-      await expect(page.getByText(`${name} ${tooltip_num}`)).toBeVisible();
+      await page
+        .getByText(`${name} ${tooltip_num}`)
+        .waitFor({ state: "visible" });
     }
 
     /******************
@@ -113,22 +111,21 @@ dimensions:
     const measuresButton = page.getByRole("button", {
       name: "Select a measure to filter by",
     });
-    await page.getByRole("button", { name: "Select a context column" }).click();
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "USD" }).click();
+    await page
+      .getByRole("menu", { name: "Showing USD" })
+      .waitFor({ state: "hidden" });
     await expect(measuresButton).toHaveText("Showing USD");
     // turn on a context column to check the formatting there
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent of total" }).click();
-
     await expect(
       page.getByRole("button", { name: "null $98.8k 33%" }),
     ).toBeVisible();
-
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "percentage" }).click();
     await expect(measuresButton).toHaveText("Showing percentage");
-
     await expect(
       page.getByRole("button", { name: "null 9.9M% 33%" }),
     ).toBeVisible();

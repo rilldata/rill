@@ -2,7 +2,7 @@
   import TimestampDetail from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampDetail.svelte";
   import TimestampSpark from "@rilldata/web-common/components/data-graphic/compositions/timestamp-profile/TimestampSpark.svelte";
   import WithParentClientRect from "@rilldata/web-common/components/data-graphic/functional-components/WithParentClientRect.svelte";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { TIMESTAMP_TOKENS } from "@rilldata/web-common/lib/duckdb-data-types";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
@@ -68,8 +68,7 @@
   isFetching={fetchingSummaries}
   {mode}
   on:select={toggleColumnProfile}
-  on:shift-click={() =>
-    copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
+  onShiftClick={() => copyToClipboard(columnName)}
   {type}
 >
   <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />

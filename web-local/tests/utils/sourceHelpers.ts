@@ -2,17 +2,13 @@ import { expect } from "@playwright/test";
 import {
   extractFileName,
   splitFolderAndName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
 import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 import path from "node:path";
 import type { Page } from "playwright";
 import { fileURLToPath } from "url";
-import {
-  clickModalButton,
-  getEntityLink,
-  waitForProfiling,
-} from "./commonHelpers";
-import { waitForFileEntry } from "./waitHelpers";
+import { clickModalButton, waitForProfiling } from "./commonHelpers";
+import { waitForFileNavEntry } from "./waitHelpers";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -46,7 +42,7 @@ export async function uploadFile(
   const fileUploadPromise = fileChooser.setFiles([
     path.join(TestDataPath, file),
   ]);
-  const fileRespWaitPromise = page.waitForResponse(/files\/-\//);
+  const fileRespWaitPromise = page.waitForResponse(/files\/entry/);
 
   // TODO: infer duplicate
   if (isDuplicate) {
@@ -68,25 +64,11 @@ export async function uploadFile(
   }
 }
 
-export async function createOrReplaceSource(
-  page: Page,
-  file: string,
-  filePath: string,
-) {
-  const [, fileName] = splitFolderAndName(filePath);
-  const name = extractFileName(fileName);
-
-  try {
-    await getEntityLink(page, name).waitFor({
-      timeout: 100,
-    });
-    await uploadFile(page, file, true, false);
-  } catch (err) {
-    await uploadFile(page, file);
-  }
+export async function createSource(page: Page, file: string, filePath: string) {
+  await uploadFile(page, file);
   await Promise.all([
     page.getByText("View this source").click(),
-    waitForFileEntry(page, filePath, true),
+    waitForFileNavEntry(page, filePath, true),
   ]);
 }
 
@@ -100,7 +82,7 @@ export async function waitForSource(
 
   await Promise.all([
     page.getByText("View this source").click(),
-    waitForFileEntry(page, filePath, true),
+    waitForFileNavEntry(page, filePath, true),
     waitForProfiling(page, name, columns),
   ]);
 }

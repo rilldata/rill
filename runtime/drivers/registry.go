@@ -51,6 +51,8 @@ type Instance struct {
 	// ProjectVariables contains default variables from rill.yaml
 	// (NOTE: This can always be reproduced from rill.yaml, so it's really just a handy cache of the values.)
 	ProjectVariables map[string]string `db:"project_variables"`
+	// FeatureFlags contains feature flags configured in rill.yaml
+	FeatureFlags map[string]bool `db:"feature_flags"`
 	// Annotations to enrich activity events (like usage tracking)
 	Annotations map[string]string
 	// EmbedCatalog tells the runtime to store the instance's catalog in its OLAP store instead
@@ -80,6 +82,13 @@ type InstanceConfig struct {
 	ModelDefaultMaterialize bool `mapstructure:"rill.models.default_materialize"`
 	// ModelMaterializeDelaySeconds adds a delay before materializing models.
 	ModelMaterializeDelaySeconds uint32 `mapstructure:"rill.models.materialize_delay_seconds"`
+	// MetricsComparisonsExact indicates whether to rewrite metrics comparison queries to approximately correct queries.
+	// Approximated comparison queries are faster but may not return comparison data points for all values.
+	MetricsApproximateComparisons bool `mapstructure:"rill.metrics.approximate_comparisons"`
+	// MetricsExactifyDruidTopN indicates whether to split Druid TopN queries into two queries to increase the accuracy of the returned measures.
+	// Enabling it reduces the performance of Druid toplist queries.
+	// See runtime/metricsview/executor_rewrite_druid_exactify.go for more details.
+	MetricsExactifyDruidTopN bool `mapstructure:"rill.metrics.exactify_druid_topn"`
 	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
@@ -120,6 +129,8 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		StageChanges:                      true,
 		ModelDefaultMaterialize:           false,
 		ModelMaterializeDelaySeconds:      0,
+		MetricsApproximateComparisons:     true,
+		MetricsExactifyDruidTopN:          false,
 		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
 	}
 

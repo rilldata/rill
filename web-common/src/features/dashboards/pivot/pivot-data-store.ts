@@ -1,12 +1,13 @@
-import { prepareMeasureFilterResolutions } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
 import { memoizeMetricsStore } from "@rilldata/web-common/features/dashboards/state-managers/memoize-metrics-store";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { timeControlStateSelector } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
-  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
@@ -31,13 +32,15 @@ import {
 import {
   getTotalsRow,
   getTotalsRowSkeleton,
-  mergeRowTotals,
+  mergeRowTotalsInOrder,
   prepareNestedPivotData,
   reduceTableCellDataIntoRows,
 } from "./pivot-table-transformations";
 import {
+  canEnablePivotComparison,
   getFilterForPivotTable,
   getPivotConfigKey,
+  getSortFilteredMeasureBody,
   getSortForAccessor,
   getTimeForQuery,
   getTimeGrainFromDimension,
@@ -45,12 +48,16 @@ import {
   isTimeDimension,
 } from "./pivot-utils";
 import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
   PivotChipType,
   type PivotDataRow,
   type PivotDataStore,
   type PivotDataStoreConfig,
   type PivotTimeConfig,
 } from "./types";
+
+let lastKey: string | undefined = undefined;
 
 /**
  * Extract out config relevant to pivot from dashboard and meta store
@@ -60,24 +67,24 @@ export function getPivotConfig(
 ): Readable<PivotDataStoreConfig> {
   return derived(
     [useMetricsView(ctx), ctx.timeRangeSummaryStore, ctx.dashboardStore],
-    ([metricsView, timeRangeSummary, dashboardStore], set) => {
+    ([metricsView, timeRangeSummary, dashboardStore]) => {
       if (
         !metricsView.data?.measures ||
         !metricsView.data?.dimensions ||
         timeRangeSummary.isFetching
       ) {
-        set({
+        return {
           measureNames: [],
           rowDimensionNames: [],
           colDimensionNames: [],
           allMeasures: [],
           allDimensions: [],
           whereFilter: dashboardStore.whereFilter,
-          measureFilter: { ready: true, filter: undefined },
           pivot: dashboardStore.pivot,
           time: {} as PivotTimeConfig,
-        });
-        return;
+          comparisonTime: undefined,
+          enableComparison: false,
+        };
       }
 
       // This indirection makes sure only one update of dashboard store triggers this
@@ -92,65 +99,76 @@ export function getPivotConfig(
         timeZone: dashboardStore?.selectedTimezone || "UTC",
         timeDimension: metricsView?.data?.timeDimension || "",
       };
-      derived(
-        [
-          prepareMeasureFilterResolutions(
-            dashboardStore,
-            timeControl,
-            ctx.queryClient,
-          ),
-        ],
-        ([measureFilterResolution]) => {
-          if (!measureFilterResolution.ready) {
-            return {
-              measureNames: [],
-              rowDimensionNames: [],
-              colDimensionNames: [],
-              allMeasures: [],
-              allDimensions: [],
-              whereFilter: dashboardStore.whereFilter,
-              measureFilter: measureFilterResolution,
-              pivot: dashboardStore.pivot,
-              time,
-            };
+
+      const enableComparison =
+        canEnablePivotComparison(
+          dashboardStore.pivot,
+          timeControl.comparisonTimeStart,
+        ) && dashboardStore.pivot.enableComparison;
+
+      let comparisonTime: TimeRangeString | undefined = undefined;
+      if (enableComparison) {
+        comparisonTime = {
+          start: timeControl.comparisonTimeStart,
+          end: timeControl.comparisonTimeEnd,
+        };
+      }
+
+      const measureNames = dashboardStore.pivot.columns.measure.flatMap((m) => {
+        const measureName = m.id;
+        const group = [measureName];
+
+        if (enableComparison) {
+          group.push(
+            `${measureName}${COMPARISON_DELTA}`,
+            `${measureName}${COMPARISON_PERCENT}`,
+          );
+        }
+        return group;
+      });
+
+      // This is temporary until we have a better way to handle time grains
+      const rowDimensionNames = dashboardStore.pivot.rows.dimension.map((d) => {
+        if (d.type === PivotChipType.Time) {
+          return `${time.timeDimension}_rill_${d.id}`;
+        }
+        return d.id;
+      });
+
+      const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
+        (d) => {
+          if (d.type === PivotChipType.Time) {
+            return `${time.timeDimension}_rill_${d.id}`;
           }
-
-          const measureNames = dashboardStore.pivot.columns.measure.map(
-            (m) => m.id,
-          );
-
-          // This is temporary until we have a better way to handle time grains
-          const rowDimensionNames = dashboardStore.pivot.rows.dimension.map(
-            (d) => {
-              if (d.type === PivotChipType.Time) {
-                return `${time.timeDimension}_rill_${d.id}`;
-              }
-              return d.id;
-            },
-          );
-
-          const colDimensionNames = dashboardStore.pivot.columns.dimension.map(
-            (d) => {
-              if (d.type === PivotChipType.Time) {
-                return `${time.timeDimension}_rill_${d.id}`;
-              }
-              return d.id;
-            },
-          );
-
-          return {
-            measureNames,
-            rowDimensionNames,
-            colDimensionNames,
-            allMeasures: metricsView.data?.measures,
-            allDimensions: metricsView.data?.dimensions,
-            whereFilter: dashboardStore.whereFilter,
-            measureFilter: measureFilterResolution,
-            pivot: dashboardStore.pivot,
-            time,
-          };
+          return d.id;
         },
-      ).subscribe(set);
+      );
+
+      const config: PivotDataStoreConfig = {
+        measureNames,
+        rowDimensionNames,
+        colDimensionNames,
+        allMeasures: metricsView.data?.measures || [],
+        allDimensions: metricsView.data?.dimensions || [],
+        whereFilter: mergeMeasureFilters(dashboardStore),
+        pivot: dashboardStore.pivot,
+        enableComparison,
+        comparisonTime,
+        time,
+      };
+
+      const currentKey = getPivotConfigKey(config);
+
+      if (lastKey !== currentKey) {
+        // Reset rowPage when pivot config changes
+        lastKey = currentKey;
+        if (config.pivot.rowPage !== 1) {
+          metricsExplorerStore.setPivotRowPage(dashboardStore.name, 1);
+          config.pivot.rowPage = 1;
+        }
+      }
+
+      return config;
     },
   );
 }
@@ -197,13 +215,14 @@ export function createTableCellQuery(
       columnDimensionAxesData,
       totalsRow,
       rowDimensionValues,
-      true,
       anchorDimension,
     );
 
   const timeRange: TimeRangeString = getTimeForQuery(config.time, timeFilters);
 
-  const mergedFilter = mergeFilters(filterForInitialTable, config.whereFilter);
+  const mergedFilter =
+    mergeFilters(filterForInitialTable, config.whereFilter) ??
+    createAndExpression([]);
 
   const sortBy = [
     {
@@ -216,7 +235,6 @@ export function createTableCellQuery(
     measureBody,
     dimensionBody,
     mergedFilter,
-    config.measureFilter,
     sortBy,
     "5000",
     "0",
@@ -325,23 +343,8 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
           columnDimensionAxes?.data,
         );
 
-        let sortFilteredMeasureBody: V1MetricsViewAggregationMeasure[] =
-          measureBody;
-        let isMeasureSortAccessor = false;
-        let sortAccessor: string | undefined = undefined;
-
-        if (sortPivotBy.length && measureWhere) {
-          sortAccessor = sortPivotBy[0]?.name;
-
-          isMeasureSortAccessor = measureBody.some(
-            (m) => m.name === sortAccessor,
-          );
-          if (isMeasureSortAccessor && sortAccessor) {
-            sortFilteredMeasureBody = [
-              { name: sortAccessor, filter: measureWhere },
-            ];
-          }
-        }
+        const { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor } =
+          getSortFilteredMeasureBody(measureBody, sortPivotBy, measureWhere);
 
         const rowPage = config.pivot.rowPage;
         const rowOffset = (rowPage - 1) * NUM_ROWS_PER_PAGE;
@@ -373,7 +376,6 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
             config.measureNames.map((m) => ({ name: m })),
             [],
             config.whereFilter,
-            config.measureFilter,
             [],
             "5000", // Using 5000 for cache hit
           );
@@ -444,6 +446,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               config,
               isMeasureSortAccessor,
               sortAccessor,
+              anchorDimension,
               rowDimensionValues,
               timeRange,
             );
@@ -499,7 +502,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   });
                 }
 
-                const mergedRowTotals = mergeRowTotals(
+                const mergedRowTotals = mergeRowTotalsInOrder(
                   rowDimensionValues,
                   axesRowTotals,
                   rowMeasureTotalsAxesQuery?.data?.[anchorDimension] || [],

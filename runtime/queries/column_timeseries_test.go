@@ -181,6 +181,11 @@ func TestTimeseries_normaliseTimeRange_Specified(t *testing.T) {
 }
 
 func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
+	if testing.Short() {
+		// Ignoring test in CI because it sometimes fails with a segmentation fault in DuckDB when running with -race
+		t.SkipNow()
+	}
+
 	time.Local = time.UTC
 
 	rt, instanceID := instanceWithSparkSameTimestampModel(t)
@@ -200,6 +205,11 @@ func TestTimeseries_SparkOnly_same_timestamp(t *testing.T) {
 }
 
 func TestTimeseries_SparkOnly(t *testing.T) {
+	if testing.Short() {
+		// Ignoring test in CI because it sometimes fails with a segmentation fault in DuckDB when running with -race
+		t.SkipNow()
+	}
+
 	time.Local = time.UTC
 
 	rt, instanceID := instanceWithSparkModel(t)

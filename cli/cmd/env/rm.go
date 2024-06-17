@@ -8,19 +8,28 @@ import (
 
 // RmCmd is sub command for env. Removes the variable for a project
 func RmCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectName string
+	var projectPath, projectName string
+
 	rmCmd := &cobra.Command{
 		Use:   "rm <key>",
 		Args:  cobra.ExactArgs(1),
 		Short: "Remove variable",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
+			ctx := cmd.Context()
 			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
 
-			ctx := cmd.Context()
+			// Find the cloud project name
+			if projectName == "" {
+				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+				if err != nil {
+					return err
+				}
+			}
+
 			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: ch.Org,
 				Name:             projectName,
@@ -47,7 +56,9 @@ func RmCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
-	rmCmd.Flags().StringVar(&projectName, "project", "", "")
-	_ = rmCmd.MarkFlagRequired("project")
+
+	rmCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
+	rmCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+
 	return rmCmd
 }

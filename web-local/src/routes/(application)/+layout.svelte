@@ -1,5 +1,4 @@
 <script lang="ts">
-  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
@@ -11,8 +10,13 @@
   import PreparingImport from "@rilldata/web-common/features/sources/modal/PreparingImport.svelte";
   import Navigation from "@rilldata/web-common/layout/navigation/Navigation.svelte";
   import AddSourceModal from "@rilldata/web-common/features/sources/modal/AddSourceModal.svelte";
+  import { page } from "$app/stores";
 
   let showDropOverlay = false;
+
+  $: ({
+    url: { pathname },
+  } = $page);
 
   function isEventWithFiles(event: DragEvent) {
     let types = event?.dataTransfer?.types;
@@ -31,7 +35,9 @@
     if (isEventWithFiles(e)) showDropOverlay = true;
   }}
 >
-  <Navigation />
+  {#if pathname !== "/welcome"}
+    <Navigation />
+  {/if}
   <section class="size-full overflow-hidden">
     <slot />
   </section>
@@ -61,4 +67,3 @@
 
 <AddSourceModal />
 <SourceImportedModal sourcePath={$sourceImportedPath} />
-<NotificationCenter />

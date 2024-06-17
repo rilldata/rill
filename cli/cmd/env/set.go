@@ -8,7 +8,8 @@ import (
 
 // SetCmd is sub command for env. Sets the variable for a project
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
-	var projectName string
+	var projectPath, projectName string
+
 	setCmd := &cobra.Command{
 		Use:   "set <key> <value>",
 		Args:  cobra.ExactArgs(2),
@@ -16,12 +17,20 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			key := args[0]
 			value := args[1]
+			ctx := cmd.Context()
 			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
 
-			ctx := cmd.Context()
+			// Find the cloud project name
+			if projectName == "" {
+				projectName, err = ch.InferProjectName(cmd.Context(), ch.Org, projectPath)
+				if err != nil {
+					return err
+				}
+			}
+
 			resp, err := client.GetProjectVariables(ctx, &adminv1.GetProjectVariablesRequest{
 				OrganizationName: ch.Org,
 				Name:             projectName,
@@ -52,7 +61,8 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
-	setCmd.Flags().StringVar(&projectName, "project", "", "")
-	_ = setCmd.MarkFlagRequired("project")
+	setCmd.Flags().StringVar(&projectName, "project", "", "Cloud project name (will attempt to infer from Git remote if not provided)")
+	setCmd.Flags().StringVar(&projectPath, "path", ".", "Project directory")
+
 	return setCmd
 }

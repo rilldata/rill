@@ -11,9 +11,9 @@
 <script lang="ts">
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
   import { writable } from "svelte/store";
+  import ConnectorExplorer from "../../features/connectors/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
-  import TableAssets from "../../features/tables/TableAssets.svelte";
   import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
@@ -60,13 +60,15 @@
   <div class="inner" style:width="{width}px">
     <ProjectTitle />
 
-    <AddAssetButton />
+    <div class="p-2 w-full">
+      <AddAssetButton />
+    </div>
     <div class="scroll-container">
       <div class="nav-wrapper" bind:clientHeight={navWrapperHeight}>
         <FileExplorer />
         <div class="grow" />
         {#if navWrapperHeight}
-          <TableAssets startingHeight={navWrapperHeight / 2} />
+          <ConnectorExplorer startingHeight={navWrapperHeight / 2} />
         {/if}
       </div>
     </div>

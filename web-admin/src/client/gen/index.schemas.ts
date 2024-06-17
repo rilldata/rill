@@ -112,11 +112,6 @@ export type AdminServiceListProjectsForOrganizationParams = {
   pageToken?: string;
 };
 
-export type AdminServiceCreateWhitelistedDomainBody = {
-  domain?: string;
-  role?: string;
-};
-
 export type AdminServiceSearchProjectUsersParams = {
   emailQuery?: string;
   pageSize?: number;
@@ -159,7 +154,7 @@ export type AdminServiceGetIFrameBody = {
   attributes?: AdminServiceGetIFrameBodyAttributes;
   /** Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView". */
   kind?: string;
-  /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart. */
+  /** Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component. */
   resource?: string;
   /** Theme to use for the embedded resource. */
   theme?: string;
@@ -223,6 +218,11 @@ export type AdminServiceCreateAlertBodyBody = {
 
 export type AdminServiceAddOrganizationMemberBodyBody = {
   email?: string;
+  role?: string;
+};
+
+export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
+  domain?: string;
   role?: string;
 };
 
@@ -442,6 +442,7 @@ export interface V1ReportOptions {
   title?: string;
   refreshCron?: string;
   refreshTimeZone?: string;
+  intervalDuration?: string;
   queryName?: string;
   queryArgsJson?: string;
   exportLimit?: string;
@@ -454,6 +455,10 @@ export interface V1ReportOptions {
 }
 
 export interface V1RemoveWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveProjectWhitelistedDomainResponse {
   [key: string]: any;
 }
 
@@ -510,6 +515,7 @@ export interface V1Project {
   orgName?: string;
   description?: string;
   public?: boolean;
+  createdByUserId?: string;
   provisioner?: string;
   githubUrl?: string;
   subpath?: string;
@@ -588,6 +594,10 @@ export interface V1ListProjectsForOrganizationResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectWhitelistedDomainsResponse {
+  domains?: V1WhitelistedDomain[];
+}
+
 export interface V1ListProjectMembersResponse {
   members?: V1Member[];
   nextPageToken?: string;
@@ -634,6 +644,16 @@ export interface V1IssueRepresentativeAuthTokenRequest {
   ttlMinutes?: string;
 }
 
+export type V1GithubPermission =
+  (typeof V1GithubPermission)[keyof typeof V1GithubPermission];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1GithubPermission = {
+  GITHUB_PERMISSION_UNSPECIFIED: "GITHUB_PERMISSION_UNSPECIFIED",
+  GITHUB_PERMISSION_READ: "GITHUB_PERMISSION_READ",
+  GITHUB_PERMISSION_WRITE: "GITHUB_PERMISSION_WRITE",
+} as const;
+
 export interface V1GetUserResponse {
   user?: V1User;
 }
@@ -676,11 +696,18 @@ export interface V1GetIFrameResponse {
   ttlSeconds?: number;
 }
 
+export type V1GetGithubUserStatusResponseOrganizationInstallationPermissions = {
+  [key: string]: V1GithubPermission;
+};
+
 export interface V1GetGithubUserStatusResponse {
   hasAccess?: boolean;
   grantAccessUrl?: string;
   accessToken?: string;
   account?: string;
+  userInstallationPermission?: V1GithubPermission;
+  organizationInstallationPermissions?: V1GetGithubUserStatusResponseOrganizationInstallationPermissions;
+  /** DEPRECATED: Use organization_installation_permissions instead. */
   organizations?: string[];
 }
 
@@ -809,6 +836,10 @@ export interface V1CreateReportResponse {
   name?: string;
 }
 
+export interface V1CreateProjectWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
 export interface V1CreateProjectResponse {
   project?: V1Project;
 }
@@ -901,7 +932,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

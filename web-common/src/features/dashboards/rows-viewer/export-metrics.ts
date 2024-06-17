@@ -1,4 +1,4 @@
-import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { get } from "svelte/store";
@@ -22,7 +22,6 @@ export default async function exportMetrics({
   const timeControlState = get(
     ctx.selectors.timeRangeSelectors.timeControlsState,
   );
-  const measureFilters = await getResolvedMeasureFilters(ctx);
 
   const result = await get(query).mutateAsync({
     instanceId: get(runtime).instanceId,
@@ -32,7 +31,7 @@ export default async function exportMetrics({
         metricsViewRowsRequest: {
           instanceId: get(runtime).instanceId,
           metricsViewName,
-          where: sanitiseExpression(dashboard.whereFilter, measureFilters),
+          where: sanitiseExpression(mergeMeasureFilters(dashboard), undefined),
           timeStart: timeControlState.timeStart,
           timeEnd: timeControlState.timeEnd,
         },

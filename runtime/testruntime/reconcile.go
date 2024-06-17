@@ -41,7 +41,7 @@ func DeleteFiles(t testing.TB, rt *runtime.Runtime, id string, files ...string) 
 	defer release()
 
 	for _, path := range files {
-		err := repo.Delete(ctx, path)
+		err := repo.Delete(ctx, path, false)
 		require.NoError(t, err)
 	}
 }
@@ -162,6 +162,7 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 		state := b.GetModel().State
 		state.RefreshedOn = nil
 		state.SpecHash = ""
+		state.RefsHash = ""
 	case runtime.ResourceKindAlert:
 		state := b.GetAlert().State
 		state.SpecHash = ""
@@ -170,6 +171,9 @@ func RequireResource(t testing.TB, rt *runtime.Runtime, id string, a *runtimev1.
 			e.StartedOn = nil
 			e.FinishedOn = nil
 		}
+	case runtime.ResourceKindConnector:
+		state := b.GetConnector().State
+		state.SpecHash = ""
 	}
 
 	// Hack to only compare the Resource field (not Meta)

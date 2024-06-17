@@ -26,7 +26,6 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	_ "github.com/rilldata/rill/runtime/drivers/file"
 	_ "github.com/rilldata/rill/runtime/drivers/gcs"
-	_ "github.com/rilldata/rill/runtime/drivers/github"
 	_ "github.com/rilldata/rill/runtime/drivers/https"
 	_ "github.com/rilldata/rill/runtime/drivers/postgres"
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
@@ -206,6 +205,56 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 			},
 		},
 		EmbedCatalog: true,
+	}
+
+	err := rt.CreateInstance(context.Background(), inst)
+	require.NoError(t, err)
+	require.NotEmpty(t, inst.ID)
+
+	ctrl, err := rt.Controller(context.Background(), inst.ID)
+	require.NoError(t, err)
+
+	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilIdle(context.Background(), false)
+	require.NoError(t, err)
+
+	return rt, inst.ID
+}
+
+func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
+	rt := New(t)
+
+	_, currentFile, _, _ := goruntime.Caller(0)
+	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
+
+	inst := &drivers.Instance{
+		Environment:      "test",
+		OLAPConnector:    "druid",
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
+		EmbedCatalog:     false,
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": projectPath},
+			},
+			{
+				Type:   "druid",
+				Name:   "druid",
+				Config: map[string]string{"dsn": "http://localhost:8888/druid/v2/sql"},
+			},
+			{
+				Type: "sqlite",
+				Name: "catalog",
+				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+				// "cache=shared" is needed to prevent threading problems.
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+			},
+		},
+		// EmbedCatalog: true,
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)

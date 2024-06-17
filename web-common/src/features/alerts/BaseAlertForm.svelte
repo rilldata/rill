@@ -1,6 +1,13 @@
 <script lang="ts">
-  import { DialogTitle } from "@rgossiaux/svelte-headlessui";
+  import { DialogTitle } from "@rilldata/web-common/components/dialog-v2";
   import * as DialogTabs from "@rilldata/web-common/components/dialog/tabs";
+  import {
+    generateAlertName,
+    getTouched,
+  } from "@rilldata/web-common/features/alerts/utils";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { X } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import type { createForm } from "svelte-forms-lib";
   import Button from "../../components/button/Button.svelte";
@@ -21,7 +28,8 @@
   const formId = isEditForm ? "edit-alert-form" : "create-alert-form";
   const dialogTitle = isEditForm ? "Edit Alert" : "Create Alert";
 
-  const { form, errors, handleSubmit, validateField, isSubmitting } = formState;
+  const { form, errors, handleSubmit, validateField, isSubmitting, touched } =
+    formState;
 
   const tabs = ["Data", "Criteria", "Delivery"];
 
@@ -35,8 +43,15 @@
 
   let currentTabIndex = 0;
 
+  $: metricsViewName = $form["metricsViewName"]; // memoise to avoid rerenders
+  $: metricsView = useMetricsView($runtime.instanceId, metricsViewName);
+
   function handleCancel() {
-    dispatch("close");
+    if (getTouched($touched)) {
+      dispatch("cancel");
+    } else {
+      dispatch("close");
+    }
   }
 
   function handleBack() {
@@ -49,27 +64,47 @@
       return;
     }
     currentTabIndex += 1;
+
+    if (isEditForm || currentTabIndex !== 2 || $touched.name) {
+      return;
+    }
+    // if the user came to the delivery tab and name was not changed then auto generate it
+    const name = generateAlertName($form, $metricsView.data ?? {});
+    if (!name) return;
+    $form.name = name;
   }
+
+  $: measure = $form.measure;
+  function measureUpdated(mes: string) {
+    $form.criteria.forEach((c) => (c.measure = mes));
+  }
+  $: measureUpdated(measure);
 </script>
 
-<!-- 602px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
+<!-- 802px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
 <form
-  class="transform bg-white rounded-md border border-slate-300 flex flex-col shadow-lg w-[602px]"
+  class="transform bg-white rounded-md flex flex-col w-[802px]"
   id={formId}
   on:submit|preventDefault={handleSubmit}
 >
-  <DialogTitle class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7">
-    {dialogTitle}
+  <DialogTitle
+    class="px-6 py-4 text-gray-900 text-lg font-semibold leading-7 flex flex-row items-center justify-between"
+  >
+    <div>{dialogTitle}</div>
+    <Button type="link" noStroke compact on:click={handleCancel}>
+      <X strokeWidth={3} size={16} class="text-black" />
+    </Button>
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>
     <DialogTabs.List class="border-t border-gray-200">
       {#each tabs as tab, i}
-        <DialogTabs.Trigger value={tab} tabIndex={i}>
+        <!-- inner width is 800px. so, width = ceil(800/3) = 267 -->
+        <DialogTabs.Trigger value={tab} tabIndex={i} class="w-[267px]">
           {tab}
         </DialogTabs.Trigger>
       {/each}
     </DialogTabs.List>
-    <div class="p-3 bg-slate-100">
+    <div class="p-3 bg-slate-100 h-[600px] overflow-auto">
       <DialogTabs.Content {currentTabIndex} tabIndex={0} value={tabs[0]}>
         <AlertDialogDataTab {formState} />
       </DialogTabs.Content>

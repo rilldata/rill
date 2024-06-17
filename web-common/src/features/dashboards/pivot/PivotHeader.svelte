@@ -4,8 +4,8 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
   import DragList from "./DragList.svelte";
-
   import { PivotChipType, PivotChipData } from "./types";
+  import { slide } from "svelte/transition";
 
   const stateManagers = getStateManagers();
   const {
@@ -14,6 +14,9 @@
     },
     metricsViewName,
   } = stateManagers;
+
+  $: ({ dimension: columnsDimensions, measure: columnsMeasures } = $columns);
+  $: ({ dimension: rowsDimensions } = $rows);
 
   function updateColumn(e: CustomEvent<PivotChipData[]>) {
     metricsExplorerStore.setPivotColumns($metricsViewName, e.detail);
@@ -27,21 +30,23 @@
   }
 </script>
 
-<div class="header">
+<div class="header" transition:slide>
   <div class="header-row">
-    <span class="row-label"> <Row size="16px" />Rows</span>
+    <span class="row-label">
+      <Row size="16px" /> Rows
+    </span>
     <DragList
       zone="rows"
       placeholder="Drag dimensions here"
+      items={rowsDimensions}
       on:update={updateRows}
-      items={$rows.dimension}
     />
   </div>
   <div class="header-row">
     <span class="row-label"> <Column size="16px" /> Columns</span>
     <DragList
       zone="columns"
-      items={$columns.dimension.concat($columns.measure)}
+      items={columnsDimensions.concat(columnsMeasures)}
       placeholder="Drag dimensions or measures here"
       on:update={updateColumn}
     />
@@ -50,10 +55,14 @@
 
 <style lang="postcss">
   .header {
-    @apply flex flex-col;
-    border-bottom: 1px solid #ddd;
-    @apply bg-white py-2 px-2.5 gap-y-2;
+    @apply flex flex-col border-b;
+    @apply bg-white justify-center py-2 gap-y-2;
+    @apply flex flex-col flex-none relative overflow-hidden;
+    @apply border-r z-0;
+    transition-property: height;
+    will-change: height;
   }
+
   .header-row {
     @apply flex items-center gap-x-2 px-2;
   }

@@ -53,7 +53,12 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 			return err
 		}
 	} else { // no error consume rowIterator
-		defer rowIter.Close()
+		defer func() {
+			err := rowIter.Close()
+			if err != nil {
+				s.logger.Error("error in closing row iterator", zap.Error(err))
+			}
+		}()
 		return s.transferFromRowIterator(ctx, rowIter, sinkCfg.Table, opts.Progress)
 	}
 	limitInBytes, _ := s.to.(drivers.Handle).Config()["storage_limit_bytes"].(int64)
@@ -101,7 +106,7 @@ func (s *sqlStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map
 			err = s.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
 			create = false
 		} else {
-			err = s.to.InsertTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
+			err = s.to.InsertTableAsSelect(ctx, sinkCfg.Table, fmt.Sprintf("SELECT * FROM %s", from), false, true, drivers.IncrementalStrategyAppend, nil)
 		}
 		if err != nil {
 			return err
@@ -114,7 +119,7 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 	schema, err := iter.Schema(ctx)
 	if err != nil {
 		if errors.Is(err, drivers.ErrIteratorDone) {
-			return fmt.Errorf("no results found for the query")
+			return drivers.ErrNoRows
 		}
 		return err
 	}
@@ -186,6 +191,9 @@ func (s *sqlStoreToDuckDB) transferFromRowIterator(ctx context.Context, iter dri
 						}
 						return err
 					}
+					if err := convert(row, schema); err != nil { // duckdb specific datatype conversion
+						return err
+					}
 
 					if err := a.AppendRow(row...); err != nil {
 						return err
@@ -217,6 +225,21 @@ func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error)
 	}
 	query += ")"
 	return query, nil
+}
+
+func convert(row []driver.Value, schema *runtimev1.StructType) error {
+	for i, v := range row {
+		if schema.Fields[i].Type.Code == runtimev1.Type_CODE_UUID {
+			val, ok := v.([16]byte)
+			if !ok {
+				return fmt.Errorf("unknown type for UUID field %s: %T", schema.Fields[i].Name, v)
+			}
+			var uuid duckdb.UUID
+			copy(uuid[:], val[:])
+			row[i] = uuid
+		}
+	}
+	return nil
 }
 
 func pbTypeToDuckDB(t *runtimev1.Type) (string, error) {

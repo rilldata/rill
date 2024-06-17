@@ -1,27 +1,26 @@
-import { removeLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { parseKindAndNameFromFile } from "@rilldata/web-common/features/entity-management/file-content-utils";
+import { extractFileName } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
   fetchFileContent,
   fetchMainEntityFiles,
 } from "@rilldata/web-common/features/entity-management/file-selectors";
 import {
-  fetchResources,
   ResourceKind,
+  fetchResources,
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import { ResourceStatus } from "@rilldata/web-common/features/entity-management/resource-status-utils";
-import { extractFileName } from "@rilldata/web-common/features/sources/extract-file-name";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
-  type V1ParseError,
   V1ReconcileStatus,
+  getRuntimeServiceGetResourceQueryKey,
+  type V1ParseError,
   type V1Resource,
   type V1ResourceName,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient } from "@tanstack/svelte-query";
-import { derived, get, type Readable, writable } from "svelte/store";
+import { derived, get, writable, type Readable } from "svelte/store";
 
 export class FileArtifact {
   public readonly path: string;
@@ -31,18 +30,12 @@ export class FileArtifact {
   public readonly reconciling = writable<boolean>(false);
 
   /**
-   * Used to check if a file has finished renaming.
-   *
-   * Reconciler uses meta.renamedFrom internally to track it.
-   * It is unset once rename is complete.
-   */
-  public renaming = false;
-
-  /**
    * Last time the state of the resource `kind/name` was updated.
    * This is updated in watch-resources and is used there to avoid unnecessary calls to GetResource API.
    */
   public lastStateUpdatedOn: string | undefined;
+
+  public deleted = false;
 
   public constructor(filePath: string) {
     this.path = filePath;
@@ -57,7 +50,7 @@ export class FileArtifact {
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
     );
-    this.renaming = !!resource.meta?.renamedFrom;
+    this.deleted = false;
   }
 
   public updateReconciling(resource: V1Resource) {
@@ -73,7 +66,7 @@ export class FileArtifact {
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
-  public deleteResource() {
+  public softDeleteResource() {
     this.reconciling.set(false);
   }
 
@@ -95,18 +88,22 @@ export class FileArtifact {
     queryClient: QueryClient,
     instanceId: string,
   ): Readable<V1ParseError[]> {
-    return derived(
+    const store = derived(
       [
+        this.name,
         useProjectParser(queryClient, instanceId),
         this.getResource(queryClient, instanceId),
       ],
-      ([projectParser, resource]) => {
+      ([name, projectParser, resource]) => {
+        if (projectParser.isFetching || resource.isFetching) {
+          // to avoid flicker during a re-fetch, retain the previous value
+          return get(store);
+        }
         if (
-          projectParser.isFetching ||
-          projectParser.isError ||
-          resource.isFetching
+          // not having a name will signify a non-entity file
+          !name?.kind ||
+          projectParser.isError
         ) {
-          // TODO: what should the error be for failed get resource API
           return [];
         }
         return [
@@ -125,6 +122,7 @@ export class FileArtifact {
       },
       [],
     );
+    return store;
   }
 
   public getHasErrors(queryClient: QueryClient, instanceId: string) {
@@ -134,59 +132,13 @@ export class FileArtifact {
     );
   }
 
-  public getResourceStatusStore(
-    queryClient: QueryClient,
-    instanceId: string,
-    validator?: (res: V1Resource) => boolean,
-  ) {
-    return derived(
-      [
-        this.getResource(queryClient, instanceId),
-        this.getAllErrors(queryClient, instanceId),
-        useProjectParser(queryClient, instanceId),
-      ],
-      ([resourceResp, errors, projectParserResp]) => {
-        if (projectParserResp.isError) {
-          return {
-            status: ResourceStatus.Errored,
-            error: projectParserResp.error,
-          };
-        }
-
-        if (
-          errors.length ||
-          (resourceResp.isError && !resourceResp.isFetching) ||
-          projectParserResp.isError
-        ) {
-          return {
-            status: ResourceStatus.Errored,
-            error: resourceResp.error ?? projectParserResp.error,
-          };
-        }
-
-        let isBusy: boolean;
-        if (validator && resourceResp.data) {
-          isBusy = !validator(resourceResp.data);
-        } else {
-          isBusy =
-            resourceResp.isFetching ||
-            resourceResp.data?.meta?.reconcileStatus !==
-              V1ReconcileStatus.RECONCILE_STATUS_IDLE;
-        }
-
-        return {
-          status: isBusy ? ResourceStatus.Busy : ResourceStatus.Idle,
-          resource: resourceResp.data,
-        };
-      },
-    );
-  }
-
   public getEntityName() {
     return get(this.name)?.name ?? extractFileName(this.path);
   }
 
   private updateNameIfChanged(resource: V1Resource) {
+    const isSubResource = !!resource.component?.spec?.definedInDashboard;
+    if (isSubResource) return;
     const curName = get(this.name);
     if (
       curName?.name !== resource.meta?.name?.name ||
@@ -213,10 +165,21 @@ export class FileArtifacts {
     for (const resource of resources) {
       switch (resource.meta?.name?.kind) {
         case ResourceKind.Source:
+        case ResourceKind.Connector:
         case ResourceKind.Model:
         case ResourceKind.MetricsView:
-        case ResourceKind.Chart:
+        case ResourceKind.Component:
         case ResourceKind.Dashboard:
+          // set query data for GetResource to avoid refetching data we already have
+          queryClient.setQueryData(
+            getRuntimeServiceGetResourceQueryKey(instanceId, {
+              "name.name": resource.meta?.name?.name,
+              "name.kind": resource.meta?.name?.kind,
+            }),
+            {
+              resource,
+            },
+          );
           this.updateArtifacts(resource);
           break;
       }
@@ -228,17 +191,15 @@ export class FileArtifacts {
     );
     await Promise.all(
       missingFiles.map((filePath) =>
-        fetchFileContent(
-          queryClient,
-          instanceId,
-          removeLeadingSlash(filePath),
-        ).then((fileContents) => {
-          const artifact =
-            this.artifacts[filePath] ?? new FileArtifact(filePath);
-          const newName = parseKindAndNameFromFile(filePath, fileContents);
-          if (newName) artifact.name.set(newName);
-          this.artifacts[filePath] ??= artifact;
-        }),
+        fetchFileContent(queryClient, instanceId, filePath).then(
+          (fileContents) => {
+            const artifact =
+              this.artifacts[filePath] ?? new FileArtifact(filePath);
+            const newName = parseKindAndNameFromFile(filePath, fileContents);
+            if (newName) artifact.name.set(newName);
+            this.artifacts[filePath] ??= artifact;
+          },
+        ),
       ),
     );
   }
@@ -246,11 +207,12 @@ export class FileArtifacts {
   public async fileUpdated(filePath: string) {
     if (this.artifacts[filePath] && get(this.artifacts[filePath].name)?.kind)
       return;
+
     this.artifacts[filePath] ??= new FileArtifact(filePath);
     const fileContents = await fetchFileContent(
       queryClient,
       get(runtime).instanceId,
-      removeLeadingSlash(filePath),
+      filePath,
     );
     const newName = parseKindAndNameFromFile(filePath, fileContents);
     if (newName) this.artifacts[filePath].name.set(newName);
@@ -260,7 +222,31 @@ export class FileArtifacts {
    * This is called when an artifact is deleted.
    */
   public fileDeleted(filePath: string) {
-    delete this.artifacts[filePath];
+    // 2-way delete to handle race condition with delete from file and resource watchers
+    // TODO: avoid this if `name` is undefined - event from resource will not be present
+    if (this.artifacts[filePath]?.deleted) {
+      // already marked for delete in resourceDeleted, delete from cache
+      delete this.artifacts[filePath];
+    } else if (this.artifacts[filePath]) {
+      // seeing delete for the 1st time, mark for delete
+      this.artifacts[filePath].deleted = true;
+    }
+  }
+
+  public resourceDeleted(name: V1ResourceName) {
+    const artifact = this.findFileArtifact(
+      (name.kind ?? "") as ResourceKind,
+      name.name ?? "",
+    );
+    if (!artifact) return;
+    // 2-way delete to handle race condition with delete from file and resource watchers
+    if (artifact.deleted) {
+      // already marked for delete in fileDeleted, delete from cache
+      delete this.artifacts[artifact.path];
+    } else {
+      // seeing delete for the 1st time, mark for delete
+      artifact.deleted = true;
+    }
   }
 
   public updateArtifacts(resource: V1Resource) {
@@ -284,21 +270,12 @@ export class FileArtifacts {
     });
   }
 
-  public wasRenaming(resource: V1Resource) {
-    const finishedRename = !resource.meta?.renamedFrom;
-    return (
-      resource.meta?.filePaths?.some((filePath) => {
-        return this.artifacts[filePath].renaming && finishedRename;
-      }) ?? false
-    );
-  }
-
   /**
    * This is called when a resource is deleted either because file was deleted or it errored out.
    */
-  public deleteResource(resource: V1Resource) {
+  public softDeleteResource(resource: V1Resource) {
     resource.meta?.filePaths?.forEach((filePath) => {
-      this.artifacts[filePath]?.deleteResource();
+      this.artifacts[filePath]?.softDeleteResource();
     });
   }
 
@@ -336,6 +313,17 @@ export class FileArtifacts {
         return currentlyReconciling;
       },
     );
+  }
+
+  /**
+   * Filters all fileArtifacts based on kind param and returns the file paths.
+   * This can be expensive if the project gets large.
+   * If we ever need this reactively then we should look into caching this list.
+   */
+  public getNamesForKind(kind: ResourceKind): string[] {
+    return Object.values(this.artifacts)
+      .filter((artifact) => get(artifact.name)?.kind === kind)
+      .map((artifact) => get(artifact.name)?.name ?? "");
   }
 }
 

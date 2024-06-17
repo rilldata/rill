@@ -23,6 +23,8 @@ export function getFilePathFromNameAndType(
   type: EntityType,
 ): string {
   switch (type) {
+    case EntityType.Connector:
+      return `/connectors/${name}.yaml`;
     case EntityType.Table:
       return `/sources/${name}.yaml`;
     case EntityType.Model:
@@ -44,6 +46,8 @@ export function getFileAPIPathFromNameAndType(
   type: EntityType,
 ): string {
   switch (type) {
+    case EntityType.Connector:
+      return `connectors/${name}.yaml`;
     case EntityType.Table:
       return `sources/${name}.yaml`;
     case EntityType.Model:
@@ -121,6 +125,6 @@ export const FolderToResourceKind: Record<string, ResourceKind> = {
   sources: ResourceKind.Source,
   models: ResourceKind.Model,
   dashboards: ResourceKind.MetricsView,
-  charts: ResourceKind.Chart,
+  charts: ResourceKind.Component,
   "custom-dashboards": ResourceKind.Dashboard,
 };

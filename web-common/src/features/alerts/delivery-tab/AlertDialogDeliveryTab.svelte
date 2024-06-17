@@ -1,6 +1,7 @@
 <script lang="ts">
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
@@ -10,15 +11,25 @@
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
 
-  const { form } = formState;
+  const { form, errors, handleChange } = formState;
 
   $: hasSlackNotifier = getHasSlackConnection($runtime.instanceId);
 </script>
 
 <div class="flex flex-col gap-y-3">
+  <FormSection title="Alert name">
+    <Input
+      alwaysShowError
+      errors={$errors["name"]}
+      id="name"
+      onChange={handleChange}
+      placeholder="My alert"
+      value={$form["name"]}
+    />
+  </FormSection>
   <FormSection
     description="We'll check for this alert whenever the data refreshes"
-    title="Schedule"
+    title="Trigger"
   />
   <FormSection
     description="Set a snooze period to silence repeat notifications for the same alert."

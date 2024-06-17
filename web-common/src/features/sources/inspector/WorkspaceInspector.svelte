@@ -108,7 +108,7 @@
       : undefined;
 
   $: sourceTableReferences =
-    model && getTableReferences(model?.spec?.sql ?? "");
+    model && getTableReferences(model?.spec?.inputProperties?.sql ?? "");
 
   $: getAllSources = useSources(instanceId);
   $: getAllModels = useModels(instanceId);

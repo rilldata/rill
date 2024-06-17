@@ -12,15 +12,19 @@ import {
 } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
+  V1MetricsViewAggregationMeasure,
   V1MetricsViewAggregationSort,
 } from "@rilldata/web-common/runtime-client";
 import { getColumnFiltersForPage } from "./pivot-infinite-scroll";
 import { mergeFilters } from "./pivot-merge-filters";
-import type {
-  PivotDataRow,
-  PivotDataStoreConfig,
-  PivotTimeConfig,
-  TimeFilters,
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  PivotState,
+  type PivotDataRow,
+  type PivotDataStoreConfig,
+  type PivotTimeConfig,
+  type TimeFilters,
 } from "./types";
 
 /**
@@ -29,23 +33,26 @@ import type {
  */
 export function getPivotConfigKey(config: PivotDataStoreConfig) {
   const {
+    time,
     colDimensionNames,
     rowDimensionNames,
     measureNames,
     whereFilter,
-    measureFilter,
+    enableComparison,
+    comparisonTime,
     pivot,
   } = config;
 
   const { sorting } = pivot;
+  const timeKey = JSON.stringify(time);
   const sortingKey = JSON.stringify(sorting);
   const filterKey = JSON.stringify(whereFilter);
-  const measureFilterKey = JSON.stringify(measureFilter);
+  const comparisonTimeKey = JSON.stringify(comparisonTime);
   const dimsAndMeasures = rowDimensionNames
     .concat(measureNames, colDimensionNames)
     .join("_");
 
-  return `${dimsAndMeasures}_${sortingKey}_${filterKey}_${measureFilterKey}`;
+  return `${dimsAndMeasures}_${timeKey}_${sortingKey}_${filterKey}_${enableComparison}_${comparisonTimeKey}`;
 }
 
 /**
@@ -79,7 +86,7 @@ export function getTimeForQuery(
       duration,
       TimeOffsetType.ADD,
       timeZone,
-    ) as Date;
+    );
 
     if (startTimeDt > new Date(timeStart as string)) {
       timeStart = filter.timeStart;
@@ -90,6 +97,34 @@ export function getTimeForQuery(
   });
 
   return { start: timeStart, end: timeEnd };
+}
+
+/**
+ * Returns the intersection of two time ranges
+ */
+export function mergeTimeStrings(
+  time1: TimeRangeString,
+  time2: TimeRangeString,
+): TimeRangeString {
+  if (!time1.start || !time1.end) {
+    return time2;
+  }
+  if (!time2.start || !time2.end) {
+    return time1;
+  }
+
+  const start1 = new Date(time1.start);
+  const start2 = new Date(time2.start);
+  const end1 = new Date(time1.end);
+  const end2 = new Date(time2.end);
+
+  const start = start1 > start2 ? start1 : start2;
+  const end = end1 < end2 ? end1 : end2;
+
+  return {
+    start: start.toISOString(),
+    end: end.toISOString(),
+  };
 }
 
 export function isTimeDimension(
@@ -143,22 +178,20 @@ export function getFilterForPivotTable(
   colDimensionAxes: Record<string, string[]> = {},
   totalsRow: PivotDataRow,
   rowDimensionValues: string[] = [],
-  isInitialTable = false,
   anchorDimension: string | undefined = undefined,
   yLimit = 100,
 ) {
   // TODO: handle for already existing global filters
 
-  const { rowDimensionNames, time } = config;
+  const { time } = config;
 
   let rowFilters: V1Expression | undefined;
   if (
-    isInitialTable &&
     anchorDimension &&
     !isTimeDimension(anchorDimension, time.timeDimension)
   ) {
     rowFilters = createInExpression(
-      rowDimensionNames[0],
+      anchorDimension,
       rowDimensionValues.slice(0, yLimit),
     );
   }
@@ -187,7 +220,6 @@ export function getFilterForPivotTable(
  */
 export function getAccessorForCell(
   colDimensionNames: string[],
-  timeDimension: string,
   colValuesIndexMaps: Map<string, number>[],
   numMeasures: number,
   cell: { [key: string]: string | number },
@@ -382,17 +414,84 @@ export function getSortForAccessor(
 
 export function getFilterForMeasuresTotalsAxesQuery(
   config: PivotDataStoreConfig,
+  anchorDimension: string,
   rowDimensionValues: string[],
-): V1Expression {
-  const { rowDimensionNames } = config;
-  const anchorDimension = rowDimensionNames?.[0];
-
-  let rowFilters: V1Expression | undefined;
-  if (anchorDimension) {
-    rowFilters = createInExpression(anchorDimension, rowDimensionValues);
+): V1Expression | undefined {
+  if (isTimeDimension(anchorDimension, config.time.timeDimension)) {
+    return config.whereFilter;
   }
-
-  const mergedFilters = mergeFilters(config.whereFilter, rowFilters ?? {});
+  const rowFilters = createAndExpression([
+    createInExpression(anchorDimension, rowDimensionValues),
+  ]);
+  const mergedFilters = mergeFilters(rowFilters, config.whereFilter);
 
   return mergedFilters;
+}
+
+export function prepareMeasureForComparison(
+  measures: V1MetricsViewAggregationMeasure[],
+): V1MetricsViewAggregationMeasure[] {
+  return measures.map((measure) => {
+    if (measure.name?.endsWith(COMPARISON_PERCENT)) {
+      return {
+        ...measure,
+        comparisonRatio: {
+          measure: measure.name.replace(COMPARISON_PERCENT, ""),
+        },
+      };
+    } else if (measure.name?.endsWith(COMPARISON_DELTA)) {
+      return {
+        ...measure,
+        comparisonDelta: {
+          measure: measure.name.replace(COMPARISON_DELTA, ""),
+        },
+      };
+    }
+
+    return measure;
+  });
+}
+
+export function canEnablePivotComparison(
+  pivotState: PivotState,
+  comparisonStart: string | Date | undefined,
+) {
+  // Disable if more than 5 measures
+  if (pivotState.columns.measure.length >= 5) {
+    return false;
+  }
+  // Disable if time dimension is present in columns or rows
+  if (pivotState.columns.dimension.some((d) => d.type === "time")) {
+    return false;
+  }
+  if (pivotState.rows.dimension.some((d) => d.type === "time")) {
+    return false;
+  }
+  // Disable if time comparison is not present
+  if (!comparisonStart) {
+    return false;
+  }
+
+  return true;
+}
+
+export function getSortFilteredMeasureBody(
+  measureBody: V1MetricsViewAggregationMeasure[],
+  sortPivotBy: V1MetricsViewAggregationSort[],
+  measureWhere: V1Expression | undefined,
+) {
+  let sortFilteredMeasureBody: V1MetricsViewAggregationMeasure[] = measureBody;
+  let isMeasureSortAccessor = false;
+  let sortAccessor: string | undefined = undefined;
+
+  if (sortPivotBy.length && measureWhere) {
+    sortAccessor = sortPivotBy[0]?.name;
+
+    isMeasureSortAccessor = measureBody.some((m) => m.name === sortAccessor);
+    if (isMeasureSortAccessor && sortAccessor) {
+      sortFilteredMeasureBody = [{ name: sortAccessor, filter: measureWhere }];
+    }
+  }
+
+  return { sortFilteredMeasureBody, isMeasureSortAccessor, sortAccessor };
 }

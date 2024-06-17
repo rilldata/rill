@@ -1,6 +1,7 @@
 <script>
   export let size = "1em";
   export let color = "currentColor";
+  export let className = "";
 </script>
 
 <svg
@@ -9,6 +10,7 @@
   fill={color}
   stroke={color}
   xmlns="http://www.w3.org/2000/svg"
+  class={className}
 >
   <path
     d="M16 2.899l13.409 26.726h-26.819l13.409-26.726zM16 0c-0.69 0-1.379 0.465-1.903 1.395l-13.659 27.222c-1.046 1.86-0.156 3.383 1.978 3.383h27.166c2.134 0 3.025-1.522 1.978-3.383h0l-13.659-27.222c-0.523-0.93-1.213-1.395-1.903-1.395v0z"

@@ -1,15 +1,30 @@
-import { parseDocument } from "yaml";
+import { parse } from "yaml";
 import { createRuntimeServiceGetFile } from "../../runtime-client";
 
 export function useProjectTitle(instanceId: string) {
-  return createRuntimeServiceGetFile(instanceId, "rill.yaml", {
-    query: {
-      select: (data) => {
-        const projectData = parseDocument(data.blob, {
-          logLevel: "error",
-        })?.toJS();
-        return projectData?.title ?? projectData?.name;
+  return createRuntimeServiceGetFile(
+    instanceId,
+    { path: "rill.yaml" },
+    {
+      query: {
+        select: (data) => {
+          let projectData: { title?: string; name?: string } = {};
+          try {
+            projectData = parse(data.blob as string, {
+              logLevel: "silent",
+            }) as {
+              title?: string;
+              name?: string;
+            };
+          } catch (e) {
+            // Ignore
+          }
+
+          return (
+            projectData?.title || projectData?.name || "Untitled Rill Project"
+          );
+        },
       },
     },
-  });
+  );
 }

@@ -1,20 +1,18 @@
-import type {
-  V1ConnectorDriver,
-  V1ReconcileError,
-} from "@rilldata/web-common/runtime-client";
-import { getFilePathFromNameAndType } from "../entity-management/entity-mappers";
-import { EntityType } from "../entity-management/types";
-import {
-  extractFileExtension,
-  sanitizeEntityName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
+import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
+import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import { sanitizeEntityName } from "../entity-management/name-utils";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string,
 ) {
-  const topLineComment = `# Visit https://docs.rilldata.com/reference/project-files/sources to learn more about Rill source files.`;
+  // Add instructions to the top of the file
+  const topOfFile = `# Source YAML
+# Reference documentation: https://docs.rilldata.com/reference/project-files/sources
+  
+type: source`;
 
+  // Convert applicable connectors to duckdb
   switch (connectorName) {
     case "s3":
     case "gcs":
@@ -43,16 +41,18 @@ export function compileCreateSourceYAML(
     }
   }
 
+  // Compile key value pairs
   const compiledKeyValues = Object.entries(values)
     .filter(([key]) => key !== "sourceName")
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 
-  return `${topLineComment}\n\ntype: "${connectorName}"\n` + compiledKeyValues;
+  // Return the compiled YAML
+  return `${topOfFile}\n\nconnector: "${connectorName}"\n` + compiledKeyValues;
 }
 
 function buildDuckDbQuery(path: string): string {
-  const extension = extractFileExtension(path as string);
+  const extension = extractFileExtension(path);
   if (extensionContainsParts(extension, [".csv", ".tsv", ".txt"])) {
     return `select * from read_csv('${path}', auto_detect=true, ignore_errors=1, header=true)`;
   } else if (extensionContainsParts(extension, [".parquet"])) {
@@ -114,10 +114,4 @@ export function getFileTypeFromPath(fileName) {
   }
 
   return fileType;
-}
-
-export function getSourceError(errors: V1ReconcileError[], sourceName) {
-  const path = getFilePathFromNameAndType(sourceName, EntityType.Table);
-
-  return errors?.find((error) => error?.filePath === path);
 }

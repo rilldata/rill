@@ -7,10 +7,10 @@ It will show an error message if passed in.
   import type { LineStatus } from "@rilldata/web-common/components/editor/line-status/state";
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
-  import type { V1ReconcileError } from "@rilldata/web-common/runtime-client";
+  import type { V1ParseError } from "@rilldata/web-common/runtime-client";
   import { slide } from "svelte/transition";
 
-  export let error: LineStatus | V1ReconcileError | undefined = undefined;
+  export let error: LineStatus | V1ParseError | undefined = undefined;
 </script>
 
 <div class="flex flex-col size-full bg-white">

@@ -2,10 +2,9 @@
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
   import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createShiftClickAction } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
@@ -24,6 +23,7 @@
   } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
@@ -80,17 +80,21 @@
 
   $: hoveredValue = measureValueFormatterUnabridged(value) ?? "no data";
 
-  const { shiftClickAction } = createShiftClickAction();
-  async function shiftClickHandler(number: string | undefined) {
+  function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
-    await navigator.clipboard.writeText(number);
-    notifications.send({
-      message: `copied dimension value "${number}" to clipboard`,
-    });
+
+    copyToClipboard(number, `copied dimension value "${number}" to clipboard`);
   }
+
+  let suppressTooltip = false;
 </script>
 
-<Tooltip distance={8} location="right" alignment="start">
+<Tooltip
+  suppress={suppressTooltip}
+  distance={8}
+  location="right"
+  alignment="start"
+>
   <BigNumberTooltipContent
     slot="tooltip-content"
     {measure}
@@ -104,12 +108,16 @@
     class="group big-number"
     class:shadow-grad={!isMeasureExpanded}
     class:cursor-pointer={!isMeasureExpanded}
-    on:click={(e) => {
-      if (e.shiftKey) return;
-      dispatch("expand-measure");
-    }}
-    on:shift-click={() => shiftClickHandler(hoveredValue)}
-    use:shiftClickAction
+    on:click={modified({
+      shift: () => shiftClickHandler(hoveredValue),
+      click: () => {
+        suppressTooltip = true;
+        dispatch("expand-measure");
+        setTimeout(() => {
+          suppressTooltip = false;
+        }, 1000);
+      },
+    })}
   >
     <h2
       class="line-clamp-2 ui-header-primary font-semibold whitespace-normal"

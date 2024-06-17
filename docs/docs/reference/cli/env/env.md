@@ -19,6 +19,8 @@ Manage variables for a project
 
 * [rill](../cli.md)	 - Rill CLI
 * [rill env configure](configure.md)	 - Configures connector variables for all sources
+* [rill env pull](pull.md)	 - Pull cloud credentials into local .env file
+* [rill env push](push.md)	 - Push local .env contents to cloud
 * [rill env rm](rm.md)	 - Remove variable
 * [rill env set](set.md)	 - Set variable
 * [rill env show](show.md)	 - Show credentials and other variables

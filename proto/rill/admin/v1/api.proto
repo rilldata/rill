@@ -312,6 +312,24 @@ service AdminService {
     };
   }
 
+  // CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
+  rpc CreateProjectWhitelistedDomain(CreateProjectWhitelistedDomainRequest) returns (CreateProjectWhitelistedDomainResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/whitelisted",
+      body: "*"
+    };
+  }
+
+  // RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
+  rpc RemoveProjectWhitelistedDomain(RemoveProjectWhitelistedDomainRequest) returns (RemoveProjectWhitelistedDomainResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/projects/{project}/whitelisted/{domain}"};
+  }
+
+  // ListWhitelistedDomains lists all the whitelisted domains of the project
+  rpc ListProjectWhitelistedDomains(ListProjectWhitelistedDomainsRequest) returns (ListProjectWhitelistedDomainsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/whitelisted"};
+  }
+
   // ListService returns all the services per organization
   rpc ListServices(ListServicesRequest) returns (ListServicesResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/services"};
@@ -659,7 +677,7 @@ message GetIFrameRequest {
   }
   // Kind of resource to embed. If not set, defaults to "rill.runtime.v1.MetricsView".
   string kind = 4;
-  // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or chart.
+  // Name of the resource to embed. This should identify a resource that is valid for embedding, such as a dashboard or component.
   string resource = 5;
   // Theme to use for the embedded resource.
   string theme = 12;
@@ -1108,7 +1126,16 @@ message GetGithubUserStatusResponse {
   string grant_access_url = 2;
   string access_token = 3;
   string account = 4;
-  repeated string organizations = 5;
+  GithubPermission user_installation_permission = 6;
+  map<string, GithubPermission> organization_installation_permissions = 7;
+  // DEPRECATED: Use organization_installation_permissions instead.
+  repeated string organizations = 5 [deprecated = true];
+}
+
+enum GithubPermission {
+  GITHUB_PERMISSION_UNSPECIFIED = 0;
+  GITHUB_PERMISSION_READ = 1;
+  GITHUB_PERMISSION_WRITE = 2;
 }
 
 message GetGitCredentialsRequest {
@@ -1144,6 +1171,32 @@ message ListWhitelistedDomainsRequest {
 }
 
 message ListWhitelistedDomainsResponse {
+  repeated WhitelistedDomain domains = 1;
+}
+
+message CreateProjectWhitelistedDomainRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string domain = 3 [(validate.rules).string.min_len = 1];
+  string role = 4 [(validate.rules).string.min_len = 1];
+}
+
+message CreateProjectWhitelistedDomainResponse {}
+
+message RemoveProjectWhitelistedDomainRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string domain = 3 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveProjectWhitelistedDomainResponse {}
+
+message ListProjectWhitelistedDomainsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+}
+
+message ListProjectWhitelistedDomainsResponse {
   repeated WhitelistedDomain domains = 1;
 }
 
@@ -1371,6 +1424,7 @@ message Project {
   string org_name = 4;
   string description = 5;
   bool public = 6;
+  string created_by_user_id = 22;
   string provisioner = 7;
   string github_url = 8;
   string subpath = 17;
@@ -1486,6 +1540,7 @@ message ReportOptions {
   string title = 1;
   string refresh_cron = 2;
   string refresh_time_zone = 9;
+  string interval_duration = 13;
   string query_name = 3;
   string query_args_json = 4;
   uint64 export_limit = 5;

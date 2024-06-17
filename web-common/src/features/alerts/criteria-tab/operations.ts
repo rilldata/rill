@@ -1,26 +1,37 @@
+import { MeasureFilterOperation } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { V1Operation } from "@rilldata/web-common/runtime-client";
 
-// TODO: should match measure filter. remove this once that is merged to main
+// TODO: should match measure filter. merge them once we add support for comparison based filters
 export const CriteriaOperationOptions = [
   {
-    value: V1Operation.OPERATION_LT,
-    label: "Less Than",
-    shortLabel: "<",
+    value: MeasureFilterOperation.GreaterThanOrEquals,
+    label: ">=",
+    shortLabel: ">=",
   },
   {
-    value: V1Operation.OPERATION_LTE,
-    label: "Less Than Or Equals",
-    shortLabel: "<=",
-  },
-  {
-    value: V1Operation.OPERATION_GT,
-    label: "Greater Than",
+    value: MeasureFilterOperation.GreaterThan,
+    label: ">",
     shortLabel: ">",
   },
   {
-    value: V1Operation.OPERATION_GTE,
-    label: "Greater Than Or Equals",
-    shortLabel: ">=",
+    value: MeasureFilterOperation.LessThanOrEquals,
+    label: "<=",
+    shortLabel: "<=",
+  },
+  {
+    value: MeasureFilterOperation.LessThan,
+    label: "<",
+    shortLabel: "<",
+  },
+  {
+    value: MeasureFilterOperation.Equals,
+    label: "=",
+    shortLabel: "=",
+  },
+  {
+    value: MeasureFilterOperation.NotEquals,
+    label: "!=",
+    shortLabel: "!=",
   },
 ];
 

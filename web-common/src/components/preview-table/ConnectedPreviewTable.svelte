@@ -6,6 +6,7 @@
     createQueryServiceTableRows,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../runtime-client/runtime-store";
+  import WorkspaceError from "../WorkspaceError.svelte";
   import type { VirtualizedTableColumns } from "../virtualized-table/types";
   import PreviewTable from "./PreviewTable.svelte";
 
@@ -19,7 +20,7 @@
   let columns: VirtualizedTableColumns[] | undefined;
   let rows: V1TableRowsResponseDataItem[] | undefined;
 
-  $: profileColumnsQuery = createQueryServiceTableColumns(
+  $: columnsQuery = createQueryServiceTableColumns(
     $runtime?.instanceId,
     table,
     {
@@ -29,7 +30,7 @@
     },
   );
 
-  $: tableQuery = createQueryServiceTableRows($runtime?.instanceId, table, {
+  $: rowsQuery = createQueryServiceTableRows($runtime?.instanceId, table, {
     connector,
     database,
     databaseSchema,
@@ -37,14 +38,18 @@
   });
 
   $: columns =
-    ($profileColumnsQuery?.data?.profileColumns as VirtualizedTableColumns[]) ??
+    ($columnsQuery?.data?.profileColumns as VirtualizedTableColumns[]) ??
     columns; // Retain old profileColumns
 
-  $: rows = $tableQuery?.data?.data ?? rows;
+  $: rows = $rowsQuery?.data?.data ?? rows;
 </script>
 
-{#if loading || $tableQuery.isLoading || $profileColumnsQuery.isLoading}
+{#if loading || $rowsQuery.isLoading || $columnsQuery.isLoading}
   <ReconcilingSpinner />
+{:else if $rowsQuery.isError || $columnsQuery.isError}
+  <WorkspaceError
+    message={`Error loading table: ${$rowsQuery.error?.response.data.message || $columnsQuery.error?.response.data.message}`}
+  />
 {:else if rows && columns}
   <PreviewTable {rows} columnNames={columns} name={table} />
 {/if}

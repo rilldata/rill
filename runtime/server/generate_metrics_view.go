@@ -83,7 +83,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	}
 	if model != nil {
 		modelState := model.GetModel().State
-		if modelState.Connector != req.Connector || modelState.Table != tbl.Name {
+		if modelState.ResultConnector != req.Connector || modelState.ResultTable != tbl.Name {
 			// The model is not for this table. Ignore it.
 			model = nil
 		}
@@ -188,7 +188,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 
 	// The AI only generates metrics. We fill in the other properties using the simple logic.
-	doc.Kind = "metrics_view"
+	doc.Type = "metrics_view"
 	doc.TimeDimension = generateMetricsViewYAMLSimpleTimeDimension(tbl.Schema)
 	doc.Dimensions = generateMetricsViewYAMLSimpleDimensions(tbl.Schema)
 	if isModel {
@@ -218,6 +218,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			Name:         measure.Name,
 			Label:        measure.Label,
 			Expression:   measure.Expression,
+			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			FormatPreset: measure.FormatPreset,
 		})
 	}
@@ -308,7 +309,7 @@ Give me up to 10 suggested metrics using the %q SQL dialect based on the table n
 // generateMetricsViewYAMLSimple generates a simple metrics view YAML definition from a table schema.
 func generateMetricsViewYAMLSimple(connector string, tbl *drivers.Table, isDefaultConnector, isModel bool, schema *runtimev1.StructType) (string, error) {
 	doc := &metricsViewYAML{
-		Kind:          "metrics_view",
+		Type:          "metrics_view",
 		Title:         identifierToTitle(tbl.Name),
 		TimeDimension: generateMetricsViewYAMLSimpleTimeDimension(schema),
 		Dimensions:    generateMetricsViewYAMLSimpleDimensions(schema),
@@ -387,7 +388,7 @@ func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metr
 // metricsViewYAML is a struct for generating a metrics view YAML file.
 // We do not use the parser's structs since they are not suitable for generating pretty output YAML.
 type metricsViewYAML struct {
-	Kind                string                      `yaml:"kind,omitempty"`
+	Type                string                      `yaml:"type,omitempty"`
 	Title               string                      `yaml:"title,omitempty"`
 	Connector           string                      `yaml:"connector,omitempty"`
 	Database            string                      `yaml:"database,omitempty"`
@@ -453,7 +454,8 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 
 	buf := new(bytes.Buffer)
 
-	buf.WriteString("# Visit https://docs.rilldata.com/reference/project-files to learn more about Rill project files.\n")
+	buf.WriteString("# Dashboard YAML\n")
+	buf.WriteString("# Reference documentation: https://docs.rilldata.com/reference/project-files/dashboards\n")
 	if aiPowered {
 		buf.WriteString("# This file was generated using AI.\n")
 	}
@@ -487,5 +489,5 @@ func safeSQLName(name string) string {
 	if alphanumericUnderscoreRegexp.MatchString(name) {
 		return name
 	}
-	return name
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }

@@ -460,15 +460,39 @@ func createGithubRepoFlow(ctx context.Context, ch *cmdutil.Helper, localGitPath 
 		return nil
 	}
 
-	repoOwner := pollRes.Account
-	if len(pollRes.Organizations) > 0 {
-		repoOwners := []string{pollRes.Account}
-		repoOwners = append(repoOwners, pollRes.Organizations...)
-		repoOwner, err = cmdutil.SelectPrompt("Select Github account", repoOwners, pollRes.Account)
+	// get orgs on which rill github app is installed with write permission
+	var candidateOrgs []string
+	if pollRes.UserInstallationPermission == adminv1.GithubPermission_GITHUB_PERMISSION_WRITE {
+		candidateOrgs = append(candidateOrgs, pollRes.Account)
+	}
+	for o, p := range pollRes.OrganizationInstallationPermissions {
+		if p == adminv1.GithubPermission_GITHUB_PERMISSION_WRITE {
+			candidateOrgs = append(candidateOrgs, o)
+		}
+	}
+
+	repoOwner := ""
+	if len(candidateOrgs) == 0 {
+		ch.PrintfWarn("\nRill does not have permissions to create a repository on your Github account. Visit this URL to grant access: %s\n", pollRes.GrantAccessUrl)
+		return nil
+	} else if len(candidateOrgs) == 1 {
+		repoOwner = candidateOrgs[0]
+		ok, err = cmdutil.ConfirmPrompt(fmt.Sprintf("Rill will create a new repository in the Github account %q. Do you want to continue?", repoOwner), "", true)
 		if err != nil {
 			return err
 		}
+		if !ok {
+			ch.PrintfWarn("\nIf you want to deploy to another Github account, visit this URL to grant access: %s\n", pollRes.GrantAccessUrl)
+			return nil
+		}
+	} else {
+		repoOwner, err = cmdutil.SelectPrompt("Select a Github account for the new repository", candidateOrgs, candidateOrgs[0])
+		if err != nil {
+			ch.PrintfWarn("\nIf you want to deploy to another Github account, visit this URL to grant access: %s\n", pollRes.GrantAccessUrl)
+			return err
+		}
 	}
+
 	// create and verify
 	githubRepository, err := createGithubRepository(ctx, ch, pollRes, localGitPath, repoOwner)
 	if err != nil {
@@ -791,9 +815,11 @@ func variablesFlow(ctx context.Context, ch *cmdutil.Helper, gitPath, subPath, pr
 	if err != nil {
 		return
 	}
-	connectors, err := parser.AnalyzeConnectors(ctx)
-	if err != nil {
-		return
+	connectors := parser.AnalyzeConnectors(ctx)
+	for _, c := range connectors {
+		if c.Err != nil {
+			return
+		}
 	}
 
 	// Remove the default DuckDB connector we always add

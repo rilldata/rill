@@ -28,11 +28,10 @@ If creating a new DuckDB source from the UI, you should pass in the appropriate 
 On the other hand, if you are creating the source YAML file directly, the definition should look something like:
 
 ```yaml
-
-type: "duckdb"
+type: "source"
+connector: "duckdb"
 sql: "SELECT * from <duckdb_table>"
 db: "<path_to_duckdb_db_file>"
-
 ```
 
 :::tip If deploying to Rill Cloud
@@ -47,7 +46,7 @@ Once a project with a DuckDB source has been deployed using `rill deploy`, Rill 
 
 :::warning When Using An External DuckDB Database
 
-If the DuckDB database file is external to your Rill project directory, you will still be able to use the fully qualified path to read this SQLite database _locally_ using Rill Developer. However, when deployed to Rill Cloud, this source will throw an **error**.
+If the DuckDB database file is external to your Rill project directory, you will still be able to use the fully qualified path to read this DuckDB database _locally_ using Rill Developer. However, when deployed to Rill Cloud, this source will throw an **error**.
 
 :::
 
@@ -95,6 +94,6 @@ Note that you must `cd` into the Git repository that your project was deployed f
 
 :::tip Did you know?
 
-If you've configured credentials locally already (in your `<RILL_HOME>/.home` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
+If you've configured credentials locally already (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
 
 :::

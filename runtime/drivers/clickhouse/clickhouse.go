@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
@@ -30,16 +31,88 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Required:    true,
+			Required:    false,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "host",
+			Required:    false,
+			Placeholder: "localhost",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.NumberPropertyType,
+			DisplayName: "port",
+			Required:    false,
+			Placeholder: "9000",
+		},
+		{
+			Key:         "username",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "username",
+			Required:    false,
+			Placeholder: "default",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "password",
+			Required:    false,
 			Secret:      true,
 		},
+		{
+			Key:         "ssl",
+			Type:        drivers.BooleanPropertyType,
+			DisplayName: "ssl",
+			Required:    false,
+		},
 	},
-	// This spec is intentionally missing a source schema, as the frontend provides
-	// custom instructions for how to connect Clickhouse as the OLAP driver.
-	SourceProperties: nil,
-	ImplementsOLAP:   true,
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Host",
+			Description: "Hostname or IP address of the ClickHouse server",
+			Placeholder: "localhost",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.NumberPropertyType,
+			Required:    true,
+			DisplayName: "Port",
+			Description: "Port number of the ClickHouse server",
+			Placeholder: "9000",
+		},
+		{
+			Key:         "username",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Username",
+			Description: "Username to connect to the ClickHouse server",
+			Placeholder: "default",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Password",
+			Description: "Password to connect to the ClickHouse server",
+			Placeholder: "password",
+			Secret:      true,
+		},
+		{
+			Key:         "ssl",
+			Type:        drivers.BooleanPropertyType,
+			Required:    true,
+			DisplayName: "SSL",
+			Description: "Use SSL to connect to the ClickHouse server",
+		},
+	},
+	ImplementsOLAP: true,
 }
 
 var maxOpenConnections = 20
@@ -47,10 +120,20 @@ var maxOpenConnections = 20
 type driver struct{}
 
 type configProperties struct {
-	// DSN is the connection string
-	DSN string `mapstructure:"dsn"`
+	// DSN is the connection string. Either DSN can be passed or the individual properties below can be set.
+	DSN      string `mapstructure:"dsn"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
+	SSL bool `mapstructure:"ssl"`
+	// EnableCache controls whether to enable cache for Clickhouse queries.
+	EnableCache bool `mapstructure:"enable_cache"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
+	// SettingsOverride override the default settings used in queries. One use case is to disable settings and set `readonly = 1` when using read-only user.
+	SettingsOverride string `mapstructure:"settings_override"`
 }
 
 // Open connects to Clickhouse using std API.
@@ -66,11 +149,34 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	if conf.DSN == "" {
-		return nil, fmt.Errorf("no DSN provided to open the connection")
+	var dsn string
+	if conf.DSN != "" {
+		dsn = conf.DSN
+	} else if conf.Host != "" {
+		var dsnURL url.URL
+		dsnURL.Host = conf.Host
+		if conf.Port != 0 {
+			dsnURL.Host = fmt.Sprintf("%v:%v", dsnURL.Host, conf.Port)
+		}
+		if conf.SSL {
+			dsnURL.Scheme = "https"
+			dsnURL.RawQuery = "secure=true&skip_verify=true"
+		} else {
+			dsnURL.Scheme = "clickhouse"
+		}
+
+		if conf.Password != "" {
+			dsnURL.User = url.UserPassword(conf.Username, conf.Password)
+		} else if conf.Username != "" {
+			dsnURL.User = url.User(conf.Username)
+		}
+
+		dsn = dsnURL.String()
+	} else {
+		return nil, fmt.Errorf("clickhouse connection parameters not set. Set `dsn` or individual properties")
 	}
 
-	db, err := sqlx.Open("clickhouse", conf.DSN)
+	db, err := sqlx.Open("clickhouse", dsn)
 	if err != nil {
 		return nil, err
 	}
@@ -201,6 +307,19 @@ func (c *connection) MigrationStatus(ctx context.Context) (current, desired int,
 // AsObjectStore implements drivers.Connection.
 func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
+}
+
+// AsModelExecutor implements drivers.Handle.
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.InputHandle == c && opts.OutputHandle == c {
+		return &selfToSelfExecutor{c, opts}, true
+	}
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	return c, true
 }
 
 // AsTransporter implements drivers.Connection.

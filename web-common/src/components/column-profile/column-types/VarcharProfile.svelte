@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/shift-click-action";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { httpRequestQueue } from "../../../runtime-client/http-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import ColumnProfileIcon from "../ColumnProfileIcon.svelte";
@@ -73,8 +73,7 @@
   isFetching={fetchingSummaries}
   {mode}
   on:select={toggleColumnProfile}
-  on:shift-click={() =>
-    copyToClipboard(columnName, `copied ${columnName} to clipboard`)}
+  onShiftClick={() => copyToClipboard(columnName)}
   {type}
 >
   <ColumnProfileIcon isFetching={fetchingSummaries} slot="icon" {type} />

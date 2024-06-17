@@ -132,7 +132,7 @@ func StatusCmd(ch *cmdutil.Helper) *cobra.Command {
 }
 
 type resourceTableRow struct {
-	Kind   string `header:"kind"`
+	Type   string `header:"type"`
 	Name   string `header:"name"`
 	Status string `header:"status"`
 	Error  string `header:"error"`
@@ -145,7 +145,7 @@ func newResourceTableRow(r *runtimev1.Resource) *resourceTableRow {
 	}
 
 	return &resourceTableRow{
-		Kind:   formatResourceKind(r.Meta.Name.Kind),
+		Type:   formatResourceKind(r.Meta.Name.Kind),
 		Name:   r.Meta.Name.Name,
 		Status: formatReconcileStatus(r.Meta.ReconcileStatus),
 		Error:  truncErr,

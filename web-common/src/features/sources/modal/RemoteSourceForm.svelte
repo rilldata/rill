@@ -27,39 +27,52 @@
 
   const { form, touched, errors, handleChange, handleSubmit, isSubmitting } =
     createForm({
-      initialValues: {
-        sourceName: "", // avoids `values.sourceName` warning
-      },
+      initialValues: !connector.implementsOlap ? { sourceName: "" } : {},
       validationSchema: getYupSchema(connector),
       onSubmit: async (values) => {
-        overlay.set({ title: `Importing ${values.sourceName}` });
+        // Sources
+        if (!connector.implementsOlap) {
+          overlay.set({ title: `Importing ${values.sourceName}` });
+          try {
+            await submitRemoteSourceForm(queryClient, connector, values);
+            await goto(`/files/sources/${values.sourceName}.yaml`);
+            dispatch("close");
+          } catch (e) {
+            rpcError = e?.response?.data;
+          }
+          overlay.set(null);
+          return;
+        }
+
+        // Connectors
         try {
-          // the following error provides type narrowing for `connector.name`
-          if (connector.name === undefined)
-            throw new Error("connector name is undefined");
-          await submitRemoteSourceForm(queryClient, connector.name, values);
-          await goto(`/files/sources/${values.sourceName}.yaml`);
+          await submitRemoteSourceForm(queryClient, connector, values);
+          await goto(`/files/connectors/${connector.name}.yaml`);
           dispatch("close");
         } catch (e) {
           rpcError = e?.response?.data;
         }
-        overlay.set(null);
       },
     });
 
+  let connectorProperties = connector.sourceProperties ?? [];
+
   // Place the "Source name" field directly under the "Path" field, which is the first property for each connector (s3, gcs, https).
-  const connectorProperties = [
-    ...(connector.sourceProperties?.slice(0, 1) ?? []),
-    {
-      key: "sourceName",
-      displayName: "Source name",
-      description: "The name of the source",
-      placeholder: "my_new_source",
-      type: ConnectorDriverPropertyType.TYPE_STRING,
-      required: true,
-    },
-    ...(connector.sourceProperties?.slice(1) ?? []),
-  ];
+  // Temporary: for OLAP connectors, we enforce that connectorName=driver.
+  if (!connector.implementsOlap) {
+    connectorProperties = [
+      ...(connector.sourceProperties?.slice(0, 1) ?? []),
+      {
+        key: "sourceName",
+        displayName: "Source name",
+        description: "The name of the source",
+        placeholder: "my_new_source",
+        type: ConnectorDriverPropertyType.TYPE_STRING,
+        required: true,
+      },
+      ...(connector.sourceProperties?.slice(1) ?? []),
+    ];
+  }
 
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
@@ -97,39 +110,43 @@
       />
     {/if}
 
-    {#each connectorProperties as property}
-      {@const label =
-        property.displayName + (property.required ? "" : " (optional)")}
-      <div class="py-1.5">
-        {#if property.type === ConnectorDriverPropertyType.TYPE_STRING && property.key !== undefined}
-          <Input
-            id={toYupFriendlyKey(property.key)}
-            {label}
-            placeholder={property.placeholder}
-            hint={property.hint}
-            error={$errors[toYupFriendlyKey(property.key)]}
-            bind:value={$form[toYupFriendlyKey(property.key)]}
-            on:input={onStringInputChange}
-            on:change={handleChange}
-          />
-        {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN && property.key !== undefined}
-          <label for={property.key} class="flex items-center">
-            <input
-              id={property.key}
-              type="checkbox"
-              bind:checked={$form[property.key]}
-              class="h-5 w-5"
+    {#each connectorProperties as property (property.key)}
+      {#if property.key !== undefined}
+        {@const label =
+          property.displayName + (property.required ? "" : " (optional)")}
+        <div class="py-1.5">
+          {#if property.type === ConnectorDriverPropertyType.TYPE_STRING || property.type === ConnectorDriverPropertyType.TYPE_NUMBER}
+            <Input
+              id={toYupFriendlyKey(property.key)}
+              label={property.displayName}
+              placeholder={property.placeholder}
+              optional={!property.required}
+              secret={property.secret}
+              hint={property.hint}
+              errors={$errors[toYupFriendlyKey(property.key)]}
+              bind:value={$form[toYupFriendlyKey(property.key)]}
+              onInput={onStringInputChange}
+              onChange={handleChange}
             />
-            <span class="ml-2 text-sm">{label}</span>
-          </label>
-        {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
-          <InformationalField
-            description={property.description}
-            hint={property.hint}
-            href={property.docsUrl}
-          />
-        {/if}
-      </div>
+          {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
+            <label for={property.key} class="flex items-center">
+              <input
+                id={property.key}
+                type="checkbox"
+                bind:checked={$form[property.key]}
+                class="h-5 w-5"
+              />
+              <span class="ml-2 text-sm">{label}</span>
+            </label>
+          {:else if property.type === ConnectorDriverPropertyType.TYPE_INFORMATIONAL}
+            <InformationalField
+              description={property.description}
+              hint={property.hint}
+              href={property.docsUrl}
+            />
+          {/if}
+        </div>
+      {/if}
     {/each}
   </form>
   <div class="flex items-center space-x-2">
@@ -141,7 +158,7 @@
       submitForm
       type="primary"
     >
-      Add source
+      Add data
     </Button>
   </div>
 </div>

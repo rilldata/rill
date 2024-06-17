@@ -1,10 +1,9 @@
-import { writable } from "svelte/store";
+import { debounce } from "@rilldata/web-common/lib/create-debouncer";
+import { derived, writable } from "svelte/store";
 import {
   DEFAULT_INSPECTOR_WIDTH,
   DEFAULT_PREVIEW_TABLE_HEIGHT,
 } from "../config";
-import { derived } from "svelte/store";
-import { debounce } from "@rilldata/web-common/lib/create-debouncer";
 
 type WorkspaceLayout = {
   inspector: {

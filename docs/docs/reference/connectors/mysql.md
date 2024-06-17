@@ -38,7 +38,8 @@ Alternatively, you can include the connection string directly in the source YAML
 An example of a source using this approach:
 
 ```yaml
-type: "mysql"
+type: "source"
+connector: "mysql"
 sql: "select * from my_table"
 dsn: "mysql_user:mysql_password@tcp(localhost:3306)/mysql_db"
 ```
@@ -77,6 +78,6 @@ Note that you must `cd` into the Git repository that your project was deployed f
 
 :::tip Did you know?
 
-If you've configured credentials locally already (in your `<RILL_HOME>/.home` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
+If you've configured credentials locally already (in your `<RILL_PROJECT_DIRECTORY>/.env` file), you can use `rill env push` to [push these credentials](/build/credentials/credentials.md#rill-env-push) to your Rill Cloud project. This will allow other users to retrieve / reuse the same credentials automatically by running `rill env pull`.
 
 :::
