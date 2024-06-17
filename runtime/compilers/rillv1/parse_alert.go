@@ -249,8 +249,7 @@ func (p *Parser) parseAlert(node *Node) error {
 		r.AlertSpec.QueryArgsJson = tmp.Query.ArgsJSON
 		// Note: have already validated that at most one of the cases match
 		if queryForUserID != "" {
-			qf := &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: queryForUserID}
-			r.AlertSpec.QueryFor = qf
+			r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: queryForUserID}
 		} else if queryForUserEmail != "" {
 			r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
 		} else if queryForAttributes != nil {
