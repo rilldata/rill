@@ -111,30 +111,25 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		renderer = "image"
 		rendererProps = must(structpb.NewStruct(map[string]any{"url": *tmp.Image}))
 	}
-	if len(tmp.Other) > 0 {
-		n += len(tmp.Other)
-		var k string
-		var v any
-		for k, v = range tmp.Other {
+	if len(tmp.Other) == 1 {
+		n++
+		var props map[string]any
+		for renderer, props = range tmp.Other {
 			break
 		}
 
-		props, ok := v.(map[string]any)
-		if !ok {
-			return nil, nil, fmt.Errorf(`expected map value for property %q`, k)
-		}
-
-		if err := componentTemplateSchema.Validate(map[string]any{k: props}); err != nil {
-			return nil, nil, fmt.Errorf(`failed to validate renderer: %w`, err)
+		if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
+			return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
 		}
 
 		propsPB, err := structpb.NewStruct(props)
 		if err != nil {
-			return nil, nil, fmt.Errorf(`failed to convert property %q to struct: %w`, k, err)
+			return nil, nil, fmt.Errorf(`failed to convert property %q to struct: %w`, renderer, err)
 		}
 
-		renderer = k
 		rendererProps = propsPB
+	} else {
+		n += len(tmp.Other)
 	}
 
 	// Check there is exactly one renderer
