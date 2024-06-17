@@ -56,6 +56,7 @@ func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	if err != nil {
 		return err
 	}
+	defer e.Close()
 
 	schema, err := e.Schema(ctx)
 	if err != nil {

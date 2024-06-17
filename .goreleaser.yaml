@@ -1,3 +1,5 @@
+version: 2
+
 project_name: rill
 
 release:
@@ -65,13 +67,13 @@ builds:
 blobs:
   - provider: gs
     bucket: prod-cdn.rilldata.com
-    folder: "rill/v{{ .Version }}"
+    directory: "rill/v{{ .Version }}"
     extra_files:
       - glob: ./dist/**/*
 
   - provider: gs
     bucket: prod-cdn.rilldata.com
-    folder: "rill/latest"
+    directory: "rill/latest"
     extra_files:
       - glob: ./dist/**/*
 
@@ -81,7 +83,7 @@ brews:
     name: rill
     license: Apache 2.0
     url_template: https://cdn.rilldata.com/rill/{{ .Tag }}/{{ .ArtifactName }}
-    tap:
+    repository:
       owner: rilldata
       name: homebrew-tap
       branch: main

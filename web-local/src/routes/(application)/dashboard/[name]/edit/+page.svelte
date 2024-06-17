@@ -66,7 +66,7 @@
   $: instanceId = $runtime.instanceId;
   $: initLocalUserPreferenceStore(metricViewName);
   $: isModelingSupportedQuery = canModel(instanceId);
-  $: isModelingSupported = $isModelingSupportedQuery.data;
+  $: isModelingSupported = $isModelingSupportedQuery;
 
   $: fileQuery = createRuntimeServiceGetFile(
     instanceId,

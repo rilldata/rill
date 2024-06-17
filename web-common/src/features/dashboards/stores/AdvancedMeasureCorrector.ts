@@ -1,11 +1,9 @@
-import { filterIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import {
   MetricsViewSpecMeasureType,
   MetricsViewSpecMeasureV2,
-  V1Expression,
   V1MetricsViewSpec,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
@@ -55,14 +53,13 @@ export class AdvancedMeasureCorrector {
 
   private correctFilters() {
     this.dashboard.dimensionThresholdFilters.forEach((dimensionThreshold) => {
-      dimensionThreshold.filter = filterIdentifiers(
-        dimensionThreshold.filter,
-        (_, ident) => !this.measureIsValidForComponent(ident, false, false),
-      ) as V1Expression;
+      dimensionThreshold.filters = dimensionThreshold.filters.filter(
+        (dtf) => !this.measureIsValidForComponent(dtf.measure, false, false),
+      );
     });
     this.dashboard.dimensionThresholdFilters =
       this.dashboard.dimensionThresholdFilters.filter(
-        (dt) => dt.filter !== undefined,
+        (dt) => dt.filters.length,
       );
   }
 

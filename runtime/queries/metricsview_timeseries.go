@@ -100,6 +100,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		if err != nil {
 			return err
 		}
+		defer e.Close()
 
 		res, _, err := e.Query(ctx, qry, nil)
 		if err != nil {

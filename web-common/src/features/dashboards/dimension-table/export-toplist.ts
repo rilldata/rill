@@ -1,5 +1,5 @@
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
-import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
@@ -26,7 +26,6 @@ export default async function exportToplist({
   const timeControlState = get(
     ctx.selectors.timeRangeSelectors.timeControlsState,
   );
-  const measureFilters = await getResolvedMeasureFilters(ctx);
   // CAST SAFETY: by definition, a dimension is selected when in the Dimension Table
   const dimensionName = dashboard.selectedDimensionName as string;
 
@@ -40,12 +39,15 @@ export default async function exportToplist({
   }
 
   const where = sanitiseExpression(
-    getDimensionFilterWithSearch(
-      dashboard?.whereFilter,
-      dashboard?.dimensionSearchText ?? "",
-      dimensionName,
+    mergeMeasureFilters(
+      dashboard,
+      getDimensionFilterWithSearch(
+        dashboard?.whereFilter,
+        dashboard?.dimensionSearchText ?? "",
+        dimensionName,
+      ),
     ),
-    measureFilters,
+    undefined,
   );
 
   const result = await get(query).mutateAsync({

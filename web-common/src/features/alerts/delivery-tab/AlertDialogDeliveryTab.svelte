@@ -1,7 +1,7 @@
 <script lang="ts">
   import FormSection from "@rilldata/web-common/components/forms/FormSection.svelte";
   import InputArray from "@rilldata/web-common/components/forms/InputArray.svelte";
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getHasSlackConnection } from "@rilldata/web-common/features/alerts/delivery-tab/notifiers-utils";
   import { SnoozeOptions } from "@rilldata/web-common/features/alerts/delivery-tab/snooze";
@@ -18,11 +18,11 @@
 
 <div class="flex flex-col gap-y-3">
   <FormSection title="Alert name">
-    <InputV2
+    <Input
       alwaysShowError
       error={$errors["name"]}
       id="name"
-      on:change={handleChange}
+      onChange={handleChange}
       placeholder="My alert"
       value={$form["name"]}
     />

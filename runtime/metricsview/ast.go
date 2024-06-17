@@ -79,8 +79,13 @@ type OrderFieldNode struct {
 //
 // Dynamic time ranges in the qry must be resolved to static start/end timestamps before calling this function.
 // This is due to NewAST not being able (or intended) to resolve external time anchors such as watermarks.
+//
+// The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
 func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
-	// Validate there's at least one dim or measure
+	// Validation
+	if len(qry.PivotOn) > 0 {
+		return nil, errors.New("cannot build AST for pivot queries")
+	}
 	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 {
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}

@@ -142,6 +142,24 @@ export const getFilteredMeasuresAndDimensions = ({
   };
 };
 
+export const getIndependentMeasures = (
+  metricsViewSpec: V1MetricsViewSpec,
+  measureNames: string[],
+) => {
+  const measures = new Set<string>();
+  measureNames.forEach((measureName) => {
+    const measure = metricsViewSpec.measures?.find(
+      (m) => m.name === measureName,
+    );
+    // temporary check for window measures until the PR to move to AggregationApi is merged
+    if (!measure || measure.requiredDimensions?.length || !!measure.window)
+      return;
+    measures.add(measureName);
+    measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
+  });
+  return [...measures];
+};
+
 export const measureSelectors = {
   /**
    * Get all measures in the dashboard.
