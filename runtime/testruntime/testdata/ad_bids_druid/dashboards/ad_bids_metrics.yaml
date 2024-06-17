@@ -18,10 +18,13 @@ dimensions:
     property: publisher
   - label: Space Label
     name: space_label
-    expression: "publisher"
   - label: tags
     name: tags
     column: "tags"
+  - label: id 
+    name: id
+    expression: "id"
+
 
 
 measures:

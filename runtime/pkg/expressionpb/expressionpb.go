@@ -52,6 +52,17 @@ func In(col *runtimev1.Expression, values []*runtimev1.Expression) *runtimev1.Ex
 	}
 }
 
+func IdentIn(ident string, values ...*runtimev1.Expression) *runtimev1.Expression {
+	return &runtimev1.Expression{
+		Expression: &runtimev1.Expression_Cond{
+			Cond: &runtimev1.Condition{
+				Op:    runtimev1.Operation_OPERATION_IN,
+				Exprs: append([]*runtimev1.Expression{Identifier(ident)}, values...),
+			},
+		},
+	}
+}
+
 func Eq(col, value string) *runtimev1.Expression {
 	return &runtimev1.Expression{
 		Expression: &runtimev1.Expression_Cond{

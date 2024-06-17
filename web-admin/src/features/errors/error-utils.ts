@@ -52,18 +52,27 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
 
     // Special handling for some errors on the Project page
     const onProjectPage = isProjectPage(get(page));
-    if (onProjectPage && error.response?.status === 400) {
-      // If "repository not found", ignore the error and show the page
-      if (
-        (error.response.data as RpcStatus).message === "repository not found"
-      ) {
-        return;
+    if (onProjectPage) {
+      if (error.response?.status === 400) {
+        // If "repository not found", ignore the error and show the page
+        if (
+          (error.response.data as RpcStatus).message === "repository not found"
+        ) {
+          return;
+        }
+
+        // This error is the error:`driver.ErrNotFound` thrown while looking up an instance in the runtime.
+        if (
+          (error.response.data as RpcStatus).message === "driver: not found"
+        ) {
+          const [, org, proj] = get(page).url.pathname.split("/");
+          void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
+          return;
+        }
       }
 
-      // This error is the error:`driver.ErrNotFound` thrown while looking up an instance in the runtime.
-      if ((error.response.data as RpcStatus).message === "driver: not found") {
-        const [, org, proj] = get(page).url.pathname.split("/");
-        void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
+      // If the runtime throws a 401, it's likely due to a stale JWT that will soon be refreshed
+      if (isRuntimeQuery(query) && error.response?.status === 401) {
         return;
       }
     }
