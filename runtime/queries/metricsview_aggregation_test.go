@@ -3589,6 +3589,94 @@ func TestMetricsViewsAggregation_Druid_comparison_tags_with_filter(t *testing.T)
 	require.Equal(t, "Yahoo,a,3.23", fieldsToString2digits(rows[i], "pub", "tags", "m1"))
 }
 
+func TestMetricsViewsAggregation_comparison_tags_with_time(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_tags_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "tags",
+			},
+			{
+				Name: "timestamp",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1_p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Where: expressionpb.AndAll(
+			expressionpb.OrAll(
+				expressionpb.Eq("pub", "Yahoo"),
+				expressionpb.Eq("pub", "Google"),
+			),
+			expressionpb.Eq("tags", "a"),
+		),
+		Having: expressionpb.Gt("m1", 0.0),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "tags",
+			},
+			{
+				Name: "timestamp",
+			},
+			{
+				Name: "m1",
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit: &limit,
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "pub,tags,__time,m1,m1_p,__time__previous", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "Google,a,3.17", fieldsToString2digits(rows[i], "pub", "tags", "m1"))
+	i++
+	require.Equal(t, "Yahoo,a,3.23", fieldsToString2digits(rows[i], "pub", "tags", "m1"))
+}
+
 func TestMetricsViewsAggregation_comparison_tags_with_filter(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
