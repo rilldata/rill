@@ -205,14 +205,16 @@ func (q *MetricsViewComparison) removeNoSortMeasures() []*runtimev1.MetricsViewA
 }
 
 func (q *MetricsViewComparison) addDimsAsFilter() {
-	inExpressions := make([]*runtimev1.Expression, 0, len(q.Result.Rows))
-	for _, r := range q.Result.Rows {
-		inExpressions = append(inExpressions, expressionpb.Value(r.DimensionValue))
-	}
-	if q.Where != nil {
-		q.Where = expressionpb.And([]*runtimev1.Expression{q.Where, expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)})
-	} else {
-		q.Where = expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)
+	if len(q.Result.Rows) > 0 {
+		inExpressions := make([]*runtimev1.Expression, 0, len(q.Result.Rows))
+		for _, r := range q.Result.Rows {
+			inExpressions = append(inExpressions, expressionpb.Value(r.DimensionValue))
+		}
+		if q.Where != nil {
+			q.Where = expressionpb.And([]*runtimev1.Expression{q.Where, expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)})
+		} else {
+			q.Where = expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)
+		}
 	}
 }
 
@@ -1071,6 +1073,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 		)
 	}
 
+	fmt.Println(sql)
 	return sql, args, nil
 }
 
