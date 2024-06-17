@@ -1,4 +1,4 @@
-model: ad_bids
+model: adbids0
 display_name: Ad bids
 description:
 
@@ -19,6 +19,10 @@ dimensions:
   - label: Space Label
     name: space_label
     expression: "publisher"
+  - label: tags
+    name: tags
+    column: "tags"
+
 
 measures:
   - label: "Number of bids"
