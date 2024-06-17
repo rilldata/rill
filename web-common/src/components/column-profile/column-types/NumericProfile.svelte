@@ -28,8 +28,8 @@
   import NumericSpark from "./sparks/NumericSpark.svelte";
 
   export let connector: string;
-  export let columnName: string;
   export let objectName: string;
+  export let columnName: string;
   export let type: string;
   export let mode = "summaries";
   export let example: any;
@@ -88,7 +88,11 @@
   $: rug = createQueryServiceColumnRugHistogram(
     $runtime?.instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("rug-histogram", active) },
+    {
+      connector,
+      columnName,
+      priority: getPriorityForColumn("rug-histogram", active),
+    },
     {
       query: {
         select($query) {

@@ -38,6 +38,7 @@ export function useAllModelColumns(
         createTableColumnsWithName(
           queryClient,
           instanceId,
+          r.model?.state?.resultConnector ?? "",
           r.meta?.name?.name ?? "",
         ),
       ),

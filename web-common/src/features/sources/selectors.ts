@@ -80,7 +80,12 @@ export function useAllSourceColumns(
 
     derived(
       allSources.data.map((r) =>
-        createTableColumnsWithName(queryClient, instanceId, r.meta.name.name),
+        createTableColumnsWithName(
+          queryClient,
+          instanceId,
+          r.source?.state?.connector ?? "",
+          r.meta.name.name,
+        ),
       ),
       (sourceColumnResponses) =>
         sourceColumnResponses
@@ -96,12 +101,15 @@ export function useAllSourceColumns(
 export function createTableColumnsWithName(
   queryClient: QueryClient,
   instanceId: string,
+  connector: string,
   tableName: string,
 ): CreateQueryResult<TableColumnsWithName> {
   return createQueryServiceTableColumns(
     instanceId,
     tableName,
-    {},
+    {
+      connector,
+    },
     {
       query: {
         select: (data) => {
