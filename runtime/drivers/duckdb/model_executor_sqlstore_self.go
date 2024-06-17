@@ -147,7 +147,7 @@ func (e *sqlStoreToSelfExecutor) queryAndInsert(ctx context.Context, olap driver
 			continue
 		}
 
-		err = olap.CreateTableAsSelect(ctx, outputTable, false, qry)
+		err = olap.CreateTableAsSelect(ctx, outputTable, false, qry, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create table: %w", err)
 		}

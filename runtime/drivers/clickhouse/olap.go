@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -206,22 +207,130 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
 			Priority: 100,
 		})
 	}
+	var create strings.Builder
+	create.WriteString("CREATE OR REPLACE TABLE ")
+	create.WriteString(safeSQLName(name))
+	// see if there is any column override
+	if prop, ok := tableOpts["columns"].(string); ok {
+		create.WriteString(prop)
+	}
+	create.WriteString(" ENGINE = ")
+	var engine string
+	// engine with default
+	if prop, ok := tableOpts["engine"].(string); ok {
+		engine = prop
+	} else {
+		engine = "MergeTree"
+	}
+	create.WriteString(engine)
+
+	if prop, ok := tableOpts["order_by"].(string); ok {
+		create.WriteString(" ORDER BY ")
+		create.WriteString(prop)
+	} else if engine == "MergeTree" {
+		// need ORDER BY for MergeTree
+		// it is optional for other engines
+		create.WriteString(" ORDER BY tuple() ")
+	}
+
+	// partition_by
+	if prop, ok := tableOpts["partition_by"].(string); ok {
+		create.WriteString(" PARTITION BY ")
+		create.WriteString(prop)
+	}
+
+	// primary_key
+	if prop, ok := tableOpts["primary_key"].(string); ok {
+		create.WriteString(" PRIMARY KEY ")
+		create.WriteString(prop)
+	}
+
+	// sample_by
+	if prop, ok := tableOpts["sample_by"].(string); ok {
+		create.WriteString(" SAMPLE BY ")
+		create.WriteString(prop)
+	}
+
+	// ttl
+	if prop, ok := tableOpts["ttl"].(string); ok {
+		create.WriteString(" TTL ")
+		create.WriteString(prop)
+	}
+
+	// settings
+	if prop, ok := tableOpts["settings"].(string); ok {
+		create.WriteString(" SETTINGS ")
+		create.WriteString(prop)
+	}
+
+	// write sql query
+	create.WriteString(" AS ")
+	create.WriteString(sql)
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s ENGINE = MergeTree ORDER BY tuple() AS %s", safeSQLName(name), sql),
+		Query:    create.String(),
 		Priority: 100,
 	})
 }
 
 // InsertTableAsSelect implements drivers.OLAPStore.
 func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
-	return fmt.Errorf("clickhouse: data transformation not yet supported")
+	if !inPlace {
+		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
+	}
+	if strategy == drivers.IncrementalStrategyAppend {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s %s\n", safeSQLName(name), sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+	}
+
+	if strategy == drivers.IncrementalStrategyMerge {
+		// Create a temporary table with the new data
+		tmp := uuid.New().String()
+		err := c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+		if err != nil {
+			return err
+		}
+
+		// Drop the rows from the target table where the unique key is present in the temporary table
+		where := ""
+		for i, key := range uniqueKey {
+			key = safeSQLName(key)
+			if i != 0 {
+				where += " AND "
+			}
+			where += fmt.Sprintf("base.%s = tmp.%s", key, key)
+		}
+		err = c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where),
+			Priority:    1,
+			LongRunning: true,
+		})
+		if err != nil {
+			return err
+		}
+
+		// Insert the new data into the target table
+		return c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s SELECT * FROM %s", safeSQLName(name), safeSQLName(tmp)),
+			Priority:    1,
+			LongRunning: true,
+		})
+	}
+
+	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 
 // DropTable implements drivers.OLAPStore.

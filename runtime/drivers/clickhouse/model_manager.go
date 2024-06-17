@@ -21,8 +21,11 @@ func (p *ModelInputProperties) Validate() error {
 }
 
 type ModelOutputProperties struct {
-	Table       string `mapstructure:"table"`
-	Materialize *bool  `mapstructure:"materialize"`
+	Table               string                      `mapstructure:"table"`
+	Materialize         *bool                       `mapstructure:"materialize"`
+	UniqueKey           []string                    `mapstructure:"unique_key"`
+	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
+	// can have other properties like order_by clause, primary key clause etc
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecutorOptions) error {

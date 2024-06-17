@@ -324,15 +324,6 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.(*connection)
-	if c == to {
-		switch from.Driver() {
-		case "s3":
-			return NewS3Transporter(from, olap, c.logger), true
-		case "https":
-			return NewHTTPTransporter(from, olap, c.logger), true
-		}
-	}
 	return nil, false
 }
 

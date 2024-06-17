@@ -63,7 +63,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		}
 
 		// Create the table
-		err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL)
+		err := olap.CreateTableAsSelect(ctx, stagingTableName, asView, inputProps.SQL, nil)
 		if err != nil {
 			_ = olap.DropTable(ctx, stagingTableName, asView)
 			return nil, fmt.Errorf("failed to create model: %w", err)
