@@ -12,6 +12,9 @@
   let showPanels = true;
 
   $: pivotDataStore = usePivotDataStore(stateManagers);
+
+  $: isFetching = $pivotDataStore.isFetching;
+  $: assembled = $pivotDataStore.assembled;
 </script>
 
 <div class="layout">
@@ -22,10 +25,10 @@
     {#if showPanels}
       <PivotHeader />
     {/if}
-    <PivotToolbar isFetching={$pivotDataStore.isFetching} bind:showPanels />
+    <PivotToolbar {isFetching} bind:showPanels />
     <div class="table-view">
       {#if !$pivotDataStore?.data || $pivotDataStore?.data?.length === 0}
-        <PivotEmpty isFetching={$pivotDataStore?.isFetching} />
+        <PivotEmpty {assembled} {isFetching} />
       {:else}
         <PivotTable {pivotDataStore} />
       {/if}
