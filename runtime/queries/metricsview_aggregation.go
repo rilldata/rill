@@ -2505,13 +2505,15 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			outerGroupClause := ""
 			if len(whereDimConditions) > 0 {
 				whereDimClause = fmt.Sprintf(" AND (%s) ", strings.Join(whereDimConditions, " OR "))
+			}
+			if len(q.Dimensions) > 0 {
 				outerGroupClause = " GROUP BY " + strings.Join(outerGroupCols, ",")
 			}
 
 			sql = fmt.Sprintf(`
 				SELECT * from (
 					-- SELECT base.d1 d1, base.d2 d2, base.timed1 td1, base.m1 m1, comparison.m2 m2 ... , comparison.timed1 td1__previous, ...
-					SELECT %[2]s %[20]s FROM 
+					SELECT %[2]s %[9]s FROM 
 						(
 							-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ... 
 							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[10]s %[12]s 
@@ -2523,12 +2525,11 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 					ON
 					-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
 							%[17]s
-					%[19]s -- GROUP BY ...
+					%[11]s -- GROUP BY ...
 					%[6]s -- ORDER BY ...
 				) WHERE 1=1 AND %[15]s 
 				%[7]s -- LIMIT ...
 				OFFSET %[8]d
-
 			`,
 				baseSelectClause, // 1
 				strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ","), // 2
@@ -2538,9 +2539,9 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				orderByClause,                                                            // 6
 				limitClause,                                                              // 7
 				q.Offset,                                                                 // 8
-				finalSelectClause,                                                        // 9
+				finalTimeDimsClause,                                                      // 9
 				strings.Join(innerGroupCols, ","),                                        // 10
-				joinType,                                                                 // 11
+				outerGroupClause,                                                         // 11
 				baseLimitClause,                                                          // 12
 				comparisonLimitClause,                                                    // 13
 				strings.Join(unnestClauses, ""),                                          // 14
@@ -2549,7 +2550,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				strings.Join(joinConditions, " AND "),                                    // 17
 				whereDimClause,                                                           // 18
 				outerGroupClause,                                                         // 19
-				finalTimeDimsClause,                                                      // 20
 			)
 		} else {
 			limit := 0
@@ -2651,11 +2651,21 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			if len(finalComparisonTimeDims) > 0 {
 				finalTimeDimsClause = fmt.Sprintf(", %s", strings.Join(finalComparisonTimeDims, ", "))
 			}
+
+			whereDimClause := ""
+			outerGroupClause := ""
+			if len(whereDimConditions) > 0 {
+				whereDimClause = fmt.Sprintf(" AND (%s) ", strings.Join(whereDimConditions, " OR "))
+			}
+			if len(q.Dimensions) > 0 {
+				outerGroupClause = " GROUP BY " + strings.Join(outerGroupCols, ",")
+			}
+
 			sql = fmt.Sprintf(`
 				SELECT * from (
-					SELECT %[2]s, %[9]s %[20]s FROM 
+					SELECT %[2]s %[9]s FROM 
 						(
-							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s AND (%[18]s) GROUP BY %[10]s %[12]s 
+							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s %[18]s GROUP BY %[10]s %[12]s 
 						) base
 					LEFT JOIN
 						(
@@ -2663,7 +2673,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 						) comparison
 					ON
 							%[17]s
-					GROUP BY %[19]s
+					%[11]s
 					%[6]s
 					%[7]s
 					OFFSET
@@ -2678,18 +2688,16 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				orderByClause,                                                            // 6
 				limitClause,                                                              // 7
 				q.Offset,                                                                 // 8
-				finalSelectClause,                                                        // 9
+				finalTimeDimsClause,                                                      // 9
 				strings.Join(innerGroupCols, ","),                                        // 10
-				joinType,                                                                 // 11
+				outerGroupClause,                                                         // 11
 				baseLimitClause,                                                          // 12
 				comparisonLimitClause,                                                    // 13
 				strings.Join(unnestClauses, ""),                                          // 14
 				havingClause,                                                             // 15
 				comparisonSelectClause,                                                   // 16
 				strings.Join(joinConditions, " AND "),                                    // 17
-				strings.Join(whereDimConditions, " OR "),                                 // 18
-				strings.Join(outerGroupCols, ","),                                        // 19
-				finalTimeDimsClause,                                                      // 20
+				whereDimClause,                                                           // 18
 			)
 		}
 	}
