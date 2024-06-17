@@ -20,17 +20,17 @@ var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema
 //go:embed data/component-template-v1.json
 var componentTemplateSpec string
 
-var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
+var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
 
 type ComponentYAML struct {
-	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string           `yaml:"title"`
-	Subtitle   string           `yaml:"subtitle"`
-	Data       *DataYAML        `yaml:"data"`
-	VegaLite   *string          `yaml:"vega_lite"`
-	Markdown   *string          `yaml:"markdown"`
-	Image      *string          `yaml:"image"`
-	Other      map[string]any   `yaml:",inline" mapstructure:",remain"`
+	commonYAML `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Title      string                    `yaml:"title"`
+	Subtitle   string                    `yaml:"subtitle"`
+	Data       *DataYAML                 `yaml:"data"`
+	VegaLite   *string                   `yaml:"vega_lite"`
+	Markdown   *string                   `yaml:"markdown"`
+	Image      *string                   `yaml:"image"`
+	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -111,13 +111,23 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		renderer = "image"
 		rendererProps = must(structpb.NewStruct(map[string]any{"url": *tmp.Image}))
 	}
-	for k, v := range tmp.Other {
-		n++
+	if len(tmp.Other) > 0 {
+		n += len(tmp.Other)
+		var k string
+		var v any
+		for k, v = range tmp.Other {
+			break
+		}
 
 		props, ok := v.(map[string]any)
 		if !ok {
 			return nil, nil, fmt.Errorf(`expected map value for property %q`, k)
 		}
+
+		if err := componentTemplateSchema.Validate(map[string]any{k: props}); err != nil {
+			return nil, nil, fmt.Errorf(`failed to validate renderer: %w`, err)
+		}
+
 		propsPB, err := structpb.NewStruct(props)
 		if err != nil {
 			return nil, nil, fmt.Errorf(`failed to convert property %q to struct: %w`, k, err)
