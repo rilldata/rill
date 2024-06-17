@@ -36,8 +36,11 @@ export function useProjectRuntime(orgName: string, projName: string) {
   return createAdminServiceGetProject(orgName, projName, undefined, {
     query: {
       queryKey: getProjectRuntimeQueryKey(orgName, projName),
-      // Proactively refetch the JWT before it expires
-      refetchInterval: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2,
+      cacheTime: Math.min(RUNTIME_ACCESS_TOKEN_DEFAULT_TTL, 1000 * 60 * 5), // Make sure we don't keep a stale JWT in the cache
+      refetchInterval: RUNTIME_ACCESS_TOKEN_DEFAULT_TTL / 2, // Proactively refetch the JWT before it expires
+      refetchOnMount: true,
+      refetchOnReconnect: true,
+      refetchOnWindowFocus: true,
       select: (data) => {
         // There may not be a prodDeployment if the project was hibernated
         if (!data.prodDeployment) {
