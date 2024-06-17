@@ -19,6 +19,8 @@
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
 
   export let connector: string;
+  export let database: string;
+  export let databaseSchema: string;
   export let objectName: string;
   export let columnName: string;
   export let type: string;
@@ -38,6 +40,8 @@
   $: nulls = getNullPercentage(
     $runtime?.instanceId,
     connector,
+    database,
+    databaseSchema,
     objectName,
     columnName,
     enableProfiling,
@@ -46,6 +50,8 @@
   $: columnCardinality = getCountDistinct(
     $runtime?.instanceId,
     connector,
+    database,
+    databaseSchema,
     objectName,
     columnName,
     enableProfiling,
@@ -54,6 +60,8 @@
   $: topK = getTopK(
     $runtime?.instanceId,
     connector,
+    database,
+    databaseSchema,
     objectName,
     columnName,
     enableProfiling,

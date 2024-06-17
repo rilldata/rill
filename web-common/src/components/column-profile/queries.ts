@@ -30,6 +30,8 @@ export type ColumnSummary = V1ProfileColumn & {
 export function getSummaries(
   instanceId: string,
   connector: string,
+  database: string,
+  databaseSchema: string,
   objectName: string,
   profileColumnResponse: QueryObserverResult<V1TableColumnsResponse>,
 ): Readable<Array<ColumnSummary>> {
@@ -43,6 +45,8 @@ export function getSummaries(
             objectName,
             {
               connector,
+              database,
+              databaseSchema,
               columnName: column.name,
             },
             {
@@ -57,6 +61,8 @@ export function getSummaries(
             objectName,
             {
               connector,
+              database,
+              databaseSchema,
               columnName: column.name,
             },
             {
@@ -90,6 +96,8 @@ export function getSummaries(
 export function getNullPercentage(
   instanceId: string,
   connector: string,
+  database: string,
+  databaseSchema: string,
   objectName: string,
   columnName: string,
   enabled = true,
@@ -99,6 +107,8 @@ export function getNullPercentage(
     objectName,
     {
       connector,
+      database,
+      databaseSchema,
       columnName,
     },
     {
@@ -112,6 +122,8 @@ export function getNullPercentage(
     objectName,
     {
       connector,
+      database,
+      databaseSchema,
     },
     {
       query: {
@@ -135,6 +147,8 @@ export function getNullPercentage(
 export function getCountDistinct(
   instanceId: string,
   connector: string,
+  database: string,
+  databaseSchema: string,
   objectName: string,
   columnName: string,
   enabled = true,
@@ -142,7 +156,7 @@ export function getCountDistinct(
   const cardinalityQuery = createQueryServiceColumnCardinality(
     instanceId,
     objectName,
-    { connector, columnName },
+    { connector, database, databaseSchema, columnName },
     {
       query: {
         enabled: enabled && !!connector,
@@ -153,7 +167,7 @@ export function getCountDistinct(
   const totalRowsQuery = createQueryServiceTableCardinality(
     instanceId,
     objectName,
-    { connector },
+    { connector, database, databaseSchema },
     {
       query: {
         enabled: enabled && !!connector,
@@ -180,6 +194,8 @@ export function getCountDistinct(
 export function getTopK(
   instanceId: string,
   connector: string,
+  database: string,
+  databaseSchema: string,
   objectName: string,
   columnName: string,
   enabled = true,
@@ -190,6 +206,8 @@ export function getTopK(
     objectName,
     {
       connector,
+      database,
+      databaseSchema,
       columnName: columnName,
       agg: "count(*)",
       k: 75,
@@ -209,6 +227,8 @@ export function getTopK(
 export function getTimeSeriesAndSpark(
   instanceId: string,
   connector: string,
+  database: string,
+  databaseSchema: string,
   objectName: string,
   columnName: string,
   enabled = true,
@@ -220,6 +240,8 @@ export function getTimeSeriesAndSpark(
     // FIXME: convert pixel back to number once the API
     {
       connector,
+      database,
+      databaseSchema,
       timestampColumnName: columnName,
       measures: [
         {
@@ -238,6 +260,8 @@ export function getTimeSeriesAndSpark(
     objectName,
     {
       connector,
+      database,
+      databaseSchema,
       columnName,
       priority: getPriorityForColumn("rollup-interval", active),
     },
@@ -253,6 +277,8 @@ export function getTimeSeriesAndSpark(
     objectName,
     {
       connector,
+      database,
+      databaseSchema,
       columnName,
       priority: getPriorityForColumn("smallest-time-grain", active),
     },
@@ -296,6 +322,8 @@ export function getTimeSeriesAndSpark(
 export function getNumericHistogram(
   instanceId: string,
   connector: string,
+  database: string,
+  databaseSchema: string,
   objectName: string,
   columnName: string,
   histogramMethod: QueryServiceColumnNumericHistogramHistogramMethod,
@@ -307,6 +335,8 @@ export function getNumericHistogram(
     objectName,
     {
       connector,
+      database,
+      databaseSchema,
       columnName,
       histogramMethod,
       priority: getPriorityForColumn("numeric-histogram", active),

@@ -138,6 +138,8 @@
     type === "model"
       ? ((resource as V1ModelV2)?.spec?.outputConnector as string)
       : ((resource as V1SourceV2)?.spec?.sinkConnector as string);
+  const database = ""; // sources and models use the default database
+  const databaseSchema = ""; // sources and models use the default databaseSchema
   $: tableName =
     type === "model"
       ? ((resource as V1ModelV2)?.state?.resultTable as string)
@@ -391,6 +393,8 @@
       {#if connector && tableName && resource}
         <WorkspaceInspector
           {connector}
+          {database}
+          {databaseSchema}
           {tableName}
           hasErrors={$hasErrors}
           {hasUnsavedChanges}

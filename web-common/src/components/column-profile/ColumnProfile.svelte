@@ -11,8 +11,10 @@
   import { defaultSort, sortByName, sortByNullity } from "./utils";
 
   export let connector: string;
-  export let containerWidth = 0;
+  export let database: string;
+  export let databaseSchema: string;
   export let objectName: string;
+  export let containerWidth = 0;
   export let indentLevel = 0;
 
   let mode = "summaries";
@@ -32,6 +34,8 @@
     objectName,
     {
       connector,
+      database,
+      databaseSchema,
     },
     { query: { keepPreviousData: true } },
   );
@@ -42,6 +46,8 @@
     objectName,
     {
       connector,
+      database,
+      databaseSchema,
       limit: 1,
     },
   );
@@ -49,6 +55,8 @@
   $: nestedColumnProfileQuery = getSummaries(
     $runtime?.instanceId,
     connector,
+    database,
+    databaseSchema,
     objectName,
     $profileColumns,
   );
@@ -107,6 +115,8 @@
       <svelte:component
         this={getColumnType(column.type)}
         {connector}
+        {database}
+        {databaseSchema}
         type={column.type}
         {objectName}
         columnName={column.name}

@@ -33,6 +33,8 @@
 
   export let hasUnsavedChanges: boolean;
   export let connector: string;
+  export let database: string;
+  export let databaseSchema: string;
   export let tableName: string;
   export let source: V1SourceV2 | undefined = undefined;
   export let model: V1ModelV2 | undefined = undefined;
@@ -55,6 +57,8 @@
     tableName,
     {
       connector,
+      database,
+      databaseSchema,
     },
     {
       query: {
@@ -68,6 +72,8 @@
     tableName,
     {
       connector,
+      database,
+      databaseSchema,
     },
     {
       query: {
@@ -91,6 +97,8 @@
   $: summaries = getSummaries(
     instanceId,
     connector,
+    database,
+    databaseSchema,
     tableName,
     $profileColumnsQuery,
   );
@@ -130,6 +138,8 @@
         resource.meta?.name?.name ?? "",
         {
           connector,
+          database,
+          databaseSchema,
         },
         {
           query: {
@@ -147,6 +157,8 @@
         resource.meta?.name?.name ?? "",
         {
           connector,
+          database,
+          databaseSchema,
         },
         {
           query: {
@@ -279,7 +291,13 @@
 
       {#if showColumns}
         <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile {connector} objectName={tableName} indentLevel={0} />
+          <ColumnProfile
+            {connector}
+            {database}
+            {databaseSchema}
+            objectName={tableName}
+            indentLevel={0}
+          />
         </div>
       {/if}
     </div>
