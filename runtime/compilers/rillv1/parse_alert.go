@@ -122,7 +122,9 @@ func (p *Parser) parseAlert(node *Node) error {
 	var resolverProps *structpb.Struct
 	var queryForUserID, queryForUserEmail string
 	var queryForAttributes *structpb.Struct
-	if tmp.Data != nil {
+	isLegacyQuery := tmp.Data == nil
+
+	if !isLegacyQuery {
 		var refs []ResourceName
 		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data)
 		if err != nil {
@@ -183,11 +185,11 @@ func (p *Parser) parseAlert(node *Node) error {
 		}
 	}
 
-	isLegacySyntax := len(tmp.Email.Recipients) > 0
+	isLegacyNotify := len(tmp.Email.Recipients) > 0
 
 	// Validate the input
 	var renotifyAfter time.Duration
-	if isLegacySyntax {
+	if isLegacyNotify {
 		// Backwards compatibility
 		// Validate email recipients
 		for _, email := range tmp.Email.Recipients {
@@ -238,19 +240,22 @@ func (p *Parser) parseAlert(node *Node) error {
 	if timeout != 0 {
 		r.AlertSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
-	r.AlertSpec.QueryName = tmp.Query.Name
-	r.AlertSpec.QueryArgsJson = tmp.Query.ArgsJSON
 
-	r.AlertSpec.Resolver = resolver
-	r.AlertSpec.ResolverProperties = resolverProps
-
-	// Note: have already validated that at most one of the cases match
-	if queryForUserID != "" {
-		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: queryForUserID}
-	} else if queryForUserEmail != "" {
-		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
-	} else if queryForAttributes != nil {
-		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
+	if !isLegacyQuery {
+		r.AlertSpec.Resolver = resolver
+		r.AlertSpec.ResolverProperties = resolverProps
+	} else {
+		r.AlertSpec.QueryName = tmp.Query.Name
+		r.AlertSpec.QueryArgsJson = tmp.Query.ArgsJSON
+		// Note: have already validated that at most one of the cases match
+		if queryForUserID != "" {
+			qf := &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: queryForUserID}
+			r.AlertSpec.QueryFor = qf
+		} else if queryForUserEmail != "" {
+			r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
+		} else if queryForAttributes != nil {
+			r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
+		}
 	}
 
 	// Notification default settings
@@ -259,7 +264,7 @@ func (p *Parser) parseAlert(node *Node) error {
 	r.AlertSpec.NotifyOnError = false
 	r.AlertSpec.Renotify = false
 
-	if isLegacySyntax {
+	if isLegacyNotify {
 		// Backwards compatibility
 		// Override email notification defaults
 		if tmp.Email.OnRecover != nil {
