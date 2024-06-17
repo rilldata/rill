@@ -14,7 +14,6 @@
   import {
     useKPISparkline,
     useKPITotals,
-    useStartEndTime,
   } from "@rilldata/web-common/features/templates/kpi/selector";
   import { KPITemplateT } from "@rilldata/web-common/features/templates/types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -45,9 +44,6 @@
   );
 
   $: sparkData = $sparkline?.data || [];
-  $: timeRangeExtents = useStartEndTime(instanceId, metricViewName, timeRange);
-
-  $: console.log($timeRangeExtents.data, sparkData);
 
   const focusedAreaGradient: [string, string] = [
     MainAreaColorGradientDark,
@@ -70,7 +66,7 @@
   {/if}
 
   <div class="flex-grow">
-    {#if sparkData.length && $timeRangeExtents.data?.start}
+    {#if sparkData.length}
       <SimpleDataGraphic
         height={80}
         width={400}

@@ -75,14 +75,19 @@
 
   $: ({ resolverProperties } = componentResource?.component?.spec ?? {});
 
-  $: chartDataQuery = createRuntimeServiceGetChartData(
-    queryClient,
-    instanceId,
-    chartName,
-    resolverProperties,
-  );
+  $: chartDataQuery = resolverProperties
+    ? createRuntimeServiceGetChartData(
+        queryClient,
+        instanceId,
+        chartName,
+        resolverProperties,
+      )
+    : null;
 
-  $: ({ isFetching: chartDataFetching, data: chartData } = $chartDataQuery);
+  $: ({ isFetching: chartDataFetching, data: chartData } = chartDataQuery ?? {
+    isFetching: false,
+    data: null,
+  });
 
   $: [, fileName] = splitFolderAndName(filePath);
 </script>

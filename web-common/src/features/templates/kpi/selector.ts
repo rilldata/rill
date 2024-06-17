@@ -66,12 +66,12 @@ export function useKPISparkline(
   const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
-    if (!allTimeRange.data?.timeRangeSummary?.max) {
-      return undefined;
-    }
-
-    const maxTime = new Date(allTimeRange.data.timeRangeSummary.max);
-    const { startTime, endTime } = isoDurationToTimeRange(timeRange, maxTime);
+    const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
+    const maxTimeDate = new Date(maxTime ?? 0);
+    const { startTime, endTime } = isoDurationToTimeRange(
+      timeRange,
+      maxTimeDate,
+    );
     const defaultGrain = getDefaultTimeGrain(startTime, endTime);
     return createQueryServiceMetricsViewTimeSeries(
       instanceId,
@@ -84,10 +84,11 @@ export function useKPISparkline(
       },
       {
         query: {
+          enabled: !!startTime && !!endTime && !!maxTime,
           select: (data) =>
             data.data?.map((d) => {
               return {
-                ts: new Date(d.ts),
+                ts: new Date(d.ts as string),
                 [measure]: d?.records?.[measure],
               };
             }) ?? [],
