@@ -88,26 +88,40 @@
       >
         Go to {componentName}.yaml
       </ContextMenu.Item>
+      <ContextMenu.Item on:click={dispatch("delete", { index: i })}
+        >Delete from dashboard</ContextMenu.Item
+      >
     </ContextMenu.Content>
   </ContextMenu.Root>
 {:else if componentName}
-  <Component
-    {instanceId}
-    {i}
-    {localZIndex}
-    {interacting}
-    {componentName}
-    {padding}
-    {radius}
-    {scale}
-    {selected}
-    fontSize={component.fontSize}
-    height={finalHeight}
-    left={finalLeft}
-    top={finalTop}
-    width={finalWidth}
-    on:change
-    on:contextmenu
-    on:mousedown={handleMouseDown}
-  />
+  <ContextMenu.Root>
+    <ContextMenu.Trigger asChild let:builder>
+      <Component
+        {instanceId}
+        {i}
+        {localZIndex}
+        {interacting}
+        {componentName}
+        {padding}
+        {radius}
+        {scale}
+        {selected}
+        fontSize={component.fontSize}
+        builders={[builder]}
+        height={finalHeight}
+        left={finalLeft}
+        top={finalTop}
+        width={finalWidth}
+        on:change
+        on:contextmenu
+        on:mousedown={handleMouseDown}
+      />
+    </ContextMenu.Trigger>
+
+    <ContextMenu.Content class="z-[100]">
+      <ContextMenu.Item on:click={dispatch("delete", { index: i })}
+        >Delete from dashboard</ContextMenu.Item
+      >
+    </ContextMenu.Content>
+  </ContextMenu.Root>
 {/if}

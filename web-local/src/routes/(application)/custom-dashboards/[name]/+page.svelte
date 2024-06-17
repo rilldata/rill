@@ -194,6 +194,15 @@
     await updateChartFile(new CustomEvent("update", { detail: yaml }));
   }
 
+  async function handleDeleteEvent(
+    e: CustomEvent<{
+      index: number;
+    }>,
+  ) {
+    if (!e.detail.index) return;
+    await deleteChart(e.detail.index);
+  }
+
   async function deleteChart(index: number) {
     const items = parsedDocument.get("items");
 
@@ -333,6 +342,7 @@
         bind:selectedChartName
         bind:selectedIndex
         on:update={handlePreviewUpdate}
+        on:delete={handleDeleteEvent}
       />
     {/if}
   </div>
