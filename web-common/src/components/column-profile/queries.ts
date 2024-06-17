@@ -52,7 +52,7 @@ export function getSummaries(
             {
               query: {
                 keepPreviousData: true,
-                enabled: !!connector && !profileColumnResponse.isFetching,
+                enabled: !profileColumnResponse.isFetching,
               },
             },
           ),
@@ -68,7 +68,7 @@ export function getSummaries(
             {
               query: {
                 keepPreviousData: true,
-                enabled: !!connector && !profileColumnResponse.isFetching,
+                enabled: !profileColumnResponse.isFetching,
               },
             },
           ),
@@ -113,7 +113,7 @@ export function getNullPercentage(
     },
     {
       query: {
-        enabled: enabled && !!connector,
+        enabled,
       },
     },
   );
@@ -127,7 +127,7 @@ export function getNullPercentage(
     },
     {
       query: {
-        enabled: enabled && !!connector,
+        enabled,
       },
     },
   );
@@ -159,7 +159,7 @@ export function getCountDistinct(
     { connector, database, databaseSchema, columnName },
     {
       query: {
-        enabled: enabled && !!connector,
+        enabled,
       },
     },
   );
@@ -170,7 +170,7 @@ export function getCountDistinct(
     { connector, database, databaseSchema },
     {
       query: {
-        enabled: enabled && !!connector,
+        enabled,
       },
     },
   );
@@ -215,7 +215,7 @@ export function getTopK(
     },
     {
       query: {
-        enabled: enabled && !!connector,
+        enabled,
       },
     },
   );
@@ -267,7 +267,7 @@ export function getTimeSeriesAndSpark(
     },
     {
       query: {
-        enabled: enabled && !!connector,
+        enabled,
       },
     },
   );
@@ -284,7 +284,7 @@ export function getTimeSeriesAndSpark(
     },
     {
       query: {
-        enabled: enabled && !!connector,
+        enabled,
       },
     },
   );
@@ -346,7 +346,7 @@ export function getNumericHistogram(
         select(query) {
           return query?.numericSummary?.numericHistogramBins?.bins;
         },
-        enabled: enabled && !!connector,
+        enabled,
       },
     },
   );

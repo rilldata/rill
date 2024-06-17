@@ -114,10 +114,10 @@
         containerWidth < COLUMN_PROFILE_CONFIG.compactBreakpoint}
       <svelte:component
         this={getColumnType(column.type)}
+        type={column.type}
         {connector}
         {database}
         {databaseSchema}
-        type={column.type}
         {objectName}
         columnName={column.name}
         example={$exampleValue?.data?.data?.[0]?.[column.name]}
