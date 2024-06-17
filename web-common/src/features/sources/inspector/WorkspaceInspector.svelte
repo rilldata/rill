@@ -60,11 +60,6 @@
       database,
       databaseSchema,
     },
-    {
-      query: {
-        enabled: !!connector,
-      },
-    },
   );
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
@@ -78,7 +73,6 @@
     {
       query: {
         keepPreviousData: true,
-        enabled: !!connector,
       },
     },
   );
@@ -144,7 +138,6 @@
         {
           query: {
             select: (data) => +(data?.cardinality ?? 0),
-            enabled: !!connector,
           },
         },
       );
@@ -163,7 +156,6 @@
         {
           query: {
             select: (data) => data?.profileColumns?.length || 0,
-            enabled: !!connector,
           },
         },
       );

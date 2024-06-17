@@ -39,6 +39,8 @@ export function useAllModelColumns(
           queryClient,
           instanceId,
           r.model?.state?.resultConnector ?? "",
+          "",
+          "",
           r.meta?.name?.name ?? "",
         ),
       ),
