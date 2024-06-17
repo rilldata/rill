@@ -50,6 +50,7 @@
   let fileArtifact: FileArtifact;
   let filePath: string;
   let customDashboardName: string;
+  let selectedChartFileArtifact: FileArtifact | undefined;
   let selectedView = "split";
   let showGrid = true;
   let showChartEditor = false;
@@ -96,17 +97,26 @@
 
   $: parsedDocument = parseDocument(yaml);
 
-  $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
-    ResourceKind.Component,
-    selectedChartName ?? "",
-  );
-  $: selectedChartFilePath = selectedChartFileArtifact?.path;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
-
   $: spec = $resourceQuery.data?.dashboard?.spec ?? spec;
 
   $: ({ items = [], columns = 20, gap = 4 } = spec);
-
+  $: if (
+    items.filter(
+      (item) =>
+        !item.definedInDashboard && item.component === selectedChartName,
+    ).length
+  ) {
+    selectedChartFileArtifact = fileArtifacts.findFileArtifact(
+      ResourceKind.Component,
+      selectedChartName ?? "",
+    );
+  } else {
+    selectedChartName = null;
+    selectedChartFileArtifact = undefined;
+    showChartEditor = false;
+  }
+  $: selectedChartFilePath = selectedChartFileArtifact?.path;
   $: editorWidth = editorPercentage * containerWidth;
   $: chartEditorHeight = chartEditorPercentage * containerHeight;
 
