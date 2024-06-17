@@ -5,10 +5,9 @@
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
-  import { getDashboardsForProject } from "@rilldata/web-admin/features/dashboards/listing/selectors";
+  import { listDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
-  import { useProjectRuntime } from "@rilldata/web-admin/features/projects/selectors";
   import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/status/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -32,8 +31,6 @@
   $: dashboardName = $page.params.dashboard;
 
   const user = createAdminServiceGetCurrentUser();
-
-  $: projectRuntime = useProjectRuntime(orgName, projectName);
 
   $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName); // polls
   $: isProjectPending =
@@ -66,12 +63,8 @@
   }
 
   async function getDashboardsAndInvalidate() {
-    const dashboardListings = await getDashboardsForProject(
-      $projectRuntime.data,
-    );
-    const dashboardNames = dashboardListings.map(
-      (listing) => listing.meta.name.name,
-    );
+    const dashboards = await listDashboards(queryClient, instanceId);
+    const dashboardNames = dashboards.map((d) => d.meta.name.name);
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 
