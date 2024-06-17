@@ -34,6 +34,8 @@ import type {
   V1UpdateOrganizationBillingPlanResponse,
   AdminServiceUpdateOrganizationBillingPlanBody,
   V1ListOrganizationSubscriptionsResponse,
+  V1DeleteOrganizationSubscriptionResponse,
+  AdminServiceDeleteOrganizationSubscriptionParams,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMembersResponse,
@@ -805,6 +807,73 @@ export const createAdminServiceListOrganizationSubscriptions = <
   return query;
 };
 
+/**
+ * @summary DeleteOrganizationSubscriptions list all the subscriptions for the organization
+ */
+export const adminServiceDeleteOrganizationSubscription = (
+  orgName: string,
+  subscriptionId: string,
+  params?: AdminServiceDeleteOrganizationSubscriptionParams,
+) => {
+  return httpClient<V1DeleteOrganizationSubscriptionResponse>({
+    url: `/v1/organizations/${orgName}/billing/subscriptions/${subscriptionId}`,
+    method: "delete",
+    params,
+  });
+};
+
+export type AdminServiceDeleteOrganizationSubscriptionMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceDeleteOrganizationSubscription>>
+  >;
+
+export type AdminServiceDeleteOrganizationSubscriptionMutationError = RpcStatus;
+
+export const createAdminServiceDeleteOrganizationSubscription = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDeleteOrganizationSubscription>>,
+    TError,
+    {
+      orgName: string;
+      subscriptionId: string;
+      params?: AdminServiceDeleteOrganizationSubscriptionParams;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDeleteOrganizationSubscription>>,
+    {
+      orgName: string;
+      subscriptionId: string;
+      params?: AdminServiceDeleteOrganizationSubscriptionParams;
+    }
+  > = (props) => {
+    const { orgName, subscriptionId, params } = props ?? {};
+
+    return adminServiceDeleteOrganizationSubscription(
+      orgName,
+      subscriptionId,
+      params,
+    );
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceDeleteOrganizationSubscription>>,
+    TError,
+    {
+      orgName: string;
+      subscriptionId: string;
+      params?: AdminServiceDeleteOrganizationSubscriptionParams;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListOrganizationInvites lists all the org invites
  */

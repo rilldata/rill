@@ -220,9 +220,6 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 	if req.BillerPlanId != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan_id", *req.BillerPlanId))
 	}
-	if req.SubscriptionChangeEffective != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.subscription_change_effective", req.SubscriptionChangeEffective.String()))
-	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
 	if err != nil {
@@ -269,30 +266,15 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 				}
 			}
 
-			changeOption := billing.SubscriptionChangeOptionImmediate
-			if req.SubscriptionChangeEffective != nil {
-				switch *req.SubscriptionChangeEffective {
-				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW:
-					changeOption = billing.SubscriptionChangeOptionImmediate
-				case adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE:
-					changeOption = billing.SubscriptionChangeOptionEndOfSubscriptionTerm
-				default:
-					return nil, status.Error(codes.InvalidArgument, "invalid subscription change effective")
-				}
-			}
-
 			if len(subs) == 1 {
 				// schedule plan change
-				_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan, changeOption)
+				_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan)
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
 				}
 			} else {
 				// multiple subscriptions, cancel them first immediately and assign new plan
-				if req.SubscriptionChangeEffective != nil && *req.SubscriptionChangeEffective != adminv1.SubscriptionChangeEffective_SUBSCRIPTION_CHANGE_EFFECTIVE_NOW {
-					return nil, status.Error(codes.InvalidArgument, "cannot change effective date for multiple subscriptions")
-				}
-
+				// should not happen unless externally assigned multiple subscriptions to the same org in the billing system
 				for _, sub := range subs {
 					err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
 					if err != nil {
@@ -309,15 +291,22 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 		}
 	}
 
+	quotaProjects := valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects)
+	quotaDeployments := valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments)
+	quotaSlotsTotal := valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal)
+	quotaSlotsPerDeployment := valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
+	quotaOutstandingInvites := valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
+	quotaStorageLimitBytesPerDeployment := valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
+
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		Description:                         org.Description,
-		QuotaProjects:                       org.QuotaProjects,
-		QuotaDeployments:                    org.QuotaDeployments,
-		QuotaSlotsTotal:                     org.QuotaSlotsTotal,
-		QuotaSlotsPerDeployment:             org.QuotaSlotsPerDeployment,
-		QuotaOutstandingInvites:             org.QuotaOutstandingInvites,
-		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
+		QuotaProjects:                       quotaProjects,
+		QuotaDeployments:                    quotaDeployments,
+		QuotaSlotsTotal:                     quotaSlotsTotal,
+		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             quotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
 		BillingCustomerID:                   org.BillingCustomerID,
 	})
 	if err != nil {
@@ -371,6 +360,45 @@ func (s *Server) ListOrganizationSubscriptions(ctx context.Context, req *adminv1
 		Organization:  organizationToDTO(org),
 		Subscriptions: subscriptions,
 	}, nil
+}
+
+func (s *Server) DeleteOrganizationSubscription(ctx context.Context, req *adminv1.DeleteOrganizationSubscriptionRequest) (*adminv1.DeleteOrganizationSubscriptionResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName), attribute.String("args.subscription_id", req.SubscriptionId))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org subscription")
+	}
+
+	if org.BillingCustomerID == "" {
+		return nil, status.Error(codes.FailedPrecondition, "organization has no billing customer")
+	}
+
+	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	for _, sub := range subs {
+		if sub.ID == req.SubscriptionId {
+			cancelOption := billing.SubscriptionCancellationOptionEndOfSubscriptionTerm
+			if req.SubscriptionCancelEffective == adminv1.SubscriptionCancelEffective_SUBSCRIPTION_CANCEL_EFFECTIVE_NOW {
+				cancelOption = billing.SubscriptionCancellationOptionImmediate
+			}
+			err = s.admin.Biller.CancelSubscription(ctx, sub.ID, cancelOption)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			return &adminv1.DeleteOrganizationSubscriptionResponse{}, nil
+		}
+	}
+
+	return nil, status.Error(codes.NotFound, "subscription not found")
 }
 
 func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {
@@ -1111,6 +1139,7 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 
 func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 	return &adminv1.Subscription{
+		Id:                           sub.ID,
 		PlanId:                       sub.Plan.BillerID,
 		PlanName:                     sub.Plan.Name,
 		StartDate:                    timestamppb.New(sub.StartDate),

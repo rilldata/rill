@@ -158,20 +158,8 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	return subscriptions, nil
 }
 
-func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
-	var changeParams orb.SubscriptionSchedulePlanChangeParams
-	switch changeOption {
-	case SubscriptionChangeOptionEndOfSubscriptionTerm:
-		changeParams = orb.SubscriptionSchedulePlanChangeParams{
-			ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionEndOfSubscriptionTerm),
-		}
-	case SubscriptionChangeOptionImmediate:
-		changeParams = orb.SubscriptionSchedulePlanChangeParams{
-			ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate),
-		}
-	}
-
-	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, changeParams)
+func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
+	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, orb.SubscriptionSchedulePlanChangeParams{ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate)})
 	if err != nil {
 		return nil, err
 	}

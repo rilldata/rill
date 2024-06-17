@@ -29,7 +29,7 @@ type Biller interface {
 	CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error)
 	CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error
 	GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error)
-	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error)
+	ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error)
 	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
 	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
@@ -97,11 +97,4 @@ type SubscriptionCancellationOption int
 const (
 	SubscriptionCancellationOptionEndOfSubscriptionTerm SubscriptionCancellationOption = iota
 	SubscriptionCancellationOptionImmediate
-)
-
-type SubscriptionChangeOption int
-
-const (
-	SubscriptionChangeOptionEndOfSubscriptionTerm SubscriptionChangeOption = iota
-	SubscriptionChangeOptionImmediate
 )

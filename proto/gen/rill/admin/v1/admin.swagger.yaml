@@ -282,8 +282,6 @@ paths:
                 type: string
               billerPlanId:
                 type: string
-              subscriptionChangeEffective:
-                $ref: '#/definitions/v1SubscriptionChangeEffective'
       tags:
         - AdminService
   /v1/organizations/{orgName}/billing/subscriptions:
@@ -304,6 +302,39 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+  /v1/organizations/{orgName}/billing/subscriptions/{subscriptionId}:
+    delete:
+      summary: DeleteOrganizationSubscriptions list all the subscriptions for the organization
+      operationId: AdminService_DeleteOrganizationSubscription
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteOrganizationSubscriptionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          type: string
+        - name: subscriptionId
+          in: path
+          required: true
+          type: string
+        - name: subscriptionCancelEffective
+          in: query
+          required: false
+          type: string
+          enum:
+            - SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED
+            - SUBSCRIPTION_CANCEL_EFFECTIVE_NOW
+            - SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE
+          default: SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -2569,6 +2600,8 @@ definitions:
     type: object
   v1DeleteOrganizationResponse:
     type: object
+  v1DeleteOrganizationSubscriptionResponse:
+    type: object
   v1DeleteProjectResponse:
     type: object
   v1DeleteReportResponse:
@@ -3260,6 +3293,8 @@ definitions:
   v1Subscription:
     type: object
     properties:
+      id:
+        type: string
       planId:
         type: string
       planName:
@@ -3279,13 +3314,13 @@ definitions:
       trialEndDate:
         type: string
         format: date-time
-  v1SubscriptionChangeEffective:
+  v1SubscriptionCancelEffective:
     type: string
     enum:
-      - SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED
-      - SUBSCRIPTION_CHANGE_EFFECTIVE_NOW
-      - SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE
-    default: SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED
+      - SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED
+      - SUBSCRIPTION_CANCEL_EFFECTIVE_NOW
+      - SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE
+    default: SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED
   v1SudoGetResourceResponse:
     type: object
     properties:

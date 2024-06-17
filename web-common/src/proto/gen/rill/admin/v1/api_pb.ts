@@ -8,29 +8,29 @@ import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protob
 import { ExportFormat } from "../../runtime/v1/export_format_pb.js";
 
 /**
- * @generated from enum rill.admin.v1.SubscriptionChangeEffective
+ * @generated from enum rill.admin.v1.SubscriptionCancelEffective
  */
-export enum SubscriptionChangeEffective {
+export enum SubscriptionCancelEffective {
   /**
-   * @generated from enum value: SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED = 0;
+   * @generated from enum value: SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED = 0;
    */
   UNSPECIFIED = 0,
 
   /**
-   * @generated from enum value: SUBSCRIPTION_CHANGE_EFFECTIVE_NOW = 1;
+   * @generated from enum value: SUBSCRIPTION_CANCEL_EFFECTIVE_NOW = 1;
    */
   NOW = 1,
 
   /**
-   * @generated from enum value: SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE = 2;
+   * @generated from enum value: SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE = 2;
    */
-  NEXT_BILLING_CYCLE = 2,
+  END_OF_BILLING_CYCLE = 2,
 }
-// Retrieve enum metadata with: proto3.getEnumType(SubscriptionChangeEffective)
-proto3.util.setEnumType(SubscriptionChangeEffective, "rill.admin.v1.SubscriptionChangeEffective", [
-  { no: 0, name: "SUBSCRIPTION_CHANGE_EFFECTIVE_UNSPECIFIED" },
-  { no: 1, name: "SUBSCRIPTION_CHANGE_EFFECTIVE_NOW" },
-  { no: 2, name: "SUBSCRIPTION_CHANGE_EFFECTIVE_NEXT_BILLING_CYCLE" },
+// Retrieve enum metadata with: proto3.getEnumType(SubscriptionCancelEffective)
+proto3.util.setEnumType(SubscriptionCancelEffective, "rill.admin.v1.SubscriptionCancelEffective", [
+  { no: 0, name: "SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED" },
+  { no: 1, name: "SUBSCRIPTION_CANCEL_EFFECTIVE_NOW" },
+  { no: 2, name: "SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE" },
 ]);
 
 /**
@@ -584,11 +584,6 @@ export class UpdateOrganizationBillingPlanRequest extends Message<UpdateOrganiza
    */
   billerPlanId?: string;
 
-  /**
-   * @generated from field: optional rill.admin.v1.SubscriptionChangeEffective subscription_change_effective = 4;
-   */
-  subscriptionChangeEffective?: SubscriptionChangeEffective;
-
   constructor(data?: PartialMessage<UpdateOrganizationBillingPlanRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -600,7 +595,6 @@ export class UpdateOrganizationBillingPlanRequest extends Message<UpdateOrganiza
     { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "rill_plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "biller_plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 4, name: "subscription_change_effective", kind: "enum", T: proto3.getEnumType(SubscriptionChangeEffective), opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationBillingPlanRequest {
@@ -740,6 +734,86 @@ export class ListOrganizationSubscriptionsResponse extends Message<ListOrganizat
 
   static equals(a: ListOrganizationSubscriptionsResponse | PlainMessage<ListOrganizationSubscriptionsResponse> | undefined, b: ListOrganizationSubscriptionsResponse | PlainMessage<ListOrganizationSubscriptionsResponse> | undefined): boolean {
     return proto3.util.equals(ListOrganizationSubscriptionsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteOrganizationSubscriptionRequest
+ */
+export class DeleteOrganizationSubscriptionRequest extends Message<DeleteOrganizationSubscriptionRequest> {
+  /**
+   * @generated from field: string org_name = 1;
+   */
+  orgName = "";
+
+  /**
+   * @generated from field: string subscription_id = 2;
+   */
+  subscriptionId = "";
+
+  /**
+   * @generated from field: rill.admin.v1.SubscriptionCancelEffective subscription_cancel_effective = 3;
+   */
+  subscriptionCancelEffective = SubscriptionCancelEffective.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<DeleteOrganizationSubscriptionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteOrganizationSubscriptionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "subscription_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "subscription_cancel_effective", kind: "enum", T: proto3.getEnumType(SubscriptionCancelEffective) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteOrganizationSubscriptionRequest {
+    return new DeleteOrganizationSubscriptionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteOrganizationSubscriptionRequest {
+    return new DeleteOrganizationSubscriptionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteOrganizationSubscriptionRequest {
+    return new DeleteOrganizationSubscriptionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteOrganizationSubscriptionRequest | PlainMessage<DeleteOrganizationSubscriptionRequest> | undefined, b: DeleteOrganizationSubscriptionRequest | PlainMessage<DeleteOrganizationSubscriptionRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteOrganizationSubscriptionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.DeleteOrganizationSubscriptionResponse
+ */
+export class DeleteOrganizationSubscriptionResponse extends Message<DeleteOrganizationSubscriptionResponse> {
+  constructor(data?: PartialMessage<DeleteOrganizationSubscriptionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.DeleteOrganizationSubscriptionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteOrganizationSubscriptionResponse {
+    return new DeleteOrganizationSubscriptionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteOrganizationSubscriptionResponse {
+    return new DeleteOrganizationSubscriptionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteOrganizationSubscriptionResponse {
+    return new DeleteOrganizationSubscriptionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: DeleteOrganizationSubscriptionResponse | PlainMessage<DeleteOrganizationSubscriptionResponse> | undefined, b: DeleteOrganizationSubscriptionResponse | PlainMessage<DeleteOrganizationSubscriptionResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteOrganizationSubscriptionResponse, a, b);
   }
 }
 
@@ -7819,37 +7893,42 @@ export class Organization extends Message<Organization> {
  */
 export class Subscription extends Message<Subscription> {
   /**
-   * @generated from field: string plan_id = 1;
+   * @generated from field: string id = 1;
+   */
+  id = "";
+
+  /**
+   * @generated from field: string plan_id = 2;
    */
   planId = "";
 
   /**
-   * @generated from field: string plan_name = 2;
+   * @generated from field: string plan_name = 3;
    */
   planName = "";
 
   /**
-   * @generated from field: google.protobuf.Timestamp start_date = 3;
+   * @generated from field: google.protobuf.Timestamp start_date = 4;
    */
   startDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp end_date = 4;
+   * @generated from field: google.protobuf.Timestamp end_date = 5;
    */
   endDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp current_billing_cycle_start_date = 5;
+   * @generated from field: google.protobuf.Timestamp current_billing_cycle_start_date = 6;
    */
   currentBillingCycleStartDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp current_billing_cycle_end_date = 6;
+   * @generated from field: google.protobuf.Timestamp current_billing_cycle_end_date = 7;
    */
   currentBillingCycleEndDate?: Timestamp;
 
   /**
-   * @generated from field: google.protobuf.Timestamp trial_end_date = 7;
+   * @generated from field: google.protobuf.Timestamp trial_end_date = 8;
    */
   trialEndDate?: Timestamp;
 
@@ -7861,13 +7940,14 @@ export class Subscription extends Message<Subscription> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.Subscription";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "start_date", kind: "message", T: Timestamp },
-    { no: 4, name: "end_date", kind: "message", T: Timestamp },
-    { no: 5, name: "current_billing_cycle_start_date", kind: "message", T: Timestamp },
-    { no: 6, name: "current_billing_cycle_end_date", kind: "message", T: Timestamp },
-    { no: 7, name: "trial_end_date", kind: "message", T: Timestamp },
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "start_date", kind: "message", T: Timestamp },
+    { no: 5, name: "end_date", kind: "message", T: Timestamp },
+    { no: 6, name: "current_billing_cycle_start_date", kind: "message", T: Timestamp },
+    { no: 7, name: "current_billing_cycle_end_date", kind: "message", T: Timestamp },
+    { no: 8, name: "trial_end_date", kind: "message", T: Timestamp },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Subscription {

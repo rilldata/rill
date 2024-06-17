@@ -27,6 +27,7 @@ const (
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
 	AdminService_UpdateOrganizationBillingPlan_FullMethodName         = "/rill.admin.v1.AdminService/UpdateOrganizationBillingPlan"
 	AdminService_ListOrganizationSubscriptions_FullMethodName         = "/rill.admin.v1.AdminService/ListOrganizationSubscriptions"
+	AdminService_DeleteOrganizationSubscription_FullMethodName        = "/rill.admin.v1.AdminService/DeleteOrganizationSubscription"
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_SearchProjectNames_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectNames"
@@ -125,6 +126,8 @@ type AdminServiceClient interface {
 	UpdateOrganizationBillingPlan(ctx context.Context, in *UpdateOrganizationBillingPlanRequest, opts ...grpc.CallOption) (*UpdateOrganizationBillingPlanResponse, error)
 	// ListOrganizationSubscriptions list all the subscriptions for the organization
 	ListOrganizationSubscriptions(ctx context.Context, in *ListOrganizationSubscriptionsRequest, opts ...grpc.CallOption) (*ListOrganizationSubscriptionsResponse, error)
+	// DeleteOrganizationSubscriptions list all the subscriptions for the organization
+	DeleteOrganizationSubscription(ctx context.Context, in *DeleteOrganizationSubscriptionRequest, opts ...grpc.CallOption) (*DeleteOrganizationSubscriptionResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -363,6 +366,16 @@ func (c *adminServiceClient) ListOrganizationSubscriptions(ctx context.Context, 
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListOrganizationSubscriptionsResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListOrganizationSubscriptions_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DeleteOrganizationSubscription(ctx context.Context, in *DeleteOrganizationSubscriptionRequest, opts ...grpc.CallOption) (*DeleteOrganizationSubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DeleteOrganizationSubscriptionResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteOrganizationSubscription_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1149,6 +1162,8 @@ type AdminServiceServer interface {
 	UpdateOrganizationBillingPlan(context.Context, *UpdateOrganizationBillingPlanRequest) (*UpdateOrganizationBillingPlanResponse, error)
 	// ListOrganizationSubscriptions list all the subscriptions for the organization
 	ListOrganizationSubscriptions(context.Context, *ListOrganizationSubscriptionsRequest) (*ListOrganizationSubscriptionsResponse, error)
+	// DeleteOrganizationSubscriptions list all the subscriptions for the organization
+	DeleteOrganizationSubscription(context.Context, *DeleteOrganizationSubscriptionRequest) (*DeleteOrganizationSubscriptionResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -1333,6 +1348,9 @@ func (UnimplementedAdminServiceServer) UpdateOrganizationBillingPlan(context.Con
 }
 func (UnimplementedAdminServiceServer) ListOrganizationSubscriptions(context.Context, *ListOrganizationSubscriptionsRequest) (*ListOrganizationSubscriptionsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationSubscriptions not implemented")
+}
+func (UnimplementedAdminServiceServer) DeleteOrganizationSubscription(context.Context, *DeleteOrganizationSubscriptionRequest) (*DeleteOrganizationSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteOrganizationSubscription not implemented")
 }
 func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganization not implemented")
@@ -1715,6 +1733,24 @@ func _AdminService_ListOrganizationSubscriptions_Handler(srv interface{}, ctx co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListOrganizationSubscriptions(ctx, req.(*ListOrganizationSubscriptionsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DeleteOrganizationSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteOrganizationSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DeleteOrganizationSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DeleteOrganizationSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DeleteOrganizationSubscription(ctx, req.(*DeleteOrganizationSubscriptionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3125,6 +3161,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListOrganizationSubscriptions",
 			Handler:    _AdminService_ListOrganizationSubscriptions_Handler,
+		},
+		{
+			MethodName: "DeleteOrganizationSubscription",
+			Handler:    _AdminService_DeleteOrganizationSubscription_Handler,
 		},
 		{
 			MethodName: "ListProjectsForOrganization",

@@ -46,7 +46,7 @@ func (n noop) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	return nil, nil
 }
 
-func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan, changeOption SubscriptionChangeOption) (*Subscription, error) {
+func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
 	return nil, nil
 }
 
