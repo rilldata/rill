@@ -30,7 +30,7 @@ type ComponentYAML struct {
 	VegaLite   *string          `yaml:"vega_lite"`
 	Markdown   *string          `yaml:"markdown"`
 	Image      *string          `yaml:"image"`
-	Template   map[string]any   `yaml:"template"`
+	Other      map[string]any   `yaml:",inline" mapstructure:",remain"`
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -111,23 +111,28 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		renderer = "image"
 		rendererProps = must(structpb.NewStruct(map[string]any{"url": *tmp.Image}))
 	}
-	if len(tmp.Template) > 0 {
+	for k, v := range tmp.Other {
 		n++
 
-		if err := componentTemplateSchema.Validate(tmp.Template); err != nil {
-			return nil, nil, fmt.Errorf(`failed to validate "template": %w`, err)
+		props, ok := v.(map[string]any)
+		if !ok {
+			return nil, nil, fmt.Errorf(`expected map value for property %q`, k)
+		}
+		propsPB, err := structpb.NewStruct(props)
+		if err != nil {
+			return nil, nil, fmt.Errorf(`failed to convert property %q to struct: %w`, k, err)
 		}
 
-		renderer = "template"
-		rendererProps = must(structpb.NewStruct(tmp.Template))
+		renderer = k
+		rendererProps = propsPB
 	}
 
 	// Check there is exactly one renderer
 	if n == 0 {
-		return nil, nil, errors.New(`missing renderer configuration (set one of vega_lite, markdown, image)`)
+		return nil, nil, errors.New(`missing renderer configuration`)
 	}
 	if n > 1 {
-		return nil, nil, errors.New(`multiple renderers are not allowed (set only one of vega_lite, markdown, image)`)
+		return nil, nil, errors.New(`multiple renderers are not allowed`)
 	}
 
 	// Create the component spec
