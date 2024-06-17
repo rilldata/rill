@@ -30,6 +30,8 @@
 {#if modelName && $modelQuery.data && $modelQuery.data?.model?.state?.resultConnector}
   <WorkspaceInspector
     connector={$modelQuery.data?.model?.state?.resultConnector}
+    database=""
+    databaseSchema=""
     tableName={modelName}
     model={$modelQuery.data?.model}
     hasErrors={false}
