@@ -210,7 +210,7 @@ func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment stri
 			if resolved.QueryFilter == nil {
 				resolved.QueryFilter = policy.QueryFilter
 			} else {
-				expressionpb.And([]*runtimev1.Expression{resolved.QueryFilter, policy.QueryFilter})
+				resolved.QueryFilter = expressionpb.And([]*runtimev1.Expression{resolved.QueryFilter, policy.QueryFilter})
 			}
 		}
 
@@ -306,7 +306,7 @@ func mergeIncludeExcludes(resolved *ResolvedMetricsViewSecurity, include, exclud
 			}
 		}
 		if !found {
-			break
+			continue
 		}
 
 		// Check it's not in resolved.Exclude
@@ -318,7 +318,7 @@ func mergeIncludeExcludes(resolved *ResolvedMetricsViewSecurity, include, exclud
 			}
 		}
 		if found {
-			break
+			continue
 		}
 
 		// Can add to newInclude

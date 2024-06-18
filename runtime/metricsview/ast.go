@@ -484,7 +484,7 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 		return nil, fmt.Errorf("failed to compile 'where': %w", err)
 	}
 
-	if a.security != nil && a.security.RowFilter != "" {
+	if a.security != nil {
 		var secExpr string
 		var secArgs []any
 
@@ -496,18 +496,22 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 			}
 		}
 
-		if secExpr == "" {
-			secExpr = a.security.RowFilter
-		} else {
-			secExpr = fmt.Sprintf("(%s) AND (%s)", secExpr, a.security.RowFilter)
+		if a.security.RowFilter != "" {
+			if secExpr == "" {
+				secExpr = a.security.RowFilter
+			} else {
+				secExpr = fmt.Sprintf("(%s) AND (%s)", secExpr, a.security.RowFilter)
+			}
 		}
 
-		if expr == "" {
-			expr = secExpr
-			args = secArgs
-		} else if secExpr != "" {
-			expr = fmt.Sprintf("(%s) AND (%s)", expr, secExpr)
-			args = append(args, secArgs...)
+		if secExpr != "" {
+			if expr == "" {
+				expr = secExpr
+				args = secArgs
+			} else {
+				expr = fmt.Sprintf("(%s) AND (%s)", expr, secExpr)
+				args = append(args, secArgs...)
+			}
 		}
 	}
 

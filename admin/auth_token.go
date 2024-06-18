@@ -169,7 +169,7 @@ func (t *magicAuthToken) OwnerID() string {
 type IssueMagicAuthTokenOptions struct {
 	ProjectID             string
 	TTL                   *time.Duration
-	CreatedByUserID       string
+	CreatedByUserID       *string
 	Attributes            map[string]any
 	MetricsView           string
 	MetricsViewFilterJSON string

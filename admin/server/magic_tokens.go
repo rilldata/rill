@@ -55,15 +55,16 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 	}
 
 	if claims.OwnerType() == auth.OwnerTypeUser {
-		opts.CreatedByUserID = claims.OwnerID()
+		id := claims.OwnerID()
+		opts.CreatedByUserID = &id
 
 		// Generate JWT attributes based on the creating user's, but with limited project-level permissions.
 		// We store these attributes with the magic token, so it can simulate the creating user (even if the creating user is later deleted or their permissions change).
 		//
 		// NOTE: A problem with this approach is that if we change the built-in format of JWT attributes, these will remain as they were when captured.
 		attrs, err := s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, &adminv1.ProjectPermissions{
-			ReadProject:    true,
-			ReadProdStatus: true,
+			ReadProject: true,
+			ReadProd:    true,
 		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -122,6 +123,10 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 
 	var createdByUserID *string
 	if !projPerms.ManageMagicAuthTokens {
+		if claims.OwnerType() != auth.OwnerTypeUser {
+			return nil, status.Error(codes.PermissionDenied, "not allowed to manage magic auth tokens")
+		}
+
 		id := claims.OwnerID()
 		createdByUserID = &id
 	}
@@ -166,7 +171,8 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 	projPerms := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if !projPerms.ManageMagicAuthTokens {
 		// If they don't have manage permissions, they can only revoke tokens they created themselves.
-		if !projPerms.CreateMagicAuthTokens || claims.OwnerID() != tkn.CreatedByUserID {
+		isCreator := tkn.CreatedByUserID != nil && *tkn.CreatedByUserID == claims.OwnerID()
+		if !projPerms.CreateMagicAuthTokens || !isCreator {
 			return nil, status.Error(codes.PermissionDenied, "not allowed to revoke this magic auth token")
 		}
 	}
@@ -211,7 +217,7 @@ func magicAuthTokenToPB(tkn *database.MagicAuthToken) (*adminv1.MagicAuthToken, 
 		CreatedOn:         timestamppb.New(tkn.CreatedOn),
 		ExpiresOn:         timestamppb.New(safeTime(tkn.ExpiresOn)),
 		UsedOn:            timestamppb.New(tkn.UsedOn),
-		CreatedByUserId:   tkn.CreatedByUserID,
+		CreatedByUserId:   safeStr(tkn.CreatedByUserID),
 		Attributes:        attrs,
 		MetricsView:       tkn.MetricsView,
 		MetricsViewFilter: metricsViewFilter,

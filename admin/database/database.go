@@ -517,12 +517,12 @@ type InsertDeploymentAuthTokenOptions struct {
 // MagicAuthToken is a persistent API token for accessing a specific (filtered) resource in a project.
 type MagicAuthToken struct {
 	ID                    string
-	SecretHash            []byte         `db:"secret"`
+	SecretHash            []byte         `db:"secret_hash"`
 	ProjectID             string         `db:"project_id"`
 	CreatedOn             time.Time      `db:"created_on"`
 	ExpiresOn             *time.Time     `db:"expires_on"`
 	UsedOn                time.Time      `db:"used_on"`
-	CreatedByUserID       string         `db:"created_by_user_id"`
+	CreatedByUserID       *string        `db:"created_by_user_id"`
 	Attributes            map[string]any `db:"attributes"`
 	MetricsView           string         `db:"metrics_view"`
 	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
@@ -535,7 +535,7 @@ type InsertMagicAuthTokenOptions struct {
 	SecretHash            []byte
 	ProjectID             string `validate:"required"`
 	ExpiresOn             *time.Time
-	CreatedByUserID       string
+	CreatedByUserID       *string
 	Attributes            map[string]any
 	MetricsView           string `validate:"required"`
 	MetricsViewFilterJSON string
