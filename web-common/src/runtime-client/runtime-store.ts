@@ -13,7 +13,34 @@ export interface Runtime {
   jwt?: JWT;
 }
 
-export const runtime = writable<Runtime>({
-  host: "",
-  instanceId: "",
-});
+const createRuntimeStore = () => {
+  const { subscribe, set, update } = writable<Runtime>({
+    host: "",
+    instanceId: "",
+  });
+
+  return {
+    subscribe,
+    update,
+    set, // backwards-compatibility for web-local (where there's no JWT)
+    setRuntime: (host: string, instanceId: string, jwt?: string) => {
+      update((current) => {
+        // Only update the store (particularly, the JWT `receivedAt`) if the values have changed
+        if (
+          host !== current.host ||
+          instanceId !== current.instanceId ||
+          jwt !== current.jwt?.token
+        ) {
+          return {
+            host,
+            instanceId,
+            jwt: jwt ? { token: jwt, receivedAt: Date.now() } : undefined,
+          };
+        }
+        return current;
+      });
+    },
+  };
+};
+
+export const runtime = createRuntimeStore();
