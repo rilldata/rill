@@ -1,10 +1,9 @@
-import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { includedDimensionValues } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import {
   createAndExpression,
   createInExpression,
   filterExpressions,
-  matchExpressionByName,
   sanitiseExpression,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { Readable, derived } from "svelte/store";
@@ -77,12 +76,8 @@ export function getDimensionValuesForComparison(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      measureFilterResolutionsStore(ctx),
     ],
-    (
-      [runtime, name, dashboardStore, timeControls, measureFilterResolution],
-      set,
-    ) => {
+    ([runtime, name, dashboardStore, timeControls], set) => {
       const isValidMeasureList =
         measures?.length > 0 && measures?.every((m) => m !== undefined);
 
@@ -94,20 +89,9 @@ export function getDimensionValuesForComparison(
       // Values to be compared
       let comparisonValues: (string | null)[] = [];
       if (surface === "chart") {
-        let dimensionValues = includedDimensionValues({
+        const dimensionValues = includedDimensionValues({
           dashboard: dashboardStore,
         })(dimensionName);
-        if (measureFilterResolution.filter) {
-          // if there is a measure filter for this dimension. remove values not in that filter
-          const dimVals = measureFilterResolution.filter.cond?.exprs?.find(
-            (e) => matchExpressionByName(e, dimensionName),
-          )?.cond?.exprs;
-          if (dimVals?.length) {
-            dimensionValues = dimensionValues.filter(
-              (d) => dimVals.findIndex((dimVal) => dimVal.val === d) >= 0,
-            );
-          }
-        }
 
         if (dimensionValues?.length) {
           // For TDD view max 11 allowed, for overview max 7 allowed
@@ -136,12 +120,15 @@ export function getDimensionValuesForComparison(
               measures: measures.map((measure) => ({ name: measure })),
               dimensions: [{ name: dimensionName }],
               where: sanitiseExpression(
-                getDimensionFilterWithSearch(
-                  dashboardStore?.whereFilter,
-                  dashboardStore?.dimensionSearchText ?? "",
-                  dimensionName,
+                mergeMeasureFilters(
+                  dashboardStore,
+                  getDimensionFilterWithSearch(
+                    dashboardStore?.whereFilter,
+                    dashboardStore?.dimensionSearchText ?? "",
+                    dimensionName,
+                  ),
                 ),
-                measureFilterResolution.filter,
+                undefined,
               ),
               timeStart: timeControls.timeStart,
               timeEnd: timeControls.timeEnd,
@@ -159,8 +146,7 @@ export function getDimensionValuesForComparison(
               query: {
                 enabled:
                   timeControls.ready &&
-                  !!dashboardStore?.selectedComparisonDimension &&
-                  measureFilterResolution.ready,
+                  !!dashboardStore?.selectedComparisonDimension,
                 queryClient: ctx.queryClient,
               },
             },

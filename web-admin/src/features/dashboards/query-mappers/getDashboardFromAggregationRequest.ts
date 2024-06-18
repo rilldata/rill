@@ -1,11 +1,12 @@
+import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import {
   convertExprToToplist,
   fillTimeRange,
 } from "@rilldata/web-admin/features/dashboards/query-mappers/utils";
-import type { QueryMapperArgs } from "@rilldata/web-admin/features/dashboards/query-mappers/types";
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
+  mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
@@ -57,16 +58,20 @@ export async function getDashboardFromAggregationRequest({
         req.having,
       );
       if (expr) {
-        dashboard.whereFilter = mergeFilters(
-          dashboard.whereFilter ?? createAndExpression([]),
-          createAndExpression([expr]),
-        );
+        dashboard.whereFilter =
+          mergeFilters(
+            dashboard.whereFilter ?? createAndExpression([]),
+            createAndExpression([expr]),
+          ) ?? createAndExpression([]);
       }
     } else {
       dashboard.dimensionThresholdFilters = [
         {
           name: dimension,
-          filter: createAndExpression([req.having.cond?.exprs?.[0]]),
+          filters:
+            req.having.cond?.exprs
+              ?.map(mapExprToMeasureFilter)
+              .filter(Boolean) ?? [],
         },
       ];
     }

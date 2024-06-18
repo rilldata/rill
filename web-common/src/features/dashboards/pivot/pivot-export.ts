@@ -1,4 +1,4 @@
-import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1ExportFormat,
@@ -54,8 +54,6 @@ export default async function exportPivot({
         },
   );
 
-  const measureFilters = await getResolvedMeasureFilters(ctx);
-
   const pivotOn = columns.dimension.map((d) =>
     d.type === PivotChipType.Time ? `Time ${d.title}` : d.id,
   );
@@ -98,7 +96,7 @@ export default async function exportPivot({
           timeRange,
           measures,
           dimensions: allDimensions,
-          where: sanitiseExpression(dashboard.whereFilter, measureFilters),
+          where: sanitiseExpression(mergeMeasureFilters(dashboard), undefined),
           pivotOn,
           sort,
           offset: "0",
