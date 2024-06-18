@@ -79,6 +79,8 @@ type Config struct {
 	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
 	MetricsProject           string                 `default:"" split_words:"true"`
 	AutoscalerCron           string                 `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
+	TLSCertPath              string                 `split_words:"true"`
+	TLSKeyPath               string                 `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -302,6 +304,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
+					TLSCertPath:            conf.TLSCertPath,
+					TLSKeyPath:             conf.TLSKeyPath,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

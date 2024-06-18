@@ -61,6 +61,8 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
+	TLSCertPath            string
+	TLSKeyPath             string
 }
 
 type Server struct {
@@ -203,6 +205,8 @@ func (s *Server) ServePSQL(ctx context.Context) error {
 		AuthHandler:  authHandler,
 		Port:         s.opts.PSQLPort,
 		Logger:       s.logger,
+		TLSCertPath:  s.opts.TLSCertPath,
+		TLSKeyPath:   s.opts.TLSKeyPath,
 	}
 	return graceful.ServePSQL(ctx, opts)
 }

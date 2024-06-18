@@ -55,8 +55,6 @@ func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt 
 		return nil, err
 	}
 
-	c, _ := conn.Acquire(context.Background())
-	c.Conn().Prepare()
 	rows, err := conn.Query(ctx, query) // query to underlying host
 	if err != nil {
 		return nil, err

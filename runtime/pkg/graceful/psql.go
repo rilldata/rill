@@ -46,12 +46,16 @@ func ServePSQL(ctx context.Context, serveOpts *ServePSQLOptions) error {
 		opts = append(opts, wire.SessionAuthStrategy(wire.ClearTextPassword(serveOpts.AuthHandler)))
 	}
 	if serveOpts.TLSCertPath != "" && serveOpts.TLSKeyPath != "" {
-		certificates := make([]tls.Certificate, 1)
-		certificates[0], err = tls.LoadX509KeyPair(serveOpts.TLSCertPath, serveOpts.TLSKeyPath)
-		if err != nil {
-			return err
-		}
-		opts = append(opts, wire.Certificates(certificates))
+		opts = append(opts, wire.TLSConfig(&tls.Config{
+			MinVersion: tls.VersionTLS12,
+			GetCertificate: func(*tls.ClientHelloInfo) (*tls.Certificate, error) {
+				certificate, err := tls.LoadX509KeyPair(serveOpts.TLSCertPath, serveOpts.TLSKeyPath)
+				if err != nil {
+					return nil, err
+				}
+				return &certificate, nil
+			},
+		}))
 	}
 
 	server, err := wire.NewServer(serveOpts.QueryHandler, opts...)

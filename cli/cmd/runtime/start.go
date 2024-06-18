@@ -43,6 +43,7 @@ import (
 	_ "github.com/rilldata/rill/runtime/drivers/s3"
 	_ "github.com/rilldata/rill/runtime/drivers/salesforce"
 	_ "github.com/rilldata/rill/runtime/drivers/slack"
+	_ "github.com/rilldata/rill/runtime/drivers/snowflake"
 	_ "github.com/rilldata/rill/runtime/drivers/sqlite"
 	_ "github.com/rilldata/rill/runtime/reconcilers"
 	_ "github.com/rilldata/rill/runtime/resolvers"
@@ -61,7 +62,6 @@ type Config struct {
 	HTTPPort                int                    `default:"8080" split_words:"true"`
 	GRPCPort                int                    `default:"9090" split_words:"true"`
 	DebugPort               int                    `default:"6060" split_words:"true"`
-	PSQLPort                int                    `default:"5432" split_words:"true"`
 	AllowedOrigins          []string               `default:"*" split_words:"true"`
 	SessionKeyPairs         []string               `split_words:"true"`
 	AuthEnable              bool                   `default:"false" split_words:"true"`
@@ -237,7 +237,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			srvOpts := &server.Options{
 				HTTPPort:        conf.HTTPPort,
 				GRPCPort:        conf.GRPCPort,
-				PSQLPort:        conf.PSQLPort,
 				AllowedOrigins:  conf.AllowedOrigins,
 				ServePrometheus: conf.MetricsExporter == observability.PrometheusExporter,
 				SessionKeyPairs: keyPairs,
@@ -254,7 +253,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			group, cctx := errgroup.WithContext(ctx)
 			group.Go(func() error { return s.ServeGRPC(cctx) })
 			group.Go(func() error { return s.ServeHTTP(cctx, nil) })
-			group.Go(func() error { return s.ServePSQL(cctx, true) })
 			if conf.DebugPort != 0 {
 				group.Go(func() error { return debugserver.ServeHTTP(cctx, conf.DebugPort) })
 			}
