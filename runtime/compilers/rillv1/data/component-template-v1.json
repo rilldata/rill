@@ -1,134 +1,56 @@
 {
-  "$ref": "#/definitions/TemplateSpec",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "definitions": {
-    "TemplateSpec": {
-      "anyOf": [
-        {
-          "additionalProperties": false,
-          "properties": {
-            "name": {
-              "const": "line",
-              "type": "string"
-            },
-            "x": {
-              "type": "string"
-            },
-            "xLabel": {
-              "type": "string"
-            },
-            "y": {
-              "type": "string"
-            },
-            "yLabel": {
-              "type": "string"
-            }
-          },
+  "type": "object",
+  "anyOf": [
+      {
+          "type": "object",
           "required": [
-            "name",
-            "x",
-            "y"
+              "line_chart"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "name": {
-              "const": "bar",
-              "type": "string"
-            },
-            "x": {
-              "type": "string"
-            },
-            "xLabel": {
-              "type": "string"
-            },
-            "y": {
-              "type": "string"
-            },
-            "yLabel": {
-              "type": "string"
-            }
+              "line_chart": {
+                  "type": "object",
+                  "required": [
+                      "x",
+                      "y"
+                  ],
+                  "properties": {
+                      "x": {
+                          "type": "string"
+                      },
+                      "y": {
+                          "type": "string"
+                      }
+                  },
+                  "additionalProperties": false
+              }
           },
+          "additionalProperties": false
+      },
+      {
+          "type": "object",
           "required": [
-            "name",
-            "x",
-            "y"
+              "bar_chart"
           ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
           "properties": {
-            "comparison_range": {
-              "type": "string"
-            },
-            "measure": {
-              "type": "string"
-            },
-            "metric_view": {
-              "type": "string"
-            },
-            "name": {
-              "const": "kpi",
-              "type": "string"
-            },
-            "time_range": {
-              "type": "string"
-            }
+              "bar_chart": {
+                  "type": "object",
+                  "required": [
+                      "x",
+                      "y"
+                  ],
+                  "properties": {
+                      "x": {
+                          "type": "string"
+                      },
+                      "y": {
+                          "type": "string"
+                      }
+                  },
+                  "additionalProperties": false
+              }
           },
-          "required": [
-            "measure",
-            "metric_view",
-            "name",
-            "time_range"
-          ],
-          "type": "object"
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "col_dimensions": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "measures": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "metric_view": {
-              "type": "string"
-            },
-            "name": {
-              "const": "table",
-              "type": "string"
-            },
-            "row_dimensions": {
-              "items": {
-                "type": "string"
-              },
-              "type": "array"
-            },
-            "time_range": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "col_dimensions",
-            "measures",
-            "metric_view",
-            "name",
-            "row_dimensions",
-            "time_range"
-          ],
-          "type": "object"
-        }
-      ]
-    }
-  }
+          "additionalProperties": false
+      }
+  ]
 }
