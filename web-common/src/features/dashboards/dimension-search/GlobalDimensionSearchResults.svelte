@@ -23,6 +23,7 @@
     actions: {
       dimensionsFilter: { toggleDimensionValueSelection },
     },
+    timeRangeSummaryStore,
   } = getStateManagers();
 
   $: instanceId = $runtime.instanceId;
@@ -31,12 +32,14 @@
   let results: ReturnType<typeof useDimensionSearchResults>;
   $: if (
     $metricsViewQuery.data?.metricsView?.state?.validSpec &&
+    $timeRangeSummaryStore.data?.timeRangeSummary &&
     !!searchText
   ) {
     results = useDimensionSearchResults(
       instanceId,
       metricsViewName,
       $metricsViewQuery.data.metricsView.state.validSpec,
+      $timeRangeSummaryStore.data.timeRangeSummary,
       searchText,
     );
   }

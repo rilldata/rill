@@ -423,6 +423,42 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 	return q.Result, nil
 }
 
+func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsViewSearchRequest) (*runtimev1.MetricsViewSearchResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.metric_view", req.MetricsViewName),
+		attribute.StringSlice("args.dimensions.names", req.Dimensions),
+		attribute.String("args.search", req.Search),
+		attribute.Int("args.filter_count", filterCount(req.Where)),
+		attribute.Int("args.priority", int(req.Priority)),
+	)
+
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
+		return nil, ErrForbidden
+	}
+
+	limit := int64(req.Limit)
+	q := &queries.MetricsViewSearch{
+		MetricsViewName:    req.MetricsViewName,
+		Dimensions:         req.Dimensions,
+		Search:             req.Search,
+		TimeRange:          req.TimeRange,
+		Where:              req.Where,
+		Having:             req.Having,
+		Priority:           req.Priority,
+		Limit:              &limit,
+		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
+	}
+	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
+	if err != nil {
+		return nil, err
+	}
+
+	return q.Result, nil
+}
+
 // inlineMeasureRegexp is used by validateInlineMeasures.
 var inlineMeasureRegexp = regexp.MustCompile(`(?i)^COUNT\((DISTINCT)? *.+\)$`)
 
