@@ -17,7 +17,7 @@ interface BarChart extends ChartProperties {
   bar_chart: ChartProperties;
 }
 
-interface KPIProperties extends DataProperties {
+export interface KPIProperties extends DataProperties {
   measure: string;
   time_range: string;
   comparison_range?: string;
@@ -26,7 +26,7 @@ export interface KPITemplateT {
   kpi: KPIProperties;
 }
 
-interface TableProperties extends DataProperties {
+export interface TableProperties extends DataProperties {
   time_range: string;
   measures: string[];
   row_dimensions: string[];

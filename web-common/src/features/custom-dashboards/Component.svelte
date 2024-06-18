@@ -112,7 +112,7 @@
         />
       {:else if renderer === "markdown" && rendererProperties?.content}
         <Markdown markdown={rendererProperties.content} {fontSize} />
-      {:else if rendererProperties}
+      {:else if renderer && rendererProperties}
         <TemplateRenderer
           {chartView}
           {renderer}

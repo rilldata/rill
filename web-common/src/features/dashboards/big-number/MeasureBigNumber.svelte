@@ -10,10 +10,6 @@
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import type {
-    TimeComparisonOption,
-    TimeRangePreset,
-  } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import {
@@ -27,10 +23,7 @@
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
-  export let comparisonOption:
-    | TimeComparisonOption
-    | TimeRangePreset
-    | undefined = undefined;
+
   export let comparisonValue: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
@@ -135,7 +128,7 @@
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
           {measureValueFormatter(output)}
         </WithTween>
-        {#if showComparison && comparisonOption && comparisonValue}
+        {#if showComparison && comparisonValue}
           <div class="flex items-baseline gap-x-3 text-sm">
             {#if comparisonValue != null}
               <div

@@ -6,6 +6,7 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
+import { QueryClient } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useKPITotals(
@@ -29,6 +30,54 @@ export function useKPITotals(
       },
     },
   );
+}
+
+export function useKPIComparisonTotal(
+  instanceId: string,
+  metricViewName: string,
+  measure: string,
+  comparisonRange: string | undefined,
+  timeRange: string,
+  queryClient: QueryClient,
+) {
+  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+
+  return derived(allTimeRangeQuery, (allTimeRange, set) => {
+    const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
+    const maxTimeDate = new Date(maxTime ?? 0);
+    const { startTime } = isoDurationToTimeRange(timeRange, maxTimeDate);
+
+    let comparisonStartTime: Date, comparisonEndTime: Date;
+
+    if (comparisonRange) {
+      ({ startTime: comparisonStartTime, endTime: comparisonEndTime } =
+        isoDurationToTimeRange(comparisonRange, startTime));
+    } else {
+      comparisonStartTime = new Date(0);
+      comparisonEndTime = startTime;
+    }
+
+    return createQueryServiceMetricsViewAggregation(
+      instanceId,
+      metricViewName,
+      {
+        measures: [{ name: measure }],
+        timeRange: {
+          start: comparisonStartTime.toISOString(),
+          end: comparisonEndTime.toISOString(),
+        },
+      },
+      {
+        query: {
+          queryClient,
+          select: (data) => {
+            return data.data?.[0]?.[measure] ?? null;
+          },
+          enabled: !!comparisonRange,
+        },
+      },
+    ).subscribe(set);
+  });
 }
 
 export function useStartEndTime(
@@ -61,7 +110,7 @@ export function useKPISparkline(
   metricViewName: string,
   measure: string,
   timeRange: string,
-  queryClient,
+  queryClient: QueryClient,
 ) {
   const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
 

@@ -12,14 +12,16 @@
   } from "@rilldata/web-common/features/dashboards/time-series/chart-colors";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
+    useKPIComparisonTotal,
     useKPISparkline,
     useKPITotals,
   } from "@rilldata/web-common/features/templates/kpi/selector";
-  import { KPITemplateT } from "@rilldata/web-common/features/templates/types";
+  import { KPIProperties } from "@rilldata/web-common/features/templates/types";
+  import { humaniseISODuration } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
 
-  export let rendererProperties: KPITemplateT;
+  export let rendererProperties: KPIProperties;
 
   const queryClient = useQueryClient();
 
@@ -27,14 +29,28 @@
   $: metricViewName = rendererProperties.metric_view;
   $: measureName = rendererProperties.measure;
   $: timeRange = rendererProperties.time_range;
+  $: comparisonTimeRange = rendererProperties?.comparison_range;
 
   $: measure = useMetaMeasure(instanceId, metricViewName, measureName);
+
   $: measureValue = useKPITotals(
     instanceId,
     metricViewName,
     measureName,
     timeRange,
   );
+
+  $: comparisonValue = useKPIComparisonTotal(
+    instanceId,
+    metricViewName,
+    measureName,
+    comparisonTimeRange,
+    timeRange,
+    queryClient,
+  );
+
+  $: console.log($comparisonValue?.data);
+
   $: sparkline = useKPISparkline(
     instanceId,
     metricViewName,
@@ -60,20 +76,25 @@
       measure={$measure.data}
       value={$measureValue.data}
       withTimeseries={false}
-      status={EntityStatus.Idle}
+      showComparison
+      comparisonValue={$comparisonValue?.data}
+      status={$measureValue?.isFetching
+        ? EntityStatus.Running
+        : EntityStatus.Idle}
       isMeasureExpanded={true}
     />
   {/if}
 
-  <div class="flex-grow">
+  <div>
     {#if sparkData.length}
       <SimpleDataGraphic
-        height={80}
-        width={400}
+        height={comparisonTimeRange ? 70 : 65}
+        width={200}
         overflowHidden={false}
         top={10}
-        bottom={10}
+        bottom={0}
         right={10}
+        left={0}
         {xMin}
         {xMax}
         {yMin}
@@ -88,5 +109,18 @@
         />
       </SimpleDataGraphic>
     {/if}
+
+    {#if comparisonTimeRange}
+      <div class="comparison-value">
+        vs last {humaniseISODuration(comparisonTimeRange, false)}
+      </div>
+    {/if}
   </div>
 </div>
+
+<style lang="postcss">
+  .comparison-value {
+    font-size: 0.8rem;
+    @apply ui-copy-muted pl-1 pt-0.5;
+  }
+</style>

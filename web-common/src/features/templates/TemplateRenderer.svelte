@@ -11,12 +11,12 @@
   export let renderer: string;
   export let componentName: string;
   export let rendererProperties: V1ComponentSpecRendererProperties;
-  export let resolverProperties: V1ComponentSpecResolverProperties;
+  export let resolverProperties: V1ComponentSpecResolverProperties | undefined;
 </script>
 
 {#if renderer === "kpi"}
   <KPITemplate {rendererProperties} />
-{:else}
+{:else if resolverProperties}
   <ChartTemplate
     {chartView}
     {componentName}
