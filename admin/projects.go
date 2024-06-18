@@ -185,6 +185,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
+			Version:         d.RuntimeVersion,
 			Branch:          opts.ProdBranch,
 			Variables:       opts.ProdVariables,
 			Annotations:     annotations,
@@ -219,6 +220,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 
 			for _, d := range ds {
 				err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
+					Version:         d.RuntimeVersion,
 					Branch:          proj.ProdBranch,
 					Variables:       proj.ProdVariables,
 					Annotations:     s.NewDeploymentAnnotations(org, proj),
