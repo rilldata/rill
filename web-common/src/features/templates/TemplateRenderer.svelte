@@ -19,6 +19,7 @@
 {:else if resolverProperties}
   <ChartTemplate
     {chartView}
+    {renderer}
     {componentName}
     {rendererProperties}
     {resolverProperties}

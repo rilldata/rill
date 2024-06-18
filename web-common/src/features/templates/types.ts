@@ -2,19 +2,24 @@ interface DataProperties {
   metric_view: string;
 }
 
-interface ChartProperties {
+export interface ChartProperties {
   x: string;
   y: string;
   xLabel?: string;
   yLabel?: string;
+  color?: string;
 }
 
 interface LineChart {
   line_chart: ChartProperties;
 }
 
-interface BarChart extends ChartProperties {
+interface BarChart {
   bar_chart: ChartProperties;
+}
+
+interface StackedBarChart {
+  stacked_bar_chart: ChartProperties;
 }
 
 export interface KPIProperties extends DataProperties {
@@ -36,6 +41,6 @@ export interface TableTemplateT {
   table: TableProperties;
 }
 
-type ChartTemplates = LineChart | BarChart;
+type ChartTemplates = LineChart | BarChart | StackedBarChart;
 
 export type TemplateSpec = ChartTemplates | KPITemplateT | TableTemplateT;

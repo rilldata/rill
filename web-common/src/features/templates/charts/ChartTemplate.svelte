@@ -7,11 +7,12 @@
   import { getSpecFromTemplateProperties } from "./utils";
 
   export let chartView: boolean;
+  export let renderer: string;
   export let componentName: string;
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let resolverProperties: V1ComponentSpecResolverProperties;
 
-  $: vegaSpec = getSpecFromTemplateProperties(rendererProperties);
+  $: vegaSpec = getSpecFromTemplateProperties(renderer, rendererProperties);
 </script>
 
 <Chart {chartView} {vegaSpec} chartName={componentName} {resolverProperties} />

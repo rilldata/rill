@@ -49,8 +49,6 @@
     queryClient,
   );
 
-  $: console.log($comparisonValue?.data);
-
   $: sparkline = useKPISparkline(
     instanceId,
     metricViewName,

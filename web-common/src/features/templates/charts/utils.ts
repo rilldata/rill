@@ -1,3 +1,4 @@
+import { ChartProperties } from "@rilldata/web-common/features/templates/types";
 import { VisualizationSpec } from "svelte-vega";
 import { ChartType } from "../../charts/types";
 import { buildVegaLiteSpec } from "./build-template";
@@ -37,19 +38,24 @@ export function sanitizeValuesForSpec(values: unknown[]) {
 }
 
 export const templateNameToChartEnumMap = {
-  bar: ChartType.BAR,
-  grouped_bar: ChartType.GROUPED_BAR,
-  stacked_bar: ChartType.STACKED_BAR,
-  line: ChartType.LINE,
-  area: ChartType.AREA,
-  stacked_area: ChartType.STACKED_AREA,
+  bar_chart: ChartType.BAR,
+  grouped_bar_chart: ChartType.GROUPED_BAR,
+  stacked_bar_chart: ChartType.STACKED_BAR,
+  line_chart: ChartType.LINE,
+  area_chart: ChartType.AREA,
+  stacked_area_chart: ChartType.STACKED_AREA,
 };
 
-export function getSpecFromTemplateProperties(properties) {
-  if (!properties.name || !properties.x || !properties.y) {
+export function getSpecFromTemplateProperties(
+  renderer: string,
+  properties: ChartProperties,
+) {
+  if (!properties.x || !properties.y) {
     return undefined;
   }
-  const chartType = templateNameToChartEnumMap[properties?.name];
+  const chartType = templateNameToChartEnumMap[renderer];
+
+  if (!chartType) return undefined;
 
   const timeFields = [{ name: properties.x, label: properties.x }];
   const quantitativeFields = [{ name: properties.y, label: properties.y }];
