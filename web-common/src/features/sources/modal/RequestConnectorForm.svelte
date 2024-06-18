@@ -59,7 +59,7 @@
         id="request"
         label="Connector"
         placeholder="Your data source"
-        error={$errors["request"]}
+        errors={$errors["request"]}
         bind:value={$form["request"]}
         onChange={handleChange}
       />
@@ -69,7 +69,7 @@
         id="email"
         label="Optionally, we can let you know when the connector is available."
         placeholder="Your email address"
-        error={$errors["email"]}
+        errors={$errors["email"]}
         bind:value={$form["email"]}
         onChange={handleChange}
       />
