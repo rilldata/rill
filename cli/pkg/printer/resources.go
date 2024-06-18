@@ -6,6 +6,7 @@ import (
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/metricsview"
 )
 
 func (p *Printer) PrintOrgs(orgs []*adminv1.Organization, defaultOrg string) {
@@ -245,4 +246,51 @@ type token struct {
 	ID        string `header:"id" json:"id"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
 	ExpiresOn string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
+}
+
+func (p *Printer) PrintMagicAuthTokens(tkns []*adminv1.MagicAuthToken) {
+	if len(tkns) == 0 {
+		p.PrintfWarn("No URLs found\n")
+		return
+	}
+
+	p.PrintData(toMagicAuthTokensTable(tkns))
+}
+
+func toMagicAuthTokensTable(tkns []*adminv1.MagicAuthToken) []*magicAuthToken {
+	res := make([]*magicAuthToken, 0, len(tkns))
+
+	for _, tkn := range tkns {
+		res = append(res, toMagicAuthTokenRow(tkn))
+	}
+
+	return res
+}
+
+func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
+	expr := metricsview.NewExpressionFromProto(t.MetricsViewFilter)
+	filter, err := metricsview.ExpressionToString(expr)
+	if err != nil {
+		panic(err)
+	}
+
+	return &magicAuthToken{
+		ID:        t.Id,
+		CreatedBy: t.CreatedByUserEmail,
+		CreatedOn: t.CreatedOn.AsTime().Format(time.DateTime),
+		ExpiresOn: t.ExpiresOn.AsTime().Format(time.DateTime),
+		UsedOn:    t.UsedOn.AsTime().Format(time.DateTime),
+		Dashboard: t.MetricsView,
+		Filter:    filter,
+	}
+}
+
+type magicAuthToken struct {
+	ID        string `header:"id" json:"id"`
+	CreatedBy string `header:"created_by" json:"created_by"`
+	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
+	ExpiresOn string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
+	UsedOn    string `header:"created_on,timestamp(ms|utc|human)" json:"used_on"`
+	Dashboard string `header:"dashboard" json:"dashboard"`
+	Filter    string `header:"filter" json:"filter"`
 }

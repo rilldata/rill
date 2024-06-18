@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/rilldata/rill/cli/cmd/project/shareurl"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
@@ -17,18 +18,19 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	projectCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
-	projectCmd.AddCommand(ShowCmd(ch))
-	projectCmd.AddCommand(StatusCmd(ch))
-	projectCmd.AddCommand(DescribeCmd(ch))
-	projectCmd.AddCommand(EditCmd(ch))
-	projectCmd.AddCommand(DeleteCmd(ch))
 	projectCmd.AddCommand(ListCmd(ch))
-	projectCmd.AddCommand(ReconcileCmd(ch))
+	projectCmd.AddCommand(ShowCmd(ch))
+	projectCmd.AddCommand(EditCmd(ch))
+	projectCmd.AddCommand(RenameCmd(ch))
+	projectCmd.AddCommand(DeleteCmd(ch))
+	projectCmd.AddCommand(shareurl.ShareURLCmd(ch))
+	projectCmd.AddCommand(StatusCmd(ch))
+	projectCmd.AddCommand(LogsCmd(ch))
+	projectCmd.AddCommand(DescribeCmd(ch))
 	projectCmd.AddCommand(RefreshCmd(ch))
+	projectCmd.AddCommand(ReconcileCmd(ch))
 	projectCmd.AddCommand(ResetCmd(ch))
 	projectCmd.AddCommand(JwtCmd(ch))
-	projectCmd.AddCommand(RenameCmd(ch))
-	projectCmd.AddCommand(LogsCmd(ch))
 
 	return projectCmd
 }

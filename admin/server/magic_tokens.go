@@ -90,8 +90,10 @@ func (s *Server) IssueMagicAuthToken(ctx context.Context, req *adminv1.IssueMagi
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
+	tokenStr := token.Token().String()
 	return &adminv1.IssueMagicAuthTokenResponse{
-		Token: token.Token().String(),
+		Token: tokenStr,
+		Url:   s.urls.magicAuthTokenOpen(req.Organization, req.Project, tokenStr),
 	}, nil
 }
 
@@ -131,7 +133,7 @@ func (s *Server) ListMagicAuthTokens(ctx context.Context, req *adminv1.ListMagic
 		createdByUserID = &id
 	}
 
-	tokens, err := s.admin.DB.FindMagicAuthTokens(ctx, proj.ID, createdByUserID, token.Val, pageSize)
+	tokens, err := s.admin.DB.FindMagicAuthTokensWithUser(ctx, proj.ID, createdByUserID, token.Val, pageSize)
 	if err != nil {
 		return nil, err
 	}
@@ -185,7 +187,7 @@ func (s *Server) RevokeMagicAuthToken(ctx context.Context, req *adminv1.RevokeMa
 	return &adminv1.RevokeMagicAuthTokenResponse{}, nil
 }
 
-func magicAuthTokensToPB(tkns []*database.MagicAuthToken) ([]*adminv1.MagicAuthToken, error) {
+func magicAuthTokensToPB(tkns []*database.MagicAuthTokenWithUser) ([]*adminv1.MagicAuthToken, error) {
 	var pbs []*adminv1.MagicAuthToken
 	for _, tkn := range tkns {
 		pb, err := magicAuthTokenToPB(tkn)
@@ -197,7 +199,7 @@ func magicAuthTokensToPB(tkns []*database.MagicAuthToken) ([]*adminv1.MagicAuthT
 	return pbs, nil
 }
 
-func magicAuthTokenToPB(tkn *database.MagicAuthToken) (*adminv1.MagicAuthToken, error) {
+func magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser) (*adminv1.MagicAuthToken, error) {
 	attrs, err := structpb.NewStruct(tkn.Attributes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert attributes to structpb: %w", err)
@@ -212,15 +214,16 @@ func magicAuthTokenToPB(tkn *database.MagicAuthToken) (*adminv1.MagicAuthToken, 
 	}
 
 	return &adminv1.MagicAuthToken{
-		Id:                tkn.ID,
-		ProjectId:         tkn.ProjectID,
-		CreatedOn:         timestamppb.New(tkn.CreatedOn),
-		ExpiresOn:         timestamppb.New(safeTime(tkn.ExpiresOn)),
-		UsedOn:            timestamppb.New(tkn.UsedOn),
-		CreatedByUserId:   safeStr(tkn.CreatedByUserID),
-		Attributes:        attrs,
-		MetricsView:       tkn.MetricsView,
-		MetricsViewFilter: metricsViewFilter,
-		MetricsViewFields: tkn.MetricsViewFields,
+		Id:                 tkn.ID,
+		ProjectId:          tkn.ProjectID,
+		CreatedOn:          timestamppb.New(tkn.CreatedOn),
+		ExpiresOn:          timestamppb.New(safeTime(tkn.ExpiresOn)),
+		UsedOn:             timestamppb.New(tkn.UsedOn),
+		CreatedByUserId:    safeStr(tkn.CreatedByUserID),
+		CreatedByUserEmail: tkn.CreatedByUserEmail,
+		Attributes:         attrs,
+		MetricsView:        tkn.MetricsView,
+		MetricsViewFilter:  metricsViewFilter,
+		MetricsViewFields:  tkn.MetricsViewFields,
 	}, nil
 }

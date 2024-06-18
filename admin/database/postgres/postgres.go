@@ -333,7 +333,7 @@ func (c *connection) FindProject(ctx context.Context, id string) (*database.Proj
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
@@ -342,7 +342,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -359,7 +359,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
@@ -384,7 +384,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -962,20 +962,38 @@ func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, rete
 	return parseErr("deployment auth token", err)
 }
 
-func (c *connection) FindMagicAuthTokens(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*database.MagicAuthToken, error) {
-	var res []*magicAuthTokenDTO
-	if createdByUserID == nil {
-		err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM magic_auth_tokens t WHERE t.project_id=$1 AND t.id>$2 ORDER BY t.id", projectID, afterID)
+func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*database.MagicAuthTokenWithUser, error) {
+	where := "t.project_id=?"
+	args := []any{projectID}
+
+	if createdByUserID != nil {
+		where += " AND t.created_by_user_id=?"
+		args = append(args, *createdByUserID)
+	}
+
+	if afterID != "" {
+		where += " AND t.id > ?"
+		args = append(args, afterID)
+	}
+
+	qry := fmt.Sprintf("SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT ?", where)
+	args = append(args, limit)
+
+	var dtos []*magicAuthTokenWithUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry, args)
+	if err != nil {
+		return nil, parseErr("magic auth tokens", err)
+	}
+
+	res := make([]*database.MagicAuthTokenWithUser, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsModel()
 		if err != nil {
-			return nil, parseErr("magic auth tokens", err)
-		}
-	} else {
-		err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT t.* FROM magic_auth_tokens t WHERE t.project_id=$1 AND t.created_by_user_id=$2 AND t.id>$3 ORDER BY t.id", projectID, *createdByUserID, afterID)
-		if err != nil {
-			return nil, parseErr("magic auth tokens", err)
+			return nil, err
 		}
 	}
-	return magicAuthTokensFromDTOs(res)
+	return res, nil
 }
 
 func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*database.MagicAuthToken, error) {
@@ -984,12 +1002,16 @@ func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*databa
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsMagicAuthToken()
+	return res.AsModel()
 }
 
 func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
 	if err := database.Validate(opts); err != nil {
 		return nil, err
+	}
+
+	if opts.MetricsViewFields == nil {
+		opts.MetricsViewFields = []string{}
 	}
 
 	res := &magicAuthTokenDTO{}
@@ -1001,7 +1023,7 @@ func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.In
 	if err != nil {
 		return nil, parseErr("magic auth token", err)
 	}
-	return res.AsMagicAuthToken()
+	return res.AsModel()
 }
 
 func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
@@ -1537,7 +1559,7 @@ type projectDTO struct {
 	Annotations   pgtype.JSON `db:"annotations"`
 }
 
-func (p *projectDTO) AsProject() (*database.Project, error) {
+func (p *projectDTO) AsModel() (*database.Project, error) {
 	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
 	if err != nil {
 		return nil, err
@@ -1555,7 +1577,7 @@ func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
 	res := make([]*database.Project, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsProject()
+		res[i], err = dto.AsModel()
 		if err != nil {
 			return nil, err
 		}
@@ -1566,11 +1588,16 @@ func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenDTO struct {
 	*database.MagicAuthToken
-	Attributes pgtype.JSON `db:"attributes"`
+	Attributes        pgtype.JSON      `db:"attributes"`
+	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
 }
 
-func (m *magicAuthTokenDTO) AsMagicAuthToken() (*database.MagicAuthToken, error) {
+func (m *magicAuthTokenDTO) AsModel() (*database.MagicAuthToken, error) {
 	err := m.Attributes.AssignTo(&m.MagicAuthToken.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
@@ -1578,16 +1605,24 @@ func (m *magicAuthTokenDTO) AsMagicAuthToken() (*database.MagicAuthToken, error)
 	return m.MagicAuthToken, nil
 }
 
-func magicAuthTokensFromDTOs(dtos []*magicAuthTokenDTO) ([]*database.MagicAuthToken, error) {
-	res := make([]*database.MagicAuthToken, len(dtos))
-	for i, dto := range dtos {
-		var err error
-		res[i], err = dto.AsMagicAuthToken()
-		if err != nil {
-			return nil, err
-		}
+// magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
+type magicAuthTokenWithUserDTO struct {
+	*database.MagicAuthTokenWithUser
+	Attributes        pgtype.JSON      `db:"attributes"`
+	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+}
+
+func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser, error) {
+	err := m.Attributes.AssignTo(&m.MagicAuthTokenWithUser.Attributes)
+	if err != nil {
+		return nil, err
 	}
-	return res, nil
+	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.MagicAuthTokenWithUser, nil
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

@@ -1,72 +1,193 @@
 package metricsview
 
-import runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+import (
+	"encoding/json"
+	"errors"
+	"fmt"
+	"reflect"
+	"strings"
+)
 
-func NewExpressionFromProto(expr *runtimev1.Expression) *Expression {
-	if expr == nil {
+func ExpressionToString(e *Expression) (string, error) {
+	b := exprStrBuilder{Builder: &strings.Builder{}}
+	err := b.writeExpression(e)
+	if err != nil {
+		return "", err
+	}
+	return b.String(), nil
+}
+
+type exprStrBuilder struct {
+	*strings.Builder
+}
+
+func (b exprStrBuilder) writeExpression(e *Expression) error {
+	if e == nil {
+		return nil
+	}
+	if e.Name != "" {
+		return b.writeName(e.Name)
+	}
+	if e.Value != nil {
+		return b.writeValue(e.Value)
+	}
+	if e.Subquery != nil {
+		return b.writeSubquery(e.Subquery)
+	}
+	if e.Condition != nil {
+		return b.writeCondition(e.Condition)
+	}
+	return errors.New("invalid expression")
+}
+
+func (b exprStrBuilder) writeName(name string) error {
+	if strings.Contains(name, `"`) {
+		_, err := strings.NewReplacer(`"`, `""`).WriteString(b.Builder, name)
+		return err
+	}
+	b.writeString(name)
+	return nil
+}
+
+func (b exprStrBuilder) writeValue(val any) error {
+	res, err := json.Marshal(val)
+	if err != nil {
+		return err
+	}
+	if len(res) > 0 && res[len(res)-1] == '\n' {
+		res = res[:len(res)-1]
+	}
+	_, err = b.WriteString(string(res))
+	return err
+}
+
+func (b exprStrBuilder) writeSubquery(_ *Subquery) error {
+	_, err := b.WriteString("<subquery>")
+	return err
+}
+
+func (b exprStrBuilder) writeCondition(cond *Condition) error {
+	switch cond.Operator {
+	case OperatorOr:
+		return b.writeJoinedExpressions(cond.Expressions, " OR ")
+	case OperatorAnd:
+		return b.writeJoinedExpressions(cond.Expressions, " AND ")
+	default:
+		if !cond.Operator.Valid() {
+			return fmt.Errorf("invalid expression operator %q", cond.Operator)
+		}
+		return b.writeBinaryCondition(cond.Expressions, cond.Operator)
+	}
+}
+
+func (b exprStrBuilder) writeJoinedExpressions(exprs []*Expression, joiner string) error {
+	if len(exprs) == 0 {
 		return nil
 	}
 
-	res := &Expression{}
-
-	switch e := expr.Expression.(type) {
-	case *runtimev1.Expression_Ident:
-		res.Name = e.Ident
-	case *runtimev1.Expression_Val:
-		res.Value = e.Val.AsInterface()
-	case *runtimev1.Expression_Cond:
-		var op Operator
-		switch e.Cond.Op {
-		case runtimev1.Operation_OPERATION_UNSPECIFIED:
-			op = OperatorUnspecified
-		case runtimev1.Operation_OPERATION_EQ:
-			op = OperatorEq
-		case runtimev1.Operation_OPERATION_NEQ:
-			op = OperatorNeq
-		case runtimev1.Operation_OPERATION_LT:
-			op = OperatorLt
-		case runtimev1.Operation_OPERATION_LTE:
-			op = OperatorLte
-		case runtimev1.Operation_OPERATION_GT:
-			op = OperatorGt
-		case runtimev1.Operation_OPERATION_GTE:
-			op = OperatorGte
-		case runtimev1.Operation_OPERATION_OR:
-			op = OperatorOr
-		case runtimev1.Operation_OPERATION_AND:
-			op = OperatorAnd
-		case runtimev1.Operation_OPERATION_IN:
-			op = OperatorIn
-		case runtimev1.Operation_OPERATION_NIN:
-			op = OperatorNin
-		case runtimev1.Operation_OPERATION_LIKE:
-			op = OperatorIlike
-		case runtimev1.Operation_OPERATION_NLIKE:
-			op = OperatorNilike
+	for i, e := range exprs {
+		if i > 0 {
+			b.writeString(joiner)
 		}
-
-		exprs := make([]*Expression, 0, len(e.Cond.Exprs))
-		for _, e := range e.Cond.Exprs {
-			exprs = append(exprs, NewExpressionFromProto(e))
-		}
-
-		res.Condition = &Condition{
-			Operator:    op,
-			Expressions: exprs,
-		}
-	case *runtimev1.Expression_Subquery:
-		measures := make([]Measure, 0, len(e.Subquery.Measures))
-		for _, m := range e.Subquery.Measures {
-			measures = append(measures, Measure{Name: m})
-		}
-
-		res.Subquery = &Subquery{
-			Dimension: Dimension{Name: e.Subquery.Dimension},
-			Measures:  measures,
-			Where:     NewExpressionFromProto(e.Subquery.Where),
-			Having:    NewExpressionFromProto(e.Subquery.Having),
+		err := b.writeWrappedExpression(e)
+		if err != nil {
+			return err
 		}
 	}
 
-	return res
+	return nil
+}
+
+func (b exprStrBuilder) writeBinaryCondition(exprs []*Expression, op Operator) error {
+	// Backwards compatibility: For IN and NIN, the right hand side may be a flattened list of values, not a single list.
+	if op == OperatorIn || op == OperatorNin {
+		if len(exprs) == 2 {
+			rhs := exprs[1]
+			isListVal := reflect.TypeOf(rhs.Value).Kind() == reflect.Slice
+			if rhs.Name == "" && !isListVal && rhs.Condition == nil && rhs.Subquery == nil {
+				// Convert the right hand side to a list
+				exprs[1] = &Expression{Value: []any{rhs.Value}}
+			}
+		}
+		if len(exprs) > 2 {
+			vals := make([]any, 0, len(exprs)-1)
+			for _, e := range exprs[1:] {
+				vals = append(vals, e.Value)
+			}
+			exprs = []*Expression{exprs[0], {Value: vals}}
+		}
+	}
+
+	if len(exprs) != 2 {
+		return fmt.Errorf("binary condition must have exactly 2 expressions")
+	}
+
+	left := exprs[0]
+	if left == nil {
+		return fmt.Errorf("left expression is nil")
+	}
+
+	right := exprs[1]
+	if right == nil {
+		return fmt.Errorf("right expression is nil")
+	}
+
+	err := b.writeWrappedExpression(left)
+	if err != nil {
+		return err
+	}
+
+	switch op {
+	case OperatorEq:
+		b.writeString("=")
+	case OperatorNeq:
+		b.writeString("!=")
+	case OperatorLt:
+		b.writeString("<")
+	case OperatorLte:
+		b.writeString("<=")
+	case OperatorGt:
+		b.writeString(">")
+	case OperatorGte:
+		b.writeString(">=")
+	case OperatorIn:
+		b.writeString(" IN ")
+	case OperatorNin:
+		b.writeString(" NOT IN ")
+	case OperatorIlike:
+		b.writeString(" ILIKE ")
+	case OperatorNilike:
+		b.writeString(" NOT ILIKE ")
+	default:
+		return fmt.Errorf("invalid binary condition operator %q", op)
+	}
+
+	err = b.writeWrappedExpression(right)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (b exprStrBuilder) writeWrappedExpression(e *Expression) error {
+	if e.Condition != nil {
+		b.writeByte('(')
+	}
+	err := b.writeExpression(e)
+	if err != nil {
+		return err
+	}
+	if e.Condition != nil {
+		b.writeByte(')')
+	}
+	return nil
+}
+
+func (b exprStrBuilder) writeByte(v byte) {
+	_ = b.WriteByte(v)
+}
+
+func (b exprStrBuilder) writeString(s string) {
+	_, _ = b.WriteString(s)
 }

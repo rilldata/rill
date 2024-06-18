@@ -14615,6 +14615,8 @@ func (m *IssueMagicAuthTokenResponse) validate(all bool) error {
 
 	// no validation rules for Token
 
+	// no validation rules for Url
+
 	if len(errors) > 0 {
 		return IssueMagicAuthTokenResponseMultiError(errors)
 	}
@@ -23559,6 +23561,8 @@ func (m *MagicAuthToken) validate(all bool) error {
 	}
 
 	// no validation rules for CreatedByUserId
+
+	// no validation rules for CreatedByUserEmail
 
 	if all {
 		switch v := interface{}(m.GetAttributes()).(type) {

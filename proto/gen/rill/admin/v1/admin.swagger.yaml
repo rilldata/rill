@@ -2807,6 +2807,8 @@ definitions:
     properties:
       token:
         type: string
+      url:
+        type: string
   v1IssueRepresentativeAuthTokenRequest:
     type: object
     properties:
@@ -2962,6 +2964,8 @@ definitions:
         type: string
         format: date-time
       createdByUserId:
+        type: string
+      createdByUserEmail:
         type: string
       attributes:
         type: object

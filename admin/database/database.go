@@ -146,7 +146,7 @@ type DB interface {
 	UpdateDeploymentAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error
 
-	FindMagicAuthTokens(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthToken, error)
+	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
 	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
@@ -527,6 +527,12 @@ type MagicAuthToken struct {
 	MetricsView           string         `db:"metrics_view"`
 	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
 	MetricsViewFields     []string       `db:"metrics_view_fields"`
+}
+
+// MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
+type MagicAuthTokenWithUser struct {
+	*MagicAuthToken
+	CreatedByUserEmail string `db:"created_by_user_email"`
 }
 
 // InsertMagicAuthTokenOptions defines options for creating a MagicAuthToken.

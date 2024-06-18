@@ -1147,6 +1147,7 @@ message IssueMagicAuthTokenRequest {
 
 message IssueMagicAuthTokenResponse {
   string token = 1;
+  string url = 2;
 }
 
 message ListMagicAuthTokensRequest {
@@ -1598,10 +1599,11 @@ message MagicAuthToken {
   google.protobuf.Timestamp expires_on = 4;
   google.protobuf.Timestamp used_on = 5;
   string created_by_user_id = 6;
-  google.protobuf.Struct attributes = 7;
-  string metrics_view = 8;
-  rill.runtime.v1.Expression metrics_view_filter = 9;
-  repeated string metrics_view_fields = 10;
+  string created_by_user_email = 7;
+  google.protobuf.Struct attributes = 8;
+  string metrics_view = 9;
+  rill.runtime.v1.Expression metrics_view_filter = 10;
+  repeated string metrics_view_fields = 11;
 }
 
 message VirtualFile {

@@ -632,6 +632,7 @@ export interface V1MagicAuthToken {
   expiresOn?: string;
   usedOn?: string;
   createdByUserId?: string;
+  createdByUserEmail?: string;
   attributes?: V1MagicAuthTokenAttributes;
   metricsView?: string;
   metricsViewFilter?: V1Expression;
@@ -716,6 +717,7 @@ export interface V1IssueRepresentativeAuthTokenRequest {
 
 export interface V1IssueMagicAuthTokenResponse {
   token?: string;
+  url?: string;
 }
 
 export type V1GithubPermission =

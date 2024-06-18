@@ -5111,6 +5111,11 @@ export class IssueMagicAuthTokenResponse extends Message<IssueMagicAuthTokenResp
    */
   token = "";
 
+  /**
+   * @generated from field: string url = 2;
+   */
+  url = "";
+
   constructor(data?: PartialMessage<IssueMagicAuthTokenResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5120,6 +5125,7 @@ export class IssueMagicAuthTokenResponse extends Message<IssueMagicAuthTokenResp
   static readonly typeName = "rill.admin.v1.IssueMagicAuthTokenResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenResponse {
@@ -8702,22 +8708,27 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
   createdByUserId = "";
 
   /**
-   * @generated from field: google.protobuf.Struct attributes = 7;
+   * @generated from field: string created_by_user_email = 7;
+   */
+  createdByUserEmail = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct attributes = 8;
    */
   attributes?: Struct;
 
   /**
-   * @generated from field: string metrics_view = 8;
+   * @generated from field: string metrics_view = 9;
    */
   metricsView = "";
 
   /**
-   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 9;
+   * @generated from field: rill.runtime.v1.Expression metrics_view_filter = 10;
    */
   metricsViewFilter?: Expression;
 
   /**
-   * @generated from field: repeated string metrics_view_fields = 10;
+   * @generated from field: repeated string metrics_view_fields = 11;
    */
   metricsViewFields: string[] = [];
 
@@ -8735,10 +8746,11 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 4, name: "expires_on", kind: "message", T: Timestamp },
     { no: 5, name: "used_on", kind: "message", T: Timestamp },
     { no: 6, name: "created_by_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "attributes", kind: "message", T: Struct },
-    { no: 8, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "metrics_view_filter", kind: "message", T: Expression },
-    { no: 10, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "created_by_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "attributes", kind: "message", T: Struct },
+    { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
+    { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {

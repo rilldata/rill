@@ -185,7 +185,7 @@ func OpenAudience(ctx context.Context, logger *zap.Logger, issuerURL, audienceUR
 	// Setup keyfunc that refreshes the JWKS in the background.
 	// It returns an error if the initial fetch fails. So we wrap it with a retry in case the admin server is not ready.
 	var jwks *keyfunc.JWKS
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 20; i++ {
 		jwks, err = keyfunc.Get(jwksURL, keyfunc.Options{
 			Ctx: ctx,
 			RefreshErrorHandler: func(err error) {

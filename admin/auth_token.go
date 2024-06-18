@@ -178,7 +178,7 @@ type IssueMagicAuthTokenOptions struct {
 
 // IssueMagicAuthToken generates and persists a new magic auth token for a project.
 func (s *Service) IssueMagicAuthToken(ctx context.Context, opts *IssueMagicAuthTokenOptions) (AuthToken, error) {
-	tkn := authtoken.NewRandom(authtoken.TypeDeployment)
+	tkn := authtoken.NewRandom(authtoken.TypeMagic)
 
 	var expiresOn *time.Time
 	if opts.TTL != nil {
