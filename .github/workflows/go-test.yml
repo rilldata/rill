@@ -22,6 +22,8 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-go-
     - name: Setup tmate session
+      env: 
+        super_secret: ${{ secrets.METRICS_CREDS }}
       uses: mxschmitt/action-tmate@v3
     - name: Go fmt
       run: test -z $(gofmt -l .)
