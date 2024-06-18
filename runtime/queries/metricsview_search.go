@@ -106,7 +106,7 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 
 	if olap.Dialect() == drivers.DialectDruid {
-		ok, err := q.executeSearchInDruid(ctx, rt, instanceID, mv.Table, resolvedSecurity)
+		ok, err := q.executeSearchInDruid(ctx, rt, olap, instanceID, mv.Table, resolvedSecurity)
 		if err != nil || ok {
 			return err
 		}
@@ -159,18 +159,12 @@ func (q *MetricsViewSearch) Export(ctx context.Context, rt *runtime.Runtime, ins
 	return nil
 }
 
-var druidDNSFixer = regexp.MustCompile(`/v2/sql(?:/avatica-protobuf)?/?`)
+var druidSQLDSN = regexp.MustCompile(`/v2/sql/?`)
 
-func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, instanceID, table string, policy *runtime.ResolvedMetricsViewSecurity) (bool, error) {
+func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, olap drivers.OLAPStore, instanceID, table string, policy *runtime.ResolvedMetricsViewSecurity) (bool, error) {
 	var query map[string]interface{}
 	if policy != nil && policy.RowFilter != "" {
-		druidolap, release, err := rt.OLAP(ctx, instanceID, "druid")
-		if err != nil {
-			return false, err
-		}
-		defer release()
-
-		rows, err := druidolap.Execute(ctx, &drivers.Statement{
+		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", table, policy.RowFilter),
 			Args:             nil,
 			DryRun:           false,
@@ -231,7 +225,7 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 		return false, fmt.Errorf("druid connector config not found in instance")
 	}
 
-	nq := druid.NewNativeQuery(druidDNSFixer.ReplaceAllString(dsn, "/v2/"))
+	nq := druid.NewNativeQuery(druidSQLDSN.ReplaceAllString(dsn, "/v2/"))
 	req := druid.NewNativeSearchQueryRequest(table, q.Search, q.Dimensions, q.TimeRange.Start.AsTime(), q.TimeRange.End.AsTime(), query)
 	var res druid.NativeSearchQueryResponse
 	err = nq.Do(ctx, req, &res, req.Context.QueryID)
