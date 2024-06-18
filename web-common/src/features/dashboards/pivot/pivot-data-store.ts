@@ -426,6 +426,23 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
               });
             }
 
+            /**
+             * If there are no axes values, return an empty table
+             */
+            if (
+              rowDimensionAxes?.data?.[anchorDimension]?.length === 0 ||
+              totalsRowResponse?.data?.data?.length === 0
+            ) {
+              return axesSet({
+                isFetching: false,
+                data: [],
+                columnDef: [],
+                assembled: true,
+                totalColumns: 0,
+                totalsRowData: displayTotalsRow ? [] : undefined,
+              });
+            }
+
             const totalsRowData = getTotalsRow(
               config,
               columnDimensionAxes?.data,
