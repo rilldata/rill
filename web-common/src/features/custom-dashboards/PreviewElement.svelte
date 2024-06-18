@@ -88,7 +88,7 @@
       >
         Go to {componentName}.yaml
       </ContextMenu.Item>
-      <ContextMenu.Item on:click={dispatch("delete", { index: i })}
+      <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
         >Delete from dashboard</ContextMenu.Item
       >
     </ContextMenu.Content>
@@ -119,7 +119,7 @@
     </ContextMenu.Trigger>
 
     <ContextMenu.Content class="z-[100]">
-      <ContextMenu.Item on:click={dispatch("delete", { index: i })}
+      <ContextMenu.Item on:click={() => dispatch("delete", { index: i })}
         >Delete from dashboard</ContextMenu.Item
       >
     </ContextMenu.Content>
