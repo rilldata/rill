@@ -6,7 +6,7 @@ import {
   createQueryServiceMetricsViewTimeRange,
   createQueryServiceMetricsViewTimeSeries,
 } from "@rilldata/web-common/runtime-client";
-import { QueryClient } from "@tanstack/svelte-query";
+import { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function useKPITotals(
@@ -39,7 +39,7 @@ export function useKPIComparisonTotal(
   comparisonRange: string | undefined,
   timeRange: string,
   queryClient: QueryClient,
-) {
+): CreateQueryResult<number | undefined> {
   const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
@@ -71,7 +71,7 @@ export function useKPIComparisonTotal(
         query: {
           queryClient,
           select: (data) => {
-            return data.data?.[0]?.[measure] ?? null;
+            return data.data?.[0]?.[measure] ?? undefined;
           },
           enabled: !!comparisonRange,
         },
@@ -111,7 +111,7 @@ export function useKPISparkline(
   measure: string,
   timeRange: string,
   queryClient: QueryClient,
-) {
+): CreateQueryResult<Array<Record<string, unknown>>> {
   const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
