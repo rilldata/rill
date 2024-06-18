@@ -252,6 +252,42 @@ func (d Dialect) EscapeTable(db, schema, table string) string {
 	return sb.String()
 }
 
+type UnnestConstruct struct {
+	UnnestClause    string
+	ColClause       string
+	UnnestColName   string
+	UnnestTableName string
+}
+
+func (d Dialect) DimensionSelectConstruct(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) *UnnestConstruct {
+	colName := d.EscapeIdentifier(dim.Name)
+	if !dim.Unnest || d == DialectDruid {
+		return &UnnestConstruct{
+			ColClause: fmt.Sprintf(`(%s) as %s`, d.MetricsViewDimensionExpression(dim), colName),
+		}
+	}
+
+	unnestColName := d.EscapeIdentifier(tempName(fmt.Sprintf("%s_%s_", "unnested", dim.Name)))
+	unnestTableName := tempName("tbl")
+	sel := fmt.Sprintf(`%s as %s`, unnestColName, colName)
+	if dim.Expression == "" {
+		// select "unnested_colName" as "colName" ... FROM "mv_table", LATERAL UNNEST("mv_table"."colName") tbl_name("unnested_colName") ...
+		return &UnnestConstruct{
+			ColClause:       sel,
+			UnnestClause:    fmt.Sprintf(`, LATERAL UNNEST(%s.%s) %s(%s)`, d.EscapeTable(db, dbSchema, table), colName, unnestTableName, unnestColName),
+			UnnestTableName: unnestTableName,
+			UnnestColName:   unnestColName,
+		}
+	}
+
+	return &UnnestConstruct{
+		ColClause:       sel,
+		UnnestClause:    fmt.Sprintf(`, LATERAL UNNEST(%s) %s(%s)`, dim.Expression, unnestTableName, unnestColName),
+		UnnestTableName: unnestTableName,
+		UnnestColName:   unnestColName,
+	}
+}
+
 func (d Dialect) DimensionSelect(db, dbSchema, table string, dim *runtimev1.MetricsViewSpec_DimensionV2) (dimSelect, unnestClause string) {
 	colName := d.EscapeIdentifier(dim.Name)
 	if !dim.Unnest || d == DialectDruid {

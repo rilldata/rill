@@ -1913,6 +1913,20 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	if len(q.Dimensions) == 0 && len(q.Measures) == 0 {
 		return "", nil, errors.New("no dimensions or measures specified")
 	}
+
+	if len(q.Measures) == 1 {
+		m := &runtimev1.MetricsViewAggregationMeasure{}
+		switch t := q.Measures[0].Compute.(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+			m.Name = t.ComparisonValue.Measure
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+			m.Name = t.ComparisonDelta.Measure
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+			m.Name = t.ComparisonRatio.Measure
+		}
+		q.Measures = append(q.Measures, m)
+	}
+
 	dimByName := make(map[string]*runtimev1.MetricsViewAggregationDimension, len(mv.Dimensions))
 	measuresByFinalName := make(map[string]*runtimev1.MetricsViewAggregationMeasure, len(q.Measures))
 	for _, d := range q.Dimensions {
@@ -1968,6 +1982,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	// these go last to decrease complexity of indexing columns
 	var finalComparisonTimeDims []string
 	mvDimsByName := make(map[string]*runtimev1.MetricsViewSpec_DimensionV2, len(mv.Dimensions))
+	unnests := make(map[string]*drivers.UnnestConstruct)
 	for _, d := range q.Dimensions {
 		// Handle regular dimensions
 		if d.TimeGrain == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
@@ -1976,7 +1991,10 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				return "", nil, err
 			}
 			mvDimsByName[d.Name] = dim
-			dimSel, unnestClause := dialect.DimensionSelect(mv.Database, mv.DatabaseSchema, mv.Table, dim)
+			unnest := dialect.DimensionSelectConstruct(mv.Database, mv.DatabaseSchema, mv.Table, dim)
+			unnests[d.Name] = unnest
+			dimSel := unnest.ColClause
+			unnestClause := unnest.UnnestClause
 			selectCols = append(selectCols, dimSel)
 			comparisonSelectCols = append(comparisonSelectCols, dimSel)
 			finalDims = append(finalDims, fmt.Sprintf("COALESCE(base.%[1]s,comparison.%[1]s) as %[1]s", safeName(dim.Name)))
@@ -2165,6 +2183,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		mv:       mv,
 		dialect:  dialect,
 		measures: q.Measures,
+		unnests:  unnests,
 	}
 	whereClause, whereClauseArgs, err := whereBuilder.buildExpression(q.Where)
 	if err != nil {

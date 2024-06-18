@@ -236,11 +236,18 @@ type ExpressionBuilder struct {
 	dialect  drivers.Dialect
 	measures []*runtimev1.MetricsViewAggregationMeasure
 	having   bool
+	unnests  map[string]*drivers.UnnestConstruct
 }
 
 func (builder *ExpressionBuilder) columnIdentifierExpression(name string) (string, bool) {
 	// check if identifier is a dimension
 	for _, dim := range builder.mv.Dimensions {
+		if dim.Unnest {
+			unnest := builder.unnests[dim.Name]
+			if unnest != nil {
+				return fmt.Sprintf("%s.%s", unnest.UnnestTableName, unnest.UnnestColName), true
+			}
+		}
 		if dim.Name == name {
 			return builder.dialect.MetricsViewDimensionExpression(dim), true
 		}
