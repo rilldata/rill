@@ -1,0 +1,38 @@
+model: ad_bids_tags
+display_name: Ad bids tags
+description:
+
+timeseries: timestamp
+smallest_time_grain: ""
+
+dimensions:
+  - label: Publisher
+    name: pub
+    column: publisher
+  - label: Domain
+    name: dom
+    column: domain
+  - label: Tags
+    name: tags
+    column: tags
+    unnest: true
+
+measures:
+  - label: "Number of bids"
+    expression: count(*)
+    description: ""
+    format_preset: ""
+  - label: "Average bid price"
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+  - name: m1 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+  - name: bid_price 
+    expression: avg(bid_price)
+    description: ""
+    format_preset: ""
+
+
