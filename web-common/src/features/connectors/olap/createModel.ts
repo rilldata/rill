@@ -77,11 +77,15 @@ export async function createModelFromTable(
   const connectorLine = `-- @connector: ${connector}`;
   const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
   const devLimit = "{{ if dev }} limit 100000 {{ end}}";
-  let modelSQL = `${topComments}\n\n`;
-  if (!isDefaultOLAPConnector) {
+
+  let modelSQL = `${topComments}\n`;
+  if (isDefaultOLAPConnector) {
+    modelSQL += `\n`;
+  } else {
     modelSQL += `${connectorLine}\n\n`;
   }
   modelSQL += `${selectStatement}\n${devLimit}`;
+
   await runtimeServicePutFile(instanceId, {
     path: newModelPath,
     blob: modelSQL,
