@@ -8,7 +8,7 @@
 </script>
 
 <MenuItems
-  class="{positioning} z-[1000] w-fit mt-1 bg-white border border-slate-100 rounded-sm shadow outline-none max-h-60 overflow-y-auto focus:outline-none"
+  class="{positioning} z-[1000] w-fit mt-1 bg-background border border-slate-100 rounded-sm shadow outline-none max-h-60 overflow-y-auto focus:outline-none"
 >
   <slot />
 </MenuItems>

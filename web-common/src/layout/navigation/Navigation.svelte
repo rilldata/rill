@@ -102,7 +102,7 @@
 
   .scroll-container {
     @apply overflow-y-auto overflow-x-hidden;
-    @apply transition-colors h-full bg-white;
+    @apply h-full bg-background;
   }
 
   .sidebar:not(.resizing) {

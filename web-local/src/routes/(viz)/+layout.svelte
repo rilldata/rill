@@ -35,7 +35,9 @@
 </script>
 
 <div class="flex flex-col size-full">
-  <header class="py-3 w-full bg-white flex gap-x-2 items-center px-4 border-b">
+  <header
+    class="py-3 w-full bg-background flex gap-x-2 items-center px-4 border-b"
+  >
     {#if $dashboardsQuery.data}
       <Breadcrumbs {pathParts} {currentPath}>
         <a href="/" slot="icon">

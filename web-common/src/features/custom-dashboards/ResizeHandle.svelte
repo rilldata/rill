@@ -64,7 +64,7 @@
   }
 
   .square {
-    @apply aspect-square bg-white border-primary-400 z-50;
+    @apply aspect-square bg-background border-primary-400 z-50;
   }
 
   .line {

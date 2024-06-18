@@ -13,7 +13,7 @@
 
 <main class="flex flex-col h-screen w-full overflow-hidden" bind:contentRect>
   {#if $$slots.header}
-    <header class="bg-white w-full h-fit">
+    <header class="bg-background w-full h-fit">
       <slot name="header" />
     </header>
   {/if}

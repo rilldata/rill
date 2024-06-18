@@ -60,7 +60,7 @@
     height: calc(var(--height) - var(--margin));
     left: 0;
     top: 0;
-    @apply bg-white;
+    @apply bg-background;
     border-radius: 50%;
     transform: translate(calc(var(--margin) / 2), calc(var(--margin) / 2));
     transition: transform var(--transition) ease;

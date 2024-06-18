@@ -3,33 +3,12 @@
 @tailwind utilities;
 
 @layer utilities {
-  .surface-bg {
-    @apply bg-gray-100 dark:bg-gray-800;
-  }
-
   .surface {
-    @apply bg-white dark:bg-gray-800;
-  }
-
-  .surface-secondary {
-    @apply bg-gray-100 dark:bg-gray-700;
-  }
-
-  .surface-impression {
-    @apply bg-gray-100 dark:bg-gray-900;
-  }
-
-  .surface-faint {
-    @apply bg-gray-50 dark:bg-transparent;
+    @apply bg-background dark:bg-gray-800;
   }
 
   .ui-copy {
-    @apply text-gray-900 dark:text-white;
-  }
-
-  .ui-copy-dashboard-header {
-    @apply ui-copy;
-    font-size: 16px;
+    @apply text-foreground;
   }
 
   .ui-copy-muted {
@@ -81,18 +60,7 @@
     @apply text-gray-600;
   }
 
-  .ui-divider {
-    @apply border-gray-300 dark:border-gray-600;
-  }
-
-  .ui-divider-faint {
-    @apply border-gray-200 dark:border-gray-600;
-  }
-
-  .ui-divider-strong {
-    @apply border-gray-400 dark:border-gray-500;
-  }
-
+ 
   .ui-measure-bar-included {
     @apply bg-primary-100 dark:bg-primary-700;
   }
@@ -137,41 +105,13 @@
     --border: 214.3 31.8% 91.4%;
     --input: 214.3 31.8% 91.4%;
 
-    /* 
-    FIXME: 
-    We need to overhaul these ShadCN vars to use the new
-    palette as the source of truth, and remove these manual
-    translations/approximations in HSL, but this is fine for
-     the initial roll out
-     */
-    
-    /* 
-    `246, 57%, 20%` approximates primary color 
-    from our new palette vs previous color:
-    `--primary: 222.2 47.4% 11.2%
-    */
     --primary: 246 57% 20%;
-    /* 
-    `227, 100%, 96%` approximates primary color 
-    from our new palette vs previous color:
-    `--primary-foreground: 210 40% 98%;`
-    */
+   
     --primary-foreground: 227 100% 96%;
   
-    /* 
-    `202, 100%, 94%` approximates secondary color 
-    from our new palette vs previous color:
-    `--secondary: 210 40% 96.1%;`
-    */
+ 
     --secondary: 202 100% 94%;
-    /* 
-    `202, 90%, 16%` approximates secondary color 
-    from our new palette vs previous color:
-    `--secondary-foreground: 222.2 47.4% 11.2%;`
-    Note that this one in particular is a poor approximation,
-    because the darkest color in the new palette is much
-    lighter than the previous --secondary-foreground color.
-    */
+
     --secondary-foreground: 202 90% 16%;
   
     --accent: 210 40% 96.1%;
@@ -183,6 +123,65 @@
     --ring: 222.2 84% 4.9%;
   
     --radius: 0.5rem;
+    color: black;
+
+    * {
+      @apply border-gray-200;
+    }
+
+    .cm-gutter {
+      background-color: white;
+    }
+  }
+
+
+
+  :root[data-theme='dark'] {
+    --ui-editor-error-foreground: hsl(0, 75%, 45%);
+    color: white;
+
+    --background: 0 0% 10%;
+    --foreground: 222.2 84% 100%;
+    --surface: hsl(0, 0%, 0%);
+  
+    --muted: 210 40% 96.1%;
+    --muted-foreground: 215.4 16.3% 46.9%;
+  
+    --popover: 0 0% 10%;
+    --popover-foreground: 222.2 84% 100%;
+  
+    --card: 0 0% 100%;
+    --card-foreground: 222.2 84% 4.9%;
+  
+    /* --border: 214.3 31.8% 91.4%; */
+    --input: 214.3 31.8% 91.4%;
+
+    --primary: 246 57% 20%;
+   
+    --primary-foreground: 227 100% 96%;
+  
+ 
+    --secondary: 202 100% 94%;
+
+    --secondary-foreground: 202 90% 10%;
+  
+    --accent: 210 0% 20%;
+    --accent-foreground: 222.2 47.4% 11.2%;
+  
+    --destructive: 0 72.2% 50.6%;
+    --destructive-foreground: 210 40% 98%;
+  
+    --ring: 222.2 84% 4.9%;
+  
+    --radius: 0.5rem;
+   
+
+    * {
+      border-color: rgb(36, 36, 36)
+    }
+    .cm-gutter {
+      background-color: black;
+    }
   }
 
   h1,
@@ -202,10 +201,12 @@ button {
   @apply ui-copy;
 }
 
+
+
 body {
-  background-color: white;
   font-family: "Inter";
   font-size: 12px;
+  @apply bg-background;
 
   /* Use this for a few keyboard characters in tooltips, etc. */
   --system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica,

@@ -100,6 +100,9 @@ export default {
           DEFAULT: "hsl(var(--card) / <alpha-value>)",
           foreground: "hsl(var(--card-foreground) / <alpha-value>)",
         },
+        surface: {
+          DEFAULT: "var(--surface)",
+        },
       },
       borderRadius: {
         lg: "var(--radius)",

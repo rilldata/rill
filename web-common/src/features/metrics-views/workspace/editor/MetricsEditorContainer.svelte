@@ -14,7 +14,7 @@ It will show an error message if passed in.
 
 <div class="flex flex-col w-full h-full">
   <div
-    class="size-full overflow-auto border border-white bg-white"
+    class="size-full overflow-auto border border-white bg-background"
     class:!border-red-500={error}
     class:border-b-0={error}
   >

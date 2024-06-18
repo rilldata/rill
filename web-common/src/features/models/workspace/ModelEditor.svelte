@@ -344,7 +344,7 @@
         </Button>
       {/if}
     </div>
-    <div class="flex gap-x-1 items-center h-full bg-white rounded-full">
+    <div class="flex gap-x-1 items-center h-full bg-background rounded-full">
       <Switch
         bind:checked={autoSave}
         id="auto-save"
@@ -365,10 +365,10 @@
 
   footer {
     @apply justify-between items-center flex flex-none;
-    @apply h-10 p-2 w-full rounded-b-sm border-t bg-white;
+    @apply h-10 p-2 w-full rounded-b-sm border-t bg-background;
   }
 
   section {
-    @apply size-full flex-col rounded-sm bg-white flex overflow-hidden relative;
+    @apply size-full flex-col rounded-sm bg-background flex overflow-hidden relative;
   }
 </style>

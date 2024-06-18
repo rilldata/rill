@@ -245,7 +245,7 @@
 
       {#if selectedView === "split" || selectedView === "viz"}
         <div
-          class="flex gap-x-1 flex-none items-center h-full bg-white rounded-full"
+          class="flex gap-x-1 flex-none items-center h-full bg-background rounded-full"
         >
           <Switch small id="grid" bind:checked={showGrid} />
           <Label for="grid" class="font-normal text-xs">Grid</Label>
@@ -291,7 +291,7 @@
           <section
             style:height="{chartEditorPercentage * 100}%"
             class:!h-12={!showChartEditor}
-            class="size-full flex flex-col flex-none bg-white flex-shrink-0 relative border-t !min-h-12"
+            class="size-full flex flex-col flex-none bg-background flex-shrink-0 relative border-t !min-h-12"
           >
             <Resizer
               direction="NS"

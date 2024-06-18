@@ -136,7 +136,7 @@
         overflow-y-auto
         {dark
     ? 'bg-gray-800 dark:bg-gray-700 border-none dark:border-none shadow'
-    : 'bg-white dark:bg-gray-700 border-[.5px] border-gray-300 dark:border-none shadow-lg dark:shadow-xl'}
+    : 'bg-background dark:bg-gray-700 border-[.5px] border-gray-300 dark:border-none shadow-lg dark:shadow-xl'}
         "
   style:outline="none"
   aria-label={label}

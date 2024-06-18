@@ -42,7 +42,7 @@
 <svelte:window on:keydown={handleModSave} />
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">
-  <div class="grow flex bg-white overflow-y-auto rounded">
+  <div class="grow flex bg-background overflow-y-auto rounded">
     <Editor
       extensions={FileExtensionToEditorExtension[".yaml"]}
       remoteContent={blob}

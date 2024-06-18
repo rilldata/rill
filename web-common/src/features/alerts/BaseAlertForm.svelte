@@ -83,7 +83,7 @@
 
 <!-- 802px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
 <form
-  class="transform bg-white rounded-md flex flex-col w-[802px]"
+  class="transform bg-background rounded-md flex flex-col w-[802px]"
   id={formId}
   on:submit|preventDefault={handleSubmit}
 >
@@ -92,7 +92,7 @@
   >
     <div>{dialogTitle}</div>
     <Button type="link" noStroke compact on:click={handleCancel}>
-      <X strokeWidth={3} size={16} class="text-black" />
+      <X strokeWidth={3} size={16} />
     </Button>
   </DialogTitle>
   <DialogTabs.Root value={tabs[currentTabIndex]}>

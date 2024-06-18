@@ -64,7 +64,7 @@
   .connector-entry-header {
     @apply flex gap-x-1 items-center;
     @apply w-full p-1;
-    @apply sticky top-0 z-10 bg-white;
+    @apply sticky top-0 z-10 bg-background;
   }
 
   button:hover {

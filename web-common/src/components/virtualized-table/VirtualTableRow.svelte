@@ -80,7 +80,7 @@
 
 <style lang="postcss">
   td {
-    @apply truncate p-0 bg-white;
+    @apply truncate p-0 bg-background;
     height: var(--row-height);
   }
 
@@ -133,6 +133,6 @@
   }
 
   .selected {
-    @apply text-black font-bold;
+    @apply font-bold;
   }
 </style>

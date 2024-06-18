@@ -35,7 +35,7 @@
   .inspector-wrapper {
     will-change: width;
     @apply h-full flex-none relative;
-    @apply border-l border-gray-200 bg-white;
+    @apply border-l  bg-background;
     @apply overflow-y-auto overflow-x-hidden;
   }
 

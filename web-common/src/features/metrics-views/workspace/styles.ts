@@ -14,14 +14,14 @@ export const CONFIG_TOP_LEVEL_LABEL_CLASSES =
 
 /** active classes are used in selector items, where active-ness is determined with JS, not web APIs */
 const activeSelectorClasses =
-  "shadow-md outline-none ring-1 ring-gray-300 bg-white hover:bg-white";
+  "shadow-md outline-none ring-1 ring-gray-300 bg-background hover:bg-background";
 const focusSelectorClasses =
-  "focus:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-300 focus:bg-white focus:hover:bg-white";
+  "focus:shadow-md focus:outline-none focus:ring-1 focus:ring-gray-300 focus:bg-background focus:hover:bg-background";
 export const CONFIG_SELECTOR = {
   base: "overflow-hidden px-2 py-2 rounded border focus:outline-none focus:shadow-md",
   active: activeSelectorClasses,
   focus: focusSelectorClasses,
-  info: "bg-white border-gray-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900",
+  info: "bg-background border-gray-200 hover:border-gray-300 hover:bg-gray-200 hover:text-gray-900",
   // FIXME: we should probably redo how we're handling these styles.
   error:
     "bg-red-100 border-red-500 text-red-800 hover:bg-red-200 hover:border-red-600",
