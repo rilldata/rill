@@ -22861,7 +22861,7 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for OpenProjectSubpath
 
-	// no validation rules for DashboardActivePage
+	// no validation rules for WebShowPage
 
 	if len(errors) > 0 {
 		return ReportOptionsMultiError(errors)
@@ -22977,7 +22977,7 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for RenotifyAfterSeconds
 
-	// no validation rules for DashboardMeasureFilterIndices
+	// no validation rules for MetricsViewMeasureFilterIndices
 
 	if len(errors) > 0 {
 		return AlertOptionsMultiError(errors)

@@ -2349,9 +2349,9 @@ definitions:
         type: array
         items:
           type: string
-      dashboardMeasureFilterIndices:
+      metricsViewMeasureFilterIndices:
         type: string
-        title: this is used to separate criteria configured in alert vs ones present in dashboard already
+        title: this is used to separate criteria configured in alert vs ones present in the dashboard already
   v1Bookmark:
     type: object
     properties:
@@ -3040,7 +3040,7 @@ definitions:
         type: array
         items:
           type: string
-      dashboardActivePage:
+      webShowPage:
         type: string
         title: query request could be similar across pages so we use this to identify the exact page
   v1RevokeCurrentAuthTokenResponse:

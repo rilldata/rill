@@ -452,7 +452,7 @@ func (s *Server) yamlForManagedReport(opts *adminv1.ReportOptions, ownerUserID s
 	res.Annotations.AdminManaged = true
 	res.Annotations.AdminNonce = time.Now().Format(time.RFC3339Nano)
 	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
-	res.Annotations.DashboardActivePage = opts.DashboardActivePage
+	res.Annotations.WebShowPage = opts.WebShowPage
 	return yaml.Marshal(res)
 }
 
@@ -495,7 +495,7 @@ func (s *Server) yamlForCommittedReport(opts *adminv1.ReportOptions) ([]byte, er
 	res.Notify.Slack.Users = opts.SlackUsers
 	res.Notify.Slack.Webhooks = opts.SlackWebhooks
 	res.Annotations.WebOpenProjectSubpath = opts.OpenProjectSubpath
-	res.Annotations.DashboardActivePage = opts.DashboardActivePage
+	res.Annotations.WebShowPage = opts.WebShowPage
 	return yaml.Marshal(res)
 }
 
@@ -610,7 +610,7 @@ type reportAnnotations struct {
 	AdminManaged          bool   `yaml:"admin_managed"`
 	AdminNonce            string `yaml:"admin_nonce"` // To ensure spec version gets updated on writes, to enable polling in TriggerReconcileAndAwaitReport
 	WebOpenProjectSubpath string `yaml:"web_open_project_subpath"`
-	DashboardActivePage   string `yaml:"dashboard_active_page"`
+	WebShowPage           string `yaml:"web_show_page"`
 }
 
 func parseReportAnnotations(annotations map[string]string) reportAnnotations {

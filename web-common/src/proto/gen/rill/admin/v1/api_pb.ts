@@ -8486,9 +8486,9 @@ export class ReportOptions extends Message<ReportOptions> {
   /**
    * query request could be similar across pages so we use this to identify the exact page
    *
-   * @generated from field: string dashboard_active_page = 14;
+   * @generated from field: string web_show_page = 14;
    */
-  dashboardActivePage = "";
+  webShowPage = "";
 
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
@@ -8511,7 +8511,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 14, name: "dashboard_active_page", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "web_show_page", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {
@@ -8591,11 +8591,11 @@ export class AlertOptions extends Message<AlertOptions> {
   slackWebhooks: string[] = [];
 
   /**
-   * this is used to separate criteria configured in alert vs ones present in dashboard already
+   * this is used to separate criteria configured in alert vs ones present in the dashboard already
    *
-   * @generated from field: string dashboard_measure_filter_indices = 12;
+   * @generated from field: string metrics_view_measure_filter_indices = 12;
    */
-  dashboardMeasureFilterIndices = "";
+  metricsViewMeasureFilterIndices = "";
 
   constructor(data?: PartialMessage<AlertOptions>) {
     super();
@@ -8616,7 +8616,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 12, name: "dashboard_measure_filter_indices", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 12, name: "metrics_view_measure_filter_indices", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {
