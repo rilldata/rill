@@ -185,7 +185,6 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-			Version:         opts.ProdVersion,
 			Branch:          opts.ProdBranch,
 			Variables:       opts.ProdVariables,
 			Annotations:     annotations,
