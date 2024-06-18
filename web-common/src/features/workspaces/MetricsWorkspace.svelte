@@ -84,8 +84,6 @@
   }
 </script>
 
-<svelte:window on:focus={() => fileArtifact.fetchContent(true)} />
-
 <WorkspaceContainer inspector={isModelingSupported}>
   <WorkspaceHeader
     slot="header"

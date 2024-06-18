@@ -18,6 +18,7 @@
   export let forceLocalUpdates = false;
   export let forceDisableAutoSave = false;
   export let showSaveBar = true;
+  export let refetchOnWindowFocus = true;
   export let onSave: (content: string) => void = () => {};
   export let onRevert: () => void = () => {};
 
@@ -49,9 +50,13 @@
     revert(); // Revert fileArtifact to remote content
     onRevert(); // Call revert callback
   }
+
+  async function handleRefocus() {
+    if (refetchOnWindowFocus) await fileArtifact.fetchContent(true);
+  }
 </script>
 
-<svelte:window on:keydown={handleKeydown} />
+<svelte:window on:keydown={handleKeydown} on:focus={handleRefocus} />
 
 <section>
   <div class="editor-container">
