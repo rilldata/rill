@@ -32,6 +32,7 @@
   export let fileArtifact: FileArtifact;
 
   let customDashboardName: string;
+  let selectedChartFileArtifact: FileArtifact | undefined;
   let selectedView = "split";
   let showGrid = true;
   let showChartEditor = false;
@@ -66,17 +67,27 @@
     hasUnsavedChanges,
   } = fileArtifact);
 
-  $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
-    ResourceKind.Component,
-    selectedChartName ?? "",
-  );
-  $: selectedChartFilePath = selectedChartFileArtifact?.path;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
 
   $: spec = structuredClone($resourceQuery.data?.dashboard?.spec ?? spec);
 
   $: ({ items = [], columns = 20, gap = 4 } = spec);
-
+  $: if (
+    items.filter(
+      (item) =>
+        !item.definedInDashboard && item.component === selectedChartName,
+    ).length
+  ) {
+    selectedChartFileArtifact = fileArtifacts.findFileArtifact(
+      ResourceKind.Component,
+      selectedChartName ?? "",
+    );
+  } else {
+    selectedChartName = null;
+    selectedChartFileArtifact = undefined;
+    showChartEditor = false;
+  }
+  $: selectedChartFilePath = selectedChartFileArtifact?.path;
   $: editorWidth = editorPercentage * containerWidth;
   $: chartEditorHeight = chartEditorPercentage * containerHeight;
 
@@ -138,6 +149,15 @@
     updateLocalContent(parsedDocument.toString(), true);
 
     if ($autoSave) await updateChartFile();
+  }
+
+  async function handleDeleteEvent(
+    e: CustomEvent<{
+      index: number;
+    }>,
+  ) {
+    if (!e.detail.index) return;
+    await deleteChart(e.detail.index);
   }
 
   async function deleteChart(index: number) {
@@ -285,6 +305,7 @@
         bind:selectedChartName
         bind:selectedIndex
         on:update={handlePreviewUpdate}
+        on:delete={handleDeleteEvent}
       />
     {/if}
   </div>

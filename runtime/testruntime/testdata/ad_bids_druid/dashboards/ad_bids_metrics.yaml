@@ -19,6 +19,10 @@ dimensions:
   - label: Space Label
     name: space_label
     expression: "publisher"
+  - label: id 
+    name: id
+    expression: "id"
+
 
 measures:
   - label: "Number of bids"

@@ -15,7 +15,7 @@
   export let value: string;
   export let id = "";
   export let label = "";
-  export let error: string | null = null;
+  export let errors: string | string[] | null | undefined = null;
   export let placeholder = "";
   export let hint = "";
   export let claimFocusOnMount = false;
@@ -95,10 +95,18 @@
     {/if}
   </div>
 
-  {#if error && (alwaysShowError || (!focus && value))}
-    <div in:slide={{ duration: 200 }} class="error">
-      {error}
-    </div>
+  {#if errors && (alwaysShowError || (!focus && value))}
+    {#if typeof errors === "string"}
+      <div in:slide={{ duration: 200 }} class="error">
+        {errors}
+      </div>
+    {:else}
+      {#each errors as error (error)}
+        <div in:slide={{ duration: 200 }} class="error">
+          {error}
+        </div>
+      {/each}
+    {/if}
   {/if}
 </div>
 

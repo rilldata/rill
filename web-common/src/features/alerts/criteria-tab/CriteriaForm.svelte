@@ -95,7 +95,6 @@
   <Input
     alwaysShowError
     bind:value
-    error=""
     id="value"
     onInput={valueUpdater}
     placeholder={"0"}

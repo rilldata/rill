@@ -20,7 +20,7 @@
   <FormSection title="Alert name">
     <Input
       alwaysShowError
-      error={$errors["name"]}
+      errors={$errors["name"]}
       id="name"
       onChange={handleChange}
       placeholder="My alert"
