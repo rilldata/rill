@@ -21,6 +21,8 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
+    - name: Setup tmate session
+      uses: mxschmitt/action-tmate@v3
     - name: Go fmt
       run: test -z $(gofmt -l .)
     - name: Go test
