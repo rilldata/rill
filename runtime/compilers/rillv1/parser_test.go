@@ -1452,6 +1452,14 @@ data:
     metrics_view: bar
 vega_lite: |%s
 `, vegaLiteSpec),
+		`components/c3.yaml`: `
+type: component
+data:
+  metrics_sql: SELECT 1
+line_chart:
+  x: time
+  y: total_sales
+`,
 		`dashboards/d1.yaml`: `
 type: dashboard
 columns: 4
@@ -1487,6 +1495,16 @@ items:
 				ResolverProperties: must(structpb.NewStruct(map[string]any{"api": "MetricsViewAggregation", "args": map[string]any{"metrics_view": "bar"}})),
 				Renderer:           "vega_lite",
 				RendererProperties: must(structpb.NewStruct(map[string]any{"spec": vegaLiteSpec})),
+			},
+		},
+		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
+			Paths: []string{"/components/c3.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+				Renderer:           "line_chart",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"x": "time", "y": "total_sales"})),
 			},
 		},
 		{
