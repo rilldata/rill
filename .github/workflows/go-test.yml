@@ -21,12 +21,10 @@ jobs:
         key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
         restore-keys: |
           ${{ runner.os }}-go-
-    - name: Setup tmate session
-      env: 
-        super_secret: ${{ secrets.METRICS_CREDS }}
-      uses: mxschmitt/action-tmate@v3
     - name: Go fmt
       run: test -z $(gofmt -l .)
     - name: Go test
+      env: 
+        METRICS_CREDS: ${{ secrets.METRICS_CREDS }}
       run: go test -short -v ./...
 
