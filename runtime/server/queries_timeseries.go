@@ -29,9 +29,11 @@ func (s *Server) ColumnRollupInterval(ctx context.Context, req *runtimev1.Column
 	}
 
 	q := &queries.RollupInterval{
-		Connector:  req.Connector,
-		TableName:  req.TableName,
-		ColumnName: req.ColumnName,
+		Connector:      req.Connector,
+		Database:       req.Database,
+		DatabaseSchema: req.DatabaseSchema,
+		TableName:      req.TableName,
+		ColumnName:     req.ColumnName,
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
