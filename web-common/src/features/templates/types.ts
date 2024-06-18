@@ -1,7 +1,3 @@
-interface TemplateSpecProperties {
-  name: string;
-}
-
 interface DataProperties {
   metric_view: string;
 }
@@ -13,31 +9,33 @@ interface ChartProperties {
   yLabel?: string;
 }
 
-interface LineChart extends ChartProperties {
-  name: "line";
+interface LineChart {
+  line_chart: ChartProperties;
 }
 
 interface BarChart extends ChartProperties {
-  name: "bar";
+  bar_chart: ChartProperties;
 }
 
-export interface KPITemplateT extends DataProperties {
-  name: "kpi";
+interface KPIProperties extends DataProperties {
   measure: string;
   time_range: string;
   comparison_range?: string;
 }
+export interface KPITemplateT {
+  kpi: KPIProperties;
+}
 
-export interface TableTemplateT extends DataProperties {
-  name: "table";
+interface TableProperties extends DataProperties {
   time_range: string;
   measures: string[];
   row_dimensions: string[];
   col_dimensions: string[];
 }
+export interface TableTemplateT {
+  table: TableProperties;
+}
 
 type ChartTemplates = LineChart | BarChart;
 
-type TemplateRenderes = ChartTemplates | KPITemplateT | TableTemplateT;
-
-export type TemplateSpec = TemplateSpecProperties & TemplateRenderes;
+export type TemplateSpec = ChartTemplates | KPITemplateT | TableTemplateT;

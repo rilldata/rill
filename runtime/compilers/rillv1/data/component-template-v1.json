@@ -1,56 +1,170 @@
 {
+  "$ref": "#/definitions/TemplateSpec",
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "type": "object",
-  "anyOf": [
-      {
-          "type": "object",
-          "required": [
-              "line_chart"
-          ],
+  "definitions": {
+    "KPITemplateT": {
+      "additionalProperties": false,
+      "properties": {
+        "kpi": {
+          "additionalProperties": false,
           "properties": {
-              "line_chart": {
-                  "type": "object",
-                  "required": [
-                      "x",
-                      "y"
-                  ],
-                  "properties": {
-                      "x": {
-                          "type": "string"
-                      },
-                      "y": {
-                          "type": "string"
-                      }
-                  },
-                  "additionalProperties": false
-              }
+            "comparison_range": {
+              "type": "string"
+            },
+            "measure": {
+              "type": "string"
+            },
+            "metric_view": {
+              "type": "string"
+            },
+            "time_range": {
+              "type": "string"
+            }
           },
-          "additionalProperties": false
+          "required": [
+            "measure",
+            "metric_view",
+            "time_range"
+          ],
+          "type": "object"
+        }
       },
-      {
-          "type": "object",
-          "required": [
-              "bar_chart"
-          ],
+      "required": [
+        "kpi"
+      ],
+      "type": "object"
+    },
+    "TableTemplateT": {
+      "additionalProperties": false,
+      "properties": {
+        "table": {
+          "additionalProperties": false,
           "properties": {
-              "bar_chart": {
-                  "type": "object",
-                  "required": [
-                      "x",
-                      "y"
-                  ],
-                  "properties": {
-                      "x": {
-                          "type": "string"
-                      },
-                      "y": {
-                          "type": "string"
-                      }
-                  },
-                  "additionalProperties": false
-              }
+            "col_dimensions": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "measures": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "metric_view": {
+              "type": "string"
+            },
+            "row_dimensions": {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            "time_range": {
+              "type": "string"
+            }
           },
-          "additionalProperties": false
-      }
-  ]
+          "required": [
+            "col_dimensions",
+            "measures",
+            "metric_view",
+            "row_dimensions",
+            "time_range"
+          ],
+          "type": "object"
+        }
+      },
+      "required": [
+        "table"
+      ],
+      "type": "object"
+    },
+    "TemplateSpec": {
+      "anyOf": [
+        {
+          "additionalProperties": false,
+          "properties": {
+            "line_chart": {
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xLabel": {
+                  "type": "string"
+                },
+                "y": {
+                  "type": "string"
+                },
+                "yLabel": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "type": "object"
+            }
+          },
+          "required": [
+            "line_chart"
+          ],
+          "type": "object"
+        },
+        {
+          "additionalProperties": false,
+          "properties": {
+            "bar_chart": {
+              "additionalProperties": false,
+              "properties": {
+                "x": {
+                  "type": "string"
+                },
+                "xLabel": {
+                  "type": "string"
+                },
+                "y": {
+                  "type": "string"
+                },
+                "yLabel": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "x",
+                "y"
+              ],
+              "type": "object"
+            },
+            "x": {
+              "type": "string"
+            },
+            "xLabel": {
+              "type": "string"
+            },
+            "y": {
+              "type": "string"
+            },
+            "yLabel": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "bar_chart",
+            "x",
+            "y"
+          ],
+          "type": "object"
+        },
+        {
+          "$ref": "#/definitions/KPITemplateT"
+        },
+        {
+          "$ref": "#/definitions/TableTemplateT"
+        }
+      ]
+    }
+  }
 }
