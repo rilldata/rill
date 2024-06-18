@@ -1550,6 +1550,8 @@ message ReportOptions {
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
   repeated string slack_webhooks = 12;
+  // query request could be similar across pages so we use this to identify the exact page
+  string dashboard_active_page = 14;
 }
 
 message AlertOptions {
@@ -1564,4 +1566,6 @@ message AlertOptions {
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;
+  // this is used to separate criteria configured in alert vs ones present in dashboard already
+  string dashboard_measure_filter_indices = 12;
 }

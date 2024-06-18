@@ -452,6 +452,7 @@ export interface V1ReportOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  dashboardActivePage?: string;
 }
 
 export interface V1RemoveWhitelistedDomainResponse {
@@ -912,6 +913,7 @@ export interface V1AlertOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  dashboardMeasureFilterIndices?: string;
 }
 
 export interface V1AddProjectMemberResponse {
