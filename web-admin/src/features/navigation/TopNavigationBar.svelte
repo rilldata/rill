@@ -39,14 +39,7 @@
   $: onProjectPage = isProjectPage($page);
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
 
-  $: organizationQuery = listOrgs(
-    { pageSize: 100 },
-    {
-      query: {
-        enabled: !!$user.data?.user,
-      },
-    },
-  );
+  $: organizationQuery = listOrgs({ pageSize: 100 });
 
   $: projectsQuery = listProjects(organization, undefined, {
     query: {
