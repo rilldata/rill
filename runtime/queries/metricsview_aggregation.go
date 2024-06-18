@@ -2427,7 +2427,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			strings.Join(joinConditions, " AND "),                                    // 17
 			finalTimeDimsClause,                                                      // 18
 		)
-		fmt.Println(sql)
 	} else {
 		if !comparisonSort || len(q.Dimensions) == 0 { // no dimensions means a single row (totals) - no sorting is required
 			// SELECT d1, d2, d3 ... GROUP BY 1, 2, 3 ...

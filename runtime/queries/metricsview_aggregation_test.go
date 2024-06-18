@@ -2423,11 +2423,12 @@ func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 }
 
 func TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
 
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -2467,7 +2468,7 @@ func TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -2561,10 +2562,11 @@ func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -2635,7 +2637,7 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -2769,10 +2771,11 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivat
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_measure_filter_no_duplicates(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -2837,7 +2840,7 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_no_duplicates(t
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -3064,10 +3067,11 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_limit(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(3)
 	q := &queries.MetricsViewAggregation{
@@ -3138,7 +3142,7 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_limit(t *t
 		Limit:  &limit,
 		Offset: 1,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -3505,11 +3509,12 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_having(t *testin
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_tags_with_filter(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
 
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -3565,7 +3570,7 @@ func TestMetricsViewsAggregation_Druid_comparison_tags_with_filter(t *testing.T)
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -3594,11 +3599,12 @@ func TestMetricsViewsAggregation_Druid_comparison_tags_with_filter(t *testing.T)
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_tags_with_time(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
 
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -3658,7 +3664,7 @@ func TestMetricsViewsAggregation_Druid_comparison_tags_with_time(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -4121,10 +4127,11 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 //
 // metrics-in cluster requires proper authentication credentials in the DSN.
 func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -4190,7 +4197,7 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -4218,10 +4225,11 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.
 }
 
 func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -4287,7 +4295,7 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *te
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -4316,10 +4324,11 @@ func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *te
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_empty_set_previous_sorted(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -4371,7 +4380,7 @@ func TestMetricsViewsAggregation_Druid_comparison_empty_set_previous_sorted(t *t
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -4394,10 +4403,11 @@ func TestMetricsViewsAggregation_Druid_comparison_empty_set_previous_sorted(t *t
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_empty_set(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -4449,7 +4459,7 @@ func TestMetricsViewsAggregation_Druid_comparison_empty_set(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -4472,10 +4482,11 @@ func TestMetricsViewsAggregation_Druid_comparison_empty_set(t *testing.T) {
 }
 
 func TestMetricsViewsAggregation_Druid_comparison(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -4549,7 +4560,7 @@ func TestMetricsViewsAggregation_Druid_comparison(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -4575,10 +4586,11 @@ func TestMetricsViewsAggregation_Druid_comparison(t *testing.T) {
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -4666,7 +4678,7 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -4693,10 +4705,11 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(10)
 	q := &queries.MetricsViewAggregation{
@@ -4783,7 +4796,7 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
 		},
 		Limit: &limit,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
@@ -4816,10 +4829,11 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	limit := int64(2)
 	q := &queries.MetricsViewAggregation{
@@ -4861,7 +4875,7 @@ func TestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
 		Limit:  &limit,
 		Offset: 1,
 	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
