@@ -2,6 +2,7 @@ package clickhouse
 
 import (
 	"context"
+	dbsql "database/sql"
 	"errors"
 	"fmt"
 	"strings"
@@ -286,47 +287,41 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 	}
 	if strategy == drivers.IncrementalStrategyAppend {
 		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("INSERT INTO %s %s\n", safeSQLName(name), sql),
+			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
 			Priority:    1,
 			LongRunning: true,
 		})
 	}
 
 	if strategy == drivers.IncrementalStrategyMerge {
-		// Create a temporary table with the new data
-		tmp := uuid.New().String()
-		err := c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("CREATE TEMPORARY TABLE %s AS (%s\n)", safeSQLName(tmp), sql),
-			Priority:    1,
-			LongRunning: true,
-		})
-		if err != nil {
-			return err
-		}
-
-		// Drop the rows from the target table where the unique key is present in the temporary table
-		where := ""
-		for i, key := range uniqueKey {
-			key = safeSQLName(key)
-			if i != 0 {
-				where += " AND "
+		return c.WithConnection(ctx, 1, true, false, func(ctx context.Context, ensuredCtx context.Context, _ *dbsql.Conn) error {
+			// create temporary table
+			tmp := uuid.New().String()
+			err := c.Exec(ctx, &drivers.Statement{
+				Query: fmt.Sprintf("CREATE TABLE %s ENGINE=MergeTree ORDER BY tuple() AS %s", safeSQLName(tmp), sql),
+			})
+			if err != nil {
+				return err
 			}
-			where += fmt.Sprintf("base.%s = tmp.%s", key, key)
-		}
-		err = c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("DELETE FROM %s base WHERE EXISTS (SELECT 1 FROM %s tmp WHERE %s)", safeSQLName(name), safeSQLName(tmp), where),
-			Priority:    1,
-			LongRunning: true,
-		})
-		if err != nil {
-			return err
-		}
+			defer func() {
+				_ = c.Exec(ctx, &drivers.Statement{
+					Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(tmp)),
+				})
+			}()
 
-		// Insert the new data into the target table
-		return c.Exec(ctx, &drivers.Statement{
-			Query:       fmt.Sprintf("INSERT INTO %s SELECT * FROM %s", safeSQLName(name), safeSQLName(tmp)),
-			Priority:    1,
-			LongRunning: true,
+			// Drop the rows from the target table where the unique key is present in the temporary table
+			cols := strings.Join(uniqueKey, ",")
+			err = c.Exec(ctx, &drivers.Statement{
+				Query: fmt.Sprintf("DELETE FROM %s WHERE (%s) IN (SELECT %s FROM %s)", safeSQLName(name), cols, cols, safeSQLName(tmp)),
+			})
+			if err != nil {
+				return err
+			}
+
+			// Insert the new data into the target table
+			return c.Exec(ctx, &drivers.Statement{
+				Query: fmt.Sprintf("INSERT INTO %s SELECT * FROM %s", safeSQLName(name), safeSQLName(tmp)),
+			})
 		})
 	}
 
