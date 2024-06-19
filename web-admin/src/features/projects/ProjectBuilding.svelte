@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -11,14 +10,6 @@
 
   export let organization: string;
   export let project: string;
-
-  function handleViewProjectStatus() {
-    goto(`/${organization}/${project}/-/status`);
-  }
-
-  function handleViewProject() {
-    goto(`/${organization}/${project}`);
-  }
 </script>
 
 <CtaLayoutContainer>
@@ -31,12 +22,14 @@
     >
     <ProjectAccessControls {organization} {project}>
       <svelte:fragment slot="manage-project">
-        <CtaButton variant="primary-outline" on:click={handleViewProjectStatus}
+        <CtaButton
+          variant="secondary"
+          href={`/${organization}/${project}/-/status`}
           >View project status
         </CtaButton>
       </svelte:fragment>
       <svelte:fragment slot="read-project">
-        <CtaButton variant="primary-outline" on:click={handleViewProject}
+        <CtaButton variant="secondary" href={`/${organization}/${project}`}
           >View project
         </CtaButton>
       </svelte:fragment>

@@ -15,6 +15,7 @@
   import GithubRepoInline from "../../../../../features/projects/GithubRepoInline.svelte";
 
   const remote = new URLSearchParams(window.location.search).get("remote");
+
   const user = createAdminServiceGetCurrentUser({
     query: {
       onSuccess: (data) => {
@@ -24,11 +25,6 @@
       },
     },
   });
-  function handleGoToGithub() {
-    window.location.href = encodeURI(
-      ADMIN_URL + "/github/connect?remote=" + remote,
-    );
-  }
 </script>
 
 <svelte:head>
@@ -50,7 +46,10 @@
         <KeyboardKey label="Control" /> + <KeyboardKey label="C" /> in the CLI to
         cancel the connect request.)
       </CtaMessage>
-      <CtaButton variant="primary" on:click={handleGoToGithub}>
+      <CtaButton
+        variant="primary"
+        href={encodeURI(ADMIN_URL + "/github/connect?remote=" + remote)}
+      >
         Connect to Github
       </CtaButton>
     </CtaContentContainer>

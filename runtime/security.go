@@ -7,12 +7,13 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/hashicorp/golang-lru/simplelru"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 var ErrForbidden = errors.New("action not allowed")
@@ -32,18 +33,20 @@ func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
 }
 
 var openAccess = &ResolvedMetricsViewSecurity{
-	Access:    true,
-	RowFilter: "",
-	Include:   nil,
-	Exclude:   nil,
+	Access:      true,
+	RowFilter:   "",
+	QueryFilter: nil,
+	Include:     nil,
+	Exclude:     nil,
 }
 
 type ResolvedMetricsViewSecurity struct {
-	Access     bool
-	RowFilter  string
-	Include    []string
-	Exclude    []string
-	ExcludeAll bool
+	Access      bool
+	RowFilter   string
+	QueryFilter *runtimev1.Expression
+	Include     []string
+	Exclude     []string
+	ExcludeAll  bool
 }
 
 func (r *ResolvedMetricsViewSecurity) CanAccessField(field string) bool {
@@ -80,17 +83,17 @@ func (r *ResolvedMetricsViewSecurity) CanAccessField(field string) bool {
 	return true
 }
 
-func computeCacheKey(instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time, attributes map[string]any) (string, error) {
+func computeCacheKey(instanceID string, r *runtimev1.Resource, attributes map[string]any, policies ...*runtimev1.MetricsViewSpec_SecurityV2) (string, error) {
 	hash := md5.New()
 	_, err := hash.Write([]byte(instanceID))
 	if err != nil {
 		return "", err
 	}
-	_, err = hash.Write([]byte(mv.Table))
+	_, err = hash.Write([]byte(r.Meta.Name.Name))
 	if err != nil {
 		return "", err
 	}
-	_, err = hash.Write([]byte(lastUpdatedOn.String()))
+	_, err = hash.Write([]byte(r.Meta.StateUpdatedOn.AsTime().String()))
 	if err != nil {
 		return "", err
 	}
@@ -115,11 +118,32 @@ func computeCacheKey(instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdat
 			}
 		}
 	}
+	for _, p := range policies {
+		if p == nil {
+			continue
+		}
+		res, err := protojson.Marshal(p)
+		if err != nil {
+			return "", err
+		}
+		_, err = hash.Write(res)
+		if err != nil {
+			return "", err
+		}
+	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
-func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time, attributes map[string]any) (*ResolvedMetricsViewSecurity, error) {
-	if mv.Security == nil {
+func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment string, attributes map[string]any, mv *runtimev1.Resource, policies ...*runtimev1.MetricsViewSpec_SecurityV2) (*ResolvedMetricsViewSecurity, error) {
+	// Exit early if all policies are nil
+	var validPolicy bool
+	for _, policy := range policies {
+		if policy != nil {
+			validPolicy = true
+			break
+		}
+	}
+	if !validPolicy {
 		return nil, nil
 	}
 
@@ -129,7 +153,7 @@ func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment stri
 		return openAccess, nil
 	}
 
-	cacheKey, err := computeCacheKey(instanceID, mv, lastUpdatedOn, attributes)
+	cacheKey, err := computeCacheKey(instanceID, mv, attributes, policies...)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute cache key: %w", err)
 	}
@@ -142,78 +166,172 @@ func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment stri
 		return cached.(*ResolvedMetricsViewSecurity), nil
 	}
 
-	resolved := &ResolvedMetricsViewSecurity{}
+	resolved := &ResolvedMetricsViewSecurity{Access: true}
 	templateData := rillv1.TemplateData{
 		Environment: environment,
 		User:        attributes,
+		Self:        rillv1.TemplateResource{Meta: mv.Meta},
 	}
 
-	if mv.Security.Access != "" {
-		access, err := rillv1.ResolveTemplate(mv.Security.Access, templateData)
-		if err != nil {
-			return nil, err
+	for _, policy := range policies {
+		if policy == nil {
+			continue
 		}
-		resolved.Access, err = rillv1.EvaluateBoolExpression(access)
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	if mv.Security.RowFilter != "" {
-		filter, err := rillv1.ResolveTemplate(mv.Security.RowFilter, templateData)
-		if err != nil {
-			return nil, err
-		}
-		resolved.RowFilter = filter
-	}
+		if policy.Access != "" {
+			accessExpr, err := rillv1.ResolveTemplate(policy.Access, templateData)
+			if err != nil {
+				return nil, err
+			}
+			access, err := rillv1.EvaluateBoolExpression(accessExpr)
+			if err != nil {
+				return nil, err
+			}
 
-	seen := map[string]bool{}
+			resolved.Access = resolved.Access && access
+		} else {
+			resolved.Access = false
+		}
 
-	for _, inc := range mv.Security.Include {
-		cond, err := rillv1.ResolveTemplate(inc.Condition, templateData)
-		if err != nil {
-			return nil, err
-		}
-		incCond, err := rillv1.EvaluateBoolExpression(cond)
-		if err != nil {
-			return nil, err
-		}
-		if incCond {
-			for _, name := range inc.Names {
-				if seen[name] {
-					continue
-				}
-				seen[name] = true
-				resolved.Include = append(resolved.Include, name)
+		if policy.RowFilter != "" {
+			filter, err := rillv1.ResolveTemplate(policy.RowFilter, templateData)
+			if err != nil {
+				return nil, err
+			}
+
+			if resolved.RowFilter == "" {
+				resolved.RowFilter = filter
+			} else {
+				resolved.RowFilter = fmt.Sprintf("(%s) AND (%s)", resolved.RowFilter, filter)
 			}
 		}
-	}
 
-	// this is to handle the case where include filter was present but none of them evaluted to true
-	if len(mv.Security.Include) > 0 && len(resolved.Include) == 0 {
-		resolved.ExcludeAll = true
-	}
-
-	for _, exc := range mv.Security.Exclude {
-		cond, err := rillv1.ResolveTemplate(exc.Condition, templateData)
-		if err != nil {
-			return nil, err
-		}
-		excCond, err := rillv1.EvaluateBoolExpression(cond)
-		if err != nil {
-			return nil, err
-		}
-		if excCond {
-			for _, name := range exc.Names {
-				if seen[name] {
-					continue
-				}
-				seen[name] = true
-				resolved.Exclude = append(resolved.Exclude, name)
+		if policy.QueryFilter != nil {
+			if resolved.QueryFilter == nil {
+				resolved.QueryFilter = policy.QueryFilter
+			} else {
+				resolved.QueryFilter = expressionpb.And([]*runtimev1.Expression{resolved.QueryFilter, policy.QueryFilter})
 			}
 		}
+
+		var include, exclude []string
+		var excludeAll bool
+		seen := map[string]bool{}
+
+		for _, inc := range policy.Include {
+			cond, err := rillv1.ResolveTemplate(inc.Condition, templateData)
+			if err != nil {
+				return nil, err
+			}
+			incCond, err := rillv1.EvaluateBoolExpression(cond)
+			if err != nil {
+				return nil, err
+			}
+			if incCond {
+				for _, name := range inc.Names {
+					if seen[name] {
+						continue
+					}
+					seen[name] = true
+					include = append(include, name)
+				}
+			}
+		}
+
+		// this is to handle the case where include filter was present but none of them evaluted to true
+		if len(policy.Include) > 0 && len(include) == 0 {
+			excludeAll = true
+		}
+
+		for _, exc := range policy.Exclude {
+			cond, err := rillv1.ResolveTemplate(exc.Condition, templateData)
+			if err != nil {
+				return nil, err
+			}
+			excCond, err := rillv1.EvaluateBoolExpression(cond)
+			if err != nil {
+				return nil, err
+			}
+			if excCond {
+				for _, name := range exc.Names {
+					if seen[name] {
+						continue
+					}
+					seen[name] = true
+					exclude = append(exclude, name)
+				}
+			}
+		}
+
+		// Merge into resolved
+		mergeIncludeExcludes(resolved, include, exclude, excludeAll)
 	}
 
 	p.cache.Add(cacheKey, resolved)
 	return resolved, nil
+}
+
+func mergeIncludeExcludes(resolved *ResolvedMetricsViewSecurity, include, exclude []string, excludeAll bool) {
+	if resolved.ExcludeAll {
+		return
+	}
+
+	if excludeAll {
+		resolved.Include = nil
+		resolved.Exclude = nil
+		resolved.ExcludeAll = true
+		return
+	}
+
+	if len(resolved.Include) == 0 && len(resolved.Exclude) == 0 {
+		resolved.Include = include
+		resolved.Exclude = exclude
+		return
+	}
+
+	if len(resolved.Include) == 0 && len(include) == 0 {
+		resolved.Exclude = append(resolved.Exclude, exclude...)
+		return
+	}
+
+	// Build a new include list that is the intersection of resolved.Include and include, minus any fields in exclude.
+	var newInclude []string
+	for _, f := range include {
+		// Check it's also in resolved.Include
+		found := false
+		for _, f2 := range resolved.Include {
+			if f == f2 {
+				found = true
+				break
+			}
+		}
+		if !found {
+			continue
+		}
+
+		// Check it's not in resolved.Exclude
+		found = false
+		for _, f2 := range resolved.Exclude {
+			if f == f2 {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
+		// Can add to newInclude
+		newInclude = append(newInclude, f)
+	}
+
+	// If newInclude is empty, exclude all fields
+	if len(newInclude) == 0 {
+		resolved.Include = nil
+		resolved.Exclude = nil
+		resolved.ExcludeAll = true
+	} else {
+		resolved.Include = newInclude
+		resolved.Exclude = nil
+	}
 }

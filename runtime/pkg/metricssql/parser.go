@@ -35,6 +35,7 @@ type Compiler struct {
 	controller     *runtime.Controller
 	instanceID     string
 	userAttributes map[string]any
+	securityPolicy *runtimev1.MetricsViewSpec_SecurityV2 // Optional additional security policy to apply
 	priority       int
 }
 
@@ -78,6 +79,7 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 		controller:     c.controller,
 		instanceID:     c.instanceID,
 		userAttributes: c.userAttributes,
+		securityPolicy: c.securityPolicy,
 		priority:       c.priority,
 	}
 	compiledSQL, err := t.transformSelectStmt(ctx, stmt)
@@ -92,6 +94,7 @@ type transformer struct {
 	controller     *runtime.Controller
 	instanceID     string
 	userAttributes map[string]any
+	securityPolicy *runtimev1.MetricsViewSpec_SecurityV2
 
 	metricsView *runtimev1.MetricsViewV2
 	refs        []*runtimev1.ResourceName
@@ -704,7 +707,7 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 	defer release()
 	dialect := olap.Dialect()
 
-	security, err := t.controller.Runtime.ResolveMetricsViewSecurity(t.userAttributes, t.instanceID, spec, mv.Meta.StateUpdatedOn.AsTime())
+	security, err := t.controller.Runtime.ResolveMetricsViewSecurity(t.instanceID, t.userAttributes, mv, spec.Security, t.securityPolicy)
 	if err != nil {
 		return "", err
 	}

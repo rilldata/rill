@@ -3,7 +3,13 @@ package duckdbsql
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
+
+// EscapeStringValue escapes a string value for use in an expression passed to EvaluateBool.
+func EscapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
+}
 
 // EvaluateBool uses DuckDB to evaluate the given expression as a boolean value.
 func EvaluateBool(expr string) (bool, error) {

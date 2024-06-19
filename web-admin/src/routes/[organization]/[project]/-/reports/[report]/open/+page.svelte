@@ -48,9 +48,8 @@
         </CtaMessage>
       </div>
       <CtaButton
-        on:click={() =>
-          goto(`/${organization}/${project}/-/reports/${reportId}`)}
-        variant="primary-outline"
+        href={`/${organization}/${project}/-/reports/${reportId}`}
+        variant="secondary"
       >
         Go to report page
       </CtaButton>
