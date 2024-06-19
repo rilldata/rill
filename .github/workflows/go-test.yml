@@ -23,10 +23,6 @@ jobs:
           ${{ runner.os }}-go-
     - name: Go fmt
       run: test -z $(gofmt -l .)
-    - name: Setup tmate session
-      uses: mxschmitt/action-tmate@v3
-      env:
-        METRICS_CREDS: ${{ secrets.METRICS_CREDS }}
     - name: Go test
       env: 
         METRICS_CREDS: ${{ secrets.METRICS_CREDS }}
