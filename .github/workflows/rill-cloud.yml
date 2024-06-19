@@ -44,6 +44,8 @@ jobs:
             git fetch --all --tags;
           fi
 
+          # Embed DuckDB extensions in the Rill binary
+          go run scripts/embed_duckdb_ext/main.go
           if [ ${RELEASE} == "true" ]; then
             go build -o rill -mod=readonly -ldflags="-s -w -X main.Version=$(git describe --tags `git rev-list --tags --max-count=1`) -X main.Commit=${GITHUB_SHA} -X main.BuildDate=$(date +%FT%T)" cli/main.go
           else
