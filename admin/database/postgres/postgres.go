@@ -388,7 +388,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 }
 
 func (c *connection) UpdateProjectsNextUsageReportingTime(ctx context.Context, ids []string, nextUsageReportingTime time.Time) error {
-	idsArray := &pgtype.TextArray{}
+	idsArray := &pgtype.UUIDArray{}
 	if err := idsArray.Set(ids); err != nil {
 		return err
 	}

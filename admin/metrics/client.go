@@ -204,7 +204,7 @@ func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, s
 		/*  sql api -
 		  SELECT
 			'<event>' AS metric_name,
-			MAX(value) AS usage
+			MAX(value) AS amount
 		  FROM rill-metrics
 		  WHERE
 			project_id ='{{ .args.project_id }}' AND time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}'
@@ -242,14 +242,14 @@ func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, s
 		}
 
 		// Decode the JSON response into UsageMetric struct
-		var usageMetric Usage
+		var usageMetric []Usage
 		err = json.NewDecoder(resp.Body).Decode(&usageMetric)
 		if err != nil {
 			return nil, err
 		}
 		resp.Body.Close()
 
-		usage = append(usage, usageMetric)
+		usage = append(usage, usageMetric...)
 	}
 	return usage, nil
 }
