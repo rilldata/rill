@@ -77,6 +77,7 @@ export function getTDDAggregationRequest(
 
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
   const dimensionName = dashboardState.selectedComparisonDimension as string;
+  const timeDimension = metricsView.timeDimension ?? "";
 
   return {
     instanceId: get(runtime).instanceId,
@@ -92,7 +93,16 @@ export function getTDDAggregationRequest(
     measures,
     timeRange,
     ...(comparisonTimeRange ? { comparisonTimeRange } : {}),
+    pivotOn: [timeDimension],
     sort: [
+      {
+        name: timeDimension,
+        desc: true,
+      },
+      {
+        name: dimensionName,
+        desc: dashboardState.sortDirection === SortDirection.DESCENDING,
+      },
       {
         name: sortMeasureName,
         desc: dashboardState.sortDirection === SortDirection.DESCENDING,

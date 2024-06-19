@@ -105,6 +105,14 @@ export function prepareSortedQueryBody(
   };
 }
 
+/**
+ * Gets the list of measures for a request by adding comparison based ones if enabled.
+ * Also updates the sort measure name based on sort type.
+ *
+ * @param sortMeasureName
+ * @param sortType
+ * @param hasComparisonTimeRange
+ */
 export function getMeasureNames(
   sortMeasureName: string,
   sortType: DashboardState_LeaderboardSortType,
