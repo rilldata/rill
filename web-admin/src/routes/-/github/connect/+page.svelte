@@ -24,10 +24,6 @@
       },
     },
   });
-
-  function handleGoToGithub() {
-    window.location.href = redirectURL;
-  }
 </script>
 
 <svelte:head>
@@ -50,9 +46,9 @@
         </CtaMessage>
       {/if}
       <div class="mt-4 w-full">
-        <CtaButton variant="primary" on:click={handleGoToGithub}
-          >Connect to Github</CtaButton
-        >
+        <CtaButton variant="primary" href={redirectURL}>
+          Connect to Github
+        </CtaButton>
       </div>
     </CtaContentContainer>
   </CtaLayoutContainer>

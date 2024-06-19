@@ -364,6 +364,13 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
 		return time.Minute * 2
 	}
+	switch fullMethodName {
+	case
+		"/rill.admin.v1.AdminService/CreateProject",
+		"/rill.admin.v1.AdminService/UpdateProject",
+		"/rill.admin.v1.AdminService/TriggerRedeploy":
+		return time.Minute * 5
+	}
 	return time.Minute
 }
 

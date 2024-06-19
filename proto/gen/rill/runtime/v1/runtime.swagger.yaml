@@ -1434,6 +1434,58 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/search:
+    post:
+      summary: MetricsViewSearch Get the data types of measures and dimensions
+      operationId: QueryService_MetricsViewSearch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewSearchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: string
+              search:
+                type: string
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Optional
+              where:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              having:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              limit:
+                type: integer
+                format: int32
+                title: Optional
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
     post:
       summary: MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
@@ -2611,6 +2663,12 @@ definitions:
         type: array
         items:
           type: string
+  MetricsViewSearchResponseSearchResult:
+    type: object
+    properties:
+      dimension:
+        type: string
+      value: {}
   MetricsViewSpecAvailableComparisonOffset:
     type: object
     properties:
@@ -4383,6 +4441,14 @@ definitions:
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+  v1MetricsViewSearchResponse:
+    type: object
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSearchResponseSearchResult'
   v1MetricsViewSort:
     type: object
     properties:
