@@ -4,6 +4,7 @@ import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_c
 import {
   DeployRequest,
   DeployValidationRequest,
+  GetCurrentUserRequest,
   GetMetadataRequest,
   GetVersionRequest,
   PushToGithubRequest,
@@ -35,7 +36,7 @@ function getClient() {
 }
 
 export function localServiceGetMetadata() {
-  return getClient().deployValidation(new GetMetadataRequest());
+  return getClient().getMetadata(new GetMetadataRequest());
 }
 export const getLocalServiceGetMetadataQueryKey = () => [
   `/v1/local/get-metadata`,
@@ -48,7 +49,7 @@ export function createLocalServiceGetMetadata() {
 }
 
 export function localServiceGetVersion() {
-  return getClient().deployValidation(new GetVersionRequest());
+  return getClient().getVersion(new GetVersionRequest());
 }
 export const getLocalServiceGetVersionQueryKey = () => [
   `/v1/local/get-version`,
@@ -108,4 +109,17 @@ export function createLocalServiceDeploy() {
     { org: string; projectName: string },
     unknown
   >(({ org, projectName }) => localServiceDeploy(org, projectName));
+}
+
+export function localServiceGetCurrentUser() {
+  return getClient().getCurrentUser(new GetCurrentUserRequest());
+}
+export const getLocalServiceGetCurrentUserQueryKey = () => [
+  `/v1/local/get-user`,
+];
+export function createLocalServiceGetCurrentUser() {
+  return createQuery({
+    queryKey: getLocalServiceGetCurrentUserQueryKey(),
+    queryFn: localServiceGetCurrentUser,
+  });
 }

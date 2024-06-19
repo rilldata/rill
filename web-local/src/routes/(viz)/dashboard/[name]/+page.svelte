@@ -7,7 +7,6 @@
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
-  import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -28,9 +27,6 @@
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
-
-  $: validation = createLocalServiceDeployValidation();
-  $: console.log($validation.data);
 </script>
 
 <svelte:head>
