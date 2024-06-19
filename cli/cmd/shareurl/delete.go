@@ -24,7 +24,6 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintfSuccess("Deleted shareable URL\n")
 			return nil
 		},
 	}

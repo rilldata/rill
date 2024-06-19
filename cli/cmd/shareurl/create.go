@@ -60,7 +60,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printf("Created %s\n", res.Url)
+			ch.Printf("%s\n", res.Url)
 			return nil
 		},
 	}
