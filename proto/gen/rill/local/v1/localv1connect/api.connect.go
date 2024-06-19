@@ -48,6 +48,9 @@ const (
 	LocalServicePushToGithubProcedure = "/rill.local.v1.LocalService/PushToGithub"
 	// LocalServiceDeployProcedure is the fully-qualified name of the LocalService's Deploy RPC.
 	LocalServiceDeployProcedure = "/rill.local.v1.LocalService/Deploy"
+	// LocalServiceGetCurrentUserProcedure is the fully-qualified name of the LocalService's
+	// GetCurrentUser RPC.
+	LocalServiceGetCurrentUserProcedure = "/rill.local.v1.LocalService/GetCurrentUser"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -59,6 +62,7 @@ var (
 	localServiceDeployValidationMethodDescriptor = localServiceServiceDescriptor.Methods().ByName("DeployValidation")
 	localServicePushToGithubMethodDescriptor     = localServiceServiceDescriptor.Methods().ByName("PushToGithub")
 	localServiceDeployMethodDescriptor           = localServiceServiceDescriptor.Methods().ByName("Deploy")
+	localServiceGetCurrentUserMethodDescriptor   = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -75,6 +79,8 @@ type LocalServiceClient interface {
 	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
 	// Deploy deploys the local project to the Rill cloud.
 	Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error)
+	// User returns the locally logged in user
+	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -123,6 +129,12 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceDeployMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		getCurrentUser: connect.NewClient[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse](
+			httpClient,
+			baseURL+LocalServiceGetCurrentUserProcedure,
+			connect.WithSchema(localServiceGetCurrentUserMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -134,6 +146,7 @@ type localServiceClient struct {
 	deployValidation *connect.Client[v1.DeployValidationRequest, v1.DeployValidationResponse]
 	pushToGithub     *connect.Client[v1.PushToGithubRequest, v1.PushToGithubResponse]
 	deploy           *connect.Client[v1.DeployRequest, v1.DeployResponse]
+	getCurrentUser   *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -166,6 +179,11 @@ func (c *localServiceClient) Deploy(ctx context.Context, req *connect.Request[v1
 	return c.deploy.CallUnary(ctx, req)
 }
 
+// GetCurrentUser calls rill.local.v1.LocalService.GetCurrentUser.
+func (c *localServiceClient) GetCurrentUser(ctx context.Context, req *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error) {
+	return c.getCurrentUser.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -180,6 +198,8 @@ type LocalServiceHandler interface {
 	PushToGithub(context.Context, *connect.Request[v1.PushToGithubRequest]) (*connect.Response[v1.PushToGithubResponse], error)
 	// Deploy deploys the local project to the Rill cloud.
 	Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error)
+	// User returns the locally logged in user
+	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -224,6 +244,12 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceDeployMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceGetCurrentUserHandler := connect.NewUnaryHandler(
+		LocalServiceGetCurrentUserProcedure,
+		svc.GetCurrentUser,
+		connect.WithSchema(localServiceGetCurrentUserMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -238,6 +264,8 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServicePushToGithubHandler.ServeHTTP(w, r)
 		case LocalServiceDeployProcedure:
 			localServiceDeployHandler.ServeHTTP(w, r)
+		case LocalServiceGetCurrentUserProcedure:
+			localServiceGetCurrentUserHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -269,4 +297,8 @@ func (UnimplementedLocalServiceHandler) PushToGithub(context.Context, *connect.R
 
 func (UnimplementedLocalServiceHandler) Deploy(context.Context, *connect.Request[v1.DeployRequest]) (*connect.Response[v1.DeployResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.Deploy is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetCurrentUser is not implemented"))
 }

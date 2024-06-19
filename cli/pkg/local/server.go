@@ -513,6 +513,32 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 	}), nil
 }
 
+func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.GetCurrentUserRequest]) (*connect.Response[localv1.GetCurrentUserResponse], error) {
+	if !s.app.ch.IsAuthenticated() {
+		return connect.NewResponse(&localv1.GetCurrentUserResponse{
+			Authenticated: false,
+		}), nil
+	}
+
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+
+	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.GetCurrentUserResponse{
+		Authenticated: true,
+		Id:            userResp.User.Id,
+		Email:         userResp.User.Email,
+		DisplayName:   userResp.User.DisplayName,
+		PhotoUrl:      userResp.User.PhotoUrl,
+	}), nil
+}
+
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
 func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 	scheme := "http"

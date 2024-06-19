@@ -25,6 +25,7 @@ const (
 	LocalService_DeployValidation_FullMethodName = "/rill.local.v1.LocalService/DeployValidation"
 	LocalService_PushToGithub_FullMethodName     = "/rill.local.v1.LocalService/PushToGithub"
 	LocalService_Deploy_FullMethodName           = "/rill.local.v1.LocalService/Deploy"
+	LocalService_GetCurrentUser_FullMethodName   = "/rill.local.v1.LocalService/GetCurrentUser"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -43,6 +44,8 @@ type LocalServiceClient interface {
 	PushToGithub(ctx context.Context, in *PushToGithubRequest, opts ...grpc.CallOption) (*PushToGithubResponse, error)
 	// Deploy deploys the local project to the Rill cloud.
 	Deploy(ctx context.Context, in *DeployRequest, opts ...grpc.CallOption) (*DeployResponse, error)
+	// User returns the locally logged in user
+	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 }
 
 type localServiceClient struct {
@@ -113,6 +116,16 @@ func (c *localServiceClient) Deploy(ctx context.Context, in *DeployRequest, opts
 	return out, nil
 }
 
+func (c *localServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCurrentUserResponse)
+	err := c.cc.Invoke(ctx, LocalService_GetCurrentUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalServiceServer is the server API for LocalService service.
 // All implementations must embed UnimplementedLocalServiceServer
 // for forward compatibility
@@ -129,6 +142,8 @@ type LocalServiceServer interface {
 	PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error)
 	// Deploy deploys the local project to the Rill cloud.
 	Deploy(context.Context, *DeployRequest) (*DeployResponse, error)
+	// User returns the locally logged in user
+	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -153,6 +168,9 @@ func (UnimplementedLocalServiceServer) PushToGithub(context.Context, *PushToGith
 }
 func (UnimplementedLocalServiceServer) Deploy(context.Context, *DeployRequest) (*DeployResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Deploy not implemented")
+}
+func (UnimplementedLocalServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 
@@ -275,6 +293,24 @@ func _LocalService_Deploy_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GetCurrentUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GetCurrentUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalService_ServiceDesc is the grpc.ServiceDesc for LocalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -305,6 +341,10 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Deploy",
 			Handler:    _LocalService_Deploy_Handler,
+		},
+		{
+			MethodName: "GetCurrentUser",
+			Handler:    _LocalService_GetCurrentUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

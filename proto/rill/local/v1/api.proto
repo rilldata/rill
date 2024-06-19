@@ -22,6 +22,9 @@ service LocalService {
 
   // Deploy deploys the local project to the Rill cloud.
   rpc Deploy(DeployRequest) returns (DeployResponse) {}
+
+  // User returns the locally logged in user
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {}
 }
 
 message PingRequest {}
@@ -94,4 +97,14 @@ message DeployResponse {
   string org = 2;
   string project = 3;
   string frontend_url = 4;
+}
+
+message GetCurrentUserRequest {}
+
+message GetCurrentUserResponse {
+  bool authenticated = 1;
+  string id = 2;
+  string email = 3;
+  string display_name = 4;
+  string photo_url = 5;
 }

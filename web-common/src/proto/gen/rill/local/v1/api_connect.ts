@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployRequest, DeployResponse, DeployValidationRequest, DeployValidationResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse } from "./api_pb.js";
+import { DeployRequest, DeployResponse, DeployValidationRequest, DeployValidationResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -76,6 +76,17 @@ export const LocalService = {
       name: "Deploy",
       I: DeployRequest,
       O: DeployResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * User returns the locally logged in user
+     *
+     * @generated from rpc rill.local.v1.LocalService.GetCurrentUser
+     */
+    getCurrentUser: {
+      name: "GetCurrentUser",
+      I: GetCurrentUserRequest,
+      O: GetCurrentUserResponse,
       kind: MethodKind.Unary,
     },
   }
