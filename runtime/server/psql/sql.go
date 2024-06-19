@@ -188,7 +188,7 @@ func colsForMetricView(ctrl *runtime.Controller, opts *PSQLQueryOpts, mv *runtim
 		return nil, fmt.Errorf("metrics view %q is not ready for querying, reconcile status: %q", mv.Meta.GetName(), mv.Meta.ReconcileStatus)
 	}
 
-	security, err := ctrl.Runtime.ResolveMetricsViewSecurity(opts.UserAttributes, opts.InstanceID, spec, mv.Meta.StateUpdatedOn.AsTime())
+	security, err := ctrl.Runtime.ResolveMetricsViewSecurity(opts.InstanceID, opts.UserAttributes, mv, nil)
 	if err != nil {
 		return nil, err
 	}

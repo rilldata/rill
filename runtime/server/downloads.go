@@ -1,14 +1,10 @@
 package server
 
 import (
-	"bytes"
-	"compress/gzip"
 	"context"
-	"encoding/base64"
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"reflect"
 	"time"
@@ -16,50 +12,13 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/gziputil"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
 )
-
-func BakeQuery(qry *runtimev1.Query) (string, error) {
-	if qry == nil {
-		return "", errors.New("cannot bake nil query")
-	}
-
-	data, err := proto.Marshal(qry)
-	if err != nil {
-		return "", err
-	}
-
-	data, err = gzipCompress(data)
-	if err != nil {
-		return "", err
-	}
-
-	return base64.URLEncoding.EncodeToString(data), nil
-}
-
-func UnbakeQuery(bakedQry string) (*runtimev1.Query, error) {
-	data, err := base64.URLEncoding.DecodeString(bakedQry)
-	if err != nil {
-		return nil, err
-	}
-
-	uncompressed, err := gzipDecompress(data)
-	if err != nil {
-		// NOTE (2023-11-29): Backwards compatibility for when we didn't gzip baked queries. We can remove this in a few months.
-		uncompressed = data
-	}
-
-	qry := &runtimev1.Query{}
-	if err := proto.Unmarshal(uncompressed, qry); err != nil {
-		return nil, err
-	}
-
-	return qry, nil
-}
 
 func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*runtimev1.ExportResponse, error) {
 	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadMetrics) {
@@ -78,7 +37,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 	}
 
 	if req.BakedQuery != "" {
-		qry, err := UnbakeQuery(req.BakedQuery)
+		qry, err := queries.UnbakeQuery(req.BakedQuery)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to parse baked query: %s", err.Error())
 		}
@@ -364,7 +323,7 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 		return "", err
 	}
 
-	r, err = gzipCompress(r)
+	r, err = gziputil.GZipCompress(r)
 	if err != nil {
 		return "", err
 	}
@@ -410,7 +369,7 @@ func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, ma
 		}
 	}
 
-	r, err := gzipDecompress(tkn.Request)
+	r, err := gziputil.GZipDecompress(tkn.Request)
 	if err != nil {
 		return nil, nil, nil, err
 	}
@@ -422,30 +381,4 @@ func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, ma
 	}
 
 	return req, tkn.Attributes, sec, nil
-}
-
-// gzipCompress compress the input bytes using gzip.
-func gzipCompress(v []byte) ([]byte, error) {
-	var b bytes.Buffer
-	w := gzip.NewWriter(&b)
-	_, err := w.Write(v)
-	if err != nil {
-		_ = w.Close()
-		return nil, err
-	}
-	err = w.Close()
-	if err != nil {
-		return nil, err
-	}
-	return b.Bytes(), nil
-}
-
-// gzipDecompress decompresses the input bytes using gzip.
-func gzipDecompress(v []byte) ([]byte, error) {
-	r, err := gzip.NewReader(bytes.NewReader(v))
-	if err != nil {
-		return nil, err
-	}
-	defer r.Close()
-	return io.ReadAll(r)
 }

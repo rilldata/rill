@@ -15,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
-	"github.com/rilldata/rill/runtime/server"
 	"go.opentelemetry.io/otel/attribute"
 	"go.uber.org/zap"
 	"golang.org/x/exp/slices"
@@ -400,7 +399,7 @@ func (r *ReportReconciler) sendReport(ctx context.Context, self *runtimev1.Resou
 		return false, fmt.Errorf("failed to build export request: %w", err)
 	}
 
-	bakedQry, err := server.BakeQuery(qry)
+	bakedQry, err := queries.BakeQuery(qry)
 	if err != nil {
 		return false, fmt.Errorf("failed to bake query of type %T: %w", qry, err)
 	}
