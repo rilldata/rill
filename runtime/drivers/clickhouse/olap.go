@@ -46,8 +46,8 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 	defer func() { _ = release() }()
 
 	// Call fn with connection embedded in context
-	wrappedCtx := contextWithConn(ctx, conn)
-	ensuredCtx := contextWithConn(context.Background(), conn)
+	wrappedCtx := c.sessionAwareContext(contextWithConn(ctx, conn))
+	ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn))
 	return fn(wrappedCtx, ensuredCtx, conn.Conn)
 }
 
