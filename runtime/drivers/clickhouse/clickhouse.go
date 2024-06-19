@@ -166,6 +166,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		if conf.SSL {
 			opts.Protocol = clickhouse.HTTP
 			opts.TLS = &tls.Config{
+				MinVersion:         tls.VersionTLS12,
 				InsecureSkipVerify: false,
 			}
 		} else {
