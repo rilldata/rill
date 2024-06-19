@@ -126,6 +126,26 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/magic-tokens/{tokenId}:
+    delete:
+      summary: RevokeMagicAuthToken revokes a magic auth token.
+      operationId: AdminService_RevokeMagicAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RevokeMagicAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: tokenId
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -1080,6 +1100,87 @@ paths:
           required: true
           schema:
             type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/tokens/magic:
+    get:
+      summary: ListMagicAuthTokens lists all the magic auth tokens for a specific project.
+      operationId: AdminService_ListMagicAuthTokens
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListMagicAuthTokensResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
+      operationId: AdminService_IssueMagicAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1IssueMagicAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          description: Organization that owns the project.
+          in: path
+          required: true
+          type: string
+        - name: project
+          description: Project to create the magic auth token in.
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              ttlMinutes:
+                type: string
+                format: int64
+                description: TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
+              metricsView:
+                type: string
+                description: Metrics view the token will provide access to.
+              metricsViewFilter:
+                $ref: '#/definitions/v1Expression'
+                description: Optional filter to apply to all queries to the metrics view.
+              metricsViewFields:
+                type: array
+                items:
+                  type: string
+                description: |-
+                  Optional list of names of dimensions and measures to limit access to.
+                  If empty, all dimensions and measures are accessible.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/users/search:
@@ -2399,6 +2500,16 @@ definitions:
         type: string
       data:
         type: string
+  v1Condition:
+    type: object
+    properties:
+      op:
+        $ref: '#/definitions/v1Operation'
+      exprs:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Expression'
   v1CreateAlertResponse:
     type: object
     properties:
@@ -2519,6 +2630,16 @@ definitions:
       - EXPORT_FORMAT_XLSX
       - EXPORT_FORMAT_PARQUET
     default: EXPORT_FORMAT_UNSPECIFIED
+  v1Expression:
+    type: object
+    properties:
+      ident:
+        type: string
+      val: {}
+      cond:
+        $ref: '#/definitions/v1Condition'
+      subquery:
+        $ref: '#/definitions/v1Subquery'
   v1GenerateAlertYAMLResponse:
     type: object
     properties:
@@ -2681,6 +2802,13 @@ definitions:
       - GITHUB_PERMISSION_READ
       - GITHUB_PERMISSION_WRITE
     default: GITHUB_PERMISSION_UNSPECIFIED
+  v1IssueMagicAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
+      url:
+        type: string
   v1IssueRepresentativeAuthTokenRequest:
     type: object
     properties:
@@ -2709,6 +2837,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Bookmark'
+  v1ListMagicAuthTokensResponse:
+    type: object
+    properties:
+      tokens:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MagicAuthToken'
+      nextPageToken:
+        type: string
   v1ListOrganizationInvitesResponse:
     type: object
     properties:
@@ -2809,6 +2947,36 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1WhitelistedDomain'
+  v1MagicAuthToken:
+    type: object
+    properties:
+      id:
+        type: string
+      projectId:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      expiresOn:
+        type: string
+        format: date-time
+      usedOn:
+        type: string
+        format: date-time
+      createdByUserId:
+        type: string
+      createdByUserEmail:
+        type: string
+      attributes:
+        type: object
+      metricsView:
+        type: string
+      metricsViewFilter:
+        $ref: '#/definitions/v1Expression'
+      metricsViewFields:
+        type: array
+        items:
+          type: string
   v1Member:
     type: object
     properties:
@@ -2826,6 +2994,23 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1Operation:
+    type: string
+    enum:
+      - OPERATION_UNSPECIFIED
+      - OPERATION_EQ
+      - OPERATION_NEQ
+      - OPERATION_LT
+      - OPERATION_LTE
+      - OPERATION_GT
+      - OPERATION_GTE
+      - OPERATION_OR
+      - OPERATION_AND
+      - OPERATION_IN
+      - OPERATION_NIN
+      - OPERATION_LIKE
+      - OPERATION_NLIKE
+    default: OPERATION_UNSPECIFIED
   v1Organization:
     type: object
     properties:
@@ -2962,6 +3147,10 @@ definitions:
         type: boolean
       manageProjectMembers:
         type: boolean
+      createMagicAuthTokens:
+        type: boolean
+      manageMagicAuthTokens:
+        type: boolean
       createReports:
         type: boolean
       manageReports:
@@ -2969,6 +3158,10 @@ definitions:
       createAlerts:
         type: boolean
       manageAlerts:
+        type: boolean
+      createBookmarks:
+        type: boolean
+      manageBookmarks:
         type: boolean
   v1PullVirtualRepoResponse:
     type: object
@@ -3042,6 +3235,8 @@ definitions:
     properties:
       tokenId:
         type: string
+  v1RevokeMagicAuthTokenResponse:
+    type: object
   v1RevokeServiceAuthTokenResponse:
     type: object
   v1SearchProjectNamesResponse:
@@ -3114,6 +3309,19 @@ definitions:
         type: boolean
   v1SetSuperuserResponse:
     type: object
+  v1Subquery:
+    type: object
+    properties:
+      dimension:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
   v1SudoGetResourceResponse:
     type: object
     properties:
