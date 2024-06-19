@@ -452,6 +452,7 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		Priority:           req.Priority,
 		Limit:              &limit,
 		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
+		SecurityPolicy:     auth.GetClaims(ctx).SecurityPolicy(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
