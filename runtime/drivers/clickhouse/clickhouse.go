@@ -160,9 +160,9 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		// address
 		host := conf.Host
 		if conf.Port != 0 {
-			host = fmt.Sprintf("%v:%v", conf.Host, conf.Port)
+			host = fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 		}
-		opts.Addr = append(opts.Addr, host)
+		opts.Addr = []string{host}
 		if conf.SSL {
 			opts.Protocol = clickhouse.HTTP
 			opts.TLS = &tls.Config{
