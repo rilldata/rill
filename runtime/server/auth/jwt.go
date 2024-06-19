@@ -17,6 +17,7 @@ import (
 	"github.com/golang-jwt/jwt/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // Issuer creates JWTs with claims for an Audience.
@@ -118,6 +119,17 @@ type TokenOptions struct {
 
 // NewToken issues a new JWT based on the provided options.
 func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
+	// Since the security policy is a proto message, we need to serialize it using protojson instead of json.Marshal.
+	var sec json.RawMessage
+	if opts.Security != nil {
+		var err error
+		sec, err = protojson.Marshal(opts.Security)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	// Create claims
 	now := time.Now()
 	claims := &jwtClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -131,9 +143,10 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 		System:    opts.SystemPermissions,
 		Instances: opts.InstancePermissions,
 		Attrs:     opts.Attributes,
-		Security:  opts.Security,
+		Security:  sec,
 	}
 
+	// Create token
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(i.signingKey.Algorithm), claims)
 	token.Header["kid"] = i.signingKey.KeyID
 	res, err := token.SignedString(i.signingKey.Key)

@@ -1,8 +1,11 @@
 package auth
 
 import (
+	"encoding/json"
+
 	"github.com/golang-jwt/jwt/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // Claims resolves permissions for a requester.
@@ -24,10 +27,10 @@ type Claims interface {
 // jwtClaims implements Claims and resolve permissions based on a JWT payload.
 type jwtClaims struct {
 	jwt.RegisteredClaims
-	System    []Permission                          `json:"sys,omitempty"`
-	Instances map[string][]Permission               `json:"ins,omitempty"`
-	Attrs     map[string]any                        `json:"attr,omitempty"`
-	Security  *runtimev1.MetricsViewSpec_SecurityV2 `json:"sec,omitempty"`
+	System    []Permission            `json:"sys,omitempty"`
+	Instances map[string][]Permission `json:"ins,omitempty"`
+	Attrs     map[string]any          `json:"attr,omitempty"`
+	Security  json.RawMessage         `json:"sec,omitempty"` // *runtimev1.MetricsViewSpec_SecurityV2 serialized with protojson
 }
 
 var _ Claims = (*jwtClaims)(nil)
@@ -59,7 +62,17 @@ func (c *jwtClaims) Attributes() map[string]any {
 }
 
 func (c jwtClaims) SecurityPolicy() *runtimev1.MetricsViewSpec_SecurityV2 {
-	return c.Security
+	if len(c.Security) == 0 {
+		return nil
+	}
+
+	sec := &runtimev1.MetricsViewSpec_SecurityV2{}
+	err := protojson.Unmarshal(c.Security, sec)
+	if err != nil {
+		panic(err)
+	}
+
+	return sec
 }
 
 // openClaims implements Claims and allows all actions.

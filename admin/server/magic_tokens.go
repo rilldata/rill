@@ -207,17 +207,18 @@ func magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser) (*adminv1.MagicAut
 
 	var metricsViewFilter *runtimev1.Expression
 	if tkn.MetricsViewFilterJSON != "" {
+		metricsViewFilter = &runtimev1.Expression{}
 		err := protojson.Unmarshal([]byte(tkn.MetricsViewFilterJSON), metricsViewFilter)
 		if err != nil {
 			return nil, fmt.Errorf("failed to unmarshal metrics view filter: %w", err)
 		}
 	}
 
-	return &adminv1.MagicAuthToken{
+	res := &adminv1.MagicAuthToken{
 		Id:                 tkn.ID,
 		ProjectId:          tkn.ProjectID,
 		CreatedOn:          timestamppb.New(tkn.CreatedOn),
-		ExpiresOn:          timestamppb.New(safeTime(tkn.ExpiresOn)),
+		ExpiresOn:          nil,
 		UsedOn:             timestamppb.New(tkn.UsedOn),
 		CreatedByUserId:    safeStr(tkn.CreatedByUserID),
 		CreatedByUserEmail: tkn.CreatedByUserEmail,
@@ -225,5 +226,9 @@ func magicAuthTokenToPB(tkn *database.MagicAuthTokenWithUser) (*adminv1.MagicAut
 		MetricsView:        tkn.MetricsView,
 		MetricsViewFilter:  metricsViewFilter,
 		MetricsViewFields:  tkn.MetricsViewFields,
-	}, nil
+	}
+	if tkn.ExpiresOn != nil {
+		res.ExpiresOn = timestamppb.New(*tkn.ExpiresOn)
+	}
+	return res, nil
 }

@@ -48,6 +48,9 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				cmd.Printf("Next page token: %s\n", res.NextPageToken)
 			}
 
+			cmd.Println()
+			cmd.Println("NOTE: For security reasons, the actual URLs can't be displayed after creation.")
+
 			return nil
 		},
 	}

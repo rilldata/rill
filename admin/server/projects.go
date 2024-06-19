@@ -161,7 +161,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		attr = mdl.Attributes
 
 		security = &runtimev1.MetricsViewSpec_SecurityV2{
-			Access: fmt.Sprintf("'{{ .self.meta.name.name }}'=%s", duckdbsql.EscapeStringValue(mdl.MetricsView)),
+			Access: fmt.Sprintf("'{{ .self.name }}'=%s", duckdbsql.EscapeStringValue(mdl.MetricsView)),
 		}
 		if mdl.MetricsViewFilterJSON != "" {
 			expr := &runtimev1.Expression{}

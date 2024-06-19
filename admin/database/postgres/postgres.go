@@ -963,24 +963,30 @@ func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, rete
 }
 
 func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*database.MagicAuthTokenWithUser, error) {
-	where := "t.project_id=?"
+	n := 1
+	where := fmt.Sprintf("t.project_id=$%d", n)
 	args := []any{projectID}
+	n++
 
 	if createdByUserID != nil {
-		where += " AND t.created_by_user_id=?"
+		where = fmt.Sprintf("%s AND t.created_by_user_id=$%d", where, n)
 		args = append(args, *createdByUserID)
+		n++
 	}
 
 	if afterID != "" {
-		where += " AND t.id > ?"
+		where = fmt.Sprintf("%s AND t.id>$%d", where, n)
 		args = append(args, afterID)
+		n++
 	}
 
-	qry := fmt.Sprintf("SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT ?", where)
+	where += " AND (t.expires_on IS NULL OR t.expires_on > now())"
+
+	qry := fmt.Sprintf("SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT $%d", where, n)
 	args = append(args, limit)
 
 	var dtos []*magicAuthTokenWithUserDTO
-	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry, args)
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry, args...)
 	if err != nil {
 		return nil, parseErr("magic auth tokens", err)
 	}

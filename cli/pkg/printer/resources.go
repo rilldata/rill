@@ -34,7 +34,7 @@ func toOrgsTable(orgs []*adminv1.Organization, defaultOrg string) []*organizatio
 func toOrgRow(o *adminv1.Organization) *organization {
 	return &organization{
 		Name:      o.Name,
-		CreatedAt: o.CreatedOn.AsTime().Format(time.DateTime),
+		CreatedAt: o.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
 
@@ -138,8 +138,8 @@ func toMemberRow(m *adminv1.Member) *member {
 		Name:      m.UserName,
 		Email:     m.UserEmail,
 		RoleName:  m.RoleName,
-		CreatedOn: m.CreatedOn.AsTime().Format(time.DateTime),
-		UpdatedOn: m.UpdatedOn.AsTime().Format(time.DateTime),
+		CreatedOn: m.CreatedOn.AsTime().Local().Format(time.DateTime),
+		UpdatedOn: m.UpdatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
 
@@ -202,7 +202,7 @@ func toServiceRow(s *adminv1.Service) *service {
 	return &service{
 		Name:      s.Name,
 		OrgName:   s.OrgName,
-		CreatedAt: s.CreatedOn.AsTime().Format(time.DateTime),
+		CreatedAt: s.CreatedOn.AsTime().Local().Format(time.DateTime),
 	}
 }
 
@@ -232,12 +232,12 @@ func toServiceTokensTable(tkns []*adminv1.ServiceToken) []*token {
 func toServiceTokenRow(s *adminv1.ServiceToken) *token {
 	var expiresOn string
 	if !s.ExpiresOn.AsTime().IsZero() {
-		expiresOn = s.ExpiresOn.AsTime().Format(time.DateTime)
+		expiresOn = s.ExpiresOn.AsTime().Local().Format(time.DateTime)
 	}
 
 	return &token{
 		ID:        s.Id,
-		CreatedOn: s.CreatedOn.AsTime().Format(time.DateTime),
+		CreatedOn: s.CreatedOn.AsTime().Local().Format(time.DateTime),
 		ExpiresOn: expiresOn,
 	}
 }
@@ -274,23 +274,26 @@ func toMagicAuthTokenRow(t *adminv1.MagicAuthToken) *magicAuthToken {
 		panic(err)
 	}
 
-	return &magicAuthToken{
+	row := &magicAuthToken{
 		ID:        t.Id,
-		CreatedBy: t.CreatedByUserEmail,
-		CreatedOn: t.CreatedOn.AsTime().Format(time.DateTime),
-		ExpiresOn: t.ExpiresOn.AsTime().Format(time.DateTime),
-		UsedOn:    t.UsedOn.AsTime().Format(time.DateTime),
 		Dashboard: t.MetricsView,
 		Filter:    filter,
+		CreatedBy: t.CreatedByUserEmail,
+		CreatedOn: t.CreatedOn.AsTime().Local().Format(time.DateTime),
+		UsedOn:    t.UsedOn.AsTime().Local().Format(time.DateTime),
 	}
+	if t.ExpiresOn != nil {
+		row.ExpiresOn = t.ExpiresOn.AsTime().Local().Format(time.DateTime)
+	}
+	return row
 }
 
 type magicAuthToken struct {
 	ID        string `header:"id" json:"id"`
-	CreatedBy string `header:"created_by" json:"created_by"`
-	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_on"`
-	ExpiresOn string `header:"expires_on,timestamp(ms|utc|human)" json:"expires_on"`
-	UsedOn    string `header:"created_on,timestamp(ms|utc|human)" json:"used_on"`
 	Dashboard string `header:"dashboard" json:"dashboard"`
 	Filter    string `header:"filter" json:"filter"`
+	CreatedBy string `header:"created by" json:"created_by"`
+	CreatedOn string `header:"created on" json:"created_on"`
+	UsedOn    string `header:"last used on" json:"used_on"`
+	ExpiresOn string `header:"expires on" json:"expires_on"`
 }
