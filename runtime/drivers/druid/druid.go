@@ -143,40 +143,9 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	var dsn string
-	if conf.DSN != "" {
-		dsn, err = correctURL(conf.DSN)
-		if err != nil {
-			return nil, err
-		}
-	} else if conf.Host != "" {
-		var dsnURL url.URL
-		dsnURL.Host = conf.Host
-		// set port
-		if conf.Port != 0 {
-			dsnURL.Host = fmt.Sprintf("%v:%v", conf.Host, conf.Port)
-		}
-
-		// set scheme
-		if conf.SSL {
-			dsnURL.Scheme = "https"
-		} else {
-			dsnURL.Scheme = "http"
-		}
-
-		// set path
-		dsnURL.Path = "druid/v2/sql"
-
-		// set username and password
-		if conf.Password != "" {
-			dsnURL.User = url.UserPassword(conf.Username, conf.Password)
-		} else if conf.Username != "" {
-			dsnURL.User = url.User(conf.Username)
-		}
-
-		dsn = dsnURL.String()
-	} else {
-		return nil, fmt.Errorf("druid connection parameters not set. Set `dsn` or individual properties")
+	dsn, err := dnsFromConfig(conf)
+	if err != nil {
+		return nil, err
 	}
 
 	db, err := sqlx.Open("druid", dsn)
@@ -317,6 +286,56 @@ func (c *connection) EstimateSize() (int64, bool) {
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
+}
+
+func GetDSN(config map[string]string) (string, error) {
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return "", err
+	}
+
+	return dnsFromConfig(conf)
+}
+
+func dnsFromConfig(conf *configProperties) (string, error) {
+	var dsn string
+	var err error
+	if conf.DSN != "" {
+		dsn, err = correctURL(conf.DSN)
+		if err != nil {
+			return "", err
+		}
+	} else if conf.Host != "" {
+		var dsnURL url.URL
+		dsnURL.Host = conf.Host
+		// set port
+		if conf.Port != 0 {
+			dsnURL.Host = fmt.Sprintf("%v:%v", conf.Host, conf.Port)
+		}
+
+		// set scheme
+		if conf.SSL {
+			dsnURL.Scheme = "https"
+		} else {
+			dsnURL.Scheme = "http"
+		}
+
+		// set path
+		dsnURL.Path = "druid/v2/sql"
+
+		// set username and password
+		if conf.Password != "" {
+			dsnURL.User = url.UserPassword(conf.Username, conf.Password)
+		} else if conf.Username != "" {
+			dsnURL.User = url.User(conf.Username)
+		}
+
+		dsn = dsnURL.String()
+	} else {
+		return "", fmt.Errorf("druid connection parameters not set. Set `dsn` or individual properties")
+	}
+	return dsn, nil
 }
 
 func correctURL(dsn string) (string, error) {

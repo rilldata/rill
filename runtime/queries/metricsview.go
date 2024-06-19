@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/apache/arrow/go/v14/arrow"
 	"github.com/apache/arrow/go/v14/arrow/array"
@@ -19,7 +18,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/xuri/excelize/v2"
@@ -32,13 +30,13 @@ import (
 var ErrForbidden = errors.New("action not allowed")
 
 // resolveMVAndSecurityFromAttributes resolves the metrics view and security policy from the attributes
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, dims []*runtimev1.MetricsViewAggregationDimension, measures []*runtimev1.MetricsViewAggregationMeasure) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
-	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, policy *runtimev1.MetricsViewSpec_SecurityV2, dims []*runtimev1.MetricsViewAggregationDimension, measures []*runtimev1.MetricsViewAggregationMeasure) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
+	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(attrs, instanceID, mv, lastUpdatedOn)
+	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, attrs, res, mv.Security, policy)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -70,24 +68,24 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 }
 
 // returns the metrics view and the time the catalog was last updated
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsViewSpec, time.Time, error) {
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewSpec, error) {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
 	if err != nil {
-		return nil, time.Time{}, status.Error(codes.InvalidArgument, fmt.Sprintf("%s, %s", err.Error(), name))
+		return nil, nil, status.Error(codes.InvalidArgument, fmt.Sprintf("%s, %s", err.Error(), name))
 	}
 
 	mv := res.GetMetricsView()
 	spec := mv.State.ValidSpec
 	if spec == nil {
-		return nil, time.Time{}, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
+		return nil, nil, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
 	}
 
-	return spec, res.Meta.StateUpdatedOn.AsTime(), nil
+	return res, spec, nil
 }
 
 func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity) bool {
@@ -898,73 +896,4 @@ func (q *MetricsViewRows) generateFilename(mv *runtimev1.MetricsViewSpec) string
 		filename += "_filtered"
 	}
 	return filename
-}
-
-func rewriteToMetricsResolverExpression(expr *runtimev1.Expression) *metricsview.Expression {
-	if expr == nil {
-		return nil
-	}
-
-	res := &metricsview.Expression{}
-
-	switch e := expr.Expression.(type) {
-	case *runtimev1.Expression_Ident:
-		res.Name = e.Ident
-	case *runtimev1.Expression_Val:
-		res.Value = e.Val.AsInterface()
-	case *runtimev1.Expression_Cond:
-		var op metricsview.Operator
-		switch e.Cond.Op {
-		case runtimev1.Operation_OPERATION_UNSPECIFIED:
-			op = metricsview.OperatorUnspecified
-		case runtimev1.Operation_OPERATION_EQ:
-			op = metricsview.OperatorEq
-		case runtimev1.Operation_OPERATION_NEQ:
-			op = metricsview.OperatorNeq
-		case runtimev1.Operation_OPERATION_LT:
-			op = metricsview.OperatorLt
-		case runtimev1.Operation_OPERATION_LTE:
-			op = metricsview.OperatorLte
-		case runtimev1.Operation_OPERATION_GT:
-			op = metricsview.OperatorGt
-		case runtimev1.Operation_OPERATION_GTE:
-			op = metricsview.OperatorGte
-		case runtimev1.Operation_OPERATION_OR:
-			op = metricsview.OperatorOr
-		case runtimev1.Operation_OPERATION_AND:
-			op = metricsview.OperatorAnd
-		case runtimev1.Operation_OPERATION_IN:
-			op = metricsview.OperatorIn
-		case runtimev1.Operation_OPERATION_NIN:
-			op = metricsview.OperatorNin
-		case runtimev1.Operation_OPERATION_LIKE:
-			op = metricsview.OperatorIlike
-		case runtimev1.Operation_OPERATION_NLIKE:
-			op = metricsview.OperatorNilike
-		}
-
-		exprs := make([]*metricsview.Expression, 0, len(e.Cond.Exprs))
-		for _, e := range e.Cond.Exprs {
-			exprs = append(exprs, rewriteToMetricsResolverExpression(e))
-		}
-
-		res.Condition = &metricsview.Condition{
-			Operator:    op,
-			Expressions: exprs,
-		}
-	case *runtimev1.Expression_Subquery:
-		measures := make([]metricsview.Measure, 0, len(e.Subquery.Measures))
-		for _, m := range e.Subquery.Measures {
-			measures = append(measures, metricsview.Measure{Name: m})
-		}
-
-		res.Subquery = &metricsview.Subquery{
-			Dimension: metricsview.Dimension{Name: e.Subquery.Dimension},
-			Measures:  measures,
-			Where:     rewriteToMetricsResolverExpression(e.Subquery.Where),
-			Having:    rewriteToMetricsResolverExpression(e.Subquery.Having),
-		}
-	}
-
-	return res
 }

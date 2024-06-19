@@ -91,12 +91,12 @@ func (r *Runtime) Close() error {
 	return errors.Join(err1, err2)
 }
 
-func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+func (r *Runtime) ResolveMetricsViewSecurity(instanceID string, attributes map[string]any, mv *runtimev1.Resource, policies ...*runtimev1.MetricsViewSpec_SecurityV2) (*ResolvedMetricsViewSecurity, error) {
 	inst, err := r.Instance(context.Background(), instanceID)
 	if err != nil {
 		return nil, err
 	}
-	return r.securityEngine.resolveMetricsViewSecurity(instanceID, inst.Environment, mv, lastUpdatedOn, attributes)
+	return r.securityEngine.resolveMetricsViewSecurity(instanceID, inst.Environment, attributes, mv, policies...)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes

@@ -92,17 +92,16 @@ func (s *Server) CreateBookmark(ctx context.Context, req *adminv1.CreateBookmark
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 	if proj.Public {
-		permissions.ReadProject = true
-		permissions.ReadProd = true
+		permissions.CreateBookmarks = claims.OwnerType() == auth.OwnerTypeUser // Logged in users can create bookmarks on public projects
 	}
 
-	if !permissions.ReadProject && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to read the project")
+	if !permissions.CreateBookmarks && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to create bookmarks")
 	}
 
-	if !permissions.ManageProject && (req.Default || req.Shared) {
+	if !permissions.ManageBookmarks && (req.Default || req.Shared) {
 		// only admins can create shared/default bookmarks
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to create the bookmark")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to create shared bookmarks")
 	}
 
 	if req.Default {
@@ -161,7 +160,7 @@ func (s *Server) UpdateBookmark(ctx context.Context, req *adminv1.UpdateBookmark
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	if !permissions.ManageProject && (bookmark.Shared || bookmark.Default) {
+	if !permissions.ManageBookmarks && (bookmark.Shared || bookmark.Default) {
 		// only admins can update shared/default bookmarks
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update the bookmark")
 	}
@@ -208,7 +207,7 @@ func (s *Server) RemoveBookmark(ctx context.Context, req *adminv1.RemoveBookmark
 
 	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
 
-	if !permissions.ManageProject && (bookmark.Shared || bookmark.Default) {
+	if !permissions.ManageBookmarks && (bookmark.Shared || bookmark.Default) {
 		// only admins can delete shared/default bookmarks
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update the bookmark")
 	}
