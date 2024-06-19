@@ -39,7 +39,14 @@
   $: onProjectPage = isProjectPage($page);
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
 
-  $: organizationQuery = listOrgs({ pageSize: 100 });
+  $: organizationQuery = listOrgs(
+    { pageSize: 100 },
+    {
+      query: {
+        enabled: !!$user.data?.user,
+      },
+    },
+  );
 
   $: projectsQuery = listProjects(organization, undefined, {
     query: {
@@ -52,7 +59,9 @@
   $: alertsQuery = useAlerts(instanceId);
   $: reportsQuery = useReports(instanceId);
 
-  $: organizations = $organizationQuery.data?.organizations ?? [];
+  $: organizations = $organizationQuery.data?.organizations ?? [
+    { name: organization, id: organization },
+  ];
   $: projects = $projectsQuery.data?.projects ?? [];
   $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
