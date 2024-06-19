@@ -490,3 +490,7 @@ func (u *externalURLs) alertOpen(org, project, alert string) string {
 func (u *externalURLs) alertEdit(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
 }
+
+func (u *externalURLs) magicAuthTokenOpen(org, project, token string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "share", token)
+}

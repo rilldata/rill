@@ -1,7 +1,9 @@
 import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
+  getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  runtimeServiceGetResource,
   runtimeServiceListResources,
   V1ListResourcesResponse,
   V1ReconcileStatus,
@@ -122,6 +124,26 @@ export function resourceIsLoading(resource?: V1Resource) {
     !!resource &&
     resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE
   );
+}
+
+export async function fetchResource(
+  queryClient: QueryClient,
+  instanceId: string,
+  name: string,
+  kind: ResourceKind,
+) {
+  const resp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
+      "name.name": name,
+      "name.kind": kind,
+    }),
+    queryFn: () =>
+      runtimeServiceGetResource(instanceId, {
+        "name.name": name,
+        "name.kind": kind,
+      }),
+  });
+  return resp.resource;
 }
 
 export async function fetchResources(

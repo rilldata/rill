@@ -19,15 +19,16 @@ import (
 )
 
 type MetricsViewSearch struct {
-	MetricsViewName    string                `json:"metrics_view_name,omitempty"`
-	Dimensions         []string              `json:"dimensions,omitempty"`
-	Search             string                `json:"search,omitempty"`
-	TimeRange          *runtimev1.TimeRange  `json:"time_range,omitempty"`
-	Where              *runtimev1.Expression `json:"where,omitempty"`
-	Having             *runtimev1.Expression `json:"having,omitempty"`
-	Priority           int32                 `json:"priority,omitempty"`
-	Limit              *int64                `json:"limit,omitempty"`
-	SecurityAttributes map[string]any        `json:"security_attributes,omitempty"`
+	MetricsViewName    string                                `json:"metrics_view_name,omitempty"`
+	Dimensions         []string                              `json:"dimensions,omitempty"`
+	Search             string                                `json:"search,omitempty"`
+	TimeRange          *runtimev1.TimeRange                  `json:"time_range,omitempty"`
+	Where              *runtimev1.Expression                 `json:"where,omitempty"`
+	Having             *runtimev1.Expression                 `json:"having,omitempty"`
+	Priority           int32                                 `json:"priority,omitempty"`
+	Limit              *int64                                `json:"limit,omitempty"`
+	SecurityAttributes map[string]any                        `json:"security_attributes,omitempty"`
+	SecurityPolicy     *runtimev1.MetricsViewSpec_SecurityV2 `json:"security_policy,omitempty"`
 
 	Result *runtimev1.MetricsViewSearchResponse
 }
@@ -63,19 +64,12 @@ func (q *MetricsViewSearch) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, q.MetricsViewName)
+	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, nil, nil)
 	if err != nil {
 		return err
-	}
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(q.SecurityAttributes, instanceID, mv, lastUpdatedOn)
-	if err != nil {
-		return err
-	}
-	if resolvedSecurity != nil && !resolvedSecurity.Access {
-		return ErrForbidden
 	}
 	for _, d := range q.Dimensions {
-		if !checkFieldAccess(d, resolvedSecurity) {
+		if !checkFieldAccess(d, sec) {
 			return ErrForbidden
 		}
 	}
@@ -106,13 +100,13 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 
 	if olap.Dialect() == drivers.DialectDruid {
-		ok, err := q.executeSearchInDruid(ctx, rt, olap, instanceID, mv.Table, resolvedSecurity)
+		ok, err := q.executeSearchInDruid(ctx, rt, olap, instanceID, mv.Table, sec)
 		if err != nil || ok {
 			return err
 		}
 	}
 
-	sql, args, err := q.buildSearchQuerySQL(mv, olap.Dialect(), resolvedSecurity)
+	sql, args, err := q.buildSearchQuerySQL(mv, olap.Dialect(), sec)
 	if err != nil {
 		return err
 	}

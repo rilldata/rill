@@ -61,6 +61,7 @@ type ResolverOptions struct {
 	Properties     map[string]any
 	Args           map[string]any
 	UserAttributes map[string]any
+	Security       *runtimev1.MetricsViewSpec_SecurityV2
 	ForExport      bool
 }
 

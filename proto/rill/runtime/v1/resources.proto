@@ -5,6 +5,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/colors.proto";
 import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/expression.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 
@@ -185,8 +186,11 @@ message MetricsViewSpec {
   message SecurityV2 {
     // Dashboard level access condition
     string access = 1;
-    // row level access condition
+    // SQL expression to apply in a WHERE clause against the underlying table
     string row_filter = 2;
+    // Dimension filter to apply to queries against the metrics view.
+    // Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
+    Expression query_filter = 5;
     // Dimension/measure level access condition
     message FieldConditionV2 {
       string condition = 1;
