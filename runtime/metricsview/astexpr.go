@@ -156,7 +156,8 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 	if op == OperatorIn || op == OperatorNin {
 		if len(exprs) == 2 {
 			rhs := exprs[1]
-			isListVal := reflect.TypeOf(rhs.Value).Kind() == reflect.Slice
+			typ := reflect.TypeOf(rhs.Value)
+			isListVal := typ != nil && typ.Kind() == reflect.Slice
 			if rhs.Name == "" && !isListVal && rhs.Condition == nil && rhs.Subquery == nil {
 				// Convert the right hand side to a list
 				exprs[1] = &Expression{Value: []any{rhs.Value}}
