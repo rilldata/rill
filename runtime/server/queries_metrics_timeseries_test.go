@@ -812,10 +812,9 @@ func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metrics
 
 	mvRes := res.GetMetricsView()
 	mv := mvRes.State.ValidSpec
-	lastUpdatedOn := res.Meta.StateUpdatedOn.AsTime()
 	require.NoError(t, err)
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), instanceID, mv, lastUpdatedOn)
+	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, auth.GetClaims(ctx).Attributes(), res, mv.Security)
 	require.NoError(t, err)
 
 	return mv, resolvedSecurity
