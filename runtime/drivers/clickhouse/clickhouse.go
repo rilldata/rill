@@ -166,7 +166,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		if conf.SSL {
 			opts.Protocol = clickhouse.HTTP
 			opts.TLS = &tls.Config{
-				InsecureSkipVerify: true,
+				InsecureSkipVerify: false,
 			}
 		} else {
 			opts.Protocol = clickhouse.Native
