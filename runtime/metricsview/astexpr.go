@@ -9,11 +9,13 @@ import (
 
 // sqlForExpression generates a SQL expression for a query expression.
 // pseudoHaving is true if the expression is allowed to reference measure expressions.
-func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, pseudoHaving bool) (string, []any, error) {
+// visible is true if the expression is only allowed to reference dimensions and measures that are exposed by the security policy.
+func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, pseudoHaving, visible bool) (string, []any, error) {
 	b := &sqlExprBuilder{
 		ast:          ast,
 		node:         n,
 		pseudoHaving: pseudoHaving,
+		visible:      visible,
 		out:          &strings.Builder{},
 	}
 
@@ -29,6 +31,7 @@ type sqlExprBuilder struct {
 	ast          *AST
 	node         *SelectNode
 	pseudoHaving bool
+	visible      bool
 	out          *strings.Builder
 	args         []any
 }
@@ -528,7 +531,7 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err 
 		}
 
 		// Second, search for the dimension in the metrics view's dimensions (since expressions are allowed to reference dimensions not included in the query)
-		dim, err := b.ast.lookupDimension(name, true)
+		dim, err := b.ast.lookupDimension(name, b.visible)
 		if err != nil {
 			return "", false, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}
