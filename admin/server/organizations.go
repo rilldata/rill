@@ -237,7 +237,10 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 
 	plan, err := s.admin.Biller.GetPlan(ctx, valOrDefault(req.RillPlanId, ""), valOrDefault(req.BillerPlanId, ""))
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		if errors.Is(err, billing.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "plan not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	if org.BillingCustomerID == "" {
@@ -262,7 +265,7 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 		if len(subs) > 0 {
 			for _, sub := range subs {
 				if sub.Plan.BillerID == plan.BillerID {
-					return nil, status.Error(codes.InvalidArgument, "plan already assigned to the organization")
+					return nil, status.Error(codes.InvalidArgument, "same plan already assigned to the organization")
 				}
 			}
 
@@ -287,6 +290,12 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 				if err != nil {
 					return nil, status.Error(codes.Internal, err.Error())
 				}
+			}
+		} else {
+			// create new subscription
+			_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+			if err != nil {
+				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
 	}
@@ -1145,7 +1154,7 @@ func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 		StartDate:                    timestamppb.New(sub.StartDate),
 		EndDate:                      timestamppb.New(sub.EndDate),
 		CurrentBillingCycleStartDate: timestamppb.New(sub.CurrentBillingCycleStartDate),
-		CurrentBillingCycleEndDate:   timestamppb.New(sub.CurrentBillingCycleStartDate),
+		CurrentBillingCycleEndDate:   timestamppb.New(sub.CurrentBillingCycleEndDate),
 		TrialEndDate:                 timestamppb.New(sub.TrialEndDate),
 	}
 }

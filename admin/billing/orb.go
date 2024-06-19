@@ -15,6 +15,7 @@ import (
 )
 
 const requestTimeout = 10 * time.Second
+const requestMaxLimit = 500
 
 var ErrNotFound = errors.New("not found")
 
@@ -83,7 +84,7 @@ func (o *Orb) GetPlan(ctx context.Context, rillPlanID, billerPlanID string) (*Pl
 		return nil, err
 	}
 	for _, p := range plans {
-		if strings.EqualFold(p.RillID, rillPlanID) || strings.EqualFold(p.BillerID, billerPlanID) {
+		if (rillPlanID != "" && strings.EqualFold(p.RillID, rillPlanID)) || (billerPlanID != "" && strings.EqualFold(p.BillerID, billerPlanID)) {
 			return p, nil
 		}
 	}
@@ -159,7 +160,10 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 }
 
 func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
-	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, orb.SubscriptionSchedulePlanChangeParams{ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate)})
+	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, orb.SubscriptionSchedulePlanChangeParams{
+		PlanID:       orb.String(plan.BillerID),
+		ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -274,10 +278,13 @@ func (o *Orb) GetReportingWorkerCron() string {
 }
 
 func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
-	plans, _ := o.client.Plans.List(ctx, orb.PlanListParams{
-		Limit:  orb.Int(1000), // TODO handle pagination, for now don't expect more than 1000 plans
+	plans, err := o.client.Plans.List(ctx, orb.PlanListParams{
+		Limit:  orb.Int(requestMaxLimit), // TODO handle pagination, for now don't expect more than 500 plans
 		Status: orb.F(orb.PlanListParamsStatusActive),
 	})
+	if err != nil {
+		return nil, err
+	}
 
 	var billingPlans []*Plan
 	for i := 0; i < len(plans.Data); i++ {

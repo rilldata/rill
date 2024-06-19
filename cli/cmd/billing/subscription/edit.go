@@ -74,7 +74,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	editCmd.Flags().SortFlags = false
 	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
-	editCmd.Flags().StringVar(&plan, "plan-id", "", "Plan ID to change subscription to")
+	editCmd.Flags().StringVar(&plan, "plan", "", "Plan ID to change subscription to")
 
 	return editCmd
 }
