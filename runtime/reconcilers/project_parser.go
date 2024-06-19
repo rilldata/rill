@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"slices"
 	"strings"
 
@@ -264,6 +265,10 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 				continue
 			}
 			r.C.Logger.Warn("Parser error", zap.String("path", e.FilePath), zap.String("error", e.Message))
+			debug := os.Getenv("DEBUG")
+			if debug == "1" {
+				fmt.Println("Parser error", e.Message)
+			}
 		}
 	} else if diff.Skipped {
 		r.C.Logger.Warn("Not parsing changed paths due to missing or broken rill.yaml")
