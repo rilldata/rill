@@ -14,8 +14,10 @@ import (
 	"github.com/rilldata/rill/admin/database"
 )
 
-const requestTimeout = 10 * time.Second
-const requestMaxLimit = 500
+const (
+	requestMaxLimit = 500
+	requestTimeout  = 10 * time.Second
+)
 
 var ErrNotFound = errors.New("not found")
 
