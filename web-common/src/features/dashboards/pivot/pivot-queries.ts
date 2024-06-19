@@ -1,4 +1,3 @@
-import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -40,7 +39,6 @@ export function createPivotAggregationRowQuery(
   measures: V1MetricsViewAggregationMeasure[],
   dimensions: V1MetricsViewAggregationDimension[],
   whereFilter: V1Expression,
-  measureFilter: ResolvedMeasureFilter | undefined,
   sort: V1MetricsViewAggregationSort[] = [],
   limit = "100",
   offset = "0",
@@ -75,7 +73,7 @@ export function createPivotAggregationRowQuery(
         {
           measures: prepareMeasureForComparison(measures),
           dimensions,
-          where: sanitiseExpression(whereFilter, measureFilter?.filter),
+          where: sanitiseExpression(whereFilter, undefined),
           timeRange: {
             start: timeRange?.start ? timeRange.start : timeControls.timeStart,
             end: timeRange?.end ? timeRange.end : timeControls.timeEnd,
@@ -160,7 +158,6 @@ export function getAxisForDimensions(
         measures,
         [dimension],
         whereFilter,
-        config.measureFilter,
         sortByForDimension,
         limit,
         offset,
@@ -201,26 +198,36 @@ export function getAxisQueryForMeasureTotals(
   config: PivotDataStoreConfig,
   isMeasureSortAccessor: boolean,
   sortAccessor: string | undefined,
+  anchorDimension: string,
   rowDimensionValues: string[],
   timeRange: TimeRangeString,
+  otherFilters: V1Expression | undefined = undefined,
 ) {
   let rowAxesQueryForMeasureTotals: Readable<PivotAxesData | null> =
     readable(null);
 
   if (rowDimensionValues.length && isMeasureSortAccessor && sortAccessor) {
-    const { measureNames, rowDimensionNames } = config;
+    const { measureNames } = config;
     const measuresBody = measureNames.map((m) => ({ name: m }));
 
     const sortedRowFilters = getFilterForMeasuresTotalsAxesQuery(
       config,
+      anchorDimension,
       rowDimensionValues,
     );
+
+    let mergedFilter: V1Expression | undefined = sortedRowFilters;
+
+    if (otherFilters) {
+      mergedFilter = mergeFilters(otherFilters, sortedRowFilters);
+    }
+
     rowAxesQueryForMeasureTotals = getAxisForDimensions(
       ctx,
       config,
-      rowDimensionNames.slice(0, 1),
+      [anchorDimension],
       measuresBody,
-      sortedRowFilters,
+      mergedFilter ?? createAndExpression([]),
       [],
       timeRange,
     );
@@ -255,10 +262,9 @@ export function getTotalsRowQuery(
       createInExpression(dimension, colDimensionAxes[dimension]),
     );
 
-  const mergedFilter = mergeFilters(
-    createAndExpression(colFilters),
-    config.whereFilter,
-  );
+  const mergedFilter =
+    mergeFilters(createAndExpression(colFilters), config.whereFilter) ??
+    createAndExpression([]);
 
   const sortBy = [
     {
@@ -271,7 +277,6 @@ export function getTotalsRowQuery(
     measureBody,
     dimensionBody,
     mergedFilter,
-    config.measureFilter,
     sortBy,
     "300",
   );

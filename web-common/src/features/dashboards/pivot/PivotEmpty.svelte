@@ -6,6 +6,7 @@
   import EmptyTableIcon from "./EmptyTableIcon.svelte";
 
   export let isFetching = false;
+  export let assembled = false;
 
   const stateManagers = getStateManagers();
   const {
@@ -45,6 +46,11 @@
         rel="noopener"
         href="https://docs.rilldata.com/explore/filters/pivot">docs</a
       >.
+    </div>
+  {:else if assembled}
+    <EmptyTableIcon />
+    <div class="text-gray-600 text-base">
+      No data to show for the selected filters.
     </div>
   {:else}
     <EmptyTableIcon />

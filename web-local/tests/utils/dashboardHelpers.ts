@@ -89,21 +89,24 @@ export async function waitForTopLists(
  * Waits for a set of top list queries to end.
  * Optionally takes a filter matcher: {@link metricsViewRequestFilterMatcher}.
  */
-export async function waitForComparisonTopLists(
+export async function waitForAggregationTopLists(
   page: Page,
   metricsView: string,
   dimensions: Array<string>,
   filterMatcher?: RequestMatcher,
 ) {
   const topListUrlRegex = new RegExp(
-    `/metrics-views/${metricsView}/compare-toplist`,
+    `/metrics-views/${metricsView}/aggregation`,
   );
   await Promise.all(
     dimensions.map((dimension) =>
       page.waitForResponse(
         (response) =>
           topListUrlRegex.test(response.url()) &&
-          response.request().postDataJSON().dimension.name === dimension &&
+          !!response
+            .request()
+            .postDataJSON()
+            ?.dimensions?.find((n) => n.name === dimension) &&
           (filterMatcher ? filterMatcher(response) : true),
       ),
     ),

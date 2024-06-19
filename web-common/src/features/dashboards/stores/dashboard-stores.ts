@@ -2,6 +2,7 @@ import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboar
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import {
   getDefaultMetricsExplorerEntity,
   restorePersistedDashboardState,
@@ -217,6 +218,7 @@ const metricViewReducers = {
       }
       metricsExplorer.dimensionFilterExcludeMode =
         includeExcludeModeFromFilters(partial.whereFilter);
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsView);
     });
   },
 
@@ -332,7 +334,12 @@ const metricViewReducers = {
 
   setPivotSort(name: string, sorting: SortingState) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      metricsExplorer.pivot = { ...metricsExplorer.pivot, sorting, rowPage: 1 };
+      metricsExplorer.pivot = {
+        ...metricsExplorer.pivot,
+        sorting,
+        rowPage: 1,
+        expanded: {},
+      };
     });
   },
 
@@ -451,10 +458,12 @@ const metricViewReducers = {
   setSelectedComparisonRange(
     name: string,
     comparisonTimeRange: DashboardTimeControls,
+    metricsViewSpec: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       setDisplayComparison(metricsExplorer, true);
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
   },
 
@@ -484,6 +493,7 @@ const metricViewReducers = {
     timeRange: TimeRange,
     timeGrain: V1TimeGrain,
     comparisonTimeRange: DashboardTimeControls | undefined,
+    metricsViewSpec: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       if (!timeRange.name) return;
@@ -503,6 +513,8 @@ const metricViewReducers = {
         metricsExplorer.selectedComparisonTimeRange !== undefined &&
           metricsExplorer.selectedComparisonDimension === undefined,
       );
+
+      AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
   },
 

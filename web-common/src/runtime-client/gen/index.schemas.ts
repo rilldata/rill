@@ -220,6 +220,16 @@ export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewSearchBody = {
+  dimensions?: string[];
+  search?: string;
+  timeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  limit?: number;
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewSchemaParams = { priority?: number };
 
 export type QueryServiceMetricsViewRowsBody = {
@@ -534,12 +544,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -567,6 +571,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -645,6 +655,13 @@ export interface V1TableCardinalityRequest {
   databaseSchema?: string;
   tableName?: string;
   priority?: number;
+}
+
+export interface V1Subquery {
+  dimension?: string;
+  measures?: string[];
+  where?: V1Expression;
+  having?: V1Expression;
 }
 
 export interface V1StructType {
@@ -763,6 +780,13 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -789,13 +813,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1173,6 +1190,10 @@ export interface V1MetricsViewSort {
   ascending?: boolean;
 }
 
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
+}
+
 export interface V1MetricsViewSchemaResponse {
   schema?: V1StructType;
 }
@@ -1268,6 +1289,25 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1284,27 +1324,6 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  having?: V1Expression;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
@@ -1346,23 +1365,25 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
+export interface V1MetricsViewAggregationRequest {
   instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
+  sort?: V1MetricsViewAggregationSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
   priority?: number;
-  exact?: boolean;
   filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -1409,27 +1430,6 @@ export interface V1ListFilesResponse {
 
 export interface V1ListExamplesResponse {
   examples?: V1Example[];
-}
-
-/**
- * ConnectorDriver represents a connector driver available in the runtime.
- */
-export interface V1ConnectorDriver {
-  name?: string;
-  configProperties?: ConnectorDriverProperty[];
-  sourceProperties?: ConnectorDriverProperty[];
-  displayName?: string;
-  description?: string;
-  implementsRegistry?: boolean;
-  implementsCatalog?: boolean;
-  implementsRepo?: boolean;
-  implementsAdmin?: boolean;
-  implementsAi?: boolean;
-  implementsSqlStore?: boolean;
-  implementsOlap?: boolean;
-  implementsObjectStore?: boolean;
-  implementsFileStore?: boolean;
-  implementsNotifier?: boolean;
 }
 
 export interface V1ListConnectorDriversResponse {
@@ -1567,6 +1567,7 @@ export interface V1Expression {
   ident?: string;
   val?: unknown;
   cond?: V1Condition;
+  subquery?: V1Subquery;
 }
 
 export interface V1ExportResponse {
@@ -1693,6 +1694,27 @@ export interface V1ConnectorSpec {
   /** properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
+}
+
+/**
+ * ConnectorDriver represents a connector driver available in the runtime.
+ */
+export interface V1ConnectorDriver {
+  name?: string;
+  configProperties?: ConnectorDriverProperty[];
+  sourceProperties?: ConnectorDriverProperty[];
+  displayName?: string;
+  description?: string;
+  implementsRegistry?: boolean;
+  implementsCatalog?: boolean;
+  implementsRepo?: boolean;
+  implementsAdmin?: boolean;
+  implementsAi?: boolean;
+  implementsSqlStore?: boolean;
+  implementsOlap?: boolean;
+  implementsObjectStore?: boolean;
+  implementsFileStore?: boolean;
+  implementsNotifier?: boolean;
 }
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };
@@ -1871,10 +1893,6 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -1901,6 +1919,10 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -1915,10 +1937,6 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
-}
-
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1929,6 +1947,10 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
+}
+
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2061,7 +2083,7 @@ export interface V1API {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
@@ -2165,15 +2187,9 @@ export interface NumericHistogramBinsBin {
 export interface MetricsViewSpecSecurityV2 {
   access?: string;
   rowFilter?: string;
+  queryFilter?: V1Expression;
   include?: SecurityV2FieldConditionV2[];
   exclude?: SecurityV2FieldConditionV2[];
-}
-
-export interface MetricsViewSpecMeasureWindow {
-  partition?: boolean;
-  /** Dimensions to order the window by. Must be present in required_dimensions. */
-  orderBy?: MetricsViewSpecDimensionSelector[];
-  frameExpression?: string;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -2186,6 +2202,21 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
 } as const;
+
+export interface MetricsViewSpecMeasureV2 {
+  name?: string;
+  expression?: string;
+  type?: MetricsViewSpecMeasureType;
+  window?: MetricsViewSpecMeasureWindow;
+  perDimensions?: MetricsViewSpecDimensionSelector[];
+  requiredDimensions?: MetricsViewSpecDimensionSelector[];
+  referencedMeasures?: string[];
+  label?: string;
+  description?: string;
+  formatPreset?: string;
+  formatD3?: string;
+  validPercentOfTotal?: boolean;
+}
 
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
@@ -2202,19 +2233,11 @@ export interface MetricsViewSpecDimensionSelector {
   desc?: boolean;
 }
 
-export interface MetricsViewSpecMeasureV2 {
-  name?: string;
-  expression?: string;
-  type?: MetricsViewSpecMeasureType;
-  window?: MetricsViewSpecMeasureWindow;
-  perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions?: MetricsViewSpecDimensionSelector[];
-  referencedMeasures?: string[];
-  label?: string;
-  description?: string;
-  formatPreset?: string;
-  formatD3?: string;
-  validPercentOfTotal?: boolean;
+export interface MetricsViewSpecMeasureWindow {
+  partition?: boolean;
+  /** Dimensions to order the window by. Must be present in required_dimensions. */
+  orderBy?: MetricsViewSpecDimensionSelector[];
+  frameExpression?: string;
 }
 
 export type MetricsViewSpecComparisonMode =
@@ -2238,6 +2261,11 @@ export interface MetricsViewSpecAvailableTimeRange {
   range?: string;
   /** Available comparison offsets for this time range. */
   comparisonOffsets?: MetricsViewSpecAvailableComparisonOffset[];
+}
+
+export interface MetricsViewSearchResponseSearchResult {
+  dimension?: string;
+  value?: unknown;
 }
 
 export interface MetricsViewFilterCond {

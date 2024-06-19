@@ -100,6 +100,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		if err != nil {
 			return err
 		}
+		defer e.Close()
 
 		res, _, err := e.Query(ctx, qry, nil)
 		if err != nil {
@@ -659,11 +660,11 @@ func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery() (*metricsview.Query,
 	}
 
 	if q.Where != nil {
-		qry.Where = rewriteToMetricsResolverExpression(q.Where)
+		qry.Where = metricsview.NewExpressionFromProto(q.Where)
 	}
 
 	if q.Having != nil {
-		qry.Having = rewriteToMetricsResolverExpression(q.Having)
+		qry.Having = metricsview.NewExpressionFromProto(q.Having)
 	}
 
 	qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{

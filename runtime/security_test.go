@@ -4,10 +4,10 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 func TestResolveMetricsView(t *testing.T) {
@@ -537,8 +537,16 @@ func TestResolveMetricsView(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			r := &runtimev1.Resource{Meta: &runtimev1.ResourceMeta{
+				Name: &runtimev1.ResourceName{
+					Kind: ResourceKindMetricsView,
+					Name: "test",
+				},
+				StateUpdatedOn: timestamppb.Now(),
+			}}
+
 			p := newSecurityEngine(1, zap.NewNop())
-			got, err := p.resolveMetricsViewSecurity("", "test", tt.args.mv, time.Now(), tt.args.attr)
+			got, err := p.resolveMetricsViewSecurity("", "test", tt.args.attr, r, tt.args.mv.Security)
 			if tt.wantErr {
 				if err == nil || !strings.Contains(err.Error(), tt.errMsgContains) {
 					t.Errorf("ResolveMetricsViewSecurity() error = %v, wantErr %v", err, tt.wantErr)

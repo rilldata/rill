@@ -45,7 +45,10 @@
 
   const {
     selectors: {
-      measures: { isMeasureValidPercentOfTotal, getMeasuresAndDimensions },
+      measures: {
+        isMeasureValidPercentOfTotal,
+        getFilteredMeasuresAndDimensions,
+      },
       dimensionFilters: { includedDimensionValues },
     },
   } = getStateManagers();
@@ -104,7 +107,7 @@
           ? (measure) => measure.name === expandedMeasureName
           : (_, i) => $showHideMeasures.selectedItems[i],
       ) ?? [];
-    const { measures } = $getMeasuresAndDimensions(
+    const { measures } = $getFilteredMeasuresAndDimensions(
       $metricsView.data ?? {},
       renderedMeasures.map((m) => m.name ?? ""),
     );

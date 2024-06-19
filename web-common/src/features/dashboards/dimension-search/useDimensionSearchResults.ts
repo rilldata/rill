@@ -1,10 +1,9 @@
-import { createLikeExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { createBatches } from "@rilldata/web-common/lib/arrayUtils";
 import {
-  createQueryServiceMetricsViewAggregation,
-  MetricsViewSpecDimensionV2,
+  createQueryServiceMetricsViewSearch,
   V1MetricsViewSpec,
+  V1TimeRangeSummary,
 } from "@rilldata/web-common/runtime-client";
-import { StreamingQueryBatch } from "@rilldata/web-common/runtime-client/StreamingQueryBatch";
 import { derived } from "svelte/store";
 
 export type DimensionSearchResult = {
@@ -18,89 +17,72 @@ export type DimensionSearchResults = {
   progress: number;
 };
 
-const batch = new StreamingQueryBatch(100);
+const BatchSize = 5;
 
 export function useDimensionSearchResults(
   instanceId: string,
   metricsViewName: string,
   metricsView: V1MetricsViewSpec,
+  timeRangeSummary: V1TimeRangeSummary,
   searchText: string,
 ) {
   const dimensions = metricsView.dimensions ?? [];
+  const batches = createBatches(dimensions, BatchSize);
   return derived(
-    dimensions.map((dimension) =>
-      getValuesForDimension(instanceId, metricsViewName, dimension, searchText),
+    batches.map((batch) =>
+      createQueryServiceMetricsViewSearch(instanceId, metricsViewName, {
+        dimensions: batch.map((d) => d.name ?? ""),
+        search: searchText,
+        limit: 100,
+        timeRange: {
+          start: timeRangeSummary.min,
+          end: timeRangeSummary.max,
+        },
+      }),
     ),
-    (dimensionsValues) => {
+    (searchResults) => {
       const results: DimensionSearchResults = {
-        responses: new Array(dimensionsValues.length),
+        responses: [],
         errors: [],
         completed: false,
         progress: 0,
       };
+      const dimensionResultsMap = new Map<string, DimensionSearchResult>();
 
       let completedCount = 0;
-      dimensionsValues.forEach((dimensionValues, index) => {
-        results.responses[index] = dimensionValues.data;
-        if (dimensionValues.error) {
+      searchResults.forEach((searchResult, index) => {
+        if (searchResult.error) {
           results.errors.push(
             new Error(
-              dimensionValues.error.response?.data?.message ??
-                dimensionValues.error.message ??
+              searchResult.error.response?.data?.message ??
+                searchResult.error.message ??
                 "Unknown error",
             ),
           );
+        } else if (searchResult.data?.results) {
+          searchResult.data.results.forEach((dr) => {
+            const dim = dr.dimension ?? "";
+            if (!dimensionResultsMap.has(dim)) {
+              const dsr = {
+                dimension: dim,
+                values: [],
+              };
+              dimensionResultsMap.set(dim, dsr);
+              results.responses.push(dsr);
+            }
+
+            dimensionResultsMap.get(dim)?.values.push(dr.value);
+          });
         }
-        if (!dimensionValues.isFetching) {
-          completedCount++;
+        if (!searchResult.isFetching) {
+          completedCount += batches[index].length;
         }
       });
-      results.completed = completedCount === dimensionsValues.length;
-      results.progress = Math.round(
-        (completedCount * 100) / dimensionsValues.length,
-      );
+
+      results.completed = completedCount === dimensions.length;
+      results.progress = Math.round((completedCount * 100) / dimensions.length);
 
       return results;
-    },
-  );
-}
-
-function getValuesForDimension(
-  instanceId: string,
-  metricsViewName: string,
-  dimension: MetricsViewSpecDimensionV2,
-  searchText: string,
-) {
-  const dimensionName = dimension.name ?? "";
-  return createQueryServiceMetricsViewAggregation(
-    instanceId,
-    metricsViewName,
-    {
-      dimensions: [{ name: dimensionName }],
-      measures: [],
-      where: createLikeExpression(dimensionName, `%${searchText}%`),
-      limit: "100",
-    },
-    {
-      query: {
-        queryFn: ({ signal }) =>
-          batch.fetch(
-            "metricsViewAggregation",
-            {
-              instanceId,
-              metricsView: metricsViewName,
-              dimensions: [{ name: dimensionName }],
-              measures: [],
-              where: createLikeExpression(dimensionName, `%${searchText}%`),
-              limit: "100",
-            },
-            signal,
-          ),
-        select: (resp) => ({
-          dimension: dimensionName,
-          values: resp?.data?.map((d) => d[dimensionName]) ?? [],
-        }),
-      },
     },
   );
 }

@@ -1434,6 +1434,58 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/search:
+    post:
+      summary: MetricsViewSearch Get the data types of measures and dimensions
+      operationId: QueryService_MetricsViewSearch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewSearchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: string
+              search:
+                type: string
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Optional
+              where:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              having:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              limit:
+                type: integer
+                format: int32
+                title: Optional
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
     post:
       summary: MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
@@ -2611,6 +2663,12 @@ definitions:
         type: array
         items:
           type: string
+  MetricsViewSearchResponseSearchResult:
+    type: object
+    properties:
+      dimension:
+        type: string
+      value: {}
   MetricsViewSpecAvailableComparisonOffset:
     type: object
     properties:
@@ -2735,7 +2793,12 @@ definitions:
         title: Dashboard level access condition
       rowFilter:
         type: string
-        title: row level access condition
+        title: SQL expression to apply in a WHERE clause against the underlying table
+      queryFilter:
+        $ref: '#/definitions/v1Expression'
+        description: |-
+          Dimension filter to apply to queries against the metrics view.
+          Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
       include:
         type: array
         items:
@@ -2868,7 +2931,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3727,6 +3790,8 @@ definitions:
       val: {}
       cond:
         $ref: '#/definitions/v1Condition'
+      subquery:
+        $ref: '#/definitions/v1Subquery'
   v1FileEvent:
     type: string
     enum:
@@ -4376,6 +4441,14 @@ definitions:
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+  v1MetricsViewSearchResponse:
+    type: object
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSearchResponseSearchResult'
   v1MetricsViewSort:
     type: object
     properties:
@@ -5318,6 +5391,19 @@ definitions:
           type: object
           $ref: '#/definitions/StructTypeField'
     title: StructType is a type composed of ordered, named and typed sub-fields
+  v1Subquery:
+    type: object
+    properties:
+      dimension:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
   v1TableCardinalityRequest:
     type: object
     properties:

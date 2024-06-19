@@ -5,13 +5,15 @@
   type ButtonType =
     | "primary"
     | "secondary"
-    | "highlighted"
-    | "text"
+    | "plain"
+    | "subtle"
+    | "ghost"
+    | "dashed"
     | "link"
-    | "brand"
+    | "text"
     | "add";
 
-  export let type: ButtonType = "primary";
+  export let type: ButtonType = "plain";
   export let status: "info" | "error" = "info";
   export let disabled = false;
   export let compact = false;
@@ -23,8 +25,8 @@
   export let selected = false;
   export let large = false;
   export let small = false;
+  export let wide = false;
   export let noStroke = false;
-  export let dashed = false;
   export let rounded = false;
   export let href: string | null = null;
   export let builders: Builder[] = [];
@@ -51,9 +53,10 @@
   class:square
   class:circle
   class:selected
+  class:loading
   class:large
   class:small
-  class:dashed
+  class:wide
   class:compact
   class:rounded
   class:!w-fit={fit}
@@ -71,9 +74,8 @@
   {#if loading}
     <svg
       xmlns="http://www.w3.org/2000/svg"
-      width="32"
-      height="32"
-      class="p-1.5"
+      width="15"
+      height="15"
       viewBox="0 0 24 24"
     >
       <path
@@ -94,6 +96,9 @@
         />
       </path>
     </svg>
+    {#if !square && !circle && !compact}
+      <span>Loading</span>
+    {/if}
   {:else}
     <slot />
   {/if}
@@ -104,85 +109,204 @@
   a {
     @apply flex text-center items-center justify-center;
     @apply text-xs leading-snug font-normal;
-    @apply gap-x-2 min-w-fit select-none;
+    @apply select-none  cursor-pointer;
     @apply rounded-[2px];
-    @apply px-3 h-7 min-h-[28px] cursor-pointer;
+    @apply px-3 gap-x-2;
+    @apply h-7  min-h-[28px] min-w-fit;
+    @apply font-medium;
   }
 
   button:disabled {
-    @apply opacity-50 cursor-not-allowed;
+    @apply cursor-not-allowed;
   }
 
   /* PRIMARY STYLES */
 
   .primary {
-    @apply bg-slate-800 text-white;
+    @apply bg-primary-600 text-white;
   }
 
-  .primary:hover,
+  .primary:hover {
+    @apply bg-primary-700;
+  }
+
+  .primary:active,
   .primary.selected {
-    @apply bg-slate-700;
+    @apply bg-primary-800;
   }
 
-  .primary:active {
-    @apply bg-slate-900;
+  .primary.disabled {
+    @apply bg-slate-400;
   }
 
-  /* SECONDARY STYLES */
+  /* SECONDARY, GHOST, DASHED STYLES */
 
-  .secondary {
-    @apply bg-white text-slate-600;
-    @apply px-3 h-7 border border-slate-300;
+  .secondary,
+  .ghost,
+  .dashed {
+    @apply bg-transparent text-primary-600;
+  }
+
+  .secondary,
+  .dashed {
+    @apply border border-primary-300;
   }
 
   .secondary:hover,
-  .secondary:disabled,
-  .secondary.selected,
-  .add:hover,
-  .add:disabled,
-  .add.selected {
-    @apply bg-slate-100;
+  .ghost:hover,
+  .dashed:hover {
+    @apply bg-primary-50;
   }
 
   .secondary:active,
-  .add:active {
-    @apply bg-slate-200;
+  .secondary.selected,
+  .ghost:active,
+  .ghost.selected,
+  .dashed:active,
+  .dashed.selected {
+    @apply bg-primary-100;
   }
 
-  /* HIGHLGHTED STYLES (REMOVE) */
-
-  .highlighted {
-    @apply bg-white text-slate-700;
-    @apply border border-slate-100;
-    @apply shadow-md;
-  }
-
-  .highlighted:hover,
-  .highlighted.selected {
+  .secondary.loading,
+  .ghost.loading,
+  .dashed.loading {
     @apply bg-slate-50;
+    @apply border-slate-300;
+    @apply text-slate-600;
   }
 
-  .highlighted:active {
+  .secondary:disabled,
+  .dashed:disabled {
+    @apply text-slate-400 bg-slate-50 border-slate-300;
+  }
+
+  .ghost:disabled {
+    @apply bg-transparent text-slate-400;
+  }
+
+  /* PLAIN STYLES */
+
+  .plain {
+    @apply bg-transparent text-slate-600;
+    @apply border border-slate-300;
+  }
+
+  .plain:hover {
+    @apply bg-slate-100;
+  }
+
+  .plain:active,
+  .plain.selected {
     @apply bg-slate-200;
+  }
+
+  .plain.disabled {
+    @apply text-slate-400;
+  }
+
+  /* SUBTLE STYLES */
+
+  .subtle {
+    @apply bg-primary-50 text-primary-700;
+  }
+
+  .subtle:hover {
+    @apply bg-primary-100;
+  }
+
+  .subtle:active,
+  .subtle.selected {
+    @apply bg-primary-200 text-primary-900;
+  }
+
+  .subtle.loading {
+    @apply bg-slate-50 text-slate-600;
+  }
+
+  .subtle:disabled {
+    @apply text-slate-400 bg-slate-50;
   }
 
   /* LINK STYLES */
 
   .link {
-    @apply text-primary-500;
-  }
-
-  .link:hover,
-  .link.selected {
     @apply text-primary-600;
   }
 
-  .link:active {
+  .link:hover {
     @apply text-primary-700;
+  }
+
+  .link:active,
+  .link.selected {
+    @apply text-primary-800;
+  }
+
+  .link.loading {
+    @apply text-slate-600;
   }
 
   .link:disabled {
     @apply text-slate-400;
+  }
+
+  /* TEXT STYLES */
+
+  .text {
+    @apply text-slate-600;
+  }
+
+  .text:hover {
+    @apply text-primary-700;
+  }
+
+  .text:active,
+  .text.selected {
+    @apply text-primary-800;
+  }
+
+  .text.loading {
+    @apply text-slate-600;
+  }
+
+  .text:disabled {
+    @apply text-slate-400;
+  }
+
+  /* DANGER STYLES */
+
+  .danger.primary {
+    @apply bg-red-500 text-white;
+  }
+
+  .danger.primary:hover {
+    @apply bg-red-600;
+  }
+
+  .danger.primary:active,
+  .danger.selected {
+    @apply bg-red-700;
+  }
+
+  .danger.primary:disabled {
+    @apply bg-slate-400;
+  }
+
+  .danger.secondary {
+    @apply bg-white;
+    @apply text-red-500;
+    @apply border-red-500;
+  }
+
+  .danger.secondary:hover {
+    @apply text-red-600;
+    @apply border-red-600;
+  }
+
+  .danger.secondary:disabled {
+    @apply text-slate-400;
+    @apply bg-slate-50;
+    @apply border-slate-300;
   }
 
   /* SHAPE STYLES */
@@ -198,61 +322,6 @@
     @apply rounded-full;
   }
 
-  /* DANGER STYLES */
-
-  .danger {
-    @apply bg-red-500 text-white;
-  }
-
-  .danger:hover,
-  .danger.selected {
-    @apply bg-red-600;
-  }
-
-  .danger:active {
-    @apply bg-red-700;
-  }
-
-  .danger.secondary {
-    @apply bg-white;
-    @apply text-red-500;
-    @apply border-red-500;
-  }
-
-  .danger:disabled {
-    @apply text-slate-400;
-    @apply bg-slate-50;
-    @apply border-slate-300;
-  }
-
-  /* BRAND STYLES */
-
-  .brand {
-    @apply bg-primary-600 text-white;
-  }
-
-  .brand:hover {
-    @apply bg-primary-500;
-  }
-
-  .brand:active {
-    @apply bg-primary-700;
-  }
-
-  /* TEXT STYLES */
-
-  .text {
-    @apply px-0 font-medium text-slate-600;
-  }
-
-  .text:hover {
-    @apply text-primary-700;
-  }
-
-  .text:active {
-    @apply text-primary-800;
-  }
-
   /* TWEAKS */
 
   .small {
@@ -266,6 +335,11 @@
   .large.square,
   .large.circle {
     @apply h-10;
+  }
+
+  .wide {
+    @apply w-full max-w-[400px];
+    @apply h-10 text-sm;
   }
 
   .compact {

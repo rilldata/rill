@@ -1,8 +1,12 @@
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
-import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
-import type {
+import {
+  fetchResource,
+  ResourceKind,
+} from "@rilldata/web-common/features/entity-management/resource-selectors";
+import {
   V1ExportFormat,
   V1MetricsViewAggregationMeasure,
   createQueryServiceExport,
@@ -26,7 +30,27 @@ export default async function exportToplist({
   const timeControlState = get(
     ctx.selectors.timeRangeSelectors.timeControlsState,
   );
-  const measureFilters = await getResolvedMeasureFilters(ctx);
+  const instanceId = get(runtime).instanceId;
+  const metricsViewResource = await fetchResource(
+    ctx.queryClient,
+    instanceId,
+    metricsViewName,
+    ResourceKind.MetricsView,
+  );
+  const measuresSpec =
+    metricsViewResource?.metricsView?.state?.validSpec?.measures ?? [];
+  const measures = [...dashboard.visibleMeasureKeys]
+    .filter((vm) => {
+      const m = measuresSpec.find((m) => m.name === vm);
+      return !!m && !m.window && !m.requiredDimensions?.length;
+    })
+    .map(
+      (name) =>
+        <V1MetricsViewAggregationMeasure>{
+          name: name,
+        },
+    );
+
   // CAST SAFETY: by definition, a dimension is selected when in the Dimension Table
   const dimensionName = dashboard.selectedDimensionName as string;
 
@@ -40,12 +64,15 @@ export default async function exportToplist({
   }
 
   const where = sanitiseExpression(
-    getDimensionFilterWithSearch(
-      dashboard?.whereFilter,
-      dashboard?.dimensionSearchText ?? "",
-      dimensionName,
+    mergeMeasureFilters(
+      dashboard,
+      getDimensionFilterWithSearch(
+        dashboard?.whereFilter,
+        dashboard?.dimensionSearchText ?? "",
+        dimensionName,
+      ),
     ),
-    measureFilters,
+    undefined,
   );
 
   const result = await get(query).mutateAsync({
@@ -54,17 +81,12 @@ export default async function exportToplist({
       format,
       query: {
         metricsViewComparisonRequest: {
-          instanceId: get(runtime).instanceId,
+          instanceId,
           metricsViewName,
           dimension: {
             name: dimensionName,
           },
-          measures: [...dashboard.visibleMeasureKeys].map(
-            (name) =>
-              <V1MetricsViewAggregationMeasure>{
-                name: name,
-              },
-          ),
+          measures,
           comparisonMeasures: comparisonMeasures,
           timeRange: {
             start: timeControlState.timeStart,

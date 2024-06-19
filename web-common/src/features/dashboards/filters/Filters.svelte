@@ -1,9 +1,9 @@
 <script lang="ts">
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Filter from "@rilldata/web-common/components/icons/Filter.svelte";
+  import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
   import MeasureFilter from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilter.svelte";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
-  import type { V1Expression } from "@rilldata/web-common/runtime-client";
   import { flip } from "svelte/animate";
   import { useMetricsView } from "../selectors/index";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -72,12 +72,12 @@
     dimension: string,
     measureName: string,
     oldDimension: string,
-    expr: V1Expression,
+    filter: MeasureFilterEntry,
   ) {
     if (oldDimension && oldDimension !== dimension) {
       removeMeasureFilter(oldDimension, measureName);
     }
-    setMeasureFilter(dimension, measureName, expr);
+    setMeasureFilter(dimension, filter);
   }
 </script>
 
@@ -121,16 +121,16 @@
         {/if}
       </div>
     {/each}
-    {#each allMeasureFilters as { name, label, dimensionName, expr } (name)}
+    {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
       <div animate:flip={{ duration: 200 }}>
         <MeasureFilter
           {name}
           {label}
           {dimensionName}
-          {expr}
+          {filter}
           on:remove={() => removeMeasureFilter(dimensionName, name)}
-          on:apply={({ detail: { dimension, oldDimension, expr } }) =>
-            handleMeasureFilterApply(dimension, name, oldDimension, expr)}
+          on:apply={({ detail: { dimension, oldDimension, filter } }) =>
+            handleMeasureFilterApply(dimension, name, oldDimension, filter)}
         />
       </div>
     {/each}

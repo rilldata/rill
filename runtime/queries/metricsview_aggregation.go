@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"slices"
 	"strings"
 	"time"
@@ -39,6 +40,7 @@ type MetricsViewAggregation struct {
 	Offset              int64                                          `json:"offset,omitempty"`
 	PivotOn             []string                                       `json:"pivot_on,omitempty"`
 	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
+	SecurityPolicy      *runtimev1.MetricsViewSpec_SecurityV2          `json:"security_policy,omitempty"`
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact,omitempty"`
 
@@ -81,7 +83,7 @@ func (q *MetricsViewAggregation) UnmarshalResult(v any) error {
 
 func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.Dimensions, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, q.Dimensions, q.Measures)
 	if err != nil {
 		return err
 	}
@@ -96,6 +98,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 		if err != nil {
 			return err
 		}
+		defer e.Close()
 
 		res, _, err := e.Query(ctx, qry, nil)
 		if err != nil {
@@ -805,17 +808,74 @@ func toData(rows *sqlx.Rows, schema *runtimev1.StructType) ([]*structpb.Struct, 
 
 func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	q.Exporting = true
-	err := q.Resolve(ctx, rt, instanceID, opts.Priority)
+
+	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
+	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
+		filename += "_filtered"
+	}
+
+	// Resolve metrics view
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, q.Dimensions, q.Measures)
+	if err != nil {
+		return err
+	}
+
+	// Attempt to route to metricsview executor
+	qry, ok, err := q.rewriteToMetricsViewQuery(mv)
+	if err != nil {
+		return fmt.Errorf("error rewriting to metrics query: %w", err)
+	}
+	if ok {
+		e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, security, opts.Priority)
+		if err != nil {
+			return err
+		}
+		defer e.Close()
+
+		var format string
+		switch opts.Format {
+		case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
+			format = "csv"
+		case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
+			format = "xlsx"
+		case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
+			format = "parquet"
+		default:
+			return fmt.Errorf("unsupported format: %s", opts.Format.String())
+		}
+
+		path, err := e.Export(ctx, qry, nil, format)
+		if err != nil {
+			return err
+		}
+		defer func() { _ = os.Remove(path) }()
+
+		err = opts.PreWriteHook(filename)
+		if err != nil {
+			return err
+		}
+
+		f, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer f.Close()
+
+		_, err = io.Copy(w, f)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	}
+	// Falling back to the old implementation
+
+	err = q.Resolve(ctx, rt, instanceID, opts.Priority)
 	if err != nil {
 		if errors.Is(err, context.DeadlineExceeded) {
 			return fmt.Errorf("timeout exceeded")
 		}
 		return err
-	}
-
-	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
-	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
-		filename += "_filtered"
 	}
 
 	meta := structTypeToMetricsViewColumn(q.Result.Schema)
@@ -1232,6 +1292,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 	var subselectMeasureAliases []string
 	var subselectComparisonAliases []string
 
+	originalMeasure := OriginalColumnName(q.Measures[0])
 	// collect subquery expressions
 	for _, m := range q.Measures {
 		switch m.Compute.(type) {
@@ -1416,7 +1477,7 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 		} else if measuresByFinalName[s.Name] != nil { // measure
 			m := measuresByFinalName[s.Name]
 			outerClause = safeName(s.Name)
-			subQueryClause = ColumnName(m)
+			subQueryClause = OriginalColumnName(m)
 		} else {
 			return "", nil, fmt.Errorf("no selected dimension or measure '%s' found for sorting", s.Name)
 		}
@@ -1700,23 +1761,35 @@ func (q *MetricsViewAggregation) buildMeasureFilterComparisonAggregationSQL(mv *
 				-- SELECT COALESCE(base.d1, comparison.d1), ..., base.m1, ..., base.m2 ... 
 				SELECT `+strings.Join(slices.Concat(finalDims[1:], toClauses(inFunc("ANY_VALUE", withCase("coalesce(base."+cw+",comparison."+cw+") = 1", "null", finalMeasures))), finalComparisonTimeDims), ",")+` FROM 
 					(
-						-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
-						SELECT 
-							%[1]s,
-							CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+` 
-						FROM %[3]s %[6]s 
-						WHERE %[4]s 
-						GROUP BY %[2]s, %[7]d 
-						ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+`
+						-- 2 additional SELECTs because Druid doesn't support FIRST aggregation
+						-- SELECT t_offset, d1, d2 ..., CASE WHEN ARRAY_LENGTH(cw) = 1 OR ARRAY_ORDINAL(cw,1) = 1 THEN ARRAY_ORDINAL(m1,1) ELSE ARRAY_ORDINAL(m1, 2) end m1 FROM (
+						SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+`,`+strings.Join(caseArraySelectCols(cw, []string{originalMeasure, cw}), ",")+` FROM (
+							-- SELECT t_offset, d1, d2 ..., array_agg(m1), array_agg(casewhere) FROM ( 
+							SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+","+strings.Join(inFuncCols("ARRAY_AGG", []string{originalMeasure, cw}), ",")+` FROM (
+								-- SELECT t_offset, dim1 as d1, dim2 as d2, timed1 as td1, avg(price) as m1, ... 
+								SELECT 
+									%[1]s,
+									CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+` 
+								FROM %[3]s %[6]s 
+								WHERE %[4]s 
+								GROUP BY %[2]s, %[7]d 
+								ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+`
+							) GROUP BY t_offset, `+strings.Join(subSelectDimAliases, ",")+`
+						)
 					) base
 				LEFT JOIN
 					(
-						SELECT 
-							`+comparisonSelectClause+","+` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+`  
-						FROM %[3]s %[6]s 
-						WHERE %[5]s 
-						GROUP BY %[2]s, %[9]d 
-						ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+` 
+						SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+`,`+strings.Join(caseArraySelectCols(cw, []string{originalMeasure, cw}), ",")+` FROM (
+							-- SELECT t_offset, d1, d2 ..., array_agg(m1), array_agg(casewhere) FROM ( 
+							SELECT t_offset, `+strings.Join(subSelectDimAliases, ",")+","+strings.Join(inFuncCols("ARRAY_AGG", []string{originalMeasure, cw}), ",")+` FROM (
+								SELECT 
+									`+comparisonSelectClause+","+` CASE WHEN `+measureFilterClause+` THEN 1 ELSE 0 END `+cw+`  
+								FROM %[3]s %[6]s 
+								WHERE %[5]s 
+								GROUP BY %[2]s, %[9]d 
+								ORDER BY `+strings.Join(slices.Concat(convertToNullCaseClauses(cw+"= 1", sortConstructs)), ",")+" "+subqueryLimitClause+` 
+							) GROUP BY t_offset, `+strings.Join(subSelectDimAliases, ",")+`
+						)
 					) comparison
 				ON
 				-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
@@ -1761,6 +1834,14 @@ type SortConstruct struct {
 	expression string
 	ending     string
 	dim        bool
+}
+
+func caseArraySelectCols(condCol string, cols []string) []string {
+	cs := make([]string, len(cols))
+	for i, c := range cols {
+		cs[i] = "CASE WHEN ARRAY_LENGTH(" + condCol + ") = 1 OR ARRAY_ORDINAL(" + condCol + ",1) = 1 THEN ARRAY_ORDINAL(" + c + ",1) ELSE ARRAY_ORDINAL(" + c + ", 2) END " + c
+	}
+	return cs
 }
 
 func convertToNullCaseClauses(cond string, sortConstructs []*SortConstruct) []string {
@@ -2144,7 +2225,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 		} else if measuresByFinalName[s.Name] != nil { // measure
 			m := measuresByFinalName[s.Name]
 			outerClause = s.Name
-			subQueryClause = ColumnName(m)
+			subQueryClause = OriginalColumnName(m)
 		} else {
 			return "", nil, fmt.Errorf("no selected dimension or measure '%s' found for sorting", s.Name)
 		}
@@ -2425,13 +2506,15 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			outerGroupClause := ""
 			if len(whereDimConditions) > 0 {
 				whereDimClause = fmt.Sprintf(" AND (%s) ", strings.Join(whereDimConditions, " OR "))
+			}
+			if len(q.Dimensions) > 0 {
 				outerGroupClause = " GROUP BY " + strings.Join(outerGroupCols, ",")
 			}
 
 			sql = fmt.Sprintf(`
 				SELECT * from (
 					-- SELECT base.d1 d1, base.d2 d2, base.timed1 td1, base.m1 m1, comparison.m2 m2 ... , comparison.timed1 td1__previous, ...
-					SELECT %[2]s %[20]s FROM 
+					SELECT %[2]s %[9]s FROM 
 						(
 							-- SELECT t_offset, d1, d2, d3, td1, td2, m1, m2 ... 
 							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s GROUP BY %[10]s %[12]s 
@@ -2443,12 +2526,11 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 					ON
 					-- base.d1 IS NOT DISTINCT FROM comparison.d1 AND base.d2 IS NOT DISTINCT FROM comparison.d2 AND ...
 							%[17]s
-					%[19]s -- GROUP BY ...
+					%[11]s -- GROUP BY ...
 					%[6]s -- ORDER BY ...
 				) WHERE 1=1 AND %[15]s 
 				%[7]s -- LIMIT ...
 				OFFSET %[8]d
-
 			`,
 				baseSelectClause, // 1
 				strings.Join(slices.Concat(finalDims, []string{finalSelectClause}), ","), // 2
@@ -2458,9 +2540,9 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				orderByClause,                                                            // 6
 				limitClause,                                                              // 7
 				q.Offset,                                                                 // 8
-				finalSelectClause,                                                        // 9
+				finalTimeDimsClause,                                                      // 9
 				strings.Join(innerGroupCols, ","),                                        // 10
-				joinType,                                                                 // 11
+				outerGroupClause,                                                         // 11
 				baseLimitClause,                                                          // 12
 				comparisonLimitClause,                                                    // 13
 				strings.Join(unnestClauses, ""),                                          // 14
@@ -2469,7 +2551,6 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				strings.Join(joinConditions, " AND "),                                    // 17
 				whereDimClause,                                                           // 18
 				outerGroupClause,                                                         // 19
-				finalTimeDimsClause,                                                      // 20
 			)
 		} else {
 			limit := 0
@@ -2571,11 +2652,21 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 			if len(finalComparisonTimeDims) > 0 {
 				finalTimeDimsClause = fmt.Sprintf(", %s", strings.Join(finalComparisonTimeDims, ", "))
 			}
+
+			whereDimClause := ""
+			outerGroupClause := ""
+			if len(whereDimConditions) > 0 {
+				whereDimClause = fmt.Sprintf(" AND (%s) ", strings.Join(whereDimConditions, " OR "))
+			}
+			if len(q.Dimensions) > 0 {
+				outerGroupClause = " GROUP BY " + strings.Join(outerGroupCols, ",")
+			}
+
 			sql = fmt.Sprintf(`
 				SELECT * from (
-					SELECT %[2]s, %[9]s %[20]s FROM 
+					SELECT %[2]s %[9]s FROM 
 						(
-							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s AND (%[18]s) GROUP BY %[10]s %[12]s 
+							SELECT %[1]s FROM %[3]s %[14]s WHERE %[4]s %[18]s GROUP BY %[10]s %[12]s 
 						) base
 					LEFT JOIN
 						(
@@ -2583,7 +2674,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 						) comparison
 					ON
 							%[17]s
-					GROUP BY %[19]s
+					%[11]s
 					%[6]s
 					%[7]s
 					OFFSET
@@ -2598,18 +2689,16 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 				orderByClause,                                                            // 6
 				limitClause,                                                              // 7
 				q.Offset,                                                                 // 8
-				finalSelectClause,                                                        // 9
+				finalTimeDimsClause,                                                      // 9
 				strings.Join(innerGroupCols, ","),                                        // 10
-				joinType,                                                                 // 11
+				outerGroupClause,                                                         // 11
 				baseLimitClause,                                                          // 12
 				comparisonLimitClause,                                                    // 13
 				strings.Join(unnestClauses, ""),                                          // 14
 				havingClause,                                                             // 15
 				comparisonSelectClause,                                                   // 16
 				strings.Join(joinConditions, " AND "),                                    // 17
-				strings.Join(whereDimConditions, " OR "),                                 // 18
-				strings.Join(outerGroupCols, ","),                                        // 19
-				finalTimeDimsClause,                                                      // 20
+				whereDimClause,                                                           // 18
 			)
 		}
 	}
@@ -2617,7 +2706,7 @@ func (q *MetricsViewAggregation) buildMetricsComparisonAggregationSQL(ctx contex
 	return sql, args, nil
 }
 
-func ColumnName(m *runtimev1.MetricsViewAggregationMeasure) string {
+func OriginalColumnName(m *runtimev1.MetricsViewAggregationMeasure) string {
 	switch v := m.Compute.(type) {
 	case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
 		return v.ComparisonValue.Measure
@@ -2636,8 +2725,8 @@ func (q *MetricsViewAggregation) calculateMeasuresMeta() error {
 	expands := make(map[string]bool, len(q.Measures))
 	originalNames := make(map[string]bool, len(q.Measures))
 	for _, m := range q.Measures {
-		name := ColumnName(m)
-		if ColumnName(m) != m.Name {
+		name := OriginalColumnName(m)
+		if OriginalColumnName(m) != m.Name {
 			expands[name] = true
 		} else {
 			originalNames[name] = true
@@ -2651,7 +2740,7 @@ func (q *MetricsViewAggregation) calculateMeasuresMeta() error {
 
 	for _, m := range q.Measures {
 		expand := false
-		if expands[ColumnName(m)] {
+		if expands[OriginalColumnName(m)] {
 			expand = true
 		}
 		q.measuresMeta[m.Name] = metricsViewMeasureMeta{
@@ -2877,11 +2966,6 @@ func (q *MetricsViewAggregation) trancationExpression(s string, timeGrain runtim
 }
 
 func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.MetricsViewSpec) (*metricsview.Query, bool, error) {
-	// Pivot not supported yet
-	if len(q.PivotOn) > 0 {
-		return nil, false, nil
-	}
-
 	// Time offset-based comparison joins not supported yet
 	if q.ComparisonTimeRange != nil && !isTimeRangeNil(q.ComparisonTimeRange) {
 		for _, d := range q.Dimensions {
@@ -2948,6 +3032,8 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 		qry.Measures = append(qry.Measures, res)
 	}
 
+	qry.PivotOn = q.PivotOn
+
 	for _, s := range q.Sort {
 		qry.Sort = append(qry.Sort, metricsview.Sort{
 			Name: s.Name,
@@ -2991,11 +3077,11 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 	}
 
 	if q.Where != nil {
-		qry.Where = rewriteToMetricsResolverExpression(q.Where)
+		qry.Where = metricsview.NewExpressionFromProto(q.Where)
 	}
 
 	if q.Having != nil {
-		qry.Having = rewriteToMetricsResolverExpression(q.Having)
+		qry.Having = metricsview.NewExpressionFromProto(q.Having)
 	}
 
 	if q.Limit != nil {

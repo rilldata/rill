@@ -77,7 +77,7 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "port",
-			Type:        drivers.StringPropertyType,
+			Type:        drivers.NumberPropertyType,
 			Required:    true,
 			DisplayName: "Port",
 			Description: "Port number of the Pinot server",

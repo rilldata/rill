@@ -8,7 +8,7 @@ import {
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
   metricsViewRequestFilterMatcher,
-  waitForComparisonTopLists,
+  waitForAggregationTopLists,
   waitForTimeSeries,
   type RequestMatcher,
 } from "../utils/dashboardHelpers";
@@ -41,7 +41,7 @@ test.describe("dashboard", () => {
     ]);
     await Promise.all([
       waitForTimeSeries(page, "AdBids_model_dashboard"),
-      waitForComparisonTopLists(page, "AdBids_model_dashboard", ["domain"]),
+      waitForAggregationTopLists(page, "AdBids_model_dashboard", ["domain"]),
       page.getByRole("button", { name: "Preview" }).click(),
     ]);
     await assertAdBidsDashboard(page);
@@ -55,7 +55,7 @@ test.describe("dashboard", () => {
       );
     await Promise.all([
       waitForTimeSeries(page, "AdBids_model_dashboard", domainFilterMatcher),
-      waitForComparisonTopLists(
+      waitForAggregationTopLists(
         page,
         "AdBids_model_dashboard",
         ["domain"],

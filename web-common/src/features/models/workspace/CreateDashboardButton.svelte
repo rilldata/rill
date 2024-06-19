@@ -41,7 +41,7 @@
   <Button
     disabled={!modelIsIdle || hasError}
     on:click={createDashboardFromModel}
-    type="brand"
+    type="primary"
   >
     <IconSpaceFixer pullLeft pullRight={collapse}>
       <Add />

@@ -59,7 +59,7 @@
 </script>
 
 <div class="whitespace-normal">
-  {#if $isModelingSupportedForCurrentOlapDriver.data}
+  {#if $isModelingSupportedForCurrentOlapDriver}
     Auto-generate a <WithTogglableFloatingElement
       distance={8}
       inline
@@ -98,7 +98,7 @@
     on:click={async () => {
       onCreateSkeletonMetricsConfig();
     }}
-    >{#if $isModelingSupportedForCurrentOlapDriver.data}s{:else}S{/if}tart with
-    a skeleton</button
+    >{#if $isModelingSupportedForCurrentOlapDriver}s{:else}S{/if}tart with a
+    skeleton</button
   >, or just start typing.
 </div>

@@ -364,6 +364,13 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
 		return time.Minute * 2
 	}
+	switch fullMethodName {
+	case
+		"/rill.admin.v1.AdminService/CreateProject",
+		"/rill.admin.v1.AdminService/UpdateProject",
+		"/rill.admin.v1.AdminService/TriggerRedeploy":
+		return time.Minute * 5
+	}
 	return time.Minute
 }
 
@@ -482,4 +489,8 @@ func (u *externalURLs) alertOpen(org, project, alert string) string {
 
 func (u *externalURLs) alertEdit(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+}
+
+func (u *externalURLs) magicAuthTokenOpen(org, project, token string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "share", token)
 }
