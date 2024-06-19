@@ -346,10 +346,10 @@ const downloadTokenTTL = 1 * time.Hour
 
 // downloadToken is the non-encrypted representation of a download token.
 type downloadToken struct {
-	Request    []byte                                `json:"req"`
-	Attributes map[string]any                        `json:"attrs"`
-	Security   *runtimev1.MetricsViewSpec_SecurityV2 `json:"sec"`
-	ExpiresOn  time.Time                             `json:"exp"`
+	Request    []byte         `json:"req"`
+	Attributes map[string]any `json:"attrs"`
+	Security   []byte         `json:"sec"` // Proto encoded *runtimev1.MetricsViewSpec_SecurityV2
+	ExpiresOn  time.Time      `json:"exp"`
 }
 
 // register downloadToken for gob encoding
@@ -369,10 +369,15 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 		return "", err
 	}
 
+	secData, err := proto.Marshal(sec)
+	if err != nil {
+		return "", err
+	}
+
 	tkn := downloadToken{
 		Request:    r,
 		Attributes: attrs,
-		Security:   sec,
+		Security:   secData,
 		ExpiresOn:  time.Now().Add(downloadTokenTTL),
 	}
 
@@ -396,6 +401,15 @@ func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, ma
 		return nil, nil, nil, fmt.Errorf("download token expired")
 	}
 
+	var sec *runtimev1.MetricsViewSpec_SecurityV2
+	if len(tkn.Security) > 0 {
+		sec = &runtimev1.MetricsViewSpec_SecurityV2{}
+		err = proto.Unmarshal(tkn.Security, sec)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+	}
+
 	r, err := gzipDecompress(tkn.Request)
 	if err != nil {
 		return nil, nil, nil, err
@@ -407,7 +421,7 @@ func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, ma
 		return nil, nil, nil, err
 	}
 
-	return req, tkn.Attributes, tkn.Security, nil
+	return req, tkn.Attributes, sec, nil
 }
 
 // gzipCompress compress the input bytes using gzip.
