@@ -50,20 +50,31 @@ func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt 
 	}
 
 	clientParams := wire.ClientParameters(ctx)
-	conn, err := s.psqlConnectionPool.acquire(ctx, clientParams[wire.ParamDatabase])
+	pool, err := s.psqlConnectionPool.acquire(ctx, clientParams[wire.ParamDatabase])
 	if err != nil {
 		return nil, err
 	}
 
-	rows, err := conn.Query(ctx, query) // query to underlying host
+	conn, err := pool.Acquire(ctx)
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Release()
+
+	// We need to set the field descriptors to support extended protocol.
+	// We create a prepared statement for the query but do not execute it to prevent buffering full results into memory.
+	// The other approach is executing the query and only reading field descriptors but it keeps the connection in-use till handler is called via ClientExecute which can leak connections.
+	// NOTE : at present runtime executes full query and sets result in the cache but it should be okay since results will be read immediately in most cases.
+	//
+	// Ideally we should use anonymous prepared statements(name="") but it is not supported by psql-wire.
+	sd, err := conn.Conn().Prepare(ctx, query, query)
 	if err != nil {
 		return nil, err
 	}
 
 	// handle schema
-	fds := rows.FieldDescriptions()
-	cols := make([]wire.Column, 0, len(fds))
-	for _, fd := range fds {
+	cols := make([]wire.Column, 0, len(sd.Fields))
+	for _, fd := range sd.Fields {
 		cols = append(cols, wire.Column{
 			Table: int32(fd.TableOID),
 			Name:  fd.Name,
@@ -78,6 +89,10 @@ func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt 
 		defer func() {
 			s.logger.Info("psql proxy query executed", zap.Duration("duration", time.Since(now)), zap.Error(err))
 		}()
+		rows, err := pool.Query(ctx, query)
+		if err != nil {
+			return err
+		}
 		defer rows.Close()
 		for rows.Next() {
 			d, err := rows.Values()
@@ -89,7 +104,7 @@ func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt 
 			}
 		}
 		if rows.Err() != nil {
-			return err
+			return rows.Err()
 		}
 
 		return writer.Complete("OK")
@@ -252,9 +267,6 @@ func (p *psqlConnectionPool) acquire(ctx context.Context, db string) (*pgxpool.P
 		cc.Password = jwt
 		return nil
 	}
-
-	// Runtime psql server does not support prepared statements
-	config.ConnConfig.DefaultQueryExecMode = pgx.QueryExecModeSimpleProtocol
 
 	pool, err = pgxpool.NewWithConfig(ctx, config)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5/pgtype"
 	wire "github.com/jeroenrinzema/psql-wire"
@@ -74,7 +75,11 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 			// get the values in the same order as schema
 			for j := 0; j < len(res.Schema.Fields); j++ {
 				if v, ok := rawData[i][res.Schema.Fields[j].Name]; ok {
-					row[j] = v
+					// do type conversion if required
+					row[j], err = convertValue(v, res.Schema.Fields[j].Type.Code)
+					if err != nil {
+						return err
+					}
 				} else {
 					row[j] = nil
 				}
@@ -86,6 +91,21 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 		return writer.Complete("OK")
 	}
 	return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(convertSchema(res.Schema)))), nil
+}
+
+func convertValue(v any, code runtimev1.Type_Code) (any, error) {
+	if v == nil {
+		return nil, nil
+	}
+	switch code {
+	case runtimev1.Type_CODE_DATE:
+		if u, ok := v.(string); ok {
+			return time.Parse(time.DateOnly, u)
+		}
+		return v, nil
+	default:
+		return v, nil
+	}
 }
 
 func convertSchema(schema *runtimev1.StructType) wire.Columns {

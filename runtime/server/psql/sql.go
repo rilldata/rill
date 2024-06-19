@@ -15,7 +15,9 @@ import (
 	goduckdb "github.com/marcboeker/go-duckdb"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb"
+	metricssqlparser "github.com/rilldata/rill/runtime/pkg/metricssql"
 	"github.com/shopspring/decimal"
 	"go.uber.org/zap"
 )
@@ -101,12 +103,19 @@ func ResolvePSQLQuery(ctx context.Context, opts *PSQLQueryOpts) ([][]any, *runti
 			return nil, nil, err
 		}
 
-		mvSpec := resource.GetMetricsView().Spec
-		tbl, err := olap.InformationSchema().Lookup(ctx, mvSpec.Database, mvSpec.DatabaseSchema, mvSpec.Table)
+		// get the schema of the metrics view with a SELECT ALL COLUMNS FROM metrics_view metrics-sql query
+		c := metricssqlparser.New(ctrl, opts.InstanceID, opts.UserAttributes, 1)
+		query, _, _, err := c.Compile(ctx, fmt.Sprintf("SELECT %s FROM %s LIMIT 0", colString(cols, olap.Dialect()), resource.Meta.Name.Name))
 		if err != nil {
 			release()
 			return nil, nil, err
 		}
+		res, err := olap.Execute(ctx, &drivers.Statement{Query: query})
+		if err != nil {
+			release()
+			return nil, nil, err
+		}
+		res.Close()
 		release()
 
 		// generate create table query
@@ -114,15 +123,10 @@ func ResolvePSQLQuery(ctx context.Context, opts *PSQLQueryOpts) ([][]any, *runti
 		sb.WriteString("CREATE TABLE ")
 		sb.WriteString(olap.Dialect().EscapeIdentifier(resource.Meta.Name.Name))
 		sb.WriteString("(")
-		colWritten := false
-		for _, field := range tbl.Schema.Fields {
-			if _, ok := cols[field.Name]; !ok { // columns is excluded from querying
-				continue
-			}
-			if colWritten {
+		for i, field := range res.Schema.Fields {
+			if i != 0 {
 				sb.WriteString(", ")
 			}
-			colWritten = true
 			sb.WriteString(olap.Dialect().EscapeIdentifier(field.Name))
 			sb.WriteString(" ")
 			typ, err := pbTypeToDuckDB(field.Type)
@@ -414,4 +418,15 @@ func convert(row []any, schema *runtimev1.StructType) (err error) {
 		}
 	}
 	return nil
+}
+
+func colString(cols map[string]any, dialect drivers.Dialect) string {
+	var sb strings.Builder
+	for key := range cols {
+		if sb.Len() > 0 {
+			sb.WriteString(",")
+		}
+		sb.WriteString(dialect.EscapeIdentifier(key))
+	}
+	return sb.String()
 }
