@@ -68,6 +68,8 @@
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparisonTimeSeries = !comparisonDimension && showComparison;
 
+  $: metricsViewSpec = $metricsView.data ?? {};
+
   $: ({
     latestWindowTimeRanges,
     periodToDateRanges,
@@ -93,6 +95,20 @@
   $: activeTimeGrain = selectedTimeRange?.interval;
 
   function onSelectTimeZone(timeZone: string) {
+    if (!interval.isValid) return;
+
+    if (selectedRange === "CUSTOM") {
+      selectRange({
+        name: TimeRangePreset.CUSTOM,
+        start: interval.start
+          ?.setZone(timeZone, { keepLocalTime: true })
+          .toJSDate(),
+        end: interval.end
+          ?.setZone(timeZone, { keepLocalTime: true })
+          .toJSDate(),
+      });
+    }
+
     metricsExplorerStore.setTimeZone(metricViewName, timeZone);
     localUserPreferences.set({ timeZone });
   }
@@ -184,6 +200,7 @@
       timeRange,
       timeGrain,
       comparisonTimeRange,
+      metricsViewSpec,
     );
   }
 
@@ -210,6 +227,7 @@
       timeRange as TimeRange,
       activeTimeGrain,
       comparisonTimeRange,
+      metricsViewSpec,
     );
   }
 
@@ -218,11 +236,15 @@
     start: Date,
     end: Date,
   ) {
-    metricsExplorerStore.setSelectedComparisonRange(metricViewName, {
-      name,
-      start,
-      end,
-    });
+    metricsExplorerStore.setSelectedComparisonRange(
+      metricViewName,
+      {
+        name,
+        start,
+        end,
+      },
+      metricsViewSpec,
+    );
   }
 </script>
 

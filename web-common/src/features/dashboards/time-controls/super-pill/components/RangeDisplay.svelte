@@ -3,11 +3,22 @@
 
   export let interval: Interval<true>;
 
-  $: date = interval.toLocaleString(DateTime.DATE_MED);
+  $: inclusiveInterval = interval.set({
+    end: interval.end.minus({ second: 1 }),
+  });
 
-  $: time = interval.toFormat("h a", { separator: "-" });
+  $: date = inclusiveInterval.toLocaleString(DateTime.DATE_MED);
+
+  $: time = inclusiveInterval.toFormat("h a", { separator: "-" });
+
+  // Only show time if either time is not 12AM
+  $: showTime = interval.end.hour !== 0 || interval.end.minute !== 0;
 </script>
 
 <div class="flex gap-x-1" title="{date} {time}">
-  <span class="line-clamp-1 text-left">{date} ({time})</span>
+  <span class="line-clamp-1 text-left"
+    >{date}
+    {#if showTime}
+      ({time}){/if}</span
+  >
 </div>

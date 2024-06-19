@@ -11,7 +11,7 @@
     DashboardTimeControls,
     TimeGrain,
   } from "@rilldata/web-common/lib/time/types";
-
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { V1TimeGrain } from "../../../runtime-client";
 
   import {
@@ -22,6 +22,7 @@
   import Chip from "@rilldata/web-common/components/chip/core/Chip.svelte";
   import { timeChipColors } from "@rilldata/web-common/components/chip/chip-types";
   import type { TimeRange } from "@rilldata/web-common/lib/time/types";
+  import { useMetricsView } from "../selectors";
 
   export let metricViewName: string;
   export let pill = false;
@@ -31,7 +32,11 @@
   let timeGrainOptions: TimeGrain[];
   let open = false;
 
+  $: ({ instanceId } = $runtime);
+
   $: dashboardStore = useDashboardStore(metricViewName);
+  $: metricsViewQuery = useMetricsView(instanceId, metricViewName);
+  $: metricsView = $metricsViewQuery.data ?? {};
 
   $: ({ minTimeGrain, timeStart, timeEnd, selectedTimeRange } =
     $timeControlsStore);
@@ -94,6 +99,7 @@
       timeRange,
       timeGrain,
       comparisonTimeRange,
+      metricsView,
     );
   }
 </script>

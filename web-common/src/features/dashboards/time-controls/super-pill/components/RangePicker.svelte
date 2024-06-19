@@ -11,6 +11,7 @@
   import RangeDisplay from "./RangeDisplay.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
+  import { slide } from "svelte/transition";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
@@ -23,6 +24,8 @@
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
+
+  let showSelector = false;
 </script>
 
 <DropdownMenu.Root
@@ -31,7 +34,9 @@
     if (open) {
       firstVisibleMonth = interval.start;
     }
+    showSelector = false;
   }}
+  closeOnItemClick={false}
 >
   <DropdownMenu.Trigger asChild let:builder>
     <button
@@ -49,24 +54,31 @@
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="p-0 overflow-hidden">
     <div class="flex">
-      <div class="flex flex-col border-r w-48 p-1">
+      <div class="flex flex-col w-48 p-1">
         <TimeRangeMenu
           {ranges}
           {selected}
           {showDefaultItem}
           {defaultTimeRange}
-          {onSelectRange}
+          onSelectRange={(selected) => {
+            onSelectRange(selected);
+
+            open = false;
+          }}
+          onSelectCustomOption={() => (showSelector = true)}
         />
       </div>
-      <div class="bg-slate-50 flex flex-col w-64 p-2 py-1">
-        <CalendarPlusDateInput
-          {firstVisibleMonth}
-          {interval}
-          {zone}
-          applyRange={applyCustomRange}
-          closeMenu={() => (open = false)}
-        />
-      </div>
+      {#if showSelector || selected === "CUSTOM"}
+        <div class="bg-slate-50 border-l flex flex-col w-64 p-2 py-1">
+          <CalendarPlusDateInput
+            {firstVisibleMonth}
+            {interval}
+            {zone}
+            applyRange={applyCustomRange}
+            closeMenu={() => (open = false)}
+          />
+        </div>
+      {/if}
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -11,10 +11,10 @@
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
-
   export let showDefaultItem: boolean;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
+  export let onSelectCustomOption: () => void;
 
   function handleClick(e: CustomEventHandler<MouseEvent, HTMLDivElement>) {
     const range = e.detail.currentTarget.dataset.range;
@@ -26,12 +26,12 @@
   }
 </script>
 
-{#if selected === "CUSTOM"}
+<!-- {#if selected === "CUSTOM"}
   <DropdownMenu.Item>
     <b> Custom </b>
   </DropdownMenu.Item>
   <DropdownMenu.Separator />
-{/if}
+{/if} -->
 
 <DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
   <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
@@ -82,3 +82,9 @@
     </span>
   </DropdownMenu.Item>
 {/each}
+
+<DropdownMenu.Separator />
+
+<DropdownMenu.Item on:click={onSelectCustomOption} data-range="custom">
+  <span class:font-bold={selected === "CUSTOM"}> Custom </span>
+</DropdownMenu.Item>

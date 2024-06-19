@@ -16,9 +16,13 @@
   }
 
   function handleSelectDay(date: DateTime<true>) {
-    const newInterval = interval.set({
-      [selectingStart ? "start" : "end"]: date,
-    });
+    let newInterval: Interval;
+
+    if (selectingStart) {
+      newInterval = interval.set({ start: date });
+    } else {
+      newInterval = interval.set({ end: date.plus({ day: 1 }) });
+    }
 
     if (newInterval.isValid) {
       interval = newInterval;

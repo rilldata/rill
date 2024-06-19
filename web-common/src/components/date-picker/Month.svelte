@@ -18,6 +18,8 @@
 
   $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
 
+  $: inclusiveEnd = interval.end.minus({ day: 1 });
+
   $: days = Array.from({ length: weekCount * 7 }, (_, i) => {
     if (i < firstDay) {
       return startDay.minus({ day: firstDay - i });
@@ -80,12 +82,12 @@
       <div class="weekday">{weekday}</div>
     {/each}
     {#each days as date (date.toISO())}
-      {@const isEnd = areSameDay(interval.end, date)}
+      {@const isEnd = areSameDay(inclusiveEnd, date)}
       {@const inRange =
-        !isEnd && date >= interval.start && date <= interval.end}
+        !isEnd && date >= interval.start && date <= inclusiveEnd}
       {@const inPotentialRange =
         (potentialEnd && date > interval.start && date < potentialEnd) ||
-        (potentialStart && date > potentialStart && date < interval.end)}
+        (potentialStart && date > potentialStart && date < inclusiveEnd)}
       {@const outOfMonth = date.month !== startDay.month}
       {@const weekend = date.weekday === 6 || date.weekday === 7}
       <button
@@ -107,10 +109,6 @@
         class:in-range={inRange}
         class:in-potential-range={inPotentialRange}
         class:is-start={areSameDay(interval.start, date)}
-        class:is-inclusive-end={areSameDay(
-          interval.end.minus({ day: 1 }),
-          date,
-        )}
         class:is-end={isEnd}
       >
         {date.day}
@@ -127,7 +125,7 @@
   }
 
   :not(.selecting-start) .day:not(.is-start):not(.is-end):hover {
-    @apply rounded-r-sm  border border-primary-200 bg-transparent border-dashed;
+    @apply rounded-r-sm  border border-primary-200 bg-primary-200 border-dashed;
   }
 
   .selecting-start .day:not(.is-start):not(.is-end):hover {
@@ -144,7 +142,7 @@
   }
 
   .is-end {
-    @apply rounded-r-md border border-primary-200 bg-white border-dashed border-l-0;
+    @apply rounded-r-md border border-l-0;
   }
 
   .in-range {
@@ -157,10 +155,14 @@
 
   .is-start {
     @apply rounded-l-md;
-    @apply bg-primary-600 border-primary-600 border-l border-r-0 text-white;
+    @apply border-l border-r-0;
   }
 
-  .is-inclusive-end {
-    @apply border-r;
+  .is-end {
+    @apply bg-primary-700 border-primary-700 text-white;
+  }
+
+  .is-start {
+    @apply bg-primary-600 border-primary-600 text-white;
   }
 </style>

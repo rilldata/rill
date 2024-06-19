@@ -18,9 +18,12 @@
   let displayError = false;
 
   function onValidDateInput(date: DateTime) {
-    const newInterval = interval.set({
-      [selectingStart ? "start" : "end"]: date,
-    });
+    let newInterval: Interval;
+    if (selectingStart) {
+      newInterval = interval.set({ start: date });
+    } else {
+      newInterval = interval.set({ end: date.plus({ day: 1 }) });
+    }
 
     if (newInterval.isValid) {
       interval = newInterval;
@@ -39,7 +42,7 @@
 <DropdownMenu.Separator />
 <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">
   <label for="start-date" class:error={selectingStart && displayError}>
-    Start Date <span class="secondary">(Inclusive)</span>
+    Start Date
   </label>
   <div class="flex gap-x-1">
     <DateInput
@@ -53,13 +56,14 @@
     />
   </div>
   <label for="start-date" class:error={!selectingStart && displayError}>
-    End Date <span class="secondary">(Exclusive)</span>
+    End Date
   </label>
+  <div>{interval.end.toRFC2822()}</div>
   <div class="flex gap-x-1 w-full">
     <DateInput
       bind:selectingStart
       bind:displayError
-      date={interval.end}
+      date={interval.end.minus({ day: 1 })}
       {zone}
       boundary="end"
       currentYear={firstVisibleMonth.year}
@@ -71,6 +75,7 @@
   <Button
     fit
     compact
+    type="primary"
     on:click={() => {
       const mapped = interval.mapEndpoints((dt) => dt.startOf("day"));
       if (mapped.isValid) {
@@ -88,8 +93,4 @@
   label {
     @apply font-semibold flex gap-x-1;
   }
-
-  /* label.error {
-      @apply text-destructive;
-    } */
 </style>
