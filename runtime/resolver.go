@@ -91,7 +91,12 @@ func (r *resolverResult) MarshalJSON() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		out = append(out, ret.(map[string]any))
+		row, ok := ret.(map[string]any)
+		if !ok {
+			// this should not
+			return nil, fmt.Errorf("unexpected type %T", ret)
+		}
+		out = append(out, row)
 	}
 	if r.rows.Err() != nil {
 		return nil, r.rows.Err()
