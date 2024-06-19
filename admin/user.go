@@ -219,6 +219,11 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
+	// return early if billing is not configured
+	if s.Biller.Name() == "noop" {
+		return org, nil
+	}
+
 	var updatedOrg *database.Organization
 	// create customer and subscription in the billing system, if it fails just log the error but don't fail the request
 	// TODO run this in a background job

@@ -14,6 +14,7 @@ const (
 )
 
 type Biller interface {
+	Name() string
 	GetDefaultPlan(ctx context.Context) (*Plan, error)
 	GetPlans(ctx context.Context) ([]*Plan, error)
 	// GetPublicPlans for listing purposes

@@ -31,6 +31,10 @@ func NewOrb(orbKey string) Biller {
 	return &Orb{client: c}
 }
 
+func (o *Orb) Name() string {
+	return "orb"
+}
+
 func (o *Orb) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 	plans, err := o.GetPlans(ctx)
 	if err != nil {

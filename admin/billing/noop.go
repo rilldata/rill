@@ -14,6 +14,10 @@ func NewNoop() Biller {
 	return noop{}
 }
 
+func (n noop) Name() string {
+	return "noop"
+}
+
 func (n noop) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 	return nil, nil
 }
