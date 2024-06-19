@@ -33,7 +33,7 @@
     return map;
   }, new Map<string, PathOption>());
 
-  $: huh = <PathOption>{
+  $: projectPath = <PathOption>{
     label: projectTitle,
     section: "project",
     depth: -1,
@@ -41,7 +41,7 @@
   };
 
   $: pathParts = [
-    new Map([[projectTitle.toLowerCase(), huh]]),
+    new Map([[projectTitle.toLowerCase(), projectPath]]),
     dashboardOptions,
   ];
 
