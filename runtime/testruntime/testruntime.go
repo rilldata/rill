@@ -67,9 +67,11 @@ func New(t TestingT) *runtime.Runtime {
 	}
 
 	logger := zap.NewNop()
-	// nolint
-	// logger, err := zap.NewDevelopment()
-	// require.NoError(t, err)
+	var err error
+	if os.Getenv("DEBUG") == "1" {
+		logger, err = zap.NewDevelopment()
+		require.NoError(t, err)
+	}
 
 	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)

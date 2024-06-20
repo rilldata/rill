@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
@@ -84,9 +83,6 @@ func (r *MetricsViewReconciler) Reconcile(ctx context.Context, n *runtimev1.Reso
 	if validateErr == nil {
 		mv.State.ValidSpec = mv.Spec
 	} else {
-		if os.Getenv("DEBUG") == "1" {
-			fmt.Println("Reconciler error", validateErr.Error())
-		}
 		mv.State.ValidSpec = nil
 	}
 
