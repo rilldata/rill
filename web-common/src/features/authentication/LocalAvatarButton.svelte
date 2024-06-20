@@ -1,14 +1,14 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import { Button } from "@rilldata/web-common/components/button";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import {
     createLocalServiceDeployValidation,
     createLocalServiceGetCurrentUser,
-    createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: user = createLocalServiceGetCurrentUser();
-  $: metadata = createLocalServiceGetMetadata();
   $: deployValidation = createLocalServiceDeployValidation();
 
   // $: if ($user.data?.authenticated) initPylonChat($user.data);
@@ -23,12 +23,8 @@
   }
 
   function makeLogOutHref(): string {
-    if (!$metadata.data?.adminUrl) return "";
-    // Create a login URL that redirects back to the current page
-    const loginWithRedirect = `${$metadata.data?.adminUrl}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
-
-    // Create the logout URL, providing the login URL as a redirect
-    return `${$metadata.data?.adminUrl}/auth/logout?redirect=${loginWithRedirect}`;
+    // Create the logout URL, providing the current URL
+    return `${$runtime.host}/auth/logout?redirect=${$page.url.href}`;
   }
 </script>
 

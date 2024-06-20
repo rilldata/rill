@@ -47,8 +47,6 @@ message GetMetadataResponse {
   bool analytics_enabled = 9;
   bool readonly = 10;
   int32 grpc_port = 11;
-  // used for logout url right now
-  string admin_url = 12;
 }
 
 message GetVersionRequest {}

@@ -60,6 +60,7 @@ func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enab
 	// Register auth endpoints (starts and OAuth flow that leads to a token being set in ~/.rill)
 	mux.Handle("/auth", s.authHandler(httpPort, secure))
 	mux.Handle("/auth/callback", s.authCallbackHandler())
+	mux.Handle("/auth/logout", s.logoutHandler())
 
 	// Register telemetry proxy endpoint
 	mux.Handle("/local/track", s.trackingHandler())
@@ -90,7 +91,6 @@ func (s *Server) GetMetadata(ctx context.Context, r *connect.Request[localv1.Get
 		AnalyticsEnabled: s.metadata.AnalyticsEnabled,
 		Readonly:         s.metadata.Readonly,
 		GrpcPort:         int32(s.metadata.GRPCPort),
-		AdminUrl:         s.app.ch.AdminURL,
 	}), nil
 }
 
@@ -617,6 +617,43 @@ func (s *Server) authCallbackHandler() http.Handler {
 		}
 		s.app.ch.AdminTokenDefault = token
 		http.Redirect(w, r, authenticator.OriginURL, http.StatusFound)
+	})
+}
+
+// logoutHandler logs out the user and unsets the token stored
+func (s *Server) logoutHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.app.ch.IsAuthenticated() {
+			return
+		}
+		c, err := s.app.ch.Client()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to start admin client: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		ctx := r.Context()
+
+		_, err = c.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to logout: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		origin := r.URL.Query().Get("redirect")
+		if origin == "" {
+			origin = "/"
+		}
+
+		// reset stored access token
+		err = dotrill.SetAccessToken("")
+		if err != nil {
+			http.Error(w, "failed to save access token", http.StatusInternalServerError)
+			return
+		}
+		s.app.ch.AdminTokenDefault = ""
+
+		http.Redirect(w, r, origin, http.StatusFound)
 	})
 }
 

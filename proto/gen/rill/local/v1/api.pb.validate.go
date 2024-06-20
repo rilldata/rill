@@ -412,8 +412,6 @@ func (m *GetMetadataResponse) validate(all bool) error {
 
 	// no validation rules for GrpcPort
 
-	// no validation rules for AdminUrl
-
 	if len(errors) > 0 {
 		return GetMetadataResponseMultiError(errors)
 	}
