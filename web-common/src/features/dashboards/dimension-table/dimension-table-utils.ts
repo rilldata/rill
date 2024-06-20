@@ -255,7 +255,7 @@ export function prepareVirtualizedDimTableColumns(
     (m) => m.name === leaderboardMeasureName,
   );
 
-  const dimensionColumn = getDimensionColumn(dimension);
+  const dimensionColumn = dimension.name ?? "";
 
   // copy column names so we don't mutate the original
   const columnNames = [...dash.visibleMeasureKeys].filter((m) =>

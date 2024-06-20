@@ -89,7 +89,7 @@ export const prepareDimTableRows =
 
     if (!dimension) return [];
 
-    const dimensionColumn = getDimensionColumn(dimension);
+    const dimensionColumn = dimension.name ?? "";
     const leaderboardMeasureName = activeMeasureName(dashData);
 
     // FIXME: should this really be all measures, or just visible measures?
