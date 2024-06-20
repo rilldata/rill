@@ -62,10 +62,26 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 	if err != nil {
 		return nil, err
 	}
+	return wire.Prepared(wire.NewStatement(s.execQuery(instanceID, query), wire.WithColumns(convertSchema(res.Schema)))), nil
+}
 
-	handle := func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+func (s *Server) execQuery(instanceID, query string) wire.PreparedStatementFn {
+	return func(ctx context.Context, writer wire.DataWriter, parameters []wire.Parameter) error {
+		// NOTE :: the duplicate call to runtime.Resolve is made so that we do not keep the results and eventually leak memory if query is never executed.
+		// This should resolve fast in most cases since results will be cached.
+		res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
+			InstanceID:         instanceID,
+			Resolver:           "metrics_sql",
+			ResolverProperties: map[string]any{"sql": query},
+			Args:               map[string]any{"priority": 1},
+			UserAttributes:     auth.GetClaims(ctx).Attributes(),
+		})
+		if err != nil {
+			return err
+		}
+
 		var rawData []map[string]interface{}
-		err := json.Unmarshal(res.Data, &rawData)
+		err = json.Unmarshal(res.Data, &rawData)
 		if err != nil {
 			return err
 		}
@@ -90,7 +106,6 @@ func (s *Server) psqlQueryHandler(ctx context.Context, query string) (wire.Prepa
 		}
 		return writer.Complete("OK")
 	}
-	return wire.Prepared(wire.NewStatement(handle, wire.WithColumns(convertSchema(res.Schema)))), nil
 }
 
 func convertValue(v any, code runtimev1.Type_Code) (any, error) {

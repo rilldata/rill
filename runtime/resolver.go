@@ -77,8 +77,6 @@ func (r *resolverResult) Close() error {
 
 // MarshalJSON implements ResolverResult.
 func (r *resolverResult) MarshalJSON() ([]byte, error) {
-	// close is idempotent so we close rows in this function itself
-	defer r.rows.Close()
 	var out []map[string]any
 	for r.rows.Next() {
 		row := make(map[string]any)

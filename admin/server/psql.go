@@ -55,6 +55,7 @@ func (s *Server) psqlProxyQueryHandler(ctx context.Context, query string) (stmt 
 		return nil, err
 	}
 
+	// acquire a connection from the pool and make sure to release the connection back to pool in all paths
 	conn, err := pool.Acquire(ctx)
 	if err != nil {
 		return nil, err

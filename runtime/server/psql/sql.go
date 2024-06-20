@@ -56,8 +56,10 @@ func ResolvePSQLQuery(ctx context.Context, opts *PSQLQueryOpts) ([][]any, *runti
 	// various hacks to make postgres query compatible with a duckdb query
 	sqlStr := rewriteSQL(opts.SQL)
 
+	if opts.SQL == "-- ping" {
+		return nil, &runtimev1.StructType{}, nil
+	}
 	// check if it is a non catalog query like `SHOW variable`
-	sqlStr = strings.TrimSuffix(sqlStr, ";")
 	matches := showVarRe.FindStringSubmatch(sqlStr)
 	if len(matches) > 1 {
 		return handleShowVariableQuery(matches[1])
@@ -240,6 +242,7 @@ func colsForMetricView(ctrl *runtime.Controller, opts *PSQLQueryOpts, mv *runtim
 // duckdb is not fully compatible with postgres so need to rewrite some queries. This is a hacky solution.
 func rewriteSQL(sql string) string {
 	sql = extraCharRe.ReplaceAllString(sql, "\n")
+	sql = strings.TrimSuffix(sql, ";")
 
 	// hacks for working with superset
 	sql = strings.ReplaceAll(sql, "ix.indrelid = c.conrelid and\n                                ix.indexrelid = c.conindid and\n                                c.contype in ('p', 'u', 'x')", "ix.indrelid = c.conrelid")
