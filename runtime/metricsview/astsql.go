@@ -104,7 +104,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
-	b.out.WriteString("FROM ")
+	b.out.WriteString(" FROM ")
 	if n.FromTable != nil {
 		b.out.WriteString(*n.FromTable)
 
@@ -155,7 +155,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	var wroteWhere bool
 	if n.TimeWhere != nil && n.TimeWhere.Expr != "" {
 		wroteWhere = true
-		b.out.WriteString("WHERE (")
+		b.out.WriteString(" WHERE (")
 		b.out.WriteString(n.TimeWhere.Expr)
 		b.out.WriteString(")")
 		b.args = append(b.args, n.TimeWhere.Args...)
