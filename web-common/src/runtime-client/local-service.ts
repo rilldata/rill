@@ -1,10 +1,6 @@
 import type { PartialMessage } from "@bufbuild/protobuf";
-import { createPromiseClient } from "@connectrpc/connect";
+import { type ConnectError, createPromiseClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
-import type {
-  CreateMutationOptions,
-  CreateQueryOptions,
-} from "@rilldata/svelte-query";
 import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_connect";
 import {
   DeployRequest,
@@ -13,10 +9,13 @@ import {
   GetVersionRequest,
   PushToGithubRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
-import type { RpcStatus } from "@rilldata/web-common/runtime-client/gen/index.schemas";
-import type { ErrorType } from "@rilldata/web-common/runtime-client/http-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { createMutation, createQuery } from "@tanstack/svelte-query";
+import {
+  createMutation,
+  createQuery,
+  type CreateMutationOptions,
+  type CreateQueryOptions,
+} from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 /**
@@ -49,7 +48,7 @@ export const getLocalServiceGetMetadataQueryKey = () => [
 ];
 export function createLocalServiceGetMetadata<
   TData = Awaited<ReturnType<typeof localServiceGetMetadata>>,
-  TError = ErrorType<RpcStatus>,
+  TError = ConnectError,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof localServiceGetMetadata>>,
@@ -73,7 +72,7 @@ export const getLocalServiceGetVersionQueryKey = () => [
 ];
 export function createLocalServiceGetVersion<
   TData = Awaited<ReturnType<typeof localServiceGetVersion>>,
-  TError = ErrorType<RpcStatus>,
+  TError = ConnectError,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof localServiceGetVersion>>,
@@ -97,7 +96,7 @@ export const getLocalServiceDeployValidationQueryKey = () => [
 ];
 export function createLocalServiceDeployValidation<
   TData = Awaited<ReturnType<typeof localServiceDeployValidation>>,
-  TError = ErrorType<RpcStatus>,
+  TError = ConnectError,
 >(options?: {
   query?: CreateQueryOptions<
     Awaited<ReturnType<typeof localServiceDeployValidation>>,
@@ -120,7 +119,7 @@ export function localServicePushToGithub(
   return getClient().pushToGithub(new PushToGithubRequest(args));
 }
 export function createLocalServicePushToGithub<
-  TError = ErrorType<RpcStatus>,
+  TError = ConnectError,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
@@ -143,7 +142,7 @@ export function localServiceDeploy(args: PartialMessage<DeployRequest>) {
   return getClient().deploy(new DeployRequest(args));
 }
 export function createLocalServiceDeploy<
-  TError = ErrorType<RpcStatus>,
+  TError = ConnectError,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
