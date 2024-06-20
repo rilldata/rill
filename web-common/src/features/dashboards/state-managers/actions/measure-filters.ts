@@ -1,44 +1,39 @@
+import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import type { DashboardMutables } from "@rilldata/web-common/features/dashboards/state-managers/actions/types";
-import {
-  getHavingFilterExpressionIndex,
-  getMeasureFilterForDimensionIndex,
-} from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import type { V1Expression } from "@rilldata/web-common/runtime-client";
 
 export function setMeasureFilter(
   { dashboard }: DashboardMutables,
   dimensionName: string,
-  measureName: string,
-  filter: V1Expression,
+  filter: MeasureFilterEntry,
 ) {
   if (dashboard.temporaryFilterName !== null) {
     dashboard.temporaryFilterName = null;
   }
 
-  const dimId = getMeasureFilterForDimensionIndex({ dashboard })(dimensionName);
+  const dimId = dashboard.dimensionThresholdFilters.findIndex(
+    (dtf) => dtf.name === dimensionName,
+  );
   let dimThresholdFilter: DimensionThresholdFilter;
   if (dimId === -1) {
     dimThresholdFilter = {
       name: dimensionName,
-      filter: createAndExpression([]),
+      filters: [],
     };
     dashboard.dimensionThresholdFilters.push(dimThresholdFilter);
   } else {
     dimThresholdFilter = dashboard.dimensionThresholdFilters[dimId];
   }
 
-  const exprIdx = getHavingFilterExpressionIndex(
-    dimThresholdFilter.filter,
-    measureName,
+  const exprIdx = dimThresholdFilter.filters.findIndex(
+    (f) => f.measure === filter.measure,
   );
   if (exprIdx === -1) {
     // if there is no expression for the measure push to the end
-    dimThresholdFilter.filter.cond?.exprs?.push(filter);
+    dimThresholdFilter.filters.push(filter);
   } else if (exprIdx >= 0) {
     // else replace the existing measure filter
-    dimThresholdFilter.filter.cond?.exprs?.splice(exprIdx, 1, filter);
+    dimThresholdFilter.filters.splice(exprIdx, 1, filter);
   }
 }
 
@@ -52,19 +47,20 @@ export function removeMeasureFilter(
     return;
   }
 
-  const dimId = getMeasureFilterForDimensionIndex({ dashboard })(dimensionName);
+  const dimId = dashboard.dimensionThresholdFilters.findIndex(
+    (dtf) => dtf.name === dimensionName,
+  );
   if (dimId === -1) return;
   const dimThresholdFilter = dashboard.dimensionThresholdFilters[dimId];
 
-  const exprIdx = getHavingFilterExpressionIndex(
-    dimThresholdFilter.filter,
-    measureName,
+  const exprIdx = dimThresholdFilter.filters.findIndex(
+    (f) => f.measure === measureName,
   );
   if (exprIdx === -1) return;
-  dimThresholdFilter.filter.cond?.exprs?.splice(exprIdx, 1);
+  dimThresholdFilter.filters.splice(exprIdx, 1);
 
   // if dimension threshold filter is empty remove it
-  if (dimThresholdFilter.filter.cond?.exprs?.length === 0) {
+  if (dimThresholdFilter.filters.length === 0) {
     dashboard.dimensionThresholdFilters.splice(dimId, 1);
   }
 }

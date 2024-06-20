@@ -4,11 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -638,6 +641,87 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	require.Equal(t, 2, strings.Count(str, "\n"))
 	rowStrings := strings.Split(str, "\n")
 	require.Equal(t, "Domain Label,Total volume", rowStrings[0])
+}
+
+func TestMetricsViewsComparison_Druid_comparsion_no_dim_values(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
+
+	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+		},
+		ComparisonMeasures: []string{"m1"},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "m1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
+			},
+		},
+		Where: expressionpb.AndAll(
+			expressionpb.IdentIn("pub", expressionpb.String("Yahoo")),
+			expressionpb.IdentIn("id", expressionpb.Number(0)),
+		),
+		Limit: 250,
+	}
+
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Empty(t, q.Result)
+}
+
+func TestMetricsViewsComparison_comparsion_no_dim_values(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+		},
+		ComparisonMeasures: []string{"m1"},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name:     "m1",
+				SortType: runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_BASE_VALUE,
+				Desc:     true,
+			},
+		},
+		Where: expressionpb.AndAll(
+			expressionpb.IdentIn("pub", expressionpb.String("Yahoo1")),
+		),
+		Limit: 250,
+	}
+
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.Empty(t, q.Result)
 }
 
 func TestMetricsViewsComparison_comparsion_having_same_name(t *testing.T) {

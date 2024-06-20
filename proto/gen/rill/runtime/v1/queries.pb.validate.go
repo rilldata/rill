@@ -8756,6 +8756,359 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewSchemaResponseValidationError{}
 
+// Validate checks the field values on MetricsViewSearchRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewSearchRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewSearchRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewSearchRequestMultiError, or nil if none found.
+func (m *MetricsViewSearchRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSearchRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	if utf8.RuneCountInString(m.GetMetricsViewName()) < 1 {
+		err := MetricsViewSearchRequestValidationError{
+			field:  "MetricsViewName",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Search
+
+	if all {
+		switch v := interface{}(m.GetTimeRange()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSearchRequestValidationError{
+					field:  "TimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSearchRequestValidationError{
+					field:  "TimeRange",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetTimeRange()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSearchRequestValidationError{
+				field:  "TimeRange",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetWhere()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSearchRequestValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSearchRequestValidationError{
+					field:  "Where",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetWhere()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSearchRequestValidationError{
+				field:  "Where",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetHaving()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSearchRequestValidationError{
+					field:  "Having",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSearchRequestValidationError{
+					field:  "Having",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetHaving()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSearchRequestValidationError{
+				field:  "Having",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if m.GetLimit() < 0 {
+		err := MetricsViewSearchRequestValidationError{
+			field:  "Limit",
+			reason: "value must be greater than or equal to 0",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for Priority
+
+	if len(errors) > 0 {
+		return MetricsViewSearchRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSearchRequestMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSearchRequest.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSearchRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSearchRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSearchRequestMultiError) AllErrors() []error { return m }
+
+// MetricsViewSearchRequestValidationError is the validation error returned by
+// MetricsViewSearchRequest.Validate if the designated constraints aren't met.
+type MetricsViewSearchRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSearchRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSearchRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSearchRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSearchRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSearchRequestValidationError) ErrorName() string {
+	return "MetricsViewSearchRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSearchRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSearchRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSearchRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSearchRequestValidationError{}
+
+// Validate checks the field values on MetricsViewSearchResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewSearchResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MetricsViewSearchResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// MetricsViewSearchResponseMultiError, or nil if none found.
+func (m *MetricsViewSearchResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSearchResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetResults() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSearchResponseValidationError{
+						field:  fmt.Sprintf("Results[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSearchResponseValidationError{
+						field:  fmt.Sprintf("Results[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewSearchResponseValidationError{
+					field:  fmt.Sprintf("Results[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewSearchResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSearchResponseMultiError is an error wrapping multiple validation
+// errors returned by MetricsViewSearchResponse.ValidateAll() if the
+// designated constraints aren't met.
+type MetricsViewSearchResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSearchResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSearchResponseMultiError) AllErrors() []error { return m }
+
+// MetricsViewSearchResponseValidationError is the validation error returned by
+// MetricsViewSearchResponse.Validate if the designated constraints aren't met.
+type MetricsViewSearchResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSearchResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSearchResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSearchResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSearchResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSearchResponseValidationError) ErrorName() string {
+	return "MetricsViewSearchResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSearchResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSearchResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSearchResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSearchResponseValidationError{}
+
 // Validate checks the field values on ColumnRollupIntervalRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -14092,6 +14445,143 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewFilter_CondValidationError{}
+
+// Validate checks the field values on MetricsViewSearchResponse_SearchResult
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *MetricsViewSearchResponse_SearchResult) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewSearchResponse_SearchResult with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// MetricsViewSearchResponse_SearchResultMultiError, or nil if none found.
+func (m *MetricsViewSearchResponse_SearchResult) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewSearchResponse_SearchResult) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Dimension
+
+	if all {
+		switch v := interface{}(m.GetValue()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MetricsViewSearchResponse_SearchResultValidationError{
+					field:  "Value",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MetricsViewSearchResponse_SearchResultValidationError{
+					field:  "Value",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetValue()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MetricsViewSearchResponse_SearchResultValidationError{
+				field:  "Value",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return MetricsViewSearchResponse_SearchResultMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewSearchResponse_SearchResultMultiError is an error wrapping
+// multiple validation errors returned by
+// MetricsViewSearchResponse_SearchResult.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewSearchResponse_SearchResultMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewSearchResponse_SearchResultMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewSearchResponse_SearchResultMultiError) AllErrors() []error { return m }
+
+// MetricsViewSearchResponse_SearchResultValidationError is the validation
+// error returned by MetricsViewSearchResponse_SearchResult.Validate if the
+// designated constraints aren't met.
+type MetricsViewSearchResponse_SearchResultValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewSearchResponse_SearchResultValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewSearchResponse_SearchResultValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewSearchResponse_SearchResultValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewSearchResponse_SearchResultValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewSearchResponse_SearchResultValidationError) ErrorName() string {
+	return "MetricsViewSearchResponse_SearchResultValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewSearchResponse_SearchResultValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewSearchResponse_SearchResult.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewSearchResponse_SearchResultValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewSearchResponse_SearchResultValidationError{}
 
 // Validate checks the field values on TopK_Entry with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

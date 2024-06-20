@@ -23,6 +23,7 @@
         request: string().required("Required"),
         email: string().email("Invalid email"),
       }),
+
       onSubmit: async (values) => {
         // Following the approach here: https://stackoverflow.com/questions/51995070/post-data-to-a-google-form-with-ajax
         const submitFormEndpoint = `${GOOGLE_FORM_ENDPOINT}/formResponse?${REQUEST_FIELD_ID}=${values.request}&${EMAIL_FIELD_ID}=${values.email}&submit=Submit`;
@@ -58,9 +59,9 @@
         id="request"
         label="Connector"
         placeholder="Your data source"
-        error={$errors["request"]}
+        errors={$errors["request"]}
         bind:value={$form["request"]}
-        on:change={handleChange}
+        onChange={handleChange}
       />
     </div>
     <div class="pt-4 pb-5 text-slate-800">
@@ -68,9 +69,9 @@
         id="email"
         label="Optionally, we can let you know when the connector is available."
         placeholder="Your email address"
-        error={$errors["email"]}
+        errors={$errors["email"]}
         bind:value={$form["email"]}
-        on:change={handleChange}
+        onChange={handleChange}
       />
     </div>
   </form>

@@ -15496,6 +15496,758 @@ var _ interface {
 	ErrorName() string
 } = ListServiceAuthTokensResponseValidationError{}
 
+// Validate checks the field values on IssueMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *IssueMagicAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IssueMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// IssueMagicAuthTokenRequestMultiError, or nil if none found.
+func (m *IssueMagicAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IssueMagicAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := IssueMagicAuthTokenRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := IssueMagicAuthTokenRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	// no validation rules for TtlMinutes
+
+	// no validation rules for MetricsView
+
+	if all {
+		switch v := interface{}(m.GetMetricsViewFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
+					field:  "MetricsViewFilter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, IssueMagicAuthTokenRequestValidationError{
+					field:  "MetricsViewFilter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMetricsViewFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return IssueMagicAuthTokenRequestValidationError{
+				field:  "MetricsViewFilter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return IssueMagicAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// IssueMagicAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by IssueMagicAuthTokenRequest.ValidateAll() if
+// the designated constraints aren't met.
+type IssueMagicAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IssueMagicAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IssueMagicAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// IssueMagicAuthTokenRequestValidationError is the validation error returned
+// by IssueMagicAuthTokenRequest.Validate if the designated constraints aren't met.
+type IssueMagicAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IssueMagicAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IssueMagicAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IssueMagicAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IssueMagicAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IssueMagicAuthTokenRequestValidationError) ErrorName() string {
+	return "IssueMagicAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IssueMagicAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIssueMagicAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IssueMagicAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IssueMagicAuthTokenRequestValidationError{}
+
+// Validate checks the field values on IssueMagicAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *IssueMagicAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on IssueMagicAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// IssueMagicAuthTokenResponseMultiError, or nil if none found.
+func (m *IssueMagicAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *IssueMagicAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Token
+
+	// no validation rules for Url
+
+	if len(errors) > 0 {
+		return IssueMagicAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// IssueMagicAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by IssueMagicAuthTokenResponse.ValidateAll() if
+// the designated constraints aren't met.
+type IssueMagicAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m IssueMagicAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m IssueMagicAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// IssueMagicAuthTokenResponseValidationError is the validation error returned
+// by IssueMagicAuthTokenResponse.Validate if the designated constraints
+// aren't met.
+type IssueMagicAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e IssueMagicAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e IssueMagicAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e IssueMagicAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e IssueMagicAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e IssueMagicAuthTokenResponseValidationError) ErrorName() string {
+	return "IssueMagicAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e IssueMagicAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sIssueMagicAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = IssueMagicAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = IssueMagicAuthTokenResponseValidationError{}
+
+// Validate checks the field values on ListMagicAuthTokensRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListMagicAuthTokensRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListMagicAuthTokensRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListMagicAuthTokensRequestMultiError, or nil if none found.
+func (m *ListMagicAuthTokensRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListMagicAuthTokensRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := ListMagicAuthTokensRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := ListMagicAuthTokensRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 1000 {
+			err := ListMagicAuthTokensRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 1000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
+	if len(errors) > 0 {
+		return ListMagicAuthTokensRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListMagicAuthTokensRequestMultiError is an error wrapping multiple
+// validation errors returned by ListMagicAuthTokensRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ListMagicAuthTokensRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListMagicAuthTokensRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListMagicAuthTokensRequestMultiError) AllErrors() []error { return m }
+
+// ListMagicAuthTokensRequestValidationError is the validation error returned
+// by ListMagicAuthTokensRequest.Validate if the designated constraints aren't met.
+type ListMagicAuthTokensRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListMagicAuthTokensRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListMagicAuthTokensRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListMagicAuthTokensRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListMagicAuthTokensRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListMagicAuthTokensRequestValidationError) ErrorName() string {
+	return "ListMagicAuthTokensRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListMagicAuthTokensRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListMagicAuthTokensRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListMagicAuthTokensRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListMagicAuthTokensRequestValidationError{}
+
+// Validate checks the field values on ListMagicAuthTokensResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListMagicAuthTokensResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListMagicAuthTokensResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListMagicAuthTokensResponseMultiError, or nil if none found.
+func (m *ListMagicAuthTokensResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListMagicAuthTokensResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetTokens() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListMagicAuthTokensResponseValidationError{
+						field:  fmt.Sprintf("Tokens[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListMagicAuthTokensResponseValidationError{
+						field:  fmt.Sprintf("Tokens[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListMagicAuthTokensResponseValidationError{
+					field:  fmt.Sprintf("Tokens[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	// no validation rules for NextPageToken
+
+	if len(errors) > 0 {
+		return ListMagicAuthTokensResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListMagicAuthTokensResponseMultiError is an error wrapping multiple
+// validation errors returned by ListMagicAuthTokensResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListMagicAuthTokensResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListMagicAuthTokensResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListMagicAuthTokensResponseMultiError) AllErrors() []error { return m }
+
+// ListMagicAuthTokensResponseValidationError is the validation error returned
+// by ListMagicAuthTokensResponse.Validate if the designated constraints
+// aren't met.
+type ListMagicAuthTokensResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListMagicAuthTokensResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListMagicAuthTokensResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListMagicAuthTokensResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListMagicAuthTokensResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListMagicAuthTokensResponseValidationError) ErrorName() string {
+	return "ListMagicAuthTokensResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListMagicAuthTokensResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListMagicAuthTokensResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListMagicAuthTokensResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListMagicAuthTokensResponseValidationError{}
+
+// Validate checks the field values on RevokeMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevokeMagicAuthTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeMagicAuthTokenRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RevokeMagicAuthTokenRequestMultiError, or nil if none found.
+func (m *RevokeMagicAuthTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeMagicAuthTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for TokenId
+
+	if len(errors) > 0 {
+		return RevokeMagicAuthTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeMagicAuthTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by RevokeMagicAuthTokenRequest.ValidateAll() if
+// the designated constraints aren't met.
+type RevokeMagicAuthTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeMagicAuthTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeMagicAuthTokenRequestMultiError) AllErrors() []error { return m }
+
+// RevokeMagicAuthTokenRequestValidationError is the validation error returned
+// by RevokeMagicAuthTokenRequest.Validate if the designated constraints
+// aren't met.
+type RevokeMagicAuthTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeMagicAuthTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeMagicAuthTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeMagicAuthTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeMagicAuthTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeMagicAuthTokenRequestValidationError) ErrorName() string {
+	return "RevokeMagicAuthTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeMagicAuthTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeMagicAuthTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeMagicAuthTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeMagicAuthTokenRequestValidationError{}
+
+// Validate checks the field values on RevokeMagicAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RevokeMagicAuthTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RevokeMagicAuthTokenResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RevokeMagicAuthTokenResponseMultiError, or nil if none found.
+func (m *RevokeMagicAuthTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RevokeMagicAuthTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RevokeMagicAuthTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RevokeMagicAuthTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by RevokeMagicAuthTokenResponse.ValidateAll() if
+// the designated constraints aren't met.
+type RevokeMagicAuthTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RevokeMagicAuthTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RevokeMagicAuthTokenResponseMultiError) AllErrors() []error { return m }
+
+// RevokeMagicAuthTokenResponseValidationError is the validation error returned
+// by RevokeMagicAuthTokenResponse.Validate if the designated constraints
+// aren't met.
+type RevokeMagicAuthTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RevokeMagicAuthTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RevokeMagicAuthTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RevokeMagicAuthTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RevokeMagicAuthTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RevokeMagicAuthTokenResponseValidationError) ErrorName() string {
+	return "RevokeMagicAuthTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RevokeMagicAuthTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRevokeMagicAuthTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RevokeMagicAuthTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RevokeMagicAuthTokenResponseValidationError{}
+
 // Validate checks the field values on GetGithubRepoStatusRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -23204,6 +23956,10 @@ func (m *ProjectPermissions) validate(all bool) error {
 
 	// no validation rules for ManageProjectMembers
 
+	// no validation rules for CreateMagicAuthTokens
+
+	// no validation rules for ManageMagicAuthTokens
+
 	// no validation rules for CreateReports
 
 	// no validation rules for ManageReports
@@ -23211,6 +23967,10 @@ func (m *ProjectPermissions) validate(all bool) error {
 	// no validation rules for CreateAlerts
 
 	// no validation rules for ManageAlerts
+
+	// no validation rules for CreateBookmarks
+
+	// no validation rules for ManageBookmarks
 
 	if len(errors) > 0 {
 		return ProjectPermissionsMultiError(errors)
@@ -24002,6 +24762,261 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = ServiceTokenValidationError{}
+
+// Validate checks the field values on MagicAuthToken with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MagicAuthToken) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on MagicAuthToken with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in MagicAuthTokenMultiError,
+// or nil if none found.
+func (m *MagicAuthToken) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MagicAuthToken) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Id
+
+	// no validation rules for ProjectId
+
+	if all {
+		switch v := interface{}(m.GetCreatedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "CreatedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetCreatedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MagicAuthTokenValidationError{
+				field:  "CreatedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetExpiresOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "ExpiresOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "ExpiresOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExpiresOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MagicAuthTokenValidationError{
+				field:  "ExpiresOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if all {
+		switch v := interface{}(m.GetUsedOn()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "UsedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "UsedOn",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetUsedOn()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MagicAuthTokenValidationError{
+				field:  "UsedOn",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for CreatedByUserId
+
+	// no validation rules for CreatedByUserEmail
+
+	if all {
+		switch v := interface{}(m.GetAttributes()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "Attributes",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetAttributes()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MagicAuthTokenValidationError{
+				field:  "Attributes",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	// no validation rules for MetricsView
+
+	if all {
+		switch v := interface{}(m.GetMetricsViewFilter()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "MetricsViewFilter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, MagicAuthTokenValidationError{
+					field:  "MetricsViewFilter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetMetricsViewFilter()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return MagicAuthTokenValidationError{
+				field:  "MetricsViewFilter",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return MagicAuthTokenMultiError(errors)
+	}
+
+	return nil
+}
+
+// MagicAuthTokenMultiError is an error wrapping multiple validation errors
+// returned by MagicAuthToken.ValidateAll() if the designated constraints
+// aren't met.
+type MagicAuthTokenMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MagicAuthTokenMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MagicAuthTokenMultiError) AllErrors() []error { return m }
+
+// MagicAuthTokenValidationError is the validation error returned by
+// MagicAuthToken.Validate if the designated constraints aren't met.
+type MagicAuthTokenValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MagicAuthTokenValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MagicAuthTokenValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MagicAuthTokenValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MagicAuthTokenValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MagicAuthTokenValidationError) ErrorName() string { return "MagicAuthTokenValidationError" }
+
+// Error satisfies the builtin error interface
+func (e MagicAuthTokenValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMagicAuthToken.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MagicAuthTokenValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MagicAuthTokenValidationError{}
 
 // Validate checks the field values on VirtualFile with the rules defined in
 // the proto definition for this message. If any rules are violated, the first

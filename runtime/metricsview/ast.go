@@ -79,8 +79,13 @@ type OrderFieldNode struct {
 //
 // Dynamic time ranges in the qry must be resolved to static start/end timestamps before calling this function.
 // This is due to NewAST not being able (or intended) to resolve external time anchors such as watermarks.
+//
+// The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
 func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
-	// Validate there's at least one dim or measure
+	// Validation
+	if len(qry.PivotOn) > 0 {
+		return nil, errors.New("cannot build AST for pivot queries")
+	}
 	if len(qry.Dimensions) == 0 && len(qry.Measures) == 0 {
 		return nil, fmt.Errorf("must specify at least one dimension or measure")
 	}
@@ -158,7 +163,7 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecur
 		// This also enables us to template the field name instead of the field expression into the expression.
 		ast.wrapSelect(ast.Root, ast.generateIdentifier())
 
-		expr, args, err := ast.sqlForExpression(ast.query.Having, ast.Root, true)
+		expr, args, err := ast.sqlForExpression(ast.query.Having, ast.Root, true, true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile 'having': %w", err)
 		}
@@ -474,16 +479,39 @@ func (a *AST) checkRequiredDimensionsPresentInQuery(m *runtimev1.MetricsViewSpec
 
 // buildUnderlyingWhere constructs the base WHERE clause for the query.
 func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
-	expr, args, err := a.sqlForExpression(a.query.Where, nil, false)
+	expr, args, err := a.sqlForExpression(a.query.Where, nil, false, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile 'where': %w", err)
 	}
 
-	if a.security != nil && a.security.RowFilter != "" {
-		if expr == "" {
-			expr = a.security.RowFilter
-		} else {
-			expr = fmt.Sprintf("(%s) AND (%s)", a.security.RowFilter, expr)
+	if a.security != nil {
+		var secExpr string
+		var secArgs []any
+
+		if a.security.QueryFilter != nil {
+			e := NewExpressionFromProto(a.security.QueryFilter)
+			secExpr, secArgs, err = a.sqlForExpression(e, nil, false, false)
+			if err != nil {
+				return nil, fmt.Errorf("failed to compile the security policy's query filter: %w", err)
+			}
+		}
+
+		if a.security.RowFilter != "" {
+			if secExpr == "" {
+				secExpr = a.security.RowFilter
+			} else {
+				secExpr = fmt.Sprintf("(%s) AND (%s)", secExpr, a.security.RowFilter)
+			}
+		}
+
+		if secExpr != "" {
+			if expr == "" {
+				expr = secExpr
+				args = secArgs
+			} else {
+				expr = fmt.Sprintf("(%s) AND (%s)", expr, secExpr)
+				args = append(args, secArgs...)
+			}
 		}
 	}
 

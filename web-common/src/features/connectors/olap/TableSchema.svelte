@@ -19,6 +19,11 @@
     },
   );
   $: ({ data, error, isError } = $columnsQuery);
+
+  function prettyPrintType(type: string) {
+    // If the type starts with "CODE_", remove it
+    return type.replace(/^CODE_/, "");
+  }
 </script>
 
 <ul class="table-schema-list">
@@ -28,14 +33,16 @@
     </div>
   {:else if data && data.profileColumns}
     {#each data.profileColumns as column (column)}
-      <li class="table-schema-entry {database ? 'pl-[74px]' : 'pl-[58px]'}">
+      <li class="table-schema-entry {database ? 'pl-[78px]' : 'pl-[60px]'}">
         <Tooltip distance={4}>
           <span class="font-mono truncate">{column.name}</span>
           <TooltipContent slot="tooltip-content">
             {column.name}
           </TooltipContent>
         </Tooltip>
-        <span class="uppercase text-gray-700">{column.type}</span>
+        <span class="uppercase text-gray-700"
+          >{prettyPrintType(column.type ?? "")}</span
+        >
       </li>
     {/each}
   {/if}

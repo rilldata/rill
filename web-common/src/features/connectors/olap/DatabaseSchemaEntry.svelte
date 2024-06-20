@@ -41,6 +41,7 @@
       className="transform transition-transform text-gray-400 {showTables
         ? 'rotate-0'
         : '-rotate-90'}"
+      size="14px"
     />
     <!-- Some databases do not have a full "database -> databaseSchema -> table" hierarchy. 
       When there are only two organizational levels,the API returns "databaseSchema -> table". 
@@ -93,10 +94,6 @@
 
   button:hover {
     @apply bg-slate-100;
-  }
-
-  .database-schema-entry:not(.open) .database-schema-entry-header {
-    @apply bg-white;
   }
 
   .message {

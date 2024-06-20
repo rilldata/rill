@@ -118,6 +118,22 @@ export type AdminServiceSearchProjectUsersParams = {
   pageToken?: string;
 };
 
+export type AdminServiceIssueMagicAuthTokenBody = {
+  /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
+  ttlMinutes?: string;
+  /** Metrics view the token will provide access to. */
+  metricsView?: string;
+  metricsViewFilter?: V1Expression;
+  /** Optional list of names of dimensions and measures to limit access to.
+If empty, all dimensions and measures are accessible. */
+  metricsViewFields?: string[];
+};
+
+export type AdminServiceListMagicAuthTokensParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceListProjectMembersParams = {
   pageSize?: number;
   pageToken?: string;
@@ -444,6 +460,13 @@ export interface V1Subscription {
   trialEndDate?: string;
 }
 
+export interface V1Subquery {
+  dimension?: string;
+  measures?: string[];
+  where?: V1Expression;
+  having?: V1Expression;
+}
+
 export interface V1SetSuperuserResponse {
   [key: string]: any;
 }
@@ -492,6 +515,10 @@ export interface V1SearchProjectNamesResponse {
 }
 
 export interface V1RevokeServiceAuthTokenResponse {
+  [key: string]: any;
+}
+
+export interface V1RevokeMagicAuthTokenResponse {
   [key: string]: any;
 }
 
@@ -570,10 +597,14 @@ export interface V1ProjectPermissions {
   manageDev?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+  createMagicAuthTokens?: boolean;
+  manageMagicAuthTokens?: boolean;
   createReports?: boolean;
   manageReports?: boolean;
   createAlerts?: boolean;
   manageAlerts?: boolean;
+  createBookmarks?: boolean;
+  manageBookmarks?: boolean;
 }
 
 export type V1ProjectAnnotations = { [key: string]: string };
@@ -636,6 +667,25 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1Operation = {
+  OPERATION_UNSPECIFIED: "OPERATION_UNSPECIFIED",
+  OPERATION_EQ: "OPERATION_EQ",
+  OPERATION_NEQ: "OPERATION_NEQ",
+  OPERATION_LT: "OPERATION_LT",
+  OPERATION_LTE: "OPERATION_LTE",
+  OPERATION_GT: "OPERATION_GT",
+  OPERATION_GTE: "OPERATION_GTE",
+  OPERATION_OR: "OPERATION_OR",
+  OPERATION_AND: "OPERATION_AND",
+  OPERATION_IN: "OPERATION_IN",
+  OPERATION_NIN: "OPERATION_NIN",
+  OPERATION_LIKE: "OPERATION_LIKE",
+  OPERATION_NLIKE: "OPERATION_NLIKE",
+} as const;
+
 export interface V1Member {
   userId?: string;
   userEmail?: string;
@@ -643,6 +693,22 @@ export interface V1Member {
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export type V1MagicAuthTokenAttributes = { [key: string]: any };
+
+export interface V1MagicAuthToken {
+  id?: string;
+  projectId?: string;
+  createdOn?: string;
+  expiresOn?: string;
+  usedOn?: string;
+  createdByUserId?: string;
+  createdByUserEmail?: string;
+  attributes?: V1MagicAuthTokenAttributes;
+  metricsView?: string;
+  metricsViewFilter?: V1Expression;
+  metricsViewFields?: string[];
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -704,6 +770,11 @@ export interface V1ListOrganizationInvitesResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListMagicAuthTokensResponse {
+  tokens?: V1MagicAuthToken[];
+  nextPageToken?: string;
+}
+
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
 }
@@ -723,6 +794,11 @@ export interface V1IssueRepresentativeAuthTokenResponse {
 export interface V1IssueRepresentativeAuthTokenRequest {
   email?: string;
   ttlMinutes?: string;
+}
+
+export interface V1IssueMagicAuthTokenResponse {
+  token?: string;
+  url?: string;
 }
 
 export type V1GithubPermission =
@@ -842,6 +918,13 @@ export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
 }
 
+export interface V1Expression {
+  ident?: string;
+  val?: unknown;
+  cond?: V1Condition;
+  subquery?: V1Subquery;
+}
+
 export type V1ExportFormat =
   (typeof V1ExportFormat)[keyof typeof V1ExportFormat];
 
@@ -955,6 +1038,11 @@ export interface V1CreateBookmarkRequest {
 
 export interface V1CreateAlertResponse {
   name?: string;
+}
+
+export interface V1Condition {
+  op?: V1Operation;
+  exprs?: V1Expression[];
 }
 
 export interface V1CompletionMessage {

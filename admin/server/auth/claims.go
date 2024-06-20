@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/rilldata/rill/admin"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/authtoken"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"go.uber.org/zap"
@@ -16,10 +17,11 @@ import (
 type OwnerType string
 
 const (
-	OwnerTypeAnon       OwnerType = "anon"
-	OwnerTypeUser       OwnerType = "user"
-	OwnerTypeService    OwnerType = "service"
-	OwnerTypeDeployment OwnerType = "deployment"
+	OwnerTypeAnon           OwnerType = "anon"
+	OwnerTypeUser           OwnerType = "user"
+	OwnerTypeService        OwnerType = "service"
+	OwnerTypeDeployment     OwnerType = "deployment"
+	OwnerTypeMagicAuthToken OwnerType = "magic_auth_token" // nolint:gosec // It's not a credential
 )
 
 // Claims resolves permissions for a requester.
@@ -27,6 +29,7 @@ type Claims interface {
 	OwnerType() OwnerType
 	OwnerID() string
 	AuthTokenID() string
+	AuthTokenModel() any
 	Superuser(ctx context.Context) bool
 	OrganizationPermissions(ctx context.Context, orgID string) *adminv1.OrganizationPermissions
 	ProjectPermissions(ctx context.Context, orgID, projectID string) *adminv1.ProjectPermissions
@@ -62,6 +65,10 @@ func (c anonClaims) OwnerID() string {
 
 func (c anonClaims) AuthTokenID() string {
 	return ""
+}
+
+func (c anonClaims) AuthTokenModel() any {
+	return nil
 }
 
 func (c anonClaims) Superuser(ctx context.Context) bool {
@@ -108,6 +115,8 @@ func (c *authTokenClaims) OwnerType() OwnerType {
 		return OwnerTypeService
 	case authtoken.TypeDeployment:
 		return OwnerTypeDeployment
+	case authtoken.TypeMagic:
+		return OwnerTypeMagicAuthToken
 	default:
 		panic(fmt.Errorf("unexpected token type %q", t))
 	}
@@ -121,6 +130,10 @@ func (c *authTokenClaims) AuthTokenID() string {
 	return c.token.Token().ID.String()
 }
 
+func (c *authTokenClaims) AuthTokenModel() any {
+	return c.token.TokenModel()
+}
+
 func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 	switch c.token.Token().Type {
 	case authtoken.TypeUser:
@@ -130,6 +143,9 @@ func (c *authTokenClaims) Superuser(ctx context.Context) bool {
 		return false
 	case authtoken.TypeDeployment:
 		// deployments can't be superusers
+		return false
+	case authtoken.TypeMagic:
+		// magic tokens can't be superusers
 		return false
 	default:
 		panic(fmt.Errorf("unexpected token type %q", c.token.Token().Type))
@@ -185,6 +201,13 @@ func (c *authTokenClaims) ProjectPermissions(ctx context.Context, orgID, project
 		perm, err = c.admin.ProjectPermissionsForService(ctx, projectID, c.token.OwnerID(), orgPerms)
 	case authtoken.TypeDeployment:
 		perm, err = c.admin.ProjectPermissionsForDeployment(ctx, projectID, c.token.OwnerID(), orgPerms)
+	case authtoken.TypeMagic:
+		mdl, ok := c.token.TokenModel().(*database.MagicAuthToken)
+		if ok {
+			perm, err = c.admin.ProjectPermissionsForMagicAuthToken(ctx, projectID, mdl)
+		} else {
+			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
+		}
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}
@@ -215,6 +238,13 @@ func (c *authTokenClaims) organizationPermissionsUnsafe(ctx context.Context, org
 		perm, err = c.admin.OrganizationPermissionsForService(ctx, orgID, c.token.OwnerID())
 	case authtoken.TypeDeployment:
 		perm, err = c.admin.OrganizationPermissionsForDeployment(ctx, orgID, c.token.OwnerID())
+	case authtoken.TypeMagic:
+		mdl, ok := c.token.TokenModel().(*database.MagicAuthToken)
+		if ok {
+			perm, err = c.admin.OrganizationPermissionsForMagicAuthToken(ctx, orgID, mdl.ProjectID)
+		} else {
+			err = fmt.Errorf("unexpected token model type %T", c.token.TokenModel())
+		}
 	default:
 		err = fmt.Errorf("unexpected token type %q", c.token.Token().Type)
 	}

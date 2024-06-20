@@ -1,8 +1,28 @@
-ALTER TABLE orgs ADD COLUMN billing_customer_id TEXT NOT NULL DEFAULT '';
+CREATE TABLE magic_auth_tokens (
+    id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+    secret_hash BYTEA NOT NULL,
+    project_id UUID NOT NULL REFERENCES projects (id) ON DELETE CASCADE,
+    created_on TIMESTAMPTZ DEFAULT now() NOT NULL,
+    expires_on TIMESTAMPTZ,
+    used_on TIMESTAMPTZ DEFAULT now() NOT NULL,
+    created_by_user_id UUID REFERENCES users (id) ON DELETE SET NULL,
+    attributes JSONB DEFAULT '{}'::JSONB NOT NULL,
+    metrics_view TEXT NOT NULL,
+    metrics_view_filter_json TEXT NOT NULL,
+    metrics_view_fields TEXT[] NOT NULL
+);
 
-CREATE UNIQUE INDEX orgs_billing_customer_id_idx ON orgs (billing_customer_id) WHERE billing_customer_id <> '';
+CREATE INDEX magic_auth_tokens_project_id_idx ON magic_auth_tokens (project_id);
+CREATE INDEX magic_auth_tokens_created_by_user_id_idx ON magic_auth_tokens (created_by_user_id) WHERE created_by_user_id IS NOT NULL;
 
-ALTER TABLE orgs ADD COLUMN quota_storage_limit_bytes_per_deployment BIGINT NOT NULL DEFAULT -1;
-UPDATE orgs SET quota_storage_limit_bytes_per_deployment = 5368709120;
+ALTER TABLE project_roles ADD create_magic_auth_tokens BOOLEAN DEFAULT false NOT NULL;
+UPDATE project_roles SET create_magic_auth_tokens = manage_project_members;
 
-ALTER TABLE projects ADD COLUMN next_usage_reporting_time TIMESTAMP DEFAULT '0001-01-01 00:00:00';
+ALTER TABLE project_roles ADD manage_magic_auth_tokens BOOLEAN DEFAULT false NOT NULL;
+UPDATE project_roles SET manage_magic_auth_tokens = manage_project_members;
+
+ALTER TABLE project_roles ADD create_bookmarks BOOLEAN DEFAULT false NOT NULL;
+UPDATE project_roles SET create_bookmarks = read_project;
+
+ALTER TABLE project_roles ADD manage_bookmarks BOOLEAN DEFAULT false NOT NULL;
+UPDATE project_roles SET manage_bookmarks = manage_project;
