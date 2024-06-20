@@ -79,7 +79,7 @@
   }
 
   th {
-    @apply truncate p-0 bg-white;
+    @apply truncate p-0 bg-background;
     height: var(--header-height);
   }
 

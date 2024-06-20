@@ -20,7 +20,7 @@
 
   $: containerClasses = dark
     ? "text-white bg-gray-800"
-    : "text-gray-800 bg-white";
+    : "text-gray-800 bg-background";
 
   let xDimClasses = "";
   let yDimClasses = "";

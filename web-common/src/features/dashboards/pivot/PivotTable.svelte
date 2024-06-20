@@ -431,7 +431,7 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-separate w-fit;
     @apply font-normal select-none;
-    @apply bg-white table-fixed;
+    @apply bg-background table-fixed;
   }
 
   .table-wrapper {
@@ -442,7 +442,7 @@
   /* Pin header */
   thead {
     @apply sticky top-0;
-    @apply z-30 bg-white;
+    @apply z-30 bg-background;
   }
 
   tbody .cell {
@@ -470,7 +470,7 @@
   }
 
   .header-cell {
-    @apply px-2 bg-white size-full;
+    @apply px-2 bg-background size-full;
     @apply flex items-center gap-x-1 w-full truncate;
     @apply font-medium;
     height: var(--header-height);
@@ -487,12 +487,12 @@
 
   .with-row-dimension tr > th:first-of-type {
     @apply sticky left-0 z-20;
-    @apply bg-white;
+    @apply bg-background;
   }
 
   .with-row-dimension tr > td:first-of-type {
     @apply sticky left-0 z-10;
-    @apply bg-white;
+    @apply bg-background;
   }
 
   tr > td:first-of-type:not(:last-of-type) {

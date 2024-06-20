@@ -234,7 +234,7 @@
   }
 
   .valid:hover {
-    @apply bg-white;
+    @apply bg-background;
   }
 
   .rounded {

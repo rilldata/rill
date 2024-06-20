@@ -82,14 +82,12 @@
 
 <li
   aria-label="{filePath} Nav Entry"
-  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-slate-100"
-  class:bg-slate-100={isCurrentFile}
+  class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-accent"
+  class:bg-accent={isCurrentFile}
 >
   <a
-    class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
-    isDotFile
-      ? 'text-gray-500 hover:text-gray-500'
-      : 'text-gray-900 hover:text-gray-900'}"
+    class="w-full truncate flex items-center gap-x-1 font-medium ui-copy"
+    class:ui-copy-muted={isDotFile || isProtectedDirectory}
     href={`/files${filePath}`}
     {id}
     on:click={fireTelemetry}

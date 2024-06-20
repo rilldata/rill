@@ -12,6 +12,7 @@
   import { getContext } from "svelte";
   import type { Writable } from "svelte/store";
   import { fly } from "svelte/transition";
+  import ThemeToggle from "./ThemeToggle.svelte";
 
   const appBuildMetaStore: Writable<ApplicationBuildMetadata> =
     getContext("rill:app:metadata");
@@ -42,13 +43,11 @@
 </script>
 
 <div
-  class="flex flex-col pt-3 pb-3 gap-y-1 bg-gray-50 border-t border-gray-200 sticky bottom-0"
+  class="flex flex-col pt-3 pb-3 gap-y-1 bg-surface border-t sticky bottom-0"
 >
-  {#each lineItems as lineItem}
-    <a href={lineItem.href} target="_blank" rel="noreferrer noopener"
-      ><div
-        class="flex flex-row items-center px-4 py-1 gap-x-2 text-gray-700 font-normal hover:bg-gray-200"
-      >
+  {#each lineItems as lineItem (lineItem.href)}
+    <a href={lineItem.href} target="_blank" rel="noreferrer noopener">
+      <div class="flex flex-row items-center px-4 py-1 gap-x-2 font-normal">
         <!-- workaround to resize the github and discord icons to match -->
         <div
           class="grid place-content-center"
@@ -65,6 +64,7 @@
       </div></a
     >
   {/each}
+
   <div
     class="px-4 py-1 text-gray-600 flex flex-row gap-x-2"
     style:font-size="10px"
@@ -101,4 +101,5 @@
       ? ` – ${$appBuildMetaStore.commitHash}`
       : ""}
   </div>
+  <ThemeToggle />
 </div>

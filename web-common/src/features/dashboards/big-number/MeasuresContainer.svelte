@@ -175,7 +175,7 @@
     class="grid grid-cols-{numColumns}"
     style:column-gap="{COLUMN_GAP}px"
   >
-    <div class="bg-white sticky top-0">
+    <div class="bg-background sticky top-0">
       <SearchableFilterButton
         label="Measures"
         on:deselect-all={setAllMeasuresNotVisible}

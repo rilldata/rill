@@ -176,7 +176,7 @@
           transition:fly={{ duration: 200, y: 4 }}
           class:text-gray-900={pinned}
           class:text-gray-400={!pinned}
-          class="transition-colors duration-100 justify-self-end"
+          class="duration-100 justify-self-end"
           on:click={() => {
             dispatch("pin");
           }}

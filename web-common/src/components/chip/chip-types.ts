@@ -44,7 +44,7 @@ export const measureChipColors: ChipColors = {
 };
 
 export const timeChipColors: ChipColors = {
-  bgBaseClass: "bg-white dark:bg-gray-700",
+  bgBaseClass: "bg-background dark:bg-gray-700",
   bgHoverClass: "hover:bg-gray-100 hover:dark:bg-gray-600",
   bgActiveClass: "bg-gray-100 dark:bg-gray-600",
   outlineBaseClass: "outline outline-1 outline-gray-200",

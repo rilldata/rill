@@ -40,7 +40,7 @@
     />
     <!-- 602px = 1px border on each side of the form + 3 tabs with a 200px fixed-width -->
     <form
-      class="transform bg-white rounded-md border border-slate-300 flex flex-col shadow-lg w-[602px]"
+      class="transform bg-background rounded-md border border-slate-300 flex flex-col shadow-lg w-[602px]"
       id="create-alert-form"
     >
       <DialogTitle

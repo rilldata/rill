@@ -11,7 +11,7 @@
   export let enabled = true;
 </script>
 
-<div class="flex flex-col bg-white {padding} gap-y-3 rounded">
+<div class="flex flex-col bg-background {padding} gap-y-3 rounded">
   <div class="flex flex-col">
     <span
       class="flex flex-row items-center gap-1 text-base text-medium text-slate-900"

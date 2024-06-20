@@ -16,7 +16,7 @@
 </script>
 
 <header
-  class="sticky top-0 grid align-center bg-white z-50"
+  class="sticky top-0 grid align-center bg-background z-50"
   style:height="var(--header-height)"
 >
   <!-- the pl-[.875rem] is a fix to move this new element over a pinch.-->
@@ -41,7 +41,7 @@
     {/if}
     <Tooltip distance={8}>
       <a
-        class="font-semibold text-black grow text-ellipsis overflow-hidden whitespace-nowrap pr-9"
+        class="font-semibold text-foreground grow text-ellipsis overflow-hidden whitespace-nowrap pr-9"
         href="/"
       >
         {$projectTitle.data}

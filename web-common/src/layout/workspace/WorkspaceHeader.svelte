@@ -104,7 +104,7 @@
 
   input,
   label {
-    @apply whitespace-pre rounded border-2 border-transparent;
+    @apply whitespace-pre rounded border-2 border-transparent bg-transparent;
   }
 
   input {

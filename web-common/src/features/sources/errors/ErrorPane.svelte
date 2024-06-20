@@ -17,7 +17,9 @@
   $: prettyMessage = humanReadableErrorMessage(connectorType, 3, errorMessage);
 </script>
 
-<div class="w-full h-full bg-white flex-col justify-center inline-flex p-3">
+<div
+  class="w-full h-full bg-background flex-col justify-center inline-flex p-3"
+>
   <div class="flex-col justify-start items-center gap-1 flex text-red-500">
     <CancelCircle size="24px" />
     <div class="text-center text-sm font-medium">

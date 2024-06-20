@@ -24,7 +24,7 @@
     class="fixed inset-0 bg-gray-400 transition-opacity opacity-40"
   />
   <div
-    class="p-6 transform bg-white rounded-md border border-slate-300 flex flex-col shadow-lg {width} {height}"
+    class="p-6 transform bg-background rounded-md border border-slate-300 flex flex-col shadow-lg {width} {height}"
   >
     <DialogTitle
       class="text-gray-900 text-lg font-semibold leading-7 {titleMarginBottom}"

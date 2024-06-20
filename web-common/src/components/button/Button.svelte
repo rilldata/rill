@@ -291,7 +291,7 @@
   }
 
   .danger.secondary {
-    @apply bg-white;
+    @apply bg-background;
     @apply text-red-500;
     @apply border-red-500;
   }
@@ -358,6 +358,6 @@
     @apply w-[34px] h-[26px] rounded-2xl;
     @apply flex items-center justify-center;
     @apply border border-dashed border-slate-300;
-    @apply bg-white px-0;
+    @apply bg-background px-0;
   }
 </style>

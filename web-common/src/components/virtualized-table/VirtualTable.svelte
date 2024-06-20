@@ -398,7 +398,7 @@
   }
 
   .table-wrapper {
-    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-white;
+    @apply overflow-scroll w-fit max-w-full h-fit max-h-full relative bg-background;
     @apply border-b;
   }
 

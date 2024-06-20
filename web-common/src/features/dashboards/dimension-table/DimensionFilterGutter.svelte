@@ -36,7 +36,7 @@
 </script>
 
 <div
-  class="sticky left-0 top-0 z-20 bg-white"
+  class="sticky left-0 top-0 z-20 bg-background"
   style:height="{totalHeight}px"
   style:width="{config.indexWidth}px"
 >
