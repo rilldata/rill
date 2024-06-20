@@ -3,7 +3,7 @@
   import PreviewTable from "@rilldata/web-common/components/preview-table/PreviewTable.svelte";
   import ChartsHeader from "@rilldata/web-common/features/charts/ChartsHeader.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
-  import ChartPromptStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartPromptStatusDisplay.svelte";
+  import ChartStatusDisplay from "@rilldata/web-common/features/charts/prompt/ChartStatusDisplay.svelte";
   import CustomDashboardEmbed from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEmbed.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
@@ -114,7 +114,7 @@
         <ChartsEditor {filePath} />
       </div>
       <div class="size-full flex-col flex overflow-hidden">
-        <ChartPromptStatusDisplay {chartName}>
+        <ChartStatusDisplay isFetching={chartDataFetching} {chartName}>
           <CustomDashboardEmbed
             chartView
             gap={8}
@@ -123,7 +123,7 @@
               { width: 10, height: 10, x: 0, y: 0, component: chartName },
             ]}
           />
-        </ChartPromptStatusDisplay>
+        </ChartStatusDisplay>
 
         <div
           class="size-full h-48 bg-gray-100 border-t relative flex-none flex-shrink-0"
