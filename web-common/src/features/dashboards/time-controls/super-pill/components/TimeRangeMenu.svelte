@@ -26,13 +26,6 @@
   }
 </script>
 
-<!-- {#if selected === "CUSTOM"}
-  <DropdownMenu.Item>
-    <b> Custom </b>
-  </DropdownMenu.Item>
-  <DropdownMenu.Separator />
-{/if} -->
-
 <DropdownMenu.Item on:click={handleClick} data-range={ALL_TIME_RANGE_ALIAS}>
   <span class:font-bold={selected === ALL_TIME_RANGE_ALIAS}>
     {RILL_TO_LABEL[ALL_TIME_RANGE_ALIAS]}

@@ -331,10 +331,10 @@
   }
 
   :global(.wrapper > button:hover:not(:disabled)) {
-    @apply bg-gray-50 cursor-pointer border-gray-400 z-50;
+    @apply bg-gray-50 cursor-pointer;
   }
 
   :global(.wrapper > [data-state="open"]) {
-    @apply bg-gray-50;
+    @apply bg-gray-50 border-gray-400 z-50;
   }
 </style>

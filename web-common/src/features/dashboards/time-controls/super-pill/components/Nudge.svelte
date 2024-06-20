@@ -9,7 +9,7 @@
 
 <button
   disabled={direction === "left" ? !canPanLeft : !canPanRight}
-  title="Pan time range {direction === 'left' ? 'back' : 'forward'}"
+  title="Step time {direction === 'left' ? 'back' : 'forward'}"
   on:click={() => onPan(direction)}
 >
   <span class={direction}>

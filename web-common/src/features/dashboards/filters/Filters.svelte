@@ -11,6 +11,8 @@
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
   import SuperPill from "../time-controls/super-pill/SuperPill.svelte";
   import { useTimeControlStore } from "../time-controls/time-control-store";
+  import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
+  import { fly } from "svelte/transition";
 
   export let readOnly = false;
 
@@ -81,20 +83,9 @@
   }
 </script>
 
-<div class="flex gap-x-1 flex-grow-0">
-  {#if !readOnly}
-    <div
-      class:ui-copy-icon={true}
-      class:ui-copy-icon-inactive={false}
-      class="flex items-center text-center justify-center flex-shrink-0"
-      style:height={ROW_HEIGHT}
-      style:width={ROW_HEIGHT}
-    >
-      <Filter size="16px" />
-    </div>
-  {/if}
-
-  <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2 items-center">
+<div class="flex flex-col gap-y-2 size-full">
+  <div class="flex flex-row flex-wrap gap-x-2 items-center">
+    <Calendar size="16px" />
     {#if allTimeRange?.start && allTimeRange?.end}
       <SuperPill
         {allTimeRange}
@@ -103,45 +94,63 @@
         {selectedComparisonTimeRange}
       />
     {/if}
-    {#each allDimensionFilters as { name, label, selectedValues } (name)}
-      {@const dimension = dimensions.find(
-        (d) => d.name === name || d.column === name,
-      )}
-      {@const dimensionName = dimension?.name || dimension?.column}
-      <div animate:flip={{ duration: 200 }}>
-        {#if dimensionName}
-          <DimensionFilter
-            {name}
-            {label}
-            {selectedValues}
-            on:remove={() => removeDimensionFilter(name)}
-            on:apply={(event) =>
-              toggleDimensionValueSelection(name, event.detail, true)}
-          />
-        {/if}
-      </div>
-    {/each}
-    {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
-      <div animate:flip={{ duration: 200 }}>
-        <MeasureFilter
-          {name}
-          {label}
-          {dimensionName}
-          {filter}
-          on:remove={() => removeMeasureFilter(dimensionName, name)}
-          on:apply={({ detail: { dimension, oldDimension, filter } }) =>
-            handleMeasureFilterApply(dimension, name, oldDimension, filter)}
-        />
-      </div>
-    {/each}
+  </div>
 
+  <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
     {#if !readOnly}
-      <FilterButton />
-      <!-- if filters are present, place a chip at the end of the flex container 
-      that enables clearing all filters -->
-      {#if hasFilters}
-        <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
-      {/if}
+      <Filter size="16px" className="ui-copy-icon flex-none mt-[5px]" />
     {/if}
+    <div class="relative flex flex-row flex-wrap gap-x-2 gap-y-2">
+      {#if !allDimensionFilters.length && !allMeasureFilters.length}
+        <div
+          in:fly={{ duration: 200, x: 8 }}
+          class="ui-copy-disabled grid ml-1 items-center"
+          style:min-height={ROW_HEIGHT}
+        >
+          No filters selected
+        </div>
+      {:else}
+        {#each allDimensionFilters as { name, label, selectedValues } (name)}
+          {@const dimension = dimensions.find(
+            (d) => d.name === name || d.column === name,
+          )}
+          {@const dimensionName = dimension?.name || dimension?.column}
+          <div animate:flip={{ duration: 200 }}>
+            {#if dimensionName}
+              <DimensionFilter
+                {name}
+                {label}
+                {selectedValues}
+                on:remove={() => removeDimensionFilter(name)}
+                on:apply={(event) =>
+                  toggleDimensionValueSelection(name, event.detail, true)}
+              />
+            {/if}
+          </div>
+        {/each}
+        {#each allMeasureFilters as { name, label, dimensionName, filter } (name)}
+          <div animate:flip={{ duration: 200 }}>
+            <MeasureFilter
+              {name}
+              {label}
+              {dimensionName}
+              {filter}
+              on:remove={() => removeMeasureFilter(dimensionName, name)}
+              on:apply={({ detail: { dimension, oldDimension, filter } }) =>
+                handleMeasureFilterApply(dimension, name, oldDimension, filter)}
+            />
+          </div>
+        {/each}
+      {/if}
+
+      {#if !readOnly}
+        <FilterButton />
+        <!-- if filters are present, place a chip at the end of the flex container 
+      that enables clearing all filters -->
+        {#if hasFilters}
+          <Button type="text" on:click={clearAllFilters}>Clear filters</Button>
+        {/if}
+      {/if}
+    </div>
   </div>
 </div>

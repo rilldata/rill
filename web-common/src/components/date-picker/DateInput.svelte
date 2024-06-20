@@ -38,11 +38,22 @@
   export let currentYear: number;
   export let onValidDateInput: (date: DateTime) => void;
 
+  let initialValue: string | null = null;
+
+  $: value = date.toLocaleString({
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+
   function validateInput(
     e: FocusEvent & {
       currentTarget: EventTarget & HTMLInputElement;
     },
   ) {
+    const changed = e.currentTarget.value !== initialValue;
+    if (!changed) return;
+
     const dateString = e.currentTarget.value;
 
     let date: DateTime = DateTime.invalid("invalid");
@@ -84,17 +95,14 @@
   type="text"
   class:active={(boundary === "start") === selectingStart}
   class:error={displayError}
-  value={date.toLocaleString({
-    month: "short",
-    day: "2-digit",
-    year: "numeric",
-  })}
+  bind:value
   on:click={() => {
     selectingStart = boundary === "start";
+    initialValue = value;
   }}
-  on:keydown={(e) => {
-    if (e.key === "Enter") {
-      e.currentTarget.blur();
+  on:keydown={({ currentTarget, key }) => {
+    if (key === "Enter") {
+      currentTarget.blur();
     }
   }}
   on:blur={validateInput}

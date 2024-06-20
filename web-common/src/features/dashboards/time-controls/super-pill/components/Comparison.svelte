@@ -38,6 +38,7 @@
   $: firstVisibleMonth = interval?.start ?? DateTime.now();
 
   let open = false;
+  let showSelector = false;
 
   $: comparisonOption =
     (selectedComparison?.name as TimeComparisonOption | undefined) || null;
@@ -79,10 +80,12 @@
 
 <DropdownMenu.Root
   bind:open
+  closeOnItemClick={false}
   onOpenChange={(open) => {
     if (open && interval && interval?.isValid) {
       firstVisibleMonth = interval.start;
     }
+    showSelector = false;
   }}
 >
   <DropdownMenu.Trigger asChild let:builder>
@@ -100,7 +103,7 @@
           no comparison period
         {/if}
       </div>
-      <span class="flex-none">
+      <span class="flex-none transition-transform" class:-rotate-180={open}>
         <CaretDownIcon />
       </span>
     </button>
@@ -115,11 +118,6 @@
             metricsExplorerStore.disableAllComparisons(metricViewName);
           }}
         >
-          <span class="w-3 aspect-square">
-            {#if !showComparison}
-              <Check size="14px" />
-            {/if}
-          </span>
           <span class:font-bold={!showComparison}> No comparison period </span>
         </DropdownMenu.Item>
 
@@ -130,6 +128,7 @@
             class="flex gap-x-2"
             on:click={() => {
               onCompareRangeSelect(option.name);
+              open = false;
             }}
           >
             <span class="w-3 aspect-square">
@@ -145,19 +144,35 @@
             <DropdownMenu.Separator />
           {/if}
         {/each}
+        <DropdownMenu.Separator />
+
+        <DropdownMenu.Item
+          on:click={() => {
+            showSelector = true;
+          }}
+          data-range="custom"
+        >
+          <span
+            class:font-bold={comparisonOption === TimeComparisonOption.CUSTOM &&
+              showComparison}
+          >
+            Custom
+          </span>
+        </DropdownMenu.Item>
       </div>
-      <!-- <DropdownMenu.Separator /> -->
-      <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
-        {#if interval?.isValid}
-          <CalendarPlusDateInput
-            {firstVisibleMonth}
-            {interval}
-            {zone}
-            {applyRange}
-            closeMenu={() => (open = false)}
-          />
-        {/if}
-      </div>
+      {#if showSelector || (comparisonOption === TimeComparisonOption.CUSTOM && showComparison)}
+        <div class="bg-slate-50 flex flex-col w-64 px-2 py-1">
+          {#if interval?.isValid}
+            <CalendarPlusDateInput
+              {firstVisibleMonth}
+              {interval}
+              {zone}
+              {applyRange}
+              closeMenu={() => (open = false)}
+            />
+          {/if}
+        </div>
+      {/if}
     </div>
   </DropdownMenu.Content>
 </DropdownMenu.Root>

@@ -4,7 +4,7 @@
   export let interval: Interval<true>;
 
   $: inclusiveInterval = interval.set({
-    end: interval.end.minus({ second: 1 }),
+    end: interval.end.minus({ millisecond: interval.end.hour === 0 ? 1 : 0 }),
   });
 
   $: date = inclusiveInterval.toLocaleString(DateTime.DATE_MED);

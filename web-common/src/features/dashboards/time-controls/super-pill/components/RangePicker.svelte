@@ -11,7 +11,6 @@
   import RangeDisplay from "./RangeDisplay.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
-  import { slide } from "svelte/transition";
 
   export let ranges: RangeBuckets;
   export let selected: NamedRange | ISODurationString;
@@ -49,7 +48,9 @@
       {#if interval.isValid}
         <RangeDisplay {interval} />
       {/if}
-      <CaretDownIcon />
+      <span class="flex-none transition-transform" class:-rotate-180={open}>
+        <CaretDownIcon />
+      </span>
     </button>
   </DropdownMenu.Trigger>
   <DropdownMenu.Content align="start" class="p-0 overflow-hidden">

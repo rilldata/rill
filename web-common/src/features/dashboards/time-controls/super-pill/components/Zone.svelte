@@ -43,7 +43,7 @@
       aria-label="Timezone selector"
     >
       {getAbbreviationForIANA(watermark, activeTimeZone)}
-      <span class="flex-none">
+      <span class="flex-none transition-transform" class:-rotate-180={open}>
         <CaretDownIcon />
       </span>
     </button>

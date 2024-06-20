@@ -10,35 +10,49 @@
 <script lang="ts">
   export let interval: Interval<true>;
   export let zone: string;
-  export let applyRange: (range: Interval<true>) => void;
   export let firstVisibleMonth: DateTime<true>;
+  export let applyRange: (range: Interval<true>) => void;
   export let closeMenu: () => void;
 
   let selectingStart = true;
   let displayError = false;
 
+  $: calendarInterval = interval.set({
+    start: interval.start.startOf("day"),
+    end: interval.end.minus({ millisecond: 1 }).startOf("day"),
+  });
+
   function onValidDateInput(date: DateTime) {
     let newInterval: Interval;
+
     if (selectingStart) {
-      newInterval = interval.set({ start: date });
+      newInterval = calendarInterval.set({ start: date });
     } else {
-      newInterval = interval.set({ end: date.plus({ day: 1 }) });
+      newInterval = calendarInterval.set({ end: date });
     }
 
     if (newInterval.isValid) {
-      interval = newInterval;
+      calendarInterval = newInterval;
     } else {
-      const singleDay = Interval.fromDateTimes(date, date.plus({ day: 1 }));
+      const singleDay = Interval.fromDateTimes(date, date.endOf("day"));
       if (singleDay.isValid) {
-        interval = singleDay;
+        calendarInterval = singleDay;
       }
     }
-
-    firstVisibleMonth = interval.start;
+    if (calendarInterval.isValid) {
+      firstVisibleMonth = calendarInterval.start;
+    }
+    selectingStart = !selectingStart;
   }
 </script>
 
-<Calendar bind:interval bind:selectingStart bind:firstVisibleMonth />
+<Calendar
+  interval={calendarInterval}
+  {selectingStart}
+  {firstVisibleMonth}
+  onSelectDay={onValidDateInput}
+/>
+
 <DropdownMenu.Separator />
 <div class="flex flex-col gap-y-2 px-2 pt-1 pb-2">
   <label for="start-date" class:error={selectingStart && displayError}>
@@ -48,7 +62,7 @@
     <DateInput
       bind:selectingStart
       bind:displayError
-      date={interval.start}
+      date={calendarInterval.start ?? DateTime.now()}
       {zone}
       boundary="start"
       currentYear={firstVisibleMonth.year}
@@ -58,12 +72,12 @@
   <label for="start-date" class:error={!selectingStart && displayError}>
     End Date
   </label>
-  <div>{interval.end.toRFC2822()}</div>
+
   <div class="flex gap-x-1 w-full">
     <DateInput
       bind:selectingStart
       bind:displayError
-      date={interval.end.minus({ day: 1 })}
+      date={calendarInterval.end ?? DateTime.now()}
       {zone}
       boundary="end"
       currentYear={firstVisibleMonth.year}
@@ -77,7 +91,10 @@
     compact
     type="primary"
     on:click={() => {
-      const mapped = interval.mapEndpoints((dt) => dt.startOf("day"));
+      const mapped = calendarInterval.set({
+        end: calendarInterval.end?.plus({ day: 1 }).startOf("day"),
+      });
+
       if (mapped.isValid) {
         applyRange(mapped);
       }

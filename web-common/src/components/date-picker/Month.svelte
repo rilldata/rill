@@ -18,7 +18,7 @@
 
   $: weekCount = Math.ceil((firstDay + startDay.daysInMonth) / 7);
 
-  $: inclusiveEnd = interval.end.minus({ day: 1 });
+  $: inclusiveEnd = interval.end.minus({ millisecond: 0 });
 
   $: days = Array.from({ length: weekCount * 7 }, (_, i) => {
     if (i < firstDay) {
@@ -125,12 +125,12 @@
   }
 
   :not(.selecting-start) .day:not(.is-start):not(.is-end):hover {
-    @apply rounded-r-sm  border border-primary-200 bg-primary-200 border-dashed;
+    @apply rounded-r-sm border border-primary-200 bg-primary-200 border-dashed;
   }
 
   .selecting-start .day:not(.is-start):not(.is-end):hover {
     @apply rounded-l-md;
-    @apply bg-primary-600 border-primary-600 border-l border-r-0 text-white;
+    @apply bg-primary-600 border-primary-600 border-l border-r-0 text-white rounded-r-none;
   }
 
   .weekday {
