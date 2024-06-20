@@ -40,12 +40,6 @@
 
   let initialValue: string | null = null;
 
-  $: value = date.toLocaleString({
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-
   function validateInput(
     e: FocusEvent & {
       currentTarget: EventTarget & HTMLInputElement;
@@ -95,10 +89,14 @@
   type="text"
   class:active={(boundary === "start") === selectingStart}
   class:error={displayError}
-  bind:value
-  on:click={() => {
+  value={date.toLocaleString({
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  })}
+  on:click={(e) => {
     selectingStart = boundary === "start";
-    initialValue = value;
+    initialValue = e.currentTarget.value;
   }}
   on:keydown={({ currentTarget, key }) => {
     if (key === "Enter") {
@@ -118,7 +116,11 @@
 
   input.active {
     outline: none;
-    border-color: #007bff;
+    @apply border-primary-600;
+  }
+  input:active,
+  input:focus {
+    outline: none;
   }
 
   input.error.active {

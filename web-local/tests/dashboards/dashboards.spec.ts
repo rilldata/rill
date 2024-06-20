@@ -203,9 +203,10 @@ test.describe("dashboard", () => {
     await expect(page.getByLabel("Comparison selector")).not.toBeVisible();
 
     await page.getByLabel("Select time range").click();
+    await page.getByRole("menuitem", { name: "Custom" }).click();
 
-    await page.getByLabel("Start date").fill("2022-02-01");
-    await page.getByLabel("Start date").blur();
+    await page.getByLabel("start date").fill("2022-02-01");
+    await page.getByLabel("start date").blur();
     await page.getByRole("button", { name: "Apply" }).click();
 
     // Check number
