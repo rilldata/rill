@@ -14,12 +14,15 @@ import (
 	"github.com/rilldata/rill/admin/pkg/publicemail"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -143,10 +146,36 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	var attr map[string]any
+	var security *runtimev1.MetricsViewSpec_SecurityV2
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
+		}
+	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
+		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
+		if !ok {
+			return nil, status.Errorf(codes.Internal, "unexpected type %T for magic auth token model", claims.AuthTokenModel())
+		}
+
+		attr = mdl.Attributes
+
+		security = &runtimev1.MetricsViewSpec_SecurityV2{
+			Access: fmt.Sprintf("'{{ .self.name }}'=%s", duckdbsql.EscapeStringValue(mdl.MetricsView)),
+		}
+		if mdl.MetricsViewFilterJSON != "" {
+			expr := &runtimev1.Expression{}
+			err := protojson.Unmarshal([]byte(mdl.MetricsViewFilterJSON), expr)
+			if err != nil {
+				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
+			}
+			security.QueryFilter = expr
+		}
+		if len(mdl.MetricsViewFields) > 0 {
+			security.Include = append(security.Include, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
+				Condition: "true",
+				Names:     mdl.MetricsViewFields,
+			})
 		}
 	}
 
@@ -170,6 +199,7 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			},
 		},
 		Attributes: attr,
+		Security:   security,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())

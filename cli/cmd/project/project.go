@@ -17,18 +17,18 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	projectCmd.PersistentFlags().StringVar(&ch.Org, "org", ch.Org, "Organization Name")
-	projectCmd.AddCommand(ShowCmd(ch))
-	projectCmd.AddCommand(StatusCmd(ch))
-	projectCmd.AddCommand(DescribeCmd(ch))
-	projectCmd.AddCommand(EditCmd(ch))
-	projectCmd.AddCommand(DeleteCmd(ch))
 	projectCmd.AddCommand(ListCmd(ch))
-	projectCmd.AddCommand(ReconcileCmd(ch))
+	projectCmd.AddCommand(ShowCmd(ch))
+	projectCmd.AddCommand(EditCmd(ch))
+	projectCmd.AddCommand(RenameCmd(ch))
+	projectCmd.AddCommand(DeleteCmd(ch))
+	projectCmd.AddCommand(StatusCmd(ch))
+	projectCmd.AddCommand(LogsCmd(ch))
+	projectCmd.AddCommand(DescribeCmd(ch))
 	projectCmd.AddCommand(RefreshCmd(ch))
+	projectCmd.AddCommand(ReconcileCmd(ch))
 	projectCmd.AddCommand(ResetCmd(ch))
 	projectCmd.AddCommand(JwtCmd(ch))
-	projectCmd.AddCommand(RenameCmd(ch))
-	projectCmd.AddCommand(LogsCmd(ch))
 
 	return projectCmd
 }

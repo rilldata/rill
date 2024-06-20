@@ -2187,6 +2187,7 @@ export interface NumericHistogramBinsBin {
 export interface MetricsViewSpecSecurityV2 {
   access?: string;
   rowFilter?: string;
+  queryFilter?: V1Expression;
   include?: SecurityV2FieldConditionV2[];
   exclude?: SecurityV2FieldConditionV2[];
 }

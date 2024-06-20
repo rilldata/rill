@@ -1,19 +1,10 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import ProjectAccessControls from "./ProjectAccessControls.svelte";
 
   export let organization: string;
   export let project: string;
-
-  function handleViewProjectStatus() {
-    goto(`/${organization}/${project}/-/status`);
-  }
-
-  function handleViewProject() {
-    goto(`/${organization}/${project}`);
-  }
 </script>
 
 <div class="flex flex-col justify-center items-center h-3/5 space-y-6 m-auto">
@@ -35,12 +26,14 @@
   </div>
   <ProjectAccessControls {organization} {project}>
     <svelte:fragment slot="manage-project">
-      <CtaButton variant="primary-outline" on:click={handleViewProjectStatus}
+      <CtaButton
+        variant="secondary"
+        href={`/${organization}/${project}/-/status`}
         >View project status
       </CtaButton>
     </svelte:fragment>
     <svelte:fragment slot="read-project">
-      <CtaButton variant="primary-outline" on:click={handleViewProject}
+      <CtaButton variant="secondary" href={`/${organization}/${project}`}
         >View project
       </CtaButton>
     </svelte:fragment>

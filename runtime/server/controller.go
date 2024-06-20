@@ -243,12 +243,19 @@ func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID stri
 	defer span.End()
 
 	mv := r.GetMetricsView()
-	if mv.State.ValidSpec == nil || mv.State.ValidSpec.Security == nil {
-		// Allow if it doesn't have a valid security policy
+	attrs := auth.GetClaims(ctx).Attributes()
+	claimsPolicy := auth.GetClaims(ctx).SecurityPolicy()
+	var mvPolicy *runtimev1.MetricsViewSpec_SecurityV2
+	if mv.State.ValidSpec != nil {
+		mvPolicy = mv.State.ValidSpec.Security
+	}
+
+	if claimsPolicy == nil && mvPolicy == nil {
+		// Allow if there is no security policy to apply
 		return r, true, nil
 	}
 
-	security, err := s.runtime.ResolveMetricsViewSecurity(auth.GetClaims(ctx).Attributes(), instID, mv.State.ValidSpec, r.Meta.StateUpdatedOn.AsTime())
+	security, err := s.runtime.ResolveMetricsViewSecurity(instID, attrs, r, mvPolicy, claimsPolicy)
 	if err != nil {
 		return nil, false, err
 	}
