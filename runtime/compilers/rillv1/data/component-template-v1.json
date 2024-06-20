@@ -3,42 +3,54 @@
     "type": "object",
     "anyOf": [
         {
-            "additionalProperties": false,
+            "type": "object",
+            "required": [
+                "line_chart"
+            ],
             "properties": {
-                "name": {
-                    "const": "line_chart"
-                },
-                "x": {
-                    "type": "string"
-                },
-                "y": {
-                    "type": "string"
+                "line_chart": {
+                    "type": "object",
+                    "required": [
+                        "x",
+                        "y"
+                    ],
+                    "properties": {
+                        "x": {
+                            "type": "string"
+                        },
+                        "y": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
                 }
             },
-            "required": [
-                "name",
-                "x",
-                "y"
-            ]
+            "additionalProperties": false
         },
         {
-            "additionalProperties": false,
+            "type": "object",
+            "required": [
+                "bar_chart"
+            ],
             "properties": {
-                "name": {
-                    "const": "bar_chart"
-                },
-                "x": {
-                    "type": "string"
-                },
-                "y": {
-                    "type": "string"
+                "bar_chart": {
+                    "type": "object",
+                    "required": [
+                        "x",
+                        "y"
+                    ],
+                    "properties": {
+                        "x": {
+                            "type": "string"
+                        },
+                        "y": {
+                            "type": "string"
+                        }
+                    },
+                    "additionalProperties": false
                 }
             },
-            "required": [
-                "name",
-                "x",
-                "y"
-            ]
+            "additionalProperties": false
         }
-    ]    
+    ]
 }

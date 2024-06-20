@@ -52,7 +52,10 @@ func (q *ColumnTimeGrain) UnmarshalResult(v any) error {
 func (q *ColumnTimeGrain) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	sampleSize := int64(500000)
 	cq := &TableCardinality{
-		TableName: q.TableName,
+		Connector:      q.Connector,
+		Database:       q.Database,
+		DatabaseSchema: q.DatabaseSchema,
+		TableName:      q.TableName,
 	}
 	err := rt.Query(ctx, instanceID, cq, priority)
 	if err != nil {

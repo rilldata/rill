@@ -77,6 +77,9 @@ const (
 	AdminService_ListServiceAuthTokens_FullMethodName          = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
 	AdminService_IssueServiceAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
 	AdminService_RevokeServiceAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
+	AdminService_IssueMagicAuthToken_FullMethodName            = "/rill.admin.v1.AdminService/IssueMagicAuthToken"
+	AdminService_ListMagicAuthTokens_FullMethodName            = "/rill.admin.v1.AdminService/ListMagicAuthTokens"
+	AdminService_RevokeMagicAuthToken_FullMethodName           = "/rill.admin.v1.AdminService/RevokeMagicAuthToken"
 	AdminService_UpdateUserPreferences_FullMethodName          = "/rill.admin.v1.AdminService/UpdateUserPreferences"
 	AdminService_ListBookmarks_FullMethodName                  = "/rill.admin.v1.AdminService/ListBookmarks"
 	AdminService_GetBookmark_FullMethodName                    = "/rill.admin.v1.AdminService/GetBookmark"
@@ -223,6 +226,12 @@ type AdminServiceClient interface {
 	IssueServiceAuthToken(ctx context.Context, in *IssueServiceAuthTokenRequest, opts ...grpc.CallOption) (*IssueServiceAuthTokenResponse, error)
 	// RevokeServiceAuthToken revoke the service auth token
 	RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error)
+	// IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
+	IssueMagicAuthToken(ctx context.Context, in *IssueMagicAuthTokenRequest, opts ...grpc.CallOption) (*IssueMagicAuthTokenResponse, error)
+	// ListMagicAuthTokens lists all the magic auth tokens for a specific project.
+	ListMagicAuthTokens(ctx context.Context, in *ListMagicAuthTokensRequest, opts ...grpc.CallOption) (*ListMagicAuthTokensResponse, error)
+	// RevokeMagicAuthToken revokes a magic auth token.
+	RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
 	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -857,6 +866,36 @@ func (c *adminServiceClient) RevokeServiceAuthToken(ctx context.Context, in *Rev
 	return out, nil
 }
 
+func (c *adminServiceClient) IssueMagicAuthToken(ctx context.Context, in *IssueMagicAuthTokenRequest, opts ...grpc.CallOption) (*IssueMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IssueMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_IssueMagicAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListMagicAuthTokens(ctx context.Context, in *ListMagicAuthTokensRequest, opts ...grpc.CallOption) (*ListMagicAuthTokensResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMagicAuthTokensResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListMagicAuthTokens_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_RevokeMagicAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateUserPreferencesResponse)
@@ -1199,6 +1238,12 @@ type AdminServiceServer interface {
 	IssueServiceAuthToken(context.Context, *IssueServiceAuthTokenRequest) (*IssueServiceAuthTokenResponse, error)
 	// RevokeServiceAuthToken revoke the service auth token
 	RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error)
+	// IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
+	IssueMagicAuthToken(context.Context, *IssueMagicAuthTokenRequest) (*IssueMagicAuthTokenResponse, error)
+	// ListMagicAuthTokens lists all the magic auth tokens for a specific project.
+	ListMagicAuthTokens(context.Context, *ListMagicAuthTokensRequest) (*ListMagicAuthTokensResponse, error)
+	// RevokeMagicAuthToken revokes a magic auth token.
+	RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
 	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -1423,6 +1468,15 @@ func (UnimplementedAdminServiceServer) IssueServiceAuthToken(context.Context, *I
 }
 func (UnimplementedAdminServiceServer) RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeServiceAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) IssueMagicAuthToken(context.Context, *IssueMagicAuthTokenRequest) (*IssueMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IssueMagicAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) ListMagicAuthTokens(context.Context, *ListMagicAuthTokensRequest) (*ListMagicAuthTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMagicAuthTokens not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeMagicAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserPreferences not implemented")
@@ -2547,6 +2601,60 @@ func _AdminService_RevokeServiceAuthToken_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_IssueMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IssueMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).IssueMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_IssueMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).IssueMagicAuthToken(ctx, req.(*IssueMagicAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListMagicAuthTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMagicAuthTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListMagicAuthTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListMagicAuthTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListMagicAuthTokens(ctx, req.(*ListMagicAuthTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RevokeMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RevokeMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeMagicAuthToken(ctx, req.(*RevokeMagicAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_UpdateUserPreferences_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(UpdateUserPreferencesRequest)
 	if err := dec(in); err != nil {
@@ -3181,6 +3289,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeServiceAuthToken",
 			Handler:    _AdminService_RevokeServiceAuthToken_Handler,
+		},
+		{
+			MethodName: "IssueMagicAuthToken",
+			Handler:    _AdminService_IssueMagicAuthToken_Handler,
+		},
+		{
+			MethodName: "ListMagicAuthTokens",
+			Handler:    _AdminService_ListMagicAuthTokens_Handler,
+		},
+		{
+			MethodName: "RevokeMagicAuthToken",
+			Handler:    _AdminService_RevokeMagicAuthToken_Handler,
 		},
 		{
 			MethodName: "UpdateUserPreferences",

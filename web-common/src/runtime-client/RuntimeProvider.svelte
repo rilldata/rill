@@ -5,18 +5,9 @@
   export let instanceId: string;
   export let jwt: string | undefined = undefined;
 
-  $: runtime.set({
-    host: host,
-    instanceId: instanceId,
-    jwt: jwt
-      ? {
-          token: jwt,
-          receivedAt: Date.now(),
-        }
-      : undefined,
-  });
+  $: runtime.setRuntime(host, instanceId, jwt);
 </script>
 
-{#if $runtime.host !== undefined && $runtime.instanceId}
+{#if $runtime.host && $runtime.instanceId}
   <slot />
 {/if}

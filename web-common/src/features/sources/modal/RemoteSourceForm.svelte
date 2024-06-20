@@ -123,7 +123,7 @@
               optional={!property.required}
               secret={property.secret}
               hint={property.hint}
-              error={$errors[toYupFriendlyKey(property.key)]}
+              errors={$errors[toYupFriendlyKey(property.key)]}
               bind:value={$form[toYupFriendlyKey(property.key)]}
               onInput={onStringInputChange}
               onChange={handleChange}

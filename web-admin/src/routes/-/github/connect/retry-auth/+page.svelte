@@ -15,6 +15,7 @@
   const urlParams = new URLSearchParams(window.location.search);
   const remote = urlParams.get("remote");
   const githubUsername = urlParams.get("githubUsername");
+
   const user = createAdminServiceGetCurrentUser({
     query: {
       onSuccess: (data) => {
@@ -24,12 +25,6 @@
       },
     },
   });
-
-  function handleGoToGithub() {
-    window.location.href = encodeURI(
-      ADMIN_URL + "/github/auth/login?remote=" + remote,
-    );
-  }
 </script>
 
 <svelte:head>
@@ -48,7 +43,10 @@
       <CtaMessage>
         Click the button below to re-authorize/authorize another account.
       </CtaMessage>
-      <CtaButton variant="primary" on:click={handleGoToGithub}>
+      <CtaButton
+        variant="primary"
+        href={encodeURI(ADMIN_URL + "/github/auth/login?remote=" + remote)}
+      >
         Connect to Github
       </CtaButton>
     </CtaContentContainer>
