@@ -30,8 +30,8 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 
 	// round down to the nearest granularity, start is inclusive and end is exclusive
 	// report usage for previous granularity
-	bucketStart := time.Now().Truncate(granularity).Add(-granularity)
-	bucketEnd := bucketStart.Add(granularity)
+	bucketStart := time.Now().UTC().Truncate(granularity).Add(-granularity)
+	bucketEnd := bucketStart.Add(granularity).UTC()
 
 	// Get metrics client
 	client, ok, err := w.admin.OpenMetricsProject(ctx)

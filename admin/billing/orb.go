@@ -245,30 +245,39 @@ func (o *Orb) ReportUsage(ctx context.Context, customerID string, usage []*Usage
 		// generate idempotency key using customer id, timestamp, event name and metadata
 		idempotencyKey := fmt.Sprintf("%s_%d_%s_%v", customerID, eventTime.UnixMilli(), eventName, u.Metadata)
 
-		if u.Metadata == nil {
-			u.Metadata = make(map[string]interface{})
+		props := make(map[string]interface{}, len(u.Metadata)+1)
+		for k, v := range u.Metadata {
+			props[k] = v
 		}
-		u.Metadata["amount"] = u.Amount
+		props["amount"] = u.Amount
 
 		orbUsage = append(orbUsage, orb.EventIngestParamsEvent{
 			ExternalCustomerID: orb.String(customerID),
 			EventName:          orb.String(eventName),
 			IdempotencyKey:     orb.String(idempotencyKey),
 			Timestamp:          orb.F(eventTime),
-			Properties:         orb.F[any](u.Metadata),
+			Properties:         orb.F[any](props),
 		})
 	}
 
 	re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
 	err := re.RunCtx(ctx, func(ctx context.Context) error {
-		var err error
-		_, err = o.client.Events.Ingest(ctx, orb.EventIngestParams{
+		resp, err := o.client.Events.Ingest(ctx, orb.EventIngestParams{
 			Events: orb.F(orbUsage),
 		})
-		return err
+		if err != nil {
+			return err
+		}
+		if len(resp.ValidationFailed) > 0 {
+			errMsg := fmt.Sprintf("validation failure for %d events, showing first few:", len(resp.ValidationFailed))
+			for i := 0; i < 5 && i < len(resp.ValidationFailed); i++ {
+				errMsg += fmt.Sprintf("\n%s: %s", resp.ValidationFailed[i].IdempotencyKey, resp.ValidationFailed[i].ValidationErrors)
+			}
+			return errors.New(errMsg)
+		}
+		return nil
 	})
 	if err != nil {
-		// TODO if err status is 400 the response contains validation errors, check if this err is logged properly
 		return err
 	}
 	return nil
