@@ -30,7 +30,6 @@ import type {
 import type { VirtualizedTableColumns } from "@rilldata/web-common/components/virtualized-table/types";
 
 import type { SvelteComponent } from "svelte";
-import { getDimensionColumn } from "../dashboard-utils";
 import type { DimensionTableRow } from "./dimension-table-types";
 import { getFiltersForOtherDimensions } from "../selectors";
 import { SortType } from "../proto-state/derived-types";
