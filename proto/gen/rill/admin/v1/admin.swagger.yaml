@@ -3230,6 +3230,9 @@ definitions:
         type: array
         items:
           type: string
+      webShowPage:
+        type: string
+        title: query request could be similar across pages so we use this to identify the exact page
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:
