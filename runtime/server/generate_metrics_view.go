@@ -410,15 +410,11 @@ func insertEmptyLinesInYaml(yamlStr string) string {
 	var result []string
 	lines := strings.Split(yamlStr, "\n")
 
-	for i, line := range lines {
+	for _, line := range lines {
 		if strings.HasPrefix(line, "title:") || strings.HasPrefix(line, "dimensions:") || strings.HasPrefix(line, "measures:") {
 			result = append(result, "")
 		}
 		result = append(result, line)
-
-		if strings.HasPrefix(line, "-") && i < len(lines)-1 {
-			result = append(result, "")
-		}
 	}
 
 	return strings.Join(result, "\n")
