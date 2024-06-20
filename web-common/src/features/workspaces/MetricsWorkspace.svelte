@@ -118,7 +118,7 @@
     {metricViewName}
   />
 
-  <MetricsInspector yaml={$remoteContent ?? ""} slot="inspector" />
+  <MetricsInspector {filePath} slot="inspector" />
 </WorkspaceContainer>
 
 <DeployDashboardCta
