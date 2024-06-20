@@ -23876,6 +23876,8 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for OpenProjectSubpath
 
+	// no validation rules for WebShowPage
+
 	if len(errors) > 0 {
 		return ReportOptionsMultiError(errors)
 	}

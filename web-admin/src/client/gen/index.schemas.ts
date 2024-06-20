@@ -479,6 +479,7 @@ export interface V1ReportOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  webShowPage?: string;
 }
 
 export interface V1RemoveWhitelistedDomainResponse {

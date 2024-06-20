@@ -89,6 +89,7 @@ export function getDirectoryHasErrors(
     (filesErrors) => filesErrors.some((fileErrors) => fileErrors.length > 0),
   );
 }
+
 function flattenDirectory(dir: Directory) {
   const files = dir.files.map((f) => `${dir.path}/${f}`);
   dir.directories.forEach((subDir) => files.push(...flattenDirectory(subDir)));

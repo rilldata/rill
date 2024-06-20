@@ -1,10 +1,7 @@
 <script lang="ts">
   import { useModel } from "@rilldata/web-common/features/models/selectors";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
-  import {
-    V1Resource,
-    createRuntimeServiceGetFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { CreateQueryResult } from "@tanstack/svelte-query";
   import {
@@ -12,12 +9,9 @@
     getTableOutOfPossiblyMalformedYAML,
   } from "../../utils";
 
-  export let filePath: string;
+  export let yaml: string;
 
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
-    path: filePath,
-  });
-  $: yaml = $fileQuery.data?.blob || "";
+  // get file.
   $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
   $: tableName = getTableOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");
 

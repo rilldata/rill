@@ -1,25 +1,8 @@
 import {
   createRuntimeServiceListFiles,
-  getRuntimeServiceGetFileQueryKey,
-  getRuntimeServiceListFilesQueryKey,
-  runtimeServiceGetFile,
-  runtimeServiceListFiles,
   V1ListFilesResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-
-export async function fetchAllFiles(
-  queryClient: QueryClient,
-  instanceId: string,
-) {
-  const filesResp = await queryClient.fetchQuery<V1ListFilesResponse>({
-    queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
-    queryFn: () => {
-      return runtimeServiceListFiles(instanceId, undefined);
-    },
-  });
-  return filesResp.files ?? [];
-}
 
 export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
   return createRuntimeServiceListFiles(instanceId, undefined, {
@@ -33,34 +16,12 @@ export function useAllFileNames(queryClient: QueryClient, instanceId: string) {
   });
 }
 
-export async function fetchMainEntityFiles(
-  queryClient: QueryClient,
-  instanceId: string,
-) {
-  const files = await fetchAllFiles(queryClient, instanceId);
-  return files
-    .filter((f) => !f.isDir && fileIsMainEntity(f.path ?? ""))
-    .map((f) => f.path ?? "");
-}
-
 export function fileIsMainEntity(filePath: string) {
   return (
     filePath.endsWith(".sql") ||
     filePath.endsWith(".yml") ||
     filePath.endsWith(".yaml")
   );
-}
-
-export async function fetchFileContent(
-  queryClient: QueryClient,
-  instanceId: string,
-  filePath: string,
-) {
-  const resp = await queryClient.fetchQuery({
-    queryKey: getRuntimeServiceGetFileQueryKey(instanceId, { path: filePath }),
-    queryFn: () => runtimeServiceGetFile(instanceId, { path: filePath }),
-  });
-  return resp.blob ?? "";
 }
 
 export function useFileNamesInDirectory(
