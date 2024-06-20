@@ -7,6 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
+import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
 import { Color } from "./colors_pb.js";
 
@@ -1530,11 +1531,19 @@ export class MetricsViewSpec_SecurityV2 extends Message<MetricsViewSpec_Security
   access = "";
 
   /**
-   * row level access condition
+   * SQL expression to apply in a WHERE clause against the underlying table
    *
    * @generated from field: string row_filter = 2;
    */
   rowFilter = "";
+
+  /**
+   * Dimension filter to apply to queries against the metrics view.
+   * Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
+   *
+   * @generated from field: rill.runtime.v1.Expression query_filter = 5;
+   */
+  queryFilter?: Expression;
 
   /**
    * either one of include or exclude will be specified
@@ -1558,6 +1567,7 @@ export class MetricsViewSpec_SecurityV2 extends Message<MetricsViewSpec_Security
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "access", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "row_filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "query_filter", kind: "message", T: Expression },
     { no: 3, name: "include", kind: "message", T: MetricsViewSpec_SecurityV2_FieldConditionV2, repeated: true },
     { no: 4, name: "exclude", kind: "message", T: MetricsViewSpec_SecurityV2_FieldConditionV2, repeated: true },
   ]);

@@ -25,6 +25,7 @@ type usedFlusher struct {
 	userTokens       map[string]bool
 	serviceTokens    map[string]bool
 	deploymentTokens map[string]bool
+	magicAuthTokens  map[string]bool
 	ctx              context.Context
 	cancel           context.CancelFunc
 	flushWg          sync.WaitGroup
@@ -42,6 +43,7 @@ func newUsedFlusher(logger *zap.Logger, db database.DB) *usedFlusher {
 		userTokens:       make(map[string]bool),
 		serviceTokens:    make(map[string]bool),
 		deploymentTokens: make(map[string]bool),
+		magicAuthTokens:  make(map[string]bool),
 		ctx:              ctx,
 		cancel:           cancel,
 	}
@@ -90,6 +92,13 @@ func (u *usedFlusher) DeploymentToken(id string) {
 	defer u.mu.Unlock()
 
 	u.deploymentTokens[id] = true
+}
+
+func (u *usedFlusher) MagicAuthToken(id string) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+
+	u.magicAuthTokens[id] = true
 }
 
 func (u *usedFlusher) Close() {
@@ -151,6 +160,12 @@ func (u *usedFlusher) flush() {
 		deploymentTokens = u.deploymentTokens
 		u.deploymentTokens = make(map[string]bool)
 	}
+
+	var magicAuthTokens map[string]bool
+	if len(u.magicAuthTokens) > 0 {
+		magicAuthTokens = u.magicAuthTokens
+		u.magicAuthTokens = make(map[string]bool)
+	}
 	u.mu.Unlock()
 
 	// Flush deployments
@@ -170,6 +185,9 @@ func (u *usedFlusher) flush() {
 
 	// Flush deployment tokens
 	u.flushToDB(deploymentTokens, u.db.UpdateDeploymentAuthTokenUsedOn, "deployment tokens")
+
+	// Flush magic auth tokens
+	u.flushToDB(magicAuthTokens, u.db.UpdateMagicAuthTokenUsedOn, "magic auth tokens")
 }
 
 // Helper function to perform the flushing of used_on to the database.

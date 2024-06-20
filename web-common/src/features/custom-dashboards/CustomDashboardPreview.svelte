@@ -198,6 +198,7 @@
       top={interacting ? finalDrag[1] : Number(component.y) * gridCell}
       left={interacting ? finalDrag[0] : Number(component.x) * gridCell}
       on:change={handleChange}
+      on:delete
     />
   {/each}
 </DashboardWrapper>
