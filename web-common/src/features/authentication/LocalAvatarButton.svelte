@@ -4,14 +4,17 @@
   import {
     createLocalServiceDeployValidation,
     createLocalServiceGetCurrentUser,
+    createLocalServiceGetMetadata,
   } from "@rilldata/web-common/runtime-client/local-service";
 
   $: user = createLocalServiceGetCurrentUser();
+  $: metadata = createLocalServiceGetMetadata();
   $: deployValidation = createLocalServiceDeployValidation();
 
   // $: if ($user.data?.authenticated) initPylonChat($user.data);
 
   function handlePylon() {
+    // TODO
     // window.Pylon("show");
   }
 
@@ -19,16 +22,14 @@
     window.location.href = `${$deployValidation.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
   }
 
-  // TODO
-  // function makeLogOutHref(): string {
-  //   // Create a login URL that redirects back to the current page
-  //   const loginWithRedirect = `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
-  //
-  //   // Create the logout URL, providing the login URL as a redirect
-  //   const href = `${ADMIN_URL}/auth/logout?redirect=${loginWithRedirect}`;
-  //
-  //   return href;
-  // }
+  function makeLogOutHref(): string {
+    if (!$metadata.data?.adminUrl) return "";
+    // Create a login URL that redirects back to the current page
+    const loginWithRedirect = `${$metadata.data?.adminUrl}/auth/login?redirect=${window.location.origin}${window.location.pathname}`;
+
+    // Create the logout URL, providing the login URL as a redirect
+    return `${$metadata.data?.adminUrl}/auth/logout?redirect=${loginWithRedirect}`;
+  }
 </script>
 
 {#if $user.isSuccess}
@@ -62,12 +63,12 @@
         <DropdownMenu.Item on:click={handlePylon}>
           Contact Rill support
         </DropdownMenu.Item>
-        <!--    <DropdownMenu.Item-->
-        <!--      href={makeLogOutHref()}-->
-        <!--      class="text-gray-800 font-normal"-->
-        <!--    >-->
-        <!--      Logout-->
-        <!--    </DropdownMenu.Item>-->
+        <DropdownMenu.Item
+          href={makeLogOutHref()}
+          class="text-gray-800 font-normal"
+        >
+          Logout
+        </DropdownMenu.Item>
       </DropdownMenu.Content>
     </DropdownMenu.Root>
   {:else}
