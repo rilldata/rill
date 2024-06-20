@@ -67,7 +67,7 @@
 <style lang="postcss">
   .custom-instructions-wrapper {
     @apply px-4 py-24 w-full;
-    @apply italic ui-copy-disabled text-center;
+    @apply italic text-gray-500 text-center;
   }
 
   .spinner-wrapper {
