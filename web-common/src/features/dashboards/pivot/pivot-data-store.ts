@@ -430,8 +430,9 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
              * If there are no axes values, return an empty table
              */
             if (
-              rowDimensionAxes?.data?.[anchorDimension]?.length === 0 ||
-              totalsRowResponse?.data?.data?.length === 0
+              (rowDimensionAxes?.data?.[anchorDimension]?.length === 0 ||
+                totalsRowResponse?.data?.data?.length === 0) &&
+              rowPage === 1
             ) {
               return axesSet({
                 isFetching: false,

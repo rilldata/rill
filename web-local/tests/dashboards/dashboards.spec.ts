@@ -26,6 +26,8 @@ test.describe("dashboard", () => {
     await createDashboardFromSource(page, "/sources/AdBids.yaml");
     await waitForFileNavEntry(page, `/dashboards/AdBids_dashboard.yaml`, true);
     await page.getByRole("button", { name: "Preview" }).click();
+    // Temporary timeout while the issue is looked into
+    await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
   });
 
@@ -64,6 +66,7 @@ test.describe("dashboard", () => {
       // click on publisher=Facebook leaderboard value
       page.getByRole("button", { name: "Facebook 19.3K" }).click(),
     ]);
+
     await wrapRetryAssertion(() =>
       assertLeaderboards(page, [
         {
