@@ -3,8 +3,8 @@ module github.com/rilldata/rill
 go 1.22.0
 
 require (
-	cloud.google.com/go/bigquery v1.59.1
-	cloud.google.com/go/storage v1.38.0
+	cloud.google.com/go/bigquery v1.61.0
+	cloud.google.com/go/storage v1.42.0
 	connectrpc.com/connect v1.16.1
 	github.com/AlecAivazis/survey/v2 v2.3.6
 	github.com/Andrew-M-C/go.jsonvalue v1.3.4
@@ -101,14 +101,14 @@ require (
 	go.uber.org/zap v1.26.0
 	gocloud.dev v0.36.0
 	golang.org/x/exp v0.0.0-20231006140011-7918f672742d
-	golang.org/x/oauth2 v0.20.0
+	golang.org/x/oauth2 v0.21.0
 	golang.org/x/sync v0.7.0
-	golang.org/x/sys v0.20.0
-	golang.org/x/text v0.15.0
-	google.golang.org/api v0.169.0
-	google.golang.org/genproto/googleapis/api v0.0.0-20240520151616-dc85e6b867a5
+	golang.org/x/sys v0.21.0
+	golang.org/x/text v0.16.0
+	google.golang.org/api v0.184.0
+	google.golang.org/genproto/googleapis/api v0.0.0-20240610135401-a8a62080eff3
 	google.golang.org/grpc v1.64.0
-	google.golang.org/protobuf v1.34.1
+	google.golang.org/protobuf v1.34.2
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
@@ -119,9 +119,9 @@ require (
 )
 
 require (
-	cloud.google.com/go v0.112.1 // indirect
+	cloud.google.com/go v0.115.0 // indirect
 	cloud.google.com/go/compute/metadata v0.3.0 // indirect
-	cloud.google.com/go/iam v1.1.6 // indirect
+	cloud.google.com/go/iam v1.1.8 // indirect
 	dario.cat/mergo v1.0.0 // indirect
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.5.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
@@ -132,7 +132,7 @@ require (
 	github.com/jackc/puddle/v2 v2.2.1 // indirect
 	github.com/kylelemons/godebug v1.1.0 // indirect
 	github.com/pkg/browser v0.0.0-20210911075715-681adbf594b8 // indirect
-	google.golang.org/genproto v0.0.0-20240227224415-6ceb2ff114de // indirect
+	google.golang.org/genproto v0.0.0-20240604185151-ef581f913117 // indirect
 )
 
 require (
@@ -143,6 +143,8 @@ require (
 )
 
 require (
+	cloud.google.com/go/auth v0.5.1 // indirect
+	cloud.google.com/go/auth/oauth2adapt v0.2.2 // indirect
 	github.com/99designs/go-keychain v0.0.0-20191008050251-8e49817e8af4 // indirect
 	github.com/99designs/keyring v1.2.2 // indirect
 	github.com/ClickHouse/ch-go v0.58.2 // indirect
@@ -155,6 +157,7 @@ require (
 	github.com/ProtonMail/go-crypto v1.0.0 // indirect
 	github.com/alicebob/gopher-json v0.0.0-20230218143504-906a9b012302 // indirect
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/apache/arrow/go/v15 v15.0.2 // indirect
 	github.com/apache/thrift v0.18.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.1 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.15.3 // indirect
@@ -225,7 +228,7 @@ require (
 	github.com/google/s2a-go v0.1.7 // indirect
 	github.com/google/wire v0.5.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.2 // indirect
-	github.com/googleapis/gax-go/v2 v2.12.2 // indirect
+	github.com/googleapis/gax-go/v2 v2.12.4 // indirect
 	github.com/gorilla/websocket v1.5.1 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-cleanhttp v0.5.2 // indirect
@@ -306,14 +309,14 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.2.0 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
-	golang.org/x/crypto v0.23.0 // indirect
+	golang.org/x/crypto v0.24.0 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.25.0 // indirect
-	golang.org/x/term v0.20.0 // indirect
+	golang.org/x/net v0.26.0 // indirect
+	golang.org/x/term v0.21.0 // indirect
 	golang.org/x/time v0.5.0 // indirect
-	golang.org/x/tools v0.21.0 // indirect
+	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	golang.org/x/xerrors v0.0.0-20231012003039-104605ab7028 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20240520151616-dc85e6b867a5 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240610135401-a8a62080eff3 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	k8s.io/klog/v2 v2.90.1 // indirect
@@ -345,6 +348,10 @@ replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testco
 // see the following PR: https://github.com/snowflakedb/gosnowflake/pull/1062
 replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
 
+// https://github.com/jeroenrinzema/psql-wire/pull/67
 replace github.com/jeroenrinzema/psql-wire v0.11.1 => github.com/k-anshul/psql-wire v0.0.0-20240619104241-c50b5cd3e614
+
+// Remove this once following changes are merged : https://github.com/k-anshul/google-cloud-go/pull/5/files
+replace cloud.google.com/go/bigquery v1.61.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20240620080947-9bb0e0dc9742
 
 exclude modernc.org/sqlite v1.18.1
