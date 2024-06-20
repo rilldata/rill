@@ -215,9 +215,9 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 	}
 	for _, measure := range doc.Measures {
 		spec.Measures = append(spec.Measures, &runtimev1.MetricsViewSpec_MeasureV2{
-			Name:       measure.Name,
 			Label:      measure.Label,
 			Expression: measure.Expression,
+			Name:       measure.Name,
 			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		})
 	}
@@ -268,9 +268,9 @@ func metricsViewYAMLSystemPrompt() string {
 		Title: "<human-friendly title based on the table name and column names>",
 		Measures: []*metricsViewMeasureYAML{
 			{
-				Name:        "<unique name for the metric in snake case, such as average_sales>",
 				Label:       "<short descriptive label for the metric>",
 				Expression:  "<SQL expression to calculate the KPI in the requested SQL dialect>",
+				Name:        "<unique name for the metric in snake case, such as average_sales>",
 				Description: "<short description of the metric>",
 			},
 		},
@@ -358,18 +358,18 @@ func generateMetricsViewYAMLSimpleDimensions(schema *runtimev1.StructType) []*me
 func generateMetricsViewYAMLSimpleMeasures(schema *runtimev1.StructType) []*metricsViewMeasureYAML {
 	var measures []*metricsViewMeasureYAML
 	measures = append(measures, &metricsViewMeasureYAML{
-		Name:        "total_records",
 		Label:       "Total records",
 		Expression:  "COUNT(*)",
+		Name:        "total_records",
 		Description: "",
 	})
 	for _, f := range schema.Fields {
 		switch f.Type.Code {
 		case runtimev1.Type_CODE_FLOAT32, runtimev1.Type_CODE_FLOAT64:
 			measures = append(measures, &metricsViewMeasureYAML{
-				Name:        f.Name,
 				Label:       fmt.Sprintf("Sum of %s", identifierToTitle(f.Name)),
 				Expression:  fmt.Sprintf("SUM(%s)", safeSQLName(f.Name)),
+				Name:        f.Name,
 				Description: "",
 			})
 		}
@@ -400,9 +400,9 @@ type metricsViewDimensionYAML struct {
 }
 
 type metricsViewMeasureYAML struct {
-	Name        string
 	Label       string
 	Expression  string
+	Name        string
 	Description string
 }
 
