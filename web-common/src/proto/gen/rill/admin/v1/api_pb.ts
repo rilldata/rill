@@ -8894,6 +8894,13 @@ export class ReportOptions extends Message<ReportOptions> {
    */
   slackWebhooks: string[] = [];
 
+  /**
+   * query request could be similar across pages so we use this to identify the exact page
+   *
+   * @generated from field: string web_show_page = 14;
+   */
+  webShowPage = "";
+
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -8915,6 +8922,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 14, name: "web_show_page", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {

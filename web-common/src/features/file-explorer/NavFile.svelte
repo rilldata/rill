@@ -31,6 +31,7 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
+  import { Save } from "lucide-svelte";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -43,6 +44,7 @@
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
+  let name: Readable<V1ResourceName | undefined>;
 
   $: id = `${filePath}-nav-link`;
   $: fileName = filePath.split("/").pop();
@@ -50,8 +52,8 @@
     removeLeadingSlash(filePath) ===
     removeLeadingSlash($page.params.file ?? "");
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  let name: Readable<V1ResourceName | undefined>;
-  $: name = fileArtifact.name;
+
+  $: ({ name, hasUnsavedChanges, saveLocalContent } = fileArtifact);
   $: resourceKind = $name?.kind as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
@@ -84,6 +86,7 @@
   aria-label="{filePath} Nav Entry"
   class="w-full text-left pr-2 h-6 group flex justify-between gap-x-1 items-center hover:bg-slate-100"
   class:bg-slate-100={isCurrentFile}
+  class:opacity-50={$hasUnsavedChanges}
 >
   <a
     class="w-full truncate flex items-center gap-x-1 font-medium {isProtectedDirectory ||
@@ -92,6 +95,7 @@
       : 'text-gray-900 hover:text-gray-900'}"
     href={`/files${filePath}`}
     {id}
+    class:italic={$hasUnsavedChanges}
     on:click={fireTelemetry}
     on:mousedown={handleMouseDown}
     style:padding-left="{padding}px"
@@ -146,6 +150,12 @@
             />
             <NavigationMenuSeparator />
           {/if}
+        {/if}
+        {#if $hasUnsavedChanges}
+          <NavigationMenuItem on:click={saveLocalContent}>
+            <Save slot="icon" size="12px" />
+            Save file
+          </NavigationMenuItem>
         {/if}
         <NavigationMenuItem on:click={() => onRename(filePath, false)}>
           <EditIcon slot="icon" />

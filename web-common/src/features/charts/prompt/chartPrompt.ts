@@ -69,8 +69,10 @@ export class ChartPromptsStore {
       return cs;
     });
     this.history.update((h) => {
-      if (!h.entities[chartName]?.length) return;
+      if (!h.entities[chartName]?.length) return h;
       h.entities[chartName][0].status = status;
+
+      return h;
     });
   }
 
@@ -83,8 +85,10 @@ export class ChartPromptsStore {
       return cs;
     });
     this.history.update((h) => {
-      if (!h.entities[chartName]?.length) return;
+      if (!h.entities[chartName]?.length) return h;
       h.entities[chartName][0].status = ChartPromptStatus.Error;
+
+      return h;
     });
   }
 
