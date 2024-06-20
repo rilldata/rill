@@ -1,4 +1,5 @@
-import { createPromiseClient } from "@connectrpc/connect";
+import type { PartialMessage } from "@bufbuild/protobuf";
+import { type ConnectError, createPromiseClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_connect";
 import {
@@ -10,12 +11,17 @@ import {
   PushToGithubRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-import { createMutation, createQuery } from "@tanstack/svelte-query";
+import {
+  createMutation,
+  createQuery,
+  type CreateMutationOptions,
+  type CreateQueryOptions,
+} from "@tanstack/svelte-query";
 import { get } from "svelte/store";
 
 /**
  * Handwritten wrapper on LocalService.
- * TODO: Add query and mutation params.
+ * TODO: find a way to autogenerate
  */
 
 // cache of clients per host
@@ -41,10 +47,21 @@ export function localServiceGetMetadata() {
 export const getLocalServiceGetMetadataQueryKey = () => [
   `/v1/local/get-metadata`,
 ];
-export function createLocalServiceGetMetadata() {
+export function createLocalServiceGetMetadata<
+  TData = Awaited<ReturnType<typeof localServiceGetMetadata>>,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceGetMetadata>>,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
   return createQuery({
-    queryKey: getLocalServiceGetMetadataQueryKey(),
-    queryFn: localServiceGetMetadata,
+    ...queryOptions,
+    queryKey: queryOptions?.queryKey ?? getLocalServiceGetMetadataQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceGetMetadata,
   });
 }
 
@@ -54,10 +71,21 @@ export function localServiceGetVersion() {
 export const getLocalServiceGetVersionQueryKey = () => [
   `/v1/local/get-version`,
 ];
-export function createLocalServiceGetVersion() {
+export function createLocalServiceGetVersion<
+  TData = Awaited<ReturnType<typeof localServiceGetVersion>>,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceGetVersion>>,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
   return createQuery({
-    queryKey: getLocalServiceGetVersionQueryKey(),
-    queryFn: localServiceGetVersion,
+    ...queryOptions,
+    queryKey: queryOptions?.queryKey ?? getLocalServiceGetVersionQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceGetVersion,
   });
 }
 
@@ -67,48 +95,71 @@ export function localServiceDeployValidation() {
 export const getLocalServiceDeployValidationQueryKey = () => [
   `/v1/local/deploy-validation`,
 ];
-export function createLocalServiceDeployValidation() {
+export function createLocalServiceDeployValidation<
+  TData = Awaited<ReturnType<typeof localServiceDeployValidation>>,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceDeployValidation>>,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
   return createQuery({
-    queryKey: getLocalServiceDeployValidationQueryKey(),
-    queryFn: localServiceDeployValidation,
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ?? getLocalServiceDeployValidationQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceDeployValidation,
   });
 }
 
-export function localServicePushToGithub(account: string, repo: string) {
-  return getClient().pushToGithub(
-    new PushToGithubRequest({
-      account,
-      repo,
-    }),
-  );
+export function localServicePushToGithub(
+  args: PartialMessage<PushToGithubRequest>,
+) {
+  return getClient().pushToGithub(new PushToGithubRequest(args));
 }
-export function createLocalServicePushToGithub() {
+export function createLocalServicePushToGithub<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof localServicePushToGithub>>,
+    TError,
+    PartialMessage<PushToGithubRequest>,
+    TContext
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
   return createMutation<
     Awaited<ReturnType<typeof localServicePushToGithub>>,
     unknown,
-    {
-      account: string;
-      repo: string;
-    },
+    PartialMessage<PushToGithubRequest>,
     unknown
-  >(({ account, repo }) => localServicePushToGithub(account, repo));
+  >(localServicePushToGithub, mutationOptions);
 }
 
-export function localServiceDeploy(org: string, projectName: string) {
-  return getClient().deploy(
-    new DeployRequest({
-      org,
-      projectName,
-    }),
-  );
+export function localServiceDeploy(args: PartialMessage<DeployRequest>) {
+  return getClient().deploy(new DeployRequest(args));
 }
-export function createLocalServiceDeploy() {
+export function createLocalServiceDeploy<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof localServiceDeploy>>,
+    TError,
+    PartialMessage<DeployRequest>,
+    TContext
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
   return createMutation<
     Awaited<ReturnType<typeof localServiceDeploy>>,
     unknown,
-    { org: string; projectName: string },
+    PartialMessage<DeployRequest>,
     unknown
-  >(({ org, projectName }) => localServiceDeploy(org, projectName));
+  >(localServiceDeploy, mutationOptions);
 }
 
 export function localServiceGetCurrentUser() {
@@ -117,9 +168,20 @@ export function localServiceGetCurrentUser() {
 export const getLocalServiceGetCurrentUserQueryKey = () => [
   `/v1/local/get-user`,
 ];
-export function createLocalServiceGetCurrentUser() {
+export function createLocalServiceGetCurrentUser<
+  TData = Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
   return createQuery({
-    queryKey: getLocalServiceGetCurrentUserQueryKey(),
-    queryFn: localServiceGetCurrentUser,
+    ...queryOptions,
+    queryKey: queryOptions?.queryKey ?? getLocalServiceGetCurrentUserQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceGetCurrentUser,
   });
 }

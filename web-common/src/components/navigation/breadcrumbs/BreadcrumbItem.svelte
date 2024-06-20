@@ -1,11 +1,8 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import type { PathOption, PathOptions } from "./Breadcrumbs.svelte";
-
-  const regex = /\[.*?\]/g;
 
   export let options: PathOptions;
   export let current: string;
@@ -15,7 +12,6 @@
   export let onSelect: undefined | ((id: string) => void) = undefined;
 
   $: selected = options.get(current.toLowerCase());
-  $: nextChild = $page.route.id?.split(regex)[depth + 1] ?? "";
 
   function linkMaker(
     current: (string | undefined)[],
@@ -42,9 +38,10 @@
   <div class="flex flex-row gap-x-1 items-center">
     {#if selected}
       <a
-        href={!isCurrentPage
-          ? linkMaker(currentPath, depth, current, selected) + nextChild
-          : "#top"}
+        on:click={() => {
+          if (isCurrentPage) window.location.reload();
+        }}
+        href={linkMaker(currentPath, depth, current, selected)}
         class="text-gray-500 hover:text-gray-600"
         class:current={isCurrentPage}
       >
@@ -94,9 +91,11 @@
   .trigger {
     @apply flex flex-col justify-center items-center;
     @apply transition-transform  text-gray-500;
+    @apply px-0.5 py-1 rounded;
   }
 
-  .trigger:hover {
-    @apply translate-y-[2px];
+  .trigger:hover,
+  .trigger[data-state="open"] {
+    @apply bg-gray-100;
   }
 </style>
