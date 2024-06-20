@@ -123,7 +123,7 @@
       : [];
 
     const measures = $visibleMeasures
-      .filter((m) => m !== undefined)
+      .filter((m) => m.name !== undefined)
       .map((m) => {
         return {
           id: m.name as string,
