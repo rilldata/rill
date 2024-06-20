@@ -1643,6 +1643,4 @@ message AlertOptions {
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;
-  // this is used to separate criteria configured in alert vs ones present in the dashboard already
-  string metrics_view_measure_filter_indices = 12;
 }

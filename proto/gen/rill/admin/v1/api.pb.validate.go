@@ -23992,8 +23992,6 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for RenotifyAfterSeconds
 
-	// no validation rules for MetricsViewMeasureFilterIndices
-
 	if len(errors) > 0 {
 		return AlertOptionsMultiError(errors)
 	}

@@ -1001,7 +1001,6 @@ export interface V1AlertOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
-  metricsViewMeasureFilterIndices?: string;
 }
 
 export interface V1AddProjectMemberResponse {

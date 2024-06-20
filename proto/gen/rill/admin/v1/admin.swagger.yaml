@@ -2450,9 +2450,6 @@ definitions:
         type: array
         items:
           type: string
-      metricsViewMeasureFilterIndices:
-        type: string
-        title: this is used to separate criteria configured in alert vs ones present in the dashboard already
   v1Bookmark:
     type: object
     properties:

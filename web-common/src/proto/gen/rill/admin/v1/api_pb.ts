@@ -9001,13 +9001,6 @@ export class AlertOptions extends Message<AlertOptions> {
    */
   slackWebhooks: string[] = [];
 
-  /**
-   * this is used to separate criteria configured in alert vs ones present in the dashboard already
-   *
-   * @generated from field: string metrics_view_measure_filter_indices = 12;
-   */
-  metricsViewMeasureFilterIndices = "";
-
   constructor(data?: PartialMessage<AlertOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9027,7 +9020,6 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 12, name: "metrics_view_measure_filter_indices", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {
