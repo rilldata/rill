@@ -76,7 +76,7 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, fmt.Sprintf("%s, %s", err.Error(), name))
+		return nil, nil, status.Error(codes.InvalidArgument, fmt.Sprintf("error getting metrics view %q: %s", name, err.Error()))
 	}
 
 	mv := res.GetMetricsView()
