@@ -51,7 +51,7 @@ type ResolverResult interface {
 	Close() error
 }
 
-func NewResolverResult(result *drivers.Result, rowLimit int64, cache bool) ResolverResult {
+func NewResolverResult(result *drivers.Result, cache bool) ResolverResult {
 	return &resolverResult{
 		rows:  result,
 		cache: cache,

@@ -103,6 +103,11 @@ func convertValue(v any, code runtimev1.Type_Code) (any, error) {
 			return time.Parse(time.DateOnly, u)
 		}
 		return v, nil
+	case runtimev1.Type_CODE_TIMESTAMP:
+		if u, ok := v.(string); ok {
+			return time.Parse(time.RFC3339, u)
+		}
+		return v, nil
 	default:
 		return v, nil
 	}
@@ -171,8 +176,6 @@ func columnForType(field *runtimev1.StructType_Field) wire.Column {
 		col.Oid = pgtype.UUIDOID
 		col.Width = 16
 	case runtimev1.Type_CODE_ARRAY:
-		// TODO : array will mostly fail for metrics_sql since in JSON they will be present as string but pgx protocol expects to be []type for array
-		// metrics_sql will not output array right now.
 		return columnForArrayType(field)
 	case runtimev1.Type_CODE_MAP:
 		col.Oid = pgtype.JSONOID
