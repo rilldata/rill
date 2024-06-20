@@ -18,7 +18,7 @@ func (a *AST) SQL() (string, []any, error) {
 	if a.query.Label {
 		err = b.writeSelectWithLabels(a.Root)
 	} else {
-		err = b.writeSelect(a.Root, 0)
+		err = b.writeSelect(a.Root)
 	}
 	if err != nil {
 		return "", nil, err
@@ -65,7 +65,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 	}
 
 	b.out.WriteString(" FROM (")
-	err := b.writeSelect(n, 0)
+	err := b.writeSelect(n)
 	if err != nil {
 		return err
 	}
@@ -74,8 +74,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 	return nil
 }
 
-func (b *sqlBuilder) writeSelect(n *SelectNode, level int) error {
-	b.out.WriteString(strings.Repeat("\t", level))
+func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	b.out.WriteString("SELECT ")
 
 	for i, f := range n.DimFields {
@@ -105,7 +104,6 @@ func (b *sqlBuilder) writeSelect(n *SelectNode, level int) error {
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
-	b.out.WriteString("\n" + strings.Repeat("\t", level))
 	b.out.WriteString("FROM ")
 	if n.FromTable != nil {
 		b.out.WriteString(*n.FromTable)
@@ -129,26 +127,23 @@ func (b *sqlBuilder) writeSelect(n *SelectNode, level int) error {
 			b.out.WriteString(tblWithAlias)
 		}
 	} else if n.FromSelect != nil {
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteByte('(')
-		err := b.writeSelect(n.FromSelect, level+1)
+		err := b.writeSelect(n.FromSelect)
 		if err != nil {
 			return err
 		}
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteString(") ")
 		b.out.WriteString(n.FromSelect.Alias)
 
 		for _, ljs := range n.LeftJoinSelects {
-			b.out.WriteString("\n" + strings.Repeat("\t", level))
-			err := b.writeJoin("LEFT", n.FromSelect, ljs, level+1)
+			err := b.writeJoin("LEFT", n.FromSelect, ljs)
 			if err != nil {
 				return err
 			}
 		}
 
 		if n.JoinComparisonSelect != nil {
-			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect, level+1)
+			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
 			if err != nil {
 				return err
 			}
@@ -160,11 +155,8 @@ func (b *sqlBuilder) writeSelect(n *SelectNode, level int) error {
 	var wroteWhere bool
 	if n.TimeWhere != nil && n.TimeWhere.Expr != "" {
 		wroteWhere = true
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteString("WHERE (")
-		b.out.WriteString("\n" + strings.Repeat("\t", level+1))
 		b.out.WriteString(n.TimeWhere.Expr)
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteString(")")
 		b.args = append(b.args, n.TimeWhere.Args...)
 	}
@@ -180,7 +172,6 @@ func (b *sqlBuilder) writeSelect(n *SelectNode, level int) error {
 	}
 
 	if n.Group && len(n.DimFields) > 0 {
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteString(" GROUP BY ")
 		for i := range n.DimFields {
 			if i > 0 {
@@ -191,14 +182,12 @@ func (b *sqlBuilder) writeSelect(n *SelectNode, level int) error {
 	}
 
 	if n.Having != nil && n.Having.Expr != "" {
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteString(" HAVING ")
 		b.out.WriteString(n.Having.Expr)
 		b.args = append(b.args, n.Having.Args...)
 	}
 
 	if len(n.OrderBy) > 0 {
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteString(" ORDER BY ")
 		for i, f := range n.OrderBy {
 			if i > 0 {
@@ -209,13 +198,11 @@ func (b *sqlBuilder) writeSelect(n *SelectNode, level int) error {
 	}
 
 	if n.Limit != nil {
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteString(" LIMIT ")
 		b.out.WriteString(strconv.FormatInt(*n.Limit, 10))
 	}
 
 	if n.Offset != nil {
-		b.out.WriteString("\n" + strings.Repeat("\t", level))
 		b.out.WriteString(" OFFSET ")
 		b.out.WriteString(strconv.FormatInt(*n.Offset, 10))
 	}
@@ -223,12 +210,11 @@ func (b *sqlBuilder) writeSelect(n *SelectNode, level int) error {
 	return nil
 }
 
-func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNode, level int) error {
-	b.out.WriteString("\n" + strings.Repeat("\t", level))
+func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNode) error {
 	b.out.WriteByte(' ')
 	b.out.WriteString(joinType)
 	b.out.WriteString(" JOIN (")
-	err := b.writeSelect(joinSelect, level+1)
+	err := b.writeSelect(joinSelect)
 	if err != nil {
 		return err
 	}
@@ -240,7 +226,6 @@ func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNo
 		return nil
 	}
 
-	b.out.WriteString("\n" + strings.Repeat("\t", level))
 	b.out.WriteString(" ON ")
 	for i, f := range baseSelect.DimFields {
 		if i > 0 {
