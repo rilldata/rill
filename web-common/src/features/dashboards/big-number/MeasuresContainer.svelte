@@ -5,7 +5,7 @@
   import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { createQueryServiceMetricsViewTotals } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { MEASURE_CONFIG } from "../config";
   import MeasureBigNumber from "./MeasureBigNumber.svelte";
@@ -124,11 +124,11 @@
 
   $: numColumns = 3;
 
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
+  $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     metricViewName,
     {
-      measureNames: $selectedMeasureNames,
+      measures: $selectedMeasureNames.map((name) => ({ name })),
       where: sanitiseExpression($dashboardStore?.whereFilter, undefined),
     },
     {
@@ -199,7 +199,7 @@
           <MeasureBigNumber
             {measure}
             value={// catch nulls and pass only undefined to the component
-            $totalsQuery?.data?.data?.[measure?.name ?? ""] ?? undefined}
+            $totalsQuery?.data?.data?.[0][measure?.name ?? ""] ?? undefined}
             withTimeseries={false}
             status={$totalsQuery?.isFetching
               ? EntityStatus.Running

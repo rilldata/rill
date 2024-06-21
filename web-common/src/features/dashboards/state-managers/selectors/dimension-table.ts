@@ -1,7 +1,7 @@
 import type {
   MetricsViewSpecDimensionV2,
   RpcStatus,
-  V1MetricsViewComparisonResponse,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewTotalsResponse,
 } from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
@@ -11,7 +11,7 @@ import {
 } from "../../dimension-table/dimension-table-utils";
 import { allMeasures, visibleMeasures } from "./measures";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import { getDimensionColumn, isSummableMeasure } from "../../dashboard-utils";
+import { isSummableMeasure } from "../../dashboard-utils";
 import { isTimeComparisonActive } from "./time-range";
 import { activeMeasureName, isValidPercentOfTotal } from "./active-measure";
 import { selectedDimensionValues } from "./dimension-filters";
@@ -50,7 +50,10 @@ export const virtualizedTableColumns =
 
     if (!dimension) return [];
 
-    const measures = visibleMeasures(dashData);
+    // temporary filter for advanced measures
+    const measures = visibleMeasures(dashData).filter(
+      (m) => !m.window && !m.requiredDimensions?.length,
+    );
 
     const measureTotals: { [key: string]: number } = {};
     if (totalsQuery?.data?.data) {
@@ -76,7 +79,7 @@ export const prepareDimTableRows =
     dashData: DashboardDataSources,
   ): ((
     sortedQuery: QueryObserverResult<
-      V1MetricsViewComparisonResponse,
+      V1MetricsViewAggregationResponse,
       RpcStatus
     >,
     unfilteredTotal: number,
@@ -86,14 +89,14 @@ export const prepareDimTableRows =
 
     if (!dimension) return [];
 
-    const dimensionColumn = getDimensionColumn(dimension);
+    const dimensionColumn = dimension.name ?? "";
     const leaderboardMeasureName = activeMeasureName(dashData);
 
     // FIXME: should this really be all measures, or just visible measures?
     const measures = allMeasures(dashData);
 
     return prepareDimensionTableRows(
-      sortedQuery?.data?.rows ?? [],
+      sortedQuery?.data?.data ?? [],
       measures,
       leaderboardMeasureName,
       dimensionColumn,

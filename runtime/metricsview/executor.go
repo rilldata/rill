@@ -3,6 +3,7 @@ package metricsview
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -10,7 +11,11 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-const defaultExecutionTimeout = time.Minute * 3
+const (
+	defaultInteractiveTimeout = time.Minute * 3
+	defaultExportTimeout      = time.Minute * 5
+	defaultPivotExportTimeout = time.Minute * 5
+)
 
 // Executor is capable of executing queries and other operations against a metrics view.
 type Executor struct {
@@ -131,7 +136,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
+		ExecutionTimeout: defaultInteractiveTimeout,
 	})
 	if err != nil {
 		return nil, err
@@ -147,8 +152,13 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, runtime.ErrForbidden
 	}
 
-	export := qry.Label // TODO: Always set to false once separate exports are implemented
+	export := qry.Label // TODO: Always set to false once all upstream code uses Export() for exports
 	if err := e.rewriteQueryLimit(qry, export); err != nil {
+		return nil, false, err
+	}
+
+	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
+	if err != nil {
 		return nil, false, err
 	}
 
@@ -173,19 +183,69 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, err
 	}
 
-	sql, args, err := ast.SQL()
-	if err != nil {
-		return nil, false, err
-	}
+	var res *drivers.Result
+	if !pivoting {
+		sql, args, err := ast.SQL()
+		if err != nil {
+			return nil, false, err
+		}
 
-	res, err := e.olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return nil, false, err
+		res, err = e.olap.Execute(ctx, &drivers.Statement{
+			Query:            sql,
+			Args:             args,
+			Priority:         e.priority,
+			ExecutionTimeout: defaultInteractiveTimeout,
+		})
+		if err != nil {
+			return nil, false, err
+		}
+	} else {
+		// Since pivots are mainly used for exports, we just do an inefficient shim that runs a pivoted export to a temporary Parquet file, and then reads the file into a *drivers.Result using DuckDB.
+		// (An efficient interactive pivot implementation would look quite different from the export-based implementation, so is not worth it at this point.)
+
+		// If e.olap is a DuckDB, use it directly. Else open a "duckdb" handle (which is always available, even for instances where DuckDB is not the main OLAP connector).
+		var duck drivers.OLAPStore
+		var releaseDuck func()
+		if e.olap.Dialect() == drivers.DialectDuckDB {
+			duck = e.olap
+		} else {
+			handle, release, err := e.rt.AcquireHandle(ctx, e.instanceID, "duckdb")
+			if err != nil {
+				return nil, false, fmt.Errorf("failed to acquire DuckDB for serving pivot: %w", err)
+			}
+
+			var ok bool
+			duck, ok = handle.AsOLAP(e.instanceID)
+			if !ok {
+				release()
+				return nil, false, fmt.Errorf(`connector "duckdb" is not an OLAP store`)
+			}
+			releaseDuck = release
+		}
+
+		// Execute the pivot export
+		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet")
+		if err != nil {
+			return nil, false, err
+		}
+
+		// Use DuckDB to read the Parquet file into a *drivers.Result
+		res, err = duck.Execute(ctx, &drivers.Statement{
+			Query:            fmt.Sprintf("SELECT * FROM '%s'", path),
+			Priority:         e.priority,
+			ExecutionTimeout: defaultInteractiveTimeout,
+		})
+		if err != nil {
+			_ = os.Remove(path)
+			return nil, false, err
+		}
+		res.SetCleanupFunc(func() error {
+			if releaseDuck != nil {
+				releaseDuck()
+			}
+			_ = os.Remove(path)
+			return nil
+		})
 	}
 
 	limitCap := e.queryLimitCap(export)
@@ -197,4 +257,56 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 	cache := e.olap.Dialect() == drivers.DialectDuckDB
 
 	return res, cache, nil
+}
+
+// Export executes and exports the provided query against the metrics view.
+// It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
+func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format string) (string, error) {
+	if e.security != nil && !e.security.Access {
+		return "", runtime.ErrForbidden
+	}
+
+	if err := e.rewriteQueryLimit(qry, true); err != nil {
+		return "", err
+	}
+
+	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
+	if err != nil {
+		return "", err
+	}
+
+	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+		return "", err
+	}
+
+	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
+		return "", err
+	}
+
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	if err != nil {
+		return "", err
+	}
+
+	if err := e.rewriteApproximateComparisons(ast); err != nil {
+		return "", err
+	}
+
+	if err := e.rewriteDruidJoins(ast); err != nil {
+		return "", err
+	}
+
+	if pivoting {
+		return e.executePivotExport(ctx, ast, pivotAST, format)
+	}
+
+	sql, args, err := ast.SQL()
+	if err != nil {
+		return "", err
+	}
+
+	return e.executeExport(ctx, format, e.metricsView.Connector, map[string]any{
+		"sql":  sql,
+		"args": args,
+	})
 }

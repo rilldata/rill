@@ -6,10 +6,10 @@
   import { guidGenerator } from "@rilldata/web-common/lib/guid";
   import { extent } from "d3-array";
   import { getContext, onDestroy } from "svelte";
+  import type { Readable } from "svelte/store";
   import { contexts } from "../constants";
   import type { ExtremumResolutionStore, ScaleStore } from "../state/types";
   import { PlotConfig, lineFactory } from "../utils";
-  import type { Readable } from "svelte/store";
 
   const markID = guidGenerator();
 

@@ -35,7 +35,7 @@ type OLAPStore interface {
 	InformationSchema() InformationSchema
 	EstimateSize() (int64, bool)
 
-	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error
+	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error
 	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, uniqueKey []string) error
 	DropTable(ctx context.Context, name string, view bool) error
 	RenameTable(ctx context.Context, name, newName string, view bool) error
@@ -64,10 +64,17 @@ type Result struct {
 
 // SetCleanupFunc sets a function, which will be called when the Result is closed.
 func (r *Result) SetCleanupFunc(fn func() error) {
-	if r.cleanupFn != nil {
-		panic("cleanup function already set")
+	if r.cleanupFn == nil {
+		r.cleanupFn = fn
+		return
 	}
-	r.cleanupFn = fn
+
+	prevFn := r.cleanupFn
+	r.cleanupFn = func() error {
+		err1 := prevFn()
+		err2 := fn()
+		return errors.Join(err1, err2)
+	}
 }
 
 // SetCap caps the number of rows to return. If the number is exceeded, an error is returned.
@@ -185,12 +192,20 @@ func (d Dialect) String() string {
 	}
 }
 
+func (d Dialect) CanPivot() bool {
+	return d == DialectDuckDB
+}
+
 // EscapeIdentifier returns an escaped SQL identifier in the dialect.
 func (d Dialect) EscapeIdentifier(ident string) string {
 	if ident == "" {
 		return ident
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
+}
+
+func (d Dialect) EscapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
 }
 
 func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {

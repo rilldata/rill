@@ -92,6 +92,7 @@
 >
   <CaretDownIcon
     className="flex-none text-gray-400 {expanded ? '' : 'transform -rotate-90'}"
+    size="14px"
   />
   <span class="truncate w-full" class:text-red-600={$hasErrors}>
     {dir.name}

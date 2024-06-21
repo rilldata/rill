@@ -2,6 +2,7 @@ package queries
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 
@@ -11,8 +12,9 @@ import (
 )
 
 type MetricsViewSchema struct {
-	MetricsViewName    string         `json:"metrics_view_name,omitempty"`
-	SecurityAttributes map[string]any `json:"security_attributes,omitempty"`
+	MetricsViewName    string                                `json:"metrics_view_name,omitempty"`
+	SecurityAttributes map[string]any                        `json:"security_attributes,omitempty"`
+	SecurityPolicy     *runtimev1.MetricsViewSpec_SecurityV2 `json:"security_policy,omitempty"`
 
 	Result *runtimev1.MetricsViewSchemaResponse `json:"-"`
 }
@@ -20,7 +22,11 @@ type MetricsViewSchema struct {
 var _ runtime.Query = &MetricsViewSchema{}
 
 func (q *MetricsViewSchema) Key() string {
-	return fmt.Sprintf("MetricsViewSchema:%s", q.MetricsViewName)
+	r, err := json.Marshal(q)
+	if err != nil {
+		panic(err)
+	}
+	return fmt.Sprintf("MetricsViewSchema:%s", string(r))
 }
 
 func (q *MetricsViewSchema) Deps() []*runtimev1.ResourceName {
@@ -47,7 +53,7 @@ func (q *MetricsViewSchema) UnmarshalResult(v any) error {
 
 func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Resolve metrics view
-	mv, _, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, nil, nil)
+	mv, _, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, nil, nil)
 	if err != nil {
 		return err
 	}
@@ -56,6 +62,7 @@ func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	if err != nil {
 		return err
 	}
+	defer e.Close()
 
 	schema, err := e.Schema(ctx)
 	if err != nil {

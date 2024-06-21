@@ -21,8 +21,28 @@ func (p *ModelInputProperties) Validate() error {
 }
 
 type ModelOutputProperties struct {
-	Table       string `mapstructure:"table"`
-	Materialize *bool  `mapstructure:"materialize"`
+	Table               string                      `mapstructure:"table"`
+	Materialize         *bool                       `mapstructure:"materialize"`
+	UniqueKey           []string                    `mapstructure:"unique_key"`
+	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
+	// Columns sets the column names and data types. If unspecified these are detected from the select query by clickhouse.
+	// It is also possible to set indexes with this property.
+	// Example : (id UInt32, username varchar, email varchar, created_at datetime, INDEX idx1 username TYPE set(100) GRANULARITY 3)
+	Columns string `mapstructure:"columns"`
+	// Engine sets the table engine. Default: MergeTree
+	Engine string `mapstructure:"engine"`
+	// OrderBy sets the order by clause. Default: tuple() for MergeTree and not set for other engines
+	OrderBy string `mapstructure:"order_by"`
+	// PartitionBy sets the partition by clause.
+	PartitionBy string `mapstructure:"partition_by"`
+	// PrimaryKey sets the primary key clause.
+	PrimaryKey string `mapstructure:"primary_key"`
+	// SampleBy sets the sample by clause.
+	SampleBy string `mapstructure:"sample_by"`
+	// TTL sets ttl for column and table.
+	TTL string `mapstructure:"ttl"`
+	// Settings set the table specific settings.
+	Settings string `mapstructure:"settings"`
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecutorOptions) error {

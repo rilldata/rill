@@ -3,13 +3,13 @@
   import { page } from "$app/stores";
   import { useAlert } from "@rilldata/web-admin/features/alerts/selectors";
   import { mapQueryToDashboard } from "@rilldata/web-admin/features/dashboards/query-mappers/mapQueryToDashboard";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -46,8 +46,8 @@
         </CtaMessage>
       </div>
       <CtaButton
-        on:click={() => goto(`/${organization}/${project}/-/alerts/${$alert}`)}
-        variant="primary-outline"
+        variant="secondary"
+        href={`/${organization}/${project}/-/alerts/${$alert}`}
       >
         Go to Alerts page
       </CtaButton>

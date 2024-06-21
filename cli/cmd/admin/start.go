@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
@@ -28,6 +29,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/api/option"
 
 	// Load database drivers for admin
 	_ "github.com/rilldata/rill/admin/database/postgres"
@@ -289,7 +291,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
-				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
+
+				var clientOpts []option.ClientOption
+				if conf.UploadsSvcCreds != "" {
+					clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.UploadsSvcCreds)))
+				}
+				storageClient, err := storage.NewClient(cmd.Context(), clientOpts...)
+				if err != nil {
+					logger.Fatal("failed to create assets bucket handle", zap.Error(err))
+				}
+
+				srv, err := server.New(logger, adm, issuer, limiter, activityClient, storageClient.Bucket(conf.UploadsBucket), &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,
@@ -305,7 +317,6 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
 					AssetsBucket:           conf.UploadsBucket,
-					UploadsSvcCreds:        conf.UploadsSvcCreds,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

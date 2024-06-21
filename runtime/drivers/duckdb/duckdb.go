@@ -19,8 +19,10 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/extensions"
+	"github.com/rilldata/rill/runtime/drivers/file"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -374,6 +376,17 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.OutputHandle == c {
 		if sqlstore, ok := opts.InputHandle.AsSQLStore(); ok {
 			return &sqlStoreToSelfExecutor{c, sqlstore, opts}, true
+		}
+	}
+	if opts.InputHandle == c {
+		if opts.OutputHandle.Driver() == "file" {
+			outputProps := &file.ModelOutputProperties{}
+			if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+				return nil, false
+			}
+			if supportsExportFormat(outputProps.Format) {
+				return &selfToFileExecutor{c, opts}, true
+			}
 		}
 	}
 	return nil, false

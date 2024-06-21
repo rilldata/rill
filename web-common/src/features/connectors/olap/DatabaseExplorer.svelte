@@ -16,13 +16,13 @@
 </script>
 
 <div class="wrapper">
-  {#if error}
+  {#if isLoading}
+    <span class="message">Loading tables...</span>
+  {:else if error}
     <span class="message">Error: {error.response.data.message}</span>
-  {:else if isLoading}
-    <span class="message">Loading databases...</span>
   {:else if data}
     {#if data.length === 0}
-      <span class="message">No databases found</span>
+      <span class="message">No tables found</span>
     {:else}
       <ol transition:slide={{ duration }}>
         {#each data as database (database)}

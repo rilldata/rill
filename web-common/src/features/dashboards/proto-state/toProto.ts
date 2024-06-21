@@ -5,6 +5,7 @@ import {
   Timestamp,
   Value,
 } from "@bufbuild/protobuf";
+import { mapMeasureFilterToExpr } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   PivotChipType,
@@ -15,6 +16,7 @@ import {
   ToProtoPivotRowJoinTypeMap,
   ToProtoTimeGrainMap,
 } from "@rilldata/web-common/features/dashboards/proto-state/enum-maps";
+import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import type {
@@ -73,10 +75,16 @@ export function getProtoFromDashboardState(
   }
   if (metrics.dimensionThresholdFilters.length) {
     state.having = metrics.dimensionThresholdFilters.map(
-      ({ name, filter }) =>
+      ({ name, filters }) =>
         new DashboardDimensionFilter({
           name,
-          filter: toExpressionProto(filter),
+          filter: toExpressionProto(
+            createAndExpression(
+              filters
+                .map(mapMeasureFilterToExpr)
+                .filter(Boolean) as V1Expression[],
+            ),
+          ),
         }),
     );
   }
