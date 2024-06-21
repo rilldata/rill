@@ -68,8 +68,9 @@ type rillYAML struct {
 	// Default YAML values for migrations
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
-	Features    yaml.Node `yaml:"features"`
-	PublicPaths []string  `yaml:"public_paths"`
+	Features yaml.Node `yaml:"features"`
+	// Paths to expose over HTTP (defaults to ./public)
+	PublicPaths []string `yaml:"public_paths"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -82,9 +83,6 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 	tmp := &rillYAML{}
 	if err := yaml.Unmarshal([]byte(data), tmp); err != nil {
 		return newYAMLError(err)
-	}
-	if len(tmp.PublicPaths) == 0 {
-		tmp.PublicPaths = []string{"public"}
 	}
 
 	// Ugly backwards compatibility hack: we have renamed "env" to "vars", and now use "env" for environment-specific overrides.
@@ -164,6 +162,10 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		default:
 			return fmt.Errorf(`invalid property "features": must be a map or a sequence`)
 		}
+	}
+
+	if len(tmp.PublicPaths) == 0 {
+		tmp.PublicPaths = []string{"public"}
 	}
 
 	res := &RillYAML{
