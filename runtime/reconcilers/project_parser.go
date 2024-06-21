@@ -290,9 +290,8 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return parseErrsErr
 	}
 
-	paths := parser.RillYAML.PublicPaths
-	if len(paths) == 0 {
-		paths = []string{"public"}
+	if len(parser.RillYAML.PublicPaths) == 0 {
+		parser.RillYAML.PublicPaths = []string{"public"}
 	}
 
 	// not setting restartController=true when diff is actually nil prevents infinite restarts

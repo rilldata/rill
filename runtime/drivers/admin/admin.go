@@ -35,7 +35,6 @@ const (
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/admin")
-var persistentCacheDir = "persistentCache"
 
 var spec = drivers.Spec{
 	DisplayName: "Rill Admin",
@@ -285,12 +284,6 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 			}
 		}
 
-		// recreating peristent cache
-		err = os.RemoveAll(persistentCacheDir)
-		if err != nil {
-			return nil, err
-		}
-
 		return nil, nil
 	})
 
@@ -300,23 +293,6 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 	case res := <-ch:
 		return res.Err
 	}
-}
-
-func copyFile(src, dst string) error {
-	srcFile, err := os.Open(src)
-	if err != nil {
-		return err
-	}
-	defer srcFile.Close()
-
-	dstFile, err := os.Create(dst)
-	if err != nil {
-		return err
-	}
-	defer dstFile.Close()
-
-	_, err = io.Copy(dstFile, srcFile)
-	return err
 }
 
 // cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.

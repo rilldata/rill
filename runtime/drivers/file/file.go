@@ -144,7 +144,6 @@ type connection struct {
 	watcher      *watcher
 
 	ignorePaths []string
-	assetsCache map[string][]byte
 	cacheMutex  sync.RWMutex
 }
 
