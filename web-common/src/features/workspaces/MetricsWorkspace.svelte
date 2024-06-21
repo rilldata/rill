@@ -21,6 +21,7 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import WorkspaceEditorContainer from "../../layout/workspace/WorkspaceEditorContainer.svelte";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -109,14 +110,15 @@
     </div>
   </WorkspaceHeader>
 
-  <MetricsEditor
-    slot="body"
-    bind:autoSave={$autoSave}
-    {fileArtifact}
-    {filePath}
-    {allErrors}
-    {metricViewName}
-  />
+  <WorkspaceEditorContainer slot="body">
+    <MetricsEditor
+      bind:autoSave={$autoSave}
+      {fileArtifact}
+      {filePath}
+      {allErrors}
+      {metricViewName}
+    />
+  </WorkspaceEditorContainer>
 
   <MetricsInspector {filePath} slot="inspector" />
 </WorkspaceContainer>
