@@ -24,7 +24,7 @@ export function buildStackedArea(
     {
       title: quantitativeField.label,
       field: quantitativeField.name,
-      formatType: "measureFormatter",
+      formatType: quantitativeField.formatterFunction || "number",
       type: "quantitative",
     },
     {
@@ -44,7 +44,7 @@ export function buildStackedArea(
     nominalField?.values?.map((value) => ({
       field: sanitizeValueForVega(value),
       type: "quantitative",
-      formatType: "measureFormatter",
+      formatType: quantitativeField.formatterFunction || "number",
     }));
 
   if (multiValueTooltipChannel?.length) {

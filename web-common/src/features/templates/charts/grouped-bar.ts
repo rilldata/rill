@@ -39,7 +39,7 @@ export function buildGroupedBar(
         title: quantitativeField.label,
         field: quantitativeField.name,
         type: "quantitative",
-        formatType: "measureFormatter",
+        formatType: quantitativeField.formatterFunction || "number",
       },
       { title: nominalField.label, field: nominalField.name, type: "nominal" },
     ],
