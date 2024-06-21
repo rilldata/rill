@@ -1,6 +1,5 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "../../client";
   import ProjectGlobalStatusIndicator from "./status/ProjectGlobalStatusIndicator.svelte";
 
@@ -8,7 +7,6 @@
     url: { pathname },
     params: { organization, project },
   } = $page);
-  $: ({ host, instanceId } = $runtime);
 
   // Get the list of tabs to display, depending on the user's permissions
   $: tabsQuery = createAdminServiceGetProject(
