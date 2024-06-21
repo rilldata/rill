@@ -516,7 +516,9 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 
 func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.GetCurrentUserRequest]) (*connect.Response[localv1.GetCurrentUserResponse], error) {
 	if !s.app.ch.IsAuthenticated() {
-		return nil, errors.New("not authenticated as a user")
+		return connect.NewResponse(&localv1.GetCurrentUserResponse{
+			User: nil,
+		}), nil
 	}
 
 	c, err := s.app.ch.Client()

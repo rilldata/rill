@@ -28,11 +28,11 @@
   }
 </script>
 
-{#if $user.isSuccess && $user.data}
+{#if $user.isSuccess && $user.data?.user}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger class="flex-none">
       <img
-        src={$user.data?.photoUrl}
+        src={$user.data?.user?.photoUrl}
         alt="avatar"
         class="h-7 inline-flex items-center rounded-full"
         referrerpolicy="no-referrer"
