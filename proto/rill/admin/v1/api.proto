@@ -809,9 +809,9 @@ message CreateUploadSignedURLRequest {
   string extension = 4; // Eg. ".tar.gz"
 }
 
-message CreateUploadSignedURLResponse {
-  string signed_url = 1;
-  string upload_path =2;
+message CreateUploadResponse {
+  string upload_id = 1;
+  string signed_url = 2;
 }
 
 message TriggerReconcileRequest {
