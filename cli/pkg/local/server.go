@@ -516,9 +516,7 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 
 func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.GetCurrentUserRequest]) (*connect.Response[localv1.GetCurrentUserResponse], error) {
 	if !s.app.ch.IsAuthenticated() {
-		return connect.NewResponse(&localv1.GetCurrentUserResponse{
-			Authenticated: false,
-		}), nil
+		return nil, errors.New("not authenticated as a user")
 	}
 
 	c, err := s.app.ch.Client()
@@ -530,13 +528,17 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	if err != nil {
 		return nil, err
 	}
+	if userResp.User == nil {
+		return nil, errors.New("failed to get current user")
+	}
 
 	return connect.NewResponse(&localv1.GetCurrentUserResponse{
-		Authenticated: true,
-		Id:            userResp.User.Id,
-		Email:         userResp.User.Email,
-		DisplayName:   userResp.User.DisplayName,
-		PhotoUrl:      userResp.User.PhotoUrl,
+		User: &adminv1.User{
+			Id:          userResp.User.Id,
+			Email:       userResp.User.Email,
+			DisplayName: userResp.User.DisplayName,
+			PhotoUrl:    userResp.User.PhotoUrl,
+		},
 	}), nil
 }
 

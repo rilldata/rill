@@ -5,7 +5,7 @@
 
 import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialMessage, PlainMessage } from "@bufbuild/protobuf";
 import { Message, proto3, Timestamp } from "@bufbuild/protobuf";
-import { GithubPermission } from "../../admin/v1/api_pb.js";
+import { GithubPermission, User } from "../../admin/v1/api_pb.js";
 
 /**
  * @generated from message rill.local.v1.PingRequest
@@ -675,29 +675,9 @@ export class GetCurrentUserRequest extends Message<GetCurrentUserRequest> {
  */
 export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
   /**
-   * @generated from field: bool authenticated = 1;
+   * @generated from field: rill.admin.v1.User user = 1;
    */
-  authenticated = false;
-
-  /**
-   * @generated from field: string id = 2;
-   */
-  id = "";
-
-  /**
-   * @generated from field: string email = 3;
-   */
-  email = "";
-
-  /**
-   * @generated from field: string display_name = 4;
-   */
-  displayName = "";
-
-  /**
-   * @generated from field: string photo_url = 5;
-   */
-  photoUrl = "";
+  user?: User;
 
   constructor(data?: PartialMessage<GetCurrentUserResponse>) {
     super();
@@ -707,11 +687,7 @@ export class GetCurrentUserResponse extends Message<GetCurrentUserResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.local.v1.GetCurrentUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "authenticated", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "photo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "user", kind: "message", T: User },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentUserResponse {

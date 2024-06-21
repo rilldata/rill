@@ -102,9 +102,5 @@ message DeployResponse {
 message GetCurrentUserRequest {}
 
 message GetCurrentUserResponse {
-  bool authenticated = 1;
-  string id = 2;
-  string email = 3;
-  string display_name = 4;
-  string photo_url = 5;
+  admin.v1.User user = 1;
 }
