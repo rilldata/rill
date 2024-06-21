@@ -19,7 +19,8 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const { runtime } = ctx;
+  const { runtime, dashboardStore } = ctx;
+  $: metricsViewProto = $dashboardStore.proto;
   const metricsView = useDashboard($runtime.instanceId, metricViewName);
 
   const exportDash = createQueryServiceExport();
@@ -121,6 +122,7 @@
     this={CreateScheduledReportDialog}
     queryName="MetricsViewAggregation"
     queryArgs={$scheduledReportsQueryArgs}
+    {metricsViewProto}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
   />

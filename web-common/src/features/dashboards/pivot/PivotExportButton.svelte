@@ -2,6 +2,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { builderActions, getAttrs } from "bits-ui";
   import { onMount } from "svelte";
+  import { get } from "svelte/store";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import {
     V1ExportFormat,
@@ -17,7 +18,8 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const { runtime, metricsViewName } = ctx;
+  const { runtime, metricsViewName, dashboardStore } = ctx;
+  $: metricsViewProto = $dashboardStore.proto;
   const exportDash = createQueryServiceExport();
 
   $: metricsView = useDashboard($runtime.instanceId, $metricsViewName);
@@ -94,6 +96,7 @@
     this={CreateScheduledReportDialog}
     queryName="MetricsViewAggregation"
     queryArgs={$scheduledReportsQueryArgs}
+    {metricsViewProto}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
   />
