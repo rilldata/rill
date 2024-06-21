@@ -9,7 +9,7 @@ export const PollTimeWhenProjectDeploymentError = 5000;
 export const PollTimeWhenProjectDeployed = 60 * 1000;
 
 export function useProjectDeployment(orgName: string, projName: string) {
-  return createAdminServiceGetProject<V1Deployment>(
+  return createAdminServiceGetProject<V1Deployment | undefined>(
     orgName,
     projName,
     undefined,
