@@ -2,13 +2,11 @@ package clickhouse
 
 import (
 	"context"
-	dbsql "database/sql"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
-	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -208,7 +206,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]string) error {
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
@@ -219,20 +217,20 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	create.WriteString(safeSQLName(name))
 	// see if there is any column override
-	if prop, ok := tableOpts["columns"].(string); ok {
+	if prop, ok := tableOpts["columns"]; ok {
 		create.WriteString(prop)
 	}
 	create.WriteString(" ENGINE = ")
 	var engine string
 	// engine with default
-	if prop, ok := tableOpts["engine"].(string); ok {
+	if prop, ok := tableOpts["engine"]; ok {
 		engine = prop
 	} else {
 		engine = "MergeTree"
 	}
 	create.WriteString(engine)
 
-	if prop, ok := tableOpts["order_by"].(string); ok {
+	if prop, ok := tableOpts["order_by"]; ok {
 		create.WriteString(" ORDER BY ")
 		create.WriteString(prop)
 	} else if engine == "MergeTree" {
@@ -242,31 +240,31 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	}
 
 	// partition_by
-	if prop, ok := tableOpts["partition_by"].(string); ok {
+	if prop, ok := tableOpts["partition_by"]; ok {
 		create.WriteString(" PARTITION BY ")
 		create.WriteString(prop)
 	}
 
 	// primary_key
-	if prop, ok := tableOpts["primary_key"].(string); ok {
+	if prop, ok := tableOpts["primary_key"]; ok {
 		create.WriteString(" PRIMARY KEY ")
 		create.WriteString(prop)
 	}
 
 	// sample_by
-	if prop, ok := tableOpts["sample_by"].(string); ok {
+	if prop, ok := tableOpts["sample_by"]; ok {
 		create.WriteString(" SAMPLE BY ")
 		create.WriteString(prop)
 	}
 
 	// ttl
-	if prop, ok := tableOpts["ttl"].(string); ok {
+	if prop, ok := tableOpts["ttl"]; ok {
 		create.WriteString(" TTL ")
 		create.WriteString(prop)
 	}
 
 	// settings
-	if prop, ok := tableOpts["settings"].(string); ok {
+	if prop, ok := tableOpts["settings"]; ok {
 		create.WriteString(" SETTINGS ")
 		create.WriteString(prop)
 	}
@@ -293,38 +291,7 @@ func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, 
 		})
 	}
 
-	if strategy == drivers.IncrementalStrategyMerge {
-		return c.WithConnection(ctx, 1, true, false, func(ctx context.Context, ensuredCtx context.Context, _ *dbsql.Conn) error {
-			// create temporary table
-			tmp := uuid.New().String()
-			err := c.Exec(ctx, &drivers.Statement{
-				Query: fmt.Sprintf("CREATE TABLE %s ENGINE=MergeTree ORDER BY tuple() AS %s", safeSQLName(tmp), sql),
-			})
-			if err != nil {
-				return err
-			}
-			defer func() {
-				_ = c.Exec(ctx, &drivers.Statement{
-					Query: fmt.Sprintf("DROP TABLE IF EXISTS %s", safeSQLName(tmp)),
-				})
-			}()
-
-			// Drop the rows from the target table where the unique key is present in the temporary table
-			cols := strings.Join(uniqueKey, ",")
-			err = c.Exec(ctx, &drivers.Statement{
-				Query: fmt.Sprintf("DELETE FROM %s WHERE (%s) IN (SELECT %s FROM %s)", safeSQLName(name), cols, cols, safeSQLName(tmp)),
-			})
-			if err != nil {
-				return err
-			}
-
-			// Insert the new data into the target table
-			return c.Exec(ctx, &drivers.Statement{
-				Query: fmt.Sprintf("INSERT INTO %s SELECT * FROM %s", safeSQLName(name), safeSQLName(tmp)),
-			})
-		})
-	}
-
+	// merge strategy is also not supported for clickhouse
 	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 

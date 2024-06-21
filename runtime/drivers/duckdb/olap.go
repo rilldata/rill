@@ -273,7 +273,7 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 
 // CreateTableAsSelect implements drivers.OLAPStore.
 // We add a \n at the end of the any user query to ensure any comment at the end of model doesn't make the query incomplete.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]string) error {
 	c.logger.Debug("create table", zap.String("name", name), zap.Bool("view", view))
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
