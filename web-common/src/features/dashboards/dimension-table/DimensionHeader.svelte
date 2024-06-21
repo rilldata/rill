@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { Button, Switch } from "@rilldata/web-common/components/button";
+  import { Switch } from "@rilldata/web-common/components/button";
   import Back from "@rilldata/web-common/components/icons/Back.svelte";
   import Close from "@rilldata/web-common/components/icons/Close.svelte";
   import SearchIcon from "@rilldata/web-common/components/icons/Search.svelte";
@@ -213,15 +213,14 @@
     {#if $exports}
       <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
     {/if}
-    <Button
-      compact
-      type="text"
+    <button
+      class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
       on:click={() => {
         startPivotForDimensionTable();
       }}
     >
       Start Pivot
-    </Button>
+    </button>
   </div>
 </div>
 
