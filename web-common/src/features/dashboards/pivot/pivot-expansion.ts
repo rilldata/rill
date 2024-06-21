@@ -8,8 +8,10 @@ import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
   V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
+import { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, readable, writable } from "svelte/store";
 import {
   createPivotAggregationRowQuery,
@@ -295,16 +297,23 @@ export function queryExpandedRowMeasureValues(
             subTableMergedFilters,
           );
 
-          const subTableQuery = createSubTableCellQuery(
-            ctx,
-            config,
-            anchorDimension,
-            columnDimensionAxesData,
-            totalsRow,
-            subRowDimensionValues,
-            subTableMergedFilters,
-            rowNestTimeFilters,
-          );
+          let subTableQuery:
+            | Readable<null>
+            | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+            readable(null);
+
+          if (config.colDimensionNames.length) {
+            subTableQuery = createSubTableCellQuery(
+              ctx,
+              config,
+              anchorDimension,
+              columnDimensionAxesData,
+              totalsRow,
+              subRowDimensionValues,
+              subTableMergedFilters,
+              rowNestTimeFilters,
+            );
+          }
 
           return derived(
             [subRowAxesQueryForMeasureTotals, subTableQuery],
@@ -327,6 +336,18 @@ export function queryExpandedRowMeasureValues(
                 subRowTotals?.data?.[anchorDimension] || [],
                 subRowTotals?.totals?.[anchorDimension] || [],
               );
+
+              if (!subTableData) {
+                const rowMeasureValueWithoutSubTable: ExpandedRowMeasureValues =
+                  {
+                    isFetching: false,
+                    expandIndex,
+                    rowDimensionValues: subRowDimensionValues,
+                    totals: mergedRowTotals,
+                    data: mergedRowTotals,
+                  };
+                return rowMeasureValueWithoutSubTable;
+              }
 
               if (subTableData?.isFetching) {
                 const rowMeasureValueWithTotals: ExpandedRowMeasureValues = {
