@@ -133,14 +133,6 @@ func (c *connection) MakeDir(ctx context.Context, dirPath string) error {
 	return nil
 }
 
-func (c *connection) SetCachedPaths(paths []string) {
-	c.cachedPaths = paths
-}
-
-func (c *connection) GetCachedPaths() []string {
-	return c.cachedPaths
-}
-
 // Rename implements drivers.RepoStore.
 func (c *connection) Rename(ctx context.Context, fromPath, toPath string) error {
 	toPath = filepath.Join(c.root, toPath)

@@ -117,7 +117,6 @@ type Handle struct {
 	virtualNextPageToken string
 	virtualStashPath     string
 	ignorePaths          []string
-	cachedPaths          []string
 }
 
 var _ drivers.Handle = &Handle{}
@@ -291,37 +290,6 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		err = os.RemoveAll(persistentCacheDir)
 		if err != nil {
 			return nil, err
-		}
-
-		for _, p := range h.cachedPaths {
-			_, err = os.Stat(p)
-			if err != nil {
-				if os.IsNotExist(err) {
-					continue
-				}
-				return nil, err
-			}
-
-			err := filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
-				if err != nil {
-					return err
-				}
-				if !info.IsDir() {
-					err = copyFile(path, filepath.Join(persistentCacheDir, path))
-					if err != nil {
-						return err
-					}
-				} else {
-					err = os.MkdirAll(path, os.ModePerm)
-					if err != nil {
-						return err
-					}
-				}
-				return nil
-			})
-			if err != nil {
-				return nil, err
-			}
 		}
 
 		return nil, nil

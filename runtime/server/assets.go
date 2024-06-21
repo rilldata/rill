@@ -26,15 +26,13 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 		return httputil.Errorf(http.StatusForbidden, "does not have access to assets")
 	}
 
-	repo, release, err := s.runtime.Repo(ctx, instanceID)
+	inst, err := s.runtime.Instance(ctx, instanceID)
 	if err != nil {
 		return err
 	}
-	defer release()
 
-	paths := repo.GetCachedPaths()
 	allowed := false
-	for _, p := range paths {
+	for _, p := range inst.PublicPaths {
 		// 'p' can be `/public`, `/public/`, `public/`, `public` (with os-based separators)
 		// match pattern `public/*` or `/public/*`
 		ok, err := filepath.Match(fmt.Sprintf("%s%c*", filepath.Clean(p), os.PathSeparator), path)
@@ -49,6 +47,12 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 	if !allowed {
 		return httputil.Error(http.StatusForbidden, fmt.Errorf("path is not allowed"))
 	}
+
+	repo, release, err := s.runtime.Repo(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
 
 	str, err := repo.Get(ctx, path)
 	if err != nil {

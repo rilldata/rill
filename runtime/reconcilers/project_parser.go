@@ -294,12 +294,6 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 	if len(paths) == 0 {
 		paths = []string{"public"}
 	}
-	repo, release, err := r.C.Runtime.Repo(ctx, parser.InstanceID)
-	if err != nil {
-		return err
-	}
-	defer release()
-	repo.SetCachedPaths(paths)
 
 	// not setting restartController=true when diff is actually nil prevents infinite restarts
 	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded

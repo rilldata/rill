@@ -93,21 +93,6 @@ func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
 	}
 	defer h.repoMu.RUnlock()
 
-	for _, p := range h.cachedPaths {
-		ok, err := filepath.Match(fmt.Sprintf("%s%c*", filepath.Clean(p), os.PathSeparator), filePath)
-		if err != nil {
-			return "", err
-		}
-		if ok {
-			// os.ReadFile(persistentCacheDir)
-			// b := h.assetsCache[strings.TrimLeft(filePath, "/")]
-			// if b != nil {
-			// 	return string(b), nil
-			// }
-			// break
-		}
-	}
-
 	filePath = filepath.Join(h.projPath, filePath)
 
 	b, err := os.ReadFile(filePath)
@@ -144,14 +129,6 @@ func (h *Handle) Put(ctx context.Context, filePath string, reader io.Reader) err
 
 func (h *Handle) MakeDir(ctx context.Context, dirPath string) error {
 	return fmt.Errorf("make dir operation is unsupported")
-}
-
-func (h *Handle) SetCachedPaths(paths []string) {
-	h.cachedPaths = paths
-}
-
-func (h *Handle) GetCachedPaths() []string {
-	return h.cachedPaths
 }
 
 func (h *Handle) Rename(ctx context.Context, fromPath, toPath string) error {
