@@ -13,7 +13,7 @@
   export let editable = true;
   export let showInspectorToggle = true;
   export let showTableToggle = false;
-  export let hasUnsavedChanges = false;
+  export let hasUnsavedChanges: boolean;
 
   let width: number;
   let titleWidth: number;

@@ -1627,6 +1627,8 @@ message ReportOptions {
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
   repeated string slack_webhooks = 12;
+  // query request could be similar across pages so we use this to identify the exact page
+  string web_show_page = 14;
 }
 
 message AlertOptions {
