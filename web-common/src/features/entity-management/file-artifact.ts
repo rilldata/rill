@@ -1,6 +1,6 @@
 import {
-  extractFileName,
   extractFileExtension,
+  extractFileName,
   splitFolderAndName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
@@ -8,31 +8,31 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ReconcileStatus,
+  getRuntimeServiceGetFileQueryKey,
+  runtimeServiceGetFile,
+  runtimeServicePutFile,
   type V1ParseError,
   type V1Resource,
   type V1ResourceName,
-  getRuntimeServiceGetFileQueryKey,
-  runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
 import {
   derived,
   get,
-  type Readable,
   writable,
+  type Readable,
   type Writable,
 } from "svelte/store";
-import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
-import { fileArtifacts } from "./file-artifacts";
 import {
   DIRECTORIES_WITHOUT_AUTOSAVE,
   FILES_WITHOUT_AUTOSAVE,
 } from "../editor/config";
-import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
+import { fileArtifacts } from "./file-artifacts";
 import { parseKindAndNameFromFile } from "./file-content-utils";
 
 const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
@@ -214,6 +214,12 @@ export class FileArtifact {
 
   softDeleteResource() {
     this.reconciling.set(false);
+  }
+
+  hardDeleteResource() {
+    this.name.set(undefined);
+    this.reconciling.set(false);
+    this.lastStateUpdatedOn = undefined;
   }
 
   getResource = (queryClient: QueryClient, instanceId: string) => {

@@ -45,14 +45,14 @@ export class FileArtifacts {
     this.artifacts.delete(filePath);
   }
 
-  resourceDeleted(name: V1ResourceName) {
+  deleteResource(name: V1ResourceName) {
     const artifact = this.findFileArtifact(
       (name.kind ?? "") as ResourceKind,
       name.name ?? "",
     );
     if (!artifact) return;
 
-    this.removeFile(artifact.path);
+    this.getFileArtifact(artifact.path)?.hardDeleteResource();
   }
 
   updateArtifacts(resource: V1Resource) {
@@ -94,12 +94,11 @@ export class FileArtifacts {
   };
 
   findFileArtifact(resKind: ResourceKind, resName: string) {
-    for (const filePath in this.artifacts) {
-      const artifact = this.artifacts.get(filePath);
+    for (const [, artifact] of this.artifacts.entries()) {
       if (!artifact) continue;
       const name = get(artifact.name);
       if (name?.kind === resKind && name?.name === resName) {
-        return this.artifacts.get(filePath);
+        return artifact;
       }
     }
     return undefined;
