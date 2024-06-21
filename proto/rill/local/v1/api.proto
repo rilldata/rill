@@ -23,8 +23,8 @@ service LocalService {
   // Deploy deploys the local project to the Rill cloud.
   rpc Deploy(DeployRequest) returns (DeployResponse) {}
 
-  // UpdateProject updates an existing project.
-  rpc UpdateProject(UpdateProjectRequest) returns (UpdateProjectResponse) {}
+  // Redeploy updates a deployed project.
+  rpc Redeploy(RedeployRequest) returns (RedeployResponse) {}
 }
 
 message PingRequest {}
@@ -100,11 +100,11 @@ message DeployResponse {
   string frontend_url = 4;
 }
 
-message UpdateProjectRequest {
+message RedeployRequest {
   string org = 1;
   string project_name = 2;
   bool reupload = 3;
 }
 
-message UpdateProjectResponse {
+message RedeployResponse {
 }

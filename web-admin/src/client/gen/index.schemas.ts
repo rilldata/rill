@@ -81,7 +81,7 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
-  uploadPath?: string;
+  archiveAssetId?: string;
   prodSlots?: string;
   provisioner?: string;
   newName?: string;
@@ -103,12 +103,11 @@ export type AdminServiceCreateProjectBody = {
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;
-  /** github_url is set for projects whose artifacts are stored in github. This is set to a github repo url.
-Either github_url or upload_path should be set. */
+  /** github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+Either github_url or archive_asset_id should be set. */
   githubUrl?: string;
-  /** upload_path is set for projects whose artifacts are not stored in github but are managed by rill. This is set to a path in gcs.
-When upload_path is set github_url, prod_branch, subpath will be empty. */
-  uploadPath?: string;
+  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
+  archiveAssetId?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
   prodVersion?: string;
 };
@@ -116,6 +115,12 @@ When upload_path is set github_url, prod_branch, subpath will be empty. */
 export type AdminServiceListProjectsForOrganizationParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceCreateAssetBody = {
+  type?: string;
+  name?: string;
+  extension?: string;
 };
 
 export type AdminServiceSearchProjectUsersParams = {
@@ -526,7 +531,7 @@ export interface V1Project {
   githubUrl?: string;
   subpath?: string;
   prodBranch?: string;
-  uploadPath?: string;
+  archiveAssetId?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
@@ -675,7 +680,7 @@ export interface V1GetRepoMetaResponse {
   gitUrl?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
-  downloadUrl?: string;
+  archiveDownloadUrl?: string;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
@@ -737,17 +742,17 @@ export interface V1GetCurrentUserResponse {
   preferences?: V1UserPreferences;
 }
 
-export interface V1GetBookmarkResponse {
-  bookmark?: V1Bookmark;
+export interface V1GetCloneCredentialsResponse {
+  gitRepoUrl?: string;
+  gitUsername?: string;
+  gitPassword?: string;
+  gitSubpath?: string;
+  gitProdBranch?: string;
+  archivePath?: string;
 }
 
-export interface V1GetArtifactsURLResponse {
-  repoUrl?: string;
-  username?: string;
-  password?: string;
-  subpath?: string;
-  prodBranch?: string;
-  uploadPath?: string;
+export interface V1GetBookmarkResponse {
+  bookmark?: V1Bookmark;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -837,11 +842,6 @@ export interface V1CreateWhitelistedDomainResponse {
   [key: string]: any;
 }
 
-export interface V1CreateUploadSignedURLResponse {
-  signedUrl?: string;
-  uploadPath?: string;
-}
-
 export interface V1CreateServiceResponse {
   service?: V1Service;
 }
@@ -867,10 +867,6 @@ export interface V1CreateOrganizationRequest {
   description?: string;
 }
 
-export interface V1CreateBookmarkResponse {
-  bookmark?: V1Bookmark;
-}
-
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
@@ -880,6 +876,14 @@ export interface V1CreateBookmarkRequest {
   projectId?: string;
   default?: boolean;
   shared?: boolean;
+}
+
+export type V1CreateAssetResponseSigningHeaders = { [key: string]: string };
+
+export interface V1CreateAssetResponse {
+  assetId?: string;
+  signedUrl?: string;
+  signingHeaders?: V1CreateAssetResponseSigningHeaders;
 }
 
 export interface V1CreateAlertResponse {
@@ -912,6 +916,10 @@ export interface V1Bookmark {
   shared?: boolean;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
 }
 
 export interface V1AlertOptions {

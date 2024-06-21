@@ -62,8 +62,8 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
-	// UploadsBucket is the path on gcs where rill managed project artifacts are stored.
-	UploadsBucket   string
+	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
+	AssetsBucket    string
 	UploadsSvcCreds string
 }
 
@@ -71,16 +71,16 @@ type Server struct {
 	adminv1.UnsafeAdminServiceServer
 	adminv1.UnsafeAIServiceServer
 	adminv1.UnsafeTelemetryServiceServer
-	logger           *zap.Logger
-	admin            *admin.Service
-	opts             *Options
-	cookies          *cookies.Store
-	authenticator    *auth.Authenticator
-	issuer           *runtimeauth.Issuer
-	urls             *externalURLs
-	limiter          ratelimit.Limiter
-	activity         *activity.Client
-	gcsStorageClient *storage.Client
+	logger        *zap.Logger
+	admin         *admin.Service
+	opts          *Options
+	cookies       *cookies.Store
+	authenticator *auth.Authenticator
+	issuer        *runtimeauth.Issuer
+	urls          *externalURLs
+	limiter       ratelimit.Limiter
+	activity      *activity.Client
+	assetsBucket  *storage.BucketHandle
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -146,16 +146,16 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 	}
 
 	return &Server{
-		logger:           logger,
-		admin:            adm,
-		opts:             opts,
-		cookies:          cookieStore,
-		authenticator:    authenticator,
-		issuer:           issuer,
-		urls:             newURLRegistry(opts),
-		limiter:          limiter,
-		activity:         activityClient,
-		gcsStorageClient: storageClient,
+		logger:        logger,
+		admin:         adm,
+		opts:          opts,
+		cookies:       cookieStore,
+		authenticator: authenticator,
+		issuer:        issuer,
+		urls:          newURLRegistry(opts),
+		limiter:       limiter,
+		activity:      activityClient,
+		assetsBucket:  storageClient.Bucket(opts.AssetsBucket),
 	}, nil
 }
 

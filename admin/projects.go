@@ -18,7 +18,7 @@ import (
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
 	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
-	if (opts.UploadPath == nil) == isGitInfoEmpty {
+	if (opts.ArchiveAssetID == nil) == isGitInfoEmpty {
 		return nil, fmt.Errorf("either github info or upload path must be set")
 	}
 
@@ -87,7 +87,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
-		UploadPath:           proj.UploadPath,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		Provisioner:          proj.Provisioner,
@@ -145,7 +145,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.UploadPath, opts.UploadPath))
+		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID))
 
 	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
@@ -272,7 +272,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		Description:          proj.Description,
 		Public:               proj.Public,
 		Provisioner:          proj.Provisioner,
-		UploadPath:           proj.UploadPath,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,

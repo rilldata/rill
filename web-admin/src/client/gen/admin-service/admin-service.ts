@@ -48,7 +48,7 @@ import type {
   V1EditAlertResponse,
   V1UnsubscribeAlertResponse,
   V1GetAlertYAMLResponse,
-  V1GetArtifactsURLResponse,
+  V1GetCloneCredentialsResponse,
   V1GetDeploymentCredentialsResponse,
   AdminServiceGetDeploymentCredentialsBody,
   V1GetIFrameResponse,
@@ -76,6 +76,8 @@ import type {
   V1ListWhitelistedDomainsResponse,
   V1CreateWhitelistedDomainResponse,
   V1RemoveWhitelistedDomainResponse,
+  V1CreateAssetResponse,
+  AdminServiceCreateAssetBody,
   V1ListProjectsForOrganizationResponse,
   AdminServiceListProjectsForOrganizationParams,
   V1CreateProjectResponse,
@@ -88,7 +90,6 @@ import type {
   V1GetProjectVariablesResponse,
   V1UpdateProjectVariablesResponse,
   AdminServiceUpdateProjectVariablesBody,
-  V1CreateUploadSignedURLResponse,
   V1ListServicesResponse,
   V1CreateServiceResponse,
   AdminServiceCreateServiceParams,
@@ -1372,39 +1373,41 @@ export const createAdminServiceGetAlertYAML = <
 };
 
 /**
- * @summary GetArtifactsURL returns credentials and other details for a project's Git repository or upload url if git repo is not configured.
+ * @summary GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
  */
-export const adminServiceGetArtifactsURL = (
+export const adminServiceGetCloneCredentials = (
   organization: string,
   project: string,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1GetArtifactsURLResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/artifacts`,
+  return httpClient<V1GetCloneCredentialsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceGetArtifactsURLQueryKey = (
+export const getAdminServiceGetCloneCredentialsQueryKey = (
   organization: string,
   project: string,
-) => [`/v1/organizations/${organization}/projects/${project}/artifacts`];
+) => [
+  `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
+];
 
-export type AdminServiceGetArtifactsURLQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>
+export type AdminServiceGetCloneCredentialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>
 >;
-export type AdminServiceGetArtifactsURLQueryError = RpcStatus;
+export type AdminServiceGetCloneCredentialsQueryError = RpcStatus;
 
-export const createAdminServiceGetArtifactsURL = <
-  TData = Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>,
+export const createAdminServiceGetCloneCredentials = <
+  TData = Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>,
   TError = RpcStatus,
 >(
   organization: string,
   project: string,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>,
+      Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>,
       TError,
       TData
     >;
@@ -1414,15 +1417,15 @@ export const createAdminServiceGetArtifactsURL = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetArtifactsURLQueryKey(organization, project);
+    getAdminServiceGetCloneCredentialsQueryKey(organization, project);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>
+    Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>
   > = ({ signal }) =>
-    adminServiceGetArtifactsURL(organization, project, signal);
+    adminServiceGetCloneCredentials(organization, project, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetArtifactsURL>>,
+    Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>,
     TError,
     TData
   >({
@@ -2725,6 +2728,56 @@ export const createAdminServiceRemoveWhitelistedDomain = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary CreateAsset returns a one time signed URL using which any asset can be uploaded.
+ */
+export const adminServiceCreateAsset = (
+  organizationName: string,
+  adminServiceCreateAssetBody: AdminServiceCreateAssetBody,
+) => {
+  return httpClient<V1CreateAssetResponse>({
+    url: `/v1/organizations/${organizationName}/create_asset`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateAssetBody,
+  });
+};
+
+export type AdminServiceCreateAssetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateAsset>>
+>;
+export type AdminServiceCreateAssetMutationBody = AdminServiceCreateAssetBody;
+export type AdminServiceCreateAssetMutationError = RpcStatus;
+
+export const createAdminServiceCreateAsset = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateAsset>>,
+    TError,
+    { organizationName: string; data: AdminServiceCreateAssetBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateAsset>>,
+    { organizationName: string; data: AdminServiceCreateAssetBody }
+  > = (props) => {
+    const { organizationName, data } = props ?? {};
+
+    return adminServiceCreateAsset(organizationName, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCreateAsset>>,
+    TError,
+    { organizationName: string; data: AdminServiceCreateAssetBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary ListProjectsForOrganization lists all the projects currently available for given organizations
  */
 export const adminServiceListProjectsForOrganization = (
@@ -3159,74 +3212,6 @@ export const createAdminServiceUpdateProjectVariables = <
       organizationName: string;
       name: string;
       data: AdminServiceUpdateProjectVariablesBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
- * @summary CreateUploadSignedURL returns a one time signed upload URL
- */
-export const adminServiceCreateUploadSignedURL = (
-  organizationName: string,
-  projectName: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
-) => {
-  return httpClient<V1CreateUploadSignedURLResponse>({
-    url: `/v1/organizations/${organizationName}/projects/${projectName}/create_upload_signed_url`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
-  });
-};
-
-export type AdminServiceCreateUploadSignedURLMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceCreateUploadSignedURL>>
->;
-export type AdminServiceCreateUploadSignedURLMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
-export type AdminServiceCreateUploadSignedURLMutationError = RpcStatus;
-
-export const createAdminServiceCreateUploadSignedURL = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceCreateUploadSignedURL>>,
-    TError,
-    {
-      organizationName: string;
-      projectName: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceCreateUploadSignedURL>>,
-    {
-      organizationName: string;
-      projectName: string;
-      data: AdminServiceTriggerReconcileBodyBody;
-    }
-  > = (props) => {
-    const { organizationName, projectName, data } = props ?? {};
-
-    return adminServiceCreateUploadSignedURL(
-      organizationName,
-      projectName,
-      data,
-    );
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceCreateUploadSignedURL>>,
-    TError,
-    {
-      organizationName: string;
-      projectName: string;
-      data: AdminServiceTriggerReconcileBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);

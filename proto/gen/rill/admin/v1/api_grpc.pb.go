@@ -33,7 +33,7 @@ const (
 	AdminService_DeleteProject_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteProject"
 	AdminService_UpdateProject_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateProject"
 	AdminService_UpdateProjectVariables_FullMethodName         = "/rill.admin.v1.AdminService/UpdateProjectVariables"
-	AdminService_CreateUploadSignedURL_FullMethodName          = "/rill.admin.v1.AdminService/CreateUploadSignedURL"
+	AdminService_CreateAsset_FullMethodName                    = "/rill.admin.v1.AdminService/CreateAsset"
 	AdminService_TriggerReconcile_FullMethodName               = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName          = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                = "/rill.admin.v1.AdminService/TriggerRedeploy"
@@ -53,7 +53,7 @@ const (
 	AdminService_RevokeCurrentAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubUserStatus"
-	AdminService_GetArtifactsURL_FullMethodName                = "/rill.admin.v1.AdminService/GetArtifactsURL"
+	AdminService_GetCloneCredentials_FullMethodName            = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
 	AdminService_ListWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
@@ -134,8 +134,8 @@ type AdminServiceClient interface {
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
-	// CreateUploadSignedURL returns a one time signed upload URL
-	CreateUploadSignedURL(ctx context.Context, in *CreateUploadSignedURLRequest, opts ...grpc.CallOption) (*CreateUploadSignedURLResponse, error)
+	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
+	CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
 	// TriggerRefreshSources refresh the source for production deployment
@@ -176,8 +176,8 @@ type AdminServiceClient interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
-	// GetArtifactsURL returns credentials and other details for a project's Git repository or upload url if git repo is not configured.
-	GetArtifactsURL(ctx context.Context, in *GetArtifactsURLRequest, opts ...grpc.CallOption) (*GetArtifactsURLResponse, error)
+	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
+	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
 	CreateWhitelistedDomain(ctx context.Context, in *CreateWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateWhitelistedDomainResponse, error)
 	// RemoveWhitelistedDomain removes a domain from the whitelist list
@@ -420,10 +420,10 @@ func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *Upd
 	return out, nil
 }
 
-func (c *adminServiceClient) CreateUploadSignedURL(ctx context.Context, in *CreateUploadSignedURLRequest, opts ...grpc.CallOption) (*CreateUploadSignedURLResponse, error) {
+func (c *adminServiceClient) CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(CreateUploadSignedURLResponse)
-	err := c.cc.Invoke(ctx, AdminService_CreateUploadSignedURL_FullMethodName, in, out, cOpts...)
+	out := new(CreateAssetResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateAsset_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -620,10 +620,10 @@ func (c *adminServiceClient) GetGithubUserStatus(ctx context.Context, in *GetGit
 	return out, nil
 }
 
-func (c *adminServiceClient) GetArtifactsURL(ctx context.Context, in *GetArtifactsURLRequest, opts ...grpc.CallOption) (*GetArtifactsURLResponse, error) {
+func (c *adminServiceClient) GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetArtifactsURLResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetArtifactsURL_FullMethodName, in, out, cOpts...)
+	out := new(GetCloneCredentialsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetCloneCredentials_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1122,8 +1122,8 @@ type AdminServiceServer interface {
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
-	// CreateUploadSignedURL returns a one time signed upload URL
-	CreateUploadSignedURL(context.Context, *CreateUploadSignedURLRequest) (*CreateUploadSignedURLResponse, error)
+	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
+	CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
 	// TriggerRefreshSources refresh the source for production deployment
@@ -1164,8 +1164,8 @@ type AdminServiceServer interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
-	// GetArtifactsURL returns credentials and other details for a project's Git repository or upload url if git repo is not configured.
-	GetArtifactsURL(context.Context, *GetArtifactsURLRequest) (*GetArtifactsURLResponse, error)
+	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
+	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
 	CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error)
 	// RemoveWhitelistedDomain removes a domain from the whitelist list
@@ -1307,8 +1307,8 @@ func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdatePro
 func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
 }
-func (UnimplementedAdminServiceServer) CreateUploadSignedURL(context.Context, *CreateUploadSignedURLRequest) (*CreateUploadSignedURLResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method CreateUploadSignedURL not implemented")
+func (UnimplementedAdminServiceServer) CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAsset not implemented")
 }
 func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
@@ -1367,8 +1367,8 @@ func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *Get
 func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubUserStatus not implemented")
 }
-func (UnimplementedAdminServiceServer) GetArtifactsURL(context.Context, *GetArtifactsURLRequest) (*GetArtifactsURLResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetArtifactsURL not implemented")
+func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateWhitelistedDomain not implemented")
@@ -1773,20 +1773,20 @@ func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_CreateUploadSignedURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(CreateUploadSignedURLRequest)
+func _AdminService_CreateAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAssetRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).CreateUploadSignedURL(ctx, in)
+		return srv.(AdminServiceServer).CreateAsset(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_CreateUploadSignedURL_FullMethodName,
+		FullMethod: AdminService_CreateAsset_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).CreateUploadSignedURL(ctx, req.(*CreateUploadSignedURLRequest))
+		return srv.(AdminServiceServer).CreateAsset(ctx, req.(*CreateAssetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2133,20 +2133,20 @@ func _AdminService_GetGithubUserStatus_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetArtifactsURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetArtifactsURLRequest)
+func _AdminService_GetCloneCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCloneCredentialsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).GetArtifactsURL(ctx, in)
+		return srv.(AdminServiceServer).GetCloneCredentials(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_GetArtifactsURL_FullMethodName,
+		FullMethod: AdminService_GetCloneCredentials_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetArtifactsURL(ctx, req.(*GetArtifactsURLRequest))
+		return srv.(AdminServiceServer).GetCloneCredentials(ctx, req.(*GetCloneCredentialsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3043,8 +3043,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UpdateProjectVariables_Handler,
 		},
 		{
-			MethodName: "CreateUploadSignedURL",
-			Handler:    _AdminService_CreateUploadSignedURL_Handler,
+			MethodName: "CreateAsset",
+			Handler:    _AdminService_CreateAsset_Handler,
 		},
 		{
 			MethodName: "TriggerReconcile",
@@ -3123,8 +3123,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetGithubUserStatus_Handler,
 		},
 		{
-			MethodName: "GetArtifactsURL",
-			Handler:    _AdminService_GetArtifactsURL_Handler,
+			MethodName: "GetCloneCredentials",
+			Handler:    _AdminService_GetCloneCredentials_Handler,
 		},
 		{
 			MethodName: "CreateWhitelistedDomain",

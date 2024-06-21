@@ -9,8 +9,6 @@ import (
 	"strings"
 	"time"
 
-	"cloud.google.com/go/storage"
-	"github.com/google/uuid"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/publicemail"
@@ -247,7 +245,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.sub_path", req.Subpath),
 		attribute.String("args.prod_branch", req.ProdBranch),
 		attribute.String("args.github_url", req.GithubUrl),
-		attribute.String("args.upload_path", req.UploadPath),
+		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
 	)
 
 	// Check the request is made by a user
@@ -332,12 +330,13 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		opts.ProdBranch = req.ProdBranch
 		opts.Subpath = req.Subpath
 	} else {
-		if req.UploadPath == "" {
-			return nil, status.Error(codes.InvalidArgument, "either github_url or upload_path must be set")
+		if req.ArchiveAssetId == "" {
+			return nil, status.Error(codes.InvalidArgument, "either github_url or archive_asset_id must be set")
 		}
-		opts.UploadPath = &req.UploadPath
-		// dummy placeholder, branch doesn't matter for uploads
-		opts.ProdBranch = "dummy"
+		if !s.isAssetInOrg(ctx, req.ArchiveAssetId, org.ID) {
+			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
+		}
+		opts.ArchiveAssetID = &req.ArchiveAssetId
 	}
 
 	// Create the project
@@ -395,8 +394,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.GithubUrl != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
 	}
-	if req.UploadPath != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.upload_path", *req.UploadPath))
+	if req.ArchiveAssetId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.archive_asset_id", *req.ArchiveAssetId))
 	}
 	if req.Public != nil {
 		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
@@ -438,9 +437,16 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 			githubURL = req.GithubUrl
 		}
 	}
-	uploadPath := proj.UploadPath
-	if req.UploadPath != nil {
-		uploadPath = req.UploadPath
+	archiveAssetID := proj.ArchiveAssetID
+	if req.ArchiveAssetId != nil {
+		archiveAssetID = req.ArchiveAssetId
+		org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+		if !s.isAssetInOrg(ctx, *archiveAssetID, org.ID) {
+			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
+		}
 	}
 
 	prodTTLSeconds := proj.ProdTTLSeconds
@@ -456,7 +462,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
-		UploadPath:           uploadPath,
+		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
@@ -517,7 +523,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
-		UploadPath:           proj.UploadPath,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
@@ -834,7 +840,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 	return &adminv1.SetProjectMemberRoleResponse{}, nil
 }
 
-func (s *Server) GetArtifactsURL(ctx context.Context, req *adminv1.GetArtifactsURLRequest) (*adminv1.GetArtifactsURLResponse, error) {
+func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
 		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get artifacts url")
@@ -849,8 +855,8 @@ func (s *Server) GetArtifactsURL(ctx context.Context, req *adminv1.GetArtifactsU
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	if proj.UploadPath != nil {
-		return &adminv1.GetArtifactsURLResponse{UploadPath: *proj.UploadPath}, nil
+	if proj.ArchiveAssetID != nil {
+		return &adminv1.GetCloneCredentialsResponse{ArchivePath: *proj.ArchiveAssetID}, nil
 	}
 
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
@@ -862,12 +868,12 @@ func (s *Server) GetArtifactsURL(ctx context.Context, req *adminv1.GetArtifactsU
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.GetArtifactsURLResponse{
-		RepoUrl:    *proj.GithubURL + ".git", // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
-		Username:   "x-access-token",
-		Password:   token,
-		Subpath:    proj.Subpath,
-		ProdBranch: proj.ProdBranch,
+	return &adminv1.GetCloneCredentialsResponse{
+		GitRepoUrl:    *proj.GithubURL + ".git", // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
+		GitUsername:   "x-access-token",
+		GitPassword:   token,
+		GitSubpath:    proj.Subpath,
+		GitProdBranch: proj.ProdBranch,
 	}, nil
 }
 
@@ -931,7 +937,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
-		UploadPath:           proj.UploadPath,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
@@ -1120,38 +1126,6 @@ func (s *Server) ListProjectWhitelistedDomains(ctx context.Context, req *adminv1
 	return &adminv1.ListProjectWhitelistedDomainsResponse{Domains: dtos}, nil
 }
 
-func (s *Server) CreateUploadSignedURL(ctx context.Context, req *adminv1.CreateUploadSignedURLRequest) (*adminv1.CreateUploadSignedURLResponse, error) {
-	opts := &storage.SignedURLOptions{
-		Scheme: storage.SigningSchemeV4,
-		Method: "PUT",
-		Headers: []string{
-			"Content-Type:application/octet-stream",
-			"x-goog-content-length-range:1,104857600", // validates that the request body is between 1 byte to 100MB
-		},
-		Expires: time.Now().Add(15 * time.Minute),
-	}
-
-	// may be create object as <org>/project/<uuid> ?
-	object := fmt.Sprintf("%s__%s__%s.tar.gz", req.OrganizationName, req.ProjectName, uuid.New().String())
-	u, err := s.gcsStorageClient.Bucket(s.opts.UploadsBucket).SignedURL(object, opts)
-	if err != nil {
-		return nil, err
-	}
-
-	uploadPath, err := url.Parse(s.opts.UploadsBucket)
-	if err != nil {
-		return nil, err
-	}
-	uploadPath.Host = s.opts.UploadsBucket
-	uploadPath.Scheme = "gs"
-	uploadPath.Path = object
-
-	return &adminv1.CreateUploadSignedURLResponse{
-		UploadPath: uploadPath.String(),
-		SignedUrl:  u,
-	}, nil
-}
-
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
 
@@ -1171,7 +1145,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdBranch:       p.ProdBranch,
 		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
-		UploadPath:       safeStr(p.UploadPath),
+		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
@@ -1179,6 +1153,14 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}
+}
+
+func (s *Server) isAssetInOrg(ctx context.Context, id, orgID string) bool {
+	asset, err := s.admin.DB.FindAsset(ctx, id)
+	if err != nil {
+		return false
+	}
+	return asset.OrganizationID == orgID
 }
 
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {

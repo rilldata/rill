@@ -31,7 +31,7 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			res, err := client.GetArtifactsURL(ctx, &adminv1.GetArtifactsURLRequest{
+			res, err := client.GetCloneCredentials(ctx, &adminv1.GetCloneCredentialsRequest{
 				Organization: args[0],
 				Project:      args[1],
 			})
@@ -40,26 +40,26 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			fmt.Println("Clone command:")
-			if res.UploadPath != "" {
-				fmt.Printf("\tgsutil cp %s .\n\n", res.UploadPath)
+			if res.ArchivePath != "" {
+				fmt.Printf("\tgsutil cp %s .\n\n", res.ArchivePath)
 				return nil
 			}
 
-			ep, err := transport.NewEndpoint(res.RepoUrl)
+			ep, err := transport.NewEndpoint(res.GitRepoUrl)
 			if err != nil {
 				return err
 			}
-			ep.User = res.Username
-			ep.Password = res.Password
+			ep.User = res.GitUsername
+			ep.Password = res.GitPassword
 			cloneURL := ep.String()
 
 			fmt.Printf("\tgit clone %s\n\n", cloneURL)
 			fmt.Println("Full details:")
-			fmt.Printf("\tRepo URL: %s\n", res.RepoUrl)
-			fmt.Printf("\tUsername: %s\n", res.Username)
-			fmt.Printf("\tPassword: %s\n", res.Password)
-			fmt.Printf("\tSubpath: %s\n", res.Subpath)
-			fmt.Printf("\tProd branch: %s\n", res.ProdBranch)
+			fmt.Printf("\tRepo URL: %s\n", res.GitRepoUrl)
+			fmt.Printf("\tUsername: %s\n", res.GitUsername)
+			fmt.Printf("\tPassword: %s\n", res.GitPassword)
+			fmt.Printf("\tSubpath: %s\n", res.GitSubpath)
+			fmt.Printf("\tProd branch: %s\n", res.GitProdBranch)
 			fmt.Printf("\nNote the credentials are only valid for a limited duration of time.\n")
 
 			return nil

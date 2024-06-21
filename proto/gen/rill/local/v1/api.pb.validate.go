@@ -1362,22 +1362,22 @@ var _ interface {
 	ErrorName() string
 } = DeployResponseValidationError{}
 
-// Validate checks the field values on UpdateProjectRequest with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *UpdateProjectRequest) Validate() error {
+// Validate checks the field values on RedeployRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *RedeployRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UpdateProjectRequest with the rules
+// ValidateAll checks the field values on RedeployRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// UpdateProjectRequestMultiError, or nil if none found.
-func (m *UpdateProjectRequest) ValidateAll() error {
+// RedeployRequestMultiError, or nil if none found.
+func (m *RedeployRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UpdateProjectRequest) validate(all bool) error {
+func (m *RedeployRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1391,19 +1391,19 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 	// no validation rules for Reupload
 
 	if len(errors) > 0 {
-		return UpdateProjectRequestMultiError(errors)
+		return RedeployRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// UpdateProjectRequestMultiError is an error wrapping multiple validation
-// errors returned by UpdateProjectRequest.ValidateAll() if the designated
-// constraints aren't met.
-type UpdateProjectRequestMultiError []error
+// RedeployRequestMultiError is an error wrapping multiple validation errors
+// returned by RedeployRequest.ValidateAll() if the designated constraints
+// aren't met.
+type RedeployRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UpdateProjectRequestMultiError) Error() string {
+func (m RedeployRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1412,11 +1412,11 @@ func (m UpdateProjectRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UpdateProjectRequestMultiError) AllErrors() []error { return m }
+func (m RedeployRequestMultiError) AllErrors() []error { return m }
 
-// UpdateProjectRequestValidationError is the validation error returned by
-// UpdateProjectRequest.Validate if the designated constraints aren't met.
-type UpdateProjectRequestValidationError struct {
+// RedeployRequestValidationError is the validation error returned by
+// RedeployRequest.Validate if the designated constraints aren't met.
+type RedeployRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1424,24 +1424,22 @@ type UpdateProjectRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e UpdateProjectRequestValidationError) Field() string { return e.field }
+func (e RedeployRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UpdateProjectRequestValidationError) Reason() string { return e.reason }
+func (e RedeployRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UpdateProjectRequestValidationError) Cause() error { return e.cause }
+func (e RedeployRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UpdateProjectRequestValidationError) Key() bool { return e.key }
+func (e RedeployRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UpdateProjectRequestValidationError) ErrorName() string {
-	return "UpdateProjectRequestValidationError"
-}
+func (e RedeployRequestValidationError) ErrorName() string { return "RedeployRequestValidationError" }
 
 // Error satisfies the builtin error interface
-func (e UpdateProjectRequestValidationError) Error() string {
+func (e RedeployRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1453,14 +1451,14 @@ func (e UpdateProjectRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUpdateProjectRequest.%s: %s%s",
+		"invalid %sRedeployRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UpdateProjectRequestValidationError{}
+var _ error = RedeployRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -1468,24 +1466,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UpdateProjectRequestValidationError{}
+} = RedeployRequestValidationError{}
 
-// Validate checks the field values on UpdateProjectResponse with the rules
-// defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *UpdateProjectResponse) Validate() error {
+// Validate checks the field values on RedeployResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *RedeployResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UpdateProjectResponse with the rules
+// ValidateAll checks the field values on RedeployResponse with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// UpdateProjectResponseMultiError, or nil if none found.
-func (m *UpdateProjectResponse) ValidateAll() error {
+// RedeployResponseMultiError, or nil if none found.
+func (m *RedeployResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UpdateProjectResponse) validate(all bool) error {
+func (m *RedeployResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -1493,19 +1491,19 @@ func (m *UpdateProjectResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return UpdateProjectResponseMultiError(errors)
+		return RedeployResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// UpdateProjectResponseMultiError is an error wrapping multiple validation
-// errors returned by UpdateProjectResponse.ValidateAll() if the designated
-// constraints aren't met.
-type UpdateProjectResponseMultiError []error
+// RedeployResponseMultiError is an error wrapping multiple validation errors
+// returned by RedeployResponse.ValidateAll() if the designated constraints
+// aren't met.
+type RedeployResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UpdateProjectResponseMultiError) Error() string {
+func (m RedeployResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -1514,11 +1512,11 @@ func (m UpdateProjectResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UpdateProjectResponseMultiError) AllErrors() []error { return m }
+func (m RedeployResponseMultiError) AllErrors() []error { return m }
 
-// UpdateProjectResponseValidationError is the validation error returned by
-// UpdateProjectResponse.Validate if the designated constraints aren't met.
-type UpdateProjectResponseValidationError struct {
+// RedeployResponseValidationError is the validation error returned by
+// RedeployResponse.Validate if the designated constraints aren't met.
+type RedeployResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -1526,24 +1524,22 @@ type UpdateProjectResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e UpdateProjectResponseValidationError) Field() string { return e.field }
+func (e RedeployResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UpdateProjectResponseValidationError) Reason() string { return e.reason }
+func (e RedeployResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UpdateProjectResponseValidationError) Cause() error { return e.cause }
+func (e RedeployResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UpdateProjectResponseValidationError) Key() bool { return e.key }
+func (e RedeployResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UpdateProjectResponseValidationError) ErrorName() string {
-	return "UpdateProjectResponseValidationError"
-}
+func (e RedeployResponseValidationError) ErrorName() string { return "RedeployResponseValidationError" }
 
 // Error satisfies the builtin error interface
-func (e UpdateProjectResponseValidationError) Error() string {
+func (e RedeployResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -1555,14 +1551,14 @@ func (e UpdateProjectResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUpdateProjectResponse.%s: %s%s",
+		"invalid %sRedeployResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UpdateProjectResponseValidationError{}
+var _ error = RedeployResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -1570,4 +1566,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UpdateProjectResponseValidationError{}
+} = RedeployResponseValidationError{}

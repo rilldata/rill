@@ -304,7 +304,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
-					UploadsBucket:          conf.UploadsBucket,
+					AssetsBucket:           conf.UploadsBucket,
 					UploadsSvcCreds:        conf.UploadsSvcCreds,
 				})
 				if err != nil {

@@ -44,8 +44,13 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 		return nil, status.Error(codes.InvalidArgument, "branch not found")
 	}
 
-	if proj.UploadPath != nil {
-		u, err := url.Parse(*proj.UploadPath)
+	if proj.ArchiveAssetID != nil {
+		asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
+		if err != nil {
+			return nil, err
+		}
+
+		u, err := url.Parse(asset.Path)
 		if err != nil {
 			return nil, err
 		}
@@ -54,7 +59,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 		return &adminv1.GetRepoMetaResponse{
-			DownloadUrl: downloadURL,
+			ArchiveDownloadUrl: downloadURL,
 		}, nil
 	}
 
@@ -144,7 +149,7 @@ func (s *Server) generateV4GetObjectSignedURL(object string) (string, error) {
 		Expires: time.Now().Add(15 * time.Minute),
 	}
 
-	u, err := s.gcsStorageClient.Bucket(s.opts.UploadsBucket).SignedURL(object, opts)
+	u, err := s.assetsBucket.SignedURL(object, opts)
 	if err != nil {
 		return "", err
 	}

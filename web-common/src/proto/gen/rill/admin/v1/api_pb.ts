@@ -1736,20 +1736,19 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
   prodBranch = "";
 
   /**
-   * github_url is set for projects whose artifacts are stored in github. This is set to a github repo url.
-   * Either github_url or upload_path should be set.
+   * github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+   * Either github_url or archive_asset_id should be set.
    *
    * @generated from field: string github_url = 10;
    */
   githubUrl = "";
 
   /**
-   * upload_path is set for projects whose artifacts are not stored in github but are managed by rill. This is set to a path in gcs.
-   * When upload_path is set github_url, prod_branch, subpath will be empty.
+   * archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
    *
-   * @generated from field: string upload_path = 14;
+   * @generated from field: string archive_asset_id = 14;
    */
-  uploadPath = "";
+  archiveAssetId = "";
 
   /**
    * @generated from field: map<string, string> variables = 11;
@@ -1780,7 +1779,7 @@ export class CreateProjectRequest extends Message<CreateProjectRequest> {
     { no: 12, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 14, name: "upload_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "variables", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 13, name: "prod_version", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
@@ -1948,9 +1947,9 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   githubUrl?: string;
 
   /**
-   * @generated from field: optional string upload_path = 12;
+   * @generated from field: optional string archive_asset_id = 12;
    */
-  uploadPath?: string;
+  archiveAssetId?: string;
 
   /**
    * @generated from field: optional int64 prod_slots = 7;
@@ -1991,7 +1990,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
-    { no: 12, name: "upload_path", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 12, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 8, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 9, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -2140,88 +2139,110 @@ export class UpdateProjectVariablesResponse extends Message<UpdateProjectVariabl
 }
 
 /**
- * @generated from message rill.admin.v1.CreateUploadSignedURLRequest
+ * @generated from message rill.admin.v1.CreateAssetRequest
  */
-export class CreateUploadSignedURLRequest extends Message<CreateUploadSignedURLRequest> {
+export class CreateAssetRequest extends Message<CreateAssetRequest> {
   /**
    * @generated from field: string organization_name = 1;
    */
   organizationName = "";
 
   /**
-   * @generated from field: string project_name = 2;
+   * @generated from field: string type = 2;
    */
-  projectName = "";
+  type = "";
 
-  constructor(data?: PartialMessage<CreateUploadSignedURLRequest>) {
+  /**
+   * Eg. "rilldata__project_name"
+   *
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  /**
+   * Eg. ".tar.gz"
+   *
+   * @generated from field: string extension = 4;
+   */
+  extension = "";
+
+  constructor(data?: PartialMessage<CreateAssetRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.CreateUploadSignedURLRequest";
+  static readonly typeName = "rill.admin.v1.CreateAssetRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "extension", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateUploadSignedURLRequest {
-    return new CreateUploadSignedURLRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAssetRequest {
+    return new CreateAssetRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateUploadSignedURLRequest {
-    return new CreateUploadSignedURLRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateAssetRequest {
+    return new CreateAssetRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateUploadSignedURLRequest {
-    return new CreateUploadSignedURLRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateAssetRequest {
+    return new CreateAssetRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: CreateUploadSignedURLRequest | PlainMessage<CreateUploadSignedURLRequest> | undefined, b: CreateUploadSignedURLRequest | PlainMessage<CreateUploadSignedURLRequest> | undefined): boolean {
-    return proto3.util.equals(CreateUploadSignedURLRequest, a, b);
+  static equals(a: CreateAssetRequest | PlainMessage<CreateAssetRequest> | undefined, b: CreateAssetRequest | PlainMessage<CreateAssetRequest> | undefined): boolean {
+    return proto3.util.equals(CreateAssetRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.CreateUploadSignedURLResponse
+ * @generated from message rill.admin.v1.CreateAssetResponse
  */
-export class CreateUploadSignedURLResponse extends Message<CreateUploadSignedURLResponse> {
+export class CreateAssetResponse extends Message<CreateAssetResponse> {
   /**
-   * @generated from field: string signed_url = 1;
+   * @generated from field: string asset_id = 1;
+   */
+  assetId = "";
+
+  /**
+   * @generated from field: string signed_url = 2;
    */
   signedUrl = "";
 
   /**
-   * @generated from field: string upload_path = 2;
+   * @generated from field: map<string, string> signing_headers = 3;
    */
-  uploadPath = "";
+  signingHeaders: { [key: string]: string } = {};
 
-  constructor(data?: PartialMessage<CreateUploadSignedURLResponse>) {
+  constructor(data?: PartialMessage<CreateAssetResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.CreateUploadSignedURLResponse";
+  static readonly typeName = "rill.admin.v1.CreateAssetResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "signed_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "upload_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "signed_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "signing_headers", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateUploadSignedURLResponse {
-    return new CreateUploadSignedURLResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): CreateAssetResponse {
+    return new CreateAssetResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateUploadSignedURLResponse {
-    return new CreateUploadSignedURLResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): CreateAssetResponse {
+    return new CreateAssetResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateUploadSignedURLResponse {
-    return new CreateUploadSignedURLResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): CreateAssetResponse {
+    return new CreateAssetResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: CreateUploadSignedURLResponse | PlainMessage<CreateUploadSignedURLResponse> | undefined, b: CreateUploadSignedURLResponse | PlainMessage<CreateUploadSignedURLResponse> | undefined): boolean {
-    return proto3.util.equals(CreateUploadSignedURLResponse, a, b);
+  static equals(a: CreateAssetResponse | PlainMessage<CreateAssetResponse> | undefined, b: CreateAssetResponse | PlainMessage<CreateAssetResponse> | undefined): boolean {
+    return proto3.util.equals(CreateAssetResponse, a, b);
   }
 }
 
@@ -5319,9 +5340,9 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
 }
 
 /**
- * @generated from message rill.admin.v1.GetArtifactsURLRequest
+ * @generated from message rill.admin.v1.GetCloneCredentialsRequest
  */
-export class GetArtifactsURLRequest extends Message<GetArtifactsURLRequest> {
+export class GetCloneCredentialsRequest extends Message<GetCloneCredentialsRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -5332,101 +5353,101 @@ export class GetArtifactsURLRequest extends Message<GetArtifactsURLRequest> {
    */
   project = "";
 
-  constructor(data?: PartialMessage<GetArtifactsURLRequest>) {
+  constructor(data?: PartialMessage<GetCloneCredentialsRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetArtifactsURLRequest";
+  static readonly typeName = "rill.admin.v1.GetCloneCredentialsRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetArtifactsURLRequest {
-    return new GetArtifactsURLRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCloneCredentialsRequest {
+    return new GetCloneCredentialsRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetArtifactsURLRequest {
-    return new GetArtifactsURLRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCloneCredentialsRequest {
+    return new GetCloneCredentialsRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetArtifactsURLRequest {
-    return new GetArtifactsURLRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCloneCredentialsRequest {
+    return new GetCloneCredentialsRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetArtifactsURLRequest | PlainMessage<GetArtifactsURLRequest> | undefined, b: GetArtifactsURLRequest | PlainMessage<GetArtifactsURLRequest> | undefined): boolean {
-    return proto3.util.equals(GetArtifactsURLRequest, a, b);
+  static equals(a: GetCloneCredentialsRequest | PlainMessage<GetCloneCredentialsRequest> | undefined, b: GetCloneCredentialsRequest | PlainMessage<GetCloneCredentialsRequest> | undefined): boolean {
+    return proto3.util.equals(GetCloneCredentialsRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.GetArtifactsURLResponse
+ * @generated from message rill.admin.v1.GetCloneCredentialsResponse
  */
-export class GetArtifactsURLResponse extends Message<GetArtifactsURLResponse> {
+export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResponse> {
   /**
-   * @generated from field: string repo_url = 1;
+   * @generated from field: string git_repo_url = 1;
    */
-  repoUrl = "";
+  gitRepoUrl = "";
 
   /**
-   * @generated from field: string username = 2;
+   * @generated from field: string git_username = 2;
    */
-  username = "";
+  gitUsername = "";
 
   /**
-   * @generated from field: string password = 3;
+   * @generated from field: string git_password = 3;
    */
-  password = "";
+  gitPassword = "";
 
   /**
-   * @generated from field: string subpath = 4;
+   * @generated from field: string git_subpath = 4;
    */
-  subpath = "";
+  gitSubpath = "";
 
   /**
-   * @generated from field: string prod_branch = 5;
+   * @generated from field: string git_prod_branch = 5;
    */
-  prodBranch = "";
+  gitProdBranch = "";
 
   /**
-   * either upload_path or git related details will be set
+   * either archive_path or git related details will be set
    *
-   * @generated from field: string upload_path = 6;
+   * @generated from field: string archive_path = 6;
    */
-  uploadPath = "";
+  archivePath = "";
 
-  constructor(data?: PartialMessage<GetArtifactsURLResponse>) {
+  constructor(data?: PartialMessage<GetCloneCredentialsResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetArtifactsURLResponse";
+  static readonly typeName = "rill.admin.v1.GetCloneCredentialsResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "repo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "upload_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "git_repo_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "git_username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "git_password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "git_prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "archive_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetArtifactsURLResponse {
-    return new GetArtifactsURLResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCloneCredentialsResponse {
+    return new GetCloneCredentialsResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetArtifactsURLResponse {
-    return new GetArtifactsURLResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCloneCredentialsResponse {
+    return new GetCloneCredentialsResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetArtifactsURLResponse {
-    return new GetArtifactsURLResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCloneCredentialsResponse {
+    return new GetCloneCredentialsResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: GetArtifactsURLResponse | PlainMessage<GetArtifactsURLResponse> | undefined, b: GetArtifactsURLResponse | PlainMessage<GetArtifactsURLResponse> | undefined): boolean {
-    return proto3.util.equals(GetArtifactsURLResponse, a, b);
+  static equals(a: GetCloneCredentialsResponse | PlainMessage<GetCloneCredentialsResponse> | undefined, b: GetCloneCredentialsResponse | PlainMessage<GetCloneCredentialsResponse> | undefined): boolean {
+    return proto3.util.equals(GetCloneCredentialsResponse, a, b);
   }
 }
 
@@ -5967,12 +5988,12 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
   gitSubpath = "";
 
   /**
-   * download_url is set when repo is managed by Rill
-   * either download_url or git related details will be set
+   * archive_download_url is set when repo is managed by Rill
+   * either archive_download_url or git related details will be set
    *
-   * @generated from field: string download_url = 4;
+   * @generated from field: string archive_download_url = 4;
    */
-  downloadUrl = "";
+  archiveDownloadUrl = "";
 
   constructor(data?: PartialMessage<GetRepoMetaResponse>) {
     super();
@@ -5985,7 +6006,7 @@ export class GetRepoMetaResponse extends Message<GetRepoMetaResponse> {
     { no: 1, name: "git_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "git_url_expires_on", kind: "message", T: Timestamp },
     { no: 3, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRepoMetaResponse {
@@ -7793,9 +7814,9 @@ export class Project extends Message<Project> {
   prodBranch = "";
 
   /**
-   * @generated from field: string upload_path = 23;
+   * @generated from field: string archive_asset_id = 23;
    */
-  uploadPath = "";
+  archiveAssetId = "";
 
   /**
    * @generated from field: string prod_olap_driver = 10;
@@ -7866,7 +7887,7 @@ export class Project extends Message<Project> {
     { no: 8, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 17, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 23, name: "upload_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "prod_olap_driver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "prod_olap_dsn", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */ },

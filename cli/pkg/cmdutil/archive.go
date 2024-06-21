@@ -31,11 +31,11 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, pr
 	}
 
 	// upload the tar ball
-	uploadPath, err := uploadTarBall(ctx, ch, org, project, b)
+	assetID, err := uploadTarBall(ctx, ch, org, project, b)
 	if err != nil {
 		return "", err
 	}
-	return uploadPath, nil
+	return assetID, nil
 }
 
 // borrowed from https://github.com/goreleaser/goreleaser/blob/main/pkg/archive/tar/tar.go with minor changes
@@ -92,16 +92,18 @@ func uploadTarBall(ctx context.Context, ch *Helper, org, project string, body io
 	}
 
 	// generate a upload URL
-	uploadURL, err := adminClient.CreateUploadSignedURL(ctx, &adminv1.CreateUploadSignedURLRequest{
+	asset, err := adminClient.CreateAsset(ctx, &adminv1.CreateAssetRequest{
 		OrganizationName: org,
-		ProjectName:      project,
+		Type:             "deploy",
+		Name:             fmt.Sprintf("%s__%s", org, project),
+		Extension:        ".tar.gz",
 	})
 	if err != nil {
 		return "", err
 	}
 
 	// Create a put request
-	req, err := http.NewRequestWithContext(ctx, http.MethodPut, uploadURL.SignedUrl, body)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPut, asset.SignedUrl, body)
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
@@ -120,5 +122,5 @@ func uploadTarBall(ctx context.Context, ch *Helper, org, project string, body io
 		body, _ := io.ReadAll(resp.Body)
 		return "", fmt.Errorf("failed to upload file: status code %d, response %s", resp.StatusCode, string(body))
 	}
-	return uploadURL.UploadPath, nil
+	return asset.AssetId, nil
 }

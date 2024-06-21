@@ -25,7 +25,7 @@ const (
 	LocalService_DeployValidation_FullMethodName = "/rill.local.v1.LocalService/DeployValidation"
 	LocalService_PushToGithub_FullMethodName     = "/rill.local.v1.LocalService/PushToGithub"
 	LocalService_Deploy_FullMethodName           = "/rill.local.v1.LocalService/Deploy"
-	LocalService_UpdateProject_FullMethodName    = "/rill.local.v1.LocalService/UpdateProject"
+	LocalService_Redeploy_FullMethodName         = "/rill.local.v1.LocalService/Redeploy"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -44,8 +44,8 @@ type LocalServiceClient interface {
 	PushToGithub(ctx context.Context, in *PushToGithubRequest, opts ...grpc.CallOption) (*PushToGithubResponse, error)
 	// Deploy deploys the local project to the Rill cloud.
 	Deploy(ctx context.Context, in *DeployRequest, opts ...grpc.CallOption) (*DeployResponse, error)
-	// UpdateProject updates an existing project.
-	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
+	// Redeploy updates a deployed project.
+	Redeploy(ctx context.Context, in *RedeployRequest, opts ...grpc.CallOption) (*RedeployResponse, error)
 }
 
 type localServiceClient struct {
@@ -116,10 +116,10 @@ func (c *localServiceClient) Deploy(ctx context.Context, in *DeployRequest, opts
 	return out, nil
 }
 
-func (c *localServiceClient) UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error) {
+func (c *localServiceClient) Redeploy(ctx context.Context, in *RedeployRequest, opts ...grpc.CallOption) (*RedeployResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UpdateProjectResponse)
-	err := c.cc.Invoke(ctx, LocalService_UpdateProject_FullMethodName, in, out, cOpts...)
+	out := new(RedeployResponse)
+	err := c.cc.Invoke(ctx, LocalService_Redeploy_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -142,8 +142,8 @@ type LocalServiceServer interface {
 	PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error)
 	// Deploy deploys the local project to the Rill cloud.
 	Deploy(context.Context, *DeployRequest) (*DeployResponse, error)
-	// UpdateProject updates an existing project.
-	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
+	// Redeploy updates a deployed project.
+	Redeploy(context.Context, *RedeployRequest) (*RedeployResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -169,8 +169,8 @@ func (UnimplementedLocalServiceServer) PushToGithub(context.Context, *PushToGith
 func (UnimplementedLocalServiceServer) Deploy(context.Context, *DeployRequest) (*DeployResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Deploy not implemented")
 }
-func (UnimplementedLocalServiceServer) UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateProject not implemented")
+func (UnimplementedLocalServiceServer) Redeploy(context.Context, *RedeployRequest) (*RedeployResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Redeploy not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 
@@ -293,20 +293,20 @@ func _LocalService_Deploy_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LocalService_UpdateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateProjectRequest)
+func _LocalService_Redeploy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeployRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LocalServiceServer).UpdateProject(ctx, in)
+		return srv.(LocalServiceServer).Redeploy(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LocalService_UpdateProject_FullMethodName,
+		FullMethod: LocalService_Redeploy_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).UpdateProject(ctx, req.(*UpdateProjectRequest))
+		return srv.(LocalServiceServer).Redeploy(ctx, req.(*RedeployRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -343,8 +343,8 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalService_Deploy_Handler,
 		},
 		{
-			MethodName: "UpdateProject",
-			Handler:    _LocalService_UpdateProject_Handler,
+			MethodName: "Redeploy",
+			Handler:    _LocalService_Redeploy_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

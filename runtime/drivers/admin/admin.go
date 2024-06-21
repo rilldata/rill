@@ -394,8 +394,8 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
 	}
 
-	if meta.DownloadUrl != "" {
-		h.downloadURL = meta.DownloadUrl
+	if meta.ArchiveDownloadUrl != "" {
+		h.downloadURL = meta.ArchiveDownloadUrl
 		return nil
 	}
 

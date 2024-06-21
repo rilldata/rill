@@ -428,7 +428,7 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 		}
 		defer release()
 
-		uploadPath, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
 		if err != nil {
 			return nil, err
 		}
@@ -444,7 +444,7 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 			ProdOlapDsn:      "",
 			ProdSlots:        2,
 			Public:           false,
-			UploadPath:       uploadPath,
+			ArchiveAssetId:   assetID,
 		}
 	} else {
 		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -544,7 +544,7 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 	}), nil
 }
 
-func (s *Server) UpdateProject(ctx context.Context, r *connect.Request[localv1.UpdateProjectRequest]) (*connect.Response[localv1.UpdateProjectResponse], error) {
+func (s *Server) Redeploy(ctx context.Context, r *connect.Request[localv1.RedeployRequest]) (*connect.Response[localv1.RedeployResponse], error) {
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("user should be authenticated")
 	}
@@ -561,17 +561,17 @@ func (s *Server) UpdateProject(ctx context.Context, r *connect.Request[localv1.U
 		}
 		defer release()
 
-		uploadPath, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
 		if err != nil {
 			return nil, err
 		}
-		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{UploadPath: &uploadPath})
+		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{ArchiveAssetId: &assetID})
 		if err != nil {
 			return nil, err
 		}
 	}
 	// TODO : Add other update project fields
-	return connect.NewResponse(&localv1.UpdateProjectResponse{}), nil
+	return connect.NewResponse(&localv1.RedeployResponse{}), nil
 }
 
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.

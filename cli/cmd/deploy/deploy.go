@@ -373,7 +373,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	}
 	if projectExists {
 		ch.Printer.Println("Found existing project. Starting re-upload.")
-		uploadPath, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
+		assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 		if err != nil {
 			return err
 		}
@@ -383,7 +383,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
 			OrganizationName: ch.Org,
 			Name:             opts.Name,
-			UploadPath:       &uploadPath,
+			ArchiveAssetId:   &assetID,
 		})
 		if err != nil {
 			if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {
@@ -399,7 +399,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 
 	// create a tar archive of the project and upload it
 	ch.Printer.Println("Starting upload.")
-	uploadPath, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
+	assetID, err := cmdutil.UploadRepo(ctx, repo, ch, ch.Org, opts.Name)
 	if err != nil {
 		return err
 	}
@@ -416,7 +416,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		ProdOlapDsn:      opts.DBDSN,
 		ProdSlots:        int64(opts.Slots),
 		Public:           opts.Public,
-		UploadPath:       uploadPath,
+		ArchiveAssetId:   assetID,
 	})
 	if err != nil {
 		if s, ok := status.FromError(err); ok && s.Code() == codes.PermissionDenied {

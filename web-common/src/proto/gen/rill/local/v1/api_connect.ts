@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployRequest, DeployResponse, DeployValidationRequest, DeployValidationResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, UpdateProjectRequest, UpdateProjectResponse } from "./api_pb.js";
+import { DeployRequest, DeployResponse, DeployValidationRequest, DeployValidationResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployRequest, RedeployResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -79,14 +79,14 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * UpdateProject updates an existing project.
+     * Redeploy updates a deployed project.
      *
-     * @generated from rpc rill.local.v1.LocalService.UpdateProject
+     * @generated from rpc rill.local.v1.LocalService.Redeploy
      */
-    updateProject: {
-      name: "UpdateProject",
-      I: UpdateProjectRequest,
-      O: UpdateProjectResponse,
+    redeploy: {
+      name: "Redeploy",
+      I: RedeployRequest,
+      O: RedeployResponse,
       kind: MethodKind.Unary,
     },
   }

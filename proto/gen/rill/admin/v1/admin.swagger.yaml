@@ -593,15 +593,15 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/artifacts:
+  /v1/organizations/{organization}/projects/{project}/clone-credentials:
     get:
-      summary: GetArtifactsURL returns credentials and other details for a project's Git repository or upload url if git repo is not configured.
-      operationId: AdminService_GetArtifactsURL
+      summary: GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
+      operationId: AdminService_GetCloneCredentials
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1GetArtifactsURLResponse'
+            $ref: '#/definitions/v1GetCloneCredentialsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1277,6 +1277,40 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/create_asset:
+    post:
+      summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
+      operationId: AdminService_CreateAsset
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateAssetResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+              name:
+                type: string
+                title: Eg. "rilldata__project_name"
+              extension:
+                type: string
+                title: Eg. ".tar.gz"
+      tags:
+        - AdminService
   /v1/organizations/{organizationName}/projects:
     get:
       summary: ListProjectsForOrganization lists all the projects currently available for given organizations
@@ -1351,13 +1385,11 @@ paths:
               githubUrl:
                 type: string
                 description: |-
-                  github_url is set for projects whose artifacts are stored in github. This is set to a github repo url.
-                  Either github_url or upload_path should be set.
-              uploadPath:
+                  github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+                  Either github_url or archive_asset_id should be set.
+              archiveAssetId:
                 type: string
-                description: |-
-                  upload_path is set for projects whose artifacts are not stored in github but are managed by rill. This is set to a path in gcs.
-                  When upload_path is set github_url, prod_branch, subpath will be empty.
+                description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
               variables:
                 type: object
                 additionalProperties:
@@ -1453,7 +1485,7 @@ paths:
                 type: string
               githubUrl:
                 type: string
-              uploadPath:
+              archiveAssetId:
                 type: string
               prodSlots:
                 type: string
@@ -1524,35 +1556,6 @@ paths:
                 type: object
                 additionalProperties:
                   type: string
-      tags:
-        - AdminService
-  /v1/organizations/{organizationName}/projects/{projectName}/create_upload_signed_url:
-    post:
-      summary: CreateUploadSignedURL returns a one time signed upload URL
-      operationId: AdminService_CreateUploadSignedURL
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1CreateUploadSignedURLResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organizationName
-          in: path
-          required: true
-          type: string
-        - name: projectName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
       tags:
         - AdminService
   /v1/organizations/{organizationName}/services:
@@ -2443,6 +2446,17 @@ definitions:
     properties:
       name:
         type: string
+  v1CreateAssetResponse:
+    type: object
+    properties:
+      assetId:
+        type: string
+      signedUrl:
+        type: string
+      signingHeaders:
+        type: object
+        additionalProperties:
+          type: string
   v1CreateBookmarkRequest:
     type: object
     properties:
@@ -2497,13 +2511,6 @@ definitions:
     properties:
       service:
         $ref: '#/definitions/v1Service'
-  v1CreateUploadSignedURLResponse:
-    type: object
-    properties:
-      signedUrl:
-        type: string
-      uploadPath:
-        type: string
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteAlertResponse:
@@ -2589,27 +2596,27 @@ definitions:
     properties:
       yaml:
         type: string
-  v1GetArtifactsURLResponse:
-    type: object
-    properties:
-      repoUrl:
-        type: string
-      username:
-        type: string
-      password:
-        type: string
-      subpath:
-        type: string
-      prodBranch:
-        type: string
-      uploadPath:
-        type: string
-        title: either upload_path or git related details will be set
   v1GetBookmarkResponse:
     type: object
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
+  v1GetCloneCredentialsResponse:
+    type: object
+    properties:
+      gitRepoUrl:
+        type: string
+      gitUsername:
+        type: string
+      gitPassword:
+        type: string
+      gitSubpath:
+        type: string
+      gitProdBranch:
+        type: string
+      archivePath:
+        type: string
+        title: either archive_path or git related details will be set
   v1GetCurrentUserResponse:
     type: object
     properties:
@@ -2709,11 +2716,11 @@ definitions:
         format: date-time
       gitSubpath:
         type: string
-      downloadUrl:
+      archiveDownloadUrl:
         type: string
         title: |-
-          download_url is set when repo is managed by Rill
-          either download_url or git related details will be set
+          archive_download_url is set when repo is managed by Rill
+          either archive_download_url or git related details will be set
   v1GetReportMetaResponse:
     type: object
     properties:
@@ -2967,7 +2974,7 @@ definitions:
         type: string
       prodBranch:
         type: string
-      uploadPath:
+      archiveAssetId:
         type: string
       prodOlapDriver:
         type: string
