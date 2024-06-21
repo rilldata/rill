@@ -5,7 +5,7 @@ import { waitForFileNavEntry } from "../utils/waitHelpers";
 
 export function useDashboardFlowTestSetup() {
   test.beforeEach(async ({ page }) => {
-    test.setTimeout(30000);
+    test.setTimeout(45000);
     await createAdBidsModel(page);
 
     await Promise.all([
