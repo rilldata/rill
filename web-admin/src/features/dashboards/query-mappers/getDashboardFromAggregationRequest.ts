@@ -162,6 +162,8 @@ async function mergeDashboardFromUrlState(
     ),
     queryFn: () => queryServiceMetricsViewSchema(instanceId, dashboard.name),
   });
+  if (!schemaResp.schema) return;
+
   const parsedDashboard = getDashboardStateFromUrl(
     urlState,
     metricsViewSpec,

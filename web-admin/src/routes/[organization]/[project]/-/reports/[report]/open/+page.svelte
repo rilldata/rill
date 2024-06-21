@@ -23,7 +23,7 @@
     $report.data?.resource?.report?.spec?.queryName,
     $report.data?.resource?.report?.spec?.queryArgsJson,
     executionTime,
-    $report.data?.resource?.alert?.spec?.annotations ?? {},
+    $report.data?.resource?.report?.spec?.annotations ?? {},
   );
 
   $: if ($dashboardStateForReport.data) {

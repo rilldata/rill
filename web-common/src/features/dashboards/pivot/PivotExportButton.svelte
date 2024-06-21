@@ -2,7 +2,6 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { builderActions, getAttrs } from "bits-ui";
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import {
     V1ExportFormat,
