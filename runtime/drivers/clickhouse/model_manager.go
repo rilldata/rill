@@ -25,7 +25,7 @@ type ModelOutputProperties struct {
 	Materialize         *bool                       `mapstructure:"materialize"`
 	UniqueKey           []string                    `mapstructure:"unique_key"`
 	IncrementalStrategy drivers.IncrementalStrategy `mapstructure:"incremental_strategy"`
-	// Coulmns sets the column names and data types. If unspecified these are detected from the select query by clickhouse.
+	// Columns sets the column names and data types. If unspecified these are detected from the select query by clickhouse.
 	// It is also possible to set indexes with this property.
 	// Example : (id UInt32, username varchar, email varchar, created_at datetime, INDEX idx1 username TYPE set(100) GRANULARITY 3)
 	Columns string `mapstructure:"columns"`
