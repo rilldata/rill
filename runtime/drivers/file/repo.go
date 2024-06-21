@@ -74,18 +74,6 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 
 // Get implements drivers.RepoStore.
 func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
-	c.cacheMutex.RLock()
-	defer c.cacheMutex.RUnlock()
-	for _, p := range c.cachedPaths {
-		if strings.HasPrefix(strings.TrimLeft(filePath, "/"), strings.TrimLeft(p, "/")) {
-			b := c.assetsCache[strings.TrimLeft(filePath, "/")]
-			if b != nil {
-				return string(b), nil
-			}
-			break
-		}
-	}
-
 	filePath = filepath.Join(c.root, filePath)
 
 	b, err := os.ReadFile(filePath)
@@ -179,41 +167,6 @@ func (c *connection) Delete(ctx context.Context, filePath string, force bool) er
 
 // Sync implements drivers.RepoStore.
 func (c *connection) Sync(ctx context.Context) error {
-	cache := make(map[string][]byte)
-	for _, p := range c.cachedPaths {
-		p = filepath.Join(c.root, p)
-		_, err := os.Stat(p)
-		if err != nil {
-			if os.IsNotExist(err) {
-				continue
-			}
-			return err
-		}
-		err = filepath.Walk(p, func(path string, info os.FileInfo, err error) error {
-			if err != nil {
-				return err
-			}
-			if !info.IsDir() {
-				b, err := os.ReadFile(path)
-				if err != nil {
-					return err
-				}
-
-				rel, err := filepath.Rel(c.root, path)
-				if err != nil {
-					return err
-				}
-				cache[strings.TrimLeft(rel, "/")] = b
-			}
-			return nil
-		})
-		if err != nil {
-			return err
-		}
-	}
-	c.cacheMutex.Lock()
-	defer c.cacheMutex.Unlock()
-	c.assetsCache = cache
 	return nil
 }
 
