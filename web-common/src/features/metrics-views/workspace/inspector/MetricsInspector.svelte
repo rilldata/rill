@@ -3,10 +3,7 @@
     useModel,
     useModels,
   } from "@rilldata/web-common/features/models/selectors";
-  import {
-    V1Resource,
-    createRuntimeServiceGetFile,
-  } from "@rilldata/web-common/runtime-client";
+  import { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
     getModelOutOfPossiblyMalformedYAML,
@@ -14,12 +11,7 @@
   } from "../../utils";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
 
-  export let filePath: string;
-
-  $: fileQuery = createRuntimeServiceGetFile($runtime.instanceId, {
-    path: filePath,
-  });
-  $: yaml = $fileQuery.data?.blob || "";
+  export let yaml: string;
 
   // get file.
   $: modelName = getModelOutOfPossiblyMalformedYAML(yaml)?.replace(/"/g, "");

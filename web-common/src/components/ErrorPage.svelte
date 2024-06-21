@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
@@ -8,7 +7,7 @@
 
   export let statusCode: number | undefined = undefined;
   export let header: string;
-  export let body: string;
+  export let body: string = "";
   export let fatal = false;
 </script>
 
@@ -26,9 +25,7 @@
       {body}
     </CtaMessage>
     {#if !fatal}
-      <CtaButton variant="primary-outline" on:click={() => goto("/")}>
-        Back to home
-      </CtaButton>
+      <CtaButton variant="secondary" href="/">Back to home</CtaButton>
     {/if}
     <CtaNeedHelp />
   </CtaContentContainer>

@@ -1,22 +1,16 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import { page } from "$app/stores";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
-  import CustomDashboardEditor from "@rilldata/web-common/features/custom-dashboards/CustomDashboardEditor.svelte";
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
-  import { getFileAPIPathFromNameAndType } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import {
-    FileArtifact,
-    fileArtifacts,
-  } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { EntityType } from "@rilldata/web-common/features/entity-management/types";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
@@ -26,36 +20,26 @@
   } from "@rilldata/web-common/layout/workspace";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
-  import {
-    createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
-    getRuntimeServiceGetFileQueryKey,
-  } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
+  import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
+  import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
+  import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
+  import type { EditorView } from "@codemirror/view";
 
-  const updateFile = createRuntimeServicePutFile({
-    mutation: {
-      onMutate({ instanceId, data: { path, blob } }) {
-        const key = getRuntimeServiceGetFileQueryKey(instanceId, { path });
-        queryClient.setQueryData(key, { blob });
-      },
-    },
-  });
+  export let fileArtifact: FileArtifact;
 
-  export let data: { fileArtifact?: FileArtifact } = {};
-
-  let fileArtifact: FileArtifact;
-  let filePath: string;
   let customDashboardName: string;
+  let selectedChartFileArtifact: FileArtifact | undefined;
   let selectedView = "split";
   let showGrid = true;
   let showChartEditor = false;
   let containerWidth: number;
   let containerHeight: number;
   let editorPercentage = 0.5;
+  let editor: EditorView;
   let selectedIndex: number | null = null;
   let chartEditorPercentage = 0.4;
   let selectedChartName: string | null = null;
@@ -65,48 +49,45 @@
     items: [],
   };
 
-  $: if (data.fileArtifact) {
-    fileArtifact = data.fileArtifact;
-    filePath = fileArtifact.path;
-  } else {
-    customDashboardName = $page.params.name;
-    filePath = getFileAPIPathFromNameAndType(
-      customDashboardName,
-      EntityType.Dashboard,
-    );
-    fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  }
-  $: name = fileArtifact?.name;
-  $: customDashboardName = $name?.name ?? "";
+  $: customDashboardName = getNameFromFile(filePath);
 
-  $: instanceId = $runtime.instanceId;
+  $: ({ instanceId } = $runtime);
 
   $: errorsQuery = fileArtifact.getAllErrors(queryClient, instanceId);
   $: errors = $errorsQuery;
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    { path: filePath },
-    {
-      query: { keepPreviousData: true },
-    },
-  );
-  $: [, fileName] = splitFolderAndName(filePath);
 
-  $: yaml = $fileQuery.data?.blob ?? "";
+  $: ({
+    saveLocalContent: updateChartFile,
+    autoSave,
+    path: filePath,
+    fileName,
+    updateLocalContent,
+    localContent,
+    remoteContent,
+    hasUnsavedChanges,
+  } = fileArtifact);
 
-  $: parsedDocument = parseDocument(yaml);
-
-  $: selectedChartFileArtifact = fileArtifacts.findFileArtifact(
-    ResourceKind.Component,
-    selectedChartName ?? "",
-  );
-  $: selectedChartFilePath = selectedChartFileArtifact?.path;
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
 
-  $: spec = $resourceQuery.data?.dashboard?.spec ?? spec;
+  $: spec = structuredClone($resourceQuery.data?.dashboard?.spec ?? spec);
 
   $: ({ items = [], columns = 20, gap = 4 } = spec);
-
+  $: if (
+    items.filter(
+      (item) =>
+        !item.definedInDashboard && item.component === selectedChartName,
+    ).length
+  ) {
+    selectedChartFileArtifact = fileArtifacts.findFileArtifact(
+      ResourceKind.Component,
+      selectedChartName ?? "",
+    );
+  } else {
+    selectedChartName = null;
+    selectedChartFileArtifact = undefined;
+    showChartEditor = false;
+  }
+  $: selectedChartFilePath = selectedChartFileArtifact?.path;
   $: editorWidth = editorPercentage * containerWidth;
   $: chartEditorHeight = chartEditorPercentage * containerHeight;
 
@@ -125,22 +106,6 @@
     if (newRoute) await goto(newRoute);
   }
 
-  async function updateChartFile(e: CustomEvent<string>) {
-    const content = e.detail;
-    if (!content) return;
-    try {
-      await $updateFile.mutateAsync({
-        instanceId,
-        data: {
-          path: filePath,
-          blob: content,
-        },
-      });
-    } catch (err) {
-      console.error(err);
-    }
-  }
-
   async function handlePreviewUpdate(
     e: CustomEvent<{
       index: number;
@@ -148,18 +113,19 @@
       dimensions: Vector;
     }>,
   ) {
-    const sequence = parsedDocument.get("items");
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const items = parsedDocument.get("items") as any;
 
-    const node = sequence.get(e.detail.index);
+    const node = items.get(e.detail.index);
 
     node.set("width", e.detail.dimensions[0]);
     node.set("height", e.detail.dimensions[1]);
     node.set("x", e.detail.position[0]);
     node.set("y", e.detail.position[1]);
 
-    yaml = parsedDocument.toString();
+    updateLocalContent(parsedDocument.toString(), true);
 
-    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+    if ($autoSave) await updateChartFile();
   }
 
   async function addChart(chartName: string) {
@@ -170,8 +136,9 @@
       x: 0,
       y: 0,
     };
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
 
-    const items = parsedDocument.get("items");
+    const items = parsedDocument.get("items") as any;
 
     if (!items) {
       parsedDocument.set("items", [newChart]);
@@ -179,27 +146,34 @@
       items.add(newChart);
     }
 
-    yaml = parsedDocument.toString();
+    updateLocalContent(parsedDocument.toString(), true);
 
-    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+    if ($autoSave) await updateChartFile();
+  }
+
+  async function handleDeleteEvent(
+    e: CustomEvent<{
+      index: number;
+    }>,
+  ) {
+    if (!e.detail.index) return;
+    await deleteChart(e.detail.index);
   }
 
   async function deleteChart(index: number) {
-    const items = parsedDocument.get("items");
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+
+    const items = parsedDocument.get("items") as any;
 
     if (!items) return;
 
     items.delete(index);
 
-    yaml = parsedDocument.toString();
+    updateLocalContent(parsedDocument.toString(), true);
 
-    await updateChartFile(new CustomEvent("update", { detail: yaml }));
+    if ($autoSave) await updateChartFile();
   }
 </script>
-
-<svelte:head>
-  <title>Rill Developer | {fileName}</title>
-</svelte:head>
 
 <svelte:window
   on:keydown={async (e) => {
@@ -220,6 +194,7 @@
     showInspectorToggle={false}
     slot="header"
     titleInput={fileName}
+    hasUnsavedChanges={$hasUnsavedChanges}
   >
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />
@@ -261,12 +236,19 @@
         />
         <div class="flex flex-col h-full overflow-hidden">
           <section class="size-full flex flex-col flex-shrink overflow-hidden">
-            <CustomDashboardEditor
-              {filePath}
-              {errors}
-              {yaml}
-              on:update={updateChartFile}
-            />
+            <ChartsEditorContainer error={errors[0]}>
+              <Editor
+                bind:editor
+                {fileArtifact}
+                extensions={FileExtensionToEditorExtension[".yaml"]}
+                autoSave
+                showSaveBar={false}
+                forceLocalUpdates
+                onRevert={() => {
+                  spec = structuredClone(spec);
+                }}
+              />
+            </ChartsEditorContainer>
           </section>
 
           <section
@@ -323,6 +305,7 @@
         bind:selectedChartName
         bind:selectedIndex
         on:update={handlePreviewUpdate}
+        on:delete={handleDeleteEvent}
       />
     {/if}
   </div>

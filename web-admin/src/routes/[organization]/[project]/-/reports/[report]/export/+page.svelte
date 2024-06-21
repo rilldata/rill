@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { createDownloadReportMutation } from "@rilldata/web-admin/features/projects/download-report";
   import CtaButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
@@ -68,8 +67,8 @@
       </div>
     {/if}
     <CtaButton
-      on:click={() => goto(`/${organization}/${project}/-/reports/${reportId}`)}
-      variant="primary-outline"
+      variant="secondary"
+      href={`/${organization}/${project}/-/reports/${reportId}`}
     >
       Go to report page
     </CtaButton>

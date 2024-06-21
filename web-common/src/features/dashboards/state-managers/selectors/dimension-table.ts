@@ -11,7 +11,7 @@ import {
 } from "../../dimension-table/dimension-table-utils";
 import { allMeasures, visibleMeasures } from "./measures";
 import type { QueryObserverResult } from "@tanstack/svelte-query";
-import { getDimensionColumn, isSummableMeasure } from "../../dashboard-utils";
+import { isSummableMeasure } from "../../dashboard-utils";
 import { isTimeComparisonActive } from "./time-range";
 import { activeMeasureName, isValidPercentOfTotal } from "./active-measure";
 import { selectedDimensionValues } from "./dimension-filters";
@@ -89,7 +89,7 @@ export const prepareDimTableRows =
 
     if (!dimension) return [];
 
-    const dimensionColumn = getDimensionColumn(dimension);
+    const dimensionColumn = dimension.name ?? "";
     const leaderboardMeasureName = activeMeasureName(dashData);
 
     // FIXME: should this really be all measures, or just visible measures?

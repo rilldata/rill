@@ -90,6 +90,12 @@ export default defineConfig({
               signal: true,
             },
           },
+          QueryService_MetricsViewSearch: {
+            query: {
+              useQuery: true,
+              signal: true,
+            },
+          },
         },
       },
     },

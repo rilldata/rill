@@ -35,7 +35,7 @@ type OLAPStore interface {
 	InformationSchema() InformationSchema
 	EstimateSize() (int64, bool)
 
-	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error
+	CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error
 	InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy IncrementalStrategy, uniqueKey []string) error
 	DropTable(ctx context.Context, name string, view bool) error
 	RenameTable(ctx context.Context, name, newName string, view bool) error
@@ -202,6 +202,10 @@ func (d Dialect) EscapeIdentifier(ident string) string {
 		return ident
 	}
 	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(ident, "\"", "\"\""))
+}
+
+func (d Dialect) EscapeStringValue(s string) string {
+	return fmt.Sprintf("'%s'", strings.ReplaceAll(s, "'", "''"))
 }
 
 func (d Dialect) ConvertToDateTruncSpecifier(grain runtimev1.TimeGrain) string {

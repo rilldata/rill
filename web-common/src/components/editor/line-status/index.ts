@@ -13,14 +13,26 @@ import {
  * bindable prop and which tends to be accessible from edit events dispatched via
  * the dispatch-events extension in the editor component directory.
  */
-export function setLineStatuses(lineStatuses: LineStatus[], view: EditorView) {
+export function setLineStatuses(
+  lineStatuses: LineStatus[],
+  view: EditorView,
+  wait = true,
+) {
   const transaction = updateLineStatusesEffect.of({
     lineStatuses: lineStatuses,
   });
 
-  view.dispatch({
-    effects: [transaction],
-  });
+  if (wait) {
+    queueMicrotask(() => {
+      view.dispatch({
+        effects: [transaction],
+      });
+    });
+  } else {
+    view.dispatch({
+      effects: [transaction],
+    });
+  }
 }
 
 /** Creates a special gutter that enables usage of line statuses.

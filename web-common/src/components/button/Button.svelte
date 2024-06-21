@@ -25,6 +25,7 @@
   export let selected = false;
   export let large = false;
   export let small = false;
+  export let wide = false;
   export let noStroke = false;
   export let rounded = false;
   export let href: string | null = null;
@@ -54,6 +55,7 @@
   class:loading
   class:large
   class:small
+  class:wide
   class:compact
   class:rounded
   class:danger={status === "error"}
@@ -131,7 +133,7 @@
     @apply bg-primary-800;
   }
 
-  .primary.disabled {
+  .primary:disabled {
     @apply bg-slate-400;
   }
 
@@ -331,6 +333,11 @@
   .large.square,
   .large.circle {
     @apply h-10;
+  }
+
+  .wide {
+    @apply w-full max-w-[400px];
+    @apply h-10 text-sm;
   }
 
   .compact {
