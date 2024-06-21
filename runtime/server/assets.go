@@ -3,7 +3,8 @@ package server
 import (
 	"fmt"
 	"net/http"
-	"strings"
+	"os"
+	"path/filepath"
 
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -34,13 +35,19 @@ func (s *Server) assetsHandler(w http.ResponseWriter, req *http.Request) error {
 	paths := repo.GetCachedPaths()
 	allowed := false
 	for _, p := range paths {
-		if strings.HasPrefix(strings.TrimLeft(path, ","), strings.TrimLeft(p, ",")) {
+		// 'p' can be `/public`, `/public/`, `public/`, `public` (with os-based separators)
+		// match pattern `public/*` or `/public/*`
+		ok, err := filepath.Match(fmt.Sprintf("%s%c*", filepath.Clean(p), os.PathSeparator), path)
+		if err != nil {
+			return httputil.Error(http.StatusBadRequest, err)
+		}
+		if ok {
 			allowed = true
 			break
 		}
 	}
 	if !allowed {
-		return fmt.Errorf("path is not allowed")
+		return httputil.Error(http.StatusForbidden, fmt.Errorf("path is not allowed"))
 	}
 
 	str, err := repo.Get(ctx, path)
