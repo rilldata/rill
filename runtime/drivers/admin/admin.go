@@ -6,9 +6,9 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
@@ -35,6 +35,7 @@ const (
 )
 
 var tracer = otel.Tracer("github.com/rilldata/rill/runtime/drivers/admin")
+var persistentCacheDir = "persistentCache"
 
 var spec = drivers.Spec{
 	DisplayName: "Rill Admin",
@@ -117,7 +118,6 @@ type Handle struct {
 	virtualStashPath     string
 	ignorePaths          []string
 	cachedPaths          []string
-	assetsCache          map[string][]byte
 }
 
 var _ drivers.Handle = &Handle{}
@@ -287,9 +287,13 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 			}
 		}
 
-		cache := make(map[string][]byte)
+		// recreating peristent cache
+		err = os.RemoveAll(persistentCacheDir)
+		if err != nil {
+			return nil, err
+		}
+
 		for _, p := range h.cachedPaths {
-			p = filepath.Join(h.projPath, p)
 			_, err = os.Stat(p)
 			if err != nil {
 				if os.IsNotExist(err) {
@@ -303,16 +307,15 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 					return err
 				}
 				if !info.IsDir() {
-					b, err := os.ReadFile(path)
+					err = copyFile(path, filepath.Join(persistentCacheDir, path))
 					if err != nil {
 						return err
 					}
-
-					rel, err := filepath.Rel(h.projPath, path)
+				} else {
+					err = os.MkdirAll(path, os.ModePerm)
 					if err != nil {
 						return err
 					}
-					cache[strings.TrimLeft(rel, "/")] = b
 				}
 				return nil
 			})
@@ -320,7 +323,6 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 				return nil, err
 			}
 		}
-		h.assetsCache = cache
 
 		return nil, nil
 	})
@@ -331,6 +333,23 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 	case res := <-ch:
 		return res.Err
 	}
+}
+
+func copyFile(src, dst string) error {
+	srcFile, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer srcFile.Close()
+
+	dstFile, err := os.Create(dst)
+	if err != nil {
+		return err
+	}
+	defer dstFile.Close()
+
+	_, err = io.Copy(dstFile, srcFile)
+	return err
 }
 
 // cloneOrPullUnsafe pulls changes from the repo. Also clones the repo if it hasn't been cloned already.

@@ -94,12 +94,17 @@ func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
 	defer h.repoMu.RUnlock()
 
 	for _, p := range h.cachedPaths {
-		if strings.HasPrefix(strings.TrimLeft(filePath, "/"), strings.TrimLeft(p, "/")) {
-			b := h.assetsCache[strings.TrimLeft(filePath, "/")]
-			if b != nil {
-				return string(b), nil
-			}
-			break
+		ok, err := filepath.Match(fmt.Sprintf("%s%c*", filepath.Clean(p), os.PathSeparator), filePath)
+		if err != nil {
+			return "", err
+		}
+		if ok {
+			// os.ReadFile(persistentCacheDir)
+			// b := h.assetsCache[strings.TrimLeft(filePath, "/")]
+			// if b != nil {
+			// 	return string(b), nil
+			// }
+			// break
 		}
 	}
 
