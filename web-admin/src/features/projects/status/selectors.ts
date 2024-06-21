@@ -1,14 +1,15 @@
 import {
   V1DeploymentStatus,
   createAdminServiceGetProject,
+  type V1Deployment,
 } from "@rilldata/web-admin/client";
 
 export const PollTimeWhenProjectDeploymentPending = 1000;
 export const PollTimeWhenProjectDeploymentError = 5000;
 export const PollTimeWhenProjectDeployed = 60 * 1000;
 
-export function useProjectDeploymentStatus(orgName: string, projName: string) {
-  return createAdminServiceGetProject<V1DeploymentStatus>(
+export function useProjectDeployment(orgName: string, projName: string) {
+  return createAdminServiceGetProject<V1Deployment>(
     orgName,
     projName,
     undefined,
@@ -16,13 +17,10 @@ export function useProjectDeploymentStatus(orgName: string, projName: string) {
       query: {
         select: (data) => {
           // There may not be a prodDeployment if the project is hibernating
-          return (
-            data?.prodDeployment?.status ||
-            V1DeploymentStatus.DEPLOYMENT_STATUS_UNSPECIFIED
-          );
+          return data?.prodDeployment;
         },
         refetchInterval: (data) => {
-          switch (data) {
+          switch (data?.status) {
             case V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING:
               return PollTimeWhenProjectDeploymentPending;
 
