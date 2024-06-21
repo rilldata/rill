@@ -99,7 +99,6 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		err = yaml.Unmarshal([]byte(rawYaml), yml)
 		if err == nil {
 			c.ignorePaths = yml.IgnorePaths
-			c.cachedPaths = yml.CachedPaths
 		}
 	}
 

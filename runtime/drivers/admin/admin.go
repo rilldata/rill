@@ -282,7 +282,6 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 			err = yaml.Unmarshal(rawYaml, yml)
 			if err == nil {
 				h.ignorePaths = yml.IgnorePaths
-				h.cachedPaths = yml.PublicPaths
 			}
 		}
 
