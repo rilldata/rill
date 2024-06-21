@@ -4,7 +4,7 @@
     V1DeploymentStatus,
   } from "@rilldata/web-admin/client";
   import {
-    getDashboardsForProject,
+    listDashboards,
     useDashboardsStatus,
   } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
@@ -60,10 +60,8 @@
   }
 
   async function getDashboardsAndInvalidate() {
-    const dashboardListItems = await getDashboardsForProject($proj.data);
-    const dashboardNames = dashboardListItems.map(
-      (listing) => listing.meta.name.name,
-    );
+    const dashboards = await listDashboards(queryClient, instanceId);
+    const dashboardNames = dashboards.map((d) => d.meta.name.name);
     return invalidateDashboardsQueries(queryClient, dashboardNames);
   }
 

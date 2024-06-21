@@ -10,7 +10,7 @@
   } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
   import { getBookmarkDataForDashboard } from "@rilldata/web-admin/features/bookmarks/getBookmarkDataForDashboard";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { useDashboardStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { useQueryClient } from "@tanstack/svelte-query";
@@ -57,14 +57,14 @@
         },
       });
       handleReset();
-      queryClient.refetchQueries(
+      await queryClient.refetchQueries(
         getAdminServiceListBookmarksQueryKey({
           projectId: $projectId.data ?? "",
           resourceKind: ResourceKind.MetricsView,
           resourceName: metricsViewName,
         }),
       );
-      notifications.send({
+      eventBus.emit("notification", {
         message: "Bookmark created",
       });
       handleClose();

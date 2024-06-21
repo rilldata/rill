@@ -1,6 +1,6 @@
 <script lang="ts">
   import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   import {
     SortDirection,
@@ -13,6 +13,7 @@
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import { timeFormat } from "d3-time-format";
+  import { onDestroy } from "svelte";
   import TDDHeader from "./TDDHeader.svelte";
   import TDDTable from "./TDDTable.svelte";
   import {
@@ -141,7 +142,7 @@
         rowHeaderLabels as (string | null)[],
       );
 
-      notifications.send({
+      eventBus.emit("notification", {
         message: `Removed ${rowHeaderLabels.length} items from filter`,
       });
       return;
@@ -151,7 +152,7 @@
         rowHeaderLabels,
       );
       selectItemsInFilter(dimensionName, rowHeaderLabels as (string | null)[]);
-      notifications.send({
+      eventBus.emit("notification", {
         message: `Added ${newValuesSelected.length} items to filter`,
       });
     }
@@ -181,6 +182,13 @@
       toggleAllSearchItems();
     }
   }
+
+  onDestroy(() => {
+    tableInteractionStore.set({
+      dimensionValue: undefined,
+      time: undefined,
+    });
+  });
 </script>
 
 <div class="h-full w-full flex flex-col">

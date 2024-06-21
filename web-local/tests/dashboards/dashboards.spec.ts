@@ -1,4 +1,5 @@
 import { expect } from "@playwright/test";
+import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { updateCodeEditor, wrapRetryAssertion } from "../utils/commonHelpers";
 import {
   assertLeaderboards,
@@ -7,8 +8,7 @@ import {
   interactWithComparisonMenu,
   interactWithTimeRangeMenu,
   metricsViewRequestFilterMatcher,
-  updateAndWaitForDashboard,
-  waitForComparisonTopLists,
+  waitForAggregationTopLists,
   waitForTimeSeries,
   type RequestMatcher,
 } from "../utils/dashboardHelpers";
@@ -26,6 +26,8 @@ test.describe("dashboard", () => {
     await createDashboardFromSource(page, "/sources/AdBids.yaml");
     await waitForFileNavEntry(page, `/dashboards/AdBids_dashboard.yaml`, true);
     await page.getByRole("button", { name: "Preview" }).click();
+    // Temporary timeout while the issue is looked into
+    await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
   });
 
@@ -41,7 +43,7 @@ test.describe("dashboard", () => {
     ]);
     await Promise.all([
       waitForTimeSeries(page, "AdBids_model_dashboard"),
-      waitForComparisonTopLists(page, "AdBids_model_dashboard", ["domain"]),
+      waitForAggregationTopLists(page, "AdBids_model_dashboard", ["domain"]),
       page.getByRole("button", { name: "Preview" }).click(),
     ]);
     await assertAdBidsDashboard(page);
@@ -55,7 +57,7 @@ test.describe("dashboard", () => {
       );
     await Promise.all([
       waitForTimeSeries(page, "AdBids_model_dashboard", domainFilterMatcher),
-      waitForComparisonTopLists(
+      waitForAggregationTopLists(
         page,
         "AdBids_model_dashboard",
         ["domain"],
@@ -64,6 +66,7 @@ test.describe("dashboard", () => {
       // click on publisher=Facebook leaderboard value
       page.getByRole("button", { name: "Facebook 19.3K" }).click(),
     ]);
+
     await wrapRetryAssertion(() =>
       assertLeaderboards(page, [
         {
@@ -88,6 +91,7 @@ test.describe("dashboard", () => {
     //     `Uncaught exception: "${exception.message}"\n${exception.stack}`
     //   );
     // });
+    const watcher = new ResourceWatcher(page);
 
     await createAdBidsModel(page);
     await createDashboardFromModel(page, "/models/AdBids_model.sql");
@@ -298,7 +302,7 @@ test.describe("dashboard", () => {
         description: ""
 
         `;
-    await updateAndWaitForDashboard(page, changeDisplayNameDoc);
+    await watcher.updateAndWaitForDashboard(changeDisplayNameDoc);
 
     // Remove timestamp column
     // await page.getByLabel("Remove timestamp column").click();
@@ -343,7 +347,7 @@ test.describe("dashboard", () => {
         description: ""
 
         `;
-    await updateAndWaitForDashboard(page, addBackTimestampColumnDoc);
+    await watcher.updateAndWaitForDashboard(addBackTimestampColumnDoc);
 
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();

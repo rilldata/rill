@@ -11,19 +11,22 @@
 <script lang="ts">
   import ProjectTitle from "@rilldata/web-common/features/project/ProjectTitle.svelte";
   import { writable } from "svelte/store";
+  import ConnectorExplorer from "../../features/connectors/ConnectorExplorer.svelte";
   import AddAssetButton from "../../features/entity-management/AddAssetButton.svelte";
   import FileExplorer from "../../features/file-explorer/FileExplorer.svelte";
-  import TableExplorer from "../../features/tables/TableExplorer.svelte";
   import Resizer from "../Resizer.svelte";
   import { DEFAULT_NAV_WIDTH } from "../config";
   import Footer from "./Footer.svelte";
   import SurfaceControlButton from "./SurfaceControlButton.svelte";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
 
   let width = DEFAULT_NAV_WIDTH;
   let previousWidth: number;
-  let container: HTMLElement;
   let resizing = false;
   let navWrapperHeight: number;
+
+  $: ({ unsavedFiles } = fileArtifacts);
+  $: ({ size: unsavedFileCount } = $unsavedFiles);
 
   function handleResize(
     e: UIEvent & {
@@ -47,7 +50,6 @@
   class:hide={!$navigationOpen}
   class:resizing
   style:width="{width}px"
-  bind:this={container}
 >
   <Resizer
     min={DEFAULT_NAV_WIDTH}
@@ -58,15 +60,17 @@
     side="right"
   />
   <div class="inner" style:width="{width}px">
-    <ProjectTitle />
+    <ProjectTitle {unsavedFileCount} />
 
-    <AddAssetButton />
+    <div class="p-2 w-full">
+      <AddAssetButton />
+    </div>
     <div class="scroll-container">
       <div class="nav-wrapper" bind:clientHeight={navWrapperHeight}>
-        <FileExplorer />
+        <FileExplorer hasUnsaved={unsavedFileCount > 0} />
         <div class="grow" />
         {#if navWrapperHeight}
-          <TableExplorer startingHeight={navWrapperHeight / 2} />
+          <ConnectorExplorer startingHeight={navWrapperHeight / 2} />
         {/if}
       </div>
     </div>

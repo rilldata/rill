@@ -45,6 +45,11 @@ const ResourceKindMap: Record<
     extension: ".yaml",
     baseContent: "", // This is constructed in the `features/sources/modal` directory
   },
+  [ResourceKind.Connector]: {
+    name: "connector",
+    extension: ".yaml",
+    baseContent: "", // This is constructed in the `features/connectors` directory
+  },
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",
@@ -81,11 +86,12 @@ measures:
     extension: ".yaml",
     baseContent: `# API YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/apis
+# Test your API endpoint at http://localhost:9009/v1/instances/default/api/<filename>
 
 type: api
 
-sql:
-  select ...
+metrics_sql: |
+  select measure, dimension from metrics_view
 `,
   },
   [ResourceKind.Component]: {
@@ -142,7 +148,17 @@ vega_lite: |
     extension: ".yaml",
     baseContent: `type: dashboard
 columns: 10
-gap: 2`,
+gap: 2
+
+items:
+  - component:
+      type: markdown
+      markdown: First component
+    width: 4
+    height: 3
+    x: 2
+    y: 1
+`,
   },
   [ResourceKind.Theme]: {
     name: "theme",

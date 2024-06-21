@@ -1,7 +1,9 @@
 import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
+  getRuntimeServiceGetResourceQueryKey,
   getRuntimeServiceListResourcesQueryKey,
+  runtimeServiceGetResource,
   runtimeServiceListResources,
   V1ListResourcesResponse,
   V1ReconcileStatus,
@@ -12,6 +14,7 @@ import type { QueryClient } from "@tanstack/svelte-query";
 export enum ResourceKind {
   ProjectParser = "rill.runtime.v1.ProjectParser",
   Source = "rill.runtime.v1.Source",
+  Connector = "rill.runtime.v1.Connector",
   Model = "rill.runtime.v1.Model",
   MetricsView = "rill.runtime.v1.MetricsView",
   Report = "rill.runtime.v1.Report",
@@ -36,6 +39,7 @@ export const ResourceShortNameToKind: Record<string, ResourceKind> = {
   report: ResourceKind.Report,
   alert: ResourceKind.Alert,
   theme: ResourceKind.Theme,
+  api: ResourceKind.API,
 };
 
 // In the UI, we shouldn't show the `rill.runtime.v1` prefix
@@ -96,11 +100,50 @@ export function useFilteredResources<T = Array<V1Resource>>(
   );
 }
 
+/**
+ * Fetches all resources and filters them client side.
+ * This is to improve network requests since we need the full list all the time as well.
+ */
+export function useClientFilteredResources(
+  instanceId: string,
+  kind: ResourceKind,
+  filter: (res: V1Resource) => boolean = () => true,
+) {
+  return createRuntimeServiceListResources(instanceId, undefined, {
+    query: {
+      select: (data) =>
+        data.resources?.filter(
+          (res) => res.meta?.name?.kind === kind && filter(res),
+        ) ?? [],
+    },
+  });
+}
+
 export function resourceIsLoading(resource?: V1Resource) {
   return (
     !!resource &&
     resource.meta?.reconcileStatus !== V1ReconcileStatus.RECONCILE_STATUS_IDLE
   );
+}
+
+export async function fetchResource(
+  queryClient: QueryClient,
+  instanceId: string,
+  name: string,
+  kind: ResourceKind,
+) {
+  const resp = await queryClient.fetchQuery({
+    queryKey: getRuntimeServiceGetResourceQueryKey(instanceId, {
+      "name.name": name,
+      "name.kind": kind,
+    }),
+    queryFn: () =>
+      runtimeServiceGetResource(instanceId, {
+        "name.name": name,
+        "name.kind": kind,
+      }),
+  });
+  return resp.resource;
 }
 
 export async function fetchResources(

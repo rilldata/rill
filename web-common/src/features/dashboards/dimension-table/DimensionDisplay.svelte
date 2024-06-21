@@ -10,14 +10,11 @@
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
   import { STRING_LIKES } from "@rilldata/web-common/lib/duckdb-data-types";
-  import {
-    createQueryServiceMetricsViewComparison,
-    createQueryServiceMetricsViewTotals,
-  } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { getDimensionFilterWithSearch } from "./dimension-table-utils";
   import DimensionHeader from "./DimensionHeader.svelte";
   import DimensionTable from "./DimensionTable.svelte";
-  import { notifications } from "@rilldata/web-common/components/notifications";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { metricsExplorerStore } from "../stores/dashboard-stores";
 
   const stateManagers = getStateManagers();
@@ -29,7 +26,7 @@
         dimensionTableTotalQueryBody,
       },
       comparison: { isBeingCompared },
-      dimensions: { dimensionTableDimName, dimensionTableColumnName },
+      dimensions: { dimensionTableDimName },
       dimensionFilters: { unselectedDimensionValues },
       dimensionTable: {
         virtualizedTableColumns,
@@ -37,7 +34,6 @@
         prepareDimTableRows,
       },
       activeMeasure: { activeMeasureName },
-      measureFilters: { getResolvedFilterForMeasureFilters },
     },
     actions: {
       dimensionsFilter: {
@@ -53,7 +49,6 @@
   // cast is safe because dimensionTableDimName must be defined
   // for the dimension table to be open
   $: dimensionName = $dimensionTableDimName as string;
-  $: dimensionColumnName = $dimensionTableColumnName(dimensionName) as string;
 
   let searchText = "";
 
@@ -67,37 +62,34 @@
 
   const timeControlsStore = useTimeControlStore(stateManagers);
 
-  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
-
   $: filterSet = getDimensionFilterWithSearch(
     $dashboardStore?.whereFilter,
     searchText,
     dimensionName,
   );
 
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
+  $: totalsQuery = createQueryServiceMetricsViewAggregation(
     instanceId,
     $metricsViewName,
-    $dimensionTableTotalQueryBody($resolvedFilter),
+    $dimensionTableTotalQueryBody,
     {
       query: {
-        enabled: $timeControlsStore.ready && $resolvedFilter.ready,
+        enabled: $timeControlsStore.ready,
       },
     },
   );
 
-  $: unfilteredTotal = $totalsQuery?.data?.data?.[$activeMeasureName] ?? 0;
+  $: unfilteredTotal = $totalsQuery?.data?.data?.[0]?.[$activeMeasureName] ?? 0;
 
   $: columns = $virtualizedTableColumns($totalsQuery);
 
-  $: sortedQuery = createQueryServiceMetricsViewComparison(
+  $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
     $metricsViewName,
-    $dimensionTableSortedQueryBody($resolvedFilter),
+    $dimensionTableSortedQueryBody,
     {
       query: {
-        enabled:
-          $timeControlsStore.ready && !!filterSet && $resolvedFilter.ready,
+        enabled: $timeControlsStore.ready && !!filterSet,
       },
     },
   );
@@ -105,11 +97,11 @@
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string),
+    $selectedDimensionValueNames.includes(row[dimensionName] as string),
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail.index][dimensionColumnName] as string;
+    const label = tableRows[event.detail.index][dimensionName] as string;
     toggleDimensionValueSelection(
       dimensionName,
       label,
@@ -126,12 +118,12 @@
   }
 
   function toggleAllSearchItems() {
-    const labels = tableRows.map((row) => row[dimensionColumnName] as string);
+    const labels = tableRows.map((row) => row[dimensionName] as string);
 
     if (areAllTableRowsSelected) {
       deselectItemsInFilter(dimensionName, labels);
 
-      notifications.send({
+      eventBus.emit("notification", {
         message: `Removed ${labels.length} items from filter`,
       });
       return;
@@ -141,7 +133,7 @@
         labels,
       );
       selectItemsInFilter(dimensionName, labels);
-      notifications.send({
+      eventBus.emit("notification", {
         message: `Added ${newValuesSelected.length} items to filter`,
       });
     }
@@ -158,7 +150,7 @@
   }
 </script>
 
-{#if sortedQuery}
+{#if $sortedQuery}
   <div class="h-full flex flex-col w-full" style:min-width="365px">
     <div class="flex-none" style:height="50px">
       <DimensionHeader

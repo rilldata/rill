@@ -9,7 +9,6 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/apache/arrow/go/v14/arrow"
 	"github.com/apache/arrow/go/v14/arrow/array"
@@ -31,13 +30,13 @@ import (
 var ErrForbidden = errors.New("action not allowed")
 
 // resolveMVAndSecurityFromAttributes resolves the metrics view and security policy from the attributes
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, dims []*runtimev1.MetricsViewAggregationDimension, measures []*runtimev1.MetricsViewAggregationMeasure) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
-	mv, lastUpdatedOn, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, policy *runtimev1.MetricsViewSpec_SecurityV2, dims []*runtimev1.MetricsViewAggregationDimension, measures []*runtimev1.MetricsViewAggregationMeasure) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
+	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(attrs, instanceID, mv, lastUpdatedOn)
+	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, attrs, res, mv.Security, policy)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -69,24 +68,24 @@ func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime
 }
 
 // returns the metrics view and the time the catalog was last updated
-func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.MetricsViewSpec, time.Time, error) {
+func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, name string) (*runtimev1.Resource, *runtimev1.MetricsViewSpec, error) {
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
-		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
 	if err != nil {
-		return nil, time.Time{}, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	mv := res.GetMetricsView()
 	spec := mv.State.ValidSpec
 	if spec == nil {
-		return nil, time.Time{}, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
+		return nil, nil, status.Errorf(codes.InvalidArgument, "metrics view %q is invalid", name)
 	}
 
-	return spec, res.Meta.StateUpdatedOn.AsTime(), nil
+	return res, spec, nil
 }
 
 func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity) bool {
@@ -127,6 +126,7 @@ func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineM
 				ms[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 					Name:       m.Name,
 					Expression: m.Expression,
+					Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 				}
 				found = true
 				break
@@ -229,10 +229,11 @@ func structTypeToMetricsViewColumn(v *runtimev1.StructType) []*runtimev1.Metrics
 }
 
 type ExpressionBuilder struct {
-	mv      *runtimev1.MetricsViewSpec
-	aliases []*runtimev1.MetricsViewComparisonMeasureAlias
-	dialect drivers.Dialect
-	having  bool
+	mv       *runtimev1.MetricsViewSpec
+	aliases  []*runtimev1.MetricsViewComparisonMeasureAlias
+	dialect  drivers.Dialect
+	measures []*runtimev1.MetricsViewAggregationMeasure
+	having   bool
 }
 
 func (builder *ExpressionBuilder) columnIdentifierExpression(name string) (string, bool) {
@@ -272,6 +273,12 @@ func (builder *ExpressionBuilder) columnIdentifierExpression(name string) (strin
 			}
 
 			return mes.Expression, true
+		}
+	}
+
+	for _, m := range builder.measures {
+		if m.Name == name {
+			return safeName(name), true
 		}
 	}
 

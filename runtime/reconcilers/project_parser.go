@@ -325,7 +325,7 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 
 // reconcileProjectConfig updates instance config derived from rill.yaml and .env
 func (r *ProjectParserReconciler) reconcileProjectConfig(ctx context.Context, parser *compilerv1.Parser, restartController bool) error {
-	return r.C.Runtime.UpdateInstanceWithRillYAML(ctx, r.C.InstanceID, parser.RillYAML, parser.DotEnv, restartController)
+	return r.C.Runtime.UpdateInstanceWithRillYAML(ctx, r.C.InstanceID, parser, restartController)
 }
 
 // reconcileResources creates, updates and deletes resources as necessary to match the parser's output with the current resources in the catalog.
@@ -536,6 +536,10 @@ func (r *ProjectParserReconciler) putParserResourceDef(ctx context.Context, inst
 		if existing == nil || !equalAPISpec(existing.GetApi().Spec, def.APISpec) {
 			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Api{Api: &runtimev1.API{Spec: def.APISpec}}}
 		}
+	case compilerv1.ResourceKindConnector:
+		if existing == nil || !equalConnectorSpec(existing.GetConnector().Spec, def.ConnectorSpec) {
+			res = &runtimev1.Resource{Resource: &runtimev1.Resource_Connector{Connector: &runtimev1.ConnectorV2{Spec: def.ConnectorSpec}}}
+		}
 	default:
 		panic(fmt.Errorf("unknown resource type %q", def.Name.Kind))
 	}
@@ -653,12 +657,6 @@ func applySpecDefaults(inst *drivers.Instance, def *compilerv1.Resource) (*compi
 	switch def.Name.Kind {
 	case compilerv1.ResourceKindSource:
 		def.SourceSpec.StageChanges = cfg.StageChanges
-	case compilerv1.ResourceKindModel:
-		def.ModelSpec.StageChanges = cfg.StageChanges
-		if def.ModelSpec.Materialize == nil {
-			def.ModelSpec.Materialize = &cfg.ModelDefaultMaterialize
-		}
-		def.ModelSpec.MaterializeDelaySeconds = cfg.ModelMaterializeDelaySeconds
 	default:
 		// Nothing to do
 	}
@@ -719,5 +717,9 @@ func equalDashboardSpec(a, b *runtimev1.DashboardSpec) bool {
 }
 
 func equalAPISpec(a, b *runtimev1.APISpec) bool {
+	return proto.Equal(a, b)
+}
+
+func equalConnectorSpec(a, b *runtimev1.ConnectorSpec) bool {
 	return proto.Equal(a, b)
 }

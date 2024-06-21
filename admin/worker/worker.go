@@ -18,6 +18,8 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
+const jobTimeout = 60 * time.Minute
+
 var (
 	tracer              = otel.Tracer("github.com/rilldata/rill/admin/worker")
 	meter               = otel.Meter("github.com/rilldata/rill/admin/worker")
@@ -46,6 +48,9 @@ func (w *Worker) Run(ctx context.Context) error {
 	})
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_device_auth_codes", w.deleteExpiredDeviceAuthCodes, 6*time.Hour)
+	})
+	group.Go(func() error {
+		return w.schedule(ctx, "delete_expired_auth_codes", w.deleteExpiredAuthCodes, 6*time.Hour)
 	})
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_expired_virtual_files", w.deleteExpiredVirtualFiles, 6*time.Hour)
@@ -118,6 +123,9 @@ func (w *Worker) scheduleCron(ctx context.Context, name string, fn func(context.
 }
 
 func (w *Worker) runJob(ctx context.Context, name string, fn func(context.Context) error) error {
+	ctx, cancel := context.WithTimeout(ctx, jobTimeout)
+	defer cancel()
+
 	ctx, span := tracer.Start(ctx, fmt.Sprintf("runJob %s", name), trace.WithAttributes(attribute.String("name", name)))
 	defer span.End()
 

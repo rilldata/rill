@@ -17,13 +17,20 @@ var vegaLiteSpec string
 
 var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema/vega-lite/v5.json", vegaLiteSpec)
 
+//go:embed data/component-template-v1.json
+var componentTemplateSpec string
+
+var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
+
 type ComponentYAML struct {
-	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string           `yaml:"title"`
-	Data       *DataYAML        `yaml:"data"`
-	VegaLite   *string          `yaml:"vega_lite"`
-	Markdown   *string          `yaml:"markdown"`
-	Image      *string          `yaml:"image"`
+	commonYAML `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Title      string                    `yaml:"title"`
+	Subtitle   string                    `yaml:"subtitle"`
+	Data       *DataYAML                 `yaml:"data"`
+	VegaLite   *string                   `yaml:"vega_lite"`
+	Markdown   *string                   `yaml:"markdown"`
+	Image      *string                   `yaml:"image"`
+	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -104,18 +111,39 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		renderer = "image"
 		rendererProps = must(structpb.NewStruct(map[string]any{"url": *tmp.Image}))
 	}
+	if len(tmp.Other) == 1 {
+		n++
+		var props map[string]any
+		for renderer, props = range tmp.Other {
+			break
+		}
+
+		if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
+			return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
+		}
+
+		propsPB, err := structpb.NewStruct(props)
+		if err != nil {
+			return nil, nil, fmt.Errorf(`failed to convert property %q to struct: %w`, renderer, err)
+		}
+
+		rendererProps = propsPB
+	} else {
+		n += len(tmp.Other)
+	}
 
 	// Check there is exactly one renderer
 	if n == 0 {
-		return nil, nil, errors.New(`missing renderer configuration (set one of vega_lite, markdown, image)`)
+		return nil, nil, errors.New(`missing renderer configuration`)
 	}
 	if n > 1 {
-		return nil, nil, errors.New(`multiple renderers are not allowed (set only one of vega_lite, markdown, image)`)
+		return nil, nil, errors.New(`multiple renderers are not allowed`)
 	}
 
 	// Create the component spec
 	spec := &runtimev1.ComponentSpec{
 		Title:              tmp.Title,
+		Subtitle:           tmp.Subtitle,
 		Resolver:           resolver,
 		ResolverProperties: resolverProps,
 		Renderer:           renderer,

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { createAdminServiceDeleteAlert } from "@rilldata/web-admin/client";
+  import EditAlert from "@rilldata/web-admin/features/alerts/EditAlert.svelte";
   import AlertFilterCriteria from "@rilldata/web-admin/features/alerts/metadata/AlertFilterCriteria.svelte";
   import AlertFilters from "@rilldata/web-admin/features/alerts/metadata/AlertFilters.svelte";
   import AlertOwnerBlock from "@rilldata/web-admin/features/alerts/metadata/AlertOwnerBlock.svelte";
@@ -16,10 +17,8 @@
   import MetadataValue from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataValue.svelte";
   import { extractNotifier } from "@rilldata/web-admin/features/scheduled-reports/metadata/notifiers-utils";
   import { IconButton } from "@rilldata/web-common/components/button";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import ThreeDot from "@rilldata/web-common/components/icons/ThreeDot.svelte";
-  import EditAlertDialog from "@rilldata/web-common/features/alerts/EditAlertDialog.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import {
     getRuntimeServiceListResourcesQueryKey,
@@ -57,11 +56,6 @@
   // Actions
   const queryClient = useQueryClient();
   const deleteAlert = createAdminServiceDeleteAlert();
-
-  let showEditAlertDialog = false;
-  function handleEditAlert() {
-    showEditAlertDialog = true;
-  }
 
   async function handleDeleteAlert() {
     await $deleteAlert.mutateAsync({
@@ -101,7 +95,7 @@
         </h1>
         <div class="grow" />
         {#if !$isAlertCreatedByCode.data}
-          <Button type="secondary" on:click={handleEditAlert}>Edit</Button>
+          <EditAlert {alertSpec} metricsViewName={$dashboardName.data} />
           <DropdownMenu.Root>
             <DropdownMenu.Trigger>
               <IconButton>
@@ -156,12 +150,13 @@
       metricsViewName={$dashboardName.data}
       filters={metricsViewAggregationRequest?.where}
       timeRange={metricsViewAggregationRequest?.timeRange}
+      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />
 
     <!-- Criteria -->
     <AlertFilterCriteria
-      metricsViewName={$dashboardName.data}
       filters={metricsViewAggregationRequest?.having}
+      comparisonTimeRange={metricsViewAggregationRequest?.comparisonTimeRange}
     />
 
     <!-- Slack notification -->
@@ -180,13 +175,4 @@
       />
     {/if}
   </div>
-{/if}
-
-{#if $alertQuery.data && $dashboard.data?.metricsView.spec}
-  <EditAlertDialog
-    open={showEditAlertDialog}
-    {alertSpec}
-    on:close={() => (showEditAlertDialog = false)}
-    metricsViewName={$dashboardName.data}
-  />
 {/if}

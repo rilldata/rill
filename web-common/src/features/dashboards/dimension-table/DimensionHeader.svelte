@@ -9,10 +9,13 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
+  import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
+  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-  import { createEventDispatcher } from "svelte";
+  import { createEventDispatcher, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { SortType } from "../proto-state/derived-types";
@@ -32,8 +35,10 @@
   const {
     selectors: {
       sorting: { sortedByDimensionValue },
+      dimensions: { getDimensionDisplayName },
       dimensionTable: { dimensionTableSearchString },
       dimensionFilters: { isFilterExcludeMode },
+      measures: { visibleMeasures },
     },
     actions: {
       sorting: { toggleSort },
@@ -44,9 +49,11 @@
       dimensions: { setPrimaryDimension },
       dimensionsFilter: { toggleDimensionFilterMode },
     },
+    dashboardStore,
+    metricsViewName,
   } = stateManagers;
 
-  const { adminServer } = featureFlags;
+  const { adminServer, exports } = featureFlags;
 
   $: excludeMode = $isFilterExcludeMode(dimensionName);
 
@@ -86,6 +93,58 @@
   function toggleFilterMode() {
     toggleDimensionFilterMode(dimensionName);
   }
+
+  let showReplacePivotModal = false;
+  function startPivotForDimensionTable() {
+    const pivot = $dashboardStore?.pivot;
+
+    if (
+      pivot.rows.dimension.length ||
+      pivot.columns.measure.length ||
+      pivot.columns.dimension.length
+    ) {
+      showReplacePivotModal = true;
+    } else {
+      createPivot();
+    }
+  }
+
+  function createPivot() {
+    showReplacePivotModal = false;
+
+    const rowDimensions = dimensionName
+      ? [
+          {
+            id: dimensionName,
+            title: $getDimensionDisplayName(dimensionName),
+            type: PivotChipType.Dimension,
+          },
+        ]
+      : [];
+
+    const measures = $visibleMeasures
+      .filter((m) => m.name !== undefined)
+      .map((m) => {
+        return {
+          id: m.name as string,
+          title: m.label || (m.name as string),
+          type: PivotChipType.Measure,
+        };
+      });
+
+    metricsExplorerStore.createPivot(
+      $metricsViewName,
+      { dimension: rowDimensions },
+      {
+        dimension: [],
+        measure: measures,
+      },
+    );
+  }
+
+  onDestroy(() => {
+    clearDimensionTableSearchString();
+  });
 </script>
 
 <div class="flex justify-between items-center p-1 pr-5">
@@ -151,6 +210,24 @@
       </TooltipContent>
     </Tooltip>
 
-    <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+    {#if $exports}
+      <ExportDimensionTableDataButton includeScheduledReport={$adminServer} />
+    {/if}
+    <button
+      class="h-6 px-1.5 py-px rounded-sm hover:bg-gray-200 text-gray-700"
+      on:click={() => {
+        startPivotForDimensionTable();
+      }}
+    >
+      Start Pivot
+    </button>
   </div>
 </div>
+
+<ReplacePivotDialog
+  open={showReplacePivotModal}
+  on:close={() => {
+    showReplacePivotModal = false;
+  }}
+  on:replace={() => createPivot()}
+/>

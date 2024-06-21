@@ -11,6 +11,7 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/c2h5oh/datasize"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"go.uber.org/multierr"
@@ -87,8 +88,14 @@ func NewKubernetes(spec json.RawMessage) (*KubernetesProvisioner, error) {
 		return nil, err
 	}
 
+	// Add Sprig template functions (removing functions that leak host info)
+	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
+	funcMap := sprig.TxtFuncMap()
+	delete(funcMap, "env")
+	delete(funcMap, "expandenv")
+
 	// Parse the template definitions
-	templates := template.Must(template.New("").ParseFiles(
+	templates := template.Must(template.New("").Funcs(funcMap).ParseFiles(
 		ksp.TemplatePaths.HTTPIngress,
 		ksp.TemplatePaths.GRPCIngress,
 		ksp.TemplatePaths.Service,
@@ -245,7 +252,7 @@ func (p *KubernetesProvisioner) AwaitReady(ctx context.Context, provisionID stri
 		if err != nil {
 			return false, nil
 		}
-		return sts.Status.AvailableReplicas > 0 && sts.Status.AvailableReplicas == sts.Status.Replicas, nil
+		return sts.Status.AvailableReplicas > 0 && sts.Status.AvailableReplicas == sts.Status.Replicas && sts.Generation == sts.Status.ObservedGeneration, nil
 	})
 	if err != nil {
 		return err

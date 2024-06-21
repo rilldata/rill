@@ -1,5 +1,9 @@
-import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
+import {
+  getFilteredMeasuresAndDimensions,
+  getIndependentMeasures,
+} from "@rilldata/web-common/features/dashboards/state-managers/selectors/measures";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
@@ -56,26 +60,16 @@ export function createMetricsViewTimeSeries(
       ctx.metricsViewName,
       ctx.dashboardStore,
       useTimeControlStore(ctx),
-      measureFilterResolutionsStore(ctx),
     ],
-    (
-      [
-        runtime,
-        metricViewName,
-        dashboardStore,
-        timeControls,
-        measureFilterResolution,
-      ],
-      set,
-    ) =>
+    ([runtime, metricViewName, dashboardStore, timeControls], set) =>
       createQueryServiceMetricsViewTimeSeries(
         runtime.instanceId,
         metricViewName,
         {
           measureNames: measures,
           where: sanitiseExpression(
-            dashboardStore?.whereFilter,
-            measureFilterResolution.filter,
+            mergeMeasureFilters(dashboardStore),
+            undefined,
           ),
           timeStart: isComparison
             ? timeControls.comparisonAdjustedStart
@@ -94,8 +88,7 @@ export function createMetricsViewTimeSeries(
               !!timeControls.ready &&
               !!ctx.dashboardStore &&
               // in case of comparison, we need to wait for the comparison start time to be available
-              (!isComparison || !!timeControls.comparisonAdjustedStart) &&
-              measureFilterResolution.ready,
+              (!isComparison || !!timeControls.comparisonAdjustedStart),
             queryClient: ctx.queryClient,
             keepPreviousData: true,
           },
@@ -135,13 +128,24 @@ export function createTimeSeriesDataStore(
           ? [...dashboardStore.visibleMeasureKeys]
           : [];
       }
+      const { measures: filteredMeasures } = getFilteredMeasuresAndDimensions({
+        dashboard: dashboardStore,
+      })(metricsView.data ?? {}, measures);
+      const independentMeasures = getIndependentMeasures(
+        metricsView.data ?? {},
+        measures,
+      );
 
       const primaryTimeSeries = createMetricsViewTimeSeries(
         ctx,
-        measures,
+        filteredMeasures,
         false,
       );
-      const primaryTotals = createTotalsForMeasure(ctx, measures, false);
+      const primaryTotals = createTotalsForMeasure(
+        ctx,
+        independentMeasures,
+        false,
+      );
 
       let unfilteredTotals:
         | CreateQueryResult<V1MetricsViewAggregationResponse, unknown>
@@ -150,7 +154,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         unfilteredTotals = createUnfilteredTotalsForMeasure(
           ctx,
-          measures,
+          independentMeasures,
           dashboardStore?.selectedComparisonDimension,
         );
       }
@@ -161,8 +165,16 @@ export function createTimeSeriesDataStore(
         | CreateQueryResult<V1MetricsViewAggregationResponse, unknown>
         | Writable<null> = writable(null);
       if (showComparison) {
-        comparisonTimeSeries = createMetricsViewTimeSeries(ctx, measures, true);
-        comparisonTotals = createTotalsForMeasure(ctx, measures, true);
+        comparisonTimeSeries = createMetricsViewTimeSeries(
+          ctx,
+          filteredMeasures,
+          true,
+        );
+        comparisonTotals = createTotalsForMeasure(
+          ctx,
+          independentMeasures,
+          true,
+        );
       }
 
       let dimensionTimeSeriesCharts:
@@ -171,7 +183,7 @@ export function createTimeSeriesDataStore(
       if (dashboardStore?.selectedComparisonDimension) {
         dimensionTimeSeriesCharts = getDimensionValueTimeSeries(
           ctx,
-          measures,
+          filteredMeasures,
           "chart",
         );
       }

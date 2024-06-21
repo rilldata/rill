@@ -1,5 +1,4 @@
 <script lang="ts">
-  import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import FileDrop from "@rilldata/web-common/features/sources/modal/FileDrop.svelte";
   import SourceImportedModal from "@rilldata/web-common/features/sources/modal/SourceImportedModal.svelte";
   import { sourceImportedPath } from "@rilldata/web-common/features/sources/sources-store";
@@ -68,4 +67,3 @@
 
 <AddSourceModal />
 <SourceImportedModal sourcePath={$sourceImportedPath} />
-<NotificationCenter />

@@ -5,6 +5,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
 
 service AdminService {
@@ -371,6 +372,24 @@ service AdminService {
   // RevokeServiceAuthToken revoke the service auth token
   rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
+  }
+
+  // IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
+  rpc IssueMagicAuthToken(IssueMagicAuthTokenRequest) returns (IssueMagicAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/tokens/magic",
+      body: "*"
+    };
+  }
+
+  // ListMagicAuthTokens lists all the magic auth tokens for a specific project.
+  rpc ListMagicAuthTokens(ListMagicAuthTokensRequest) returns (ListMagicAuthTokensResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/tokens/magic"};
+  }
+
+  // RevokeMagicAuthToken revokes a magic auth token.
+  rpc RevokeMagicAuthToken(RevokeMagicAuthTokenRequest) returns (RevokeMagicAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/magic-tokens/{token_id}"};
   }
 
   // UpdateUserPreferences updates the preferences for the user
@@ -1109,6 +1128,46 @@ message ListServiceAuthTokensResponse {
   repeated ServiceToken tokens = 1;
 }
 
+
+message IssueMagicAuthTokenRequest {
+  // Organization that owns the project.
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  // Project to create the magic auth token in.
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
+  int64 ttl_minutes = 3;
+  // Metrics view the token will provide access to.
+  string metrics_view = 4;
+  // Optional filter to apply to all queries to the metrics view.
+  rill.runtime.v1.Expression metrics_view_filter = 5;
+  // Optional list of names of dimensions and measures to limit access to.
+  // If empty, all dimensions and measures are accessible.
+  repeated string metrics_view_fields = 6;
+}
+
+message IssueMagicAuthTokenResponse {
+  string token = 1;
+  string url = 2;
+}
+
+message ListMagicAuthTokensRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message ListMagicAuthTokensResponse {
+  repeated MagicAuthToken tokens = 1;
+  string next_page_token = 2;
+}
+
+message RevokeMagicAuthTokenRequest {
+  string token_id = 1;
+}
+
+message RevokeMagicAuthTokenResponse {}
+
 message GetGithubRepoStatusRequest {
   string github_url = 1;
 }
@@ -1126,7 +1185,16 @@ message GetGithubUserStatusResponse {
   string grant_access_url = 2;
   string access_token = 3;
   string account = 4;
-  repeated string organizations = 5;
+  GithubPermission user_installation_permission = 6;
+  map<string, GithubPermission> organization_installation_permissions = 7;
+  // DEPRECATED: Use organization_installation_permissions instead.
+  repeated string organizations = 5 [deprecated = true];
+}
+
+enum GithubPermission {
+  GITHUB_PERMISSION_UNSPECIFIED = 0;
+  GITHUB_PERMISSION_READ = 1;
+  GITHUB_PERMISSION_WRITE = 2;
 }
 
 message GetGitCredentialsRequest {
@@ -1473,10 +1541,14 @@ message ProjectPermissions {
   bool manage_dev = 8;
   bool read_project_members = 9;
   bool manage_project_members = 10;
+  bool create_magic_auth_tokens = 15;
+  bool manage_magic_auth_tokens = 16;
   bool create_reports = 11;
   bool manage_reports = 12;
   bool create_alerts = 13;
   bool manage_alerts = 14;
+  bool create_bookmarks = 17;
+  bool manage_bookmarks = 18;
 }
 
 message Member {
@@ -1520,6 +1592,20 @@ message ServiceToken {
   google.protobuf.Timestamp expires_on = 3;
 }
 
+message MagicAuthToken {
+  string id = 1;
+  string project_id = 2;
+  google.protobuf.Timestamp created_on = 3;
+  google.protobuf.Timestamp expires_on = 4;
+  google.protobuf.Timestamp used_on = 5;
+  string created_by_user_id = 6;
+  string created_by_user_email = 7;
+  google.protobuf.Struct attributes = 8;
+  string metrics_view = 9;
+  rill.runtime.v1.Expression metrics_view_filter = 10;
+  repeated string metrics_view_fields = 11;
+}
+
 message VirtualFile {
   string path = 1;
   bytes data = 2;
@@ -1531,6 +1617,7 @@ message ReportOptions {
   string title = 1;
   string refresh_cron = 2;
   string refresh_time_zone = 9;
+  string interval_duration = 13;
   string query_name = 3;
   string query_args_json = 4;
   uint64 export_limit = 5;
@@ -1540,6 +1627,8 @@ message ReportOptions {
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
   repeated string slack_webhooks = 12;
+  // base64 state url of the metrics_view when it was created
+  string web_open_state = 14;
 }
 
 message AlertOptions {
@@ -1554,4 +1643,6 @@ message AlertOptions {
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;
+  // base64 state url of the dashboard when it was created
+  string web_open_state = 12;
 }

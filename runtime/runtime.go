@@ -91,12 +91,12 @@ func (r *Runtime) Close() error {
 	return errors.Join(err1, err2)
 }
 
-func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+func (r *Runtime) ResolveMetricsViewSecurity(instanceID string, attributes map[string]any, mv *runtimev1.Resource, policies ...*runtimev1.MetricsViewSpec_SecurityV2) (*ResolvedMetricsViewSecurity, error) {
 	inst, err := r.Instance(context.Background(), instanceID)
 	if err != nil {
 		return nil, err
 	}
-	return r.securityEngine.resolveMetricsViewSecurity(instanceID, inst.Environment, mv, lastUpdatedOn, attributes)
+	return r.securityEngine.resolveMetricsViewSecurity(instanceID, inst.Environment, attributes, mv, policies...)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
@@ -110,7 +110,14 @@ func (r *Runtime) GetInstanceAttributes(ctx context.Context, instanceID string) 
 	return instanceAnnotationsToAttribs(instance)
 }
 
-func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, rillYAML *rillv1.RillYAML, dotEnv map[string]string, restartController bool) error {
+func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID string, parser *rillv1.Parser, restartController bool) error {
+	if parser.RillYAML == nil {
+		return errors.New("rill.yaml is required to update an instance")
+	}
+
+	rillYAML := parser.RillYAML
+	dotEnv := parser.DotEnv
+
 	inst, err := r.Instance(ctx, instanceID)
 	if err != nil {
 		return err
@@ -122,15 +129,32 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 
 	inst.ProjectOLAPConnector = rillYAML.OLAPConnector
 
-	conns := make([]*runtimev1.Connector, 0, len(rillYAML.Connectors))
+	// Dedupe connectors
+	connMap := make(map[string]*runtimev1.Connector)
 	for _, c := range rillYAML.Connectors {
-		conns = append(conns, &runtimev1.Connector{
+		connMap[c.Name] = &runtimev1.Connector{
 			Type:   c.Type,
 			Name:   c.Name,
 			Config: c.Defaults,
-		})
+		}
+	}
+	for _, r := range parser.Resources {
+		if r.ConnectorSpec != nil {
+			connMap[r.Name.Name] = &runtimev1.Connector{
+				Name:                r.Name.Name,
+				Type:                r.ConnectorSpec.Driver,
+				Config:              r.ConnectorSpec.Properties,
+				ConfigFromVariables: r.ConnectorSpec.PropertiesFromVariables,
+			}
+		}
+	}
+
+	conns := make([]*runtimev1.Connector, 0, len(connMap))
+	for _, c := range connMap {
+		conns = append(conns, c)
 	}
 	inst.ProjectConnectors = conns
+
 	vars := make(map[string]string)
 	for _, v := range rillYAML.Variables {
 		vars[v.Name] = v.Default
@@ -141,6 +165,38 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	inst.ProjectVariables = vars
 	inst.FeatureFlags = rillYAML.FeatureFlags
 	return r.EditInstance(ctx, inst, restartController)
+}
+
+// UpdateInstanceConnector upserts or removes a connector from an instance
+// If connector is nil, the connector is removed; otherwise, it is upserted
+func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name string, connector *runtimev1.ConnectorSpec) error {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	// remove the connector if it exists
+	for i, c := range inst.ProjectConnectors {
+		if c.Name == name {
+			inst.ProjectConnectors = append(inst.ProjectConnectors[:i], inst.ProjectConnectors[i+1:]...)
+			break
+		}
+	}
+
+	if connector == nil {
+		// connector should be removed
+		return r.EditInstance(ctx, inst, false)
+	}
+
+	// append the new/updated connector
+	inst.ProjectConnectors = append(inst.ProjectConnectors, &runtimev1.Connector{
+		Name:                name,
+		Type:                connector.Driver,
+		Config:              connector.Properties,
+		ConfigFromVariables: connector.PropertiesFromVariables,
+	})
+
+	return r.EditInstance(ctx, inst, false)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

@@ -68,7 +68,7 @@ func Test_connection_CreateTableAsSelect(t *testing.T) {
 	sql := "SELECT 1"
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			err := tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
+			err := tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql, nil)
 			require.NoError(t, err)
 			res, err := tt.c.Execute(ctx, &drivers.Statement{Query: fmt.Sprintf("SELECT count(*) FROM %q", tt.name)})
 			require.NoError(t, err)
@@ -106,10 +106,10 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select 1")
+	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select 1", nil)
 	require.NoError(t, err)
 	time.Sleep(2 * time.Millisecond)
-	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select 'hello'")
+	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select 'hello'", nil)
 	require.NoError(t, err)
 
 	dirs, err := os.ReadDir(filepath.Join(temp, "test-select-multiple"))
@@ -119,7 +119,7 @@ func Test_connection_CreateTableAsSelectMultipleTimes(t *testing.T) {
 		names = append(names, dir.Name())
 	}
 
-	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select fail query")
+	err = c.CreateTableAsSelect(context.Background(), "test-select-multiple", false, "select fail query", nil)
 	require.Error(t, err)
 
 	dirs, err = os.ReadDir(filepath.Join(temp, "test-select-multiple"))
@@ -151,7 +151,7 @@ func Test_connection_DropTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test-drop", false, "select 1")
+	err = c.CreateTableAsSelect(context.Background(), "test-drop", false, "select 1", nil)
 	require.NoError(t, err)
 
 	// Note: true since at lot of places we look at information_schema lookup on main db to determine whether tbl is a view or table
@@ -180,13 +180,13 @@ func Test_connection_InsertTableAsSelect(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "select 1")
+	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "select 1", nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "select 2")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", "select 2", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", true, "select 3")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", "select 3", true, true, drivers.IncrementalStrategyAppend, nil)
 	require.Error(t, err)
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT count(*) FROM 'test-insert'"})
@@ -209,7 +209,7 @@ func Test_connection_RenameTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test-rename", false, "select 1")
+	err = c.CreateTableAsSelect(context.Background(), "test-rename", false, "select 1", nil)
 	require.NoError(t, err)
 
 	err = c.RenameTable(context.Background(), "test-rename", "rename-test", false)
@@ -235,10 +235,10 @@ func Test_connection_RenameToExistingTable(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "source", false, "SELECT 1 AS data")
+	err = c.CreateTableAsSelect(context.Background(), "source", false, "SELECT 1 AS data", nil)
 	require.NoError(t, err)
 
-	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA")
+	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA", nil)
 	require.NoError(t, err)
 
 	err = c.RenameTable(context.Background(), "_tmp_source", "source", false)
@@ -264,7 +264,7 @@ func Test_connection_AddTableColumn(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test alter column", false, "select 1 as data")
+	err = c.CreateTableAsSelect(context.Background(), "test alter column", false, "select 1 as data", nil)
 	require.NoError(t, err)
 
 	res, err := c.Execute(context.Background(), &drivers.Statement{Query: "SELECT data_type FROM information_schema.columns WHERE table_name='test alter column' AND table_catalog = 'view'"})
@@ -293,10 +293,10 @@ func Test_connection_RenameToExistingTableOld(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "source", false, "SELECT 1 AS data")
+	err = c.CreateTableAsSelect(context.Background(), "source", false, "SELECT 1 AS data", nil)
 	require.NoError(t, err)
 
-	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA")
+	err = c.CreateTableAsSelect(context.Background(), "_tmp_source", false, "SELECT 2 AS DATA", nil)
 	require.NoError(t, err)
 
 	err = c.RenameTable(context.Background(), "_tmp_source", "source", false)
@@ -351,12 +351,12 @@ func Test_connection_CreateTableAsSelectStorageLimits(t *testing.T) {
 	sql := "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')"
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
-			err := tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
+			err := tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql, nil)
 			if err != nil { // ingestion mostly completes in less than 5 seconds before the limit is checked
 				require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 			}
 
-			err = tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql)
+			err = tt.c.CreateTableAsSelect(ctx, tt.name, tt.view, sql, nil)
 			require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 		})
 	}
@@ -372,15 +372,15 @@ func Test_connection_InsertTableAsSelectLimits(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
+	err = c.CreateTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')", nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')", false, true, drivers.IncrementalStrategyAppend, nil)
 	if err != nil {
 		require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 	}
 
-	err = c.InsertTableAsSelect(context.Background(), "test-insert", false, "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')")
+	err = c.InsertTableAsSelect(context.Background(), "test-insert", "SELECT * from read_parquet('../../../web-local/tests/data/AdBids.parquet')", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.ErrorIs(t, err, drivers.ErrStorageLimitExceeded)
 }
 
@@ -395,19 +395,19 @@ func Test_connection_CastEnum(t *testing.T) {
 	require.NoError(t, c.Migrate(context.Background()))
 	c.AsOLAP("default")
 
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'bglr' AS city, 'IND' AS country")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'bglr' AS city, 'IND' AS country", nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 2, 'mUm', 'IND'")
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 2, 'mUm', 'IND'", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, 'Perth', 'Aus'")
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, 'Perth', 'Aus'", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, null, 'Aus'")
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, null, 'Aus'", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
-	err = c.InsertTableAsSelect(context.Background(), "test", false, "SELECT 3, 'bglr', null")
+	err = c.InsertTableAsSelect(context.Background(), "test", "SELECT 3, 'bglr', null", false, true, drivers.IncrementalStrategyAppend, nil)
 	require.NoError(t, err)
 
 	err = c.convertToEnum(context.Background(), "test", []string{"city", "country"})
@@ -448,20 +448,20 @@ func Test_connection_CreateTableAsSelectWithComments(t *testing.T) {
 		-- that was a stupid query
 		-- I hope to write not so stupid query
 	`
-	err = normalConn.CreateTableAsSelect(ctx, "test", false, sql)
+	err = normalConn.CreateTableAsSelect(ctx, "test", false, sql, nil)
 	require.NoError(t, err)
 
-	err = normalConn.CreateTableAsSelect(ctx, "test_view", true, sql)
+	err = normalConn.CreateTableAsSelect(ctx, "test_view", true, sql, nil)
 	require.NoError(t, err)
 
 	sql = `
 		with r as (select 1 as id ) 	
 		select * from r
 	`
-	err = normalConn.CreateTableAsSelect(ctx, "test", false, sql)
+	err = normalConn.CreateTableAsSelect(ctx, "test", false, sql, nil)
 	require.NoError(t, err)
 
-	err = normalConn.CreateTableAsSelect(ctx, "test_view", true, sql)
+	err = normalConn.CreateTableAsSelect(ctx, "test_view", true, sql, nil)
 	require.NoError(t, err)
 }
 
@@ -478,16 +478,16 @@ func Test_connection_ChangingOrder(t *testing.T) {
 	c.AsOLAP("default")
 
 	// create table
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'", nil)
 	require.NoError(t, err)
 
 	// create view
-	err = c.CreateTableAsSelect(context.Background(), "test_view", true, "SELECT * FROM test")
+	err = c.CreateTableAsSelect(context.Background(), "test_view", true, "SELECT * FROM test", nil)
 	require.NoError(t, err)
 	verifyCount(t, c, "test_view", 1)
 
 	// change sequence
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id", nil)
 	require.NoError(t, err)
 	// view should still work
 	verifyCount(t, c, "test_view", 1)
@@ -501,16 +501,16 @@ func Test_connection_ChangingOrder(t *testing.T) {
 	c.AsOLAP("default")
 
 	// create table
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 1 AS id, 'India' AS 'coun\"try'", nil)
 	require.NoError(t, err)
 
 	// create view
-	err = c.CreateTableAsSelect(context.Background(), "test_view", true, "SELECT * FROM test")
+	err = c.CreateTableAsSelect(context.Background(), "test_view", true, "SELECT * FROM test", nil)
 	require.NoError(t, err)
 	verifyCount(t, c, "test_view", 1)
 
 	// change sequence
-	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id")
+	err = c.CreateTableAsSelect(context.Background(), "test", false, "SELECT 'India' AS 'coun\"try', 1 AS id", nil)
 	require.NoError(t, err)
 
 	// view no longer works

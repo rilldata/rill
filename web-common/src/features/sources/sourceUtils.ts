@@ -1,18 +1,18 @@
-import {
-  extractFileExtension,
-  sanitizeEntityName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
+import { extractFileExtension } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import type { V1ConnectorDriver } from "@rilldata/web-common/runtime-client";
+import { sanitizeEntityName } from "../entity-management/name-utils";
 
 export function compileCreateSourceYAML(
   values: Record<string, unknown>,
   connectorName: string,
 ) {
+  // Add instructions to the top of the file
   const topOfFile = `# Source YAML
 # Reference documentation: https://docs.rilldata.com/reference/project-files/sources
-
+  
 type: source`;
 
+  // Convert applicable connectors to duckdb
   switch (connectorName) {
     case "s3":
     case "gcs":
@@ -41,11 +41,13 @@ type: source`;
     }
   }
 
+  // Compile key value pairs
   const compiledKeyValues = Object.entries(values)
     .filter(([key]) => key !== "sourceName")
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 
+  // Return the compiled YAML
   return `${topOfFile}\n\nconnector: "${connectorName}"\n` + compiledKeyValues;
 }
 

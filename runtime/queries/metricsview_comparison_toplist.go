@@ -34,6 +34,7 @@ type MetricsViewComparison struct {
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact"`
 	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
+	SecurityPolicy      *runtimev1.MetricsViewSpec_SecurityV2          `json:"security_policy,omitempty"`
 
 	Result *runtimev1.MetricsViewComparisonResponse `json:"-"`
 
@@ -42,9 +43,9 @@ type MetricsViewComparison struct {
 }
 
 type metricsViewMeasureMeta struct {
-	innerIndex int  // relative position of the measure in the inner query, 1 based
-	outerIndex int  // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
-	expand     bool // whether the measure has derived measures like comparison, delta etc
+	baseSubqueryIndex int  // relative position of the measure in the inner query, 1 based
+	outerIndex        int  // relative position of the measure in the outer query, this different from innerIndex as there may be derived measures like comparison, delta etc in the outer query after each base measure, 1 based
+	expand            bool // whether the measure has derived measures like comparison, delta etc
 }
 
 var _ runtime.Query = &MetricsViewComparison{}
@@ -81,7 +82,7 @@ func (q *MetricsViewComparison) UnmarshalResult(v any) error {
 
 func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
 	if err != nil {
 		return err
 	}
@@ -205,14 +206,16 @@ func (q *MetricsViewComparison) removeNoSortMeasures() []*runtimev1.MetricsViewA
 }
 
 func (q *MetricsViewComparison) addDimsAsFilter() {
-	inExpressions := make([]*runtimev1.Expression, 0, len(q.Result.Rows))
-	for _, r := range q.Result.Rows {
-		inExpressions = append(inExpressions, expressionpb.Value(r.DimensionValue))
-	}
-	if q.Where != nil {
-		q.Where = expressionpb.And([]*runtimev1.Expression{q.Where, expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)})
-	} else {
-		q.Where = expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)
+	if len(q.Result.Rows) > 0 {
+		inExpressions := make([]*runtimev1.Expression, 0, len(q.Result.Rows))
+		for _, r := range q.Result.Rows {
+			inExpressions = append(inExpressions, expressionpb.Value(r.DimensionValue))
+		}
+		if q.Where != nil {
+			q.Where = expressionpb.And([]*runtimev1.Expression{q.Where, expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)})
+		} else {
+			q.Where = expressionpb.In(expressionpb.Identifier(q.DimensionName), inExpressions)
+		}
 	}
 }
 
@@ -244,9 +247,9 @@ func (q *MetricsViewComparison) calculateMeasuresMeta() error {
 			}
 		}
 		q.measuresMeta[m.Name] = metricsViewMeasureMeta{
-			innerIndex: inner,
-			outerIndex: outer,
-			expand:     expand,
+			baseSubqueryIndex: inner,
+			outerIndex:        outer,
+			expand:            expand,
 		}
 		if expand {
 			outer += 4
@@ -791,7 +794,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 			return "", nil, fmt.Errorf("undefined sort type for measure %s", s.Name)
 		}
 		orderClause := fmt.Sprint(pos)
-		subQueryOrderClause := fmt.Sprint(measureMeta.innerIndex + 1) // 1-based + skip the first dim column
+		subQueryOrderClause := fmt.Sprint(measureMeta.baseSubqueryIndex + 1) // 1-based + skip the first dim column
 		ending := ""
 		if s.Desc {
 			ending += " DESC"
@@ -1076,7 +1079,7 @@ func (q *MetricsViewComparison) buildMetricsComparisonTopListSQL(mv *runtimev1.M
 
 func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
 	if err != nil {
 		return err
 	}

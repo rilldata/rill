@@ -1,12 +1,8 @@
 <script lang="ts">
-  import { beforeNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
-  import {
-    featureFlags,
-    retainFeaturesFlags,
-  } from "@rilldata/web-common/features/feature-flags";
+  import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
@@ -14,6 +10,7 @@
   import { onMount } from "svelte";
   import ErrorBoundary from "../features/errors/ErrorBoundary.svelte";
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
+  import { initPylonWidget } from "../features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
   import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
@@ -27,9 +24,10 @@
   // Set read-only mode so that the user can't edit the dashboard
   featureFlags.set(true, "adminServer", "readOnly");
 
-  beforeNavigate(retainFeaturesFlags);
   clearViewedAsUserAfterNavigate(queryClient);
+
   initCloudMetrics();
+  initPylonWidget();
 
   onMount(() => errorEventHandler?.addJavascriptErrorListeners());
 

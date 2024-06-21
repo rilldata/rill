@@ -42,7 +42,7 @@ var _ driver.QueryerContext = &sqlConnection{}
 
 func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
 	dr := newDruidRequest(query, args)
-	b, err := json.Marshal(newDruidRequest(query, args))
+	b, err := json.Marshal(dr)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +50,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	bodyReader := bytes.NewReader(b)
 
 	context.AfterFunc(ctx, func() {
-		tctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+		tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 		r, err := http.NewRequestWithContext(tctx, http.MethodDelete, c.dsn+"/"+dr.Context.SQLQueryID, http.NoBody)
 		if err != nil {
@@ -176,12 +176,16 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 				}
 			case "TIMESTAMP":
 				transformers[i] = func(v any) (any, error) {
-					t, err := time.Parse(time.RFC3339, v.(string))
-					if err != nil {
-						return nil, err
+					switch v := v.(type) {
+					case string:
+						t, err := time.Parse(time.RFC3339, v)
+						if err != nil {
+							return nil, err
+						}
+						return t, nil
+					default:
+						return v, nil
 					}
-
-					return t, nil
 				}
 			case "ARRAY":
 				transformers[i] = func(v any) (any, error) {

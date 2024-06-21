@@ -14,6 +14,7 @@ cli.prepare:
 	git clone --quiet https://github.com/rilldata/rill-examples.git runtime/pkg/examples/embed/dist
 	rm -rf runtime/pkg/examples/embed/dist/.git
 	cp scripts/install.sh cli/pkg/installscript/embed/install.sh
+	go run scripts/embed_duckdb_ext/main.go
 
 .PHONY: coverage.go
 coverage.go:
@@ -40,6 +41,7 @@ proto.generate:
 	cd proto && buf generate --exclude-path rill/ui
 	cd proto && buf generate --template buf.gen.openapi-admin.yaml --path rill/admin
 	cd proto && buf generate --template buf.gen.openapi-runtime.yaml --path rill/runtime
+	cd proto && buf generate --template buf.gen.local.yaml --path rill/local
 	cd proto && buf generate --template buf.gen.ui.yaml
 	npm run generate:runtime-client -w web-common
 	npm run generate:client -w web-admin

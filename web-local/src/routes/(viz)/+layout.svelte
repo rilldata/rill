@@ -4,12 +4,12 @@
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
+  import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
-  import type { LayoutData } from "../$types";
+  import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
-  export let data: LayoutData;
-
-  $: ({ instanceId } = data);
+  $: ({ instanceId } = $runtime);
 
   $: ({
     params: { name: dashboardName },
@@ -17,6 +17,9 @@
   } = $page);
 
   $: dashboardsQuery = useValidDashboards(instanceId);
+  $: projectTitleQuery = useProjectTitle(instanceId);
+
+  $: projectTitle = $projectTitleQuery.data ?? "Untitled Rill Project";
 
   $: dashboards = $dashboardsQuery.data ?? [];
 
@@ -30,9 +33,19 @@
     return map;
   }, new Map<string, PathOption>());
 
-  $: pathParts = [dashboardOptions];
+  $: projectPath = <PathOption>{
+    label: projectTitle,
+    section: "project",
+    depth: -1,
+    href: "/",
+  };
 
-  $: currentPath = [dashboardName];
+  $: pathParts = [
+    new Map([[projectTitle.toLowerCase(), projectPath]]),
+    dashboardOptions,
+  ];
+
+  $: currentPath = [projectTitle, dashboardName];
 </script>
 
 <div class="flex flex-col size-full">
@@ -48,7 +61,9 @@
       PREVIEW
     </span>
     {#if route.id?.includes("dashboard")}
-      <DashboardCtAs metricViewName={dashboardName} />
+      <StateManagersProvider metricsViewName={dashboardName}>
+        <DashboardCtAs metricViewName={dashboardName} />
+      </StateManagersProvider>
     {/if}
   </header>
   <slot />

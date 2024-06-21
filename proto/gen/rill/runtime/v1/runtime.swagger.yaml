@@ -1,6 +1,6 @@
 swagger: "2.0"
 info:
-  title: rill/runtime/v1/export_format.proto
+  title: rill/runtime/v1/colors.proto
   version: version not set
 tags:
   - name: RuntimeService
@@ -1170,6 +1170,9 @@ paths:
               timeRange:
                 $ref: '#/definitions/v1TimeRange'
                 title: Optional. Defaults to unbounded
+              comparisonTimeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Optional, if omitted than the request prepares an aggregation without a comparison
               timeStart:
                 type: string
                 format: date-time
@@ -1183,6 +1186,12 @@ paths:
                 items:
                   type: string
                 title: Optional. List of dimensions/measures. No pivot is done if ommitted
+              aliases:
+                type: array
+                items:
+                  type: object
+                  $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
+                title: Optional
               where:
                 $ref: '#/definitions/v1Expression'
                 title: Optional
@@ -1205,6 +1214,8 @@ paths:
                 $ref: '#/definitions/v1MetricsViewFilter'
                 description: Deprecated. should be removed once UI is moved to use new filters
                 title: Optional
+              exact:
+                type: boolean
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/compare-toplist:
@@ -1421,6 +1432,58 @@ paths:
           required: false
           type: integer
           format: int32
+      tags:
+        - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/search:
+    post:
+      summary: MetricsViewSearch Get the data types of measures and dimensions
+      operationId: QueryService_MetricsViewSearch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewSearchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: string
+              search:
+                type: string
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Optional
+              where:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              having:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              limit:
+                type: integer
+                format: int32
+                title: Optional
+              priority:
+                type: integer
+                format: int32
       tags:
         - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
@@ -2600,6 +2663,12 @@ definitions:
         type: array
         items:
           type: string
+  MetricsViewSearchResponseSearchResult:
+    type: object
+    properties:
+      dimension:
+        type: string
+      value: {}
   MetricsViewSpecAvailableComparisonOffset:
     type: object
     properties:
@@ -2627,6 +2696,18 @@ definitions:
       - COMPARISON_MODE_TIME
       - COMPARISON_MODE_DIMENSION
     default: COMPARISON_MODE_UNSPECIFIED
+  MetricsViewSpecDimensionSelector:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Only for time dimensions (optional)
+      desc:
+        type: boolean
+        title: Only for when ordering (optional)
+    title: Selector for a dimension
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2643,6 +2724,15 @@ definitions:
       unnest:
         type: boolean
     title: Dimensions are columns to filter and group by
+  MetricsViewSpecMeasureType:
+    type: string
+    enum:
+      - MEASURE_TYPE_UNSPECIFIED
+      - MEASURE_TYPE_SIMPLE
+      - MEASURE_TYPE_DERIVED
+      - MEASURE_TYPE_TIME_COMPARISON
+    default: MEASURE_TYPE_UNSPECIFIED
+    title: Type of measure query to generate
   MetricsViewSpecMeasureV2:
     type: object
     properties:
@@ -2650,6 +2740,24 @@ definitions:
         type: string
       expression:
         type: string
+      type:
+        $ref: '#/definitions/MetricsViewSpecMeasureType'
+      window:
+        $ref: '#/definitions/MetricsViewSpecMeasureWindow'
+      perDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+      requiredDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+      referencedMeasures:
+        type: array
+        items:
+          type: string
       label:
         type: string
       description:
@@ -2661,6 +2769,22 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
+  MetricsViewSpecMeasureWindow:
+    type: object
+    properties:
+      partition:
+        type: boolean
+        title: If true, partitions the window by all present dimensions except those in order_by
+      orderBy:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+        description: Dimensions to order the window by. Must be present in required_dimensions.
+      frameExpression:
+        type: string
+        title: Raw SQL expression to use as the frame (starting with "ROWS ...")
+    title: Window to apply to the measure calculation
   MetricsViewSpecSecurityV2:
     type: object
     properties:
@@ -2669,7 +2793,12 @@ definitions:
         title: Dashboard level access condition
       rowFilter:
         type: string
-        title: row level access condition
+        title: SQL expression to apply in a WHERE clause against the underlying table
+      queryFilter:
+        $ref: '#/definitions/v1Expression'
+        description: |-
+          Dimension filter to apply to queries against the metrics view.
+          Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
       include:
         type: array
         items:
@@ -2998,6 +3127,9 @@ definitions:
           type: object
           $ref: '#/definitions/v1ResourceName'
         title: List of resources that appear to use the connector
+      errorMessage:
+        type: string
+        title: Error message if the connector is misconfigured
     description: AnalyzedConnector contains information about a connector that is referenced in the project files.
   v1AssertionResult:
     type: object
@@ -3408,6 +3540,8 @@ definitions:
         type: object
       definedInDashboard:
         type: boolean
+      subtitle:
+        type: string
   v1ComponentState:
     type: object
   v1Condition:
@@ -3434,6 +3568,11 @@ definitions:
         additionalProperties:
           type: string
         title: Config for the connector
+      configFromVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
   v1ConnectorDriver:
     type: object
     properties:
@@ -3480,6 +3619,34 @@ definitions:
       implementsNotifier:
         type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
+  v1ConnectorSpec:
+    type: object
+    properties:
+      driver:
+        type: string
+      properties:
+        type: object
+        additionalProperties:
+          type: string
+      propertiesFromVariables:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          properties_from_variables stores properties whose value is a variable.
+          NOTE : properties_from_variables and properties both should be used to get all properties.
+  v1ConnectorState:
+    type: object
+    properties:
+      specHash:
+        type: string
+  v1ConnectorV2:
+    type: object
+    properties:
+      spec:
+        $ref: '#/definitions/v1ConnectorSpec'
+      state:
+        $ref: '#/definitions/v1ConnectorState'
   v1CreateDirectoryResponse:
     type: object
     title: Response message for RuntimeService.CreateDirectory
@@ -3538,6 +3705,8 @@ definitions:
     properties:
       component:
         type: string
+      definedInDashboard:
+        type: boolean
       x:
         type: integer
         format: int64
@@ -3621,6 +3790,8 @@ definitions:
       val: {}
       cond:
         $ref: '#/definitions/v1Condition'
+      subquery:
+        $ref: '#/definitions/v1Subquery'
   v1FileEvent:
     type: string
     enum:
@@ -3911,6 +4082,38 @@ definitions:
         title: Required if BUILTIN_MEASURE_COUNT_DISTINCT
       filter:
         $ref: '#/definitions/v1Expression'
+      count:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeCount'
+      countDistinct:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeCountDistinct'
+      comparisonValue:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonValue'
+      comparisonDelta:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonDelta'
+      comparisonRatio:
+        $ref: '#/definitions/v1MetricsViewAggregationMeasureComputeComparisonRatio'
+  v1MetricsViewAggregationMeasureComputeComparisonDelta:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonRatio:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeComparisonValue:
+    type: object
+    properties:
+      measure:
+        type: string
+  v1MetricsViewAggregationMeasureComputeCount:
+    type: object
+  v1MetricsViewAggregationMeasureComputeCountDistinct:
+    type: object
+    properties:
+      dimension:
+        type: string
   v1MetricsViewAggregationRequest:
     type: object
     properties:
@@ -3940,6 +4143,9 @@ definitions:
       timeRange:
         $ref: '#/definitions/v1TimeRange'
         title: Optional. Defaults to unbounded
+      comparisonTimeRange:
+        $ref: '#/definitions/v1TimeRange'
+        title: Optional, if omitted than the request prepares an aggregation without a comparison
       timeStart:
         type: string
         format: date-time
@@ -3953,6 +4159,12 @@ definitions:
         items:
           type: string
         title: Optional. List of dimensions/measures. No pivot is done if ommitted
+      aliases:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MetricsViewComparisonMeasureAlias'
+        title: Optional
       where:
         $ref: '#/definitions/v1Expression'
         title: Optional
@@ -3975,6 +4187,8 @@ definitions:
         $ref: '#/definitions/v1MetricsViewFilter'
         description: Deprecated. should be removed once UI is moved to use new filters
         title: Optional
+      exact:
+        type: boolean
   v1MetricsViewAggregationResponse:
     type: object
     properties:
@@ -4227,6 +4441,14 @@ definitions:
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+  v1MetricsViewSearchResponse:
+    type: object
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSearchResponseSearchResult'
   v1MetricsViewSort:
     type: object
     properties:
@@ -4536,39 +4758,49 @@ definitions:
   v1ModelSpec:
     type: object
     properties:
-      connector:
-        type: string
-      sql:
-        type: string
-      materialize:
-        type: boolean
       refreshSchedule:
         $ref: '#/definitions/v1Schedule'
       timeoutSeconds:
         type: integer
         format: int64
-      usesTemplating:
+      incremental:
         type: boolean
-      stageChanges:
-        type: boolean
-        title: Fields not derived from code files
-      materializeDelaySeconds:
-        type: integer
-        format: int64
+      incrementalStateResolver:
+        type: string
+      incrementalStateResolverProperties:
+        type: object
+      inputConnector:
+        type: string
+      inputProperties:
+        type: object
+      outputConnector:
+        type: string
+      outputProperties:
+        type: object
       trigger:
         type: boolean
   v1ModelState:
     type: object
     properties:
-      connector:
+      executorConnector:
         type: string
-      table:
+      resultConnector:
+        type: string
+      resultProperties:
+        type: object
+      resultTable:
         type: string
       specHash:
+        type: string
+      refsHash:
         type: string
       refreshedOn:
         type: string
         format: date-time
+      incrementalState:
+        type: object
+      incrementalStateSchema:
+        $ref: '#/definitions/v1StructType'
   v1ModelV2:
     type: object
     properties:
@@ -4928,6 +5160,16 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      watermarkInherit:
+        type: boolean
+        description: If true, will use the lowest watermark of its refs instead of the trigger time.
+      intervalsIsoDuration:
+        type: string
+      intervalsLimit:
+        type: integer
+        format: int32
+      intervalsCheckUnclosed:
+        type: boolean
   v1ReportState:
     type: object
     properties:
@@ -4978,6 +5220,8 @@ definitions:
         $ref: '#/definitions/v1Dashboard'
       api:
         $ref: '#/definitions/v1API'
+      connector:
+        $ref: '#/definitions/v1ConnectorV2'
   v1ResourceEvent:
     type: string
     enum:
@@ -5147,6 +5391,19 @@ definitions:
           type: object
           $ref: '#/definitions/StructTypeField'
     title: StructType is a type composed of ordered, named and typed sub-fields
+  v1Subquery:
+    type: object
+    properties:
+      dimension:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
   v1TableCardinalityRequest:
     type: object
     properties:

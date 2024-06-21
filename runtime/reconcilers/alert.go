@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -708,7 +709,11 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 	if msg != nil {
 		if adminMeta != nil {
 			// Note: adminMeta may not always be available (if outside of cloud). In those cases, we leave the links blank (no clickthrough available).
-			msg.OpenLink = adminMeta.OpenURL
+			openLink, err := addExecutionTime(adminMeta.OpenURL, executionTime)
+			if err != nil {
+				return fmt.Errorf("failed to build open url: %w", err)
+			}
+			msg.OpenLink = openLink
 			msg.EditLink = adminMeta.EditURL
 		}
 
@@ -912,7 +917,7 @@ func formatMetricsViewAggregationResult(q *queries.MetricsViewAggregation, measu
 	row := q.Result.Data[0]
 	res := make(map[string]any)
 	for k, v := range row.AsMap() {
-		measureLabel, f := getMeasureLabelAndFormatter(k, measures, logger)
+		measureLabel, f := getComparisonMeasureLabelAndFormatter(k, q.Measures, measures, logger)
 		res[measureLabel] = formatValue(f, v, logger)
 	}
 	return res
@@ -932,7 +937,7 @@ func formatMetricsViewComparisonResult(q *queries.MetricsViewComparison, measure
 			res[measureLabel+" (Δ)"] = formatValue(f, v.DeltaAbs.AsInterface(), logger)
 		}
 		if v.DeltaRel != nil {
-			fp, err := formatter.NewPresetFormatter("percent", false)
+			fp, err := formatter.NewPresetFormatter("percentage", false)
 			if err != nil {
 				logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
 				fp = nil
@@ -941,6 +946,73 @@ func formatMetricsViewComparisonResult(q *queries.MetricsViewComparison, measure
 		}
 	}
 	return res
+}
+
+// getComparisonMeasureLabelAndFormatter gets the measure label and formatter by a measure name and adds a suffix if it was compared measure.
+// for relative change comparison it uses percent formatter, uses defined preset for everything else
+// if a measure is not found in the request list, it returns the measure name as the label and no formatter.
+// if the measure is not found in the metrics view measures, it returns the measure name as the label and no formatter.
+// if the formatter fails to load, it logs the error and returns the measure name as the label and no formatter.
+func getComparisonMeasureLabelAndFormatter(measureName string, reqMeasures []*runtimev1.MetricsViewAggregationMeasure, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (string, formatter.Formatter) {
+	var reqMeasure *runtimev1.MetricsViewAggregationMeasure
+	effectiveMeasure := measureName
+	for _, m := range reqMeasures {
+		if measureName == m.Name {
+			reqMeasure = m
+			// get the actual measure comparison is based on
+			switch v := m.Compute.(type) {
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+				effectiveMeasure = v.ComparisonValue.Measure
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+				effectiveMeasure = v.ComparisonDelta.Measure
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+				effectiveMeasure = v.ComparisonRatio.Measure
+			}
+			break
+		}
+	}
+	if reqMeasure == nil {
+		return measureName, nil
+	}
+
+	var measure *runtimev1.MetricsViewSpec_MeasureV2
+	for _, m := range measures {
+		if effectiveMeasure == m.Name {
+			measure = m
+			break
+		}
+	}
+
+	if measure == nil {
+		return effectiveMeasure, nil
+	}
+
+	measureLabel := measure.Label
+	if measureLabel == "" {
+		measureLabel = measureName
+	}
+	formatPreset := measure.FormatPreset
+	if effectiveMeasure != measureName {
+		// comparison measure, add a suffix based on type
+		switch reqMeasure.Compute.(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+			measureLabel += " (prev)"
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+			measureLabel += " (Δ)"
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+			measureLabel += " (Δ%)"
+			formatPreset = "percentage"
+		}
+	}
+
+	// D3 formatting isn't implemented yet so using the format preset only for now
+	f, err := formatter.NewPresetFormatter(formatPreset, false)
+	if err != nil {
+		logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
+		return measureLabel, nil
+	}
+
+	return measureLabel, f
 }
 
 // getMeasureLabelAndFormatter gets the measure label and formatter by a measure name.
@@ -980,9 +1052,23 @@ func formatValue(f formatter.Formatter, v any, logger *zap.Logger) any {
 	if f == nil || v == nil {
 		return v
 	}
-	if s, err := f.StringFormat(v); err != nil {
+	if s, err := f.StringFormat(v); err == nil {
 		return s
 	}
 	logger.Warn("Failed to format measure value", zap.Any("value", v))
 	return fmt.Sprintf("%v", v)
+}
+
+func addExecutionTime(openURL string, executionTime time.Time) (string, error) {
+	u, err := url.Parse(openURL)
+	if err != nil {
+		return "", err
+	}
+	q, err := url.ParseQuery(u.RawQuery)
+	if err != nil {
+		return "", err
+	}
+	q.Set("execution_time", executionTime.UTC().Format(time.RFC3339))
+	u.RawQuery = q.Encode()
+	return u.String(), nil
 }

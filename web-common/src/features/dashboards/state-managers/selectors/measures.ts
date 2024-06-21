@@ -1,4 +1,10 @@
-import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+import {
+  MetricsViewSpecDimensionSelector,
+  MetricsViewSpecMeasureType,
+  MetricsViewSpecMeasureV2,
+  V1MetricsViewSpec,
+  V1TimeGrain,
+} from "@rilldata/web-common/runtime-client";
 import type { DashboardDataSources } from "./types";
 
 export const allMeasures = ({
@@ -46,6 +52,114 @@ export const isMeasureValidPercentOfTotal = ({
   };
 };
 
+export const filteredSimpleMeasures = ({
+  metricsSpecQueryResult,
+}: DashboardDataSources) => {
+  return () => {
+    return (
+      metricsSpecQueryResult.data?.measures?.filter(
+        (m) =>
+          !m.window &&
+          m.type !== MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON,
+      ) ?? []
+    );
+  };
+};
+
+/**
+ * Selects measure valid for current dashboard selections.
+ * Also includes additional dimensions needed for any advanced measures.
+ */
+export const getFilteredMeasuresAndDimensions = ({
+  dashboard,
+}: Pick<DashboardDataSources, "dashboard">) => {
+  return (
+    metricsViewSpec: V1MetricsViewSpec,
+    measureNames: string[],
+  ): {
+    measures: string[];
+    dimensions: MetricsViewSpecDimensionSelector[];
+  } => {
+    const dimensions = new Map<string, V1TimeGrain>();
+    const measures = new Set<string>();
+    measureNames.forEach((measureName) => {
+      const measure = metricsViewSpec.measures?.find(
+        (m) => m.name === measureName,
+      );
+      if (
+        !measure ||
+        measure.type === MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON
+        // TODO: we need to send a single query for this support
+        // (measure.type ===
+        //   MetricsViewSpecMeasureType.MEASURE_TYPE_TIME_COMPARISON &&
+        //   (!dashboard.showTimeComparison ||
+        //     !dashboard.selectedComparisonTimeRange))
+      )
+        return;
+
+      let skipMeasure = false;
+      measure.requiredDimensions?.forEach((reqDim) => {
+        if (
+          reqDim.timeGrain !== V1TimeGrain.TIME_GRAIN_UNSPECIFIED &&
+          reqDim.timeGrain !== dashboard.selectedTimeRange?.interval
+        ) {
+          // filter out measures with dependant dimensions not matching the selected grain
+          skipMeasure = true;
+          return;
+        }
+        if (!reqDim.name) return;
+
+        const existingEntry = dimensions.get(reqDim.name);
+        if (existingEntry) {
+          if (existingEntry === V1TimeGrain.TIME_GRAIN_UNSPECIFIED) {
+            dimensions.set(
+              reqDim.name,
+              reqDim.timeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+            );
+          } else {
+            // mismatching measures are requested
+            skipMeasure = true;
+          }
+          return;
+        }
+
+        dimensions.set(
+          reqDim.name,
+          reqDim.timeGrain ?? V1TimeGrain.TIME_GRAIN_UNSPECIFIED,
+        );
+      });
+      if (skipMeasure) return;
+      measures.add(measureName);
+      measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
+    });
+    return {
+      measures: [...measures],
+      dimensions: [...dimensions.entries()].map(([name, timeGrain]) => ({
+        name,
+        timeGrain,
+      })),
+    };
+  };
+};
+
+export const getIndependentMeasures = (
+  metricsViewSpec: V1MetricsViewSpec,
+  measureNames: string[],
+) => {
+  const measures = new Set<string>();
+  measureNames.forEach((measureName) => {
+    const measure = metricsViewSpec.measures?.find(
+      (m) => m.name === measureName,
+    );
+    // temporary check for window measures until the PR to move to AggregationApi is merged
+    if (!measure || measure.requiredDimensions?.length || !!measure.window)
+      return;
+    measures.add(measureName);
+    measure.referencedMeasures?.filter((refMes) => measures.add(refMes));
+  });
+  return [...measures];
+};
+
 export const measureSelectors = {
   /**
    * Get all measures in the dashboard.
@@ -70,4 +184,8 @@ export const measureSelectors = {
    * Checks if the provided measure is a valid percent of total
    */
   isMeasureValidPercentOfTotal,
+
+  filteredSimpleMeasures,
+
+  getFilteredMeasuresAndDimensions,
 };

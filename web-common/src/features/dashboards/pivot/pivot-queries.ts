@@ -1,4 +1,3 @@
-import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -23,8 +22,14 @@ import {
   getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
   isTimeDimension,
+  prepareMeasureForComparison,
 } from "./pivot-utils";
-import type { PivotAxesData, PivotDataStoreConfig } from "./types";
+import {
+  COMPARISON_DELTA,
+  COMPARISON_PERCENT,
+  type PivotAxesData,
+  type PivotDataStoreConfig,
+} from "./types";
 
 /**
  * Wrapper function for Aggregate Query API
@@ -34,7 +39,6 @@ export function createPivotAggregationRowQuery(
   measures: V1MetricsViewAggregationMeasure[],
   dimensions: V1MetricsViewAggregationDimension[],
   whereFilter: V1Expression,
-  measureFilter: ResolvedMeasureFilter | undefined,
   sort: V1MetricsViewAggregationSort[] = [],
   limit = "100",
   offset = "0",
@@ -49,6 +53,17 @@ export function createPivotAggregationRowQuery(
     ];
   }
 
+  let hasComparison = false;
+  if (
+    measures.some(
+      (m) =>
+        m.name?.endsWith(COMPARISON_PERCENT) ||
+        m.name?.endsWith(COMPARISON_DELTA),
+    )
+  ) {
+    hasComparison = true;
+  }
+
   return derived(
     [ctx.runtime, ctx.metricsViewName, useTimeControlStore(ctx)],
     ([runtime, metricViewName, timeControls], set) =>
@@ -56,13 +71,19 @@ export function createPivotAggregationRowQuery(
         runtime.instanceId,
         metricViewName,
         {
-          measures,
+          measures: prepareMeasureForComparison(measures),
           dimensions,
-          where: sanitiseExpression(whereFilter, measureFilter?.filter),
+          where: sanitiseExpression(whereFilter, undefined),
           timeRange: {
             start: timeRange?.start ? timeRange.start : timeControls.timeStart,
             end: timeRange?.end ? timeRange.end : timeControls.timeEnd,
           },
+          comparisonTimeRange: hasComparison
+            ? {
+                start: timeControls.comparisonTimeStart,
+                end: timeControls.comparisonTimeEnd,
+              }
+            : undefined,
           sort,
           limit,
           offset,
@@ -137,7 +158,6 @@ export function getAxisForDimensions(
         measures,
         [dimension],
         whereFilter,
-        config.measureFilter,
         sortByForDimension,
         limit,
         offset,
@@ -178,26 +198,36 @@ export function getAxisQueryForMeasureTotals(
   config: PivotDataStoreConfig,
   isMeasureSortAccessor: boolean,
   sortAccessor: string | undefined,
+  anchorDimension: string,
   rowDimensionValues: string[],
   timeRange: TimeRangeString,
+  otherFilters: V1Expression | undefined = undefined,
 ) {
   let rowAxesQueryForMeasureTotals: Readable<PivotAxesData | null> =
     readable(null);
 
   if (rowDimensionValues.length && isMeasureSortAccessor && sortAccessor) {
-    const { measureNames, rowDimensionNames } = config;
+    const { measureNames } = config;
     const measuresBody = measureNames.map((m) => ({ name: m }));
 
     const sortedRowFilters = getFilterForMeasuresTotalsAxesQuery(
       config,
+      anchorDimension,
       rowDimensionValues,
     );
+
+    let mergedFilter: V1Expression | undefined = sortedRowFilters;
+
+    if (otherFilters) {
+      mergedFilter = mergeFilters(otherFilters, sortedRowFilters);
+    }
+
     rowAxesQueryForMeasureTotals = getAxisForDimensions(
       ctx,
       config,
-      rowDimensionNames.slice(0, 1),
+      [anchorDimension],
       measuresBody,
-      sortedRowFilters,
+      mergedFilter ?? createAndExpression([]),
       [],
       timeRange,
     );
@@ -232,10 +262,9 @@ export function getTotalsRowQuery(
       createInExpression(dimension, colDimensionAxes[dimension]),
     );
 
-  const mergedFilter = mergeFilters(
-    createAndExpression(colFilters),
-    config.whereFilter,
-  );
+  const mergedFilter =
+    mergeFilters(createAndExpression(colFilters), config.whereFilter) ??
+    createAndExpression([]);
 
   const sortBy = [
     {
@@ -248,7 +277,6 @@ export function getTotalsRowQuery(
     measureBody,
     dimensionBody,
     mergedFilter,
-    config.measureFilter,
     sortBy,
     "300",
   );

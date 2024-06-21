@@ -1,14 +1,12 @@
 <script lang="ts">
-  import { afterNavigate, goto } from "$app/navigation";
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "../../client";
-  import Tab from "../../components/tabs/Tab.svelte";
-  import TabGroup from "../../components/tabs/TabGroup.svelte";
-  import TabList from "../../components/tabs/TabList.svelte";
   import ProjectDeploymentStatusChip from "./status/ProjectDeploymentStatusChip.svelte";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
+  $: ({
+    url: { pathname },
+    params: { organization, project },
+  } = $page);
 
   // Get the list of tabs to display, depending on the user's permissions
   $: tabsQuery = createAdminServiceGetProject(
@@ -50,52 +48,43 @@
       },
     },
   );
+
   $: tabs = $tabsQuery.data;
-
-  function getCurrentTabIndex(tabs: { route: string }[], pathname: string) {
-    return tabs.findIndex((tab) => {
-      return tab.route === pathname;
-    });
-  }
-  $: currentTabIndex = tabs && getCurrentTabIndex(tabs, $page.url.pathname);
-
-  function handleTabChange(event: CustomEvent) {
-    // Navigate to the new tab
-    goto(`${tabs[event.detail].route}`);
-  }
-
-  afterNavigate((nav) => {
-    // If changing to a new project, switch to the dashboards tab
-    if (nav.from?.params && nav.to.params.project !== nav.from.params.project) {
-      // We use DOM manipulation here because the library does not support controlled tabs
-      // See: https://github.com/rgossiaux/svelte-headlessui/issues/80
-      const dashboardTab = Array.from(
-        document.querySelectorAll('button[role="tab"]'),
-      ).find(
-        (el) => (el as HTMLElement).innerText === "Dashboards",
-      ) as HTMLButtonElement;
-      dashboardTab.click();
-    }
-  });
 </script>
 
 {#if tabs}
-  <div class="pl-[17px] border-b pt-1 pb-[3px]">
-    <TabGroup defaultIndex={currentTabIndex} on:change={handleTabChange}>
-      <TabList>
-        {#each tabs as tab}
-          <Tab>
-            {tab.label}
-            {#if tab.label === "Status"}
-              <ProjectDeploymentStatusChip
-                {organization}
-                {project}
-                iconOnly={true}
-              />
-            {/if}
-          </Tab>
-        {/each}
-      </TabList>
-    </TabGroup>
-  </div>
+  <nav>
+    {#each tabs as tab (tab.route)}
+      <a href={tab.route} class:selected={pathname === tab.route}>
+        {tab.label}
+        {#if tab.label === "Status"}
+          <ProjectDeploymentStatusChip
+            {organization}
+            {project}
+            iconOnly={true}
+          />
+        {/if}
+      </a>
+    {/each}
+  </nav>
 {/if}
+
+<style lang="postcss">
+  a {
+    @apply p-2 flex gap-x-1 items-center;
+    @apply rounded-sm text-gray-500;
+    @apply text-xs font-medium justify-center;
+  }
+
+  .selected {
+    @apply text-gray-900;
+  }
+
+  a:hover {
+    @apply bg-slate-100 text-gray-700;
+  }
+
+  nav {
+    @apply flex gap-x-6 px-[17px] border-b pt-1 pb-[3px];
+  }
+</style>

@@ -1,53 +1,42 @@
 <script lang="ts">
   import type { EditorView } from "@codemirror/view";
-  import YAMLEditor from "@rilldata/web-common/components/editor/YAMLEditor.svelte";
   import type { V1ParseError } from "@rilldata/web-common/runtime-client";
-  import { createEventDispatcher } from "svelte";
   import { setLineStatuses } from "../../../components/editor/line-status";
   import { mapParseErrorsToLines } from "../../metrics-views/errors";
+  import Editor from "../../editor/Editor.svelte";
+  import { FileExtensionToEditorExtension } from "../../editor/getExtensionsForFile";
+  import { FileArtifact } from "../../entity-management/file-artifact";
 
-  const dispatch = createEventDispatcher();
-
-  export let blob: string;
-  export let latest: string;
-  export let hasUnsavedChanges: boolean;
   export let allErrors: V1ParseError[];
-  export let filePath: string;
+  export let fileArtifact: FileArtifact;
+  export let onSave: () => void = () => {};
 
-  let view: EditorView;
+  $: ({ remoteContent, localContent } = fileArtifact);
 
-  $: latest = blob;
+  let editor: EditorView;
 
-  function handleUpdate(e: CustomEvent<{ content: string }>) {
-    latest = e.detail.content;
-
+  function handleUpdate() {
+    onSave();
     // Clear line errors (it's confusing when they're outdated)
-    setLineStatuses([], view);
+    setLineStatuses([], editor);
   }
 
   //  Handle errors
-  $: if (view) setLineStatuses(mapParseErrorsToLines(allErrors, blob), view);
-
-  function handleModSave(event: KeyboardEvent) {
-    // Check if a Modifier Key + S is pressed
-    if (!(event.metaKey || event.ctrlKey) || event.key !== "s") return;
-
-    event.preventDefault();
-
-    if (!hasUnsavedChanges) return;
-    dispatch("save");
-  }
+  $: if (editor)
+    setLineStatuses(
+      mapParseErrorsToLines(allErrors, $localContent ?? $remoteContent ?? ""),
+      editor,
+    );
 </script>
-
-<svelte:window on:keydown={handleModSave} />
 
 <div class="editor flex flex-col border border-gray-200 rounded h-full">
   <div class="grow flex bg-white overflow-y-auto rounded">
-    <YAMLEditor
-      content={latest}
-      bind:view
-      on:save={handleUpdate}
-      key={filePath}
+    <Editor
+      {fileArtifact}
+      extensions={FileExtensionToEditorExtension[".yaml"]}
+      bind:editor
+      forceDisableAutoSave
+      onSave={handleUpdate}
     />
   </div>
 </div>

@@ -1,110 +1,49 @@
 <script lang="ts">
-  import { afterNavigate, beforeNavigate, goto } from "$app/navigation";
-  import { page } from "$app/stores";
-  import WorkspaceError from "@rilldata/web-common/components/WorkspaceError.svelte";
+  import { afterNavigate } from "$app/navigation";
   import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
   import FileWorkspaceHeader from "@rilldata/web-common/features/editor/FileWorkspaceHeader.svelte";
-  import { FILES_WITHOUT_AUTOSAVE } from "@rilldata/web-common/features/editor/config";
   import { getExtensionsForFile } from "@rilldata/web-common/features/editor/getExtensionsForFile";
-  import { addLeadingSlash } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { directoryState } from "@rilldata/web-common/features/file-explorer/directory-store";
-  import UnsavedSourceDialog from "@rilldata/web-common/features/sources/editor/UnsavedSourceDialog.svelte";
-  import { extractFileExtension } from "@rilldata/web-common/features/sources/extract-file-name";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
-  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
-  import {
-    createRuntimeServiceGetFile,
-    createRuntimeServicePutFile,
-  } from "@rilldata/web-common/runtime-client";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
-  import SourceModelPage from "../../[type=workspace]/[name]/+page.svelte";
-  import ChartPage from "../../chart/[name]/+page.svelte";
-  import CustomDashboardPage from "../../custom-dashboards/[name]/+page.svelte";
-  import DashboardPage from "../../dashboard/[name]/edit/+page.svelte";
+  import type { EditorView } from "@codemirror/view";
+  import SourceWorkspace from "@rilldata/web-common/features/workspaces/SourceWorkspace.svelte";
+  import ModelWorkspace from "@rilldata/web-common/features/workspaces/ModelWorkspace.svelte";
+  import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
+  import ChartWorkspace from "@rilldata/web-common/features/workspaces/ChartWorkspace.svelte";
+  import CustomDashboardWorkspace from "@rilldata/web-common/features/workspaces/CustomDashboardWorkspace.svelte";
 
-  const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
+  const workspaces = new Map([
+    [ResourceKind.Source, SourceWorkspace],
+    [ResourceKind.Model, ModelWorkspace],
+    [ResourceKind.MetricsView, MetricsWorkspace],
+    [ResourceKind.Component, ChartWorkspace],
+    [ResourceKind.Dashboard, CustomDashboardWorkspace],
+    [undefined, null],
+  ]);
 
-  let interceptedUrl: string | null = null;
+  export let data;
 
-  const putFile = createRuntimeServicePutFile(); // TODO: optimistically update the Get File cache
+  let editor: EditorView;
 
-  $: filePath = addLeadingSlash($page.params.file);
-  $: fileExtension = extractFileExtension(filePath);
-  $: fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(fileExtension);
+  $: ({ filePath, fileArtifact } = data);
+  $: ({ autoSave, hasUnsavedChanges, fileName, name } = fileArtifact);
 
-  $: fileQuery = createRuntimeServiceGetFile(
-    $runtime.instanceId,
-    { path: filePath },
-    {
-      query: {
-        enabled: !fileTypeUnsupported,
-      },
-    },
-  );
-  $: fileError = !!$fileQuery.error;
-  $: fileErrorMessage = $fileQuery.error?.response.data.message;
-  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
-  $: name = fileArtifact.name;
-  $: resourceKind = $name?.kind;
+  $: resourceKind = <ResourceKind | undefined>$name?.kind;
 
-  $: isSource = resourceKind === ResourceKind.Source;
-  $: isModel = resourceKind === ResourceKind.Model;
-  $: isDashboard = resourceKind === ResourceKind.MetricsView;
-  $: isChart = resourceKind === ResourceKind.Component;
-  $: isCustomDashboard = resourceKind === ResourceKind.Dashboard;
-  $: isOther =
-    !isSource && !isModel && !isDashboard && !isChart && !isCustomDashboard;
+  $: workspace = workspaces.get(resourceKind);
 
   onMount(() => {
     expandDirectory(filePath);
-
     // TODO: Focus on the code editor
   });
 
   afterNavigate(() => {
     expandDirectory(filePath);
-
     // TODO: Focus on the code editor
   });
-
-  beforeNavigate((e) => {
-    if (!hasUnsavedChanges || interceptedUrl) return;
-
-    e.cancel();
-
-    if (e.to) interceptedUrl = e.to.url.href;
-  });
-
-  let blob = "";
-  $: blob = $fileQuery.data?.blob ?? blob;
-
-  $: latest = blob;
-  $: hasUnsavedChanges = latest !== blob;
-
-  $: pathname = $page.url.pathname;
-  $: workspace = workspaces.get(pathname);
-  $: autoSave = workspace.editor.autoSave;
-  $: disableAutoSave = FILES_WITHOUT_AUTOSAVE.includes(filePath);
-
-  async function save() {
-    if (!hasUnsavedChanges) return;
-
-    await $putFile.mutateAsync({
-      instanceId: $runtime.instanceId,
-      data: {
-        path: filePath,
-        blob: latest,
-      },
-    });
-  }
-
-  function revert() {
-    latest = blob;
-  }
 
   // TODO: move this logic into the DirectoryState
   // TODO: expand all directories in the path, not just the last one
@@ -112,66 +51,28 @@
     const directory = filePath.split("/").slice(0, -1).join("/");
     directoryState.expand(directory);
   }
-
-  function handleConfirm() {
-    if (!interceptedUrl) return;
-    const url = interceptedUrl;
-    latest = blob;
-    hasUnsavedChanges = false;
-    interceptedUrl = null;
-    goto(url).catch(console.error);
-  }
-
-  function handleCancel() {
-    interceptedUrl = null;
-  }
 </script>
 
-{#if fileTypeUnsupported}
-  <WorkspaceError message="Unsupported file type." />
-{:else if fileError}
-  <WorkspaceError message={`Error loading file: ${fileErrorMessage}`} />
-{:else if isSource || isModel}
-  <SourceModelPage data={{ fileArtifact }} />
-{:else if isDashboard}
-  <DashboardPage data={{ fileArtifact }} />
-{:else if isChart}
-  {#key $page.params.file}
-    <ChartPage data={{ fileArtifact }} />
-  {/key}
-{:else if isCustomDashboard}
-  <CustomDashboardPage data={{ fileArtifact }} />
-{:else if isOther}
+<svelte:head>
+  <title>Rill Developer | {fileName}</title>
+</svelte:head>
+
+{#if workspace}
+  <svelte:component this={workspace} {fileArtifact} />
+{:else}
   <WorkspaceContainer inspector={false}>
     <FileWorkspaceHeader
-      filePath={$page.params.file}
-      {hasUnsavedChanges}
       slot="header"
+      {filePath}
+      hasUnsavedChanges={$hasUnsavedChanges}
     />
-    <div
-      slot="body"
-      class="editor-pane size-full overflow-hidden flex flex-col"
-    >
-      <WorkspaceEditorContainer>
-        <Editor
-          {blob}
-          {hasUnsavedChanges}
-          extensions={getExtensionsForFile(filePath)}
-          {disableAutoSave}
-          bind:latest
-          bind:autoSave={$autoSave}
-          on:save={save}
-          on:revert={revert}
-        />
-      </WorkspaceEditorContainer>
-    </div>
+    <WorkspaceEditorContainer slot="body">
+      <Editor
+        {fileArtifact}
+        extensions={getExtensionsForFile(filePath)}
+        bind:editor
+        bind:autoSave={$autoSave}
+      />
+    </WorkspaceEditorContainer>
   </WorkspaceContainer>
-{/if}
-
-{#if interceptedUrl}
-  <UnsavedSourceDialog
-    context="file"
-    on:confirm={handleConfirm}
-    on:cancel={handleCancel}
-  />
 {/if}

@@ -48,7 +48,7 @@ describe("Line Status BG Highlighter Extension (CodeMirror)", () => {
   });
 
   it("renders a set of line statuses & correctly updates them", () => {
-    setLineStatuses([{ line: 2, level: "error" }], view);
+    setLineStatuses([{ line: 2, level: "error" }], view, false);
     let lines = getLines(container);
     expect(lines[1].className.includes("cm-line-error")).toBe(true);
 
@@ -59,6 +59,7 @@ describe("Line Status BG Highlighter Extension (CodeMirror)", () => {
         { line: 3, level: "error" },
       ],
       view,
+      false,
     );
     lines = getLines(container);
     Array.from(lines).forEach((line, i) => {
@@ -68,7 +69,7 @@ describe("Line Status BG Highlighter Extension (CodeMirror)", () => {
     });
 
     // remove all line statuses.
-    setLineStatuses([], view);
+    setLineStatuses([], view, false);
     lines = getLines(container);
     expect(
       Array.from(lines).every(
@@ -78,7 +79,7 @@ describe("Line Status BG Highlighter Extension (CodeMirror)", () => {
   });
 
   it("does not render line statuses whose line number is greater than the number of lines in the doc", () => {
-    setLineStatuses([{ line: 100, level: "error" }], view);
+    setLineStatuses([{ line: 100, level: "error" }], view, false);
     const lines = getLines(container);
     expect(
       Array.from(lines).every(

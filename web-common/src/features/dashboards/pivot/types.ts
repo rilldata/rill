@@ -1,4 +1,4 @@
-import type { ResolvedMeasureFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
@@ -12,6 +12,10 @@ import type {
   SortingState,
 } from "@tanstack/svelte-table";
 import type { Readable } from "svelte/motion";
+
+export const COMPARISON_VALUE = "__comparison_value";
+export const COMPARISON_DELTA = "__comparison_delta";
+export const COMPARISON_PERCENT = "__comparison_percent";
 
 export interface PivotDataState {
   isFetching: boolean;
@@ -33,6 +37,7 @@ export interface PivotState {
   sorting: SortingState;
   columnPage: number;
   rowPage: number;
+  enableComparison: boolean;
   rowJoinType: PivotRowJoinType;
 }
 
@@ -77,9 +82,10 @@ export interface PivotDataStoreConfig {
   allMeasures: MetricsViewSpecMeasureV2[];
   allDimensions: MetricsViewSpecDimensionV2[];
   whereFilter: V1Expression;
-  measureFilter: ResolvedMeasureFilter;
   pivot: PivotState;
   time: PivotTimeConfig;
+  enableComparison: boolean;
+  comparisonTime: TimeRangeString | undefined;
 }
 
 export interface PivotAxesData {
@@ -143,3 +149,5 @@ export enum PivotChipType {
   Measure = "measure",
   Dimension = "dimension",
 }
+
+export type MeasureType = "measure" | "comparison_delta" | "comparison_percent";

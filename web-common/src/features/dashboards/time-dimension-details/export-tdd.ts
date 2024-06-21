@@ -1,5 +1,5 @@
 import { getDimensionFilterWithSearch } from "@rilldata/web-common/features/dashboards/dimension-table/dimension-table-utils";
-import { getResolvedMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type {
   V1ExportFormat,
@@ -25,17 +25,19 @@ export default async function exportTDD({
   const selectedTimeRange = get(
     ctx.selectors.timeRangeSelectors.selectedTimeRangeState,
   );
-  const measureFilters = await getResolvedMeasureFilters(ctx);
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
   const dimensionName = dashboard.selectedComparisonDimension as string;
 
   const where = sanitiseExpression(
-    getDimensionFilterWithSearch(
-      dashboard?.whereFilter,
-      dashboard?.dimensionSearchText ?? "",
-      dimensionName,
+    mergeMeasureFilters(
+      dashboard,
+      getDimensionFilterWithSearch(
+        dashboard?.whereFilter,
+        dashboard?.dimensionSearchText ?? "",
+        dimensionName,
+      ),
     ),
-    measureFilters,
+    undefined,
   );
 
   const result = await get(query).mutateAsync({

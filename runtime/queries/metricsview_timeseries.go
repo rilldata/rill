@@ -12,6 +12,7 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/duration"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/pkg/timeutil"
@@ -78,12 +79,6 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		return fmt.Errorf("metrics view '%s' does not have a time dimension", q.MetricsViewName)
 	}
 
-	olap, release, err := rt.OLAP(ctx, instanceID, q.MetricsView.Connector)
-	if err != nil {
-		return err
-	}
-	defer release()
-
 	ctrl, err := rt.Controller(ctx, instanceID)
 	if err != nil {
 		return err
@@ -93,6 +88,35 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	if err != nil {
 		return err
 	}
+	mv := r.GetMetricsView().Spec
+
+	// Attempt to route to metricsview executor
+	qry, ok, err := q.rewriteToMetricsViewQuery()
+	if err != nil {
+		return fmt.Errorf("error rewriting to metrics query: %w", err)
+	}
+	if ok {
+		e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, q.ResolvedMVSecurity, priority)
+		if err != nil {
+			return err
+		}
+		defer e.Close()
+
+		res, _, err := e.Query(ctx, qry, nil)
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		return q.populateResult(res, q.MetricsView.TimeDimension, mv)
+	}
+	// Falling back to the old implementation
+
+	olap, release, err := rt.OLAP(ctx, instanceID, q.MetricsView.Connector)
+	if err != nil {
+		return err
+	}
+	defer release()
 
 	// backwards compatibility
 	if q.Filter != nil {
@@ -102,7 +126,6 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 		q.Where = convertFilterToExpression(q.Filter)
 	}
 
-	mv := r.GetMetricsView().Spec
 	sql, tsAlias, args, err := q.buildMetricsTimeseriesSQL(olap, mv, q.ResolvedMVSecurity)
 	if err != nil {
 		return fmt.Errorf("error building query: %w", err)
@@ -119,104 +142,7 @@ func (q *MetricsViewTimeSeries) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer rows.Close()
 
-	// Omit the time value from the result schema
-	schema := rows.Schema
-	if schema != nil {
-		for i, f := range schema.Fields {
-			if f.Name == tsAlias {
-				schema.Fields = slices.Delete(schema.Fields, i, i+1)
-				break
-			}
-		}
-	}
-
-	tz := time.UTC
-	if q.TimeZone != "" {
-		tz, err = time.LoadLocation(q.TimeZone)
-		if err != nil {
-			return fmt.Errorf("invalid timezone '%s': %w", q.TimeZone, err)
-		}
-	}
-
-	fdow := mv.FirstDayOfWeek
-	if mv.FirstDayOfWeek > 7 || mv.FirstDayOfWeek <= 0 {
-		fdow = 1
-	}
-
-	fmoy := mv.FirstMonthOfYear
-	if mv.FirstMonthOfYear > 12 || mv.FirstMonthOfYear <= 0 {
-		fmoy = 1
-	}
-
-	dur := timeGrainToDuration(q.TimeGranularity)
-
-	var start time.Time
-	var zeroTime time.Time
-	var data []*runtimev1.TimeSeriesValue
-	nullRecords := generateNullRecords(schema)
-	rowMap := make(map[string]any)
-	for rows.Next() {
-		err := rows.MapScan(rowMap)
-		if err != nil {
-			return err
-		}
-
-		var t time.Time
-		switch v := rowMap[tsAlias].(type) {
-		case time.Time:
-			t = v
-		case *time.Time:
-			if v != nil {
-				t = *v
-			}
-		case int64:
-			if olap.Dialect() != drivers.DialectPinot {
-				panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
-			}
-			t = time.UnixMilli(v)
-		default:
-			panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
-		}
-		delete(rowMap, tsAlias)
-
-		records, err := pbutil.ToStruct(rowMap, schema)
-		if err != nil {
-			return err
-		}
-
-		if zeroTime.Equal(start) {
-			if q.TimeStart != nil {
-				start = timeutil.TruncateTime(q.TimeStart.AsTime(), convTimeGrain(q.TimeGranularity), tz, int(fdow), int(fmoy))
-				data = addNulls(data, nullRecords, start, t, dur, tz)
-			}
-		} else {
-			data = addNulls(data, nullRecords, start, t, dur, tz)
-		}
-
-		data = append(data, &runtimev1.TimeSeriesValue{
-			Ts:      timestamppb.New(t),
-			Records: records,
-		})
-		start = addTo(t, dur, tz)
-	}
-	if q.TimeEnd != nil && nullRecords != nil {
-		if start.Equal(zeroTime) && q.TimeStart != nil {
-			start = q.TimeStart.AsTime()
-		}
-
-		if !start.Equal(zeroTime) {
-			data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), dur, tz)
-		}
-	}
-
-	meta := structTypeToMetricsViewColumn(rows.Schema)
-
-	q.Result = &runtimev1.MetricsViewTimeSeriesResponse{
-		Meta: meta,
-		Data: data,
-	}
-
-	return nil
+	return q.populateResult(rows, tsAlias, mv)
 }
 
 func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
@@ -262,6 +188,105 @@ func (q *MetricsViewTimeSeries) Export(ctx context.Context, rt *runtime.Runtime,
 		return WriteXLSX(meta, tmp, w)
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
 		return WriteParquet(meta, tmp, w)
+	}
+
+	return nil
+}
+
+func (q *MetricsViewTimeSeries) populateResult(rows *drivers.Result, tsAlias string, mv *runtimev1.MetricsViewSpec) error {
+	// Omit the time value from the result schema
+	schema := rows.Schema
+	if schema != nil {
+		for i, f := range schema.Fields {
+			if f.Name == tsAlias {
+				schema.Fields = slices.Delete(schema.Fields, i, i+1)
+				break
+			}
+		}
+	}
+
+	tz := time.UTC
+	if q.TimeZone != "" {
+		var err error
+		tz, err = time.LoadLocation(q.TimeZone)
+		if err != nil {
+			return fmt.Errorf("invalid timezone '%s': %w", q.TimeZone, err)
+		}
+	}
+
+	fdow := mv.FirstDayOfWeek
+	if mv.FirstDayOfWeek > 7 || mv.FirstDayOfWeek <= 0 {
+		fdow = 1
+	}
+
+	fmoy := mv.FirstMonthOfYear
+	if mv.FirstMonthOfYear > 12 || mv.FirstMonthOfYear <= 0 {
+		fmoy = 1
+	}
+
+	dur := timeGrainToDuration(q.TimeGranularity)
+
+	var start time.Time
+	var zeroTime time.Time
+	var data []*runtimev1.TimeSeriesValue
+	nullRecords := generateNullRecords(schema)
+	rowMap := make(map[string]any)
+	for rows.Next() {
+		err := rows.MapScan(rowMap)
+		if err != nil {
+			return err
+		}
+
+		var t time.Time
+		switch v := rowMap[tsAlias].(type) {
+		case time.Time:
+			t = v
+		case *time.Time:
+			if v != nil {
+				t = *v
+			}
+		case int64:
+			t = time.UnixMilli(v)
+		default:
+			panic(fmt.Sprintf("unexpected type for timestamp column: %T", v))
+		}
+		delete(rowMap, tsAlias)
+
+		records, err := pbutil.ToStruct(rowMap, schema)
+		if err != nil {
+			return err
+		}
+
+		if zeroTime.Equal(start) {
+			if q.TimeStart != nil {
+				start = timeutil.TruncateTime(q.TimeStart.AsTime(), convTimeGrain(q.TimeGranularity), tz, int(fdow), int(fmoy))
+				data = addNulls(data, nullRecords, start, t, dur, tz)
+			}
+		} else {
+			data = addNulls(data, nullRecords, start, t, dur, tz)
+		}
+
+		data = append(data, &runtimev1.TimeSeriesValue{
+			Ts:      timestamppb.New(t),
+			Records: records,
+		})
+		start = addTo(t, dur, tz)
+	}
+	if q.TimeEnd != nil && nullRecords != nil {
+		if start.Equal(zeroTime) && q.TimeStart != nil {
+			start = q.TimeStart.AsTime()
+		}
+
+		if !start.Equal(zeroTime) {
+			data = addNulls(data, nullRecords, start, q.TimeEnd.AsTime(), dur, tz)
+		}
+	}
+
+	meta := structTypeToMetricsViewColumn(rows.Schema)
+
+	q.Result = &runtimev1.MetricsViewTimeSeriesResponse{
+		Meta: meta,
+		Data: data,
 	}
 
 	return nil
@@ -425,7 +450,7 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 		sql = fmt.Sprintf(
 			`
 					SELECT
-					toTimeZone(date_trunc('%[1]s', toTimeZone(%[2]s::DateTime64, '%[7]s'))::DateTime64, '%[7]s') as %[3]s,
+					toTimeZone(date_trunc('%[1]s', toTimeZone(%[2]s::TIMESTAMP, '%[7]s'))::TIMESTAMP, '%[7]s') as %[3]s,
 					%[4]s
 					FROM %[5]s
 					WHERE %[6]s
@@ -445,7 +470,7 @@ func (q *MetricsViewTimeSeries) buildClickHouseSQL(mv *runtimev1.MetricsViewSpec
 		sql = fmt.Sprintf(
 			`
 				SELECT
-					toTimeZone(date_trunc('%[1]s', toTimeZone(%[2]s::DateTime64, '%[7]s') + INTERVAL %[8]s) - (INTERVAL %[8]s), '%[7]s') as %[3]s,
+					toTimeZone(date_trunc('%[1]s', toTimeZone(%[2]s::TIMESTAMP, '%[7]s') + INTERVAL %[8]s)::TIMESTAMP - (INTERVAL %[8]s), '%[7]s') as %[3]s,
 				%[4]s
 				FROM %[5]s
 				WHERE %[6]s
@@ -575,4 +600,84 @@ func addTo(t time.Time, d duration.Duration, tz *time.Location) time.Time {
 		return d.Add(t)
 	}
 	return d.Add(t.In(tz)).In(time.UTC)
+}
+
+func (q *MetricsViewTimeSeries) rewriteToMetricsViewQuery() (*metricsview.Query, bool, error) {
+	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
+
+	for _, m := range q.MeasureNames {
+		qry.Measures = append(qry.Measures, metricsview.Measure{Name: m})
+	}
+
+	for _, m := range q.InlineMeasures {
+		res := metricsview.Measure{Name: m.Name}
+		switch strings.ToLower(m.Expression) {
+		case "count(*)":
+			res.Compute = &metricsview.MeasureCompute{Count: true}
+		default:
+			return nil, false, fmt.Errorf("inline measure expression is not supported")
+		}
+
+		qry.Measures = append(qry.Measures, res)
+	}
+
+	res := &metricsview.TimeRange{}
+	if q.TimeStart != nil {
+		res.Start = q.TimeStart.AsTime()
+	}
+	if q.TimeEnd != nil {
+		res.End = q.TimeEnd.AsTime()
+	}
+	qry.TimeRange = res
+
+	if q.Limit != 0 {
+		qry.Limit = &q.Limit
+	}
+
+	if q.Offset != 0 {
+		qry.Offset = &q.Offset
+	}
+
+	for _, s := range q.Sort {
+		qry.Sort = append(qry.Sort, metricsview.Sort{
+			Name: s.Name,
+			Desc: !s.Ascending,
+		})
+	}
+
+	if len(q.Sort) == 0 {
+		qry.Sort = append(qry.Sort, metricsview.Sort{
+			Name: q.MetricsView.TimeDimension,
+			Desc: false,
+		})
+	}
+
+	if q.Filter != nil { // backwards backwards compatibility
+		if q.Where != nil {
+			return nil, false, fmt.Errorf("both filter and where is provided")
+		}
+		q.Where = convertFilterToExpression(q.Filter)
+	}
+
+	if q.Where != nil {
+		qry.Where = metricsview.NewExpressionFromProto(q.Where)
+	}
+
+	if q.Having != nil {
+		qry.Having = metricsview.NewExpressionFromProto(q.Having)
+	}
+
+	qry.Dimensions = append(qry.Dimensions, metricsview.Dimension{
+		Name: q.MetricsView.TimeDimension,
+		Compute: &metricsview.DimensionCompute{
+			TimeFloor: &metricsview.DimensionComputeTimeFloor{
+				Dimension: q.MetricsView.TimeDimension,
+				Grain:     metricsview.TimeGrainFromProto(q.TimeGranularity),
+			},
+		},
+	})
+
+	qry.TimeZone = q.TimeZone
+
+	return qry, true, nil
 }

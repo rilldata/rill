@@ -333,7 +333,7 @@ func (c *connection) FindProject(ctx context.Context, id string) (*database.Proj
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
@@ -342,7 +342,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -359,7 +359,7 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
@@ -384,7 +384,7 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -962,6 +962,94 @@ func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, rete
 	return parseErr("deployment auth token", err)
 }
 
+func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*database.MagicAuthTokenWithUser, error) {
+	n := 1
+	where := fmt.Sprintf("t.project_id=$%d", n)
+	args := []any{projectID}
+	n++
+
+	if createdByUserID != nil {
+		where = fmt.Sprintf("%s AND t.created_by_user_id=$%d", where, n)
+		args = append(args, *createdByUserID)
+		n++
+	}
+
+	if afterID != "" {
+		where = fmt.Sprintf("%s AND t.id>$%d", where, n)
+		args = append(args, afterID)
+		n++
+	}
+
+	where += " AND (t.expires_on IS NULL OR t.expires_on > now())"
+
+	qry := fmt.Sprintf("SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT $%d", where, n)
+	args = append(args, limit)
+
+	var dtos []*magicAuthTokenWithUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry, args...)
+	if err != nil {
+		return nil, parseErr("magic auth tokens", err)
+	}
+
+	res := make([]*database.MagicAuthTokenWithUser, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsModel()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*database.MagicAuthToken, error) {
+	res := &magicAuthTokenDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM magic_auth_tokens t WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return res.AsModel()
+}
+
+func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	if opts.MetricsViewFields == nil {
+		opts.MetricsViewFields = []string{}
+	}
+
+	res := &magicAuthTokenDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return res.AsModel()
+}
+
+func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE magic_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("magic auth token", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=$1", id)
+	return checkDeleteRow("magic auth token", res, err)
+}
+
+func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("magic auth token", err)
+}
+
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE device_code = $1", deviceCode).StructScan(authCode)
@@ -1004,6 +1092,36 @@ func (c *connection) UpdateDeviceAuthCode(ctx context.Context, id, userID string
 func (c *connection) DeleteExpiredDeviceAuthCodes(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM device_auth_codes WHERE expires_on + $1 < now()", retention)
 	return parseErr("device auth code", err)
+}
+
+func (c *connection) FindAuthorizationCode(ctx context.Context, code string) (*database.AuthorizationCode, error) {
+	authCode := &database.AuthorizationCode{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM authorization_codes WHERE code = $1", code).StructScan(authCode)
+	if err != nil {
+		return nil, parseErr("authorization code", err)
+	}
+	return authCode, nil
+}
+
+func (c *connection) InsertAuthorizationCode(ctx context.Context, code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod string, expiration time.Time) (*database.AuthorizationCode, error) {
+	res := &database.AuthorizationCode{}
+	err := c.getDB(ctx).QueryRowxContext(ctx,
+		`INSERT INTO authorization_codes (code, user_id, client_id, redirect_uri, code_challenge, code_challenge_method, expires_on)
+		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`, code, userID, clientID, redirectURI, codeChallenge, codeChallengeMethod, expiration).StructScan(res)
+	if err != nil {
+		return nil, parseErr("authorization code", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteAuthorizationCode(ctx context.Context, code string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM authorization_codes WHERE code=$1", code)
+	return checkDeleteRow("authorization code", res, err)
+}
+
+func (c *connection) DeleteExpiredAuthorizationCodes(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM authorization_codes WHERE expires_on + $1 < now()", retention)
+	return parseErr("authorization code", err)
 }
 
 func (c *connection) FindOrganizationRole(ctx context.Context, name string) (*database.OrganizationRole, error) {
@@ -1447,7 +1565,7 @@ type projectDTO struct {
 	Annotations   pgtype.JSON `db:"annotations"`
 }
 
-func (p *projectDTO) AsProject() (*database.Project, error) {
+func (p *projectDTO) AsModel() (*database.Project, error) {
 	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
 	if err != nil {
 		return nil, err
@@ -1465,12 +1583,52 @@ func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
 	res := make([]*database.Project, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsProject()
+		res[i], err = dto.AsModel()
 		if err != nil {
 			return nil, err
 		}
 	}
 	return res, nil
+}
+
+// magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
+type magicAuthTokenDTO struct {
+	*database.MagicAuthToken
+	Attributes        pgtype.JSON      `db:"attributes"`
+	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+}
+
+func (m *magicAuthTokenDTO) AsModel() (*database.MagicAuthToken, error) {
+	err := m.Attributes.AssignTo(&m.MagicAuthToken.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.MagicAuthToken, nil
+}
+
+// magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
+type magicAuthTokenWithUserDTO struct {
+	*database.MagicAuthTokenWithUser
+	Attributes        pgtype.JSON      `db:"attributes"`
+	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+}
+
+func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser, error) {
+	err := m.Attributes.AssignTo(&m.MagicAuthTokenWithUser.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.MagicAuthTokenWithUser, nil
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

@@ -3,9 +3,11 @@ package rill.runtime.v1;
 
 import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
-import "rill/runtime/v1/export_format.proto";
-import "rill/runtime/v1/time_grain.proto";
 import "rill/runtime/v1/colors.proto";
+import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/expression.proto";
+import "rill/runtime/v1/schema.proto";
+import "rill/runtime/v1/time_grain.proto";
 
 enum ReconcileStatus {
   RECONCILE_STATUS_UNSPECIFIED = 0;
@@ -32,6 +34,7 @@ message Resource {
     Component component = 13;
     Dashboard dashboard = 14;
     API api = 15;
+    ConnectorV2 connector = 16;
   }
 }
 
@@ -102,23 +105,29 @@ message ModelV2 {
 }
 
 message ModelSpec {
-  string connector = 1;
-  string sql = 2;
-  optional bool materialize = 3;
   Schedule refresh_schedule = 4;
   uint32 timeout_seconds = 5;
-  bool uses_templating = 6;
-  // Fields not derived from code files
-  bool stage_changes = 7;
-  uint32 materialize_delay_seconds = 8;
+  bool incremental = 13;
+  string incremental_state_resolver = 14;
+  google.protobuf.Struct incremental_state_resolver_properties = 15;
+  string input_connector = 10;
+  google.protobuf.Struct input_properties = 11;
+  string output_connector = 1;
+  google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
+  reserved 2, 3, 6, 7, 8;
 }
 
 message ModelState {
-  string connector = 1;
-  string table = 2;
+  string executor_connector = 6;
+  string result_connector = 1;
+  google.protobuf.Struct result_properties = 5;
+  string result_table = 2;
   string spec_hash = 3;
+  string refs_hash = 9;
   google.protobuf.Timestamp refreshed_on = 4;
+  google.protobuf.Struct incremental_state = 7;
+  StructType incremental_state_schema = 8;
 }
 
 message MetricsViewV2 {
@@ -136,10 +145,37 @@ message MetricsViewSpec {
     string description = 4;
     bool unnest = 5;
   }
+  // Selector for a dimension
+  message DimensionSelector {
+    string name = 1;
+    TimeGrain time_grain = 2; // Only for time dimensions (optional)
+    bool desc = 3; // Only for when ordering (optional)
+  }
+  // Type of measure query to generate
+  enum MeasureType {
+    MEASURE_TYPE_UNSPECIFIED = 0;
+    MEASURE_TYPE_SIMPLE = 1;
+    MEASURE_TYPE_DERIVED = 2;
+    MEASURE_TYPE_TIME_COMPARISON = 3;
+  }
+  // Window to apply to the measure calculation
+  message MeasureWindow {
+    // If true, partitions the window by all present dimensions except those in order_by
+    bool partition = 1;
+    // Dimensions to order the window by. Must be present in required_dimensions.
+    repeated DimensionSelector order_by = 3;
+    // Raw SQL expression to use as the frame (starting with "ROWS ...")
+    string frame_expression = 2;
+  }
   // Measures are aggregated computed values
   message MeasureV2 {
     string name = 1;
     string expression = 2;
+    MeasureType type = 8;
+    MeasureWindow window = 9;
+    repeated DimensionSelector per_dimensions = 10;
+    repeated DimensionSelector required_dimensions = 11;
+    repeated string referenced_measures = 12;
     string label = 3;
     string description = 4;
     string format_preset = 5;
@@ -150,8 +186,11 @@ message MetricsViewSpec {
   message SecurityV2 {
     // Dashboard level access condition
     string access = 1;
-    // row level access condition
+    // SQL expression to apply in a WHERE clause against the underlying table
     string row_filter = 2;
+    // Dimension filter to apply to queries against the metrics view.
+    // Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
+    Expression query_filter = 5;
     // Dimension/measure level access condition
     message FieldConditionV2 {
       string condition = 1;
@@ -262,6 +301,10 @@ message ReportSpec {
   ExportFormat export_format = 8;
   repeated Notifier notifiers = 11;
   map<string, string> annotations = 10;
+  bool watermark_inherit = 12; // If true, will use the lowest watermark of its refs instead of the trigger time.
+  string intervals_iso_duration = 13;
+  int32 intervals_limit = 14;
+  bool intervals_check_unclosed = 15;
 }
 
 message ReportState {
@@ -414,6 +457,7 @@ message ComponentSpec {
   string renderer = 4;
   google.protobuf.Struct renderer_properties = 5;
   bool defined_in_dashboard = 6;
+  string subtitle = 7;
 }
 
 message ComponentState {}
@@ -434,6 +478,7 @@ message DashboardState {}
 
 message DashboardItem {
   string component = 1;
+  bool defined_in_dashboard = 8;
   optional uint32 x = 2;
   optional uint32 y = 3;
   optional uint32 width = 4;
@@ -485,4 +530,21 @@ message ExecutionError {
 
 message CharLocation {
   uint32 line = 1;
+}
+
+message ConnectorSpec {
+  string driver = 1;
+  map<string, string> properties = 2;
+  // properties_from_variables stores properties whose value is a variable.
+  // NOTE : properties_from_variables and properties both should be used to get all properties.
+  map<string, string> properties_from_variables = 3;
+}
+
+message ConnectorState {
+  string spec_hash = 1;
+}
+
+message ConnectorV2 {
+  ConnectorSpec spec = 1;
+  ConnectorState state = 2;
 }

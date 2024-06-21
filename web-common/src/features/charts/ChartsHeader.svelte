@@ -4,16 +4,17 @@
   import PanelCTA from "@rilldata/web-common/components/panel/PanelCTA.svelte";
   import GenerateVegaSpecPrompt from "@rilldata/web-common/features/charts/prompt/GenerateVegaSpecPrompt.svelte";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import {
     extractFileName,
     splitFolderAndName,
-  } from "@rilldata/web-common/features/sources/extract-file-name";
+  } from "@rilldata/web-common/features/entity-management/file-path-utils";
+  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import { WorkspaceHeader } from "@rilldata/web-common/layout/workspace";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let filePath: string;
+  export let hasUnsavedChanges: boolean;
 
   let fileName: string;
   $: [, fileName] = splitFolderAndName(filePath);
@@ -39,7 +40,11 @@
   let generateOpen = false;
 </script>
 
-<WorkspaceHeader on:change={handleNameChange} titleInput={fileName}>
+<WorkspaceHeader
+  on:change={handleNameChange}
+  titleInput={fileName}
+  {hasUnsavedChanges}
+>
   <svelte:fragment slot="cta">
     <PanelCTA side="right">
       <Button on:click={() => (generateOpen = true)}>Generate using AI</Button>

@@ -40,11 +40,6 @@ func (p *Parser) parseDashboard(node *Node) error {
 		return fmt.Errorf("dashboards cannot have a connector")
 	}
 
-	// Ensure there's at least one item
-	if len(tmp.Items) == 0 {
-		return errors.New(`at least one item must be configured`)
-	}
-
 	// Parse items.
 	// Each item can either reference an externally defined component by name or define a component inline.
 	items := make([]*runtimev1.DashboardItem, len(tmp.Items))
@@ -65,12 +60,13 @@ func (p *Parser) parseDashboard(node *Node) error {
 		}
 
 		items[i] = &runtimev1.DashboardItem{
-			Component: component,
-			X:         item.X,
-			Y:         item.Y,
-			Width:     item.Width,
-			Height:    item.Height,
-			FontSize:  item.FontSize,
+			Component:          component,
+			DefinedInDashboard: inlineComponentDef != nil,
+			X:                  item.X,
+			Y:                  item.Y,
+			Width:              item.Width,
+			Height:             item.Height,
+			FontSize:           item.FontSize,
 		}
 
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})

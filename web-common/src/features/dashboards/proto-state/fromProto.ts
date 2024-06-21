@@ -1,4 +1,8 @@
 import { protoBase64, type Timestamp } from "@bufbuild/protobuf";
+import {
+  mapExprToMeasureFilter,
+  MeasureFilterEntry,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import {
   PivotChipType,
@@ -110,10 +114,15 @@ export function getDashboardStateFromProto(
     entity.whereFilter = fromExpressionProto(dashboard.where);
   }
   if (dashboard.having) {
-    entity.dimensionThresholdFilters = dashboard.having.map((h) => ({
-      name: h.name,
-      filter: fromExpressionProto(h.filter as Expression) as V1Expression,
-    }));
+    entity.dimensionThresholdFilters = dashboard.having.map((h) => {
+      const expr = fromExpressionProto(h.filter as Expression);
+      return {
+        name: h.name,
+        filters: expr?.cond?.exprs
+          ?.map(mapExprToMeasureFilter)
+          .filter(Boolean) as MeasureFilterEntry[],
+      };
+    });
   }
   if (dashboard.compareTimeRange) {
     entity.selectedComparisonTimeRange = fromTimeRangeProto(
@@ -359,6 +368,7 @@ function fromPivotProto(
     sorting: dashboard.pivotSort ?? [],
     columnPage: dashboard.pivotColumnPage ?? 1,
     rowPage: 1,
+    enableComparison: dashboard.pivotEnableComparison ?? true,
     rowJoinType:
       FromProtoPivotRowJoinTypeMap[
         dashboard.pivotRowJoinType ?? DashboardState_PivotRowJoinType.NEST

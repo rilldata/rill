@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -16,8 +17,6 @@ import (
 	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/zap"
 )
-
-var useCache = false
 
 // Create instruments
 var (
@@ -48,8 +47,8 @@ func (c *connection) WithConnection(ctx context.Context, priority int, longRunni
 	defer func() { _ = release() }()
 
 	// Call fn with connection embedded in context
-	wrappedCtx := contextWithConn(ctx, conn)
-	ensuredCtx := contextWithConn(context.Background(), conn)
+	wrappedCtx := c.sessionAwareContext(contextWithConn(ctx, conn))
+	ensuredCtx := c.sessionAwareContext(contextWithConn(context.Background(), conn))
 	return fn(wrappedCtx, ensuredCtx, conn.Conn)
 }
 
@@ -109,9 +108,13 @@ func (c *connection) Execute(ctx context.Context, stmt *drivers.Statement) (res 
 		return nil, err
 	}
 
-	stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1"
-	if useCache {
-		stmt.Query += ", use_query_cache = 1"
+	if c.config.SettingsOverride != "" {
+		stmt.Query += "\n SETTINGS " + c.config.SettingsOverride
+	} else {
+		stmt.Query += "\n SETTINGS cast_keep_nullable = 1, join_use_nulls = 1, session_timezone = 'UTC'"
+		if c.config.EnableCache {
+			stmt.Query += ", use_query_cache = 1"
+		}
 	}
 
 	// Gather metrics only for actual queries
@@ -204,17 +207,102 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
 			Priority: 100,
 		})
 	}
+
+	outputProps := &ModelOutputProperties{}
+	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
+		return fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
+	var create strings.Builder
+	create.WriteString("CREATE OR REPLACE TABLE ")
+	create.WriteString(safeSQLName(name))
+
+	// see if there is any column override
+	if outputProps.Columns != "" {
+		create.WriteString(outputProps.Columns)
+	}
+
+	// engine with default
+	create.WriteString(" ENGINE = ")
+	var engine string
+	if outputProps.Engine != "" {
+		engine = outputProps.Engine
+	} else {
+		engine = "MergeTree"
+	}
+	create.WriteString(engine)
+
+	// order_by
+	if outputProps.OrderBy != "" {
+		create.WriteString(" ORDER BY ")
+		create.WriteString(outputProps.OrderBy)
+	} else if engine == "MergeTree" {
+		// need ORDER BY for MergeTree
+		// it is optional for other engines
+		create.WriteString(" ORDER BY tuple() ")
+	}
+
+	// partition_by
+	if outputProps.PartitionBy != "" {
+		create.WriteString(" PARTITION BY ")
+		create.WriteString(outputProps.PartitionBy)
+	}
+
+	// primary_key
+	if outputProps.PrimaryKey != "" {
+		create.WriteString(" PRIMARY KEY ")
+		create.WriteString(outputProps.PrimaryKey)
+	}
+
+	// sample_by
+	if outputProps.SampleBy != "" {
+		create.WriteString(" SAMPLE BY ")
+		create.WriteString(outputProps.SampleBy)
+	}
+
+	// ttl
+	if outputProps.TTL != "" {
+		create.WriteString(" TTL ")
+		create.WriteString(outputProps.TTL)
+	}
+
+	// settings
+	if outputProps.Settings != "" {
+		create.WriteString(" SETTINGS ")
+		create.WriteString(outputProps.Settings)
+	}
+
+	// write sql query
+	create.WriteString(" AS ")
+	create.WriteString(sql)
 	return c.Exec(ctx, &drivers.Statement{
-		Query:    fmt.Sprintf("CREATE OR REPLACE TABLE %s ENGINE = MergeTree ORDER BY tuple() AS %s", safeSQLName(name), sql),
+		Query:    create.String(),
 		Priority: 100,
 	})
+}
+
+// InsertTableAsSelect implements drivers.OLAPStore.
+func (c *connection) InsertTableAsSelect(ctx context.Context, name, sql string, byName, inPlace bool, strategy drivers.IncrementalStrategy, uniqueKey []string) error {
+	if !inPlace {
+		return fmt.Errorf("clickhouse: inserts does not support inPlace=false")
+	}
+	if strategy == drivers.IncrementalStrategyAppend {
+		return c.Exec(ctx, &drivers.Statement{
+			Query:       fmt.Sprintf("INSERT INTO %s %s", safeSQLName(name), sql),
+			Priority:    1,
+			LongRunning: true,
+		})
+	}
+
+	// merge strategy is also not supported for clickhouse
+	return fmt.Errorf("incremental insert strategy %q not supported", strategy)
 }
 
 // DropTable implements drivers.OLAPStore.
@@ -229,11 +317,6 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 		Query:    fmt.Sprintf("DROP %s %s", typ, safeSQLName(name)),
 		Priority: 100,
 	})
-}
-
-// InsertTableAsSelect implements drivers.OLAPStore.
-func (c *connection) InsertTableAsSelect(ctx context.Context, name string, byName bool, sql string) error {
-	return fmt.Errorf("clickhouse: data transformation not yet supported")
 }
 
 // RenameTable implements drivers.OLAPStore.

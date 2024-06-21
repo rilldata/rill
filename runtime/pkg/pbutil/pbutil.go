@@ -6,8 +6,8 @@ import (
 	"math/big"
 	"net"
 	"reflect"
+	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
@@ -50,10 +50,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(float64(v)), nil
 	case time.Time:
 		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
-			s := v.Format(time.DateOnly)
+			s := v.In(time.UTC).Format(time.DateOnly)
 			return structpb.NewStringValue(s), nil
 		}
-		s := v.Format(time.RFC3339Nano)
+		s := v.In(time.UTC).Format(time.RFC3339Nano)
 		return structpb.NewStringValue(s), nil
 	case float32:
 		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
@@ -115,6 +115,8 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 				return structpb.NewStringValue(uid.String()), nil
 			}
 		}
+	case string:
+		return structpb.NewStringValue(strings.ToValidUTF8(v, "�")), nil
 	case net.IP:
 		return structpb.NewStringValue(v.String()), nil
 	// pointers to base types
@@ -133,10 +135,7 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 	case *uint64:
 		return structpb.NewNumberValue(float64(*v)), nil
 	case *string:
-		if !utf8.ValidString(*v) {
-			return nil, fmt.Errorf("invalid UTF-8 in string: %q", *v)
-		}
-		return structpb.NewStringValue(*v), nil
+		return ToValue(*v, nil)
 	case *int8:
 		return structpb.NewNumberValue(float64(*v)), nil
 	case *int16:
@@ -147,10 +146,10 @@ func ToValue(v any, t *runtimev1.Type) (*structpb.Value, error) {
 		return structpb.NewNumberValue(float64(*v)), nil
 	case *time.Time:
 		if t != nil && t.Code == runtimev1.Type_CODE_DATE {
-			s := v.Format(time.DateOnly)
+			s := v.In(time.UTC).Format(time.DateOnly)
 			return structpb.NewStringValue(s), nil
 		}
-		s := v.Format(time.RFC3339Nano)
+		s := v.In(time.UTC).Format(time.RFC3339Nano)
 		return structpb.NewStringValue(s), nil
 	case *float32:
 		// Turning NaNs and Infs into nulls until frontend can deal with them as strings
@@ -195,11 +194,8 @@ func ToStruct(v map[string]any, t *runtimev1.StructType) (*structpb.Struct, erro
 	x := &structpb.Struct{Fields: make(map[string]*structpb.Value, len(v))}
 	if t == nil {
 		for k, v := range v {
-			if !utf8.ValidString(k) {
-				return nil, fmt.Errorf("invalid UTF-8 in string: %q", k)
-			}
 			var err error
-			x.Fields[k], err = ToValue(v, nil)
+			x.Fields[strings.ToValidUTF8(k, "�")], err = ToValue(v, nil)
 			if err != nil {
 				return nil, err
 			}

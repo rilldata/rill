@@ -7,13 +7,22 @@ export function removeIfExists<T>(array: Array<T>, checker: (e: T) => boolean) {
   return false;
 }
 
-export function getMapFromArray<T, K>(
+export function getMapFromArray<T, K, V = T>(
   array: T[],
   keyGetter: (entity: T) => K,
-): Map<K, T> {
-  const map = new Map<K, T>();
+  valGetter: (entity: T) => V = (e) => e as unknown as V,
+): Map<K, V> {
+  const map = new Map<K, V>();
   for (const entity of array) {
-    map.set(keyGetter(entity), entity);
+    map.set(keyGetter(entity), valGetter(entity));
   }
   return map;
+}
+
+export function createBatches<T>(array: T[], batchSize: number): T[][] {
+  const batches: T[][] = [];
+  for (let i = 0; i < array.length; i += batchSize) {
+    batches.push(array.slice(i, i + batchSize));
+  }
+  return batches;
 }

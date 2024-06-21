@@ -3,7 +3,7 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { getName } from "@rilldata/web-common/features/entity-management/name-utils";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { get } from "svelte/store";
-import { notifications } from "../../components/notifications";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { runtimeServicePutFile } from "../../runtime-client";
 import { runtime } from "../../runtime-client/runtime-store";
 
@@ -36,7 +36,7 @@ select * from ${tableName}`,
   });
 
   if (notify) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: `Queried ${tableName} in workspace`,
     });
   }

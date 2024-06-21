@@ -134,6 +134,12 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			scheme := "http"
+			if tlsCertPath != "" && tlsKeyPath != "" {
+				scheme = "https"
+			}
+			localURL := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
+
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Version:     ch.Version,
 				Verbose:     verbose,
@@ -148,6 +154,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				Activity:    ch.Telemetry(cmd.Context()),
 				AdminURL:    ch.AdminURL,
 				AdminToken:  ch.AdminToken(),
+				CMDHelper:   ch,
+				LocalURL:    localURL,
 			})
 			if err != nil {
 				return err

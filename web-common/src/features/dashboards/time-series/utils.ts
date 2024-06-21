@@ -195,7 +195,7 @@ export function transformAggregateDimensionData(
   timeDimension: string,
   dimensionName: string,
   measures: string[],
-  dimensionValues: string[],
+  dimensionValues: (string | null)[],
   timeSeriesData: V1TimeSeriesValue[],
   response: V1MetricsViewAggregationResponseDataItem[],
 ): V1TimeSeriesValue[][] {
@@ -246,12 +246,4 @@ export function transformAggregateDimensionData(
   }
 
   return data;
-}
-
-export function createBatches<T>(array: T[], batchSize: number): T[][] {
-  const batches: T[][] = [];
-  for (let i = 0; i < array.length; i += batchSize) {
-    batches.push(array.slice(i, i + batchSize));
-  }
-  return batches;
 }

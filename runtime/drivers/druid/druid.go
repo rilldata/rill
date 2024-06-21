@@ -35,6 +35,80 @@ var spec = drivers.Spec{
 			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
 			Secret:      true,
 		},
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "host",
+			Required:    false,
+		},
+		{
+			Key:         "port",
+			Type:        drivers.NumberPropertyType,
+			DisplayName: "port",
+			Required:    false,
+			Placeholder: "8888",
+		},
+		{
+			Key:         "username",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "username",
+			Required:    false,
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "password",
+			Required:    false,
+			Secret:      true,
+		},
+		{
+			Key:         "ssl",
+			Type:        drivers.BooleanPropertyType,
+			DisplayName: "ssl",
+			Required:    false,
+		},
+	},
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Host",
+			Description: "Hostname or IP address of the Druid server",
+			Placeholder: "localhost",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.NumberPropertyType,
+			Required:    true,
+			DisplayName: "Port",
+			Description: "Port number of the Druid server",
+			Placeholder: "8888",
+		},
+		{
+			Key:         "username",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Username",
+			Description: "Username to connect to the Druid server",
+			Placeholder: "default",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Password",
+			Description: "Password to connect to the Druid server",
+			Placeholder: "password",
+			Secret:      true,
+		},
+		{
+			Key:         "ssl",
+			Type:        drivers.BooleanPropertyType,
+			Required:    true,
+			DisplayName: "SSL",
+			Description: "Use SSL to connect to the Druid server",
+		},
 	},
 	ImplementsOLAP: true,
 }
@@ -44,8 +118,14 @@ type driver struct{}
 var _ drivers.Driver = &driver{}
 
 type configProperties struct {
-	// DSN is the connection string
-	DSN string `mapstructure:"dsn"`
+	// DSN is the connection string. Set either DSN or properties below.
+	DSN      string `mapstructure:"dsn"`
+	Username string `mapstructure:"username"`
+	Password string `mapstructure:"password"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	// SSL determines whether secured connection need to be established. To be set when setting individual fields.
+	SSL bool `mapstructure:"ssl"`
 	// LogQueries controls whether to log the raw SQL passed to OLAP.Execute.
 	LogQueries bool `mapstructure:"log_queries"`
 }
@@ -63,10 +143,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	if conf.DSN == "" {
-		return nil, fmt.Errorf("no DSN provided to open the connection")
-	}
-	dsn, err := correctURL(conf.DSN)
+	dsn, err := dnsFromConfig(conf)
 	if err != nil {
 		return nil, err
 	}
@@ -172,6 +249,16 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 	return nil, false
 }
 
+// AsModelExecutor implements drivers.Handle.
+func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	return nil, false
+}
+
+// AsModelManager implements drivers.Handle.
+func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
+	return nil, false
+}
+
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
 	return nil, false
@@ -199,6 +286,56 @@ func (c *connection) EstimateSize() (int64, bool) {
 
 func (c *connection) AcquireLongRunning(ctx context.Context) (func(), error) {
 	return func() {}, nil
+}
+
+func GetDSN(config map[string]string) (string, error) {
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return "", err
+	}
+
+	return dnsFromConfig(conf)
+}
+
+func dnsFromConfig(conf *configProperties) (string, error) {
+	var dsn string
+	var err error
+	if conf.DSN != "" {
+		dsn, err = correctURL(conf.DSN)
+		if err != nil {
+			return "", err
+		}
+	} else if conf.Host != "" {
+		var dsnURL url.URL
+		dsnURL.Host = conf.Host
+		// set port
+		if conf.Port != 0 {
+			dsnURL.Host = fmt.Sprintf("%v:%v", conf.Host, conf.Port)
+		}
+
+		// set scheme
+		if conf.SSL {
+			dsnURL.Scheme = "https"
+		} else {
+			dsnURL.Scheme = "http"
+		}
+
+		// set path
+		dsnURL.Path = "druid/v2/sql"
+
+		// set username and password
+		if conf.Password != "" {
+			dsnURL.User = url.UserPassword(conf.Username, conf.Password)
+		} else if conf.Username != "" {
+			dsnURL.User = url.User(conf.Username)
+		}
+
+		dsn = dsnURL.String()
+	} else {
+		return "", fmt.Errorf("druid connection parameters not set. Set `dsn` or individual properties")
+	}
+	return dsn, nil
 }
 
 func correctURL(dsn string) (string, error) {

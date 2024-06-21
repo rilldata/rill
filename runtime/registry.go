@@ -127,6 +127,22 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	return nil
 }
 
+// DataDir returns the path to a persistent data directory for the given instance.
+// Storage usage in the returned directory will be reported in the instance's heartbeat events.
+func (r *Runtime) DataDir(instanceID string, elem ...string) string {
+	elem = append([]string{r.opts.DataDir, instanceID}, elem...)
+	return filepath.Join(elem...)
+}
+
+// TempDir returns the path to a temporary directory for the given instance.
+// The TempDir is a fixed location. The caller is responsible for using a unique subdirectory name and cleaning up after use.
+// The TempDir may be cleared after restarts.
+// Storage usage in the returned directory will be reported in the instance's heartbeat events.
+func (r *Runtime) TempDir(instanceID string, elem ...string) string {
+	elem = append([]string{r.opts.DataDir, instanceID, "tmp"}, elem...)
+	return filepath.Join(elem...)
+}
+
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
 // It ensures that a controller is started for every instance, and that a controller is completely stopped before getting restarted when edited.
 type registryCache struct {
@@ -537,11 +553,13 @@ func (r *registryCache) emitHeartbeats() {
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
 
-	r.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat",
-		attribute.String("instance_id", inst.ID),
-		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
-		attribute.Int64("data_dir_size_bytes", sizeOfDir(dataDir)),
-	)
+	// Add instance annotations as attributes to pass organization id, project id, etc.
+	attrs := instanceAnnotationsToAttribs(inst)
+	for k, v := range inst.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+
+	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 }
 
 // updateProjectConfig updates the project config for the given instance.
@@ -554,18 +572,22 @@ func (r *registryCache) updateProjectConfig(iwc *instanceWithController) error {
 	}
 	defer release()
 
-	rillYAML, err := rillv1.ParseRillYAML(iwc.ctx, repo, iwc.instanceID)
-	if err != nil {
-		if errors.Is(err, rillv1.ErrRillYAMLNotFound) { // empty project
-			return nil
-		}
-		return err
-	}
-	dotEnv, err := rillv1.ParseDotEnv(iwc.ctx, repo, iwc.instanceID)
+	instance, err := r.get(iwc.instanceID)
 	if err != nil {
 		return err
 	}
-	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, rillYAML, dotEnv, false)
+
+	p, err := rillv1.Parse(iwc.ctx, repo, iwc.instanceID, instance.Environment, instance.OLAPConnector)
+	if err != nil {
+		return err
+	}
+
+	if p.RillYAML == nil {
+		// Empty project
+		return nil
+	}
+
+	return r.rt.UpdateInstanceWithRillYAML(iwc.ctx, iwc.instanceID, p, false)
 }
 
 func sizeOfDir(path string) int64 {

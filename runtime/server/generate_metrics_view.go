@@ -83,7 +83,7 @@ func (s *Server) GenerateMetricsViewFile(ctx context.Context, req *runtimev1.Gen
 	}
 	if model != nil {
 		modelState := model.GetModel().State
-		if modelState.Connector != req.Connector || modelState.Table != tbl.Name {
+		if modelState.ResultConnector != req.Connector || modelState.ResultTable != tbl.Name {
 			// The model is not for this table. Ignore it.
 			model = nil
 		}
@@ -218,6 +218,7 @@ func (s *Server) generateMetricsViewYAMLWithAI(ctx context.Context, instanceID, 
 			Name:         measure.Name,
 			Label:        measure.Label,
 			Expression:   measure.Expression,
+			Type:         runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 			FormatPreset: measure.FormatPreset,
 		})
 	}
@@ -488,5 +489,5 @@ func safeSQLName(name string) string {
 	if alphanumericUnderscoreRegexp.MatchString(name) {
 		return name
 	}
-	return name
+	return fmt.Sprintf("\"%s\"", strings.ReplaceAll(name, "\"", "\"\""))
 }

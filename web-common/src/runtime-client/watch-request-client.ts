@@ -1,13 +1,18 @@
 import { Throttler } from "@rilldata/web-common/lib/throttler";
-import { ExponentialBackoffTracker } from "@rilldata/web-common/runtime-client/exponential-backoff-tracker";
 import { streamingFetchWrapper } from "@rilldata/web-common/runtime-client/fetch-streaming-wrapper";
 import type {
   V1WatchFilesResponse,
   V1WatchLogsResponse,
   V1WatchResourcesResponse,
 } from "@rilldata/web-common/runtime-client/index";
-import { get } from "svelte/store";
+import { get, writable } from "svelte/store";
 import { runtime } from "./runtime-store";
+import { asyncWait } from "../lib/waitUtils";
+
+const MAX_RETRIES = 5;
+const BACKOFF_DELAY = 1000;
+const RETRY_COUNT_DELAY = 500;
+const RECONNECT_CALLBACK_DELAY = 150;
 
 type WatchResponse =
   | V1WatchFilesResponse
@@ -33,12 +38,16 @@ type Callback<T, K extends keyof EventMap<T>> = (
 export class WatchRequestClient<Res extends WatchResponse> {
   private url: string | undefined;
   private controller: AbortController | undefined;
-  private tracker = ExponentialBackoffTracker.createBasicTracker();
+  private stream: AsyncGenerator<StreamingFetchResponse<Res>> | undefined;
   private outOfFocusThrottler = new Throttler(10000);
+  public retryAttempts = writable(0);
+  private reconnectTimeout: ReturnType<typeof setTimeout> | undefined;
+  private retryTimeout: ReturnType<typeof setTimeout> | undefined;
   private listeners: Listeners<Res> = new Map([
     ["response", []],
     ["reconnect", []],
   ]);
+  private closed = false;
 
   public on<K extends keyof EventMap<Res>>(
     event: K,
@@ -50,21 +59,24 @@ export class WatchRequestClient<Res extends WatchResponse> {
   public watch(url: string) {
     this.cancel();
     this.url = url;
-    this.restart().catch(console.log);
+    this.listen().catch(console.error);
   }
 
-  public cancel() {
-    this.controller?.abort();
-    this.controller = undefined;
+  public close() {
+    this.closed = true;
+    this.cancel();
   }
 
   public throttle() {
     this.outOfFocusThrottler.throttle(() => {
-      this.cancel();
+      this.close();
     });
   }
 
-  public reconnect() {
+  public async reconnect() {
+    this.closed = false;
+    clearTimeout(this.reconnectTimeout);
+
     if (this.outOfFocusThrottler.isThrottling()) {
       this.outOfFocusThrottler.cancel();
     }
@@ -72,55 +84,58 @@ export class WatchRequestClient<Res extends WatchResponse> {
     // The stream was not cancelled, so don't reconnect
     if (this.controller && !this.controller.signal.aborted) return;
 
-    this.restart().catch(console.log);
+    const currentAttempts = get(this.retryAttempts);
 
-    // Reconnecting, notify listeners
-    this.emitReconnect();
+    if (currentAttempts >= MAX_RETRIES) throw new Error("Max retries exceeded");
+
+    if (currentAttempts > 0) {
+      const delay = BACKOFF_DELAY * 2 ** currentAttempts;
+      await asyncWait(delay);
+    }
+
+    this.retryAttempts.update((n) => n + 1);
+    this.listen(true).catch(console.error);
   }
 
-  /**
-   * (re)starts the stream connection for watch request.
-   * If there is a disconnect then it reconnects with exponential backoff.
-   */
-  private async restart() {
-    if (!this.url) return console.error("Unable to reconnect without a URL.");
-    // abort previous connections before starting a new one
+  private cancel() {
     this.controller?.abort();
+    this.stream = this.controller = undefined;
+  }
+
+  private async listen(reconnect = false) {
+    clearTimeout(this.reconnectTimeout);
+
+    if (!this.url) throw new Error("URL not set");
+
     this.controller = new AbortController();
+    this.stream = this.getFetchStream(this.url, this.controller);
 
-    let firstRun = true;
-    // Maintain the controller here to make sure we check `aborted` for the correct one.
-    // Checking for `this.controller` might lead to edge cases where it has a newer controller.
-    let controller = this.controller;
-    while (!controller.signal.aborted) {
-      if (!firstRun) {
-        // Reconnecting, notify listeners
-        this.emitReconnect();
-        // safeguard to cancel the request if not already cancelled
-        controller.abort();
-        controller = new AbortController();
+    try {
+      this.retryTimeout = setTimeout(() => {
+        this.retryAttempts.set(0);
+      }, RETRY_COUNT_DELAY);
+
+      if (reconnect) {
+        this.reconnectTimeout = setTimeout(() => {
+          this.listeners.get("reconnect")?.forEach((cb) => void cb());
+        }, RECONNECT_CALLBACK_DELAY);
       }
-      firstRun = false;
 
-      this.controller = controller;
-      try {
-        const stream = this.getFetchStream(this.url, this.controller);
-        for await (const res of stream) {
-          if (controller.signal.aborted) return;
-          if (res.error) throw new Error(res.error.message);
+      for await (const res of this.stream) {
+        if (this.controller?.signal.aborted) break;
+        if (res.error) throw new Error(res.error.message);
 
-          if (res.result) {
-            this.listeners
-              .get("response")
-              ?.forEach((cb) => void cb(res.result));
-          }
-        }
-      } catch (err) {
-        if (!(await this.tracker.failed())) {
-          // No point in continuing retry once we have failed enough times
-          return;
-        }
+        if (res.result)
+          this.listeners.get("response")?.forEach((cb) => void cb(res.result));
       }
+    } catch (err) {
+      clearTimeout(this.retryTimeout);
+
+      if (this.controller) this.cancel();
+      if (this.closed) return;
+      this.reconnect().catch((e) => {
+        throw new Error(e);
+      });
     }
   }
 
@@ -138,9 +153,5 @@ export class WatchRequestClient<Res extends WatchResponse> {
       headers,
       controller.signal,
     );
-  }
-
-  private emitReconnect() {
-    this.listeners.get("reconnect")?.forEach((cb) => void cb());
   }
 }

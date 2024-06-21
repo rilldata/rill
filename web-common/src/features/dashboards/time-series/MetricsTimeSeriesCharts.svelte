@@ -27,6 +27,7 @@
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -42,7 +43,10 @@
 
   const {
     selectors: {
-      measures: { isMeasureValidPercentOfTotal },
+      measures: {
+        isMeasureValidPercentOfTotal,
+        getFilteredMeasuresAndDimensions,
+      },
       dimensionFilters: { includedDimensionValues },
     },
   } = getStateManagers();
@@ -93,11 +97,22 @@
   $: isAlternateChart = tddChartType != TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
-  $: renderedMeasures = $metricsView.data?.measures?.filter(
-    expandedMeasureName
-      ? (measure) => measure.name === expandedMeasureName
-      : (_, i) => $showHideMeasures.selectedItems[i],
-  );
+  let renderedMeasures: MetricsViewSpecMeasureV2[];
+  $: {
+    renderedMeasures =
+      $metricsView.data?.measures?.filter(
+        expandedMeasureName
+          ? (measure) => measure.name === expandedMeasureName
+          : (_, i) => $showHideMeasures.selectedItems[i],
+      ) ?? [];
+    const { measures } = $getFilteredMeasuresAndDimensions(
+      $metricsView.data ?? {},
+      renderedMeasures.map((m) => m.name ?? ""),
+    );
+    renderedMeasures = renderedMeasures.filter((rm) =>
+      measures.includes(rm.name ?? ""),
+    );
+  }
 
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
@@ -214,7 +229,9 @@
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
       <ChartTypeSelector
-        hasComparison={Boolean(showComparison || dimensionData.length)}
+        hasComparison={Boolean(
+          showComparison || includedValuesForDimension.length,
+        )}
         {metricViewName}
         chartType={tddChartType}
       />

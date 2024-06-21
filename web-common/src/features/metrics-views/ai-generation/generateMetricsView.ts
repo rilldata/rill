@@ -3,7 +3,7 @@ import { fileArtifacts } from "@rilldata/web-common/features/entity-management/f
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
 import { getScreenNameFromPage } from "@rilldata/web-common/features/file-explorer/telemetry";
 import { get } from "svelte/store";
-import { notifications } from "../../../components/notifications";
+import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { overlay } from "../../../layout/overlay-store";
 import { behaviourEvent } from "../../../metrics/initMetrics";
 import type { BehaviourEventMedium } from "../../../metrics/service/BehaviourEventTypes";
@@ -64,7 +64,7 @@ export function useCreateDashboardFromTableUIAction(
     const abortController = new AbortController();
 
     overlay.set({
-      title: "Hang tight! AI is personalizing your dashboard",
+      title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your dashboard`,
       detail: {
         component: OptionToCancelAIGeneration,
         props: {
@@ -134,7 +134,7 @@ export function useCreateDashboardFromTableUIAction(
         MetricsEventScreenName.Dashboard,
       );
     } catch (err) {
-      notifications.send({
+      eventBus.emit("notification", {
         message: "Failed to create a dashboard for " + tableName,
         detail: err.response?.data?.message ?? err.message,
       });
@@ -162,7 +162,7 @@ export async function createDashboardFromTableInMetricsEditor(
   const abortController = new AbortController();
 
   overlay.set({
-    title: "Hang tight! AI is personalizing your dashboard",
+    title: `Hang tight! ${isAiEnabled ? "AI is" : "We're"} personalizing your dashboard`,
     detail: {
       component: OptionToCancelAIGeneration,
       props: {
@@ -212,7 +212,7 @@ export async function createDashboardFromTableInMetricsEditor(
       });
     }
   } catch (err) {
-    notifications.send({
+    eventBus.emit("notification", {
       message: "Failed to create a dashboard for " + tableName,
       detail: err.response?.data?.message ?? err.message,
     });

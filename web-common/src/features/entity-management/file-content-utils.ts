@@ -1,14 +1,17 @@
 import { FolderToResourceKind } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import {
+  extractFileName,
+  splitFolderAndName,
+} from "@rilldata/web-common/features/entity-management/file-path-utils";
+import {
   ResourceKind,
   ResourceShortNameToKind,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
-import {
-  extractFileName,
-  splitFolderAndName,
-} from "@rilldata/web-common/features/sources/extract-file-name";
 import type { V1ResourceName } from "@rilldata/web-common/runtime-client";
-import { parse } from "yaml";
+
+// Doing this to avoid a build issue that we can resolve later
+import y from "yaml";
+const { parse } = y;
 
 export function parseKindAndNameFromFile(
   filePath: string,
@@ -21,7 +24,8 @@ export function parseKindAndNameFromFile(
   if (filePath.endsWith(".yaml") || filePath.endsWith(".yml")) {
     return tryParseYaml(kind, name, fileContents);
   } else if (filePath.endsWith(".sql")) {
-    return tryParseSql(kind, name, fileContents);
+    // .sql is defaulted to Model
+    return tryParseSql(ResourceKind.Model, name, fileContents);
   }
   return undefined;
 }
