@@ -406,18 +406,26 @@ type metricsViewMeasureYAML struct {
 	Description string
 }
 
-func insertEmptyLinesInYaml(yamlStr string) string {
-	var result []string
-	lines := strings.Split(yamlStr, "\n")
+func insertEmptyLinesInYaml(node *yaml.Node) {
+	for i := 0; i < len(node.Content); i++ {
+		if node.Content[i].Kind == yaml.MappingNode {
+			for j := 0; j < len(node.Content[i].Content); j += 2 {
+				keyNode := node.Content[i].Content[j]
+				valueNode := node.Content[i].Content[j+1]
 
-	for _, line := range lines {
-		if strings.HasPrefix(line, "title:") || strings.HasPrefix(line, "dimensions:") || strings.HasPrefix(line, "measures:") {
-			result = append(result, "")
+				if keyNode.Value == "title" || keyNode.Value == "dimensions" || keyNode.Value == "measures" {
+					keyNode.HeadComment = "\n"
+				}
+				insertEmptyLinesInYaml(valueNode)
+			}
+		} else if node.Content[i].Kind == yaml.SequenceNode {
+			for j := 0; j < len(node.Content[i].Content); j++ {
+				if node.Content[i].Content[j].Kind == yaml.MappingNode {
+					node.Content[i].Content[j].HeadComment = "\n"
+				}
+			}
 		}
-		result = append(result, line)
 	}
-
-	return strings.Join(result, "\n")
 }
 
 func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error) {
@@ -435,10 +443,22 @@ func marshalMetricsViewYAML(doc *metricsViewYAML, aiPowered bool) (string, error
 		return "", err
 	}
 
-	yamlString := string(yamlBytes)
-	formattedYamlString := insertEmptyLinesInYaml(yamlString)
+	var rootNode yaml.Node
+	if err := yaml.Unmarshal(yamlBytes, &rootNode); err != nil {
+		return "", err
+	}
 
-	buf.WriteString(formattedYamlString)
+	insertEmptyLinesInYaml(&rootNode)
+
+	enc := yaml.NewEncoder(buf)
+	enc.SetIndent(2)
+	if err := enc.Encode(&rootNode); err != nil {
+		return "", err
+	}
+
+	if err := enc.Close(); err != nil {
+		return "", err
+	}
 
 	return buf.String(), nil
 }
