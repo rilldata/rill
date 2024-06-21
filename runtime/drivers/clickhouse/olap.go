@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -206,33 +207,42 @@ func (c *connection) AlterTableColumn(ctx context.Context, tableName, columnName
 }
 
 // CreateTableAsSelect implements drivers.OLAPStore.
-func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]string) error {
+func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view bool, sql string, tableOpts map[string]any) error {
 	if view {
 		return c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("CREATE OR REPLACE VIEW %s AS %s", safeSQLName(name), sql),
 			Priority: 100,
 		})
 	}
+
+	outputProps := &ModelOutputProperties{}
+	if err := mapstructure.WeakDecode(tableOpts, outputProps); err != nil {
+		return fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
 	var create strings.Builder
 	create.WriteString("CREATE OR REPLACE TABLE ")
 	create.WriteString(safeSQLName(name))
+
 	// see if there is any column override
-	if prop, ok := tableOpts["columns"]; ok {
-		create.WriteString(prop)
+	if outputProps.Columns != "" {
+		create.WriteString(outputProps.Columns)
 	}
+
+	// engine with default
 	create.WriteString(" ENGINE = ")
 	var engine string
-	// engine with default
-	if prop, ok := tableOpts["engine"]; ok {
-		engine = prop
+	if outputProps.Engine != "" {
+		engine = outputProps.Engine
 	} else {
 		engine = "MergeTree"
 	}
 	create.WriteString(engine)
 
-	if prop, ok := tableOpts["order_by"]; ok {
+	// order_by
+	if outputProps.OrderBy != "" {
 		create.WriteString(" ORDER BY ")
-		create.WriteString(prop)
+		create.WriteString(outputProps.OrderBy)
 	} else if engine == "MergeTree" {
 		// need ORDER BY for MergeTree
 		// it is optional for other engines
@@ -240,33 +250,33 @@ func (c *connection) CreateTableAsSelect(ctx context.Context, name string, view 
 	}
 
 	// partition_by
-	if prop, ok := tableOpts["partition_by"]; ok {
+	if outputProps.PartitionBy != "" {
 		create.WriteString(" PARTITION BY ")
-		create.WriteString(prop)
+		create.WriteString(outputProps.PartitionBy)
 	}
 
 	// primary_key
-	if prop, ok := tableOpts["primary_key"]; ok {
+	if outputProps.PrimaryKey != "" {
 		create.WriteString(" PRIMARY KEY ")
-		create.WriteString(prop)
+		create.WriteString(outputProps.PrimaryKey)
 	}
 
 	// sample_by
-	if prop, ok := tableOpts["sample_by"]; ok {
+	if outputProps.SampleBy != "" {
 		create.WriteString(" SAMPLE BY ")
-		create.WriteString(prop)
+		create.WriteString(outputProps.SampleBy)
 	}
 
 	// ttl
-	if prop, ok := tableOpts["ttl"]; ok {
+	if outputProps.TTL != "" {
 		create.WriteString(" TTL ")
-		create.WriteString(prop)
+		create.WriteString(outputProps.TTL)
 	}
 
 	// settings
-	if prop, ok := tableOpts["settings"]; ok {
+	if outputProps.Settings != "" {
 		create.WriteString(" SETTINGS ")
-		create.WriteString(prop)
+		create.WriteString(outputProps.Settings)
 	}
 
 	// write sql query
