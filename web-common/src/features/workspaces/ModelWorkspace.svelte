@@ -1,0 +1,172 @@
+<script lang="ts">
+  import { goto } from "$app/navigation";
+  import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
+  import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+  import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import {
+    ResourceKind,
+    resourceIsLoading,
+  } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
+  import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import ModelEditor from "@rilldata/web-common/features/models/workspace/ModelEditor.svelte";
+  import ModelWorkspaceCtAs from "@rilldata/web-common/features/models/workspace/ModelWorkspaceCTAs.svelte";
+  import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
+  import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
+  import WorkspaceEditorContainer from "@rilldata/web-common/layout/workspace/WorkspaceEditorContainer.svelte";
+  import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
+  import WorkspaceTableContainer from "@rilldata/web-common/layout/workspace/WorkspaceTableContainer.svelte";
+  import { workspaces } from "@rilldata/web-common/layout/workspace/workspace-stores";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import type { V1ModelV2 } from "@rilldata/web-common/runtime-client";
+  import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
+  import { isProfilingQuery } from "@rilldata/web-common/runtime-client/query-matcher";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { fade, slide } from "svelte/transition";
+
+  export let fileArtifact: FileArtifact;
+
+  $: ({
+    hasUnsavedChanges,
+    autoSave,
+    path: filePath,
+    fileName,
+    remoteContent,
+  } = fileArtifact);
+
+  $: assetName = getNameFromFile(filePath);
+
+  $: workspace = workspaces.get(filePath);
+  $: tableVisible = workspace.table.visible;
+
+  $: instanceId = $runtime.instanceId;
+
+  $: allErrorsStore = fileArtifact.getAllErrors(queryClient, instanceId);
+  $: hasErrors = fileArtifact.getHasErrors(queryClient, instanceId);
+
+  $: allErrors = $allErrorsStore;
+
+  $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
+  $: resource = $resourceQuery.data?.model;
+  $: connector = (resource as V1ModelV2)?.spec?.outputConnector as string;
+
+  $: tableName = (resource as V1ModelV2)?.state?.resultTable as string;
+
+  $: refreshedOn = resource?.state?.refreshedOn;
+  $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
+
+  async function save() {
+    httpRequestQueue.removeByName(assetName);
+    await queryClient.cancelQueries({
+      predicate: (query) => isProfilingQuery(query, assetName),
+    });
+  }
+
+  async function handleNameChange(
+    e: Event & {
+      currentTarget: EventTarget & HTMLInputElement;
+    },
+  ) {
+    const newRoute = await handleEntityRename(
+      instanceId,
+      e.currentTarget,
+      filePath,
+      fileName,
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ],
+    );
+
+    if (newRoute) await goto(newRoute);
+  }
+
+  function formatRefreshedOn(refreshedOn: string) {
+    const date = new Date(refreshedOn);
+    return date.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "numeric",
+    });
+  }
+</script>
+
+<WorkspaceContainer>
+  <WorkspaceHeader
+    slot="header"
+    titleInput={fileName}
+    showTableToggle
+    hasUnsavedChanges={$hasUnsavedChanges}
+    on:change={handleNameChange}
+  >
+    <svelte:fragment slot="workspace-controls">
+      <p
+        class="ui-copy-muted line-clamp-1 mr-2 text-[11px]"
+        transition:fade={{ duration: 200 }}
+      >
+        {#if refreshedOn}
+          Computed on {formatRefreshedOn(refreshedOn)}
+        {/if}
+      </p>
+    </svelte:fragment>
+
+    <svelte:fragment slot="cta" let:width>
+      {@const collapse = width < 800}
+
+      <div class="flex gap-x-2 items-center">
+        <ModelWorkspaceCtAs
+          {collapse}
+          modelHasError={$hasErrors}
+          modelName={assetName}
+        />
+      </div>
+    </svelte:fragment>
+  </WorkspaceHeader>
+
+  <div slot="body" class="editor-pane size-full overflow-hidden flex flex-col">
+    <WorkspaceEditorContainer>
+      {#key assetName}
+        <ModelEditor {fileArtifact} bind:autoSave={$autoSave} onSave={save} />
+      {/key}
+    </WorkspaceEditorContainer>
+
+    {#if $tableVisible}
+      <WorkspaceTableContainer>
+        {#if !allErrors.length}
+          <ConnectedPreviewTable
+            {connector}
+            table={tableName ?? ""}
+            loading={resourceIsReconciling}
+          />
+        {/if}
+        <svelte:fragment slot="error">
+          {#if allErrors.length > 0}
+            <div
+              transition:slide={{ duration: 200 }}
+              class="error bottom-4 break-words overflow-auto p-6 border-2 border-gray-300 font-bold text-gray-700 w-full shrink-0 max-h-[60%] z-10 bg-gray-100 flex flex-col gap-2"
+            >
+              {#each allErrors as error (error.message)}
+                <div>{error.message}</div>
+              {/each}
+            </div>
+          {/if}
+        </svelte:fragment>
+      </WorkspaceTableContainer>
+    {/if}
+  </div>
+
+  <svelte:fragment slot="inspector">
+    {#if tableName && resource}
+      <WorkspaceInspector
+        {tableName}
+        hasErrors={$hasErrors}
+        hasUnsavedChanges={$hasUnsavedChanges}
+        model={resource}
+        isEmpty={!$remoteContent?.length}
+        sourceIsReconciling={resourceIsReconciling}
+      />
+    {/if}
+  </svelte:fragment>
+</WorkspaceContainer>

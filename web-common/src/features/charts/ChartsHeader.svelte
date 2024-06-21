@@ -14,6 +14,7 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let filePath: string;
+  export let hasUnsavedChanges: boolean;
 
   let fileName: string;
   $: [, fileName] = splitFolderAndName(filePath);
@@ -39,7 +40,11 @@
   let generateOpen = false;
 </script>
 
-<WorkspaceHeader on:change={handleNameChange} titleInput={fileName}>
+<WorkspaceHeader
+  on:change={handleNameChange}
+  titleInput={fileName}
+  {hasUnsavedChanges}
+>
   <svelte:fragment slot="cta">
     <PanelCTA side="right">
       <Button on:click={() => (generateOpen = true)}>Generate using AI</Button>
