@@ -8,6 +8,8 @@
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { errorStore, isErrorStoreEmpty } from "./error-store";
 
+  $: ({ statusCode, header, body, detail } = $errorStore);
+
   afterNavigate(() => {
     // Checks to see if we're on the error page (and navigating away)
     if (!$isErrorStoreEmpty) {
@@ -19,9 +21,5 @@
 {#if $isErrorStoreEmpty}
   <slot />
 {:else}
-  <ErrorPage
-    statusCode={$errorStore.statusCode}
-    header={$errorStore.header}
-    body={$errorStore.body}
-  />
+  <ErrorPage {statusCode} {header} {body} {detail} />
 {/if}
