@@ -24,7 +24,6 @@
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
-  import { isErrorStoreEmpty } from "../errors/error-store";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import { isMetricsExplorerPage, isProjectPage } from "./nav-utils";
@@ -128,7 +127,7 @@
     </a>
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
   </Tooltip>
-  {#if $isErrorStoreEmpty && organization}
+  {#if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <OrganizationAvatar {organization} slot="icon" />
     </Breadcrumbs>
