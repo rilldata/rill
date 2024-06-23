@@ -5,10 +5,18 @@ import {
   createRuntimeServiceListResources,
 } from "@rilldata/web-common/runtime-client";
 
-export function useReports(instanceId: string) {
-  return createRuntimeServiceListResources(instanceId, {
-    kind: ResourceKind.Report,
-  });
+export function useReports(instanceId: string, enabled = true) {
+  return createRuntimeServiceListResources(
+    instanceId,
+    {
+      kind: ResourceKind.Report,
+    },
+    {
+      query: {
+        enabled,
+      },
+    },
+  );
 }
 
 export function useReport(instanceId: string, name: string) {

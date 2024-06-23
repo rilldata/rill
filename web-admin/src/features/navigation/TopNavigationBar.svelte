@@ -37,6 +37,8 @@
   $: ({ organization, project, dashboard, alert, report } = $page.params);
 
   $: onProjectPage = isProjectPage($page);
+  $: onAlertPage = !!alert;
+  $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
 
   $: organizationQuery = listOrgs(
@@ -56,8 +58,8 @@
 
   $: visualizationsQuery = useValidVisualizations(instanceId);
 
-  $: alertsQuery = useAlerts(instanceId);
-  $: reportsQuery = useReports(instanceId);
+  $: alertsQuery = useAlerts(instanceId, onAlertPage);
+  $: reportsQuery = useReports(instanceId, onReportPage);
 
   $: organizations = $organizationQuery.data?.organizations ?? [];
   $: projects = $projectsQuery.data?.projects ?? [];
