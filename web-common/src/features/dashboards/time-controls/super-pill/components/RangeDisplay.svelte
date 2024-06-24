@@ -2,23 +2,27 @@
   import { Interval, DateTime } from "luxon";
 
   export let interval: Interval<true>;
+  export let grain: string;
+
+  $: showTime = grain === "TIME_GRAIN_HOUR" || grain === "TIME_GRAIN_MINUTE";
+  $: timeFormat = grain === "TIME_GRAIN_MINUTE" ? "h:mm a" : "h a";
 
   $: inclusiveInterval = interval.set({
-    end: interval.end.minus({ millisecond: interval.end.hour === 0 ? 1 : 0 }),
+    end: interval.end.minus({ millisecond: 1 }),
   });
 
-  $: date = inclusiveInterval.toLocaleString(DateTime.DATE_MED);
+  $: displayedInterval = showTime ? interval : inclusiveInterval;
 
-  $: time = inclusiveInterval.toFormat("h a", { separator: "-" });
+  $: date = displayedInterval.toLocaleString(DateTime.DATE_MED);
 
-  // Only show time if either time is not 12AM
-  $: showTime = interval.end.hour !== 0 || interval.end.minute !== 0;
+  $: time = displayedInterval.toFormat(timeFormat, { separator: "-" });
 </script>
 
 <div class="flex gap-x-1" title="{date} {time}">
-  <span class="line-clamp-1 text-left"
-    >{date}
+  <span class="line-clamp-1 text-left">
+    {date}
     {#if showTime}
-      ({time}){/if}</span
-  >
+      ({time})
+    {/if}
+  </span>
 </div>

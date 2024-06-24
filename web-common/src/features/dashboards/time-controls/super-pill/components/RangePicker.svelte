@@ -17,6 +17,7 @@
   export let interval: Interval<true>;
   export let zone: string;
   export let showDefaultItem: boolean;
+  export let grain: string;
   export let defaultTimeRange: NamedRange | ISODurationString | undefined;
   export let onSelectRange: (range: NamedRange | ISODurationString) => void;
   export let applyCustomRange: (range: Interval<true>) => void;
@@ -46,7 +47,7 @@
     >
       <b class="mr-1 line-clamp-1 flex-none">{getRangeLabel(selected)}</b>
       {#if interval.isValid}
-        <RangeDisplay {interval} />
+        <RangeDisplay {interval} {grain} />
       {/if}
       <span class="flex-none transition-transform" class:-rotate-180={open}>
         <CaretDownIcon />

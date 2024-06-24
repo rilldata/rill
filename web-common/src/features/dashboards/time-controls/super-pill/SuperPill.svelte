@@ -263,12 +263,13 @@
   />
   <!-- TO DO -->
   <!-- <Elements.Zoom /> -->
-  {#if interval.isValid}
+  {#if interval.isValid && activeTimeGrain}
     <Elements.RangePicker
       {ranges}
       {showDefaultItem}
       {defaultTimeRange}
       selected={selectedRange}
+      grain={activeTimeGrain}
       {onSelectRange}
       {interval}
       zone={activeTimeZone}
