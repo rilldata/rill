@@ -1471,7 +1471,7 @@ items:
   height: 2
 - component:
     markdown:
-	  content: Hello world!
+      content: "Hello world!"
 `,
 	})
 
