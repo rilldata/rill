@@ -99,11 +99,6 @@ func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offs
 	return recommendations, nil
 }
 
-type UsageAvailability struct {
-	MinTime time.Time `json:"min_time"`
-	MaxTime time.Time `json:"max_time"`
-}
-
 type Usage struct {
 	OrgID      string    `json:"org_id"`
 	ProjectID  string    `json:"project_id"`

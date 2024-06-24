@@ -228,6 +228,7 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	var orbUsage []orb.EventIngestParamsEvent
+	// sync max 500 events at a time
 	for _, u := range usage {
 		eventName := u.MetricName + "_" + string(u.ReportingGrain)
 		// use end time minus 1 second to make sure the event is attributed to the current time bucket
@@ -248,27 +249,30 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 			Timestamp:          orb.F(eventTime),
 			Properties:         orb.F[any](props),
 		})
-	}
 
-	re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
-	err := re.RunCtx(ctx, func(ctx context.Context) error {
-		resp, err := o.client.Events.Ingest(ctx, orb.EventIngestParams{
-			Events: orb.F(orbUsage),
-		})
-		if err != nil {
-			return err
-		}
-		if len(resp.ValidationFailed) > 0 {
-			errMsg := fmt.Sprintf("validation failure for %d events, showing first few:", len(resp.ValidationFailed))
-			for i := 0; i < 5 && i < len(resp.ValidationFailed); i++ {
-				errMsg += fmt.Sprintf("\n%s: %s", resp.ValidationFailed[i].IdempotencyKey, resp.ValidationFailed[i].ValidationErrors)
+		if len(orbUsage) == requestMaxLimit {
+			re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
+			err := re.RunCtx(ctx, func(ctx context.Context) error {
+				resp, err := o.client.Events.Ingest(ctx, orb.EventIngestParams{
+					Events: orb.F(orbUsage),
+				})
+				if err != nil {
+					return err
+				}
+				if len(resp.ValidationFailed) > 0 {
+					errMsg := fmt.Sprintf("validation failure for %d events, showing first few:", len(resp.ValidationFailed))
+					for i := 0; i < 5 && i < len(resp.ValidationFailed); i++ {
+						errMsg += fmt.Sprintf("\n%s: %s", resp.ValidationFailed[i].IdempotencyKey, resp.ValidationFailed[i].ValidationErrors)
+					}
+					return errors.New(errMsg)
+				}
+				return nil
+			})
+			if err != nil {
+				return err
 			}
-			return errors.New(errMsg)
+			orbUsage = nil
 		}
-		return nil
-	})
-	if err != nil {
-		return err
 	}
 	return nil
 }
