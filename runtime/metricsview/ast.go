@@ -554,27 +554,28 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine) (*SelectNode, error) 
 		return nil, nil
 	}
 
-	n := &SelectNode{
-		Alias:     alias,
-		DimFields: a.dimFields,
-		Group:     true,
-		FromTable: a.underlyingTable,
-		Where:     a.underlyingWhere,
-	}
-
 	if spine.Where != nil {
-		expr, args, err := a.sqlForExpression(spine.Where, n, false, true)
+		expr, args, err := a.sqlForExpression(spine.Where, nil, false, true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
 		}
+
+		n := &SelectNode{
+			Alias:     alias,
+			DimFields: a.dimFields,
+			Group:     true,
+			FromTable: a.underlyingTable,
+		}
 		n.Where = n.Where.and(expr, args)
+
+		return n, nil
 	}
 
 	if spine.TimeRange != nil {
 		return nil, errors.New("time_range not yet supported in spine")
 	}
 
-	return n, nil
+	return nil, errors.New("unhandled spine type")
 }
 
 // addTimeRange adds a time range to the given SelectNode's WHERE clause.

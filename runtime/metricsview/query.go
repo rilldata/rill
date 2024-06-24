@@ -95,11 +95,11 @@ type MeasureComputeComparisonRatio struct {
 }
 
 type Spine struct {
-	Where     *Expression     `mapstructure:"where"`
-	TimeRange *TimeRangeSpine `mapstructure:"time_range"`
+	Where     *Expression `mapstructure:"where"`
+	TimeRange *TimeSpine  `mapstructure:"time"`
 }
 
-type TimeRangeSpine struct {
+type TimeSpine struct {
 	Start time.Time `mapstructure:"start"`
 	End   time.Time `mapstructure:"end"`
 	Grain TimeGrain `mapstructure:"grain"`
