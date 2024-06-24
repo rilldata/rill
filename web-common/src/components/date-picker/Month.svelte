@@ -83,8 +83,7 @@
     {/each}
     {#each days as date (date.toISO())}
       {@const isEnd = areSameDay(inclusiveEnd, date)}
-      {@const inRange =
-        !isEnd && date >= interval.start && date <= inclusiveEnd}
+      {@const inRange = date >= interval.start && date <= inclusiveEnd}
       {@const inPotentialRange =
         (potentialEnd && date > interval.start && date < potentialEnd) ||
         (potentialStart && date > potentialStart && date < inclusiveEnd)}
@@ -125,7 +124,7 @@
   }
 
   :not(.selecting-start) .day:not(.is-start):not(.is-end):hover {
-    @apply rounded-r-sm border border-primary-200 bg-primary-200 border-dashed;
+    @apply rounded-r-sm border border-primary-200 bg-primary-300 border-dashed;
   }
 
   .selecting-start .day:not(.is-start):not(.is-end):hover {
@@ -159,7 +158,7 @@
   }
 
   .is-end {
-    @apply bg-primary-700 border-primary-700 text-white;
+    @apply bg-primary-600 border-primary-700 text-white;
   }
 
   .is-start {
