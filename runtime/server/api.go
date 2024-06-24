@@ -3,15 +3,21 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
+	"github.com/go-openapi/spec"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
+	"gopkg.in/yaml.v3"
 )
 
 func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
@@ -77,4 +83,205 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	return nil
+}
+
+func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) error {
+	// Parse path parameters
+	ctx := req.Context()
+	instanceID := req.PathValue("instance_id")
+
+	// Add observability attributes
+	observability.AddRequestAttributes(ctx)
+	s.addInstanceRequestAttributes(ctx, instanceID)
+
+	// Only GET request is allowed
+	if req.Method != http.MethodGet {
+		return httputil.Error(http.StatusMethodNotAllowed, fmt.Errorf("GET only"))
+	}
+
+	// Check if user has access to query for API data
+	if !auth.GetClaims(ctx).CanInstance(instanceID, auth.ReadAPI) {
+		return httputil.Errorf(http.StatusForbidden, "does not have access to custom APIs")
+	}
+
+	apis := make(map[string]*runtimev1.API)
+
+	// Get all built-in APIs
+	for name, api := range runtime.BuiltinAPIs {
+		apis[name] = api
+	}
+
+	// Get all custom APIs
+	ctrl, err := s.runtime.Controller(ctx, instanceID)
+	if err != nil {
+		return httputil.Error(http.StatusBadRequest, err)
+	}
+
+	list, err := ctrl.List(ctx, runtime.ResourceKindAPI, "", false)
+	if err != nil {
+		return err
+	}
+
+	for _, res := range list {
+		apis[res.Meta.Name.Name] = res.GetApi()
+	}
+
+	// Generate the OpenAPI spec
+	combinedAPISpec, err := s.generateOpenAPISpec(instanceID, apis)
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
+
+	// Check accepted format of the OpenAPI spec: JSON or YAML
+	accept := req.Header.Get("Accept")
+
+	// YAML
+	if accept == "application/yaml" || accept == "application/x-yaml" {
+		data, err := yaml.Marshal(combinedAPISpec)
+		if err != nil {
+			return httputil.Error(http.StatusInternalServerError, err)
+		}
+
+		w.Header().Set("Content-Type", "application/yaml")
+		_, err = w.Write(data)
+		if err != nil {
+			return httputil.Error(http.StatusInternalServerError, err)
+		}
+
+		return nil
+	}
+
+	// JSON
+	data, err := combinedAPISpec.MarshalJSON()
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	_, err = w.Write(data)
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
+
+	return nil
+}
+
+func (s *Server) generateOpenAPISpec(instanceID string, apis map[string]*runtimev1.API) (*spec.Swagger, error) {
+	baseSpec := &spec.Swagger{
+		SwaggerProps: spec.SwaggerProps{
+			Swagger:  "2.0",
+			Produces: []string{"application/json"},
+			Info: &spec.Info{
+				InfoProps: spec.InfoProps{
+					Title:   "Rill custom API of instance " + instanceID,
+					Version: "1.0.0",
+				},
+			},
+			BasePath: "/",
+			Paths: &spec.Paths{
+				Paths: make(map[string]spec.PathItem),
+			},
+		},
+	}
+
+	var runtimeHost string
+	if s.opts.AuthAudienceURL != "" {
+		runtimeURL, err := url.Parse(s.opts.AuthAudienceURL)
+		if err != nil {
+			return nil, err
+		}
+		runtimeHost = runtimeURL.Host
+	} else {
+		runtimeHost = fmt.Sprintf("localhost:%d", s.opts.HTTPPort)
+	}
+
+	baseSpec.SwaggerProps.Host = runtimeHost
+
+	for name, api := range apis {
+		pathItem, err := s.generatePathItemSpec(name, api)
+		if err != nil {
+			return nil, err
+		}
+
+		baseSpec.Paths.Paths[fmt.Sprintf("/v1/instances/%s/api/%s", instanceID, name)] = *pathItem
+	}
+
+	return baseSpec, nil
+}
+
+func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*spec.PathItem, error) {
+	var err error
+	reqSummary := ""
+	if api.Spec.OpenApiSpec != nil {
+		reqSummary = api.Spec.OpenApiSpec.ReqSummary
+	}
+	if reqSummary == "" {
+		reqSummary = fmt.Sprintf("Query %s API", name)
+	}
+
+	var params []spec.Parameter
+	if api.Spec.OpenApiSpec != nil && api.Spec.OpenApiSpec.ReqParams != nil {
+		maps := make([]map[string]any, len(api.Spec.OpenApiSpec.ReqParams))
+		for i, param := range api.Spec.OpenApiSpec.ReqParams {
+			maps[i] = param.AsMap()
+		}
+		params, err = rillv1.ConvertParameters(maps)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	resDescription := ""
+	if api.Spec.OpenApiSpec != nil {
+		resDescription = api.Spec.OpenApiSpec.ResDescription
+	}
+	if resDescription == "" {
+		resDescription = fmt.Sprintf("Successful response of the %s API", name)
+	}
+
+	var schema *spec.Schema
+	if api.Spec.OpenApiSpec != nil && api.Spec.OpenApiSpec.ResSchema != nil {
+		schema, err = rillv1.ConvertSchema(api.Spec.OpenApiSpec.ResSchema.AsMap())
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		schema = &spec.Schema{
+			SchemaProps: spec.SchemaProps{
+				Type: []string{"object"},
+			},
+		}
+	}
+
+	pathItem := spec.PathItem{
+		PathItemProps: spec.PathItemProps{
+			Get: &spec.Operation{
+				OperationProps: spec.OperationProps{
+					Summary:    reqSummary,
+					Parameters: params,
+					Responses: &spec.Responses{
+						ResponsesProps: spec.ResponsesProps{
+							StatusCodeResponses: map[int]spec.Response{
+								200: {
+									ResponseProps: spec.ResponseProps{
+										Description: resDescription,
+										Schema: &spec.Schema{
+											SchemaProps: spec.SchemaProps{
+												Type: []string{"array"},
+												Items: &spec.SchemaOrArray{
+													Schema: schema,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	return &pathItem, nil
 }

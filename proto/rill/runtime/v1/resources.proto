@@ -495,9 +495,17 @@ message API {
 message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
+  OpenAPISpec open_api_spec = 3;
 }
 
 message APIState {}
+
+message OpenAPISpec {
+  string req_summary = 1;
+  repeated google.protobuf.Struct req_params = 2;
+  string res_description = 3;
+  google.protobuf.Struct res_schema = 4;
+}
 
 message Schedule {
   bool ref_update = 4;
