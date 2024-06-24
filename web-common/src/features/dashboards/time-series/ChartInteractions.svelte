@@ -109,14 +109,16 @@
 </script>
 
 {#if $dashboardStore?.selectedScrubRange?.end}
-  <div class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2">
+  <div
+    class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2 z-50 bg-white"
+  >
     <Button compact type="plain" on:click={() => zoomScrub()}>
       <div class="flex items-center gap-x-2">
         <span class="flex-none">
           <Zoom size="16px" />
         </span>
-        {#if subInterval?.isValid}
-          <RangeDisplay interval={subInterval} />
+        {#if subInterval?.isValid && timeGrain}
+          <RangeDisplay interval={subInterval} grain={timeGrain} />
         {/if}
         <span class="font-semibold">(Z)</span>
       </div>
