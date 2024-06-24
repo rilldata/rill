@@ -9355,6 +9355,13 @@ export class ReportOptions extends Message<ReportOptions> {
    */
   slackWebhooks: string[] = [];
 
+  /**
+   * base64 state url of the metrics_view when it was created
+   *
+   * @generated from field: string web_open_state = 14;
+   */
+  webOpenState = "";
+
   constructor(data?: PartialMessage<ReportOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9376,6 +9383,7 @@ export class ReportOptions extends Message<ReportOptions> {
     { no: 10, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 14, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ReportOptions {
@@ -9454,6 +9462,13 @@ export class AlertOptions extends Message<AlertOptions> {
    */
   slackWebhooks: string[] = [];
 
+  /**
+   * base64 state url of the dashboard when it was created
+   *
+   * @generated from field: string web_open_state = 12;
+   */
+  webOpenState = "";
+
   constructor(data?: PartialMessage<AlertOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9473,6 +9488,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 9, name: "slack_users", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {

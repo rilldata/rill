@@ -2569,6 +2569,9 @@ definitions:
         type: array
         items:
           type: string
+      webOpenState:
+        type: string
+        title: base64 state url of the dashboard when it was created
   v1BillingPlan:
     type: object
     properties:
@@ -3408,6 +3411,9 @@ definitions:
         type: array
         items:
           type: string
+      webOpenState:
+        type: string
+        title: base64 state url of the metrics_view when it was created
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

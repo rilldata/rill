@@ -299,8 +299,6 @@
             value={bigNum}
             isMeasureExpanded={isInTimeDimensionView}
             {showComparison}
-            comparisonOption={$timeControlsStore?.selectedComparisonTimeRange
-              ?.name}
             {comparisonValue}
             status={$timeSeriesDataStore?.isFetching
               ? EntityStatus.Running

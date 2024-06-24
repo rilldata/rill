@@ -351,7 +351,9 @@ replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testco
 // see the following PR: https://github.com/snowflakedb/gosnowflake/pull/1062
 replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
 
-// Remove this once following changes are merged : https://github.com/k-anshul/google-cloud-go/pull/5/files
-replace cloud.google.com/go/bigquery v1.61.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20240620080947-9bb0e0dc9742
-
 exclude modernc.org/sqlite v1.18.1
+
+// Adds changes from the two PRs :
+// https://github.com/apache/arrow/pull/41638
+// https://github.com/apache/arrow/pull/42003
+replace github.com/apache/arrow/go/v14 v14.0.2 => github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff

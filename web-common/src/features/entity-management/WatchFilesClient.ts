@@ -43,10 +43,7 @@ export class WatchFilesClient {
     if (!res.isDir) {
       switch (res.event) {
         case V1FileEvent.FILE_EVENT_WRITE:
-          void queryClient.refetchQueries(
-            getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
-          );
-          void fileArtifacts.fileUpdated(res.path);
+          await fileArtifacts.getFileArtifact(res.path).fetchContent(true);
 
           if (res.path === "/rill.yaml") {
             // If it's a rill.yaml file, invalidate the dev JWT queries
@@ -64,7 +61,7 @@ export class WatchFilesClient {
           void queryClient.resetQueries(
             getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
           );
-          fileArtifacts.fileDeleted(res.path);
+          fileArtifacts.removeFile(res.path);
           this.seenFiles.delete(res.path);
 
           if (res.path === "/rill.yaml") {

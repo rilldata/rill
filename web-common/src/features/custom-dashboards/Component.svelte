@@ -1,14 +1,15 @@
 <script lang="ts" context="module">
-  import { onMount } from "svelte";
-  import type ResizeHandle from "./ResizeHandle.svelte";
-  import type { ComponentType } from "svelte";
+  import TemplateRenderer from "@rilldata/web-common/features/templates/TemplateRenderer.svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import Chart from "./Chart.svelte";
-  import Markdown from "./Markdown.svelte";
+  import type { ComponentType } from "svelte";
+  import { onMount } from "svelte";
   import {
     ResourceKind,
     useResource,
   } from "../entity-management/resource-selectors";
+  import Chart from "./Chart.svelte";
+  import Markdown from "./Markdown.svelte";
+  import type ResizeHandle from "./ResizeHandle.svelte";
 
   const options = [0, 0.5, 1];
   const allSides = options
@@ -111,6 +112,14 @@
         />
       {:else if renderer === "markdown" && rendererProperties?.content}
         <Markdown markdown={rendererProperties.content} {fontSize} />
+      {:else if renderer && rendererProperties}
+        <TemplateRenderer
+          {chartView}
+          {renderer}
+          {rendererProperties}
+          {resolverProperties}
+          {componentName}
+        />
       {/if}
     </div>
   </div>

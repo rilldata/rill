@@ -1716,6 +1716,8 @@ message ReportOptions {
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
   repeated string slack_webhooks = 12;
+  // base64 state url of the metrics_view when it was created
+  string web_open_state = 14;
 }
 
 message AlertOptions {
@@ -1730,6 +1732,8 @@ message AlertOptions {
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;
+  // base64 state url of the dashboard when it was created
+  string web_open_state = 12;
 }
 
 message ListPublicBillingPlansRequest {}

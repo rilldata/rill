@@ -77,14 +77,17 @@ export function isoDurationToFullTimeRange(
   };
 }
 
-export function humaniseISODuration(isoDuration: string): string {
+export function humaniseISODuration(
+  isoDuration: string,
+  toUpper = true,
+): string {
   if (!isoDuration) return "";
   const duration = Duration.fromISO(isoDuration);
   let humanISO = duration.toHuman({
     listStyle: "long",
   });
   humanISO = humanISO.replace(/(\d) (\w)/g, (substring, n, c) => {
-    return `${n} ${c.toUpperCase()}`;
+    return `${n} ${toUpper ? c.toUpperCase() : c}`;
   });
   humanISO = humanISO.replace(", and", " and");
   return humanISO;

@@ -25192,6 +25192,8 @@ func (m *ReportOptions) validate(all bool) error {
 
 	// no validation rules for OpenProjectSubpath
 
+	// no validation rules for WebOpenState
+
 	if len(errors) > 0 {
 		return ReportOptionsMultiError(errors)
 	}
@@ -25305,6 +25307,8 @@ func (m *AlertOptions) validate(all bool) error {
 	// no validation rules for Renotify
 
 	// no validation rules for RenotifyAfterSeconds
+
+	// no validation rules for WebOpenState
 
 	if len(errors) > 0 {
 		return AlertOptionsMultiError(errors)
