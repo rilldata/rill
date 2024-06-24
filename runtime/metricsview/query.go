@@ -13,6 +13,7 @@ type Query struct {
 	Dimensions          []Dimension `mapstructure:"dimensions"`
 	Measures            []Measure   `mapstructure:"measures"`
 	PivotOn             []string    `mapstructure:"pivot_on"`
+	Spine               *Spine      `mapstructure:"spine"`
 	Sort                []Sort      `mapstructure:"sort"`
 	TimeRange           *TimeRange  `mapstructure:"time_range"`
 	ComparisonTimeRange *TimeRange  `mapstructure:"comparison_time_range"`
@@ -91,6 +92,17 @@ type MeasureComputeComparisonDelta struct {
 
 type MeasureComputeComparisonRatio struct {
 	Measure string `mapstructure:"measure"`
+}
+
+type Spine struct {
+	Where     *Expression     `mapstructure:"where"`
+	TimeRange *TimeRangeSpine `mapstructure:"time_range"`
+}
+
+type TimeRangeSpine struct {
+	Start time.Time `mapstructure:"start"`
+	End   time.Time `mapstructure:"end"`
+	Grain TimeGrain `mapstructure:"grain"`
 }
 
 type Sort struct {
