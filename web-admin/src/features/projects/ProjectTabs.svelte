@@ -1,7 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "../../client";
-  import ProjectDeploymentStatusChip from "./status/ProjectDeploymentStatusChip.svelte";
+  import ProjectGlobalStatusIndicator from "./status/ProjectGlobalStatusIndicator.svelte";
 
   $: ({
     url: { pathname },
@@ -58,11 +58,7 @@
       <a href={tab.route} class:selected={pathname === tab.route}>
         {tab.label}
         {#if tab.label === "Status"}
-          <ProjectDeploymentStatusChip
-            {organization}
-            {project}
-            iconOnly={true}
-          />
+          <ProjectGlobalStatusIndicator {organization} {project} />
         {/if}
       </a>
     {/each}
