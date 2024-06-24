@@ -144,7 +144,6 @@ type connection struct {
 	watcher      *watcher
 
 	ignorePaths []string
-	cacheMutex  sync.RWMutex
 }
 
 // Config implements drivers.Connection.
