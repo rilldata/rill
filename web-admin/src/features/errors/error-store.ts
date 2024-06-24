@@ -9,6 +9,7 @@ export interface ErrorStoreState {
   statusCode: number | null;
   header: string;
   body: string;
+  detail?: string;
 }
 
 export interface ErrorStore extends Writable<ErrorStoreState> {

@@ -160,11 +160,13 @@ function createErrorStoreStateFromAxiosError(
     statusCode: error.response?.status,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+    detail: (error.response?.data as RpcStatus)?.message,
   };
 }
 
 export function createErrorPagePropsFromRoutingError(
   statusCode: number,
+  errorMessage: string,
 ): ErrorStoreState {
   if (statusCode === 404) {
     return {
@@ -179,5 +181,6 @@ export function createErrorPagePropsFromRoutingError(
     statusCode: statusCode,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+    detail: errorMessage,
   };
 }
