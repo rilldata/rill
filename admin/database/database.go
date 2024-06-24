@@ -215,7 +215,7 @@ type DB interface {
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
-	InsertAsset(ctx context.Context, organizationID, path string) (*Asset, error)
+	InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*Asset, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -282,7 +282,7 @@ type Project struct {
 	Public          bool
 	CreatedByUserID *string `db:"created_by_user_id"`
 	Provisioner     string
-	// ArchiveAssetID is set when project artifacts are managed by Rill instead of maintained in Git.
+	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
 	// If ArchiveAssetID is set all git related fields will be empty.
 	ArchiveAssetID       *string           `db:"archive_asset_id"`
 	GithubURL            *string           `db:"github_url"`
@@ -817,7 +817,8 @@ type InsertVirtualFileOptions struct {
 
 type Asset struct {
 	ID             string
-	OrganizationID string `db:"org_id"`
-	Path           string
+	OrganizationID string    `db:"org_id"`
+	Path           string    `db:"path"`
+	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
 }

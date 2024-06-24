@@ -24,9 +24,23 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, pr
 		return "", err
 	}
 
+	// generate an ignore list of files using .gitignore
+	ignore, err := repo.Get(ctx, "/.gitignore")
+	if err != nil {
+		return "", err
+	}
+	var ignoreList []string
+	files := strings.Split(ignore, "\n")
+	for _, file := range files {
+		file = strings.TrimSpace(file)
+		if file != "" {
+			ignoreList = append(ignoreList, file)
+		}
+	}
+
 	// generate a tar ball
 	b := &bytes.Buffer{}
-	if err := createTarball(b, entries, repo.Root()); err != nil {
+	if err := createTarball(b, entries, repo.Root(), ignoreList); err != nil {
 		return "", err
 	}
 
@@ -39,7 +53,7 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, pr
 }
 
 // borrowed from https://github.com/goreleaser/goreleaser/blob/main/pkg/archive/tar/tar.go with minor changes
-func createTarball(writer io.Writer, files []drivers.DirEntry, root string) error {
+func createTarball(writer io.Writer, files []drivers.DirEntry, root string, ignoreList []string) error {
 	gw, err := gzip.NewWriterLevel(writer, gzip.BestCompression)
 	if err != nil {
 		return err
@@ -48,7 +62,7 @@ func createTarball(writer io.Writer, files []drivers.DirEntry, root string) erro
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
 	for _, entry := range files {
-		if strings.EqualFold(entry.Path, "/.env") { // ignore .env
+		if isIgnored(entry.Path, ignoreList) {
 			continue
 		}
 		fullPath := filepath.Join(root, entry.Path)
@@ -107,8 +121,9 @@ func uploadTarBall(ctx context.Context, ch *Helper, org, project string, body io
 	if err != nil {
 		return "", fmt.Errorf("failed to create request: %w", err)
 	}
-	req.Header.Set("Content-Type", "application/octet-stream")
-	req.Header.Set("x-goog-content-length-range", "1,104857600")
+	for key, value := range asset.SigningHeaders {
+		req.Header.Set(key, value)
+	}
 
 	// Execute the request
 	resp, err := http.DefaultClient.Do(req)
@@ -123,4 +138,16 @@ func uploadTarBall(ctx context.Context, ch *Helper, org, project string, body io
 		return "", fmt.Errorf("failed to upload file: status code %d, response %s", resp.StatusCode, string(body))
 	}
 	return asset.AssetId, nil
+}
+
+func isIgnored(path string, ignorePathsConfig []string) bool {
+	for _, dir := range ignorePathsConfig {
+		if path == dir {
+			return true
+		}
+		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
+			return true
+		}
+	}
+	return false
 }

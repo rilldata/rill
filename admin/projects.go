@@ -19,7 +19,7 @@ import (
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
 	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
 	if (opts.ArchiveAssetID == nil) == isGitInfoEmpty {
-		return nil, fmt.Errorf("either github info or upload path must be set")
+		return nil, fmt.Errorf("either github info or archive_asset_id must be set")
 	}
 
 	// Get roles for initial setup

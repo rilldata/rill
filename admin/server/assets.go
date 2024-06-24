@@ -2,7 +2,6 @@ package server
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/url"
 	"path"
@@ -10,7 +9,7 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/google/uuid"
-	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
 	"go.opentelemetry.io/otel/attribute"
@@ -38,6 +37,24 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 		attribute.String("args.type", req.Type),
 	)
 
+	// Check the request is made by a user
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser && claims.OwnerType() != auth.OwnerTypeService {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+	}
+
+	// Find parent org
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	// Check permissions
+	// create asset and create project should be the same permission
+	if !claims.OrganizationPermissions(ctx, org.ID).CreateProjects {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to create assets")
+	}
+
 	// generate a signed url
 	object := fmt.Sprintf("%s__%s.%s", req.Name, uuid.New().String(), req.Extension)
 	opts := &storage.SignedURLOptions{
@@ -57,15 +74,7 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 		return nil, err
 	}
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
-	if err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "org not found")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	asset, err := s.admin.DB.InsertAsset(ctx, org.ID, assetPath)
+	asset, err := s.admin.DB.InsertAsset(ctx, org.ID, assetPath, claims.OwnerID())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to insert asset: %s", err.Error())
 	}

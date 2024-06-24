@@ -363,7 +363,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		if req.ArchiveAssetId == "" {
 			return nil, status.Error(codes.InvalidArgument, "either github_url or archive_asset_id must be set")
 		}
-		if !s.isAssetInOrg(ctx, req.ArchiveAssetId, org.ID) {
+		if !s.hasAssetUsagePermission(ctx, req.ArchiveAssetId, org.ID, claims.OwnerID()) {
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
 		opts.ArchiveAssetID = &req.ArchiveAssetId
@@ -456,7 +456,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
+	if req.GithubUrl != nil && req.ArchiveAssetId != nil {
+		return nil, fmt.Errorf("cannot set both github_url and archive_asset_id")
+	}
 	githubURL := proj.GithubURL
+	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
 		if safeStr(proj.GithubURL) != *req.GithubUrl {
@@ -466,15 +470,15 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 			}
 			githubURL = req.GithubUrl
 		}
+		archiveAssetID = nil
 	}
-	archiveAssetID := proj.ArchiveAssetID
 	if req.ArchiveAssetId != nil {
 		archiveAssetID = req.ArchiveAssetId
 		org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 		if err != nil {
 			return nil, err
 		}
-		if !s.isAssetInOrg(ctx, *archiveAssetID, org.ID) {
+		if !s.hasAssetUsagePermission(ctx, *archiveAssetID, org.ID, claims.OwnerID()) {
 			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
 	}
@@ -873,7 +877,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {
 	claims := auth.GetClaims(ctx)
 	if !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get artifacts url")
+		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
 	}
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
@@ -1193,12 +1197,12 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 	}
 }
 
-func (s *Server) isAssetInOrg(ctx context.Context, id, orgID string) bool {
+func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID string) bool {
 	asset, err := s.admin.DB.FindAsset(ctx, id)
 	if err != nil {
 		return false
 	}
-	return asset.OrganizationID == orgID
+	return asset.OrganizationID == orgID && asset.OwnerID == ownerID
 }
 
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
