@@ -631,7 +631,7 @@ message UpdateOrganizationResponse {
 
 message UpdateOrganizationBillingPlanRequest {
   string org_name = 1;
-  optional string rill_plan_id = 2;
+  optional string plan_name = 2;
   optional string biller_plan_id = 3;
 }
 
@@ -1739,12 +1739,13 @@ message ListPublicBillingPlansResponse {
 }
 
 message BillingPlan {
-  string biller_id = 1;
-  string rill_id = 2;
-  string name = 3;
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
   string description = 4;
   uint32 trial_period_days = 5;
-  Quotas quotas = 6;
+  bool default = 6;
+  Quotas quotas = 7;
   // TODO expose pricing information
 }
 

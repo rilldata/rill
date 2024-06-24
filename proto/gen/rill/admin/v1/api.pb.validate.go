@@ -1518,8 +1518,8 @@ func (m *UpdateOrganizationBillingPlanRequest) validate(all bool) error {
 
 	// no validation rules for OrgName
 
-	if m.RillPlanId != nil {
-		// no validation rules for RillPlanId
+	if m.PlanName != nil {
+		// no validation rules for PlanName
 	}
 
 	if m.BillerPlanId != nil {
@@ -25645,15 +25645,17 @@ func (m *BillingPlan) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for BillerId
-
-	// no validation rules for RillId
+	// no validation rules for Id
 
 	// no validation rules for Name
+
+	// no validation rules for DisplayName
 
 	// no validation rules for Description
 
 	// no validation rules for TrialPeriodDays
+
+	// no validation rules for Default
 
 	if all {
 		switch v := interface{}(m.GetQuotas()).(type) {

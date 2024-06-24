@@ -576,9 +576,9 @@ export class UpdateOrganizationBillingPlanRequest extends Message<UpdateOrganiza
   orgName = "";
 
   /**
-   * @generated from field: optional string rill_plan_id = 2;
+   * @generated from field: optional string plan_name = 2;
    */
-  rillPlanId?: string;
+  planName?: string;
 
   /**
    * @generated from field: optional string biller_plan_id = 3;
@@ -594,7 +594,7 @@ export class UpdateOrganizationBillingPlanRequest extends Message<UpdateOrganiza
   static readonly typeName = "rill.admin.v1.UpdateOrganizationBillingPlanRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "rill_plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "biller_plan_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
@@ -9565,19 +9565,19 @@ export class ListPublicBillingPlansResponse extends Message<ListPublicBillingPla
  */
 export class BillingPlan extends Message<BillingPlan> {
   /**
-   * @generated from field: string biller_id = 1;
+   * @generated from field: string id = 1;
    */
-  billerId = "";
+  id = "";
 
   /**
-   * @generated from field: string rill_id = 2;
-   */
-  rillId = "";
-
-  /**
-   * @generated from field: string name = 3;
+   * @generated from field: string name = 2;
    */
   name = "";
+
+  /**
+   * @generated from field: string display_name = 3;
+   */
+  displayName = "";
 
   /**
    * @generated from field: string description = 4;
@@ -9590,9 +9590,14 @@ export class BillingPlan extends Message<BillingPlan> {
   trialPeriodDays = 0;
 
   /**
+   * @generated from field: bool default = 6;
+   */
+  default = false;
+
+  /**
    * TODO expose pricing information
    *
-   * @generated from field: rill.admin.v1.Quotas quotas = 6;
+   * @generated from field: rill.admin.v1.Quotas quotas = 7;
    */
   quotas?: Quotas;
 
@@ -9604,12 +9609,13 @@ export class BillingPlan extends Message<BillingPlan> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.BillingPlan";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "biller_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "rill_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "trial_period_days", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 6, name: "quotas", kind: "message", T: Quotas },
+    { no: 6, name: "default", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "quotas", kind: "message", T: Quotas },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): BillingPlan {

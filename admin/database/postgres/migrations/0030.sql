@@ -5,4 +5,6 @@ CREATE UNIQUE INDEX orgs_billing_customer_id_idx ON orgs (billing_customer_id) W
 ALTER TABLE orgs ADD COLUMN quota_storage_limit_bytes_per_deployment BIGINT NOT NULL DEFAULT -1;
 UPDATE orgs SET quota_storage_limit_bytes_per_deployment = 5368709120;
 
-ALTER TABLE projects ADD COLUMN next_usage_reporting_time TIMESTAMP DEFAULT '0001-01-01 00:00:00';
+CREATE TABLE billing_reporting_time( usage_reported_on TIMESTAMPTZ );
+
+INSERT INTO billing_reporting_time(usage_reported_on) VALUES (NULL);

@@ -99,18 +99,21 @@ func (c *Client) AutoscalerSlotsRecommendations(ctx context.Context, limit, offs
 	return recommendations, nil
 }
 
-type ProjectUsageAvailability struct {
-	ProjectID string    `json:"project_id"`
-	MinTime   time.Time `json:"min_time"`
-	MaxTime   time.Time `json:"max_time"`
+type UsageAvailability struct {
+	MinTime time.Time `json:"min_time"`
+	MaxTime time.Time `json:"max_time"`
 }
 
 type Usage struct {
-	MetricName string  `json:"metric_name"`
-	Amount     float64 `json:"amount"`
+	OrgID      string    `json:"org_id"`
+	ProjectID  string    `json:"project_id"`
+	StartTime  time.Time `json:"start_time"`
+	EndTime    time.Time `json:"end_time"`
+	MetricName string    `json:"metric_name"`
+	Amount     float64   `json:"amount"`
 }
 
-func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []string, startTime, endTime time.Time) ([]*ProjectUsageAvailability, error) {
+func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime time.Time, grain string) ([]*Usage, error) {
 	// Create the URL for the request
 	var runtimeHost string
 
@@ -126,24 +129,42 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []s
 		return nil, err
 	}
 
-	uri.Path = path.Join("/v1/instances", c.InstanceID, "/api/project-usage-availability")
-	/*  sql api  -
-	  SELECT
+	uri.Path = path.Join("/v1/instances", c.InstanceID, "/api/billing-usage")
+	/*  sql api will be like -
+	  (SELECT
+		org_id,
 		project_id,
-		MIN(time) as min_time,
-		MAX(time) as max_time
-	  FROM rill-metrics
+		date_trunc('{{ .args.grain }}', time) as start_time,
+		date_trunc('{{ .args.grain }}', time) + INTERVAL 1 {{ .args.grain }} as end_time,
+		event_name AS metric_name,
+		MAX(value) AS amount
+	  FROM rill_metrics
 	  WHERE
-		project_id IN ({{ .args.project_ids }}) and time >= '{{ .args.start_time }}' and time < '{{ .args.end_time }}'
-	  GROUP BY 1
+		time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}' and event_name='data_dir_size_bytes'
+	  GROUP BY ALL
+	  ORDER BY 1,2,3)
+	UNION ALL
+	  (SELECT
+		org_id,
+		project_id,
+		date_trunc('{{ .args.grain }}', time) as start_time,
+		date_trunc('{{ .args.grain }}', time) + INTERVAL 1 {{ .args.grain }} as end_time,
+		event_name AS metric_name,
+		sum(value) AS amount
+	  FROM rill_metrics
+	  WHERE
+	    time >= '2024-06-11T00:00:00Z' AND time < '{{ .args.start_time }}' and event_name='{{ .args.end_time }}'
+	  GROUP BY ALL
+	  ORDER BY 1,2,3)
+	...
+	// if we move to syncing raw events then we may not use aggregation function and UNION and use date_trunc('{{ .args.grain }}', insert_time) as event_time instead of start_time and end_time
 	*/
 
 	// Add URL query parameters
 	qry := uri.Query()
 	qry.Add("start_time", startTime.Format(time.RFC3339))
 	qry.Add("end_time", endTime.Format(time.RFC3339))
-	// create a comma separated string of projectIDs with single quotes around each projectID
-	qry.Add("project_ids", fmt.Sprintf("'%s'", strings.Join(projectIDs, "','")))
+	qry.Add("grain", grain)
 
 	uri.RawQuery = qry.Encode()
 	apiURL := uri.String()
@@ -171,85 +192,12 @@ func (c *Client) GetProjectUsageAvailability(ctx context.Context, projectIDs []s
 		return nil, fmt.Errorf("request failed with status code %d", resp.StatusCode)
 	}
 
-	// Decode the JSON response into ProjectUsageAvailability structs
-	var availability []*ProjectUsageAvailability
-	err = json.NewDecoder(resp.Body).Decode(&availability)
+	// Decode the JSON response into UsageMetric struct
+	var usage []*Usage
+	err = json.NewDecoder(resp.Body).Decode(&usage)
 	if err != nil {
 		return nil, err
 	}
 
-	return availability, nil
-}
-
-func (c *Client) GetProjectUsageMetrics(ctx context.Context, projectID string, startTime, endTime time.Time, metricNames []string) ([]Usage, error) {
-	// Create the URL for the request
-	var runtimeHost string
-
-	// In production, the REST and gRPC endpoints are the same, but in development, they're served on different ports.
-	if strings.Contains(c.RuntimeHost, "localhost") {
-		runtimeHost = "http://localhost:8081"
-	} else {
-		runtimeHost = c.RuntimeHost
-	}
-
-	uri, err := url.Parse(runtimeHost)
-	if err != nil {
-		return nil, err
-	}
-
-	var usage []Usage
-	for _, metric := range metricNames {
-		// metric name is the api name
-		uri.Path = path.Join("/v1/instances", c.InstanceID, fmt.Sprintf("/api/%s", metric+"-usage"))
-		/*  sql api -
-		  SELECT
-			'<event>' AS metric_name,
-			MAX(value) AS amount
-		  FROM rill-metrics
-		  WHERE
-			project_id ='{{ .args.project_id }}' AND time >= '{{ .args.start_time }}' AND time < '{{ .args.end_time }}'
-		  GROUP BY 1
-		*/
-
-		// Add URL query parameters
-		qry := uri.Query()
-		qry.Add("project_id", projectID)
-		qry.Add("start_time", startTime.Format(time.RFC3339))
-		qry.Add("end_time", endTime.Format(time.RFC3339))
-
-		uri.RawQuery = qry.Encode()
-		apiURL := uri.String()
-
-		// Create a new HTTP request
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, apiURL, http.NoBody)
-		if err != nil {
-			return nil, err
-		}
-
-		// Set the access token in the request headers
-		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.AccessToken))
-
-		// Send the request
-		client := http.DefaultClient
-		resp, err := client.Do(req)
-		if err != nil {
-			return nil, err
-		}
-
-		// Check the response status code
-		if resp.StatusCode != http.StatusOK {
-			return nil, fmt.Errorf("request failed with status code %d", resp.StatusCode)
-		}
-
-		// Decode the JSON response into UsageMetric struct
-		var usageMetric []Usage
-		err = json.NewDecoder(resp.Body).Decode(&usageMetric)
-		if err != nil {
-			return nil, err
-		}
-		resp.Body.Close()
-
-		usage = append(usage, usageMetric...)
-	}
 	return usage, nil
 }

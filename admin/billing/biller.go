@@ -2,16 +2,18 @@ package billing
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
 )
 
 const (
-	DefaultPlanID   = "Starter"
 	SupportEmail    = "support@rilldata.com"
 	DefaultTimeZone = "UTC"
 )
+
+var ErrNotFound = errors.New("not found")
 
 type Biller interface {
 	Name() string
@@ -19,8 +21,10 @@ type Biller interface {
 	GetPlans(ctx context.Context) ([]*Plan, error)
 	// GetPublicPlans for listing purposes
 	GetPublicPlans(ctx context.Context) ([]*Plan, error)
-	// GetPlan returns the plan with the given Rill plan ID or biller plan ID.
-	GetPlan(ctx context.Context, rillPlanID string, billerPlanID string) (*Plan, error)
+	// GetPlan returns the plan with the given biller plan ID.
+	GetPlan(ctx context.Context, id string) (*Plan, error)
+	// GetPlanByName returns the plan with the given Rill plan name.
+	GetPlanByName(ctx context.Context, name string) (*Plan, error)
 
 	// CreateCustomer creates a customer for the given organization in the billing system and returns the external customer ID.
 	CreateCustomer(ctx context.Context, organization *database.Organization) (string, error)
@@ -35,22 +39,22 @@ type Biller interface {
 	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
 
-	ReportUsage(ctx context.Context, customerID string, usage []*Usage) error
+	ReportUsage(ctx context.Context, usage []*Usage) error
 
 	GetReportingGranularity() UsageReportingGranularity
 	GetReportingWorkerCron() string
 }
 
 type Plan struct {
-	BillerID          string // ID of the plan in the external billing system
-	RillID            string // ID of the plan in Rill, can be empty if biller does not support it
-	Name              string
-	Description       string
-	TrialPeriodDays   int
-	Quotas            Quotas
-	ReportableMetrics []string // list of metric names that are reported to the billing system
-	Metadata          map[string]string
-	// TODO do we need to expose pricing information
+	ID              string // ID of the plan in the external billing system
+	Name            string // Unique name of the plan in Rill, can be empty if biller does not support it
+	DisplayName     string
+	Description     string
+	TrialPeriodDays int
+	Default         bool
+	Public          bool
+	Quotas          Quotas
+	Metadata        map[string]string
 }
 
 type Quotas struct {
@@ -62,6 +66,17 @@ type Quotas struct {
 	NumSlotsTotal         *int
 	NumSlotsPerDeployment *int
 	NumOutstandingInvites *int
+}
+
+type planMetadata struct {
+	Default                        bool   `mapstructure:"default"`
+	Public                         bool   `mapstructure:"public"`
+	StorageLimitBytesPerDeployment *int64 `mapstructure:"storage_limit_bytes_per_deployment"`
+	NumProjects                    *int   `mapstructure:"num_projects"`
+	NumDeployments                 *int   `mapstructure:"num_deployments"`
+	NumSlotsTotal                  *int   `mapstructure:"num_slots_total"`
+	NumSlotsPerDeployment          *int   `mapstructure:"num_slots_per_deployment"`
+	NumOutstandingInvites          *int   `mapstructure:"num_outstanding_invites"`
 }
 
 type Subscription struct {

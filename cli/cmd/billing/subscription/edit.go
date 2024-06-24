@@ -8,7 +8,7 @@ import (
 )
 
 func EditCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, plan string
+	var orgName, plan, planID string
 
 	editCmd := &cobra.Command{
 		Use:   "edit",
@@ -60,8 +60,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			resp, err := client.UpdateOrganizationBillingPlan(cmd.Context(), &adminv1.UpdateOrganizationBillingPlanRequest{
 				OrgName:      orgName,
-				RillPlanId:   &plan,
-				BillerPlanId: &plan,
+				PlanName:     &plan,
+				BillerPlanId: &planID,
 			})
 			if err != nil {
 				return err
@@ -74,7 +74,8 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 	editCmd.Flags().SortFlags = false
 	editCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization name")
-	editCmd.Flags().StringVar(&plan, "plan", "", "Plan ID to change subscription to")
+	editCmd.Flags().StringVar(&plan, "plan", "", "Plan Name to change subscription to")
+	editCmd.Flags().StringVar(&planID, "plan-id", "", "Biller plan Id to change subscription to")
 
 	return editCmd
 }

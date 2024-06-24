@@ -387,16 +387,6 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 	return res.AsModel()
 }
 
-func (c *connection) UpdateProjectsNextUsageReportingTime(ctx context.Context, ids []string, nextUsageReportingTime time.Time) error {
-	idsArray := &pgtype.UUIDArray{}
-	if err := idsArray.Set(ids); err != nil {
-		return err
-	}
-
-	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE projects SET next_usage_reporting_time=$1 WHERE id = ANY($2)", nextUsageReportingTime, idsArray)
-	return err
-}
-
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
 	var count int
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT COUNT(*) FROM projects WHERE org_id = $1", orgID).Scan(&count)
@@ -1566,6 +1556,41 @@ func (c *connection) UpdateVirtualFileDeleted(ctx context.Context, projectID, br
 func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `DELETE FROM virtual_files WHERE deleted AND updated_on + $1 < now()`, retention)
 	return parseErr("virtual files", err)
+}
+
+func (c *connection) FindBillingOrganizationIDs(ctx context.Context) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id <> ''`)
+	if err != nil {
+		return nil, parseErr("billing orgs", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
+	if err != nil {
+		return 0, parseErr("billing projects", err)
+	}
+	return count, nil
+}
+
+func (c *connection) FindBillingUsageReportedOn(ctx context.Context) (time.Time, error) {
+	var usageReportedOn sql.NullTime
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT usage_reported_on FROM billing_reporting_time`).Scan(&usageReportedOn)
+	if err != nil {
+		return time.Time{}, parseErr("billing usage", err)
+	}
+	if !usageReportedOn.Valid {
+		return time.Time{}, nil
+	}
+	return usageReportedOn.Time, nil
+}
+
+func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_reporting_time SET usage_reported_on=$1`, usageReportedOn)
+	return checkUpdateRow("billing usage", res, err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

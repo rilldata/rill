@@ -26,7 +26,11 @@ func (n noop) GetPlans(ctx context.Context) ([]*Plan, error) {
 	return nil, nil
 }
 
-func (n noop) GetPlan(ctx context.Context, rillPlanID, billerPlanID string) (*Plan, error) {
+func (n noop) GetPlan(ctx context.Context, id string) (*Plan, error) {
+	return nil, nil
+}
+
+func (n noop) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	return nil, nil
 }
 
@@ -58,7 +62,7 @@ func (n noop) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 	return nil
 }
 
-func (n noop) ReportUsage(ctx context.Context, customerID string, usage []*Usage) error {
+func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }
 

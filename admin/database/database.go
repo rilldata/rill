@@ -79,7 +79,6 @@ type DB interface {
 	InsertProject(ctx context.Context, opts *InsertProjectOptions) (*Project, error)
 	DeleteProject(ctx context.Context, id string) error
 	UpdateProject(ctx context.Context, id string, opts *UpdateProjectOptions) (*Project, error)
-	UpdateProjectsNextUsageReportingTime(ctx context.Context, ids []string, nextUsageReportingTime time.Time) error
 	CountProjectsForOrganization(ctx context.Context, orgID string) (int, error)
 	FindProjectWhitelistedDomain(ctx context.Context, projectID, domain string) (*ProjectWhitelistedDomain, error)
 	FindProjectWhitelistedDomainForProjectWithJoinedRoleNames(ctx context.Context, projectID string) ([]*ProjectWhitelistedDomainWithJoinedRoleNames, error)
@@ -214,6 +213,12 @@ type DB interface {
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
+
+	FindBillingOrganizationIDs(ctx context.Context) ([]string, error)
+	// CountBillingProjectsForOrganization counts the projects which are not hibernated and created before the given time
+	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
+	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
+	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -247,7 +252,7 @@ type Organization struct {
 	QuotaSlotsPerDeployment             int       `db:"quota_slots_per_deployment"`
 	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
-	BillingCustomerID                   string    `db:"billing_customer_id"` // review: should this be a struct to store more metadata
+	BillingCustomerID                   string    `db:"billing_customer_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -279,28 +284,27 @@ type UpdateOrganizationOptions struct {
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID                     string
-	OrganizationID         string `db:"org_id"`
-	Name                   string
-	Description            string
-	Public                 bool
-	CreatedByUserID        *string `db:"created_by_user_id"`
-	Provisioner            string
-	GithubURL              *string           `db:"github_url"`
-	GithubInstallationID   *int64            `db:"github_installation_id"`
-	Subpath                string            `db:"subpath"`
-	ProdVersion            string            `db:"prod_version"`
-	ProdBranch             string            `db:"prod_branch"`
-	ProdVariables          map[string]string `db:"prod_variables"`
-	ProdOLAPDriver         string            `db:"prod_olap_driver"`
-	ProdOLAPDSN            string            `db:"prod_olap_dsn"`
-	ProdSlots              int               `db:"prod_slots"`
-	ProdTTLSeconds         *int64            `db:"prod_ttl_seconds"`
-	ProdDeploymentID       *string           `db:"prod_deployment_id"`
-	Annotations            map[string]string `db:"annotations"`
-	CreatedOn              time.Time         `db:"created_on"`
-	UpdatedOn              time.Time         `db:"updated_on"`
-	NextUsageReportingTime time.Time         `db:"next_usage_reporting_time"`
+	ID                   string
+	OrganizationID       string `db:"org_id"`
+	Name                 string
+	Description          string
+	Public               bool
+	CreatedByUserID      *string `db:"created_by_user_id"`
+	Provisioner          string
+	GithubURL            *string           `db:"github_url"`
+	GithubInstallationID *int64            `db:"github_installation_id"`
+	Subpath              string            `db:"subpath"`
+	ProdVersion          string            `db:"prod_version"`
+	ProdBranch           string            `db:"prod_branch"`
+	ProdVariables        map[string]string `db:"prod_variables"`
+	ProdOLAPDriver       string            `db:"prod_olap_driver"`
+	ProdOLAPDSN          string            `db:"prod_olap_dsn"`
+	ProdSlots            int               `db:"prod_slots"`
+	ProdTTLSeconds       *int64            `db:"prod_ttl_seconds"`
+	ProdDeploymentID     *string           `db:"prod_deployment_id"`
+	Annotations          map[string]string `db:"annotations"`
+	CreatedOn            time.Time         `db:"created_on"`
+	UpdatedOn            time.Time         `db:"updated_on"`
 }
 
 // InsertProjectOptions defines options for inserting a new Project.

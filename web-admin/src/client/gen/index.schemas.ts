@@ -226,7 +226,7 @@ export type AdminServiceDeleteOrganizationSubscriptionParams = {
 };
 
 export type AdminServiceUpdateOrganizationBillingPlanBody = {
-  rillPlanId?: string;
+  planName?: string;
   billerPlanId?: string;
 };
 
@@ -1074,11 +1074,12 @@ export interface V1Bookmark {
 }
 
 export interface V1BillingPlan {
-  billerId?: string;
-  rillId?: string;
+  id?: string;
   name?: string;
+  displayName?: string;
   description?: string;
   trialPeriodDays?: number;
+  default?: boolean;
   quotas?: V1Quotas;
 }
 

@@ -298,7 +298,7 @@ paths:
           schema:
             type: object
             properties:
-              rillPlanId:
+              planName:
                 type: string
               billerPlanId:
                 type: string
@@ -2572,17 +2572,19 @@ definitions:
   v1BillingPlan:
     type: object
     properties:
-      billerId:
-        type: string
-      rillId:
+      id:
         type: string
       name:
+        type: string
+      displayName:
         type: string
       description:
         type: string
       trialPeriodDays:
         type: integer
         format: int64
+      default:
+        type: boolean
       quotas:
         $ref: '#/definitions/v1Quotas'
         title: TODO expose pricing information

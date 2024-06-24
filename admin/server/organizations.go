@@ -214,8 +214,8 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 
 func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1.UpdateOrganizationBillingPlanRequest) (*adminv1.UpdateOrganizationBillingPlanResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
-	if req.RillPlanId != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.rill_plan_id", *req.RillPlanId))
+	if req.PlanName != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", *req.PlanName))
 	}
 	if req.BillerPlanId != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan_id", *req.BillerPlanId))
@@ -231,11 +231,19 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org billing plan")
 	}
 
-	if req.RillPlanId == nil && req.BillerPlanId == nil {
-		return nil, status.Error(codes.InvalidArgument, "rill or biller plan id must be provided")
+	planName := valOrDefault(req.PlanName, "")
+	billerPlanID := valOrDefault(req.BillerPlanId, "")
+
+	if planName == "" && billerPlanID == "" {
+		return nil, status.Error(codes.InvalidArgument, "plan name or biller plan id must be provided")
 	}
 
-	plan, err := s.admin.Biller.GetPlan(ctx, valOrDefault(req.RillPlanId, ""), valOrDefault(req.BillerPlanId, ""))
+	var plan *billing.Plan
+	if req.PlanName != nil {
+		plan, err = s.admin.Biller.GetPlanByName(ctx, *req.PlanName)
+	} else {
+		plan, err = s.admin.Biller.GetPlan(ctx, *req.BillerPlanId)
+	}
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, "plan not found")
@@ -264,7 +272,7 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 
 		if len(subs) > 0 {
 			for _, sub := range subs {
-				if sub.Plan.BillerID == plan.BillerID {
+				if sub.Plan.ID == plan.ID {
 					return nil, status.Error(codes.InvalidArgument, "same plan already assigned to the organization")
 				}
 			}
@@ -300,22 +308,15 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 		}
 	}
 
-	quotaProjects := valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects)
-	quotaDeployments := valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments)
-	quotaSlotsTotal := valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal)
-	quotaSlotsPerDeployment := valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment)
-	quotaOutstandingInvites := valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites)
-	quotaStorageLimitBytesPerDeployment := valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment)
-
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		Description:                         org.Description,
-		QuotaProjects:                       quotaProjects,
-		QuotaDeployments:                    quotaDeployments,
-		QuotaSlotsTotal:                     quotaSlotsTotal,
-		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
-		QuotaOutstandingInvites:             quotaOutstandingInvites,
-		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
+		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
 	})
 	if err != nil {
@@ -1149,7 +1150,7 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 	return &adminv1.Subscription{
 		Id:                           sub.ID,
-		PlanId:                       sub.Plan.BillerID,
+		PlanId:                       sub.Plan.ID,
 		PlanName:                     sub.Plan.Name,
 		StartDate:                    timestamppb.New(sub.StartDate),
 		EndDate:                      timestamppb.New(sub.EndDate),
@@ -1161,11 +1162,12 @@ func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 
 func billingPlanToDTO(plan *billing.Plan) *adminv1.BillingPlan {
 	return &adminv1.BillingPlan{
-		BillerId:        plan.BillerID,
-		RillId:          plan.RillID,
+		Id:              plan.ID,
 		Name:            plan.Name,
+		DisplayName:     plan.DisplayName,
 		Description:     plan.Description,
 		TrialPeriodDays: uint32(plan.TrialPeriodDays),
+		Default:         plan.Default,
 		Quotas: &adminv1.Quotas{
 			Projects:                       valOrEmptyString(plan.Quotas.NumProjects),
 			Deployments:                    valOrEmptyString(plan.Quotas.NumDeployments),

@@ -4,11 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strconv"
-	"strings"
 	"time"
 
 	"github.com/eapache/go-resiliency/retrier"
+	"github.com/mitchellh/mapstructure"
 	"github.com/orbcorp/orb-go"
 	"github.com/orbcorp/orb-go/option"
 	"github.com/rilldata/rill/admin/database"
@@ -18,8 +17,6 @@ const (
 	requestMaxLimit = 500
 	requestTimeout  = 10 * time.Second
 )
-
-var ErrNotFound = errors.New("not found")
 
 var _ Biller = &Orb{}
 
@@ -43,18 +40,8 @@ func (o *Orb) GetDefaultPlan(ctx context.Context) (*Plan, error) {
 		return nil, err
 	}
 	for _, p := range plans {
-		if strings.EqualFold(p.RillID, DefaultPlanID) {
+		if p.Default {
 			return p, nil
-		}
-
-		if v, ok := p.Metadata["default"]; ok {
-			def, err := strconv.ParseBool(v)
-			if err != nil {
-				return nil, err
-			}
-			if def {
-				return p, nil
-			}
 		}
 	}
 	return nil, ErrNotFound
@@ -71,26 +58,33 @@ func (o *Orb) GetPublicPlans(ctx context.Context) ([]*Plan, error) {
 	}
 	var publicPlans []*Plan
 	for _, p := range all {
-		if v, ok := p.Metadata["public"]; ok {
-			public, err := strconv.ParseBool(v)
-			if err != nil {
-				return nil, err
-			}
-			if public {
-				publicPlans = append(publicPlans, p)
-			}
+		if p.Public {
+			publicPlans = append(publicPlans, p)
 		}
 	}
 	return publicPlans, nil
 }
 
-func (o *Orb) GetPlan(ctx context.Context, rillPlanID, billerPlanID string) (*Plan, error) {
+func (o *Orb) GetPlan(ctx context.Context, id string) (*Plan, error) {
 	plans, err := o.getAllPlans(ctx)
 	if err != nil {
 		return nil, err
 	}
 	for _, p := range plans {
-		if (rillPlanID != "" && strings.EqualFold(p.RillID, rillPlanID)) || (billerPlanID != "" && strings.EqualFold(p.BillerID, billerPlanID)) {
+		if p.ID == id {
+			return p, nil
+		}
+	}
+	return nil, ErrNotFound
+}
+
+func (o *Orb) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
+	plans, err := o.getAllPlans(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for _, p := range plans {
+		if p.Name == name {
 			return p, nil
 		}
 	}
@@ -99,7 +93,7 @@ func (o *Orb) GetPlan(ctx context.Context, rillPlanID, billerPlanID string) (*Pl
 
 func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization) (string, error) {
 	customer, err := o.client.Customers.New(ctx, orb.CustomerNewParams{
-		Email:              orb.String(SupportEmail),
+		Email:              orb.String(SupportEmail), // TODO use creators email or capture organization billing email
 		Name:               orb.String(organization.Name),
 		ExternalCustomerID: orb.String(organization.ID),
 		Timezone:           orb.String(DefaultTimeZone),
@@ -114,7 +108,7 @@ func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organiz
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
 	sub, err := o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
 		ExternalCustomerID: orb.String(customerID),
-		PlanID:             orb.String(plan.BillerID),
+		PlanID:             orb.String(plan.ID),
 	})
 	if err != nil {
 		return nil, err
@@ -167,7 +161,7 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 
 func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
 	s, err := o.client.Subscriptions.SchedulePlanChange(ctx, subscriptionID, orb.SubscriptionSchedulePlanChangeParams{
-		PlanID:       orb.String(plan.BillerID),
+		PlanID:       orb.String(plan.ID),
 		ChangeOption: orb.F(orb.SubscriptionSchedulePlanChangeParamsChangeOptionImmediate),
 	})
 	if err != nil {
@@ -232,18 +226,14 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 	return nil
 }
 
-func (o *Orb) ReportUsage(ctx context.Context, customerID string, usage []*Usage) error {
-	if len(usage) == 0 {
-		return nil
-	}
-
+func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 	var orbUsage []orb.EventIngestParamsEvent
 	for _, u := range usage {
 		eventName := u.MetricName + "_" + string(u.ReportingGrain)
 		// use end time minus 1 second to make sure the event is attributed to the current time bucket
 		eventTime := u.EndTime.Add(-1 * time.Second)
 		// generate idempotency key using customer id, timestamp, event name and metadata
-		idempotencyKey := fmt.Sprintf("%s_%d_%s_%v", customerID, eventTime.UnixMilli(), eventName, u.Metadata)
+		idempotencyKey := fmt.Sprintf("%s_%d_%s_%v", u.CustomerID, eventTime.UnixMilli(), eventName, u.Metadata)
 
 		props := make(map[string]interface{}, len(u.Metadata)+1)
 		for k, v := range u.Metadata {
@@ -252,7 +242,7 @@ func (o *Orb) ReportUsage(ctx context.Context, customerID string, usage []*Usage
 		props["amount"] = u.Amount
 
 		orbUsage = append(orbUsage, orb.EventIngestParamsEvent{
-			ExternalCustomerID: orb.String(customerID),
+			ExternalCustomerID: orb.String(u.CustomerID),
 			EventName:          orb.String(eventName),
 			IdempotencyKey:     orb.String(idempotencyKey),
 			Timestamp:          orb.F(eventTime),
@@ -288,8 +278,8 @@ func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
 }
 
 func (o *Orb) GetReportingWorkerCron() string {
-	// run every hour in middle of the hour
-	return "30 * * * *"
+	// run every hour at end of the hour
+	return "* * * * *"
 }
 
 func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
@@ -313,74 +303,19 @@ func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
 }
 
 func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
-	// Convert orb.Plan to billing.Plan
-	q := &Quotas{}
-	v, ok := p.Metadata["storage_limit_bytes_per_deployment"]
-	if ok {
-		m, err := strconv.ParseInt(v, 10, 64)
-		if err != nil {
-			return nil, err
-		}
-		q.StorageLimitBytesPerDeployment = &m
+	metadata := &planMetadata{}
+	err := mapstructure.WeakDecode(p.Metadata, metadata)
+	if err != nil {
+		return nil, err
 	}
 
-	v, ok = p.Metadata["num_projects"]
-	if ok {
-		m, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, err
-		}
-		q.NumProjects = &m
-	}
-
-	v, ok = p.Metadata["num_deployments"]
-	if ok {
-		m, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, err
-		}
-		q.NumDeployments = &m
-	}
-
-	v, ok = p.Metadata["num_slots_total"]
-	if ok {
-		m, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, err
-		}
-		q.NumSlotsTotal = &m
-	}
-
-	v, ok = p.Metadata["num_slots_per_deployment"]
-	if ok {
-		m, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, err
-		}
-		q.NumSlotsPerDeployment = &m
-	}
-
-	v, ok = p.Metadata["num_outstanding_invites"]
-	if ok {
-		m, err := strconv.Atoi(v)
-		if err != nil {
-			return nil, err
-		}
-		q.NumOutstandingInvites = &m
-	}
-
-	v, ok = p.Metadata["reportable_metrics"]
-	var reportableMetrics []string
-	if ok {
-		reportableMetrics = strings.Split(v, ",")
-		// trim spaces, remove empty strings, and convert to lower case
-		for i := 0; i < len(reportableMetrics); i++ {
-			m := strings.TrimSpace(reportableMetrics[i])
-			if m == "" {
-				continue
-			}
-			reportableMetrics[i] = strings.ToLower(m)
-		}
+	q := &Quotas{
+		StorageLimitBytesPerDeployment: metadata.StorageLimitBytesPerDeployment,
+		NumProjects:                    metadata.NumProjects,
+		NumDeployments:                 metadata.NumDeployments,
+		NumSlotsTotal:                  metadata.NumSlotsTotal,
+		NumSlotsPerDeployment:          metadata.NumSlotsPerDeployment,
+		NumOutstandingInvites:          metadata.NumOutstandingInvites,
 	}
 
 	trialPeriodDays := 0
@@ -389,14 +324,15 @@ func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 	}
 
 	billingPlan := &Plan{
-		BillerID:          p.ID,
-		RillID:            p.ExternalPlanID,
-		Name:              p.Name,
-		Description:       p.Description,
-		TrialPeriodDays:   trialPeriodDays,
-		Quotas:            *q,
-		ReportableMetrics: reportableMetrics,
-		Metadata:          p.Metadata,
+		ID:              p.ID,
+		Name:            p.ExternalPlanID,
+		DisplayName:     p.Name,
+		Description:     p.Description,
+		TrialPeriodDays: trialPeriodDays,
+		Default:         metadata.Default,
+		Public:          metadata.Public,
+		Quotas:          *q,
+		Metadata:        p.Metadata,
 	}
 	return billingPlan, nil
 }

@@ -357,11 +357,12 @@ func toPlansTable(plans []*adminv1.BillingPlan) []*plan {
 
 func toPlanRow(p *adminv1.BillingPlan) *plan {
 	return &plan{
-		BillerID:                            p.BillerId,
-		RillID:                              p.RillId,
+		ID:                                  p.Id,
 		Name:                                p.Name,
+		DisplayName:                         p.DisplayName,
 		Description:                         p.Description,
 		TrialDays:                           strconv.Itoa(int(p.TrialPeriodDays)),
+		Default:                             p.Default,
 		QuotaNumProjects:                    p.Quotas.Projects,
 		QuotaNumDeployments:                 p.Quotas.Deployments,
 		QuotaNumSlotsTotal:                  p.Quotas.SlotsTotal,
@@ -372,11 +373,12 @@ func toPlanRow(p *adminv1.BillingPlan) *plan {
 }
 
 type plan struct {
-	BillerID                            string `header:"biller_id" json:"biller_id"`
-	RillID                              string `header:"rill_id" json:"rill_id"`
+	ID                                  string `header:"id" json:"id"`
 	Name                                string `header:"name" json:"name"`
+	DisplayName                         string `header:"display_name" json:"display_name"`
 	Description                         string `header:"description" json:"description"`
 	TrialDays                           string `header:"trial_days" json:"trial_days"`
+	Default                             bool   `header:"default" json:"default"`
 	QuotaNumProjects                    string `header:"quota_num_projects" json:"quota_num_projects"`
 	QuotaNumDeployments                 string `header:"quota_num_deployments" json:"quota_num_deployments"`
 	QuotaNumSlotsTotal                  string `header:"quota_num_slots_total" json:"quota_num_slots_total"`
