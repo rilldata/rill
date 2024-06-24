@@ -66,7 +66,7 @@ export function getTDDAggregationRequest(
   const measures: V1MetricsViewAggregationMeasure[] = [
     { name: dashboardState.tdd.expandedMeasureName },
   ];
-  const { sortMeasureName, measures: apiMeasures } = getMeasureNames(
+  const { measures: apiMeasures } = getMeasureNames(
     dashboardState.tdd.expandedMeasureName,
     dashboardState.dashboardSortType,
     !!comparisonTimeRange?.start &&
@@ -96,15 +96,7 @@ export function getTDDAggregationRequest(
     pivotOn: [timeDimension],
     sort: [
       {
-        name: timeDimension,
-        desc: true,
-      },
-      {
         name: dimensionName,
-        desc: dashboardState.sortDirection === SortDirection.DESCENDING,
-      },
-      {
-        name: sortMeasureName,
         desc: dashboardState.sortDirection === SortDirection.DESCENDING,
       },
     ],
