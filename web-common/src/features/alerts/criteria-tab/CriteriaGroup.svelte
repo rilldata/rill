@@ -14,6 +14,7 @@
 
   function handleDeleteCriteria(index: number) {
     $form["criteria"] = $form["criteria"].filter((_, i: number) => i !== index);
+    console.log("DELETE");
   }
 
   function handleAddCriteria() {

@@ -4,7 +4,12 @@ import {
   mapMeasureFilterToExpr,
   MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import {
+  mergeDimensionAndMeasureFilter,
+  mergeMeasureFilters,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
   V1Expression,
   V1MetricsViewAggregationRequest,
@@ -30,6 +35,7 @@ export type AlertFormValues = {
   // it's helpful to have them here. Also, in the future they may be editable in the form.
   metricsViewName: string;
   whereFilter: V1Expression;
+  dimensionThresholdFilters: Array<DimensionThresholdFilter>;
   timeRange: V1TimeRange;
   comparisonTimeRange: V1TimeRange | undefined;
 };
@@ -59,7 +65,13 @@ export function getAlertQueryArgsFromFormValues(
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
-    where: sanitiseExpression(formValues.whereFilter, undefined),
+    where: sanitiseExpression(
+      mergeDimensionAndMeasureFilter(
+        formValues.whereFilter,
+        formValues.dimensionThresholdFilters,
+      ),
+      undefined,
+    ),
     having: sanitiseExpression(undefined, {
       cond: {
         op: formValues.criteriaOperation,

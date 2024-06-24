@@ -4,6 +4,7 @@ import {
   mapExprToMeasureFilter,
   MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
@@ -21,6 +22,7 @@ export type AlertFormValuesSubset = Pick<
   AlertFormValues,
   | "metricsViewName"
   | "whereFilter"
+  | "dimensionThresholdFilters"
   | "timeRange"
   | "comparisonTimeRange"
   | "measure"
@@ -60,6 +62,10 @@ export function extractAlertFormValues(
     comparisonTimeRange.end = allTimeRange.timeRangeSummary?.max;
   }
 
+  const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+    queryArgs.where,
+  );
+
   return {
     measure: measures[0]?.name ?? "",
     splitByDimension: dimensions[0]?.name ?? "",
@@ -71,7 +77,8 @@ export function extractAlertFormValues(
 
     // These are not part of the form, but are used to track the state of the form
     metricsViewName: queryArgs.metricsView as string,
-    whereFilter: queryArgs.where ?? createAndExpression([]),
+    whereFilter: dimensionFilters,
+    dimensionThresholdFilters,
     timeRange,
     comparisonTimeRange,
   };
