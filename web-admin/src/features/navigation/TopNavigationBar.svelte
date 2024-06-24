@@ -59,7 +59,9 @@
   $: alertsQuery = useAlerts(instanceId);
   $: reportsQuery = useReports(instanceId);
 
-  $: organizations = $organizationQuery.data?.organizations ?? [];
+  $: organizations = $organizationQuery.data?.organizations ?? [
+    { name: organization, id: organization },
+  ];
   $: projects = $projectsQuery.data?.projects ?? [];
   $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
