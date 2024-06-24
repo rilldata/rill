@@ -29,8 +29,47 @@ const wrap = parseMixed((node) => {
   return null;
 });
 
+const names = new Set(["Literal", ":"]);
+let foundExpression = false;
+let foundColon = false;
+
+const metricsParsing = parseMixed(({ name, from, to }, input) => {
+  if (!names.has(name)) return null;
+
+  if (
+    !foundExpression &&
+    name === "Literal" &&
+    input.read(from, to) === "expression"
+  ) {
+    foundExpression = true;
+    return null;
+  }
+
+  if (name === ":") {
+    foundColon = true;
+    return null;
+  }
+
+  if (foundExpression && foundColon && name === "Literal") {
+    foundExpression = false;
+    foundColon = false;
+    return {
+      parser: DuckDBSQL.language.parser,
+    };
+  }
+  return null;
+});
+
 const customYAMLandSQLParser = yamlLanguage.parser.configure({
   wrap,
+});
+
+const metricsPlusSQLParser = yamlLanguage.parser.configure({
+  wrap: metricsParsing,
+});
+
+export const metricsPlusSQL = LRLanguage.define({
+  parser: metricsPlusSQLParser,
 });
 
 export const customYAMLwithJSONandSQL = LRLanguage.define({
