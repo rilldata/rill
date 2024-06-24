@@ -8,6 +8,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
 
   export let chartName: string;
+  export let isFetching: boolean;
 
   $: chartPrompt = chartPromptsStore.getStatusForChart(chartName);
 </script>
@@ -34,6 +35,11 @@
         </div>
         <div>Using prompt: "{$chartPrompt.prompt}"</div>
       </div>
+    </div>
+  {:else if isFetching}
+    <div class="flex flex-col gap-y-2 items-center justify-center">
+      <Spinner size="16px" status={EntityStatus.Running} />
+      <div>Loading chart data</div>
     </div>
   {:else}
     <slot />

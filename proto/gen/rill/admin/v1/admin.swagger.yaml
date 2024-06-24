@@ -2450,6 +2450,9 @@ definitions:
         type: array
         items:
           type: string
+      webOpenState:
+        type: string
+        title: base64 state url of the dashboard when it was created
   v1Bookmark:
     type: object
     properties:
@@ -3230,9 +3233,9 @@ definitions:
         type: array
         items:
           type: string
-      webShowPage:
+      webOpenState:
         type: string
-        title: query request could be similar across pages so we use this to identify the exact page
+        title: base64 state url of the metrics_view when it was created
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

@@ -33,7 +33,6 @@ TableCells – the cell contents.
     actions: { dimensionTable },
     selectors: {
       sorting: { sortMeasure },
-      dimensions: { dimensionTableColumnName },
       dimensionFilters: { isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
@@ -59,7 +58,7 @@ TableCells – the cell contents.
   const FILTER_COLUMN_WIDTH = config.indexWidth;
 
   $: selectedIndex = selectedValues.map((label) => {
-    return rows.findIndex((row) => row[dimensionColumnName] === label);
+    return rows.findIndex((row) => row[dimensionName] === label);
   });
 
   let rowScrollOffset = 0;
@@ -87,12 +86,10 @@ TableCells – the cell contents.
   let estimateColumnSize: number[] = [];
 
   /* Separate out dimension column */
-  $: dimensionColumnName = $dimensionTableColumnName(dimensionName);
   $: dimensionColumn = columns?.find(
-    (c) => c.name == dimensionColumnName,
+    (c) => c.name == dimensionName,
   ) as VirtualizedTableColumns;
-  $: measureColumns =
-    columns?.filter((c) => c.name !== dimensionColumnName) ?? [];
+  $: measureColumns = columns?.filter((c) => c.name !== dimensionName) ?? [];
 
   let horizontalScrolling = false;
 

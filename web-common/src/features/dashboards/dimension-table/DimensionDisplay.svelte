@@ -26,7 +26,7 @@
         dimensionTableTotalQueryBody,
       },
       comparison: { isBeingCompared },
-      dimensions: { dimensionTableDimName, dimensionTableColumnName },
+      dimensions: { dimensionTableDimName },
       dimensionFilters: { unselectedDimensionValues },
       dimensionTable: {
         virtualizedTableColumns,
@@ -49,7 +49,6 @@
   // cast is safe because dimensionTableDimName must be defined
   // for the dimension table to be open
   $: dimensionName = $dimensionTableDimName as string;
-  $: dimensionColumnName = $dimensionTableColumnName(dimensionName);
 
   let searchText = "";
 
@@ -98,11 +97,11 @@
   $: tableRows = $prepareDimTableRows($sortedQuery, unfilteredTotal);
 
   $: areAllTableRowsSelected = tableRows.every((row) =>
-    $selectedDimensionValueNames.includes(row[dimensionColumnName] as string),
+    $selectedDimensionValueNames.includes(row[dimensionName] as string),
   );
 
   function onSelectItem(event) {
-    const label = tableRows[event.detail.index][dimensionColumnName] as string;
+    const label = tableRows[event.detail.index][dimensionName] as string;
     toggleDimensionValueSelection(
       dimensionName,
       label,
@@ -119,7 +118,7 @@
   }
 
   function toggleAllSearchItems() {
-    const labels = tableRows.map((row) => row[dimensionColumnName] as string);
+    const labels = tableRows.map((row) => row[dimensionName] as string);
 
     if (areAllTableRowsSelected) {
       deselectItemsInFilter(dimensionName, labels);
