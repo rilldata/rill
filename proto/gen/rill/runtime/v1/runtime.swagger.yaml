@@ -2931,7 +2931,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -2981,6 +2981,8 @@ definitions:
         type: string
       resolverProperties:
         type: object
+      openApiSpec:
+        $ref: '#/definitions/v1OpenAPISpec'
   v1APIState:
     type: object
   v1Alert:
@@ -4887,6 +4889,19 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TableInfo'
+  v1OpenAPISpec:
+    type: object
+    properties:
+      reqSummary:
+        type: string
+      reqParams:
+        type: array
+        items:
+          type: object
+      resDescription:
+        type: string
+      resSchema:
+        type: object
   v1Operation:
     type: string
     enum:

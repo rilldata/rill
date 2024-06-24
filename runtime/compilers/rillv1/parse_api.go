@@ -1,14 +1,64 @@
 package rillv1
 
 import (
+	"encoding/json"
 	"fmt"
 
+	"github.com/go-openapi/spec"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
 // APIYAML is the raw structure of a API resource defined in YAML (does not include common fields)
 type APIYAML struct {
 	DataYAML `yaml:",inline" mapstructure:",squash"`
+	OpenAPI  *OpenAPIYAML `yaml:"openapi"`
+}
+
+type OpenAPIYAML struct {
+	Info     map[string]any `yaml:"info"`
+	Request  *ReqSpecYAML   `yaml:"request"`
+	Response *RespSpecYAML  `yaml:"response"`
+}
+
+type ReqSpecYAML struct {
+	Summary    string           `yaml:"summary"`
+	Parameters []map[string]any `yaml:"parameters"`
+}
+
+type RespSpecYAML struct {
+	Description string         `yaml:"description"`
+	Schema      map[string]any `yaml:"schema"`
+}
+
+func ConvertParameters(params []map[string]any) ([]spec.Parameter, error) {
+	var parameters []spec.Parameter
+	for _, param := range params {
+		var specParam spec.Parameter
+		jsonData, err := json.Marshal(param)
+		if err != nil {
+			return nil, err
+		}
+		err = specParam.UnmarshalJSON(jsonData)
+		if err != nil {
+			return nil, err
+		}
+		parameters = append(parameters, specParam)
+	}
+	return parameters, nil
+}
+
+func ConvertSchema(schema map[string]any) (*spec.Schema, error) {
+	specSchema := spec.Schema{}
+	jsonData, err := json.Marshal(schema)
+	if err != nil {
+		return nil, err
+	}
+	err = specSchema.UnmarshalJSON(jsonData)
+	if err != nil {
+		return nil, err
+	}
+	return &specSchema, nil
 }
 
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
@@ -18,6 +68,37 @@ func (p *Parser) parseAPI(node *Node) error {
 	err := p.decodeNodeYAML(node, false, tmp)
 	if err != nil {
 		return err
+	}
+
+	// Validate
+	var reqSummary string
+	var reqParams []*structpb.Struct
+	if tmp.OpenAPI != nil && tmp.OpenAPI.Request != nil {
+		reqSummary = tmp.OpenAPI.Request.Summary
+		_, err := ConvertParameters(tmp.OpenAPI.Request.Parameters)
+		if err != nil {
+			return fmt.Errorf("encountered invalid parameter type: %w", err)
+		}
+		for _, param := range tmp.OpenAPI.Request.Parameters {
+			paramPB, err := structpb.NewStruct(param)
+			if err != nil {
+				return fmt.Errorf("encountered invalid parameter type: %w", err)
+			}
+			reqParams = append(reqParams, paramPB)
+		}
+	}
+	var resDescription string
+	var resSchema *structpb.Struct
+	if tmp.OpenAPI != nil && tmp.OpenAPI.Response != nil {
+		resDescription = tmp.OpenAPI.Response.Description
+		_, err := ConvertSchema(tmp.OpenAPI.Response.Schema)
+		if err != nil {
+			return fmt.Errorf("encountered invalid schema type: %w", err)
+		}
+		resSchema, err = structpb.NewStruct(tmp.OpenAPI.Response.Schema)
+		if err != nil {
+			return fmt.Errorf("encountered invalid schema type: %w", err)
+		}
 	}
 
 	// Map common node properties to DataYAML
@@ -43,6 +124,12 @@ func (p *Parser) parseAPI(node *Node) error {
 
 	r.APISpec.Resolver = resolver
 	r.APISpec.ResolverProperties = resolverProps
+	r.APISpec.OpenApiSpec = &runtimev1.OpenAPISpec{
+		ReqSummary:     reqSummary,
+		ReqParams:      reqParams,
+		ResDescription: resDescription,
+		ResSchema:      resSchema,
+	}
 
 	return nil
 }
