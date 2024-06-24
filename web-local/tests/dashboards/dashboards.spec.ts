@@ -124,7 +124,7 @@ test.describe("dashboard", () => {
       page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }),
     ).not.toBeVisible();
 
-    await interactWithComparisonMenu(page, "No comparison", (l) =>
+    await interactWithComparisonMenu(page, (l) =>
       l.getByRole("menuitem", { name: "Time" }).click(),
     );
 
@@ -177,15 +177,18 @@ test.describe("dashboard", () => {
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
     // Turn off comparison
-    await interactWithComparisonMenu(page, "Comparing by Time", (l) =>
-      l.getByRole("menuitem", { name: "No comparison" }).click(),
+    await interactWithComparisonMenu(
+      page,
+      (l) =>
+        l.getByRole("menuitem", { name: "No dimension breakdown" }).click(),
+      "Broken down by Time",
     );
 
     // Check number
     await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
-    await interactWithComparisonMenu(page, "No comparison", (l) =>
+    await interactWithComparisonMenu(page, (l) =>
       l.getByRole("menuitem", { name: "Time" }).click(),
     );
 
@@ -493,7 +496,7 @@ dimensions:
       page.getByText("No comparison dimension selected"),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "No comparison" }).click();
+    await page.getByRole("button", { name: "No dimension breakdown" }).click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
     await page.getByText("google.com", { exact: true }).click();

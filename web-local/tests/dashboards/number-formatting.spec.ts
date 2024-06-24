@@ -138,7 +138,7 @@ dimensions:
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
-    await interactWithComparisonMenu(page, "No comparison", (l) =>
+    await interactWithComparisonMenu(page, (l) =>
       l.getByRole("menuitem", { name: "Time" }).click(),
     );
 

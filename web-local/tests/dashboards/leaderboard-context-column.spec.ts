@@ -103,7 +103,7 @@ test.describe("leaderboard context column", () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
     // enable comparisons which should automatically enable a time comparison (including context column)
-    await interactWithComparisonMenu(page, "No comparison", (l) =>
+    await interactWithComparisonMenu(page, (l) =>
       l.getByRole("menuitem", { name: "Time" }).click(),
     );
 
@@ -244,7 +244,7 @@ test.describe("leaderboard context column", () => {
      */
 
     // Need to manually enable comparison since we disabled it
-    await interactWithComparisonMenu(page, "No Comparison", (l) =>
+    await interactWithComparisonMenu(page, (l) =>
       l.getByRole("menuitem", { name: "Time" }).click(),
     );
 

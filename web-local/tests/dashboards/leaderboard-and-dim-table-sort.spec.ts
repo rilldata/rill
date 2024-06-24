@@ -78,7 +78,7 @@ test.describe("leaderboard and dimension table sorting", () => {
 
     // add time comparison and select Pct change
     await page
-      .getByRole("button", { name: "No comparison", exact: true })
+      .getByRole("button", { name: "No dimension breakdown", exact: true })
       .click();
     await page.getByRole("menuitem", { name: "Time" }).click();
     await page.keyboard.press("Escape");

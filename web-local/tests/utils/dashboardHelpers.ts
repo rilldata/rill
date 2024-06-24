@@ -177,11 +177,13 @@ export async function interactWithTimeRangeMenu(
 
 export async function interactWithComparisonMenu(
   page: Page,
-  curLabel: string,
   cb: (l: Locator) => void | Promise<void>,
+  curLabel?: string,
 ) {
   // Open the menu
-  await page.getByRole("button", { name: curLabel }).click();
+  await page
+    .getByRole("button", { name: curLabel || "No dimension breakdown" })
+    .click();
   // Run the defined interactions
   await cb(page.getByLabel("Comparison selector"));
   // Wait for menu to close

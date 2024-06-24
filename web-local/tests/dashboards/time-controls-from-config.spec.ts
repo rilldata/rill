@@ -87,7 +87,7 @@ default_comparison:
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // Comparison is selected
-    await expect(page.getByText("Comparing by Time")).toBeVisible();
+    await expect(page.getByText("Broken down by Time")).toBeVisible();
     // Go back to metrics editor
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
@@ -102,7 +102,7 @@ default_comparison:
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // Comparison is selected
-    await expect(page.getByText("Comparing by Publisher")).toBeVisible();
+    await expect(page.getByText("Broken down by Publisher")).toBeVisible();
     // Go back to metrics editor
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
@@ -115,8 +115,6 @@ default_comparison:
     );
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
-    // No Comparison
-    await expect(page.getByText("no comparison period")).toBeVisible();
   });
 
   test("available_time_ranges", async ({ page }) => {
