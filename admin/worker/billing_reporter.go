@@ -36,7 +36,13 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 	} else {
 		startTime = t.UTC()
 	}
-	endTime := startTime.Add(granularity).UTC()
+	// report until end of the last hour
+	endTime := time.Now().UTC().Truncate(granularity)
+
+	if !startTime.Before(endTime) {
+		w.logger.Debug("skipping usage reporting: no new usage data available", zap.Time("start_time", startTime), zap.Time("end_time", endTime))
+		return nil
+	}
 
 	// Get metrics client
 	client, ok, err := w.admin.OpenMetricsProject(ctx)
