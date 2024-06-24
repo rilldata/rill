@@ -346,3 +346,8 @@ replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testco
 replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
 
 exclude modernc.org/sqlite v1.18.1
+
+// Adds changes from the two PRs :
+// https://github.com/apache/arrow/pull/41638
+// https://github.com/apache/arrow/pull/42003
+replace github.com/apache/arrow/go/v14 v14.0.2 => github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff
