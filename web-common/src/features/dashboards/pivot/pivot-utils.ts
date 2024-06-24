@@ -454,7 +454,7 @@ export function prepareMeasureForComparison(
 
 export function canEnablePivotComparison(
   pivotState: PivotState,
-  // comparisonStart: string | Date | undefined,
+  comparisonStart: string | Date | undefined,
 ) {
   // Disable if more than 5 measures
   if (pivotState.columns.measure.length >= 5) {
@@ -465,6 +465,10 @@ export function canEnablePivotComparison(
     return false;
   }
   if (pivotState.rows.dimension.some((d) => d.type === "time")) {
+    return false;
+  }
+  // Disable if time comparison is not present
+  if (!comparisonStart) {
     return false;
   }
 

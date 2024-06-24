@@ -185,7 +185,7 @@ export function getDefaultMetricsExplorerEntity(
       expanded: {},
       sorting: [],
       rowPage: 1,
-      enableComparison: false,
+      enableComparison: true,
       columnPage: 1,
     },
     contextColumnWidths: { ...contextColWidthDefaults },
