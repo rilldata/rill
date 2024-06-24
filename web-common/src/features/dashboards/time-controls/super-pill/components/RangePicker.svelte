@@ -24,7 +24,6 @@
 
   let firstVisibleMonth: DateTime<true> = interval.start;
   let open = false;
-
   let showSelector = false;
 </script>
 
@@ -34,7 +33,7 @@
     if (open) {
       firstVisibleMonth = interval.start;
     }
-    showSelector = false;
+    showSelector = selected === "CUSTOM";
   }}
   closeOnItemClick={false}
 >
@@ -67,10 +66,10 @@
 
             open = false;
           }}
-          onSelectCustomOption={() => (showSelector = true)}
+          onSelectCustomOption={() => (showSelector = !showSelector)}
         />
       </div>
-      {#if showSelector || selected === "CUSTOM"}
+      {#if showSelector}
         <div class="bg-slate-50 border-l flex flex-col w-64 p-2 py-1">
           <CalendarPlusDateInput
             {firstVisibleMonth}
