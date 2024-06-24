@@ -251,28 +251,43 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 		})
 
 		if len(orbUsage) == requestMaxLimit {
-			re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
-			err := re.RunCtx(ctx, func(ctx context.Context) error {
-				resp, err := o.client.Events.Ingest(ctx, orb.EventIngestParams{
-					Events: orb.F(orbUsage),
-				})
-				if err != nil {
-					return err
-				}
-				if len(resp.ValidationFailed) > 0 {
-					errMsg := fmt.Sprintf("validation failure for %d events, showing first few:", len(resp.ValidationFailed))
-					for i := 0; i < 5 && i < len(resp.ValidationFailed); i++ {
-						errMsg += fmt.Sprintf("\n%s: %s", resp.ValidationFailed[i].IdempotencyKey, resp.ValidationFailed[i].ValidationErrors)
-					}
-					return errors.New(errMsg)
-				}
-				return nil
-			})
+			err := o.pushUsage(ctx, &orbUsage)
 			if err != nil {
 				return err
 			}
 			orbUsage = nil
 		}
+	}
+
+	if len(orbUsage) > 0 {
+		err := o.pushUsage(ctx, &orbUsage)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (o *Orb) pushUsage(ctx context.Context, usage *[]orb.EventIngestParamsEvent) error {
+	re := retrier.New(retrier.ExponentialBackoff(5, 500*time.Millisecond), retryErrClassifier{})
+	err := re.RunCtx(ctx, func(ctx context.Context) error {
+		resp, err := o.client.Events.Ingest(ctx, orb.EventIngestParams{
+			Events: orb.F(*usage),
+		})
+		if err != nil {
+			return err
+		}
+		if len(resp.ValidationFailed) > 0 {
+			errMsg := fmt.Sprintf("validation failure for %d events, showing first few:", len(resp.ValidationFailed))
+			for i := 0; i < 5 && i < len(resp.ValidationFailed); i++ {
+				errMsg += fmt.Sprintf("\n%s: %s", resp.ValidationFailed[i].IdempotencyKey, resp.ValidationFailed[i].ValidationErrors)
+			}
+			return errors.New(errMsg)
+		}
+		return nil
+	})
+	if err != nil {
+		return err
 	}
 	return nil
 }
