@@ -99,7 +99,6 @@ function prepareDimensionData(
 ): TableData | undefined {
   if (!data || !totalsData || !measure) return undefined;
 
-  // const formatter = createMeasureValueFormatter<null | undefined>(measure);
   const measureName = measure?.name as string;
   const validPercentOfTotal = measure?.validPercentOfTotal as boolean;
 

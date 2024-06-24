@@ -53,11 +53,6 @@
 
   $: timeGrain = $timeControlStore.selectedTimeRange?.interval;
 
-  // Get labels for table headers
-  // $: measureLabel =
-  //   $metricsView?.data?.measures?.find((m) => m.name === expandedMeasureName)
-  //     ?.label ?? "";
-
   $: measure = $metricsView?.data?.measures?.find(
     (m) => m.name === expandedMeasureName,
   );
@@ -230,7 +225,7 @@
         </div>
       </div>
     </div>
-  {:else if formattedData && comparisonCopy}
+  {:else if formattedData && comparisonCopy && measure}
     <TDDTable
       {measure}
       {excludeMode}
