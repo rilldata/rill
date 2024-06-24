@@ -117,7 +117,7 @@ This component needs to do the following:
           class="flex items-center gap-x-0.5 px-1.5 text-gray-700 hover:text-inherit"
         >
           <span class="font-normal">
-            {showTimeComparison || selectedDimension ? "Comparing by" : ""}
+            {showTimeComparison || selectedDimension ? "Broken down by" : ""}
             <span class="font-bold">{label}</span>
           </span>
           <span class="transition-transform" class:-rotate-180={active}>

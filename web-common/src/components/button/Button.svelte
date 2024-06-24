@@ -253,7 +253,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-slate-600;
+    @apply text-slate-600 p-0;
   }
 
   .text:hover {

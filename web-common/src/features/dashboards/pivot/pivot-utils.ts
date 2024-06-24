@@ -467,10 +467,6 @@ export function canEnablePivotComparison(
   if (pivotState.rows.dimension.some((d) => d.type === "time")) {
     return false;
   }
-  // Disable if time comparison is not present
-  if (!comparisonStart) {
-    return false;
-  }
 
   return true;
 }
