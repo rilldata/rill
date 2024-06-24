@@ -41,6 +41,15 @@ export interface TableTemplateT {
   table: TableProperties;
 }
 
+export interface MarkdownProperties {
+  content: string;
+  css?: { [key: string]: any };
+}
+
+export interface MarkdownTemplateT {
+  markdown: MarkdownProperties
+}
+
 type ChartTemplates = LineChart | BarChart | StackedBarChart;
 
-export type TemplateSpec = ChartTemplates | KPITemplateT | TableTemplateT;
+export type TemplateSpec = ChartTemplates | KPITemplateT | TableTemplateT | MarkdownTemplateT;

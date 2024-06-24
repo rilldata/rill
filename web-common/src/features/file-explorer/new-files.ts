@@ -14,10 +14,10 @@ export async function handleEntityCreate(kind: ResourceKind) {
   const allNames =
     kind === ResourceKind.Source || kind === ResourceKind.Model
       ? // sources and models share the name
-        [
-          ...fileArtifacts.getNamesForKind(ResourceKind.Source),
-          ...fileArtifacts.getNamesForKind(ResourceKind.Model),
-        ]
+      [
+        ...fileArtifacts.getNamesForKind(ResourceKind.Source),
+        ...fileArtifacts.getNamesForKind(ResourceKind.Model),
+      ]
       : fileArtifacts.getNamesForKind(kind);
   const { name, extension, baseContent } = ResourceKindMap[kind];
   const newName = getName(name, allNames);
@@ -152,8 +152,10 @@ gap: 2
 
 items:
   - component:
-      type: markdown
-      markdown: First component
+      markdown:
+        content: "First Component"
+        css:
+          font-size: "40px"
     width: 4
     height: 3
     x: 2
