@@ -62,8 +62,7 @@ type Options struct {
 	GithubClientID         string
 	GithubClientSecret     string
 	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
-	AssetsBucket    string
-	UploadsSvcCreds string
+	AssetsBucket string
 }
 
 type Server struct {

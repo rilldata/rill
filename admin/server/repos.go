@@ -50,11 +50,7 @@ func (s *Server) GetRepoMeta(ctx context.Context, req *adminv1.GetRepoMetaReques
 			return nil, err
 		}
 
-		u, err := url.Parse(asset.Path)
-		if err != nil {
-			return nil, err
-		}
-		downloadURL, err := s.generateV4GetObjectSignedURL(strings.TrimPrefix(u.Path, "/"))
+		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
@@ -142,18 +138,24 @@ func (s *Server) PullVirtualRepo(ctx context.Context, req *adminv1.PullVirtualRe
 	}, nil
 }
 
-func (s *Server) generateV4GetObjectSignedURL(object string) (string, error) {
+// objectpath is of form gs://<bucket>/.....
+func (s *Server) generateV4GetObjectSignedURL(objectpath string) (string, error) {
+	u, err := url.Parse(objectpath)
+	if err != nil {
+		return "", err
+	}
+
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "GET",
 		Expires: time.Now().Add(15 * time.Minute),
 	}
 
-	u, err := s.assetsBucket.SignedURL(object, opts)
+	signedURL, err := s.assetsBucket.SignedURL(strings.TrimPrefix(u.Path, "/"), opts)
 	if err != nil {
 		return "", err
 	}
-	return u, nil
+	return signedURL, nil
 }
 
 func virtualFileToDTO(vf *database.VirtualFile) *adminv1.VirtualFile {

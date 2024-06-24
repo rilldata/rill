@@ -1572,7 +1572,7 @@ func (c *connection) InsertAsset(ctx context.Context, organizationID, path, owne
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
 		INSERT INTO assets (org_id, path, owner_id)
 		VALUES ($1, $2, $3) RETURNING *`,
-		organizationID, path,
+		organizationID, path, ownerID,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("asset", err)

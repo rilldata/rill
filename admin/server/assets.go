@@ -56,20 +56,20 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 	}
 
 	// generate a signed url
-	object := fmt.Sprintf("%s__%s.%s", req.Name, uuid.New().String(), req.Extension)
+	object := path.Join(req.Type, fmt.Sprintf("%s__%s.%s", req.Name, uuid.New().String(), req.Extension))
 	opts := &storage.SignedURLOptions{
 		Scheme:  storage.SigningSchemeV4,
 		Method:  "PUT",
 		Headers: signingHeaders,
 		Expires: time.Now().Add(15 * time.Minute),
 	}
-	u, err := s.assetsBucket.SignedURL(object, opts)
+	signedURL, err := s.assetsBucket.SignedURL(object, opts)
 	if err != nil {
 		return nil, err
 	}
 
 	// create an asset
-	assetPath, err := s.assetPath(req.Type, object)
+	assetPath, err := s.assetPath(object)
 	if err != nil {
 		return nil, err
 	}
@@ -81,18 +81,18 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 
 	return &adminv1.CreateAssetResponse{
 		AssetId:        asset.ID,
-		SignedUrl:      u,
+		SignedUrl:      signedURL,
 		SigningHeaders: signingHeaderMap,
 	}, nil
 }
 
-func (s *Server) assetPath(typ, object string) (string, error) {
+func (s *Server) assetPath(object string) (string, error) {
 	uploadPath, err := url.Parse(s.opts.AssetsBucket)
 	if err != nil {
 		return "", err
 	}
 	uploadPath.Host = s.opts.AssetsBucket
 	uploadPath.Scheme = "gs"
-	uploadPath.Path = path.Join(typ, object)
+	uploadPath.Path = object
 	return uploadPath.String(), nil
 }

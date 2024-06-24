@@ -377,7 +377,7 @@ type InsertDeploymentOptions struct {
 	ProvisionID       string
 	RuntimeVersion    string
 	Slots             int
-	Branch            string `validate:"required"`
+	Branch            string
 	RuntimeHost       string `validate:"required"`
 	RuntimeInstanceID string `validate:"required"`
 	RuntimeAudience   string

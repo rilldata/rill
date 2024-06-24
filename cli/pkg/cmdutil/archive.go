@@ -10,42 +10,30 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"strings"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-// UploadRepo uploads a local project artifacts to rill managed store and returns upload path
-func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, project string) (string, error) {
+var ignoreFileList = []string{"/.env"}
+
+// UploadRepo uploads a local project files to rill managed store.
+// Internally it creates an asset object on admin service and returns its id which can be supplied while creating/updating project.
+func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, name string) (string, error) {
 	// list files
 	entries, err := repo.ListRecursive(ctx, "**", false)
 	if err != nil {
 		return "", err
 	}
 
-	// generate an ignore list of files using .gitignore
-	ignore, err := repo.Get(ctx, "/.gitignore")
-	if err != nil {
-		return "", err
-	}
-	var ignoreList []string
-	files := strings.Split(ignore, "\n")
-	for _, file := range files {
-		file = strings.TrimSpace(file)
-		if file != "" {
-			ignoreList = append(ignoreList, file)
-		}
-	}
-
 	// generate a tar ball
 	b := &bytes.Buffer{}
-	if err := createTarball(b, entries, repo.Root(), ignoreList); err != nil {
+	if err := createTarball(b, entries, repo.Root()); err != nil {
 		return "", err
 	}
 
 	// upload the tar ball
-	assetID, err := uploadTarBall(ctx, ch, org, project, b)
+	assetID, err := uploadTarBall(ctx, ch, org, name, b)
 	if err != nil {
 		return "", err
 	}
@@ -53,7 +41,7 @@ func UploadRepo(ctx context.Context, repo drivers.RepoStore, ch *Helper, org, pr
 }
 
 // borrowed from https://github.com/goreleaser/goreleaser/blob/main/pkg/archive/tar/tar.go with minor changes
-func createTarball(writer io.Writer, files []drivers.DirEntry, root string, ignoreList []string) error {
+func createTarball(writer io.Writer, files []drivers.DirEntry, root string) error {
 	gw, err := gzip.NewWriterLevel(writer, gzip.BestCompression)
 	if err != nil {
 		return err
@@ -62,7 +50,7 @@ func createTarball(writer io.Writer, files []drivers.DirEntry, root string, igno
 	tw := tar.NewWriter(gw)
 	defer tw.Close()
 	for _, entry := range files {
-		if isIgnored(entry.Path, ignoreList) {
+		if drivers.IsIgnored(entry.Path, ignoreFileList) {
 			continue
 		}
 		fullPath := filepath.Join(root, entry.Path)
@@ -99,7 +87,7 @@ func createTarball(writer io.Writer, files []drivers.DirEntry, root string, igno
 	return nil
 }
 
-func uploadTarBall(ctx context.Context, ch *Helper, org, project string, body io.Reader) (string, error) {
+func uploadTarBall(ctx context.Context, ch *Helper, org, name string, body io.Reader) (string, error) {
 	adminClient, err := ch.Client()
 	if err != nil {
 		return "", err
@@ -109,8 +97,8 @@ func uploadTarBall(ctx context.Context, ch *Helper, org, project string, body io
 	asset, err := adminClient.CreateAsset(ctx, &adminv1.CreateAssetRequest{
 		OrganizationName: org,
 		Type:             "deploy",
-		Name:             fmt.Sprintf("%s__%s", org, project),
-		Extension:        ".tar.gz",
+		Name:             fmt.Sprintf("%s__%s", org, name),
+		Extension:        "tar.gz",
 	})
 	if err != nil {
 		return "", err
@@ -138,16 +126,4 @@ func uploadTarBall(ctx context.Context, ch *Helper, org, project string, body io
 		return "", fmt.Errorf("failed to upload file: status code %d, response %s", resp.StatusCode, string(body))
 	}
 	return asset.AssetId, nil
-}
-
-func isIgnored(path string, ignorePathsConfig []string) bool {
-	for _, dir := range ignorePathsConfig {
-		if path == dir {
-			return true
-		}
-		if strings.HasPrefix(path, dir) && path[len(dir)] == '/' {
-			return true
-		}
-	}
-	return false
 }
