@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
+  import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";

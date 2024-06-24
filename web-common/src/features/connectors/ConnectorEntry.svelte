@@ -21,39 +21,36 @@
   $: isOlapConnector = olapConnector === connector.name;
 </script>
 
-<!-- Only show the OLAP connector, for now -->
-{#if isOlapConnector}
-  {#if connector.name}
-    <li aria-label={connector.name} class="connector-entry">
-      <button
-        class="connector-entry-header"
-        on:click={() => (showDatabases = !showDatabases)}
-      >
-        <CaretDownIcon
-          className="transform transition-transform text-gray-400 {showDatabases
-            ? 'rotate-0'
-            : '-rotate-90'}"
-          size="14px"
-        />
-        <div class="flex-none">
-          {#if connector.driver?.name}
-            <svelte:component
-              this={connectorIconMapping[connector.driver.name]}
-              size="16px"
-            />
-          {/if}
-        </div>
-        <h4>{connector.name}</h4>
-        <div class="flex-grow" />
-        {#if isOlapConnector}
-          <Tag height={16}>OLAP</Tag>
+{#if connector.name}
+  <li aria-label={connector.name} class="connector-entry">
+    <button
+      class="connector-entry-header"
+      on:click={() => (showDatabases = !showDatabases)}
+    >
+      <CaretDownIcon
+        className="transform transition-transform text-gray-400 {showDatabases
+          ? 'rotate-0'
+          : '-rotate-90'}"
+        size="14px"
+      />
+      <div class="flex-none">
+        {#if connector.driver?.name}
+          <svelte:component
+            this={connectorIconMapping[connector.driver.name]}
+            size="16px"
+          />
         {/if}
-      </button>
-      {#if showDatabases}
-        <DatabaseExplorer {instanceId} {connector} />
+      </div>
+      <h4>{connector.name}</h4>
+      <div class="flex-grow" />
+      {#if isOlapConnector}
+        <Tag height={16}>OLAP</Tag>
       {/if}
-    </li>
-  {/if}
+    </button>
+    {#if showDatabases}
+      <DatabaseExplorer {instanceId} {connector} />
+    {/if}
+  </li>
 {/if}
 
 <style lang="postcss">

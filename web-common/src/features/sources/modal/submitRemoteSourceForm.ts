@@ -23,6 +23,9 @@ import {
   getFileAPIPathFromNameAndType,
   getFilePathFromNameAndType,
 } from "../../entity-management/entity-mappers";
+import { fileArtifacts } from "../../entity-management/file-artifacts";
+import { getName } from "../../entity-management/name-utils";
+import { ResourceKind } from "../../entity-management/resource-selectors";
 import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
@@ -99,12 +102,14 @@ export async function submitRemoteSourceForm(
    * Connectors
    */
 
+  const newConnectorName = getName(
+    connector.name as string,
+    fileArtifacts.getNamesForKind(ResourceKind.Connector),
+  );
+
   // Make a new `<connector>.yaml` file
   await runtimeServicePutFile(instanceId, {
-    path: getFileAPIPathFromNameAndType(
-      connector.name as string,
-      EntityType.Connector,
-    ),
+    path: getFileAPIPathFromNameAndType(newConnectorName, EntityType.Connector),
     blob: compileConnectorYAML(connector, formValues),
     create: true,
     createOnly: false,
@@ -121,10 +126,7 @@ export async function submitRemoteSourceForm(
   // Update the `rill.yaml` file
   await runtimeServicePutFile(instanceId, {
     path: "rill.yaml",
-    blob: await updateRillYAMLWithOlapConnector(
-      queryClient,
-      connector.name as string,
-    ),
+    blob: await updateRillYAMLWithOlapConnector(queryClient, newConnectorName),
     create: true,
     createOnly: false,
   });

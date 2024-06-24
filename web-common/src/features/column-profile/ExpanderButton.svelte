@@ -2,7 +2,7 @@
   import SlidingWords from "@rilldata/web-common/components/tooltip/SlidingWords.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import CaretDownIcon from "../icons/CaretDownIcon.svelte";
+  import CaretDownIcon from "../../components/icons/CaretDownIcon.svelte";
 
   export let rotated = false;
   export let suppressTooltip = false;

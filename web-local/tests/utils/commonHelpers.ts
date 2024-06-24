@@ -41,7 +41,7 @@ export async function waitForProfiling(
       columns.map((column) =>
         page.waitForResponse(
           new RegExp(
-            `/queries/null-count/tables/${name}\\?columnName=${column}`,
+            `/queries/null-count/tables/${name}\\?connector=duckdb&database=&databaseSchema=&columnName=${column}`,
           ),
         ),
       ),

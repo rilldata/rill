@@ -2,8 +2,8 @@
   import { goto } from "$app/navigation";
   import ConnectedPreviewTable from "@rilldata/web-common/components/preview-table/ConnectedPreviewTable.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import {
     ResourceKind,
     resourceIsLoading,
@@ -60,6 +60,8 @@
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data?.source;
   $: connector = (resource as V1SourceV2)?.spec?.sinkConnector as string;
+  const database = ""; // sources use the default database
+  const databaseSchema = ""; // sources use the default databaseSchema
   $: tableName = (resource as V1SourceV2)?.state?.table as string;
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
@@ -195,8 +197,11 @@
   </div>
 
   <svelte:fragment slot="inspector">
-    {#if tableName && resource}
+    {#if connector && tableName && resource}
       <WorkspaceInspector
+        {connector}
+        {database}
+        {databaseSchema}
         {tableName}
         hasErrors={$hasErrors}
         hasUnsavedChanges={$hasUnsavedChanges}

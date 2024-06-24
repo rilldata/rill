@@ -1,37 +1,40 @@
 <script lang="ts">
-  import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
-  import { getSummaries } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
+  import { getSummaries } from "@rilldata/web-common/features/column-profile/queries";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
+  import { useModels } from "@rilldata/web-common/features/models/selectors";
   import {
     formatConnectorType,
     getFileExtension,
   } from "@rilldata/web-common/features/sources/inspector/helpers";
+  import { useSources } from "@rilldata/web-common/features/sources/selectors";
   import CollapsibleSectionTitle from "@rilldata/web-common/layout/CollapsibleSectionTitle.svelte";
   import {
     formatBigNumberPercentage,
     formatInteger,
   } from "@rilldata/web-common/lib/formatters";
   import {
-    createQueryServiceTableCardinality,
-    createQueryServiceTableColumns,
     V1ModelV2,
     V1SourceV2,
+    createQueryServiceTableCardinality,
+    createQueryServiceTableColumns,
   } from "@rilldata/web-common/runtime-client";
+  import { derived } from "svelte/store";
   import { slide } from "svelte/transition";
   import { LIST_SLIDE_DURATION } from "../../../layout/config";
   import { runtime } from "../../../runtime-client/runtime-store";
-  import InspectorSummary from "./InspectorSummary.svelte";
-  import { useModels } from "@rilldata/web-common/features/models/selectors";
-  import { useSources } from "@rilldata/web-common/features/sources/selectors";
-  import { derived } from "svelte/store";
   import { getTableReferences } from "../../models/utils/get-table-references";
-  import { getMatchingReferencesAndEntries } from "../../models/workspace/inspector/utils";
-  import WithModelResultTooltip from "../../models/workspace/inspector/WithModelResultTooltip.svelte";
   import References from "../../models/workspace/inspector/References.svelte";
+  import WithModelResultTooltip from "../../models/workspace/inspector/WithModelResultTooltip.svelte";
+  import { getMatchingReferencesAndEntries } from "../../models/workspace/inspector/utils";
+  import InspectorHeaderGrid from "./InspectorHeaderGrid.svelte";
 
   export let hasUnsavedChanges: boolean;
+  export let connector: string;
+  export let database: string;
+  export let databaseSchema: string;
   export let tableName: string;
   export let source: V1SourceV2 | undefined = undefined;
   export let model: V1ModelV2 | undefined = undefined;
@@ -40,7 +43,6 @@
   export let isEmpty = false;
   export let hasErrors: boolean;
   export let showReferences = true;
-  export let showSummaryTitle = false;
 
   let showColumns = true;
 
@@ -52,13 +54,26 @@
   $: cardinalityQuery = createQueryServiceTableCardinality(
     instanceId,
     tableName,
+    {
+      connector,
+      database,
+      databaseSchema,
+    },
   );
 
   $: profileColumnsQuery = createQueryServiceTableColumns(
     instanceId,
     tableName,
-    {},
-    { query: { keepPreviousData: true } },
+    {
+      connector,
+      database,
+      databaseSchema,
+    },
+    {
+      query: {
+        keepPreviousData: true,
+      },
+    },
   );
 
   $: cardinality = Number($cardinalityQuery?.data?.cardinality ?? 0);
@@ -72,7 +87,14 @@
 
   $: columnCount = `${formatInteger(profileColumnsCount)} columns`;
 
-  $: summaries = getSummaries(tableName, instanceId, $profileColumnsQuery);
+  $: summaries = getSummaries(
+    instanceId,
+    connector,
+    database,
+    databaseSchema,
+    tableName,
+    $profileColumnsQuery,
+  );
 
   $: totalCells = profileColumnsCount * cardinality;
 
@@ -107,8 +129,16 @@
       return createQueryServiceTableCardinality(
         instanceId,
         resource.meta?.name?.name ?? "",
-        {},
-        { query: { select: (data) => +(data?.cardinality ?? 0) } },
+        {
+          connector,
+          database,
+          databaseSchema,
+        },
+        {
+          query: {
+            select: (data) => +(data?.cardinality ?? 0),
+          },
+        },
       );
     }) ?? [];
 
@@ -117,8 +147,16 @@
       return createQueryServiceTableColumns(
         instanceId,
         resource.meta?.name?.name ?? "",
-        {},
-        { query: { select: (data) => data?.profileColumns?.length || 0 } },
+        {
+          connector,
+          database,
+          databaseSchema,
+        },
+        {
+          query: {
+            select: (data) => data?.profileColumns?.length || 0,
+          },
+        },
       );
     }) ?? [];
 
@@ -153,8 +191,8 @@
       {source ? "Source" : "Model"} is empty.
     </div>
   {:else if source || model}
-    <InspectorSummary {rowCount} {columnCount} showTitle={showSummaryTitle}>
-      <svelte:fragment slot="row-header">
+    <InspectorHeaderGrid>
+      <svelte:fragment slot="top-left">
         {#if source}
           <p>
             {connectorType}
@@ -186,8 +224,9 @@
           </WithModelResultTooltip>
         {/if}
       </svelte:fragment>
+      <svelte:fragment slot="top-right">{rowCount}</svelte:fragment>
 
-      <svelte:fragment slot="column-header">
+      <svelte:fragment slot="bottom-left">
         {#if source}
           <Tooltip location="left" alignment="start" distance={24}>
             {#if nullPercentage !== undefined}
@@ -223,7 +262,9 @@
           </WithModelResultTooltip>
         {/if}
       </svelte:fragment>
-    </InspectorSummary>
+
+      <svelte:fragment slot="bottom-right">{columnCount}</svelte:fragment>
+    </InspectorHeaderGrid>
 
     <hr />
 
@@ -244,7 +285,13 @@
 
       {#if showColumns}
         <div transition:slide={{ duration: LIST_SLIDE_DURATION }}>
-          <ColumnProfile objectName={tableName} indentLevel={0} />
+          <ColumnProfile
+            {connector}
+            {database}
+            {databaseSchema}
+            objectName={tableName}
+            indentLevel={0}
+          />
         </div>
       {/if}
     </div>
