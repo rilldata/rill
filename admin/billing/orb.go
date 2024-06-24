@@ -282,8 +282,8 @@ func (o *Orb) GetReportingGranularity() UsageReportingGranularity {
 }
 
 func (o *Orb) GetReportingWorkerCron() string {
-	// run every hour at end of the hour
-	return "* * * * *"
+	// run every hour at around end of the hour
+	return "55 * * * *"
 }
 
 func (o *Orb) getAllPlans(ctx context.Context) ([]*Plan, error) {
