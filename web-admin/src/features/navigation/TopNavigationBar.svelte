@@ -60,7 +60,10 @@
   $: alertsQuery = useAlerts(instanceId, onAlertPage);
   $: reportsQuery = useReports(instanceId, onReportPage);
 
-  $: organizations = $organizationQuery.data?.organizations ?? [];
+  $: organizations =
+    $organizationQuery.data?.organizations ??
+    // handle case when visiting root cloud page directly (ui.rilldata.com)
+    (organization ? [{ name: organization, id: organization }] : []);
   $: projects = $projectsQuery.data?.projects ?? [];
   $: visualizations = $visualizationsQuery.data ?? [];
   $: alerts = $alertsQuery.data?.resources ?? [];
