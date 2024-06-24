@@ -825,7 +825,7 @@ export interface V1GetCloneCredentialsResponse {
   gitPassword?: string;
   gitSubpath?: string;
   gitProdBranch?: string;
-  archivePath?: string;
+  archiveDownloadUrl?: string;
 }
 
 export interface V1GetBookmarkResponse {

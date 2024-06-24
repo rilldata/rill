@@ -886,7 +886,15 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 	}
 
 	if proj.ArchiveAssetID != nil {
-		return &adminv1.GetCloneCredentialsResponse{ArchivePath: *proj.ArchiveAssetID}, nil
+		asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.GetCloneCredentialsResponse{ArchiveDownloadUrl: downloadURL}, nil
 	}
 
 	if proj.GithubURL == nil || proj.GithubInstallationID == nil {

@@ -68,22 +68,22 @@ type Config struct {
 	GithubClientID         string                 `split_words:"true"`
 	GithubClientSecret     string                 `split_words:"true"`
 	UploadsBucket          string                 `split_words:"true"`
-	// UploadsSvcCreds is only required to be set for local development.
+	// AssetsBucketGoogleCredentialsJSON is only required to be set for local development.
 	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
-	UploadsSvcCreds          string `split_words:"true"`
-	EmailSMTPHost            string `split_words:"true"`
-	EmailSMTPPort            int    `split_words:"true"`
-	EmailSMTPUsername        string `split_words:"true"`
-	EmailSMTPPassword        string `split_words:"true"`
-	EmailSenderEmail         string `split_words:"true"`
-	EmailSenderName          string `split_words:"true"`
-	EmailBCC                 string `split_words:"true"`
-	OpenAIAPIKey             string `envconfig:"openai_api_key"`
-	ActivitySinkType         string `default:"" split_words:"true"`
-	ActivitySinkKafkaBrokers string `default:"" split_words:"true"`
-	ActivityUISinkKafkaTopic string `default:"" split_words:"true"`
-	MetricsProject           string `default:"" split_words:"true"`
-	AutoscalerCron           string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
+	AssetsBucketGoogleCredentialsJSON string `split_words:"true"`
+	EmailSMTPHost                     string `split_words:"true"`
+	EmailSMTPPort                     int    `split_words:"true"`
+	EmailSMTPUsername                 string `split_words:"true"`
+	EmailSMTPPassword                 string `split_words:"true"`
+	EmailSenderEmail                  string `split_words:"true"`
+	EmailSenderName                   string `split_words:"true"`
+	EmailBCC                          string `split_words:"true"`
+	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
+	ActivitySinkType                  string `default:"" split_words:"true"`
+	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
+	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
+	MetricsProject                    string `default:"" split_words:"true"`
+	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -293,8 +293,8 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				var clientOpts []option.ClientOption
-				if conf.UploadsSvcCreds != "" {
-					clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.UploadsSvcCreds)))
+				if conf.AssetsBucketGoogleCredentialsJSON != "" {
+					clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.AssetsBucketGoogleCredentialsJSON)))
 				}
 				storageClient, err := storage.NewClient(cmd.Context(), clientOpts...)
 				if err != nil {

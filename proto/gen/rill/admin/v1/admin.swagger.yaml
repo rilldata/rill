@@ -2738,9 +2738,9 @@ definitions:
         type: string
       gitProdBranch:
         type: string
-      archivePath:
+      archiveDownloadUrl:
         type: string
-        title: either archive_path or git related details will be set
+        title: either archive_download_url or git related details will be set
   v1GetCurrentUserResponse:
     type: object
     properties:

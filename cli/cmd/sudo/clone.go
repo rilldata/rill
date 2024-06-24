@@ -40,8 +40,8 @@ func cloneCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			fmt.Println("Clone command:")
-			if res.ArchivePath != "" {
-				fmt.Printf("\tgsutil cp %s .\n\n", res.ArchivePath)
+			if res.ArchiveDownloadUrl != "" {
+				fmt.Printf("\tcurl -o %s\n\n", res.ArchiveDownloadUrl)
 				return nil
 			}
 

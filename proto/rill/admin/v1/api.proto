@@ -1234,8 +1234,8 @@ message GetCloneCredentialsResponse {
   string git_password = 3;
   string git_subpath = 4;
   string git_prod_branch = 5;
-  // either archive_path or git related details will be set
-  string archive_path = 6;
+  // either archive_download_url or git related details will be set
+  string archive_download_url = 6;
 }
 
 message CreateWhitelistedDomainRequest {

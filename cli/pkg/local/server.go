@@ -410,7 +410,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}), nil
 }
 
-func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRequest]) (*connect.Response[localv1.DeployResponse], error) {
+func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.DeployProjectRequest]) (*connect.Response[localv1.DeployProjectResponse], error) {
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("user should be authenticated before deploying")
 	}
@@ -536,7 +536,7 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 		return nil, err
 	}
 
-	return connect.NewResponse(&localv1.DeployResponse{
+	return connect.NewResponse(&localv1.DeployProjectResponse{
 		DeployId:    projResp.Project.ProdDeploymentId,
 		Org:         projResp.Project.OrgName,
 		Project:     projResp.Project.Name,
@@ -544,7 +544,7 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 	}), nil
 }
 
-func (s *Server) Redeploy(ctx context.Context, r *connect.Request[localv1.RedeployRequest]) (*connect.Response[localv1.RedeployResponse], error) {
+func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1.RedeployProjectRequest]) (*connect.Response[localv1.RedeployProjectResponse], error) {
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("user should be authenticated")
 	}
@@ -571,7 +571,7 @@ func (s *Server) Redeploy(ctx context.Context, r *connect.Request[localv1.Redepl
 		}
 	}
 	// TODO : Add other update project fields
-	return connect.NewResponse(&localv1.RedeployResponse{}), nil
+	return connect.NewResponse(&localv1.RedeployProjectResponse{}), nil
 }
 
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.

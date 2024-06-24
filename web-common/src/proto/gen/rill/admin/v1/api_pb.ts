@@ -5702,11 +5702,11 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
   gitProdBranch = "";
 
   /**
-   * either archive_path or git related details will be set
+   * either archive_download_url or git related details will be set
    *
-   * @generated from field: string archive_path = 6;
+   * @generated from field: string archive_download_url = 6;
    */
-  archivePath = "";
+  archiveDownloadUrl = "";
 
   constructor(data?: PartialMessage<GetCloneCredentialsResponse>) {
     super();
@@ -5721,7 +5721,7 @@ export class GetCloneCredentialsResponse extends Message<GetCloneCredentialsResp
     { no: 3, name: "git_password", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "git_subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "git_prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "archive_path", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "archive_download_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCloneCredentialsResponse {

@@ -16027,7 +16027,7 @@ func (m *GetCloneCredentialsResponse) validate(all bool) error {
 
 	// no validation rules for GitProdBranch
 
-	// no validation rules for ArchivePath
+	// no validation rules for ArchiveDownloadUrl
 
 	if len(errors) > 0 {
 		return GetCloneCredentialsResponseMultiError(errors)
