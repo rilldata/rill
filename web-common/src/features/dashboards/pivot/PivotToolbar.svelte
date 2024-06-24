@@ -23,13 +23,13 @@
     },
   } = stateManagers;
 
-  $: comparisonStart = $timeControlsState.comparisonTimeStart;
+  // $: comparisonStart = $timeControlsState.comparisonTimeStart;
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
   $: comparisonEnabled = $dashboardStore?.pivot?.enableComparison;
 
   $: canShowComparison = canEnablePivotComparison(
     $dashboardStore?.pivot,
-    comparisonStart,
+    // comparisonStart,
   );
 
   // function expandVisible() {

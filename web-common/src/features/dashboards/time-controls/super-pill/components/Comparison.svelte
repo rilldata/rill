@@ -9,9 +9,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { DateTime, Interval } from "luxon";
   import { metricsExplorerStore } from "../../../stores/dashboard-stores";
-  import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
-  import { show } from "@rilldata/web-common/layout/navigation/SurfaceControlButton.svelte";
 
   type Option = {
     name: TimeComparisonOption;
