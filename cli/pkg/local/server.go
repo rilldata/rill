@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	"github.com/rilldata/rill/cli/pkg/update"
@@ -163,6 +164,18 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		}), nil
 	}
 
+	rc, ok, err := dotrillcloud.GetAll(s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	isDeployed := ok
+	deployedOrgID := ""
+	deployedProjectID := ""
+	if rc != nil {
+		deployedOrgID = rc.OrgID
+		deployedProjectID = rc.ProjectID
+	}
+
 	isGithubRepo := true
 	githubRemoteFound := true
 	repoAccess := false
@@ -216,6 +229,9 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				RillOrgExistsAsGithubUserName: false,
 				RillUserOrgs:                  nil,
 				LocalProjectName:              localProjectName,
+				IsDeployed:                    isDeployed,
+				DeployedOrgId:                 deployedOrgID,
+				DeployedProjectId:             deployedProjectID,
 			}), nil
 		}
 	}
@@ -263,6 +279,9 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
 		RillUserOrgs:                  userOrgs,
 		LocalProjectName:              localProjectName,
+		IsDeployed:                    isDeployed,
+		DeployedOrgId:                 deployedOrgID,
+		DeployedProjectId:             deployedProjectID,
 	}), nil
 }
 
@@ -531,6 +550,16 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		projResp, err = c.CreateProject(ctx, projRequest)
 		suffix++
 		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	err = dotrillcloud.SetAll(s.app.ProjectPath, &dotrillcloud.RillCloud{
+		ProjectName: projResp.Project.Name,
+		ProjectID:   projResp.Project.Id,
+		OrgName:     projResp.Project.OrgName,
+		OrgID:       projResp.Project.OrgId,
 	})
 	if err != nil {
 		return nil, err

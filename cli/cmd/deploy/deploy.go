@@ -25,6 +25,7 @@ import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/deviceauth"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -293,6 +294,16 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		return fmt.Errorf("create project failed with error %w", err)
 	}
 
+	err = dotrillcloud.SetAll(localProjectPath, &dotrillcloud.RillCloud{
+		ProjectName: res.Project.Name,
+		ProjectID:   res.Project.Id,
+		OrgName:     res.Project.OrgName,
+		OrgID:       res.Project.OrgId,
+	})
+	if err != nil {
+		return err
+	}
+
 	// Success!
 	ch.PrintfSuccess("Created project \"%s/%s\". Use `rill project rename` to change name if required.\n\n", ch.Org, res.Project.Name)
 	ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
@@ -424,6 +435,16 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 			return nil
 		}
 		return fmt.Errorf("create project failed with error %w", err)
+	}
+
+	err = dotrillcloud.SetAll(localProjectPath, &dotrillcloud.RillCloud{
+		ProjectName: res.Project.Name,
+		ProjectID:   res.Project.Id,
+		OrgName:     res.Project.OrgName,
+		OrgID:       res.Project.OrgId,
+	})
+	if err != nil {
+		return err
 	}
 
 	// Success!

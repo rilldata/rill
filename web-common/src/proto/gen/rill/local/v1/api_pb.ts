@@ -407,6 +407,21 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
    */
   localProjectName = "";
 
+  /**
+   * @generated from field: bool is_deployed = 16;
+   */
+  isDeployed = false;
+
+  /**
+   * @generated from field: string deployed_org_id = 17;
+   */
+  deployedOrgId = "";
+
+  /**
+   * @generated from field: string deployed_project_id = 18;
+   */
+  deployedProjectId = "";
+
   constructor(data?: PartialMessage<DeployValidationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -430,6 +445,9 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
     { no: 13, name: "rill_org_exists_as_github_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "is_deployed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 17, name: "deployed_org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 18, name: "deployed_project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployValidationResponse {

@@ -850,6 +850,12 @@ func (m *DeployValidationResponse) validate(all bool) error {
 
 	// no validation rules for LocalProjectName
 
+	// no validation rules for IsDeployed
+
+	// no validation rules for DeployedOrgId
+
+	// no validation rules for DeployedProjectId
+
 	if m.HasUncommittedChanges != nil {
 		// no validation rules for HasUncommittedChanges
 	}
