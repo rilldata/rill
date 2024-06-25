@@ -28,9 +28,12 @@
     query: Query,
   ) => errorEventHandler?.requestErrorEventHandler(error, query);
 
+  let removeJavascriptListeners: () => void;
+
   onMount(async () => {
     const config = await runtimeServiceGetConfig();
     await initMetrics(config);
+    removeJavascriptListeners = errorEventHandler.addJavascriptErrorListeners();
 
     featureFlags.set(false, "adminServer");
     featureFlags.set(config.readonly, "readOnly");
@@ -39,6 +42,14 @@
       version: config.version,
       commitHash: config.build_commit,
     });
+  });
+
+  /**
+   * Async mount doesnt support an unsubscribe method.
+   * So we need this to make sure javascript listeners for error handler is removed.
+   */
+  onMount(() => {
+    return () => removeJavascriptListeners?.();
   });
 
   $: ({ host, instanceId } = $runtime);
