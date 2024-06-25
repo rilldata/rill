@@ -46,7 +46,6 @@
   );
 
   $: references = $referencedWithMetadata;
-  $: references, console.log(references);
 
   function blur() {
     eventBus.emit("highlightSelection", []);
