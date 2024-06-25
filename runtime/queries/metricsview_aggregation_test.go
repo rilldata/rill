@@ -67,9 +67,6 @@ func Ignore_TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_totals", func(t *testing.T) {
 		TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t)
 	})
-	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_limit", func(t *testing.T) {
-		TestMetricsViewsAggregation_comparison_measure_filter_with_limit(t)
-	})
 	t.Run("TestMetricsViewsAggregation_comparison_measure_filter", func(t *testing.T) {
 		TestMetricsViewsAggregation_comparison_measure_filter(t)
 	})
