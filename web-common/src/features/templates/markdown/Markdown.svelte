@@ -6,8 +6,8 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  $: kpiProperties = rendererProperties as MarkdownProperties;
-  $: css = kpiProperties.css || {};
+  $: markdownProperties = rendererProperties as MarkdownProperties;
+  $: css = markdownProperties.css || {};
 
   $: styleString = Object.entries(css)
     .map(([k, v]) => `${k}:${v}`)
@@ -18,7 +18,7 @@
   class="markdown size-full items-center flex justify-center"
   style={styleString}
 >
-  {#await marked(kpiProperties.content) then content}
+  {#await marked(markdownProperties.content) then content}
     {@html DOMPurify.sanitize(content)}
   {/await}
 </div>
