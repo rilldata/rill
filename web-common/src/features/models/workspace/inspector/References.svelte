@@ -46,6 +46,7 @@
   );
 
   $: references = $referencedWithMetadata;
+  $: references, console.log(references);
 
   function blur() {
     eventBus.emit("highlightSelection", []);
@@ -69,9 +70,7 @@
           <div>
             <WithModelResultTooltip {modelHasError}>
               <a
-                href="/{reference?.resource?.source
-                  ? 'source'
-                  : 'model'}/{reference?.resource?.meta?.name?.name}"
+                href="/files{reference?.resource?.meta?.filePaths[0]}"
                 class="ui-copy-muted grid justify-between gap-x-2 {query_reference_trigger} pl-4 pr-4"
                 style:grid-template-columns="auto max-content"
                 on:focus={() => {
