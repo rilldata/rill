@@ -2432,7 +2432,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -2495,6 +2495,10 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the dashboard when it was created
+      resolver:
+        type: string
+      resolverProps:
+        type: object
   v1Bookmark:
     type: object
     properties:
