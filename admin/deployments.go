@@ -33,11 +33,6 @@ type createDeploymentOptions struct {
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
-	// We require a branch to be specified to create a deployment
-	if opts.ProdBranch == "" {
-		return nil, fmt.Errorf("cannot create project without a branch")
-	}
-
 	// Use default if no provisioner is specified
 	if opts.Provisioner == "" {
 		opts.Provisioner = s.opts.DefaultProvisioner
@@ -210,10 +205,6 @@ type UpdateDeploymentOptions struct {
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *UpdateDeploymentOptions) error {
-	if opts.Branch == "" {
-		return fmt.Errorf("cannot update deployment without specifying a valid branch")
-	}
-
 	// Update the provisioned runtime if the version has changed
 	if opts.Version != "" && opts.Version != depl.RuntimeVersion {
 		// Get provisioner from the set
@@ -336,6 +327,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			Description:          proj.Description,
 			Public:               proj.Public,
 			Provisioner:          proj.Provisioner,
+			ArchiveAssetID:       proj.ArchiveAssetID,
 			GithubURL:            proj.GithubURL,
 			GithubInstallationID: proj.GithubInstallationID,
 			ProdVersion:          proj.ProdVersion,

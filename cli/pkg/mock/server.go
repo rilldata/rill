@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
@@ -19,6 +20,7 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
+	"google.golang.org/api/option"
 )
 
 func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (*admin.Service, error) {
@@ -83,7 +85,11 @@ func AdminServer(ctx context.Context, logger *zap.Logger, adm *admin.Service) (*
 	}
 
 	limiter := ratelimit.NewNoop()
-	srv, err := server.New(logger, adm, issuer, limiter, activity.NewNoopClient(), &server.Options{
+	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return nil, err
+	}
+	srv, err := server.New(logger, adm, issuer, limiter, activity.NewNoopClient(), client.Bucket("mock"), &server.Options{
 		HTTPPort:               conf.HTTPPort,
 		GRPCPort:               conf.GRPCPort,
 		ExternalURL:            conf.ExternalURL,

@@ -23,6 +23,7 @@ func SudoCmd(ch *cmdutil.Helper) *cobra.Command {
 	sudoCmd.AddCommand(user.UserCmd(ch))
 	sudoCmd.AddCommand(quota.QuotaCmd(ch))
 	sudoCmd.AddCommand(gitCloneCmd(ch))
+	sudoCmd.AddCommand(cloneCmd(ch))
 	sudoCmd.AddCommand(lookupCmd(ch))
 	sudoCmd.AddCommand(project.ProjectCmd(ch))
 	sudoCmd.AddCommand(annotations.AnnotationsCmd(ch))
