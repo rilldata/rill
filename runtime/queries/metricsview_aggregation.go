@@ -89,7 +89,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 
 	// Attempt to route to metricsview executor
-	qry, ok, err := q.rewriteToMetricsViewQuery(mv)
+	qry, ok, err := q.rewriteToMetricsViewQuery()
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
@@ -821,7 +821,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	// Attempt to route to metricsview executor
-	qry, ok, err := q.rewriteToMetricsViewQuery(mv)
+	qry, ok, err := q.rewriteToMetricsViewQuery()
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
@@ -2965,16 +2965,7 @@ func (q *MetricsViewAggregation) trancationExpression(s string, timeGrain runtim
 	}
 }
 
-func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.MetricsViewSpec) (*metricsview.Query, bool, error) {
-	// Time offset-based comparison joins not supported yet
-	if q.ComparisonTimeRange != nil && !isTimeRangeNil(q.ComparisonTimeRange) {
-		for _, d := range q.Dimensions {
-			if d.Name == mv.TimeDimension {
-				return nil, false, nil
-			}
-		}
-	}
-
+func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query, bool, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
 
 	for _, d := range q.Dimensions {
