@@ -74,10 +74,14 @@ func (c *connection) ListRecursive(ctx context.Context, glob string, skipDirs bo
 
 // Get implements drivers.RepoStore.
 func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
-	filePath = filepath.Join(c.root, filePath)
+	fp := filepath.Join(c.root, filePath)
 
-	b, err := os.ReadFile(filePath)
+	b, err := os.ReadFile(fp)
 	if err != nil {
+		switch t := err.(type) {
+		case *fs.PathError:
+			return "", fmt.Errorf("%s %s %s", t.Op, filePath, t.Err.Error())
+		}
 		return "", err
 	}
 
