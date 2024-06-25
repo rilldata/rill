@@ -5,7 +5,6 @@ import {
   MeasureFilterEntry,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
-import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
 import {
   V1AlertSpec,
