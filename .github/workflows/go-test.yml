@@ -24,4 +24,7 @@ jobs:
     - name: Go fmt
       run: test -z $(gofmt -l .)
     - name: Go test
+      env: 
+        METRICS_CREDS: ${{ secrets.METRICS_CREDS }}
       run: go test -short -v ./...
+

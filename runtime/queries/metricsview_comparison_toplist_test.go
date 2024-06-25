@@ -644,11 +644,12 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 }
 
 func TestMetricsViewsComparison_Druid_comparsion_no_dim_values(t *testing.T) {
-	if os.Getenv("LOCALDRUID") == "" {
-		t.Skip("skipping the test in non-local Druid environment")
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without metrics-in")
 	}
 
-	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
 
 	q := &queries.MetricsViewComparison{
 		MetricsViewName: "ad_bids_metrics",
@@ -681,7 +682,7 @@ func TestMetricsViewsComparison_Druid_comparsion_no_dim_values(t *testing.T) {
 		Limit: 250,
 	}
 
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.Empty(t, q.Result)
 }

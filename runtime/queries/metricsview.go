@@ -76,7 +76,7 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 
 	res, err := ctrl.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: name}, false)
 	if err != nil {
-		return nil, nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, nil, status.Error(codes.InvalidArgument, fmt.Sprintf("error getting metrics view %q: %s", name, err.Error()))
 	}
 
 	mv := res.GetMetricsView()
@@ -234,11 +234,18 @@ type ExpressionBuilder struct {
 	dialect  drivers.Dialect
 	measures []*runtimev1.MetricsViewAggregationMeasure
 	having   bool
+	unnests  map[string]*drivers.UnnestConstruct
 }
 
 func (builder *ExpressionBuilder) columnIdentifierExpression(name string) (string, bool) {
 	// check if identifier is a dimension
 	for _, dim := range builder.mv.Dimensions {
+		if dim.Unnest {
+			unnest := builder.unnests[dim.Name]
+			if unnest != nil {
+				return fmt.Sprintf("%s.%s", unnest.UnnestTableName, unnest.UnnestColName), true
+			}
+		}
 		if dim.Name == name {
 			return builder.dialect.MetricsViewDimensionExpression(dim), true
 		}
