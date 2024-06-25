@@ -2996,6 +2996,8 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 		qry.Dimensions = append(qry.Dimensions, res)
 	}
 
+	var measuresFilter *runtimev1.Expression
+
 	for _, m := range q.Measures {
 		res := metricsview.Measure{Name: m.Name}
 		switch m.BuiltinMeasure {
@@ -3007,9 +3009,11 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 			}}
 		}
 
-		// Measure filters not supported yet
 		if m.Filter != nil {
-			return nil, false, nil
+			if len(q.Measures) > 1 {
+				return nil, false, fmt.Errorf("measure-level filter is not supported when multiple measures are present")
+			}
+			measuresFilter = m.Filter
 		}
 
 		if m.Compute != nil {
@@ -3078,6 +3082,27 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(mv *runtimev1.Metrics
 
 	if q.Where != nil {
 		qry.Where = metricsview.NewExpressionFromProto(q.Where)
+	}
+
+	// If a measure-level filter is present, we set qry.Where as the spine, and use (qry.Where AND measuresFilter) as the new where clause
+	if measuresFilter != nil {
+		measuresFilter := metricsview.NewExpressionFromProto(measuresFilter)
+
+		qry.Spine = &metricsview.Spine{Where: &metricsview.WhereSpine{Expression: qry.Where}}
+
+		if qry.Where == nil {
+			qry.Where = measuresFilter
+		} else {
+			qry.Where = &metricsview.Expression{
+				Condition: &metricsview.Condition{
+					Operator: metricsview.OperatorAnd,
+					Expressions: []*metricsview.Expression{
+						qry.Where,
+						measuresFilter,
+					},
+				},
+			}
+		}
 	}
 
 	if q.Having != nil {

@@ -555,7 +555,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine) (*SelectNode, error) 
 	}
 
 	if spine.Where != nil {
-		expr, args, err := a.sqlForExpression(spine.Where, nil, false, true)
+		expr, args, err := a.sqlForExpression(spine.Where.Expression, nil, false, true)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile 'spine.where': %w", err)
 		}

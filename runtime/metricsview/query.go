@@ -95,8 +95,12 @@ type MeasureComputeComparisonRatio struct {
 }
 
 type Spine struct {
-	Where     *Expression `mapstructure:"where"`
+	Where     *WhereSpine `mapstructure:"where"`
 	TimeRange *TimeSpine  `mapstructure:"time"`
+}
+
+type WhereSpine struct {
+	Expression *Expression `mapstructure:"expr"`
 }
 
 type TimeSpine struct {
