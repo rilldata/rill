@@ -612,15 +612,6 @@ func metricsViewDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runti
 	return nil, fmt.Errorf("dimension %s not found", dimName)
 }
 
-func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {
-	for _, measure := range mv.Measures {
-		if strings.EqualFold(measure.Name, measureName) {
-			return measure.Expression, nil
-		}
-	}
-	return "", fmt.Errorf("measure %s not found", measureName)
-}
-
 func WriteCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {
 	w := csv.NewWriter(writer)
 
