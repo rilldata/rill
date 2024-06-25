@@ -104,7 +104,7 @@ func (r *legacyMetricsResolver) Validate(ctx context.Context) error {
 	return nil
 }
 
-func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
+func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	ctrl, err := r.runtime.Controller(ctx, r.instanceID)
 	if err != nil {
 		return nil, err
@@ -174,9 +174,9 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (*runtim
 		return nil, err
 	}
 
-	return &runtime.ResolverResult{
-		Data:   data,
-		Schema: schema,
+	return &legacyResolverResult{
+		data:   data,
+		schema: schema,
 	}, nil
 }
 
@@ -326,4 +326,25 @@ func (r *legacyMetricsResolver) formatValue(f formatter.Formatter, v any) any {
 	}
 	r.logger.Warn("Failed to format measure value", zap.Any("value", v))
 	return fmt.Sprintf("%v", v)
+}
+
+type legacyResolverResult struct {
+	data   []byte
+	schema *runtimev1.StructType
+}
+
+func (r *legacyResolverResult) Schema() *runtimev1.StructType {
+	return r.schema
+}
+
+func (r *legacyResolverResult) Cache() bool {
+	return true
+}
+
+func (r *legacyResolverResult) MarshalJSON() ([]byte, error) {
+	return r.data, nil
+}
+
+func (r *legacyResolverResult) Close() error {
+	return nil
 }

@@ -1448,33 +1448,6 @@ export type V1InstanceProjectVariables = { [key: string]: string };
 
 export type V1InstanceVariables = { [key: string]: string };
 
-/**
- * Instance represents a single data project, meaning one set of code artifacts,
-one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-metadata (such as reconciliation state). Instances are the unit of isolation within
-the runtime. They enable one runtime deployment to serve not only multiple data
-projects, but also multiple tenants. On local, the runtime will usually have
-just a single instance.
- */
-export interface V1Instance {
-  instanceId?: string;
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  createdOn?: string;
-  updatedOn?: string;
-  connectors?: V1Connector[];
-  projectConnectors?: V1Connector[];
-  variables?: V1InstanceVariables;
-  projectVariables?: V1InstanceProjectVariables;
-  featureFlags?: V1InstanceFeatureFlags;
-  annotations?: V1InstanceAnnotations;
-  embedCatalog?: boolean;
-  watchRepo?: boolean;
-}
-
 export interface V1InlineMeasure {
   name?: string;
   expression?: string;
@@ -1675,11 +1648,6 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
-export interface V1ConnectorV2 {
-  spec?: V1ConnectorSpec;
-  state?: V1ConnectorState;
-}
-
 /**
  * properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties.
@@ -1694,6 +1662,11 @@ export interface V1ConnectorSpec {
   /** properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
+}
+
+export interface V1ConnectorV2 {
+  spec?: V1ConnectorSpec;
+  state?: V1ConnectorState;
 }
 
 /**
@@ -1717,10 +1690,6 @@ export interface V1ConnectorDriver {
   implementsNotifier?: boolean;
 }
 
-export type V1ConnectorConfigFromVariables = { [key: string]: string };
-
-export type V1ConnectorConfig = { [key: string]: string };
-
 export interface V1Connector {
   /** Type of the connector. One of the infra driver supported. */
   type?: string;
@@ -1728,6 +1697,37 @@ export interface V1Connector {
   config?: V1ConnectorConfig;
   configFromVariables?: V1ConnectorConfigFromVariables;
 }
+
+/**
+ * Instance represents a single data project, meaning one set of code artifacts,
+one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+metadata (such as reconciliation state). Instances are the unit of isolation within
+the runtime. They enable one runtime deployment to serve not only multiple data
+projects, but also multiple tenants. On local, the runtime will usually have
+just a single instance.
+ */
+export interface V1Instance {
+  instanceId?: string;
+  environment?: string;
+  olapConnector?: string;
+  repoConnector?: string;
+  adminConnector?: string;
+  aiConnector?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  connectors?: V1Connector[];
+  projectConnectors?: V1Connector[];
+  variables?: V1InstanceVariables;
+  projectVariables?: V1InstanceProjectVariables;
+  featureFlags?: V1InstanceFeatureFlags;
+  annotations?: V1InstanceAnnotations;
+  embedCatalog?: boolean;
+  watchRepo?: boolean;
+}
+
+export type V1ConnectorConfigFromVariables = { [key: string]: string };
+
+export type V1ConnectorConfig = { [key: string]: string };
 
 export interface V1Condition {
   op?: V1Operation;
