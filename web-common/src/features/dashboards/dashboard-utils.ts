@@ -71,15 +71,22 @@ export function prepareSortedQueryBody(
     comparisonTimeRange = undefined;
   }
 
-  const { sortMeasureName: apiSortName, measures: apiMeasures } =
-    getMeasureNames(
-      sortMeasureName,
-      sortType,
-      !!comparisonTimeRange?.start &&
-        !!comparisonTimeRange?.end &&
-        !!timeControls.selectedComparisonTimeRange,
-    );
-  measures.push(...apiMeasures);
+  let apiSortName = sortMeasureName;
+  if (
+    !!comparisonTimeRange?.start &&
+    !!comparisonTimeRange?.end &&
+    !!timeControls.selectedComparisonTimeRange
+  ) {
+    measures.push(...getComparisonRequestMeasures(sortMeasureName));
+    switch (sortType) {
+      case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
+        apiSortName += ComparisonDeltaAbsoluteSuffix;
+        break;
+      case DashboardState_LeaderboardSortType.DELTA_PERCENT:
+        apiSortName += ComparisonDeltaRelativeSuffix;
+        break;
+    }
+  }
 
   return {
     dimensions: [
@@ -106,51 +113,29 @@ export function prepareSortedQueryBody(
 }
 
 /**
- * Gets the list of measures for a request by adding comparison based ones if enabled.
- * Also updates the sort measure name based on sort type.
- *
- * @param sortMeasureName
- * @param sortType
- * @param hasComparisonTimeRange
+ * Gets comparison based measures used in MetricsViewAggregationRequest
  */
-export function getMeasureNames(
-  sortMeasureName: string,
-  sortType: DashboardState_LeaderboardSortType,
-  hasComparisonTimeRange: boolean,
-) {
-  const measures: V1MetricsViewAggregationMeasure[] = [];
-
-  if (hasComparisonTimeRange && sortMeasureName) {
-    measures.push(
-      {
-        name: sortMeasureName + ComparisonDeltaPreviousSuffix,
-        comparisonValue: {
-          measure: sortMeasureName,
-        },
+export function getComparisonRequestMeasures(
+  measureName: string,
+): V1MetricsViewAggregationMeasure[] {
+  return [
+    {
+      name: measureName + ComparisonDeltaPreviousSuffix,
+      comparisonValue: {
+        measure: measureName,
       },
-      {
-        name: sortMeasureName + ComparisonDeltaAbsoluteSuffix,
-        comparisonDelta: {
-          measure: sortMeasureName,
-        },
+    },
+    {
+      name: measureName + ComparisonDeltaAbsoluteSuffix,
+      comparisonDelta: {
+        measure: measureName,
       },
-      {
-        name: sortMeasureName + ComparisonDeltaRelativeSuffix,
-        comparisonRatio: {
-          measure: sortMeasureName,
-        },
+    },
+    {
+      name: measureName + ComparisonDeltaRelativeSuffix,
+      comparisonRatio: {
+        measure: measureName,
       },
-    );
-
-    switch (sortType) {
-      case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
-        sortMeasureName += ComparisonDeltaAbsoluteSuffix;
-        break;
-      case DashboardState_LeaderboardSortType.DELTA_PERCENT:
-        sortMeasureName += ComparisonDeltaRelativeSuffix;
-        break;
-    }
-  }
-
-  return { measures, sortMeasureName };
+    },
+  ];
 }

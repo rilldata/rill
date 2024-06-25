@@ -7,8 +7,11 @@ import {
 import type { TimeRangeString } from "@rilldata/web-common/lib/time/types";
 import type {
   V1Expression,
+  V1MetricsViewAggregationMeasure,
+  V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
+import { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, readable, writable } from "svelte/store";
 import {
   createPivotAggregationRowQuery,
@@ -44,11 +47,14 @@ function getValuesForExpandedKey(
   tableData: PivotDataRow[],
   rowDimensions: string[],
   key: string,
+  hasTotalsRow = true,
 ) {
   const indices = key.split(".").map((index) => parseInt(index, 10));
 
-  // The first row is always the totals row for the expanded context
-  indices[0] = indices[0] - 1;
+  if (hasTotalsRow) {
+    // The first row is always the totals row for the expanded context with measures
+    indices[0] = indices[0] - 1;
+  }
 
   // Retrieve the value from the nested array
   let currentValue: PivotDataRow[] | undefined = tableData;
@@ -153,7 +159,16 @@ export function queryExpandedRowMeasureValues(
   const expanded = config.pivot.expanded;
   if (!tableData || Object.keys(expanded).length == 0) return readable(null);
 
-  const measureBody = config.measureNames.map((m) => ({ name: m }));
+  const numMeasures = config.measureNames.length;
+  let measureBody: V1MetricsViewAggregationMeasure[] = config.measureNames.map(
+    (m) => ({ name: m }),
+  );
+
+  if (numMeasures === 0) {
+    measureBody = [
+      { name: "__count", builtinMeasure: "BUILTIN_MEASURE_COUNT" },
+    ];
+  }
   return derived(
     Object.keys(expanded)?.map((expandIndex) => {
       const nestLevel = expandIndex?.split(".")?.length;
@@ -171,6 +186,7 @@ export function queryExpandedRowMeasureValues(
         tableData,
         rowDimensionNames,
         expandIndex,
+        numMeasures > 0,
       );
 
       if (
@@ -281,16 +297,23 @@ export function queryExpandedRowMeasureValues(
             subTableMergedFilters,
           );
 
-          const subTableQuery = createSubTableCellQuery(
-            ctx,
-            config,
-            anchorDimension,
-            columnDimensionAxesData,
-            totalsRow,
-            subRowDimensionValues,
-            subTableMergedFilters,
-            rowNestTimeFilters,
-          );
+          let subTableQuery:
+            | Readable<null>
+            | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+            readable(null);
+
+          if (config.colDimensionNames.length) {
+            subTableQuery = createSubTableCellQuery(
+              ctx,
+              config,
+              anchorDimension,
+              columnDimensionAxesData,
+              totalsRow,
+              subRowDimensionValues,
+              subTableMergedFilters,
+              rowNestTimeFilters,
+            );
+          }
 
           return derived(
             [subRowAxesQueryForMeasureTotals, subTableQuery],
@@ -313,6 +336,18 @@ export function queryExpandedRowMeasureValues(
                 subRowTotals?.data?.[anchorDimension] || [],
                 subRowTotals?.totals?.[anchorDimension] || [],
               );
+
+              if (!subTableData) {
+                const rowMeasureValueWithoutSubTable: ExpandedRowMeasureValues =
+                  {
+                    isFetching: false,
+                    expandIndex,
+                    rowDimensionValues: subRowDimensionValues,
+                    totals: mergedRowTotals,
+                    data: mergedRowTotals,
+                  };
+                return rowMeasureValueWithoutSubTable;
+              }
 
               if (subTableData?.isFetching) {
                 const rowMeasureValueWithTotals: ExpandedRowMeasureValues = {
@@ -371,8 +406,10 @@ export function addExpandedDataToPivot(
       .split(".")
       .map((index) => parseInt(index, 10));
 
-    // The first row is always the totals row for the expanded context
-    indices[0] = indices[0] - 1;
+    if (config.measureNames.length > 0) {
+      // The first row is always the totals row for the expanded context with measures
+      indices[0] = indices[0] - 1;
+    }
 
     let parent: PivotDataRow[] = pivotData; // Keep a reference to the parent array
     let lastIdx = 0;

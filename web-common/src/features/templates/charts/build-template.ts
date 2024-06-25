@@ -1,5 +1,5 @@
 import { VisualizationSpec } from "svelte-vega";
-import { ChartType } from "../types";
+import { ChartType } from "../../charts/types";
 import { buildArea } from "./area";
 import { buildGroupedBar } from "./grouped-bar";
 import { buildLine } from "./line";
@@ -25,6 +25,7 @@ export interface ChartField {
   tooltipName?: string;
   // for mapping nominal values to colors
   values?: (number | undefined | string | null)[];
+  formatterFunction?: string;
 }
 
 export function buildVegaLiteSpec(

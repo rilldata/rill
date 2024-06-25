@@ -1,4 +1,4 @@
-import { ChartField } from "@rilldata/web-common/features/charts/templates/build-template";
+import { ChartField } from "@rilldata/web-common/features/templates/charts/build-template";
 import { singleLayerBaseSpec } from "./utils";
 
 export function buildSimpleBar(
@@ -30,7 +30,7 @@ export function buildSimpleBar(
         title: quantitativeField.label,
         field: quantitativeField.name,
         type: "quantitative",
-        formatType: "measureFormatter",
+        formatType: quantitativeField.formatterFunction || "number",
       },
     ],
   };

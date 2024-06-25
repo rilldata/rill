@@ -613,6 +613,30 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/clone-credentials:
+    get:
+      summary: GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
+      operationId: AdminService_GetCloneCredentials
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetCloneCredentialsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
     post:
       summary: GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
@@ -652,30 +676,6 @@ paths:
                 type: string
               attributes:
                 type: object
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/projects/{project}/git-credentials:
-    get:
-      summary: GetGitCredentials returns credentials and other details for a project's Git repository.
-      operationId: AdminService_GetGitCredentials
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1GetGitCredentialsResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: project
-          in: path
-          required: true
-          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/iframe:
@@ -1378,6 +1378,40 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organizationName}/create_asset:
+    post:
+      summary: CreateAsset returns a one time signed URL using which any asset can be uploaded.
+      operationId: AdminService_CreateAsset
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateAssetResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organizationName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              type:
+                type: string
+              name:
+                type: string
+                title: Eg. "rilldata__project_name"
+              extension:
+                type: string
+                title: Eg. ".tar.gz"
+      tags:
+        - AdminService
   /v1/organizations/{organizationName}/projects:
     get:
       summary: ListProjectsForOrganization lists all the projects currently available for given organizations
@@ -1451,6 +1485,12 @@ paths:
                 type: string
               githubUrl:
                 type: string
+                description: |-
+                  github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+                  Either github_url or archive_asset_id should be set.
+              archiveAssetId:
+                type: string
+                description: archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
               variables:
                 type: object
                 additionalProperties:
@@ -1545,6 +1585,8 @@ paths:
               prodBranch:
                 type: string
               githubUrl:
+                type: string
+              archiveAssetId:
                 type: string
               prodSlots:
                 type: string
@@ -2518,6 +2560,17 @@ definitions:
     properties:
       name:
         type: string
+  v1CreateAssetResponse:
+    type: object
+    properties:
+      assetId:
+        type: string
+      signedUrl:
+        type: string
+      signingHeaders:
+        type: object
+        additionalProperties:
+          type: string
   v1CreateBookmarkRequest:
     type: object
     properties:
@@ -2672,6 +2725,22 @@ definitions:
     properties:
       bookmark:
         $ref: '#/definitions/v1Bookmark'
+  v1GetCloneCredentialsResponse:
+    type: object
+    properties:
+      gitRepoUrl:
+        type: string
+      gitUsername:
+        type: string
+      gitPassword:
+        type: string
+      gitSubpath:
+        type: string
+      gitProdBranch:
+        type: string
+      archiveDownloadUrl:
+        type: string
+        title: either archive_download_url or git related details will be set
   v1GetCurrentUserResponse:
     type: object
     properties:
@@ -2691,19 +2760,6 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
-  v1GetGitCredentialsResponse:
-    type: object
-    properties:
-      repoUrl:
-        type: string
-      username:
-        type: string
-      password:
-        type: string
-      subpath:
-        type: string
-      prodBranch:
-        type: string
   v1GetGithubRepoStatusResponse:
     type: object
     properties:
@@ -2784,6 +2840,11 @@ definitions:
         format: date-time
       gitSubpath:
         type: string
+      archiveDownloadUrl:
+        type: string
+        title: |-
+          archive_download_url is set when repo is managed by Rill
+          either archive_download_url or git related details will be set
   v1GetReportMetaResponse:
     type: object
     properties:
@@ -3100,6 +3161,8 @@ definitions:
       subpath:
         type: string
       prodBranch:
+        type: string
+      archiveAssetId:
         type: string
       prodOlapDriver:
         type: string

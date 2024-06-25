@@ -8,7 +8,7 @@
   import { listDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
-  import { useProjectDeploymentStatus } from "@rilldata/web-admin/features/projects/status/selectors";
+  import { useProjectDeployment } from "@rilldata/web-admin/features/projects/status/selectors";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
@@ -32,22 +32,21 @@
 
   const user = createAdminServiceGetCurrentUser();
 
-  $: projectDeploymentStatus = useProjectDeploymentStatus(orgName, projectName); // polls
+  $: projectDeployment = useProjectDeployment(orgName, projectName); // polls
+  $: ({ data: deployment } = $projectDeployment);
   $: isProjectPending =
-    $projectDeploymentStatus.data ===
-    V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
+    deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
   $: isProjectErrored =
-    $projectDeploymentStatus.data ===
-    V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
+    deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
   $: isProjectBuilt = isProjectOK || isProjectErrored;
 
   let isProjectOK: boolean;
 
-  $: if ($projectDeploymentStatus.data) {
+  $: if (deployment?.status) {
     const projectWasNotOk = !isProjectOK;
 
     isProjectOK =
-      $projectDeploymentStatus.data === V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
+      deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
 
     if (projectWasNotOk && isProjectOK) {
       getDashboardsAndInvalidate();
