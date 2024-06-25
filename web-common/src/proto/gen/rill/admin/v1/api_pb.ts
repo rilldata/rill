@@ -7878,6 +7878,74 @@ export class GetAlertYAMLResponse extends Message<GetAlertYAMLResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.ListPublicBillingPlansRequest
+ */
+export class ListPublicBillingPlansRequest extends Message<ListPublicBillingPlansRequest> {
+  constructor(data?: PartialMessage<ListPublicBillingPlansRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListPublicBillingPlansRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPublicBillingPlansRequest {
+    return new ListPublicBillingPlansRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPublicBillingPlansRequest {
+    return new ListPublicBillingPlansRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPublicBillingPlansRequest {
+    return new ListPublicBillingPlansRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPublicBillingPlansRequest | PlainMessage<ListPublicBillingPlansRequest> | undefined, b: ListPublicBillingPlansRequest | PlainMessage<ListPublicBillingPlansRequest> | undefined): boolean {
+    return proto3.util.equals(ListPublicBillingPlansRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListPublicBillingPlansResponse
+ */
+export class ListPublicBillingPlansResponse extends Message<ListPublicBillingPlansResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.BillingPlan plans = 1;
+   */
+  plans: BillingPlan[] = [];
+
+  constructor(data?: PartialMessage<ListPublicBillingPlansResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListPublicBillingPlansResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "plans", kind: "message", T: BillingPlan, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPublicBillingPlansResponse {
+    return new ListPublicBillingPlansResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPublicBillingPlansResponse {
+    return new ListPublicBillingPlansResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPublicBillingPlansResponse {
+    return new ListPublicBillingPlansResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListPublicBillingPlansResponse | PlainMessage<ListPublicBillingPlansResponse> | undefined, b: ListPublicBillingPlansResponse | PlainMessage<ListPublicBillingPlansResponse> | undefined): boolean {
+    return proto3.util.equals(ListPublicBillingPlansResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.TelemetryRequest
  */
 export class TelemetryRequest extends Message<TelemetryRequest> {
@@ -9505,74 +9573,6 @@ export class AlertOptions extends Message<AlertOptions> {
 
   static equals(a: AlertOptions | PlainMessage<AlertOptions> | undefined, b: AlertOptions | PlainMessage<AlertOptions> | undefined): boolean {
     return proto3.util.equals(AlertOptions, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.ListPublicBillingPlansRequest
- */
-export class ListPublicBillingPlansRequest extends Message<ListPublicBillingPlansRequest> {
-  constructor(data?: PartialMessage<ListPublicBillingPlansRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListPublicBillingPlansRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPublicBillingPlansRequest {
-    return new ListPublicBillingPlansRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPublicBillingPlansRequest {
-    return new ListPublicBillingPlansRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPublicBillingPlansRequest {
-    return new ListPublicBillingPlansRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListPublicBillingPlansRequest | PlainMessage<ListPublicBillingPlansRequest> | undefined, b: ListPublicBillingPlansRequest | PlainMessage<ListPublicBillingPlansRequest> | undefined): boolean {
-    return proto3.util.equals(ListPublicBillingPlansRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.ListPublicBillingPlansResponse
- */
-export class ListPublicBillingPlansResponse extends Message<ListPublicBillingPlansResponse> {
-  /**
-   * @generated from field: repeated rill.admin.v1.BillingPlan plans = 1;
-   */
-  plans: BillingPlan[] = [];
-
-  constructor(data?: PartialMessage<ListPublicBillingPlansResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListPublicBillingPlansResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "plans", kind: "message", T: BillingPlan, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListPublicBillingPlansResponse {
-    return new ListPublicBillingPlansResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListPublicBillingPlansResponse {
-    return new ListPublicBillingPlansResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListPublicBillingPlansResponse {
-    return new ListPublicBillingPlansResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: ListPublicBillingPlansResponse | PlainMessage<ListPublicBillingPlansResponse> | undefined, b: ListPublicBillingPlansResponse | PlainMessage<ListPublicBillingPlansResponse> | undefined): boolean {
-    return proto3.util.equals(ListPublicBillingPlansResponse, a, b);
   }
 }
 

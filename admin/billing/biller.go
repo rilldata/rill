@@ -94,7 +94,7 @@ type Subscription struct {
 type Usage struct {
 	CustomerID     string
 	MetricName     string
-	Amount         float64
+	Value          float64
 	ReportingGrain UsageReportingGranularity
 	StartTime      time.Time // Start time of the usage period
 	EndTime        time.Time // End time of the usage period

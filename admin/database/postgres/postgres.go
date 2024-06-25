@@ -1558,7 +1558,7 @@ func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention ti
 	return parseErr("virtual files", err)
 }
 
-func (c *connection) FindBillingOrganizationIDs(ctx context.Context) ([]string, error) {
+func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error) {
 	var res []string
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id <> ''`)
 	if err != nil {

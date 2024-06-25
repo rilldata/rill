@@ -66,13 +66,17 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 	}
 
 	reportedOrgs := make(map[string]struct{})
+	var maxEndTime time.Time
 	var usage []*billing.Usage
 	for _, m := range u {
 		reportedOrgs[m.OrgID] = struct{}{}
+		if m.EndTime.After(maxEndTime) {
+			maxEndTime = m.EndTime
+		}
 		usage = append(usage, &billing.Usage{
 			CustomerID:     m.OrgID,
 			MetricName:     m.MetricName,
-			Amount:         m.Amount,
+			Value:          m.Value,
 			ReportingGrain: w.admin.Biller.GetReportingGranularity(),
 			StartTime:      m.StartTime,
 			EndTime:        m.EndTime,
@@ -85,14 +89,14 @@ func (w *Worker) reportUsage(ctx context.Context) error {
 		return fmt.Errorf("failed to report usage: %w", err)
 	}
 
-	// update last reporting time to endTime as it is the max processed event time
-	err = w.admin.DB.UpdateBillingUsageReportedOn(ctx, endTime)
+	// update last reporting time to maxEndTime as it is the max processed event time
+	err = w.admin.DB.UpdateBillingUsageReportedOn(ctx, maxEndTime)
 	if err != nil {
 		return fmt.Errorf("failed to update last usage reporting time: %w", err)
 	}
 
 	// get orgs which have billing customer id
-	orgs, err := w.admin.DB.FindBillingOrganizationIDs(ctx)
+	orgs, err := w.admin.DB.FindOrganizationIDsWithBilling(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to report usage: unable to fetch orgs: %w", err)
 	}

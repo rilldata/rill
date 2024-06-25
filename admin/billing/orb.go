@@ -79,6 +79,9 @@ func (o *Orb) GetPlan(ctx context.Context, id string) (*Plan, error) {
 }
 
 func (o *Orb) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
+	if name == "" {
+		return nil, ErrNotFound
+	}
 	plans, err := o.getAllPlans(ctx)
 	if err != nil {
 		return nil, err
@@ -240,7 +243,7 @@ func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
 		for k, v := range u.Metadata {
 			props[k] = v
 		}
-		props["amount"] = u.Amount
+		props["amount"] = u.Value
 
 		orbUsage = append(orbUsage, orb.EventIngestParamsEvent{
 			ExternalCustomerID: orb.String(u.CustomerID),

@@ -105,7 +105,7 @@ type Usage struct {
 	StartTime  time.Time `json:"start_time"`
 	EndTime    time.Time `json:"end_time"`
 	MetricName string    `json:"metric_name"`
-	Amount     float64   `json:"amount"`
+	Value      float64   `json:"value"`
 }
 
 func (c *Client) GetUsageMetrics(ctx context.Context, startTime, endTime time.Time, grain string) ([]*Usage, error) {

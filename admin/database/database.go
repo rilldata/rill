@@ -214,7 +214,7 @@ type DB interface {
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
-	FindBillingOrganizationIDs(ctx context.Context) ([]string, error)
+	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
 	// CountBillingProjectsForOrganization counts the projects which are not hibernated and created before the given time
 	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
