@@ -106,6 +106,7 @@ import type {
   V1PingResponse,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
+  V1GetProjectByIDResponse,
   V1GetAlertMetaResponse,
   AdminServiceGetAlertMetaBody,
   V1GetRepoMetaResponse,
@@ -3855,6 +3856,65 @@ export const createAdminServiceTriggerRedeploy = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary GetProject returns information about a specific project
+ */
+export const adminServiceGetProjectByID = (
+  id: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetProjectByIDResponse>({
+    url: `/v1/projects/${id}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetProjectByIDQueryKey = (id: string) => [
+  `/v1/projects/${id}`,
+];
+
+export type AdminServiceGetProjectByIDQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetProjectByID>>
+>;
+export type AdminServiceGetProjectByIDQueryError = RpcStatus;
+
+export const createAdminServiceGetProjectByID = <
+  TData = Awaited<ReturnType<typeof adminServiceGetProjectByID>>,
+  TError = RpcStatus,
+>(
+  id: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetProjectByID>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetProjectByIDQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetProjectByID>>
+  > = ({ signal }) => adminServiceGetProjectByID(id, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetProjectByID>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, enabled: !!id, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
  */

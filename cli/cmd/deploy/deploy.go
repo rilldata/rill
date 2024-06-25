@@ -295,10 +295,7 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	}
 
 	err = dotrillcloud.SetAll(localProjectPath, &dotrillcloud.RillCloud{
-		ProjectName: res.Project.Name,
-		ProjectID:   res.Project.Id,
-		OrgName:     res.Project.OrgName,
-		OrgID:       res.Project.OrgId,
+		ProjectID: res.Project.Id,
 	})
 	if err != nil {
 		return err
@@ -438,10 +435,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	}
 
 	err = dotrillcloud.SetAll(localProjectPath, &dotrillcloud.RillCloud{
-		ProjectName: res.Project.Name,
-		ProjectID:   res.Project.Id,
-		OrgName:     res.Project.OrgName,
-		OrgID:       res.Project.OrgId,
+		ProjectID: res.Project.Id,
 	})
 	if err != nil {
 		return err

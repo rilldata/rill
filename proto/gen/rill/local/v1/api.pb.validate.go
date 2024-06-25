@@ -852,8 +852,6 @@ func (m *DeployValidationResponse) validate(all bool) error {
 
 	// no validation rules for IsDeployed
 
-	// no validation rules for DeployedOrgId
-
 	// no validation rules for DeployedProjectId
 
 	if m.HasUncommittedChanges != nil {
@@ -1397,6 +1395,8 @@ func (m *RedeployProjectRequest) validate(all bool) error {
 	// no validation rules for Org
 
 	// no validation rules for ProjectName
+
+	// no validation rules for ProjectId
 
 	// no validation rules for Reupload
 

@@ -773,6 +773,10 @@ export interface V1GetProjectResponse {
   projectPermissions?: V1ProjectPermissions;
 }
 
+export interface V1GetProjectByIDResponse {
+  project?: V1Project;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;

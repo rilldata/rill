@@ -8,10 +8,7 @@ import (
 )
 
 type RillCloud struct {
-	ProjectName string `json:"project_name"`
-	ProjectID   string `json:"project_id"`
-	OrgName     string `json:"org_name"`
-	OrgID       string `json:"org_id"`
+	ProjectID string `json:"project_id"`
 }
 
 const confPath = ".rillcloud/project.yaml"

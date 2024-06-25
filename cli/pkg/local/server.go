@@ -169,10 +169,8 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return nil, err
 	}
 	isDeployed := ok
-	deployedOrgID := ""
 	deployedProjectID := ""
 	if rc != nil {
-		deployedOrgID = rc.OrgID
 		deployedProjectID = rc.ProjectID
 	}
 
@@ -230,7 +228,6 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				RillUserOrgs:                  nil,
 				LocalProjectName:              localProjectName,
 				IsDeployed:                    isDeployed,
-				DeployedOrgId:                 deployedOrgID,
 				DeployedProjectId:             deployedProjectID,
 			}), nil
 		}
@@ -280,7 +277,6 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		RillUserOrgs:                  userOrgs,
 		LocalProjectName:              localProjectName,
 		IsDeployed:                    isDeployed,
-		DeployedOrgId:                 deployedOrgID,
 		DeployedProjectId:             deployedProjectID,
 	}), nil
 }
@@ -556,10 +552,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 	}
 
 	err = dotrillcloud.SetAll(s.app.ProjectPath, &dotrillcloud.RillCloud{
-		ProjectName: projResp.Project.Name,
-		ProjectID:   projResp.Project.Id,
-		OrgName:     projResp.Project.OrgName,
-		OrgID:       projResp.Project.OrgId,
+		ProjectID: projResp.Project.Id,
 	})
 	if err != nil {
 		return nil, err
@@ -590,7 +583,22 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		}
 		defer release()
 
-		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		var projName, orgName string
+		if r.Msg.ProjectId != "" {
+			proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+				Id: projName,
+			})
+			if err != nil {
+				return nil, err
+			}
+			projName = proj.Project.Name
+			orgName = proj.Project.OrgName
+		} else {
+			projName = r.Msg.ProjectName
+			orgName = r.Msg.Org
+		}
+
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, orgName, projName)
 		if err != nil {
 			return nil, err
 		}

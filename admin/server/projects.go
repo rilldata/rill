@@ -215,6 +215,26 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}, nil
 }
 
+func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByIDRequest) (*adminv1.GetProjectByIDResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.Id),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.GetProjectByIDResponse{
+		Project: s.projToDTO(proj, org.Name),
+	}, nil
+}
+
 func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.pattern", req.NamePattern),

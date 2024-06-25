@@ -413,12 +413,7 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
   isDeployed = false;
 
   /**
-   * @generated from field: string deployed_org_id = 17;
-   */
-  deployedOrgId = "";
-
-  /**
-   * @generated from field: string deployed_project_id = 18;
+   * @generated from field: string deployed_project_id = 17;
    */
   deployedProjectId = "";
 
@@ -446,8 +441,7 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
     { no: 14, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 16, name: "is_deployed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 17, name: "deployed_org_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 18, name: "deployed_project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "deployed_project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployValidationResponse {
@@ -678,7 +672,12 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   projectName = "";
 
   /**
-   * @generated from field: bool reupload = 3;
+   * @generated from field: string project_id = 3;
+   */
+  projectId = "";
+
+  /**
+   * @generated from field: bool reupload = 4;
    */
   reupload = false;
 
@@ -692,7 +691,8 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {
