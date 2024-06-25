@@ -72,15 +72,15 @@ type ExprNode struct {
 
 // and returns a new node that is the AND of the current node and the given expression.
 func (n *ExprNode) and(expr string, args []any) *ExprNode {
+	if expr == "" {
+		return n
+	}
+
 	if n == nil || n.Expr == "" {
 		return &ExprNode{
 			Expr: expr,
 			Args: args,
 		}
-	}
-
-	if expr == "" {
-		return n
 	}
 
 	return &ExprNode{
@@ -500,9 +500,7 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile 'where': %w", err)
 	}
-	if expr != "" {
-		res = res.and(expr, args)
-	}
+	res = res.and(expr, args)
 
 	if a.security != nil && a.security.QueryFilter != nil {
 		e := NewExpressionFromProto(a.security.QueryFilter)
@@ -529,7 +527,6 @@ func (a *AST) buildBaseSelect(alias string, tr *TimeRange) (*SelectNode, error) 
 		FromTable: a.underlyingTable,
 		Where:     a.underlyingWhere,
 	}
-
 	a.addTimeRange(n, tr)
 
 	// If there is a spine, we wrap the base SELECT in a new SELECT that we add the spine to.
@@ -545,6 +542,7 @@ func (a *AST) buildBaseSelect(alias string, tr *TimeRange) (*SelectNode, error) 
 		n.SpineSelect = sn
 
 		// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
+		// (since by definition, some dimension values in the spine might not be present in FromSelect).
 		for i, f := range n.DimFields {
 			f.Expr = a.sqlForMember(sn.Alias, f.Name)
 			n.DimFields[i] = f
@@ -573,7 +571,6 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 			FromTable: a.underlyingTable,
 		}
 		n.Where = n.Where.and(expr, args)
-
 		a.addTimeRange(n, tr)
 
 		return n, nil
