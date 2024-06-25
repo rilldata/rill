@@ -536,20 +536,26 @@ func (a *AST) buildBaseSelect(alias string, tr *TimeRange) (*SelectNode, error) 
 	// We do not join the spine directly to the FromTable because the join would be evaluated before the GROUP BY,
 	// which would impact the measure aggregations (e.g. counts per group would be wrong).
 	if a.query.Spine != nil {
-		sn, err := a.buildSpineSelect(a.generateIdentifier(), a.query.Spine)
+		sn, err := a.buildSpineSelect(a.generateIdentifier(), a.query.Spine, tr)
 		if err != nil {
 			return nil, err
 		}
 
 		a.wrapSelect(n, a.generateIdentifier())
 		n.SpineSelect = sn
+
+		// Update the dimension fields to derive from the SpineSelect instead of the FromSelect
+		for i, f := range n.DimFields {
+			f.Expr = a.sqlForMember(sn.Alias, f.Name)
+			n.DimFields[i] = f
+		}
 	}
 
 	return n, nil
 }
 
 // buildSpineSelect constructs a SELECT node for the given spine of dimension values.
-func (a *AST) buildSpineSelect(alias string, spine *Spine) (*SelectNode, error) {
+func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*SelectNode, error) {
 	if spine == nil {
 		return nil, nil
 	}
@@ -567,6 +573,8 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine) (*SelectNode, error) 
 			FromTable: a.underlyingTable,
 		}
 		n.Where = n.Where.and(expr, args)
+
+		a.addTimeRange(n, tr)
 
 		return n, nil
 	}

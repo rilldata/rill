@@ -2026,7 +2026,9 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 	require.NotEmpty(t, q.Result)
 
 	rows = q.Result.Data
-	require.Equal(t, 0, len(rows))
+	require.Equal(t, 1, len(rows))
+	i = 0
+	require.Equal(t, "null,4296", fieldsToString(rows[i], "pub", "measure_0"))
 }
 
 func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing.T) {
