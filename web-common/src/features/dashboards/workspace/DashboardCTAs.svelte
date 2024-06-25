@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from "$app/stores";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
@@ -52,6 +53,8 @@
     showDeployDashboardModal = true;
     await behaviourEvent?.fireDeployIntentEvent();
   }
+
+  console.log($page.url);
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
