@@ -23,6 +23,7 @@
     $alert.data?.resource?.alert?.spec?.queryName ?? "",
     $alert.data?.resource?.alert?.spec?.queryArgsJson ?? "",
     executionTime,
+    $alert.data?.resource?.alert?.spec?.annotations ?? {},
   );
 
   $: if ($dashboardStateForAlert.data) {

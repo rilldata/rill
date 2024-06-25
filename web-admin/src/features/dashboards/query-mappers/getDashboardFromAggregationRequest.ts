@@ -13,16 +13,22 @@ import {
   SortDirection,
   SortType,
 } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
+import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import {
   createAndExpression,
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { DashboardState_ActivePage } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
-import type {
-  V1Expression,
-  V1MetricsViewAggregationRequest,
+import {
+  getQueryServiceMetricsViewSchemaQueryKey,
+  queryServiceMetricsViewSchema,
+  type V1Expression,
+  type V1MetricsViewAggregationRequest,
+  type V1MetricsViewSpec,
 } from "@rilldata/web-common/runtime-client";
+import type { QueryClient } from "@tanstack/svelte-query";
 
 export async function getDashboardFromAggregationRequest({
   queryClient,
@@ -32,7 +38,20 @@ export async function getDashboardFromAggregationRequest({
   timeRangeSummary,
   executionTime,
   metricsView,
+  annotations,
 }: QueryMapperArgs<V1MetricsViewAggregationRequest>) {
+  let loadedFromState = false;
+  if (annotations["web_open_state"]) {
+    await mergeDashboardFromUrlState(
+      queryClient,
+      instanceId,
+      dashboard,
+      metricsView,
+      annotations["web_open_state"],
+    );
+    loadedFromState = true;
+  }
+
   fillTimeRange(
     dashboard,
     req.timeRange,
@@ -76,6 +95,9 @@ export async function getDashboardFromAggregationRequest({
       ];
     }
   }
+
+  // everything after this can be loaded from the dashboard state if present
+  if (loadedFromState) return dashboard;
 
   if (req.timeRange?.timeZone) {
     dashboard.selectedTimezone = req.timeRange?.timeZone || "UTC";
@@ -124,4 +146,30 @@ function exprHasComparison(expr: V1Expression) {
     }
   });
   return hasComparison;
+}
+
+async function mergeDashboardFromUrlState(
+  queryClient: QueryClient,
+  instanceId: string,
+  dashboard: MetricsExplorerEntity,
+  metricsViewSpec: V1MetricsViewSpec,
+  urlState: string,
+) {
+  const schemaResp = await queryClient.fetchQuery({
+    queryKey: getQueryServiceMetricsViewSchemaQueryKey(
+      instanceId,
+      dashboard.name,
+    ),
+    queryFn: () => queryServiceMetricsViewSchema(instanceId, dashboard.name),
+  });
+  if (!schemaResp.schema) return;
+
+  const parsedDashboard = getDashboardStateFromUrl(
+    urlState,
+    metricsViewSpec,
+    schemaResp.schema,
+  );
+  for (const k in parsedDashboard) {
+    dashboard[k] = parsedDashboard[k];
+  }
 }
