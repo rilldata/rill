@@ -2011,8 +2011,6 @@ export interface V1AlertSpec {
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
-  queryName?: string;
-  queryArgsJson?: string;
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;

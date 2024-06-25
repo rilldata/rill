@@ -27,7 +27,12 @@ type AlertYAML struct {
 	} `yaml:"intervals"`
 	Timeout string    `yaml:"timeout"`
 	Data    *DataYAML `yaml:"data"`
-	Query   struct {
+	For     struct {
+		UserID     string         `yaml:"user_id"`
+		UserEmail  string         `yaml:"user_email"`
+		Attributes map[string]any `yaml:"attributes"`
+	} `yaml:"for"`
+	Query struct { // legacy query
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args"`
 		ArgsJSON string         `yaml:"args_json"`
@@ -131,6 +136,31 @@ func (p *Parser) parseAlert(node *Node) error {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
+
+		// Query for: validate only one of user_id, user_email, or attributes is set
+		n := 0
+		if tmp.For.UserID != "" {
+			n++
+			queryForUserID = tmp.For.UserID
+		}
+		if tmp.For.UserEmail != "" {
+			n++
+			_, err := mail.ParseAddress(tmp.For.UserEmail)
+			if err != nil {
+				return fmt.Errorf(`invalid value %q for property "for.user_email"`, tmp.For.UserEmail)
+			}
+			queryForUserEmail = tmp.For.UserEmail
+		}
+		if len(tmp.For.Attributes) > 0 {
+			n++
+			queryForAttributes, err = structpb.NewStruct(tmp.For.Attributes)
+			if err != nil {
+				return fmt.Errorf(`failed to serialize property "for.attributes": %w`, err)
+			}
+		}
+		if n > 1 {
+			return fmt.Errorf(`only one of "for.user_id", "for.user_email", or "for.attributes" may be set`)
+		}
 	} else {
 		// Query name
 		if tmp.Query.Name == "" {
@@ -180,9 +210,21 @@ func (p *Parser) parseAlert(node *Node) error {
 			return fmt.Errorf(`only one of "query.for.user_id", "query.for.user_email", or "query.for.attributes" may be set`)
 		}
 
-		if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
-			return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
+		resolver = "legacy_metrics"
+		props := map[string]any{
+			"query_name":      tmp.Query.Name,
+			"query_args_json": tmp.Query.ArgsJSON,
+			"format":          true,
+			"limit":           1,
 		}
+		resolverProps, err = structpb.NewStruct(props)
+		if err != nil {
+			return fmt.Errorf("encountered invalid property type: %w", err)
+		}
+	}
+
+	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
+		return errors.New(`cannot set both "email.recipients" and "notify.email.recipients"`)
 	}
 
 	isLegacyNotify := len(tmp.Email.Recipients) > 0
@@ -241,20 +283,16 @@ func (p *Parser) parseAlert(node *Node) error {
 		r.AlertSpec.TimeoutSeconds = uint32(timeout.Seconds())
 	}
 
-	if !isLegacyQuery {
-		r.AlertSpec.Resolver = resolver
-		r.AlertSpec.ResolverProperties = resolverProps
-	} else {
-		r.AlertSpec.QueryName = tmp.Query.Name
-		r.AlertSpec.QueryArgsJson = tmp.Query.ArgsJSON
-		// Note: have already validated that at most one of the cases match
-		if queryForUserID != "" {
-			r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: queryForUserID}
-		} else if queryForUserEmail != "" {
-			r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
-		} else if queryForAttributes != nil {
-			r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
-		}
+	r.AlertSpec.Resolver = resolver
+	r.AlertSpec.ResolverProperties = resolverProps
+
+	// Note: have already validated that at most one of the cases match
+	if queryForUserID != "" {
+		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserId{QueryForUserId: queryForUserID}
+	} else if queryForUserEmail != "" {
+		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: queryForUserEmail}
+	} else if queryForAttributes != nil {
+		r.AlertSpec.QueryFor = &runtimev1.AlertSpec_QueryForAttributes{QueryForAttributes: queryForAttributes}
 	}
 
 	// Notification default settings

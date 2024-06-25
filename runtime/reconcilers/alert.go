@@ -251,14 +251,17 @@ func (r *AlertReconciler) executionSpecHash(spec *runtimev1.AlertSpec, refs []*r
 		return "", err
 	}
 
-	_, err = hash.Write([]byte(spec.QueryName))
+	_, err = hash.Write([]byte(spec.Resolver))
 	if err != nil {
 		return "", err
 	}
 
-	_, err = hash.Write([]byte(spec.QueryArgsJson))
-	if err != nil {
-		return "", err
+	if spec.ResolverProperties != nil {
+		v := structpb.NewStructValue(spec.ResolverProperties)
+		err = pbutil.WriteHash(v, hash)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	_, err = hash.Write([]byte(spec.GetQueryForUserId()))
@@ -538,42 +541,9 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	// Log
 	r.C.Logger.Debug("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
-	if a.Spec.Resolver != "" {
-		res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-			InstanceID:         r.C.InstanceID,
-			Resolver:           a.Spec.Resolver,
-			ResolverProperties: a.Spec.ResolverProperties.AsMap(),
-			Args: map[string]any{
-				"priority":       alertQueryPriority,
-				"execution_time": executionTime,
-			},
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to resolve alert: %w", err)
-		}
-
-		var tmp []map[string]any
-		err = json.Unmarshal(res.Data, &tmp)
-		if err != nil {
-			return nil, fmt.Errorf("alert state resolver produced invalid JSON: %w", err)
-		}
-
-		if len(tmp) == 0 {
-			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
-			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
-		}
-
-		r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
-
-		// Return fail row
-		failRow, err := structpb.NewStruct(tmp[0])
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
-		}
-		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_FAIL, FailRow: failRow}, nil
+	if a.Spec.Resolver == "" {
+		return nil, fmt.Errorf("alert has no resolver")
 	}
-
-	// Legacy query resolver
 
 	// Evaluate query attributes
 	var queryForAttrs map[string]any
@@ -585,14 +555,9 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	}
 
 	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
-		InstanceID: r.C.InstanceID,
-		Resolver:   "legacy_metrics",
-		ResolverProperties: map[string]any{
-			"query_name":      a.Spec.QueryName,
-			"query_args_json": a.Spec.QueryArgsJson,
-			"is_formatted":    true,
-			"row_count":       1,
-		},
+		InstanceID:         r.C.InstanceID,
+		Resolver:           a.Spec.Resolver,
+		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
 		Args: map[string]any{
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,

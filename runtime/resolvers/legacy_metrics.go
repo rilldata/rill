@@ -25,19 +25,19 @@ func init() {
 type legacyMetricsResolver struct {
 	runtime         *runtime.Runtime
 	instanceID      string
-	query           *runtime.Query
+	query           runtime.Query
 	args            *legacyMetricsResolverArgs
 	metricsViewName string
-	rowCount        int
-	isFormatted     bool
+	limit           int
+	format          bool
 	logger          *zap.Logger
 }
 
 type legacyMetricsResolverProps struct {
 	QueryName     string `mapstructure:"query_name"`
 	QueryArgsJSON string `mapstructure:"query_args_json"`
-	RowCount      int    `mapstructure:"row_count"`
-	IsFormatted   bool   `mapstructure:"is_formatted"`
+	Limit         int    `mapstructure:"limit"`
+	Format        bool   `mapstructure:"format"`
 }
 
 type legacyMetricsResolverArgs struct {
@@ -75,12 +75,12 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 	return &legacyMetricsResolver{
 		runtime:         opts.Runtime,
 		instanceID:      opts.InstanceID,
-		query:           &q,
+		query:           q,
 		args:            args,
 		metricsViewName: metricsViewName,
 		logger:          opts.Runtime.Logger,
-		rowCount:        props.RowCount,
-		isFormatted:     props.IsFormatted,
+		limit:           props.Limit,
+		format:          props.Format,
 	}, nil
 }
 
@@ -115,7 +115,7 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (*runtim
 		return nil, err
 	}
 
-	err = r.runtime.Query(ctx, r.instanceID, *r.query, r.args.Priority)
+	err = r.runtime.Query(ctx, r.instanceID, r.query, r.args.Priority)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute query: %w", err)
 	}
@@ -123,15 +123,15 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (*runtim
 	var out []map[string]any
 	var schema *runtimev1.StructType
 
-	switch q := (*r.query).(type) {
+	switch q := r.query.(type) {
 	case *queries.MetricsViewAggregation:
 		schema = q.Result.Schema
 		if q.Result != nil {
 			for i, row := range q.Result.Data {
-				if r.rowCount > 0 && i >= r.rowCount {
+				if r.limit > 0 && i >= r.limit {
 					break
 				}
-				if r.isFormatted {
+				if r.format {
 					out = append(out, r.formatMetricsViewAggregationResult(row.AsMap(), q, metricsView.GetMetricsView().Spec.Measures))
 					continue
 				}
@@ -141,10 +141,10 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (*runtim
 	case *queries.MetricsViewComparison:
 		if q.Result != nil {
 			for i, row := range q.Result.Rows {
-				if r.rowCount > 0 && i >= r.rowCount {
+				if r.limit > 0 && i >= r.limit {
 					break
 				}
-				if r.isFormatted {
+				if r.format {
 					out = append(out, r.formatMetricsViewComparisonResult(row, q, metricsView.GetMetricsView().Spec.Measures))
 					continue
 				}

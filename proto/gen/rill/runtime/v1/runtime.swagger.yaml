@@ -2967,10 +2967,6 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      queryName:
-        type: string
-      queryArgsJson:
-        type: string
       queryForUserId:
         type: string
       queryForUserEmail:

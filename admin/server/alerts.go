@@ -457,20 +457,13 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	// Data options
-	switch opts.Resolver {
-	case "sql":
-		res.Data.Connector = opts.ResolverProps.AsMap()["connector"].(string)
-		res.Data.SQL = opts.ResolverProps.AsMap()["sql"].(string)
-	case "metrics_sql":
-		res.Data.SQL = opts.ResolverProps.AsMap()["sql"].(string)
-	case "api":
-		res.Data.API = opts.ResolverProps.AsMap()["api"].(string)
-		res.Data.Args = opts.ResolverProps.AsMap()["args"].(map[string]any)
+	if opts.Resolver != "" {
+		res.Data = opts.ResolverProps.AsMap()
 	}
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
+	res.For.UserID = ownerUserID
 	res.Query.For.UserID = ownerUserID
 	// Notification options
 	res.Renotify = opts.Renotify
@@ -502,16 +495,8 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	// Data options
-	switch opts.Resolver {
-	case "sql":
-		res.Data.Connector = opts.ResolverProps.AsMap()["connector"].(string)
-		res.Data.SQL = opts.ResolverProps.AsMap()["sql"].(string)
-	case "metrics_sql":
-		res.Data.SQL = opts.ResolverProps.AsMap()["sql"].(string)
-	case "api":
-		res.Data.API = opts.ResolverProps.AsMap()["api"].(string)
-		res.Data.Args = opts.ResolverProps.AsMap()["args"].(map[string]any)
+	if opts.Resolver != "" {
+		res.Data = opts.ResolverProps.AsMap()
 	}
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
@@ -567,8 +552,8 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 	opts := &adminv1.AlertOptions{}
 	opts.Title = spec.Title
 	opts.IntervalDuration = spec.IntervalsIsoDuration
-	opts.QueryName = spec.QueryName
-	opts.QueryArgsJson = spec.QueryArgsJson
+	opts.Resolver = spec.Resolver
+	opts.ResolverProps = spec.ResolverProperties
 	opts.Renotify = spec.Renotify
 	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
 	for _, notifier := range spec.Notifiers {
@@ -599,13 +584,10 @@ type alertYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Data struct {
-		Connector  string         `yaml:"connector"`
-		SQL        string         `yaml:"sql"`
-		MetricsSQL string         `yaml:"metrics_sql"`
-		API        string         `yaml:"api"`
-		Args       map[string]any `yaml:"args"`
-	} `yaml:"data"`
+	Data map[string]any `yaml:"data"`
+	For  struct {
+		UserID string `yaml:"user_id"`
+	} `yaml:"for"`
 	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`
