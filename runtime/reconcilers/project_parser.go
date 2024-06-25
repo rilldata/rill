@@ -290,10 +290,6 @@ func (r *ProjectParserReconciler) reconcileParser(ctx context.Context, inst *dri
 		return parseErrsErr
 	}
 
-	if len(parser.RillYAML.PublicPaths) == 0 {
-		parser.RillYAML.PublicPaths = []string{"public"}
-	}
-
 	// not setting restartController=true when diff is actually nil prevents infinite restarts
 	updateConfig := diff == nil || diff.ModifiedDotEnv || diff.Reloaded
 	if updateConfig {

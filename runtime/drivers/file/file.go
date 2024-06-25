@@ -58,7 +58,6 @@ type configProperties struct {
 // a smaller subset of relevant parts of rill.yaml
 type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
-	CachedPaths []string `yaml:"public_paths"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
