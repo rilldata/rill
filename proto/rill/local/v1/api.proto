@@ -105,8 +105,8 @@ message DeployProjectResponse {
 message RedeployProjectRequest {
   string org = 1;
   string project_name = 2;
-  string project_id = 3;
-  bool reupload = 4;
+  string project_id = 4;
+  bool reupload = 3;
 }
 
 message RedeployProjectResponse {
