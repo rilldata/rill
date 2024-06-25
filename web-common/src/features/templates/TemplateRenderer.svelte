@@ -1,6 +1,7 @@
 <script lang="ts">
   import ChartTemplate from "@rilldata/web-common/features/templates/charts/ChartTemplate.svelte";
   import KPITemplate from "@rilldata/web-common/features/templates/kpi/KPITemplate.svelte";
+  import TableTemplate from "@rilldata/web-common/features/templates/table/TableTemplate.svelte";
 
   import {
     V1ComponentSpecRendererProperties,
@@ -16,6 +17,8 @@
 
 {#if renderer === "kpi"}
   <KPITemplate {rendererProperties} />
+{:else if renderer === "table"}
+  <TableTemplate {rendererProperties} />
 {:else if resolverProperties}
   <ChartTemplate
     {chartView}
