@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { DeployRequest, DeployResponse, DeployValidationRequest, DeployValidationResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse } from "./api_pb.js";
+import { DeployProjectRequest, DeployProjectResponse, DeployValidationRequest, DeployValidationResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -68,14 +68,25 @@ export const LocalService = {
       kind: MethodKind.Unary,
     },
     /**
-     * Deploy deploys the local project to the Rill cloud.
+     * DeployProject deploys the local project to the Rill cloud.
      *
-     * @generated from rpc rill.local.v1.LocalService.Deploy
+     * @generated from rpc rill.local.v1.LocalService.DeployProject
      */
-    deploy: {
-      name: "Deploy",
-      I: DeployRequest,
-      O: DeployResponse,
+    deployProject: {
+      name: "DeployProject",
+      I: DeployProjectRequest,
+      O: DeployProjectResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * RedeployProject updates a deployed project.
+     *
+     * @generated from rpc rill.local.v1.LocalService.RedeployProject
+     */
+    redeployProject: {
+      name: "RedeployProject",
+      I: RedeployProjectRequest,
+      O: RedeployProjectResponse,
       kind: MethodKind.Unary,
     },
   }

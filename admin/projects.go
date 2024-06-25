@@ -17,9 +17,9 @@ import (
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
-	// Check Github info is set (presently required for deployments)
-	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
-		return nil, fmt.Errorf("cannot create project without github info")
+	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
+	if (opts.ArchiveAssetID == nil) == isGitInfoEmpty {
+		return nil, fmt.Errorf("either github info or archive_asset_id must be set")
 	}
 
 	// Get roles for initial setup
@@ -87,6 +87,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		Provisioner:          proj.Provisioner,
@@ -143,7 +144,8 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
-		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
+		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
+		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID))
 
 	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
@@ -185,7 +187,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-			Version:         opts.ProdVersion,
+			Version:         d.RuntimeVersion,
 			Branch:          opts.ProdBranch,
 			Variables:       opts.ProdVariables,
 			Annotations:     annotations,
@@ -220,6 +222,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 
 			for _, d := range ds {
 				err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
+					Version:         d.RuntimeVersion,
 					Branch:          proj.ProdBranch,
 					Variables:       proj.ProdVariables,
 					Annotations:     s.NewDeploymentAnnotations(org, proj),
@@ -270,6 +273,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		Description:          proj.Description,
 		Public:               proj.Public,
 		Provisioner:          proj.Provisioner,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,

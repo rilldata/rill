@@ -146,6 +146,13 @@ type DB interface {
 	UpdateDeploymentAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteExpiredDeploymentAuthTokens(ctx context.Context, retention time.Duration) error
 
+	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
+	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
+	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
+	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
+	DeleteMagicAuthToken(ctx context.Context, id string) error
+	DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error
+
 	FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*DeviceAuthCode, error)
 	FindPendingDeviceAuthCodeByUserCode(ctx context.Context, userCode string) (*DeviceAuthCode, error)
 	InsertDeviceAuthCode(ctx context.Context, deviceCode, userCode, clientID string, expiresOn time.Time) (*DeviceAuthCode, error)
@@ -206,6 +213,9 @@ type DB interface {
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
+
+	FindAsset(ctx context.Context, id string) (*Asset, error)
+	InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*Asset, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -265,13 +275,16 @@ type UpdateOrganizationOptions struct {
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID                   string
-	OrganizationID       string `db:"org_id"`
-	Name                 string
-	Description          string
-	Public               bool
-	CreatedByUserID      *string `db:"created_by_user_id"`
-	Provisioner          string
+	ID              string
+	OrganizationID  string `db:"org_id"`
+	Name            string
+	Description     string
+	Public          bool
+	CreatedByUserID *string `db:"created_by_user_id"`
+	Provisioner     string
+	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
+	// If ArchiveAssetID is set all git related fields will be empty.
+	ArchiveAssetID       *string           `db:"archive_asset_id"`
 	GithubURL            *string           `db:"github_url"`
 	GithubInstallationID *int64            `db:"github_installation_id"`
 	Subpath              string            `db:"subpath"`
@@ -296,6 +309,7 @@ type InsertProjectOptions struct {
 	Public               bool
 	CreatedByUserID      *string
 	Provisioner          string
+	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	Subpath              string
@@ -314,6 +328,7 @@ type UpdateProjectOptions struct {
 	Description          string
 	Public               bool
 	Provisioner          string
+	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	ProdVersion          string
@@ -362,7 +377,7 @@ type InsertDeploymentOptions struct {
 	ProvisionID       string
 	RuntimeVersion    string
 	Slots             int
-	Branch            string `validate:"required"`
+	Branch            string
 	RuntimeHost       string `validate:"required"`
 	RuntimeInstanceID string `validate:"required"`
 	RuntimeAudience   string
@@ -507,6 +522,40 @@ type InsertDeploymentAuthTokenOptions struct {
 	ExpiresOn    *time.Time
 }
 
+// MagicAuthToken is a persistent API token for accessing a specific (filtered) resource in a project.
+type MagicAuthToken struct {
+	ID                    string
+	SecretHash            []byte         `db:"secret_hash"`
+	ProjectID             string         `db:"project_id"`
+	CreatedOn             time.Time      `db:"created_on"`
+	ExpiresOn             *time.Time     `db:"expires_on"`
+	UsedOn                time.Time      `db:"used_on"`
+	CreatedByUserID       *string        `db:"created_by_user_id"`
+	Attributes            map[string]any `db:"attributes"`
+	MetricsView           string         `db:"metrics_view"`
+	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
+	MetricsViewFields     []string       `db:"metrics_view_fields"`
+}
+
+// MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
+type MagicAuthTokenWithUser struct {
+	*MagicAuthToken
+	CreatedByUserEmail string `db:"created_by_user_email"`
+}
+
+// InsertMagicAuthTokenOptions defines options for creating a MagicAuthToken.
+type InsertMagicAuthTokenOptions struct {
+	ID                    string
+	SecretHash            []byte
+	ProjectID             string `validate:"required"`
+	ExpiresOn             *time.Time
+	CreatedByUserID       *string
+	Attributes            map[string]any
+	MetricsView           string `validate:"required"`
+	MetricsViewFilterJSON string
+	MetricsViewFields     []string
+}
+
 // AuthClient is a client that requests and consumes auth tokens.
 type AuthClient struct {
 	ID          string
@@ -585,22 +634,26 @@ type OrganizationRole struct {
 
 // ProjectRole represents roles for projects.
 type ProjectRole struct {
-	ID                   string
-	Name                 string
-	ReadProject          bool `db:"read_project"`
-	ManageProject        bool `db:"manage_project"`
-	ReadProd             bool `db:"read_prod"`
-	ReadProdStatus       bool `db:"read_prod_status"`
-	ManageProd           bool `db:"manage_prod"`
-	ReadDev              bool `db:"read_dev"`
-	ReadDevStatus        bool `db:"read_dev_status"`
-	ManageDev            bool `db:"manage_dev"`
-	ReadProjectMembers   bool `db:"read_project_members"`
-	ManageProjectMembers bool `db:"manage_project_members"`
-	CreateReports        bool `db:"create_reports"`
-	ManageReports        bool `db:"manage_reports"`
-	CreateAlerts         bool `db:"create_alerts"`
-	ManageAlerts         bool `db:"manage_alerts"`
+	ID                    string
+	Name                  string
+	ReadProject           bool `db:"read_project"`
+	ManageProject         bool `db:"manage_project"`
+	ReadProd              bool `db:"read_prod"`
+	ReadProdStatus        bool `db:"read_prod_status"`
+	ManageProd            bool `db:"manage_prod"`
+	ReadDev               bool `db:"read_dev"`
+	ReadDevStatus         bool `db:"read_dev_status"`
+	ManageDev             bool `db:"manage_dev"`
+	ReadProjectMembers    bool `db:"read_project_members"`
+	ManageProjectMembers  bool `db:"manage_project_members"`
+	CreateMagicAuthTokens bool `db:"create_magic_auth_tokens"`
+	ManageMagicAuthTokens bool `db:"manage_magic_auth_tokens"`
+	CreateReports         bool `db:"create_reports"`
+	ManageReports         bool `db:"manage_reports"`
+	CreateAlerts          bool `db:"create_alerts"`
+	ManageAlerts          bool `db:"manage_alerts"`
+	CreateBookmarks       bool `db:"create_bookmarks"`
+	ManageBookmarks       bool `db:"manage_bookmarks"`
 }
 
 // Member is a convenience type used for display-friendly representation of an org or project member.
@@ -760,4 +813,12 @@ type InsertVirtualFileOptions struct {
 	Branch    string
 	Path      string `validate:"required"`
 	Data      []byte `validate:"max=8192"` // 8kb
+}
+
+type Asset struct {
+	ID             string
+	OrganizationID string    `db:"org_id"`
+	Path           string    `db:"path"`
+	OwnerID        string    `db:"owner_id"`
+	CreatedOn      time.Time `db:"created_on"`
 }

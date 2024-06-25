@@ -33,6 +33,7 @@ const (
 	AdminService_DeleteProject_FullMethodName                  = "/rill.admin.v1.AdminService/DeleteProject"
 	AdminService_UpdateProject_FullMethodName                  = "/rill.admin.v1.AdminService/UpdateProject"
 	AdminService_UpdateProjectVariables_FullMethodName         = "/rill.admin.v1.AdminService/UpdateProjectVariables"
+	AdminService_CreateAsset_FullMethodName                    = "/rill.admin.v1.AdminService/CreateAsset"
 	AdminService_TriggerReconcile_FullMethodName               = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName          = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                = "/rill.admin.v1.AdminService/TriggerRedeploy"
@@ -52,7 +53,7 @@ const (
 	AdminService_RevokeCurrentAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName            = "/rill.admin.v1.AdminService/GetGithubUserStatus"
-	AdminService_GetGitCredentials_FullMethodName              = "/rill.admin.v1.AdminService/GetGitCredentials"
+	AdminService_GetCloneCredentials_FullMethodName            = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
 	AdminService_ListWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListWhitelistedDomains"
@@ -77,6 +78,9 @@ const (
 	AdminService_ListServiceAuthTokens_FullMethodName          = "/rill.admin.v1.AdminService/ListServiceAuthTokens"
 	AdminService_IssueServiceAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueServiceAuthToken"
 	AdminService_RevokeServiceAuthToken_FullMethodName         = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
+	AdminService_IssueMagicAuthToken_FullMethodName            = "/rill.admin.v1.AdminService/IssueMagicAuthToken"
+	AdminService_ListMagicAuthTokens_FullMethodName            = "/rill.admin.v1.AdminService/ListMagicAuthTokens"
+	AdminService_RevokeMagicAuthToken_FullMethodName           = "/rill.admin.v1.AdminService/RevokeMagicAuthToken"
 	AdminService_UpdateUserPreferences_FullMethodName          = "/rill.admin.v1.AdminService/UpdateUserPreferences"
 	AdminService_ListBookmarks_FullMethodName                  = "/rill.admin.v1.AdminService/ListBookmarks"
 	AdminService_GetBookmark_FullMethodName                    = "/rill.admin.v1.AdminService/GetBookmark"
@@ -133,6 +137,8 @@ type AdminServiceClient interface {
 	UpdateProject(ctx context.Context, in *UpdateProjectRequest, opts ...grpc.CallOption) (*UpdateProjectResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
+	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
+	CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
 	// TriggerRefreshSources refresh the source for production deployment
@@ -173,8 +179,8 @@ type AdminServiceClient interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
-	// GetGitCredentials returns credentials and other details for a project's Git repository.
-	GetGitCredentials(ctx context.Context, in *GetGitCredentialsRequest, opts ...grpc.CallOption) (*GetGitCredentialsResponse, error)
+	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
+	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
 	CreateWhitelistedDomain(ctx context.Context, in *CreateWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateWhitelistedDomainResponse, error)
 	// RemoveWhitelistedDomain removes a domain from the whitelist list
@@ -223,6 +229,12 @@ type AdminServiceClient interface {
 	IssueServiceAuthToken(ctx context.Context, in *IssueServiceAuthTokenRequest, opts ...grpc.CallOption) (*IssueServiceAuthTokenResponse, error)
 	// RevokeServiceAuthToken revoke the service auth token
 	RevokeServiceAuthToken(ctx context.Context, in *RevokeServiceAuthTokenRequest, opts ...grpc.CallOption) (*RevokeServiceAuthTokenResponse, error)
+	// IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
+	IssueMagicAuthToken(ctx context.Context, in *IssueMagicAuthTokenRequest, opts ...grpc.CallOption) (*IssueMagicAuthTokenResponse, error)
+	// ListMagicAuthTokens lists all the magic auth tokens for a specific project.
+	ListMagicAuthTokens(ctx context.Context, in *ListMagicAuthTokensRequest, opts ...grpc.CallOption) (*ListMagicAuthTokensResponse, error)
+	// RevokeMagicAuthToken revokes a magic auth token.
+	RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(ctx context.Context, in *UpdateUserPreferencesRequest, opts ...grpc.CallOption) (*UpdateUserPreferencesResponse, error)
 	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -411,6 +423,16 @@ func (c *adminServiceClient) UpdateProjectVariables(ctx context.Context, in *Upd
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateProjectVariablesResponse)
 	err := c.cc.Invoke(ctx, AdminService_UpdateProjectVariables_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CreateAssetResponse)
+	err := c.cc.Invoke(ctx, AdminService_CreateAsset_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -607,10 +629,10 @@ func (c *adminServiceClient) GetGithubUserStatus(ctx context.Context, in *GetGit
 	return out, nil
 }
 
-func (c *adminServiceClient) GetGitCredentials(ctx context.Context, in *GetGitCredentialsRequest, opts ...grpc.CallOption) (*GetGitCredentialsResponse, error) {
+func (c *adminServiceClient) GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetGitCredentialsResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetGitCredentials_FullMethodName, in, out, cOpts...)
+	out := new(GetCloneCredentialsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetCloneCredentials_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -851,6 +873,36 @@ func (c *adminServiceClient) RevokeServiceAuthToken(ctx context.Context, in *Rev
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RevokeServiceAuthTokenResponse)
 	err := c.cc.Invoke(ctx, AdminService_RevokeServiceAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) IssueMagicAuthToken(ctx context.Context, in *IssueMagicAuthTokenRequest, opts ...grpc.CallOption) (*IssueMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(IssueMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_IssueMagicAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListMagicAuthTokens(ctx context.Context, in *ListMagicAuthTokensRequest, opts ...grpc.CallOption) (*ListMagicAuthTokensResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListMagicAuthTokensResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListMagicAuthTokens_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RevokeMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_RevokeMagicAuthToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1109,6 +1161,8 @@ type AdminServiceServer interface {
 	UpdateProject(context.Context, *UpdateProjectRequest) (*UpdateProjectResponse, error)
 	// UpdateProjectVariables updates variables for a project. NOTE: Update project API doesn't update variables.
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
+	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
+	CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
 	// TriggerRefreshSources refresh the source for production deployment
@@ -1149,8 +1203,8 @@ type AdminServiceServer interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
-	// GetGitCredentials returns credentials and other details for a project's Git repository.
-	GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error)
+	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
+	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
 	CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error)
 	// RemoveWhitelistedDomain removes a domain from the whitelist list
@@ -1199,6 +1253,12 @@ type AdminServiceServer interface {
 	IssueServiceAuthToken(context.Context, *IssueServiceAuthTokenRequest) (*IssueServiceAuthTokenResponse, error)
 	// RevokeServiceAuthToken revoke the service auth token
 	RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error)
+	// IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
+	IssueMagicAuthToken(context.Context, *IssueMagicAuthTokenRequest) (*IssueMagicAuthTokenResponse, error)
+	// ListMagicAuthTokens lists all the magic auth tokens for a specific project.
+	ListMagicAuthTokens(context.Context, *ListMagicAuthTokensRequest) (*ListMagicAuthTokensResponse, error)
+	// RevokeMagicAuthToken revokes a magic auth token.
+	RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
 	UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error)
 	// ListBookmarks lists all the bookmarks for the user and global ones for dashboard
@@ -1292,6 +1352,9 @@ func (UnimplementedAdminServiceServer) UpdateProject(context.Context, *UpdatePro
 func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateProjectVariables not implemented")
 }
+func (UnimplementedAdminServiceServer) CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CreateAsset not implemented")
+}
 func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
 }
@@ -1349,8 +1412,8 @@ func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *Get
 func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubUserStatus not implemented")
 }
-func (UnimplementedAdminServiceServer) GetGitCredentials(context.Context, *GetGitCredentialsRequest) (*GetGitCredentialsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetGitCredentials not implemented")
+func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateWhitelistedDomain(context.Context, *CreateWhitelistedDomainRequest) (*CreateWhitelistedDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateWhitelistedDomain not implemented")
@@ -1423,6 +1486,15 @@ func (UnimplementedAdminServiceServer) IssueServiceAuthToken(context.Context, *I
 }
 func (UnimplementedAdminServiceServer) RevokeServiceAuthToken(context.Context, *RevokeServiceAuthTokenRequest) (*RevokeServiceAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeServiceAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) IssueMagicAuthToken(context.Context, *IssueMagicAuthTokenRequest) (*IssueMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method IssueMagicAuthToken not implemented")
+}
+func (UnimplementedAdminServiceServer) ListMagicAuthTokens(context.Context, *ListMagicAuthTokensRequest) (*ListMagicAuthTokensResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListMagicAuthTokens not implemented")
+}
+func (UnimplementedAdminServiceServer) RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RevokeMagicAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) UpdateUserPreferences(context.Context, *UpdateUserPreferencesRequest) (*UpdateUserPreferencesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateUserPreferences not implemented")
@@ -1751,6 +1823,24 @@ func _AdminService_UpdateProjectVariables_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateProjectVariables(ctx, req.(*UpdateProjectVariablesRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_CreateAsset_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateAssetRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).CreateAsset(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_CreateAsset_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).CreateAsset(ctx, req.(*CreateAssetRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2097,20 +2187,20 @@ func _AdminService_GetGithubUserStatus_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetGitCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetGitCredentialsRequest)
+func _AdminService_GetCloneCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCloneCredentialsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).GetGitCredentials(ctx, in)
+		return srv.(AdminServiceServer).GetCloneCredentials(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_GetGitCredentials_FullMethodName,
+		FullMethod: AdminService_GetCloneCredentials_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetGitCredentials(ctx, req.(*GetGitCredentialsRequest))
+		return srv.(AdminServiceServer).GetCloneCredentials(ctx, req.(*GetCloneCredentialsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2543,6 +2633,60 @@ func _AdminService_RevokeServiceAuthToken_Handler(srv interface{}, ctx context.C
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).RevokeServiceAuthToken(ctx, req.(*RevokeServiceAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_IssueMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(IssueMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).IssueMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_IssueMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).IssueMagicAuthToken(ctx, req.(*IssueMagicAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListMagicAuthTokens_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListMagicAuthTokensRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListMagicAuthTokens(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListMagicAuthTokens_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListMagicAuthTokens(ctx, req.(*ListMagicAuthTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RevokeMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RevokeMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RevokeMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RevokeMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RevokeMagicAuthToken(ctx, req.(*RevokeMagicAuthTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3007,6 +3151,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UpdateProjectVariables_Handler,
 		},
 		{
+			MethodName: "CreateAsset",
+			Handler:    _AdminService_CreateAsset_Handler,
+		},
+		{
 			MethodName: "TriggerReconcile",
 			Handler:    _AdminService_TriggerReconcile_Handler,
 		},
@@ -3083,8 +3231,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetGithubUserStatus_Handler,
 		},
 		{
-			MethodName: "GetGitCredentials",
-			Handler:    _AdminService_GetGitCredentials_Handler,
+			MethodName: "GetCloneCredentials",
+			Handler:    _AdminService_GetCloneCredentials_Handler,
 		},
 		{
 			MethodName: "CreateWhitelistedDomain",
@@ -3181,6 +3329,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RevokeServiceAuthToken",
 			Handler:    _AdminService_RevokeServiceAuthToken_Handler,
+		},
+		{
+			MethodName: "IssueMagicAuthToken",
+			Handler:    _AdminService_IssueMagicAuthToken_Handler,
+		},
+		{
+			MethodName: "ListMagicAuthTokens",
+			Handler:    _AdminService_ListMagicAuthTokens_Handler,
+		},
+		{
+			MethodName: "RevokeMagicAuthToken",
+			Handler:    _AdminService_RevokeMagicAuthToken_Handler,
 		},
 		{
 			MethodName: "UpdateUserPreferences",

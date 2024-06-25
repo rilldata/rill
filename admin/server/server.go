@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	grpc_auth "github.com/grpc-ecosystem/go-grpc-middleware/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/util/metautils"
 	grpc_validator "github.com/grpc-ecosystem/go-grpc-middleware/validator"
@@ -60,6 +61,8 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
+	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
+	AssetsBucket string
 }
 
 type Server struct {
@@ -75,6 +78,7 @@ type Server struct {
 	urls          *externalURLs
 	limiter       ratelimit.Limiter
 	activity      *activity.Client
+	assetsBucket  *storage.BucketHandle
 }
 
 var _ adminv1.AdminServiceServer = (*Server)(nil)
@@ -83,7 +87,7 @@ var _ adminv1.AIServiceServer = (*Server)(nil)
 
 var _ adminv1.TelemetryServiceServer = (*Server)(nil)
 
-func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, activityClient *activity.Client, opts *Options) (*Server, error) {
+func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, limiter ratelimit.Limiter, activityClient *activity.Client, assetsBucket *storage.BucketHandle, opts *Options) (*Server, error) {
 	externalURL, err := url.Parse(opts.ExternalURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse external URL: %w", err)
@@ -140,6 +144,7 @@ func New(logger *zap.Logger, adm *admin.Service, issuer *runtimeauth.Issuer, lim
 		urls:          newURLRegistry(opts),
 		limiter:       limiter,
 		activity:      activityClient,
+		assetsBucket:  assetsBucket,
 	}, nil
 }
 
@@ -364,6 +369,13 @@ func timeoutSelector(fullMethodName string) time.Duration {
 	if strings.HasPrefix(fullMethodName, "/rill.admin.v1.AIService") {
 		return time.Minute * 2
 	}
+	switch fullMethodName {
+	case
+		"/rill.admin.v1.AdminService/CreateProject",
+		"/rill.admin.v1.AdminService/UpdateProject",
+		"/rill.admin.v1.AdminService/TriggerRedeploy":
+		return time.Minute * 5
+	}
 	return time.Minute
 }
 
@@ -482,4 +494,8 @@ func (u *externalURLs) alertOpen(org, project, alert string) string {
 
 func (u *externalURLs) alertEdit(org, project, alert string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "alerts", alert)
+}
+
+func (u *externalURLs) magicAuthTokenOpen(org, project, token string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "share", token)
 }

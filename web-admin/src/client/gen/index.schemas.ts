@@ -81,6 +81,7 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  archiveAssetId?: string;
   prodSlots?: string;
   provisioner?: string;
   newName?: string;
@@ -102,7 +103,11 @@ export type AdminServiceCreateProjectBody = {
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;
+  /** github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+Either github_url or archive_asset_id should be set. */
   githubUrl?: string;
+  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
+  archiveAssetId?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
   prodVersion?: string;
 };
@@ -112,8 +117,30 @@ export type AdminServiceListProjectsForOrganizationParams = {
   pageToken?: string;
 };
 
+export type AdminServiceCreateAssetBody = {
+  type?: string;
+  name?: string;
+  extension?: string;
+};
+
 export type AdminServiceSearchProjectUsersParams = {
   emailQuery?: string;
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceIssueMagicAuthTokenBody = {
+  /** TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry. */
+  ttlMinutes?: string;
+  /** Metrics view the token will provide access to. */
+  metricsView?: string;
+  metricsViewFilter?: V1Expression;
+  /** Optional list of names of dimensions and measures to limit access to.
+If empty, all dimensions and measures are accessible. */
+  metricsViewFields?: string[];
+};
+
+export type AdminServiceListMagicAuthTokensParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -383,6 +410,13 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
+export interface V1Subquery {
+  dimension?: string;
+  measures?: string[];
+  where?: V1Expression;
+  having?: V1Expression;
+}
+
 export interface V1SetSuperuserResponse {
   [key: string]: any;
 }
@@ -434,6 +468,10 @@ export interface V1RevokeServiceAuthTokenResponse {
   [key: string]: any;
 }
 
+export interface V1RevokeMagicAuthTokenResponse {
+  [key: string]: any;
+}
+
 export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
@@ -452,6 +490,7 @@ export interface V1ReportOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  webOpenState?: string;
 }
 
 export interface V1RemoveWhitelistedDomainResponse {
@@ -500,10 +539,14 @@ export interface V1ProjectPermissions {
   manageDev?: boolean;
   readProjectMembers?: boolean;
   manageProjectMembers?: boolean;
+  createMagicAuthTokens?: boolean;
+  manageMagicAuthTokens?: boolean;
   createReports?: boolean;
   manageReports?: boolean;
   createAlerts?: boolean;
   manageAlerts?: boolean;
+  createBookmarks?: boolean;
+  manageBookmarks?: boolean;
 }
 
 export type V1ProjectAnnotations = { [key: string]: string };
@@ -520,6 +563,7 @@ export interface V1Project {
   githubUrl?: string;
   subpath?: string;
   prodBranch?: string;
+  archiveAssetId?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
@@ -564,6 +608,25 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
+export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1Operation = {
+  OPERATION_UNSPECIFIED: "OPERATION_UNSPECIFIED",
+  OPERATION_EQ: "OPERATION_EQ",
+  OPERATION_NEQ: "OPERATION_NEQ",
+  OPERATION_LT: "OPERATION_LT",
+  OPERATION_LTE: "OPERATION_LTE",
+  OPERATION_GT: "OPERATION_GT",
+  OPERATION_GTE: "OPERATION_GTE",
+  OPERATION_OR: "OPERATION_OR",
+  OPERATION_AND: "OPERATION_AND",
+  OPERATION_IN: "OPERATION_IN",
+  OPERATION_NIN: "OPERATION_NIN",
+  OPERATION_LIKE: "OPERATION_LIKE",
+  OPERATION_NLIKE: "OPERATION_NLIKE",
+} as const;
+
 export interface V1Member {
   userId?: string;
   userEmail?: string;
@@ -571,6 +634,22 @@ export interface V1Member {
   roleName?: string;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export type V1MagicAuthTokenAttributes = { [key: string]: any };
+
+export interface V1MagicAuthToken {
+  id?: string;
+  projectId?: string;
+  createdOn?: string;
+  expiresOn?: string;
+  usedOn?: string;
+  createdByUserId?: string;
+  createdByUserEmail?: string;
+  attributes?: V1MagicAuthTokenAttributes;
+  metricsView?: string;
+  metricsViewFilter?: V1Expression;
+  metricsViewFields?: string[];
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -623,6 +702,11 @@ export interface V1ListOrganizationInvitesResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListMagicAuthTokensResponse {
+  tokens?: V1MagicAuthToken[];
+  nextPageToken?: string;
+}
+
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
 }
@@ -642,6 +726,11 @@ export interface V1IssueRepresentativeAuthTokenResponse {
 export interface V1IssueRepresentativeAuthTokenRequest {
   email?: string;
   ttlMinutes?: string;
+}
+
+export interface V1IssueMagicAuthTokenResponse {
+  token?: string;
+  url?: string;
 }
 
 export type V1GithubPermission =
@@ -668,6 +757,7 @@ export interface V1GetRepoMetaResponse {
   gitUrl?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
+  archiveDownloadUrl?: string;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
@@ -717,14 +807,6 @@ export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
 }
 
-export interface V1GetGitCredentialsResponse {
-  repoUrl?: string;
-  username?: string;
-  password?: string;
-  subpath?: string;
-  prodBranch?: string;
-}
-
 export interface V1GetDeploymentCredentialsResponse {
   runtimeHost?: string;
   instanceId?: string;
@@ -735,6 +817,15 @@ export interface V1GetDeploymentCredentialsResponse {
 export interface V1GetCurrentUserResponse {
   user?: V1User;
   preferences?: V1UserPreferences;
+}
+
+export interface V1GetCloneCredentialsResponse {
+  gitRepoUrl?: string;
+  gitUsername?: string;
+  gitPassword?: string;
+  gitSubpath?: string;
+  gitProdBranch?: string;
+  archiveDownloadUrl?: string;
 }
 
 export interface V1GetBookmarkResponse {
@@ -759,6 +850,13 @@ export interface V1GenerateReportYAMLResponse {
 
 export interface V1GenerateAlertYAMLResponse {
   yaml?: string;
+}
+
+export interface V1Expression {
+  ident?: string;
+  val?: unknown;
+  cond?: V1Condition;
+  subquery?: V1Subquery;
 }
 
 export type V1ExportFormat =
@@ -868,8 +966,21 @@ export interface V1CreateBookmarkRequest {
   shared?: boolean;
 }
 
+export type V1CreateAssetResponseSigningHeaders = { [key: string]: string };
+
+export interface V1CreateAssetResponse {
+  assetId?: string;
+  signedUrl?: string;
+  signingHeaders?: V1CreateAssetResponseSigningHeaders;
+}
+
 export interface V1CreateAlertResponse {
   name?: string;
+}
+
+export interface V1Condition {
+  op?: V1Operation;
+  exprs?: V1Expression[];
 }
 
 export interface V1CompletionMessage {
@@ -900,8 +1011,6 @@ export interface V1Bookmark {
   updatedOn?: string;
 }
 
-export type V1AlertOptionsResolverProps = { [key: string]: any };
-
 export interface V1AlertOptions {
   title?: string;
   intervalDuration?: string;
@@ -914,8 +1023,7 @@ export interface V1AlertOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
-  resolver?: string;
-  resolverProps?: V1AlertOptionsResolverProps;
+  webOpenState?: string;
 }
 
 export interface V1AddProjectMemberResponse {
@@ -936,7 +1044,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

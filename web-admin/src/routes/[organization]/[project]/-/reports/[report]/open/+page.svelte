@@ -23,11 +23,12 @@
     $report.data?.resource?.report?.spec?.queryName,
     $report.data?.resource?.report?.spec?.queryArgsJson,
     executionTime,
+    $report.data?.resource?.report?.spec?.annotations ?? {},
   );
 
   $: if ($dashboardStateForReport.data) {
     goto(
-      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${$dashboardStateForReport.data.state}`,
+      `/${organization}/${project}/${$dashboardStateForReport.data.metricsView}?state=${encodeURIComponent($dashboardStateForReport.data.state)}`,
     );
   }
 
@@ -48,9 +49,8 @@
         </CtaMessage>
       </div>
       <CtaButton
-        on:click={() =>
-          goto(`/${organization}/${project}/-/reports/${reportId}`)}
-        variant="primary-outline"
+        href={`/${organization}/${project}/-/reports/${reportId}`}
+        variant="secondary"
       >
         Go to report page
       </CtaButton>

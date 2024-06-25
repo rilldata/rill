@@ -22,6 +22,7 @@ import type {
   V1GetGithubRepoStatusResponse,
   AdminServiceGetGithubRepoStatusParams,
   V1GetGithubUserStatusResponse,
+  V1RevokeMagicAuthTokenResponse,
   V1ListOrganizationsResponse,
   AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
@@ -48,9 +49,9 @@ import type {
   V1EditAlertResponse,
   V1UnsubscribeAlertResponse,
   V1GetAlertYAMLResponse,
+  V1GetCloneCredentialsResponse,
   V1GetDeploymentCredentialsResponse,
   AdminServiceGetDeploymentCredentialsBody,
-  V1GetGitCredentialsResponse,
   V1GetIFrameResponse,
   AdminServiceGetIFrameBody,
   V1ListProjectInvitesResponse,
@@ -67,6 +68,10 @@ import type {
   V1EditReportResponse,
   V1TriggerReportResponse,
   V1UnsubscribeReportResponse,
+  V1ListMagicAuthTokensResponse,
+  AdminServiceListMagicAuthTokensParams,
+  V1IssueMagicAuthTokenResponse,
+  AdminServiceIssueMagicAuthTokenBody,
   V1SearchProjectUsersResponse,
   AdminServiceSearchProjectUsersParams,
   V1ListProjectWhitelistedDomainsResponse,
@@ -76,6 +81,8 @@ import type {
   V1ListWhitelistedDomainsResponse,
   V1CreateWhitelistedDomainResponse,
   V1RemoveWhitelistedDomainResponse,
+  V1CreateAssetResponse,
+  AdminServiceCreateAssetBody,
   V1ListProjectsForOrganizationResponse,
   AdminServiceListProjectsForOrganizationParams,
   V1CreateProjectResponse,
@@ -364,6 +371,51 @@ export const createAdminServiceGetGithubUserStatus = <
   return query;
 };
 
+/**
+ * @summary RevokeMagicAuthToken revokes a magic auth token.
+ */
+export const adminServiceRevokeMagicAuthToken = (tokenId: string) => {
+  return httpClient<V1RevokeMagicAuthTokenResponse>({
+    url: `/v1/magic-tokens/${tokenId}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceRevokeMagicAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRevokeMagicAuthToken>>
+>;
+
+export type AdminServiceRevokeMagicAuthTokenMutationError = RpcStatus;
+
+export const createAdminServiceRevokeMagicAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRevokeMagicAuthToken>>,
+    TError,
+    { tokenId: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRevokeMagicAuthToken>>,
+    { tokenId: string }
+  > = (props) => {
+    const { tokenId } = props ?? {};
+
+    return adminServiceRevokeMagicAuthToken(tokenId);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRevokeMagicAuthToken>>,
+    TError,
+    { tokenId: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListOrganizations lists all the organizations currently managed by the admin
  */
@@ -1371,6 +1423,74 @@ export const createAdminServiceGetAlertYAML = <
 };
 
 /**
+ * @summary GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
+ */
+export const adminServiceGetCloneCredentials = (
+  organization: string,
+  project: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetCloneCredentialsResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetCloneCredentialsQueryKey = (
+  organization: string,
+  project: string,
+) => [
+  `/v1/organizations/${organization}/projects/${project}/clone-credentials`,
+];
+
+export type AdminServiceGetCloneCredentialsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>
+>;
+export type AdminServiceGetCloneCredentialsQueryError = RpcStatus;
+
+export const createAdminServiceGetCloneCredentials = <
+  TData = Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  project: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetCloneCredentialsQueryKey(organization, project);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>
+  > = ({ signal }) =>
+    adminServiceGetCloneCredentials(organization, project, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetCloneCredentials>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
  * @summary GetDeploymentCredentials returns runtime info and access token on behalf of a specific user, or alternatively for a raw set of JWT attributes
  */
 export const adminServiceGetDeploymentCredentials = (
@@ -1436,72 +1556,6 @@ export const createAdminServiceGetDeploymentCredentials = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetDeploymentCredentials>>,
-    TError,
-    TData
-  >({
-    queryKey,
-    queryFn,
-    enabled: !!(organization && project),
-    ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-/**
- * @summary GetGitCredentials returns credentials and other details for a project's Git repository.
- */
-export const adminServiceGetGitCredentials = (
-  organization: string,
-  project: string,
-  signal?: AbortSignal,
-) => {
-  return httpClient<V1GetGitCredentialsResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/git-credentials`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getAdminServiceGetGitCredentialsQueryKey = (
-  organization: string,
-  project: string,
-) => [`/v1/organizations/${organization}/projects/${project}/git-credentials`];
-
-export type AdminServiceGetGitCredentialsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceGetGitCredentials>>
->;
-export type AdminServiceGetGitCredentialsQueryError = RpcStatus;
-
-export const createAdminServiceGetGitCredentials = <
-  TData = Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
-  TError = RpcStatus,
->(
-  organization: string,
-  project: string,
-  options?: {
-    query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
-      TError,
-      TData
-    >;
-  },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ??
-    getAdminServiceGetGitCredentialsQueryKey(organization, project);
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetGitCredentials>>
-  > = ({ signal }) =>
-    adminServiceGetGitCredentials(organization, project, signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetGitCredentials>>,
     TError,
     TData
   >({
@@ -2292,6 +2346,143 @@ export const createAdminServiceUnsubscribeReport = <
   >(mutationFn, mutationOptions);
 };
 /**
+ * @summary ListMagicAuthTokens lists all the magic auth tokens for a specific project.
+ */
+export const adminServiceListMagicAuthTokens = (
+  organization: string,
+  project: string,
+  params?: AdminServiceListMagicAuthTokensParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1ListMagicAuthTokensResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceListMagicAuthTokensQueryKey = (
+  organization: string,
+  project: string,
+  params?: AdminServiceListMagicAuthTokensParams,
+) => [
+  `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
+  ...(params ? [params] : []),
+];
+
+export type AdminServiceListMagicAuthTokensQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
+>;
+export type AdminServiceListMagicAuthTokensQueryError = RpcStatus;
+
+export const createAdminServiceListMagicAuthTokens = <
+  TData = Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  project: string,
+  params?: AdminServiceListMagicAuthTokensParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceListMagicAuthTokensQueryKey(organization, project, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>
+  > = ({ signal }) =>
+    adminServiceListMagicAuthTokens(organization, project, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListMagicAuthTokens>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+/**
+ * @summary IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
+ */
+export const adminServiceIssueMagicAuthToken = (
+  organization: string,
+  project: string,
+  adminServiceIssueMagicAuthTokenBody: AdminServiceIssueMagicAuthTokenBody,
+) => {
+  return httpClient<V1IssueMagicAuthTokenResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/tokens/magic`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceIssueMagicAuthTokenBody,
+  });
+};
+
+export type AdminServiceIssueMagicAuthTokenMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceIssueMagicAuthToken>>
+>;
+export type AdminServiceIssueMagicAuthTokenMutationBody =
+  AdminServiceIssueMagicAuthTokenBody;
+export type AdminServiceIssueMagicAuthTokenMutationError = RpcStatus;
+
+export const createAdminServiceIssueMagicAuthToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceIssueMagicAuthToken>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceIssueMagicAuthTokenBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceIssueMagicAuthToken>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceIssueMagicAuthTokenBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceIssueMagicAuthToken(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceIssueMagicAuthToken>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceIssueMagicAuthTokenBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
  * @summary SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
  */
 export const adminServiceSearchProjectUsers = (
@@ -2720,6 +2911,56 @@ export const createAdminServiceRemoveWhitelistedDomain = <
     Awaited<ReturnType<typeof adminServiceRemoveWhitelistedDomain>>,
     TError,
     { organization: string; domain: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary CreateAsset returns a one time signed URL using which any asset can be uploaded.
+ */
+export const adminServiceCreateAsset = (
+  organizationName: string,
+  adminServiceCreateAssetBody: AdminServiceCreateAssetBody,
+) => {
+  return httpClient<V1CreateAssetResponse>({
+    url: `/v1/organizations/${organizationName}/create_asset`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateAssetBody,
+  });
+};
+
+export type AdminServiceCreateAssetMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceCreateAsset>>
+>;
+export type AdminServiceCreateAssetMutationBody = AdminServiceCreateAssetBody;
+export type AdminServiceCreateAssetMutationError = RpcStatus;
+
+export const createAdminServiceCreateAsset = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceCreateAsset>>,
+    TError,
+    { organizationName: string; data: AdminServiceCreateAssetBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceCreateAsset>>,
+    { organizationName: string; data: AdminServiceCreateAssetBody }
+  > = (props) => {
+    const { organizationName, data } = props ?? {};
+
+    return adminServiceCreateAsset(organizationName, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceCreateAsset>>,
+    TError,
+    { organizationName: string; data: AdminServiceCreateAssetBody },
     TContext
   >(mutationFn, mutationOptions);
 };

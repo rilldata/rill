@@ -161,28 +161,54 @@ func local_request_LocalService_PushToGithub_0(ctx context.Context, marshaler ru
 
 }
 
-func request_LocalService_Deploy_0(ctx context.Context, marshaler runtime.Marshaler, client LocalServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeployRequest
+func request_LocalService_DeployProject_0(ctx context.Context, marshaler runtime.Marshaler, client LocalServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeployProjectRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.Deploy(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.DeployProject(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_LocalService_Deploy_0(ctx context.Context, marshaler runtime.Marshaler, server LocalServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq DeployRequest
+func local_request_LocalService_DeployProject_0(ctx context.Context, marshaler runtime.Marshaler, server LocalServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeployProjectRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.Deploy(ctx, &protoReq)
+	msg, err := server.DeployProject(ctx, &protoReq)
+	return msg, metadata, err
+
+}
+
+func request_LocalService_RedeployProject_0(ctx context.Context, marshaler runtime.Marshaler, client LocalServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq RedeployProjectRequest
+	var metadata runtime.ServerMetadata
+
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.RedeployProject(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_LocalService_RedeployProject_0(ctx context.Context, marshaler runtime.Marshaler, server LocalServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq RedeployProjectRequest
+	var metadata runtime.ServerMetadata
+
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := server.RedeployProject(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -318,7 +344,7 @@ func RegisterLocalServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("POST", pattern_LocalService_Deploy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_LocalService_DeployProject_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -326,12 +352,12 @@ func RegisterLocalServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.local.v1.LocalService/Deploy", runtime.WithHTTPPathPattern("/rill.local.v1.LocalService/Deploy"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.local.v1.LocalService/DeployProject", runtime.WithHTTPPathPattern("/rill.local.v1.LocalService/DeployProject"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_LocalService_Deploy_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_LocalService_DeployProject_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -339,7 +365,32 @@ func RegisterLocalServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_LocalService_Deploy_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_LocalService_DeployProject_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_LocalService_RedeployProject_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		var stream runtime.ServerTransportStream
+		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.local.v1.LocalService/RedeployProject", runtime.WithHTTPPathPattern("/rill.local.v1.LocalService/RedeployProject"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := local_request_LocalService_RedeployProject_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_LocalService_RedeployProject_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -494,25 +545,47 @@ func RegisterLocalServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("POST", pattern_LocalService_Deploy_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_LocalService_DeployProject_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.local.v1.LocalService/Deploy", runtime.WithHTTPPathPattern("/rill.local.v1.LocalService/Deploy"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.local.v1.LocalService/DeployProject", runtime.WithHTTPPathPattern("/rill.local.v1.LocalService/DeployProject"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_LocalService_Deploy_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_LocalService_DeployProject_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_LocalService_Deploy_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_LocalService_DeployProject_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
+	mux.Handle("POST", pattern_LocalService_RedeployProject_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		var err error
+		var annotatedContext context.Context
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.local.v1.LocalService/RedeployProject", runtime.WithHTTPPathPattern("/rill.local.v1.LocalService/RedeployProject"))
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_LocalService_RedeployProject_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
+		if err != nil {
+			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_LocalService_RedeployProject_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -530,7 +603,9 @@ var (
 
 	pattern_LocalService_PushToGithub_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"rill.local.v1.LocalService", "PushToGithub"}, ""))
 
-	pattern_LocalService_Deploy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"rill.local.v1.LocalService", "Deploy"}, ""))
+	pattern_LocalService_DeployProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"rill.local.v1.LocalService", "DeployProject"}, ""))
+
+	pattern_LocalService_RedeployProject_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1}, []string{"rill.local.v1.LocalService", "RedeployProject"}, ""))
 )
 
 var (
@@ -544,5 +619,7 @@ var (
 
 	forward_LocalService_PushToGithub_0 = runtime.ForwardResponseMessage
 
-	forward_LocalService_Deploy_0 = runtime.ForwardResponseMessage
+	forward_LocalService_DeployProject_0 = runtime.ForwardResponseMessage
+
+	forward_LocalService_RedeployProject_0 = runtime.ForwardResponseMessage
 )

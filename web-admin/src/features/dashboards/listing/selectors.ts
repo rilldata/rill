@@ -1,4 +1,3 @@
-import type { V1GetProjectResponse } from "@rilldata/web-admin/client";
 import {
   createAdminServiceGetProject,
   V1DeploymentStatus,
@@ -15,11 +14,11 @@ import type { V1Resource } from "@rilldata/web-common/runtime-client";
 import {
   createRuntimeServiceListResources,
   getRuntimeServiceListResourcesQueryKey,
+  runtimeServiceListResources,
   V1ReconcileStatus,
 } from "@rilldata/web-common/runtime-client";
 import { invalidateMetricsViewData } from "@rilldata/web-common/runtime-client/invalidation";
 import type { CreateQueryResult, QueryClient } from "@tanstack/svelte-query";
-import Axios from "axios";
 import { derived } from "svelte/store";
 
 export interface DashboardListItem {
@@ -29,36 +28,19 @@ export interface DashboardListItem {
   isValid: boolean;
 }
 
-// TODO: use the creator pattern to get rid of the raw call to http endpoint
-export async function getDashboardsForProject(
-  projectData: V1GetProjectResponse,
+export async function listDashboards(
+  queryClient: QueryClient,
+  instanceId: string,
 ): Promise<V1Resource[]> {
-  // There may not be a prodDeployment if the project was hibernated
-  if (!projectData.prodDeployment) {
-    return [];
-  }
+  // Fetch all resources
+  const queryKey = getRuntimeServiceListResourcesQueryKey(instanceId);
+  const queryFn = () => runtimeServiceListResources(instanceId);
+  const resp = await queryClient.fetchQuery(queryKey, queryFn);
 
-  // Hack: in development, the runtime host is actually on port 8081
-  const runtimeHost = projectData.prodDeployment.runtimeHost.replace(
-    "localhost:9091",
-    "localhost:8081",
-  );
+  // Filter for metricsViews client-side (to reduce calls to ListResources)
+  const metricsViews = resp.resources.filter((res) => !!res.metricsView);
 
-  const axios = Axios.create({
-    baseURL: runtimeHost,
-    headers: {
-      Authorization: `Bearer ${projectData.jwt}`,
-    },
-  });
-
-  // TODO: use resource API
-  const catalogEntriesResponse = await axios.get(
-    `/v1/instances/${projectData.prodDeployment.runtimeInstanceId}/resources?kind=${ResourceKind.MetricsView}`,
-  );
-
-  const catalogEntries = catalogEntriesResponse.data?.resources as V1Resource[];
-
-  return catalogEntries.filter((e) => !!e.metricsView);
+  return metricsViews;
 }
 
 export function useDashboardsLastUpdated(
@@ -263,7 +245,7 @@ export function useDashboardV2(
       enabled: !!instanceId && !!name,
       select: (data) => {
         const dashboard = data.resources.find(
-          (res) => res.meta.name.name === name,
+          (res) => res.meta.name.name.toLowerCase() === name.toLowerCase(),
         );
         const refreshedOn = getDashboardRefreshedOn(dashboard, data.resources);
         return { resource: dashboard, refreshedOn };

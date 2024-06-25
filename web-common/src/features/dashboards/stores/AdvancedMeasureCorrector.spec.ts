@@ -1,3 +1,7 @@
+import {
+  MeasureFilterOperation,
+  MeasureFilterType,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import {
@@ -10,17 +14,12 @@ import {
   AD_BIDS_PUBLISHER_DIMENSION,
   AD_BIDS_TIMESTAMP_DIMENSION,
 } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores-test-data";
-import {
-  createAndExpression,
-  createBinaryExpression,
-} from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { DashboardTimeControls } from "@rilldata/web-common/lib/time/types";
 import {
   V1MetricsViewSpec,
-  V1Operation,
   V1TimeGrain,
 } from "@rilldata/web-common/runtime-client";
-import { describe, it, expect } from "vitest";
+import { describe, expect, it } from "vitest";
 
 describe("AdvancedMeasureCorrector", () => {
   const MetricsView = {
@@ -74,13 +73,15 @@ describe("AdvancedMeasureCorrector", () => {
     dashboard.dimensionThresholdFilters = [
       {
         name: AD_BIDS_PUBLISHER_DIMENSION,
-        filter: createAndExpression([
-          createBinaryExpression(
-            AD_BIDS_IMPRESSIONS_MEASURE,
-            V1Operation.OPERATION_GT,
-            10,
-          ),
-        ]),
+        filters: [
+          {
+            measure: AD_BIDS_IMPRESSIONS_MEASURE,
+            operation: MeasureFilterOperation.GreaterThan,
+            type: MeasureFilterType.Value,
+            value1: "10",
+            value2: "",
+          },
+        ],
       },
     ];
 
@@ -88,7 +89,7 @@ describe("AdvancedMeasureCorrector", () => {
     expect(dashboard.leaderboardMeasureName).toEqual(
       AD_BIDS_IMPRESSIONS_MEASURE,
     );
-    expect(dashboard.dimensionThresholdFilters[0]?.filter).not.toBeUndefined();
+    expect(dashboard.dimensionThresholdFilters[0]?.filters.length).toEqual(1);
 
     // metrics view spec updated to make AD_BIDS_IMPRESSIONS_MEASURE an advanced measure
     AdvancedMeasureCorrector.correct(dashboard, {

@@ -102,15 +102,23 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
-	inExpr := &Expression{
-		Condition: &Condition{
-			Operator: OperatorIn,
-			Expressions: []*Expression{
-				{Name: qry.Dimensions[0].Name},
-				{Value: vals},
+	var inExpr *Expression
+	if len(vals) == 0 {
+		inExpr = &Expression{
+			Value: false,
+		}
+	} else {
+		inExpr = &Expression{
+			Condition: &Condition{
+				Operator: OperatorIn,
+				Expressions: []*Expression{
+					{Name: qry.Dimensions[0].Name},
+					{Value: vals},
+				},
 			},
-		},
+		}
 	}
+
 	if qry.Where == nil {
 		qry.Where = inExpr
 	} else {

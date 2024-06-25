@@ -5,6 +5,7 @@ import "google/api/annotations.proto";
 import "google/protobuf/timestamp.proto";
 import "google/protobuf/struct.proto";
 import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/expression.proto";
 import "validate/validate.proto";
 
 service AdminService {
@@ -89,6 +90,14 @@ service AdminService {
   rpc UpdateProjectVariables(UpdateProjectVariablesRequest) returns (UpdateProjectVariablesResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization_name}/projects/{name}/variables",
+      body: "*"
+    };
+  }
+
+  // CreateAsset returns a one time signed URL using which any asset can be uploaded.
+  rpc CreateAsset(CreateAssetRequest) returns (CreateAssetResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization_name}/create_asset",
       body: "*"
     };
   }
@@ -216,9 +225,9 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user"};
   }
 
-  // GetGitCredentials returns credentials and other details for a project's Git repository.
-  rpc GetGitCredentials(GetGitCredentialsRequest) returns (GetGitCredentialsResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/git-credentials"};
+  // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
+  rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
   }
 
   // CreateWhitelistedDomain adds a domain to the whitelist
@@ -371,6 +380,24 @@ service AdminService {
   // RevokeServiceAuthToken revoke the service auth token
   rpc RevokeServiceAuthToken(RevokeServiceAuthTokenRequest) returns (RevokeServiceAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/services/tokens/{token_id}"};
+  }
+
+  // IssueMagicAuthToken creates a "magic" auth token that provides limited access to a specific filtered dashboard in a specific project.
+  rpc IssueMagicAuthToken(IssueMagicAuthTokenRequest) returns (IssueMagicAuthTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/tokens/magic",
+      body: "*"
+    };
+  }
+
+  // ListMagicAuthTokens lists all the magic auth tokens for a specific project.
+  rpc ListMagicAuthTokens(ListMagicAuthTokensRequest) returns (ListMagicAuthTokensResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/tokens/magic"};
+  }
+
+  // RevokeMagicAuthToken revokes a magic auth token.
+  rpc RevokeMagicAuthToken(RevokeMagicAuthTokenRequest) returns (RevokeMagicAuthTokenResponse) {
+    option (google.api.http) = {delete: "/v1/magic-tokens/{token_id}"};
   }
 
   // UpdateUserPreferences updates the preferences for the user
@@ -744,7 +771,11 @@ message CreateProjectRequest {
   int64 prod_slots = 8;
   string subpath = 12;
   string prod_branch = 9;
+  // github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+  // Either github_url or archive_asset_id should be set.
   string github_url = 10;
+  // archive_asset_id is set for projects whose project files are not stored in github but are managed by rill.
+  string archive_asset_id = 14;
   map<string, string> variables = 11;
   string prod_version = 13;
 }
@@ -767,6 +798,7 @@ message UpdateProjectRequest {
   optional bool public = 4;
   optional string prod_branch = 5;
   optional string github_url = 6;
+  optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
   optional string provisioner = 8;
   optional string new_name = 9;
@@ -786,6 +818,19 @@ message UpdateProjectVariablesRequest {
 
 message UpdateProjectVariablesResponse {
   map<string, string> variables = 1;
+}
+
+message CreateAssetRequest {
+  string organization_name = 1 [(validate.rules).string.min_len = 1];
+  string type = 2 [(validate.rules).string = {in: ["deploy"]}];
+  string name = 3 [(validate.rules).string.min_len = 1]; // Eg. "rilldata__project_name"
+  string extension = 4; // Eg. ".tar.gz"
+}
+
+message CreateAssetResponse {
+  string asset_id = 1;
+  string signed_url = 2;
+  map<string, string> signing_headers = 3;
 }
 
 message TriggerReconcileRequest {
@@ -1109,6 +1154,46 @@ message ListServiceAuthTokensResponse {
   repeated ServiceToken tokens = 1;
 }
 
+
+message IssueMagicAuthTokenRequest {
+  // Organization that owns the project.
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  // Project to create the magic auth token in.
+  string project = 2 [(validate.rules).string.min_len = 1];
+  // TTL for the token in minutes. Set to 0 for no expiry. Defaults to no expiry.
+  int64 ttl_minutes = 3;
+  // Metrics view the token will provide access to.
+  string metrics_view = 4;
+  // Optional filter to apply to all queries to the metrics view.
+  rill.runtime.v1.Expression metrics_view_filter = 5;
+  // Optional list of names of dimensions and measures to limit access to.
+  // If empty, all dimensions and measures are accessible.
+  repeated string metrics_view_fields = 6;
+}
+
+message IssueMagicAuthTokenResponse {
+  string token = 1;
+  string url = 2;
+}
+
+message ListMagicAuthTokensRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message ListMagicAuthTokensResponse {
+  repeated MagicAuthToken tokens = 1;
+  string next_page_token = 2;
+}
+
+message RevokeMagicAuthTokenRequest {
+  string token_id = 1;
+}
+
+message RevokeMagicAuthTokenResponse {}
+
 message GetGithubRepoStatusRequest {
   string github_url = 1;
 }
@@ -1138,17 +1223,19 @@ enum GithubPermission {
   GITHUB_PERMISSION_WRITE = 2;
 }
 
-message GetGitCredentialsRequest {
+message GetCloneCredentialsRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
 }
 
-message GetGitCredentialsResponse {
-  string repo_url = 1;
-  string username = 2;
-  string password = 3;
-  string subpath = 4;
-  string prod_branch = 5;
+message GetCloneCredentialsResponse {
+  string git_repo_url = 1;
+  string git_username = 2;
+  string git_password = 3;
+  string git_subpath = 4;
+  string git_prod_branch = 5;
+  // either archive_download_url or git related details will be set
+  string archive_download_url = 6;
 }
 
 message CreateWhitelistedDomainRequest {
@@ -1209,6 +1296,9 @@ message GetRepoMetaResponse {
   string git_url = 1;
   google.protobuf.Timestamp git_url_expires_on = 2;
   string git_subpath = 3;
+  // archive_download_url is set when repo is managed by Rill
+  // either archive_download_url or git related details will be set
+  string archive_download_url = 4;
 }
 
 message PullVirtualRepoRequest {
@@ -1429,6 +1519,7 @@ message Project {
   string github_url = 8;
   string subpath = 17;
   string prod_branch = 9;
+  string archive_asset_id = 23;
   string prod_olap_driver = 10;
   string prod_olap_dsn = 11;
   int64 prod_slots = 12;
@@ -1482,10 +1573,14 @@ message ProjectPermissions {
   bool manage_dev = 8;
   bool read_project_members = 9;
   bool manage_project_members = 10;
+  bool create_magic_auth_tokens = 15;
+  bool manage_magic_auth_tokens = 16;
   bool create_reports = 11;
   bool manage_reports = 12;
   bool create_alerts = 13;
   bool manage_alerts = 14;
+  bool create_bookmarks = 17;
+  bool manage_bookmarks = 18;
 }
 
 message Member {
@@ -1529,6 +1624,20 @@ message ServiceToken {
   google.protobuf.Timestamp expires_on = 3;
 }
 
+message MagicAuthToken {
+  string id = 1;
+  string project_id = 2;
+  google.protobuf.Timestamp created_on = 3;
+  google.protobuf.Timestamp expires_on = 4;
+  google.protobuf.Timestamp used_on = 5;
+  string created_by_user_id = 6;
+  string created_by_user_email = 7;
+  google.protobuf.Struct attributes = 8;
+  string metrics_view = 9;
+  rill.runtime.v1.Expression metrics_view_filter = 10;
+  repeated string metrics_view_fields = 11;
+}
+
 message VirtualFile {
   string path = 1;
   bytes data = 2;
@@ -1550,6 +1659,8 @@ message ReportOptions {
   repeated string slack_users = 10;
   repeated string slack_channels = 11;
   repeated string slack_webhooks = 12;
+  // base64 state url of the metrics_view when it was created
+  string web_open_state = 14;
 }
 
 message AlertOptions {
@@ -1564,6 +1675,8 @@ message AlertOptions {
   repeated string slack_users = 9;
   repeated string slack_channels = 10;
   repeated string slack_webhooks = 11;
-  string resolver = 12;
-  google.protobuf.Struct resolver_props = 13;
+  // base64 state url of the dashboard when it was created
+  string web_open_state = 12;
+  string resolver = 13;
+  google.protobuf.Struct resolver_props = 14;
 }

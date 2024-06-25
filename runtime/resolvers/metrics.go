@@ -2,7 +2,6 @@ package resolvers
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -59,7 +58,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err := opts.Runtime.ResolveMetricsViewSecurity(opts.UserAttributes, opts.InstanceID, mv, res.Meta.StateUpdatedOn.AsTime())
+	security, err := opts.Runtime.ResolveMetricsViewSecurity(opts.InstanceID, opts.UserAttributes, res, mv.Security, opts.Security)
 	if err != nil {
 		return nil, err
 	}
@@ -104,36 +103,13 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 	return r.executor.ValidateQuery(r.query)
 }
 
-func (r *metricsResolver) ResolveInteractive(ctx context.Context) (*runtime.ResolverResult, error) {
+func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
 	res, cache, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
 	}
-	defer res.Close()
 
-	out := []map[string]any{}
-	for res.Next() {
-		row := make(map[string]any)
-		err = res.MapScan(row)
-		if err != nil {
-			return nil, err
-		}
-		out = append(out, row)
-	}
-	if res.Err() != nil {
-		return nil, res.Rows.Err()
-	}
-
-	data, err := json.Marshal(out)
-	if err != nil {
-		return nil, err
-	}
-
-	return &runtime.ResolverResult{
-		Data:   data,
-		Schema: res.Schema,
-		Cache:  cache,
-	}, nil
+	return runtime.NewResolverResult(res, cache), nil
 }
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {

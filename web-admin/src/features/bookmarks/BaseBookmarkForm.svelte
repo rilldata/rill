@@ -52,13 +52,13 @@ Managed bookmarks will be available to all viewers of this dashboard.`;
 >
   <Input
     bind:value={$form["displayName"]}
-    error={$errors["displayName"]}
+    errors={$errors["displayName"]}
     id="displayName"
     label="Name"
   />
   <Input
     bind:value={$form["description"]}
-    error={$errors["description"]}
+    errors={$errors["description"]}
     id="description"
     label="Description"
     optional

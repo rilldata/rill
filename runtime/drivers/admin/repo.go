@@ -27,6 +27,12 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	}
 	defer h.repoMu.RUnlock()
 
+	if h.downloadURL != "" {
+		// use downloadURL as a proxy for CommitHash for one-time uploads
+		// It will change when new data is uploaded
+		return h.downloadURL, nil
+	}
+
 	repo, err := git.PlainOpen(h.repoPath)
 	if err != nil {
 		return "", err

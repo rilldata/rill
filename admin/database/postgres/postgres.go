@@ -333,7 +333,7 @@ func (c *connection) FindProject(ctx context.Context, id string) (*database.Proj
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) FindProjectByName(ctx context.Context, orgName, name string) (*database.Project, error) {
@@ -342,7 +342,7 @@ func (c *connection) FindProjectByName(ctx context.Context, orgName, name string
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) InsertProject(ctx context.Context, opts *database.InsertProjectOptions) (*database.Project, error) {
@@ -352,14 +352,14 @@ func (c *connection) InsertProject(ctx context.Context, opts *database.InsertPro
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, github_url, github_installation_id, prod_ttl_seconds, prod_version)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16) RETURNING *`,
-		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
+		INSERT INTO projects (org_id, name, description, public, created_by_user_id, provisioner, prod_olap_driver, prod_olap_dsn, prod_slots, subpath, prod_branch, prod_variables, archive_asset_id, github_url, github_installation_id, prod_ttl_seconds, prod_version)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17) RETURNING *`,
+		opts.OrganizationID, opts.Name, opts.Description, opts.Public, opts.CreatedByUserID, opts.Provisioner, opts.ProdOLAPDriver, opts.ProdOLAPDSN, opts.ProdSlots, opts.Subpath, opts.ProdBranch, opts.ProdVariables, opts.ArchiveAssetID, opts.GithubURL, opts.GithubInstallationID, opts.ProdTTLSeconds, opts.ProdVersion,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) DeleteProject(ctx context.Context, id string) error {
@@ -377,14 +377,14 @@ func (c *connection) UpdateProject(ctx context.Context, id string, opts *databas
 
 	res := &projectDTO{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, `
-		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, prod_deployment_id=$8, provisioner=$9, prod_slots=$10, prod_ttl_seconds=$11, annotations=$12, prod_version=$13, updated_on=now()
-		WHERE id=$14 RETURNING *`,
-		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
+		UPDATE projects SET name=$1, description=$2, public=$3, prod_branch=$4, prod_variables=$5, github_url=$6, github_installation_id=$7, archive_asset_id=$8, prod_deployment_id=$9, provisioner=$10, prod_slots=$11, prod_ttl_seconds=$12, annotations=$13, prod_version=$14, updated_on=now()
+		WHERE id=$15 RETURNING *`,
+		opts.Name, opts.Description, opts.Public, opts.ProdBranch, opts.ProdVariables, opts.GithubURL, opts.GithubInstallationID, opts.ArchiveAssetID, opts.ProdDeploymentID, opts.Provisioner, opts.ProdSlots, opts.ProdTTLSeconds, opts.Annotations, opts.ProdVersion, id,
 	).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project", err)
 	}
-	return res.AsProject()
+	return res.AsModel()
 }
 
 func (c *connection) CountProjectsForOrganization(ctx context.Context, orgID string) (int, error) {
@@ -962,6 +962,94 @@ func (c *connection) DeleteExpiredDeploymentAuthTokens(ctx context.Context, rete
 	return parseErr("deployment auth token", err)
 }
 
+func (c *connection) FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*database.MagicAuthTokenWithUser, error) {
+	n := 1
+	where := fmt.Sprintf("t.project_id=$%d", n)
+	args := []any{projectID}
+	n++
+
+	if createdByUserID != nil {
+		where = fmt.Sprintf("%s AND t.created_by_user_id=$%d", where, n)
+		args = append(args, *createdByUserID)
+		n++
+	}
+
+	if afterID != "" {
+		where = fmt.Sprintf("%s AND t.id>$%d", where, n)
+		args = append(args, afterID)
+		n++
+	}
+
+	where += " AND (t.expires_on IS NULL OR t.expires_on > now())"
+
+	qry := fmt.Sprintf("SELECT t.*, u.email AS created_by_user_email FROM magic_auth_tokens t LEFT JOIN users u ON t.created_by_user_id=u.id WHERE %s ORDER BY t.id LIMIT $%d", where, n)
+	args = append(args, limit)
+
+	var dtos []*magicAuthTokenWithUserDTO
+	err := c.getDB(ctx).SelectContext(ctx, &dtos, qry, args...)
+	if err != nil {
+		return nil, parseErr("magic auth tokens", err)
+	}
+
+	res := make([]*database.MagicAuthTokenWithUser, len(dtos))
+	for i, dto := range dtos {
+		var err error
+		res[i], err = dto.AsModel()
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (c *connection) FindMagicAuthToken(ctx context.Context, id string) (*database.MagicAuthToken, error) {
+	res := &magicAuthTokenDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT t.* FROM magic_auth_tokens t WHERE t.id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return res.AsModel()
+}
+
+func (c *connection) InsertMagicAuthToken(ctx context.Context, opts *database.InsertMagicAuthTokenOptions) (*database.MagicAuthToken, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	if opts.MetricsViewFields == nil {
+		opts.MetricsViewFields = []string{}
+	}
+
+	res := &magicAuthTokenDTO{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO magic_auth_tokens (id, secret_hash, project_id, expires_on, created_by_user_id, attributes, metrics_view, metrics_view_filter_json, metrics_view_fields)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+		opts.ID, opts.SecretHash, opts.ProjectID, opts.ExpiresOn, opts.CreatedByUserID, opts.Attributes, opts.MetricsView, opts.MetricsViewFilterJSON, opts.MetricsViewFields,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("magic auth token", err)
+	}
+	return res.AsModel()
+}
+
+func (c *connection) UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "UPDATE magic_auth_tokens SET used_on=now() WHERE id=ANY($1)", ids)
+	if err != nil {
+		return parseErr("magic auth token", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteMagicAuthToken(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE id=$1", id)
+	return checkDeleteRow("magic auth token", res, err)
+}
+
+func (c *connection) DeleteExpiredMagicAuthTokens(ctx context.Context, retention time.Duration) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM magic_auth_tokens WHERE expires_on IS NOT NULL AND expires_on + $1 < now()", retention)
+	return parseErr("magic auth token", err)
+}
+
 func (c *connection) FindDeviceAuthCodeByDeviceCode(ctx context.Context, deviceCode string) (*database.DeviceAuthCode, error) {
 	authCode := &database.DeviceAuthCode{}
 	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM device_auth_codes WHERE device_code = $1", deviceCode).StructScan(authCode)
@@ -1470,6 +1558,28 @@ func (c *connection) DeleteExpiredVirtualFiles(ctx context.Context, retention ti
 	return parseErr("virtual files", err)
 }
 
+func (c *connection) FindAsset(ctx context.Context, id string) (*database.Asset, error) {
+	res := &database.Asset{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM assets WHERE id = $1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("asset", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*database.Asset, error) {
+	res := &database.Asset{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		INSERT INTO assets (org_id, path, owner_id)
+		VALUES ($1, $2, $3) RETURNING *`,
+		organizationID, path, ownerID,
+	).StructScan(res)
+	if err != nil {
+		return nil, parseErr("asset", err)
+	}
+	return res, nil
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
@@ -1477,7 +1587,7 @@ type projectDTO struct {
 	Annotations   pgtype.JSON `db:"annotations"`
 }
 
-func (p *projectDTO) AsProject() (*database.Project, error) {
+func (p *projectDTO) AsModel() (*database.Project, error) {
 	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
 	if err != nil {
 		return nil, err
@@ -1495,12 +1605,52 @@ func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
 	res := make([]*database.Project, len(dtos))
 	for i, dto := range dtos {
 		var err error
-		res[i], err = dto.AsProject()
+		res[i], err = dto.AsModel()
 		if err != nil {
 			return nil, err
 		}
 	}
 	return res, nil
+}
+
+// magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
+type magicAuthTokenDTO struct {
+	*database.MagicAuthToken
+	Attributes        pgtype.JSON      `db:"attributes"`
+	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+}
+
+func (m *magicAuthTokenDTO) AsModel() (*database.MagicAuthToken, error) {
+	err := m.Attributes.AssignTo(&m.MagicAuthToken.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.MagicAuthToken, nil
+}
+
+// magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
+type magicAuthTokenWithUserDTO struct {
+	*database.MagicAuthTokenWithUser
+	Attributes        pgtype.JSON      `db:"attributes"`
+	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+}
+
+func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser, error) {
+	err := m.Attributes.AssignTo(&m.MagicAuthTokenWithUser.Attributes)
+	if err != nil {
+		return nil, err
+	}
+	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	if err != nil {
+		return nil, err
+	}
+
+	return m.MagicAuthTokenWithUser, nil
 }
 
 func checkUpdateRow(target string, res sql.Result, err error) error {

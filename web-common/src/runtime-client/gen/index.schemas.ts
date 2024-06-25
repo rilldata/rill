@@ -220,6 +220,16 @@ export type QueryServiceMetricsViewTimeRangeBody = {
   priority?: number;
 };
 
+export type QueryServiceMetricsViewSearchBody = {
+  dimensions?: string[];
+  search?: string;
+  timeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  limit?: number;
+  priority?: number;
+};
+
 export type QueryServiceMetricsViewSchemaParams = { priority?: number };
 
 export type QueryServiceMetricsViewRowsBody = {
@@ -534,12 +544,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -567,6 +571,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -1178,6 +1188,10 @@ It's set to true if the metrics view is based on an externally managed table. */
 export interface V1MetricsViewSort {
   name?: string;
   ascending?: boolean;
+}
+
+export interface V1MetricsViewSearchResponse {
+  results?: MetricsViewSearchResponseSearchResult[];
 }
 
 export interface V1MetricsViewSchemaResponse {
@@ -2175,15 +2189,9 @@ export interface NumericHistogramBinsBin {
 export interface MetricsViewSpecSecurityV2 {
   access?: string;
   rowFilter?: string;
+  queryFilter?: V1Expression;
   include?: SecurityV2FieldConditionV2[];
   exclude?: SecurityV2FieldConditionV2[];
-}
-
-export interface MetricsViewSpecMeasureWindow {
-  partition?: boolean;
-  /** Dimensions to order the window by. Must be present in required_dimensions. */
-  orderBy?: MetricsViewSpecDimensionSelector[];
-  frameExpression?: string;
 }
 
 export type MetricsViewSpecMeasureType =
@@ -2196,6 +2204,21 @@ export const MetricsViewSpecMeasureType = {
   MEASURE_TYPE_DERIVED: "MEASURE_TYPE_DERIVED",
   MEASURE_TYPE_TIME_COMPARISON: "MEASURE_TYPE_TIME_COMPARISON",
 } as const;
+
+export interface MetricsViewSpecMeasureV2 {
+  name?: string;
+  expression?: string;
+  type?: MetricsViewSpecMeasureType;
+  window?: MetricsViewSpecMeasureWindow;
+  perDimensions?: MetricsViewSpecDimensionSelector[];
+  requiredDimensions?: MetricsViewSpecDimensionSelector[];
+  referencedMeasures?: string[];
+  label?: string;
+  description?: string;
+  formatPreset?: string;
+  formatD3?: string;
+  validPercentOfTotal?: boolean;
+}
 
 export interface MetricsViewSpecDimensionV2 {
   name?: string;
@@ -2212,19 +2235,11 @@ export interface MetricsViewSpecDimensionSelector {
   desc?: boolean;
 }
 
-export interface MetricsViewSpecMeasureV2 {
-  name?: string;
-  expression?: string;
-  type?: MetricsViewSpecMeasureType;
-  window?: MetricsViewSpecMeasureWindow;
-  perDimensions?: MetricsViewSpecDimensionSelector[];
-  requiredDimensions?: MetricsViewSpecDimensionSelector[];
-  referencedMeasures?: string[];
-  label?: string;
-  description?: string;
-  formatPreset?: string;
-  formatD3?: string;
-  validPercentOfTotal?: boolean;
+export interface MetricsViewSpecMeasureWindow {
+  partition?: boolean;
+  /** Dimensions to order the window by. Must be present in required_dimensions. */
+  orderBy?: MetricsViewSpecDimensionSelector[];
+  frameExpression?: string;
 }
 
 export type MetricsViewSpecComparisonMode =
@@ -2248,6 +2263,11 @@ export interface MetricsViewSpecAvailableTimeRange {
   range?: string;
   /** Available comparison offsets for this time range. */
   comparisonOffsets?: MetricsViewSpecAvailableComparisonOffset[];
+}
+
+export interface MetricsViewSearchResponseSearchResult {
+  dimension?: string;
+  value?: unknown;
 }
 
 export interface MetricsViewFilterCond {
