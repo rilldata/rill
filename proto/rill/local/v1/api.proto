@@ -20,8 +20,11 @@ service LocalService {
   // PushToGithub create a Git repo from local project and pushed to users git account.
   rpc PushToGithub(PushToGithubRequest) returns (PushToGithubResponse) {}
 
-  // Deploy deploys the local project to the Rill cloud.
-  rpc Deploy(DeployRequest) returns (DeployResponse) {}
+  // DeployProject deploys the local project to the Rill cloud.
+  rpc DeployProject(DeployProjectRequest) returns (DeployProjectResponse) {}
+
+  // RedeployProject updates a deployed project.
+  rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {}
 }
 
 message PingRequest {}
@@ -84,14 +87,24 @@ message PushToGithubResponse {
   string repo = 3;
 }
 
-message DeployRequest {
+message DeployProjectRequest {
   string org = 1;
   string project_name = 2;
+  bool upload = 3;
 }
 
-message DeployResponse {
+message DeployProjectResponse {
   string deploy_id = 1;
   string org = 2;
   string project = 3;
   string frontend_url = 4;
+}
+
+message RedeployProjectRequest {
+  string org = 1;
+  string project_name = 2;
+  bool reupload = 3;
+}
+
+message RedeployProjectResponse {
 }
