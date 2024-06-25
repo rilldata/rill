@@ -1622,7 +1622,6 @@ export interface V1DashboardItem {
   y?: number;
   width?: number;
   height?: number;
-  fontSize?: number;
 }
 
 export interface V1DashboardSpec {
@@ -2083,7 +2082,7 @@ export interface V1API {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

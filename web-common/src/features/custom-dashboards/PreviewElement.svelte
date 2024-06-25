@@ -68,7 +68,6 @@
         {radius}
         {scale}
         {selected}
-        fontSize={component.fontSize}
         builders={[builder]}
         height={finalHeight}
         left={finalLeft}
@@ -106,7 +105,6 @@
         {radius}
         {scale}
         {selected}
-        fontSize={component.fontSize}
         builders={[builder]}
         height={finalHeight}
         left={finalLeft}

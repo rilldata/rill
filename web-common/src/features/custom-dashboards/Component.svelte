@@ -8,7 +8,6 @@
     useResource,
   } from "../entity-management/resource-selectors";
   import Chart from "./Chart.svelte";
-  import Markdown from "./Markdown.svelte";
   import type ResizeHandle from "./ResizeHandle.svelte";
 
   const options = [0, 0.5, 1];
@@ -34,7 +33,6 @@
   export let chartView = false;
   export let componentName: string;
   export let instanceId: string;
-  export let fontSize: number = 20;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -110,8 +108,6 @@
           chartName={componentName}
           {resolverProperties}
         />
-      {:else if renderer === "markdown" && rendererProperties?.content}
-        <Markdown markdown={rendererProperties.content} {fontSize} />
       {:else if renderer && rendererProperties}
         <TemplateRenderer
           {chartView}
