@@ -96,6 +96,7 @@ func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
 
 	b, err := os.ReadFile(fp)
 	if err != nil {
+		// obscure the root directory location
 		switch t := err.(type) {
 		case *fs.PathError:
 			return "", fmt.Errorf("%s %s %s", t.Op, filePath, t.Err.Error())
