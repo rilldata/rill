@@ -1,4 +1,4 @@
-import { getMeasureNames } from "@rilldata/web-common/features/dashboards/dashboard-utils";
+import { getComparisonRequestMeasures } from "@rilldata/web-common/features/dashboards/dashboard-utils";
 import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { SortDirection } from "@rilldata/web-common/features/dashboards/proto-state/derived-types";
 import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors/index";
@@ -66,14 +66,15 @@ export function getTDDAggregationRequest(
   const measures: V1MetricsViewAggregationMeasure[] = [
     { name: dashboardState.tdd.expandedMeasureName },
   ];
-  const { measures: apiMeasures } = getMeasureNames(
-    dashboardState.tdd.expandedMeasureName,
-    dashboardState.dashboardSortType,
+  if (
     !!comparisonTimeRange?.start &&
-      !!comparisonTimeRange?.end &&
-      !!timeControlState.selectedComparisonTimeRange,
-  );
-  measures.push(...apiMeasures);
+    !!comparisonTimeRange?.end &&
+    !!timeControlState.selectedComparisonTimeRange
+  ) {
+    measures.push(
+      ...getComparisonRequestMeasures(dashboardState.tdd.expandedMeasureName),
+    );
+  }
 
   // CAST SAFETY: exports are only available in TDD when a comparison dimension is selected
   const dimensionName = dashboardState.selectedComparisonDimension as string;
