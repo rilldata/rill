@@ -534,12 +534,8 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err 
 		// First, search for the dimension in the ASTs dimension fields (this also covers any computed dimension)
 		for _, f := range b.ast.dimFields {
 			if f.Name == name {
-				if f.Unnest {
-					// Since it's unnested, we need to reference the unnested alias.
-					// Note that we return "false" for "unnest" because it will already have been unnested since it's one of the dimensions included in the query,
-					// so we can filter against it as if it's a normal dimension.
-					return b.ast.sqlForMember(f.UnnestAlias, f.Name), false, nil
-				}
+				// Note that we return "false" even though it may be an unnest dimension because it will already have been unnested since it's one of the dimensions included in the query,
+				// So we can filter against it as if it's a normal dimension.
 				return f.Expr, false, nil
 			}
 		}
