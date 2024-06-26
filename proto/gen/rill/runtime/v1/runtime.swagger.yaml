@@ -3060,6 +3060,8 @@ definitions:
         type: string
       resolverProperties:
         type: object
+      dataProperties:
+        type: object
   v1AlertState:
     type: object
     properties:

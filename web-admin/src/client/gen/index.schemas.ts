@@ -1011,7 +1011,7 @@ export interface V1CreateBookmarkResponse {
   bookmark?: V1Bookmark;
 }
 
-export type V1AlertOptionsResolverProps = { [key: string]: any };
+export type V1AlertOptionsDataProps = { [key: string]: any };
 
 export interface V1AlertOptions {
   title?: string;
@@ -1026,8 +1026,7 @@ export interface V1AlertOptions {
   slackChannels?: string[];
   slackWebhooks?: string[];
   webOpenState?: string;
-  resolver?: string;
-  resolverProps?: V1AlertOptionsResolverProps;
+  dataProps?: V1AlertOptionsDataProps;
 }
 
 export interface V1AddProjectMemberResponse {

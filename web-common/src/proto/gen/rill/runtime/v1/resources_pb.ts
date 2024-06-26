@@ -2334,6 +2334,11 @@ export class AlertSpec extends Message<AlertSpec> {
    */
   resolverProperties?: Struct;
 
+  /**
+   * @generated from field: google.protobuf.Struct data_properties = 24;
+   */
+  dataProperties?: Struct;
+
   constructor(data?: PartialMessage<AlertSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2362,6 +2367,7 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
     { no: 22, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 23, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 24, name: "data_properties", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertSpec {

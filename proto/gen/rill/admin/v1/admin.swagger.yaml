@@ -2495,9 +2495,7 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the dashboard when it was created
-      resolver:
-        type: string
-      resolverProps:
+      dataProps:
         type: object
   v1Bookmark:
     type: object
