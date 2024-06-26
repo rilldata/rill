@@ -320,6 +320,7 @@ func toSubscriptionRow(s *adminv1.Subscription) *subscription {
 	return &subscription{
 		ID:                           s.Id,
 		PlanName:                     s.PlanName,
+		PlanDisplayName:              s.PlanDisplayName,
 		StartDate:                    s.StartDate.AsTime().Local().Format(time.DateTime),
 		EndDate:                      s.EndDate.AsTime().Local().Format(time.DateTime),
 		CurrentBillingCycleStartDate: s.CurrentBillingCycleStartDate.AsTime().Local().Format(time.DateTime),
@@ -331,6 +332,7 @@ func toSubscriptionRow(s *adminv1.Subscription) *subscription {
 type subscription struct {
 	ID                           string `header:"id" json:"id"`
 	PlanName                     string `header:"plan_name" json:"plan_name"`
+	PlanDisplayName              string `header:"plan_display_name" json:"plan_display_name"`
 	StartDate                    string `header:"start_date,timestamp(ms|utc|human)" json:"start_date"`
 	EndDate                      string `header:"end_date,timestamp(ms|utc|human)" json:"end_date"`
 	CurrentBillingCycleStartDate string `header:"current_billing_cycle_start_date,timestamp(ms|utc|human)" json:"current_billing_cycle_start_date"`

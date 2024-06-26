@@ -34,9 +34,9 @@ import type {
   AdminServiceUpdateOrganizationBody,
   V1UpdateOrganizationBillingPlanResponse,
   AdminServiceUpdateOrganizationBillingPlanBody,
-  V1ListOrganizationSubscriptionsResponse,
-  V1DeleteOrganizationSubscriptionResponse,
-  AdminServiceDeleteOrganizationSubscriptionParams,
+  V1GetOrganizationBillingSubscriptionResponse,
+  V1DeleteOrganizationBillingSubscriptionResponse,
+  AdminServiceDeleteOrganizationBillingSubscriptionParams,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMembersResponse,
@@ -797,36 +797,42 @@ export const createAdminServiceUpdateOrganizationBillingPlan = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary ListOrganizationSubscriptions list all the subscriptions for the organization
+ * @summary GetOrganizationBillingSubscription lists the subscription for the organization
  */
-export const adminServiceListOrganizationSubscriptions = (
+export const adminServiceGetOrganizationBillingSubscription = (
   orgName: string,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ListOrganizationSubscriptionsResponse>({
+  return httpClient<V1GetOrganizationBillingSubscriptionResponse>({
     url: `/v1/organizations/${orgName}/billing/subscriptions`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceListOrganizationSubscriptionsQueryKey = (
+export const getAdminServiceGetOrganizationBillingSubscriptionQueryKey = (
   orgName: string,
 ) => [`/v1/organizations/${orgName}/billing/subscriptions`];
 
-export type AdminServiceListOrganizationSubscriptionsQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListOrganizationSubscriptions>>
->;
-export type AdminServiceListOrganizationSubscriptionsQueryError = RpcStatus;
+export type AdminServiceGetOrganizationBillingSubscriptionQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSubscription>>
+  >;
+export type AdminServiceGetOrganizationBillingSubscriptionQueryError =
+  RpcStatus;
 
-export const createAdminServiceListOrganizationSubscriptions = <
-  TData = Awaited<ReturnType<typeof adminServiceListOrganizationSubscriptions>>,
+export const createAdminServiceGetOrganizationBillingSubscription = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceGetOrganizationBillingSubscription>
+  >,
   TError = RpcStatus,
 >(
   orgName: string,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceListOrganizationSubscriptions>>,
+      Awaited<
+        ReturnType<typeof adminServiceGetOrganizationBillingSubscription>
+      >,
       TError,
       TData
     >;
@@ -836,15 +842,15 @@ export const createAdminServiceListOrganizationSubscriptions = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceListOrganizationSubscriptionsQueryKey(orgName);
+    getAdminServiceGetOrganizationBillingSubscriptionQueryKey(orgName);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListOrganizationSubscriptions>>
+    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSubscription>>
   > = ({ signal }) =>
-    adminServiceListOrganizationSubscriptions(orgName, signal);
+    adminServiceGetOrganizationBillingSubscription(orgName, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceListOrganizationSubscriptions>>,
+    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSubscription>>,
     TError,
     TData
   >({
@@ -860,38 +866,43 @@ export const createAdminServiceListOrganizationSubscriptions = <
 };
 
 /**
- * @summary DeleteOrganizationSubscriptions list all the subscriptions for the organization
+ * @summary DeleteOrganizationSubscription delete the give subscription for the organization
  */
-export const adminServiceDeleteOrganizationSubscription = (
+export const adminServiceDeleteOrganizationBillingSubscription = (
   orgName: string,
   subscriptionId: string,
-  params?: AdminServiceDeleteOrganizationSubscriptionParams,
+  params?: AdminServiceDeleteOrganizationBillingSubscriptionParams,
 ) => {
-  return httpClient<V1DeleteOrganizationSubscriptionResponse>({
+  return httpClient<V1DeleteOrganizationBillingSubscriptionResponse>({
     url: `/v1/organizations/${orgName}/billing/subscriptions/${subscriptionId}`,
     method: "delete",
     params,
   });
 };
 
-export type AdminServiceDeleteOrganizationSubscriptionMutationResult =
+export type AdminServiceDeleteOrganizationBillingSubscriptionMutationResult =
   NonNullable<
-    Awaited<ReturnType<typeof adminServiceDeleteOrganizationSubscription>>
+    Awaited<
+      ReturnType<typeof adminServiceDeleteOrganizationBillingSubscription>
+    >
   >;
 
-export type AdminServiceDeleteOrganizationSubscriptionMutationError = RpcStatus;
+export type AdminServiceDeleteOrganizationBillingSubscriptionMutationError =
+  RpcStatus;
 
-export const createAdminServiceDeleteOrganizationSubscription = <
+export const createAdminServiceDeleteOrganizationBillingSubscription = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceDeleteOrganizationSubscription>>,
+    Awaited<
+      ReturnType<typeof adminServiceDeleteOrganizationBillingSubscription>
+    >,
     TError,
     {
       orgName: string;
       subscriptionId: string;
-      params?: AdminServiceDeleteOrganizationSubscriptionParams;
+      params?: AdminServiceDeleteOrganizationBillingSubscriptionParams;
     },
     TContext
   >;
@@ -899,16 +910,18 @@ export const createAdminServiceDeleteOrganizationSubscription = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceDeleteOrganizationSubscription>>,
+    Awaited<
+      ReturnType<typeof adminServiceDeleteOrganizationBillingSubscription>
+    >,
     {
       orgName: string;
       subscriptionId: string;
-      params?: AdminServiceDeleteOrganizationSubscriptionParams;
+      params?: AdminServiceDeleteOrganizationBillingSubscriptionParams;
     }
   > = (props) => {
     const { orgName, subscriptionId, params } = props ?? {};
 
-    return adminServiceDeleteOrganizationSubscription(
+    return adminServiceDeleteOrganizationBillingSubscription(
       orgName,
       subscriptionId,
       params,
@@ -916,12 +929,14 @@ export const createAdminServiceDeleteOrganizationSubscription = <
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceDeleteOrganizationSubscription>>,
+    Awaited<
+      ReturnType<typeof adminServiceDeleteOrganizationBillingSubscription>
+    >,
     TError,
     {
       orgName: string;
       subscriptionId: string;
-      params?: AdminServiceDeleteOrganizationSubscriptionParams;
+      params?: AdminServiceDeleteOrganizationBillingSubscriptionParams;
     },
     TContext
   >(mutationFn, mutationOptions);

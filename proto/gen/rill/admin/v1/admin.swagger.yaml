@@ -306,13 +306,13 @@ paths:
         - AdminService
   /v1/organizations/{orgName}/billing/subscriptions:
     get:
-      summary: ListOrganizationSubscriptions list all the subscriptions for the organization
-      operationId: AdminService_ListOrganizationSubscriptions
+      summary: GetOrganizationBillingSubscription lists the subscription for the organization
+      operationId: AdminService_GetOrganizationBillingSubscription
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListOrganizationSubscriptionsResponse'
+            $ref: '#/definitions/v1GetOrganizationBillingSubscriptionResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -326,13 +326,13 @@ paths:
         - AdminService
   /v1/organizations/{orgName}/billing/subscriptions/{subscriptionId}:
     delete:
-      summary: DeleteOrganizationSubscriptions list all the subscriptions for the organization
-      operationId: AdminService_DeleteOrganizationSubscription
+      summary: DeleteOrganizationSubscription delete the give subscription for the organization
+      operationId: AdminService_DeleteOrganizationBillingSubscription
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1DeleteOrganizationSubscriptionResponse'
+            $ref: '#/definitions/v1DeleteOrganizationBillingSubscriptionResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -2767,9 +2767,9 @@ definitions:
     type: object
   v1DeleteAlertResponse:
     type: object
-  v1DeleteOrganizationResponse:
+  v1DeleteOrganizationBillingSubscriptionResponse:
     type: object
-  v1DeleteOrganizationSubscriptionResponse:
+  v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
     type: object
@@ -2945,6 +2945,13 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationBillingSubscriptionResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1GetOrganizationResponse:
     type: object
     properties:
@@ -3071,16 +3078,6 @@ definitions:
           $ref: '#/definitions/v1Member'
       nextPageToken:
         type: string
-  v1ListOrganizationSubscriptionsResponse:
-    type: object
-    properties:
-      organization:
-        $ref: '#/definitions/v1Organization'
-      subscriptions:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Subscription'
   v1ListOrganizationsResponse:
     type: object
     properties:
@@ -3577,6 +3574,8 @@ definitions:
       planId:
         type: string
       planName:
+        type: string
+      planDisplayName:
         type: string
       startDate:
         type: string

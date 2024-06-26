@@ -34,19 +34,19 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			resp, err := client.ListOrganizationSubscriptions(cmd.Context(), &adminv1.ListOrganizationSubscriptionsRequest{
+			resp, err := client.GetOrganizationBillingSubscription(cmd.Context(), &adminv1.GetOrganizationBillingSubscriptionRequest{
 				OrgName: orgName,
 			})
 			if err != nil {
 				return err
 			}
 
-			if len(resp.Subscriptions) == 0 {
-				ch.PrintfWarn("No subscriptions found for organization %q\n", orgName)
+			if resp.Subscription == nil {
+				ch.PrintfWarn("No subscription found for organization %q.\n", orgName)
 				return nil
 			}
 
-			ch.PrintSubscriptions(resp.Subscriptions)
+			ch.PrintSubscriptions([]*adminv1.Subscription{resp.Subscription})
 			return nil
 		},
 	}

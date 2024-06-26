@@ -34,20 +34,20 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			subsResp, err := client.ListOrganizationSubscriptions(ctx, &adminv1.ListOrganizationSubscriptionsRequest{
+			subResp, err := client.GetOrganizationBillingSubscription(ctx, &adminv1.GetOrganizationBillingSubscriptionRequest{
 				OrgName: orgName,
 			})
 			if err != nil {
 				return err
 			}
 
-			if len(subsResp.Subscriptions) == 0 {
+			if subResp.Subscription == nil {
 				ch.PrintfWarn("No subscriptions found for organization %q\n", orgName)
 				return nil
 			}
 
-			ch.PrintfBold("Organization has following subscription(s)\n")
-			ch.PrintSubscriptions(subsResp.Subscriptions)
+			ch.PrintfBold("Organization has following subscription\n")
+			ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 
 			ok, err := cmdutil.ConfirmPrompt("\nPlan changes will take place immediately, Do you want to Continue ?\n", "", false)
 			if err != nil {

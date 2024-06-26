@@ -55,7 +55,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				cancelEffective = adminv1.SubscriptionCancelEffective_SUBSCRIPTION_CANCEL_EFFECTIVE_NOW
 			}
 
-			_, err = client.DeleteOrganizationSubscription(ctx, &adminv1.DeleteOrganizationSubscriptionRequest{
+			_, err = client.DeleteOrganizationBillingSubscription(ctx, &adminv1.DeleteOrganizationBillingSubscriptionRequest{
 				OrgName:                     orgName,
 				SubscriptionId:              subID,
 				SubscriptionCancelEffective: cancelEffective,

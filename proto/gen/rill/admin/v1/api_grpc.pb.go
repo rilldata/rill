@@ -26,8 +26,8 @@ const (
 	AdminService_DeleteOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/DeleteOrganization"
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
 	AdminService_UpdateOrganizationBillingPlan_FullMethodName         = "/rill.admin.v1.AdminService/UpdateOrganizationBillingPlan"
-	AdminService_ListOrganizationSubscriptions_FullMethodName         = "/rill.admin.v1.AdminService/ListOrganizationSubscriptions"
-	AdminService_DeleteOrganizationSubscription_FullMethodName        = "/rill.admin.v1.AdminService/DeleteOrganizationSubscription"
+	AdminService_GetOrganizationBillingSubscription_FullMethodName    = "/rill.admin.v1.AdminService/GetOrganizationBillingSubscription"
+	AdminService_DeleteOrganizationBillingSubscription_FullMethodName = "/rill.admin.v1.AdminService/DeleteOrganizationBillingSubscription"
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_SearchProjectNames_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectNames"
@@ -128,10 +128,10 @@ type AdminServiceClient interface {
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
 	// UpdateOrganizationBillingPlan updates the billing plan for the organization
 	UpdateOrganizationBillingPlan(ctx context.Context, in *UpdateOrganizationBillingPlanRequest, opts ...grpc.CallOption) (*UpdateOrganizationBillingPlanResponse, error)
-	// ListOrganizationSubscriptions list all the subscriptions for the organization
-	ListOrganizationSubscriptions(ctx context.Context, in *ListOrganizationSubscriptionsRequest, opts ...grpc.CallOption) (*ListOrganizationSubscriptionsResponse, error)
-	// DeleteOrganizationSubscriptions list all the subscriptions for the organization
-	DeleteOrganizationSubscription(ctx context.Context, in *DeleteOrganizationSubscriptionRequest, opts ...grpc.CallOption) (*DeleteOrganizationSubscriptionResponse, error)
+	// GetOrganizationBillingSubscription lists the subscription for the organization
+	GetOrganizationBillingSubscription(ctx context.Context, in *GetOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSubscriptionResponse, error)
+	// DeleteOrganizationSubscription delete the give subscription for the organization
+	DeleteOrganizationBillingSubscription(ctx context.Context, in *DeleteOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*DeleteOrganizationBillingSubscriptionResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -374,20 +374,20 @@ func (c *adminServiceClient) UpdateOrganizationBillingPlan(ctx context.Context, 
 	return out, nil
 }
 
-func (c *adminServiceClient) ListOrganizationSubscriptions(ctx context.Context, in *ListOrganizationSubscriptionsRequest, opts ...grpc.CallOption) (*ListOrganizationSubscriptionsResponse, error) {
+func (c *adminServiceClient) GetOrganizationBillingSubscription(ctx context.Context, in *GetOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSubscriptionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ListOrganizationSubscriptionsResponse)
-	err := c.cc.Invoke(ctx, AdminService_ListOrganizationSubscriptions_FullMethodName, in, out, cOpts...)
+	out := new(GetOrganizationBillingSubscriptionResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetOrganizationBillingSubscription_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
 	return out, nil
 }
 
-func (c *adminServiceClient) DeleteOrganizationSubscription(ctx context.Context, in *DeleteOrganizationSubscriptionRequest, opts ...grpc.CallOption) (*DeleteOrganizationSubscriptionResponse, error) {
+func (c *adminServiceClient) DeleteOrganizationBillingSubscription(ctx context.Context, in *DeleteOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*DeleteOrganizationBillingSubscriptionResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeleteOrganizationSubscriptionResponse)
-	err := c.cc.Invoke(ctx, AdminService_DeleteOrganizationSubscription_FullMethodName, in, out, cOpts...)
+	out := new(DeleteOrganizationBillingSubscriptionResponse)
+	err := c.cc.Invoke(ctx, AdminService_DeleteOrganizationBillingSubscription_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1212,10 +1212,10 @@ type AdminServiceServer interface {
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
 	// UpdateOrganizationBillingPlan updates the billing plan for the organization
 	UpdateOrganizationBillingPlan(context.Context, *UpdateOrganizationBillingPlanRequest) (*UpdateOrganizationBillingPlanResponse, error)
-	// ListOrganizationSubscriptions list all the subscriptions for the organization
-	ListOrganizationSubscriptions(context.Context, *ListOrganizationSubscriptionsRequest) (*ListOrganizationSubscriptionsResponse, error)
-	// DeleteOrganizationSubscriptions list all the subscriptions for the organization
-	DeleteOrganizationSubscription(context.Context, *DeleteOrganizationSubscriptionRequest) (*DeleteOrganizationSubscriptionResponse, error)
+	// GetOrganizationBillingSubscription lists the subscription for the organization
+	GetOrganizationBillingSubscription(context.Context, *GetOrganizationBillingSubscriptionRequest) (*GetOrganizationBillingSubscriptionResponse, error)
+	// DeleteOrganizationSubscription delete the give subscription for the organization
+	DeleteOrganizationBillingSubscription(context.Context, *DeleteOrganizationBillingSubscriptionRequest) (*DeleteOrganizationBillingSubscriptionResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -1406,11 +1406,11 @@ func (UnimplementedAdminServiceServer) UpdateOrganization(context.Context, *Upda
 func (UnimplementedAdminServiceServer) UpdateOrganizationBillingPlan(context.Context, *UpdateOrganizationBillingPlanRequest) (*UpdateOrganizationBillingPlanResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganizationBillingPlan not implemented")
 }
-func (UnimplementedAdminServiceServer) ListOrganizationSubscriptions(context.Context, *ListOrganizationSubscriptionsRequest) (*ListOrganizationSubscriptionsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ListOrganizationSubscriptions not implemented")
+func (UnimplementedAdminServiceServer) GetOrganizationBillingSubscription(context.Context, *GetOrganizationBillingSubscriptionRequest) (*GetOrganizationBillingSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationBillingSubscription not implemented")
 }
-func (UnimplementedAdminServiceServer) DeleteOrganizationSubscription(context.Context, *DeleteOrganizationSubscriptionRequest) (*DeleteOrganizationSubscriptionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method DeleteOrganizationSubscription not implemented")
+func (UnimplementedAdminServiceServer) DeleteOrganizationBillingSubscription(context.Context, *DeleteOrganizationBillingSubscriptionRequest) (*DeleteOrganizationBillingSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeleteOrganizationBillingSubscription not implemented")
 }
 func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganization not implemented")
@@ -1791,38 +1791,38 @@ func _AdminService_UpdateOrganizationBillingPlan_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_ListOrganizationSubscriptions_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ListOrganizationSubscriptionsRequest)
+func _AdminService_GetOrganizationBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOrganizationBillingSubscriptionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).ListOrganizationSubscriptions(ctx, in)
+		return srv.(AdminServiceServer).GetOrganizationBillingSubscription(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_ListOrganizationSubscriptions_FullMethodName,
+		FullMethod: AdminService_GetOrganizationBillingSubscription_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).ListOrganizationSubscriptions(ctx, req.(*ListOrganizationSubscriptionsRequest))
+		return srv.(AdminServiceServer).GetOrganizationBillingSubscription(ctx, req.(*GetOrganizationBillingSubscriptionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_DeleteOrganizationSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeleteOrganizationSubscriptionRequest)
+func _AdminService_DeleteOrganizationBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeleteOrganizationBillingSubscriptionRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).DeleteOrganizationSubscription(ctx, in)
+		return srv.(AdminServiceServer).DeleteOrganizationBillingSubscription(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_DeleteOrganizationSubscription_FullMethodName,
+		FullMethod: AdminService_DeleteOrganizationBillingSubscription_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).DeleteOrganizationSubscription(ctx, req.(*DeleteOrganizationSubscriptionRequest))
+		return srv.(AdminServiceServer).DeleteOrganizationBillingSubscription(ctx, req.(*DeleteOrganizationBillingSubscriptionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3303,12 +3303,12 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UpdateOrganizationBillingPlan_Handler,
 		},
 		{
-			MethodName: "ListOrganizationSubscriptions",
-			Handler:    _AdminService_ListOrganizationSubscriptions_Handler,
+			MethodName: "GetOrganizationBillingSubscription",
+			Handler:    _AdminService_GetOrganizationBillingSubscription_Handler,
 		},
 		{
-			MethodName: "DeleteOrganizationSubscription",
-			Handler:    _AdminService_DeleteOrganizationSubscription_Handler,
+			MethodName: "DeleteOrganizationBillingSubscription",
+			Handler:    _AdminService_DeleteOrganizationBillingSubscription_Handler,
 		},
 		{
 			MethodName: "ListProjectsForOrganization",

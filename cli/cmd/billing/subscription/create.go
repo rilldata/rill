@@ -33,16 +33,16 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			subsResp, err := client.ListOrganizationSubscriptions(cmd.Context(), &adminv1.ListOrganizationSubscriptionsRequest{
+			subResp, err := client.GetOrganizationBillingSubscription(cmd.Context(), &adminv1.GetOrganizationBillingSubscriptionRequest{
 				OrgName: orgName,
 			})
 			if err != nil {
 				return err
 			}
 
-			if len(subsResp.Subscriptions) > 0 {
-				ch.PrintfWarn("Organization already has following subscription(s), use `rill billing subscription edit` to update\n")
-				ch.PrintSubscriptions(subsResp.Subscriptions)
+			if subResp.Subscription != nil {
+				ch.PrintfWarn("Organization already has following subscription, use `rill billing subscription edit` to update\n")
+				ch.PrintSubscriptions([]*adminv1.Subscription{subResp.Subscription})
 				return nil
 			}
 

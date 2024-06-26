@@ -339,7 +339,7 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 	}, nil
 }
 
-func (s *Server) ListOrganizationSubscriptions(ctx context.Context, req *adminv1.ListOrganizationSubscriptionsRequest) (*adminv1.ListOrganizationSubscriptionsResponse, error) {
+func (s *Server) GetOrganizationBillingSubscription(ctx context.Context, req *adminv1.GetOrganizationBillingSubscriptionRequest) (*adminv1.GetOrganizationBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
@@ -353,7 +353,7 @@ func (s *Server) ListOrganizationSubscriptions(ctx context.Context, req *adminv1
 	}
 
 	if org.BillingCustomerID == "" {
-		return &adminv1.ListOrganizationSubscriptionsResponse{Organization: organizationToDTO(org)}, nil
+		return &adminv1.GetOrganizationBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
 	}
 
 	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
@@ -361,18 +361,21 @@ func (s *Server) ListOrganizationSubscriptions(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	var subscriptions []*adminv1.Subscription
-	for _, sub := range subs {
-		subscriptions = append(subscriptions, subscriptionToDTO(sub))
+	if len(subs) == 0 {
+		return &adminv1.GetOrganizationBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
 	}
 
-	return &adminv1.ListOrganizationSubscriptionsResponse{
-		Organization:  organizationToDTO(org),
-		Subscriptions: subscriptions,
+	if len(subs) > 1 {
+		s.logger.Warn("multiple subscriptions found for the organization", zap.String("org", org.Name))
+	}
+
+	return &adminv1.GetOrganizationBillingSubscriptionResponse{
+		Organization: organizationToDTO(org),
+		Subscription: subscriptionToDTO(subs[0]),
 	}, nil
 }
 
-func (s *Server) DeleteOrganizationSubscription(ctx context.Context, req *adminv1.DeleteOrganizationSubscriptionRequest) (*adminv1.DeleteOrganizationSubscriptionResponse, error) {
+func (s *Server) DeleteOrganizationBillingSubscription(ctx context.Context, req *adminv1.DeleteOrganizationBillingSubscriptionRequest) (*adminv1.DeleteOrganizationBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName), attribute.String("args.subscription_id", req.SubscriptionId))
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
@@ -404,7 +407,7 @@ func (s *Server) DeleteOrganizationSubscription(ctx context.Context, req *adminv
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
-			return &adminv1.DeleteOrganizationSubscriptionResponse{}, nil
+			return &adminv1.DeleteOrganizationBillingSubscriptionResponse{}, nil
 		}
 	}
 
@@ -1152,6 +1155,7 @@ func subscriptionToDTO(sub *billing.Subscription) *adminv1.Subscription {
 		Id:                           sub.ID,
 		PlanId:                       sub.Plan.ID,
 		PlanName:                     sub.Plan.Name,
+		PlanDisplayName:              sub.Plan.DisplayName,
 		StartDate:                    timestamppb.New(sub.StartDate),
 		EndDate:                      timestamppb.New(sub.EndDate),
 		CurrentBillingCycleStartDate: timestamppb.New(sub.CurrentBillingCycleStartDate),

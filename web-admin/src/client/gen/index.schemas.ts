@@ -219,11 +219,11 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceDeleteOrganizationSubscriptionSubscriptionCancelEffective =
-  (typeof AdminServiceDeleteOrganizationSubscriptionSubscriptionCancelEffective)[keyof typeof AdminServiceDeleteOrganizationSubscriptionSubscriptionCancelEffective];
+export type AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective =
+  (typeof AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective)[keyof typeof AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AdminServiceDeleteOrganizationSubscriptionSubscriptionCancelEffective =
+export const AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective =
   {
     SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED:
       "SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED",
@@ -232,8 +232,8 @@ export const AdminServiceDeleteOrganizationSubscriptionSubscriptionCancelEffecti
       "SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE",
   } as const;
 
-export type AdminServiceDeleteOrganizationSubscriptionParams = {
-  subscriptionCancelEffective?: AdminServiceDeleteOrganizationSubscriptionSubscriptionCancelEffective;
+export type AdminServiceDeleteOrganizationBillingSubscriptionParams = {
+  subscriptionCancelEffective?: AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective;
 };
 
 export type AdminServiceUpdateOrganizationBillingPlanBody = {
@@ -464,6 +464,7 @@ export interface V1Subscription {
   id?: string;
   planId?: string;
   planName?: string;
+  planDisplayName?: string;
   startDate?: string;
   endDate?: string;
   currentBillingCycleStartDate?: string;
@@ -768,11 +769,6 @@ export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListOrganizationSubscriptionsResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
 export interface V1ListOrganizationMembersResponse {
   members?: V1Member[];
   nextPageToken?: string;
@@ -857,6 +853,11 @@ export interface V1GetProjectResponse {
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
+}
+
+export interface V1GetOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
 }
 
 export interface V1GetIFrameResponse {
@@ -995,11 +996,11 @@ export interface V1DeleteProjectResponse {
   [key: string]: any;
 }
 
-export interface V1DeleteOrganizationSubscriptionResponse {
+export interface V1DeleteOrganizationResponse {
   [key: string]: any;
 }
 
-export interface V1DeleteOrganizationResponse {
+export interface V1DeleteOrganizationBillingSubscriptionResponse {
   [key: string]: any;
 }
 
