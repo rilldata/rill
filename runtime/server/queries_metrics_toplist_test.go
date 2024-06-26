@@ -75,12 +75,6 @@ func TestServer_MetricsViewToplist_InlineMeasures(t *testing.T) {
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "domain",
 		MeasureNames:    []string{"measure_0", "tmp_measure", "measure_2"},
-		InlineMeasures: []*runtimev1.InlineMeasure{
-			{
-				Name:       "tmp_measure",
-				Expression: "count(*)",
-			},
-		},
 		Sort: []*runtimev1.MetricsViewSort{
 			{
 				Name:      "measure_0",

@@ -114,43 +114,6 @@ func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity)
 	return true
 }
 
-// resolveMeasures returns the selected measures
-func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsViewSpec_MeasureV2, error) {
-	// Build combined measures
-	ms := make([]*runtimev1.MetricsViewSpec_MeasureV2, len(selectedNames))
-	for i, n := range selectedNames {
-		found := false
-		// Search in the inlines (take precedence)
-		for _, m := range inlines {
-			if m.Name == n {
-				ms[i] = &runtimev1.MetricsViewSpec_MeasureV2{
-					Name:       m.Name,
-					Expression: m.Expression,
-					Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-				}
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-		// Search in the metrics view
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				ms[i] = m
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
-	}
-
-	return ms, nil
-}
-
 func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
 	rows, err := olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,
@@ -601,15 +564,6 @@ func convertToXLSXValue(pbvalue *structpb.Value) (interface{}, error) {
 	default:
 		return pbvalue.AsInterface(), nil
 	}
-}
-
-func metricsViewDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
-	for _, dimension := range mv.Dimensions {
-		if strings.EqualFold(dimension.Name, dimName) {
-			return dimension, nil
-		}
-	}
-	return nil, fmt.Errorf("dimension %s not found", dimName)
 }
 
 func WriteCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {

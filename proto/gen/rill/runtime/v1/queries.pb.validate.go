@@ -4499,40 +4499,6 @@ func (m *MetricsViewToplistRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	for idx, item := range m.GetInlineMeasures() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewToplistRequestValidationError{
-						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewToplistRequestValidationError{
-						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MetricsViewToplistRequestValidationError{
-					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
 		case interface{ ValidateAll() error }:
@@ -6389,40 +6355,6 @@ func (m *MetricsViewTimeSeriesRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
-	for idx, item := range m.GetInlineMeasures() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
-						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewTimeSeriesRequestValidationError{
-						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MetricsViewTimeSeriesRequestValidationError{
-					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
 	if all {
 		switch v := interface{}(m.GetTimeStart()).(type) {
 		case interface{ ValidateAll() error }:
@@ -6883,40 +6815,6 @@ func (m *MetricsViewTotalsRequest) validate(all bool) error {
 			return err
 		}
 		errors = append(errors, err)
-	}
-
-	for idx, item := range m.GetInlineMeasures() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewTotalsRequestValidationError{
-						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewTotalsRequestValidationError{
-						field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MetricsViewTotalsRequestValidationError{
-					field:  fmt.Sprintf("InlineMeasures[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
 	}
 
 	if all {
