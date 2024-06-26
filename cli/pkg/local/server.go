@@ -164,12 +164,11 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		}), nil
 	}
 
-	rc, ok, err := dotrillcloud.GetAll(s.app.ProjectPath)
+	rc, err := dotrillcloud.GetAll(s.app.ProjectPath)
 	if err != nil {
 		return nil, err
 	}
-	isDeployed := ok
-	deployedProjectID := ""
+	var deployedProjectID string
 	if rc != nil {
 		deployedProjectID = rc.ProjectID
 	}
@@ -227,7 +226,6 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				RillOrgExistsAsGithubUserName: false,
 				RillUserOrgs:                  nil,
 				LocalProjectName:              localProjectName,
-				IsDeployed:                    isDeployed,
 				DeployedProjectId:             deployedProjectID,
 			}), nil
 		}
@@ -276,7 +274,6 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
 		RillUserOrgs:                  userOrgs,
 		LocalProjectName:              localProjectName,
-		IsDeployed:                    isDeployed,
 		DeployedProjectId:             deployedProjectID,
 	}), nil
 }
@@ -583,22 +580,14 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		}
 		defer release()
 
-		var projName, orgName string
-		if r.Msg.ProjectId != "" {
-			proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-				Id: projName,
-			})
-			if err != nil {
-				return nil, err
-			}
-			projName = proj.Project.Name
-			orgName = proj.Project.OrgName
-		} else {
-			projName = r.Msg.ProjectName
-			orgName = r.Msg.Org
+		projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+			Id: r.Msg.ProjectId,
+		})
+		if err != nil {
+			return nil, err
 		}
 
-		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, orgName, projName)
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, projResp.Project.OrgName, projResp.Project.Name)
 		if err != nil {
 			return nil, err
 		}

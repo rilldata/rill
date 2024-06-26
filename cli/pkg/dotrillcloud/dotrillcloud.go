@@ -2,7 +2,7 @@ package dotrillcloud
 
 import (
 	"os"
-	"path"
+	"path/filepath"
 
 	"gopkg.in/yaml.v3"
 )
@@ -11,27 +11,27 @@ type RillCloud struct {
 	ProjectID string `json:"project_id"`
 }
 
-const confPath = ".rillcloud/project.yaml"
+var confPath = filepath.Join(".rillcloud", "project.yaml")
 
-func GetAll(localProjectPath string) (*RillCloud, bool, error) {
-	data, err := os.ReadFile(path.Join(localProjectPath, confPath))
+func GetAll(localProjectPath string) (*RillCloud, error) {
+	data, err := os.ReadFile(filepath.Join(localProjectPath, confPath))
 	if err != nil {
 		if os.IsNotExist(err) {
-			return nil, false, nil
+			return nil, nil
 		}
-		return nil, false, err
+		return nil, err
 	}
 
 	conf := &RillCloud{}
 	err = yaml.Unmarshal(data, conf)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	return conf, false, nil
+	return conf, nil
 }
 
 func SetAll(localProjectPath string, conf *RillCloud) error {
-	err := os.MkdirAll(path.Join(localProjectPath, ".rillcloud"), os.ModePerm)
+	err := os.MkdirAll(filepath.Join(localProjectPath, ".rillcloud"), os.ModePerm)
 	if err != nil {
 		return err
 	}
@@ -41,5 +41,5 @@ func SetAll(localProjectPath string, conf *RillCloud) error {
 		return err
 	}
 
-	return os.WriteFile(path.Join(localProjectPath, confPath), data, 0o644)
+	return os.WriteFile(filepath.Join(localProjectPath, confPath), data, 0o644)
 }
