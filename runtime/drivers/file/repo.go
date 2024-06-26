@@ -79,7 +79,7 @@ func (c *connection) Get(ctx context.Context, filePath string) (string, error) {
 	b, err := os.ReadFile(fp)
 	if err != nil {
 		// obscure the root directory location
-		if t, ok := err.(*fs.PathError); ok {
+		if t, ok := err.(*fs.PathError); ok { // nolint:errorlint // we specifically check for a non-wrapped error
 			return "", fmt.Errorf("%s %s %s", t.Op, filePath, t.Err.Error())
 		}
 		return "", err
