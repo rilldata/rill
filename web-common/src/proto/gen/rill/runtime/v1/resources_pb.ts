@@ -3454,11 +3454,6 @@ export class DashboardItem extends Message<DashboardItem> {
    */
   height?: number;
 
-  /**
-   * @generated from field: uint32 font_size = 7;
-   */
-  fontSize = 0;
-
   constructor(data?: PartialMessage<DashboardItem>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3473,7 +3468,6 @@ export class DashboardItem extends Message<DashboardItem> {
     { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 7, name: "font_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardItem {

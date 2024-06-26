@@ -142,6 +142,13 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			}
 		}
 
+		if n.SpineSelect != nil {
+			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
+			if err != nil {
+				return err
+			}
+		}
+
 		if n.JoinComparisonSelect != nil {
 			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
 			if err != nil {

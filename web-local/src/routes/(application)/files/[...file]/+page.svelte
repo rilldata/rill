@@ -14,6 +14,7 @@
   import MetricsWorkspace from "@rilldata/web-common/features/workspaces/MetricsWorkspace.svelte";
   import ChartWorkspace from "@rilldata/web-common/features/workspaces/ChartWorkspace.svelte";
   import CustomDashboardWorkspace from "@rilldata/web-common/features/workspaces/CustomDashboardWorkspace.svelte";
+  import { customYAMLwithJSONandSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
 
   const workspaces = new Map([
     [ResourceKind.Source, SourceWorkspace],
@@ -34,6 +35,11 @@
   $: resourceKind = <ResourceKind | undefined>$name?.kind;
 
   $: workspace = workspaces.get(resourceKind);
+
+  $: extensions =
+    resourceKind === ResourceKind.API
+      ? [customYAMLwithJSONandSQL]
+      : getExtensionsForFile(filePath);
 
   onMount(() => {
     expandDirectory(filePath);
@@ -69,7 +75,7 @@
     <WorkspaceEditorContainer slot="body">
       <Editor
         {fileArtifact}
-        extensions={getExtensionsForFile(filePath)}
+        {extensions}
         bind:editor
         bind:autoSave={$autoSave}
       />

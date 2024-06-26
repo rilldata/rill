@@ -3721,9 +3721,6 @@ definitions:
       height:
         type: integer
         format: int64
-      fontSize:
-        type: integer
-        format: int64
   v1DashboardSpec:
     type: object
     properties:
