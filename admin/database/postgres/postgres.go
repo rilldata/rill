@@ -1580,14 +1580,26 @@ func (c *connection) InsertAsset(ctx context.Context, organizationID, path, owne
 	return res, nil
 }
 
-func (c *connection) DeleteUnusedAssets(ctx context.Context) ([]*database.Asset, error) {
-	// Delete unused assets that are older than 15 minutes
-	// We skip unused assets created in last 15 minutes to prevent race condition where somebody created an asset but is yet to use it
-	rows, err := c.getDB(ctx).QueryxContext(ctx, "DELETE FROM assets WHERE id IN (SELECT a.id FROM assets a LEFT JOIN projects p ON a.id = p.archive_asset_id WHERE p.archive_asset_id IS NULL AND a.created_on < NOW() - INTERVAL '15 minutes') RETURNING *")
+func (c *connection) FindUnusedAssets(ctx context.Context, createdBefore time.Time, limit int) ([]*database.Asset, error) {
+	query := `SELECT a.* FROM assets a 
+	LEFT JOIN projects p 
+	ON a.id = p.archive_asset_id 
+	WHERE p.archive_asset_id IS NULL`
+	var args []any
+	if createdBefore.IsZero() {
+		query += " ORDER BY a.created_on DESC LIMIT $1"
+		args = []any{limit}
+	} else {
+		query += " AND a.created_on < $1 ORDER BY a.created_on DESC LIMIT $2"
+		args = []any{createdBefore, limit}
+	}
+
+	rows, err := c.getDB(ctx).QueryxContext(ctx, query, args...)
 	if err != nil {
 		return nil, parseErr("assets", err)
 	}
 	defer rows.Close()
+
 	var res []*database.Asset
 	for rows.Next() {
 		var asset database.Asset
@@ -1601,6 +1613,11 @@ func (c *connection) DeleteUnusedAssets(ctx context.Context) ([]*database.Asset,
 		return nil, parseErr("assets", rows.Err())
 	}
 	return res, nil
+}
+
+func (c *connection) DeleteAssets(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM assets WHERE id=ANY($1)", ids)
+	return parseErr("asset", err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

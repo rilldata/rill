@@ -1,0 +1,1 @@
+CREATE INDEX assets_created_on_idx ON assets (created_on);
