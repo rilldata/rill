@@ -44,7 +44,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 
 		projectOrg, err := w.admin.DB.FindOrganization(ctx, targetProject.OrganizationID)
 		if err != nil {
-			w.logger.Error("failed to find org for the project", zap.String("project_name", targetProject.Name), zap.String("org_id", targetProject.OrganizationID), zap.Error(err))
+			w.logger.Error("failed to autoscale: unable to find org for the project", zap.String("project_name", targetProject.Name), zap.String("org_id", targetProject.OrganizationID), zap.Error(err))
 			continue
 		}
 
@@ -62,6 +62,7 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			Name:                 targetProject.Name,
 			Description:          targetProject.Description,
 			Public:               targetProject.Public,
+			ArchiveAssetID:       targetProject.ArchiveAssetID,
 			GithubURL:            targetProject.GithubURL,
 			GithubInstallationID: targetProject.GithubInstallationID,
 			ProdVersion:          targetProject.ProdVersion,
@@ -74,11 +75,18 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			Annotations:          targetProject.Annotations,
 		})
 		if err != nil {
-			w.logger.Error("failed to autoscale", zap.String("project_name", targetProject.Name), zap.String("org_name", projectOrg.Name), zap.Error(err))
+			w.logger.Error("failed to autoscale: error updating the project", zap.String("project_name", targetProject.Name), zap.String("org_name", projectOrg.Name), zap.Error(err))
 			continue
 		}
 
-		w.logger.Info("succeeded in autoscaling",
+		scaleMsg := "succeeded in autoscaling "
+		if updatedProject.ProdSlots > targetProject.ProdSlots {
+			scaleMsg += "up"
+		} else {
+			scaleMsg += "down"
+		}
+
+		w.logger.Info(scaleMsg,
 			zap.String("project_name", updatedProject.Name),
 			zap.Int("updated_slots", updatedProject.ProdSlots),
 			zap.Int("prev_slots", targetProject.ProdSlots),

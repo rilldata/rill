@@ -275,6 +275,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.sub_path", req.Subpath),
 		attribute.String("args.prod_branch", req.ProdBranch),
 		attribute.String("args.github_url", req.GithubUrl),
+		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
 	)
 
 	// Check the request is made by a user
@@ -321,12 +322,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
 	}
 
-	// Check Github app is installed and caller has access on the repo
-	installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, userID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Add prod TTL as 7 days if not a public project else infinite
 	var prodTTL *int64
 	if !req.Public {
@@ -339,25 +334,43 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		req.ProdVersion = "latest"
 	}
 
+	opts := &database.InsertProjectOptions{
+		OrganizationID:  org.ID,
+		Name:            req.Name,
+		Description:     req.Description,
+		Public:          req.Public,
+		CreatedByUserID: &userID,
+		Provisioner:     req.Provisioner,
+		ProdVersion:     req.ProdVersion,
+		ProdOLAPDriver:  req.ProdOlapDriver,
+		ProdOLAPDSN:     req.ProdOlapDsn,
+		ProdSlots:       int(req.ProdSlots),
+		ProdVariables:   req.Variables,
+		ProdTTLSeconds:  prodTTL,
+	}
+
+	if req.GithubUrl != "" {
+		// Check Github app is installed and caller has access on the repo
+		installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, userID)
+		if err != nil {
+			return nil, err
+		}
+		opts.GithubInstallationID = &installationID
+		opts.GithubURL = &req.GithubUrl
+		opts.ProdBranch = req.ProdBranch
+		opts.Subpath = req.Subpath
+	} else {
+		if req.ArchiveAssetId == "" {
+			return nil, status.Error(codes.InvalidArgument, "either github_url or archive_asset_id must be set")
+		}
+		if !s.hasAssetUsagePermission(ctx, req.ArchiveAssetId, org.ID, claims.OwnerID()) {
+			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
+		}
+		opts.ArchiveAssetID = &req.ArchiveAssetId
+	}
+
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, &database.InsertProjectOptions{
-		OrganizationID:       org.ID,
-		Name:                 req.Name,
-		Description:          req.Description,
-		Public:               req.Public,
-		CreatedByUserID:      &userID,
-		Provisioner:          req.Provisioner,
-		ProdVersion:          req.ProdVersion,
-		ProdOLAPDriver:       req.ProdOlapDriver,
-		ProdOLAPDSN:          req.ProdOlapDsn,
-		ProdSlots:            int(req.ProdSlots),
-		Subpath:              req.Subpath,
-		ProdBranch:           req.ProdBranch,
-		GithubURL:            &req.GithubUrl,
-		GithubInstallationID: &installationID,
-		ProdVariables:        req.Variables,
-		ProdTTLSeconds:       prodTTL,
-	})
+	proj, err := s.admin.CreateProject(ctx, org, opts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -411,6 +424,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.GithubUrl != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
 	}
+	if req.ArchiveAssetId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.archive_asset_id", *req.ArchiveAssetId))
+	}
 	if req.Public != nil {
 		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
 	}
@@ -440,7 +456,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
+	if req.GithubUrl != nil && req.ArchiveAssetId != nil {
+		return nil, fmt.Errorf("cannot set both github_url and archive_asset_id")
+	}
 	githubURL := proj.GithubURL
+	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
 		if safeStr(proj.GithubURL) != *req.GithubUrl {
@@ -449,6 +469,17 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 				return nil, err
 			}
 			githubURL = req.GithubUrl
+		}
+		archiveAssetID = nil
+	}
+	if req.ArchiveAssetId != nil {
+		archiveAssetID = req.ArchiveAssetId
+		org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+		if !s.hasAssetUsagePermission(ctx, *archiveAssetID, org.ID, claims.OwnerID()) {
+			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
 	}
 
@@ -465,6 +496,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
+		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
@@ -525,6 +557,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
@@ -841,6 +874,51 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 	return &adminv1.SetProjectMemberRoleResponse{}, nil
 }
 
+func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
+	}
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if proj.ArchiveAssetID != nil {
+		asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.GetCloneCredentialsResponse{ArchiveDownloadUrl: downloadURL}, nil
+	}
+
+	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
+		return nil, status.Error(codes.FailedPrecondition, "project's repository is not managed by Rill, and it does not have a GitHub integration")
+	}
+
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.GetCloneCredentialsResponse{
+		GitRepoUrl:    *proj.GithubURL + ".git", // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
+		GitUsername:   "x-access-token",
+		GitPassword:   token,
+		GitSubpath:    proj.Subpath,
+		GitProdBranch: proj.ProdBranch,
+	}, nil
+}
+
 // getAndCheckGithubInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
 func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL, userID string) (int64, error) {
 	// Get Github installation ID for the repo
@@ -901,6 +979,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
@@ -1108,6 +1187,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdBranch:       p.ProdBranch,
 		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
+		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
@@ -1115,6 +1195,14 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}
+}
+
+func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID string) bool {
+	asset, err := s.admin.DB.FindAsset(ctx, id)
+	if err != nil {
+		return false
+	}
+	return asset.OrganizationID == orgID && asset.OwnerID == ownerID
 }
 
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {

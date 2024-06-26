@@ -542,9 +542,9 @@ export class PushToGithubResponse extends Message<PushToGithubResponse> {
 }
 
 /**
- * @generated from message rill.local.v1.DeployRequest
+ * @generated from message rill.local.v1.DeployProjectRequest
  */
-export class DeployRequest extends Message<DeployRequest> {
+export class DeployProjectRequest extends Message<DeployProjectRequest> {
   /**
    * @generated from field: string org = 1;
    */
@@ -555,39 +555,45 @@ export class DeployRequest extends Message<DeployRequest> {
    */
   projectName = "";
 
-  constructor(data?: PartialMessage<DeployRequest>) {
+  /**
+   * @generated from field: bool upload = 3;
+   */
+  upload = false;
+
+  constructor(data?: PartialMessage<DeployProjectRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.DeployRequest";
+  static readonly typeName = "rill.local.v1.DeployProjectRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "upload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployRequest {
-    return new DeployRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployProjectRequest {
+    return new DeployProjectRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployRequest {
-    return new DeployRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployProjectRequest {
+    return new DeployProjectRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployRequest {
-    return new DeployRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployProjectRequest {
+    return new DeployProjectRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeployRequest | PlainMessage<DeployRequest> | undefined, b: DeployRequest | PlainMessage<DeployRequest> | undefined): boolean {
-    return proto3.util.equals(DeployRequest, a, b);
+  static equals(a: DeployProjectRequest | PlainMessage<DeployProjectRequest> | undefined, b: DeployProjectRequest | PlainMessage<DeployProjectRequest> | undefined): boolean {
+    return proto3.util.equals(DeployProjectRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.local.v1.DeployResponse
+ * @generated from message rill.local.v1.DeployProjectResponse
  */
-export class DeployResponse extends Message<DeployResponse> {
+export class DeployProjectResponse extends Message<DeployProjectResponse> {
   /**
    * @generated from field: string deploy_id = 1;
    */
@@ -608,13 +614,13 @@ export class DeployResponse extends Message<DeployResponse> {
    */
   frontendUrl = "";
 
-  constructor(data?: PartialMessage<DeployResponse>) {
+  constructor(data?: PartialMessage<DeployProjectResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.local.v1.DeployResponse";
+  static readonly typeName = "rill.local.v1.DeployProjectResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "deploy_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -622,20 +628,100 @@ export class DeployResponse extends Message<DeployResponse> {
     { no: 4, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployResponse {
-    return new DeployResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployProjectResponse {
+    return new DeployProjectResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployResponse {
-    return new DeployResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeployProjectResponse {
+    return new DeployProjectResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployResponse {
-    return new DeployResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeployProjectResponse {
+    return new DeployProjectResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: DeployResponse | PlainMessage<DeployResponse> | undefined, b: DeployResponse | PlainMessage<DeployResponse> | undefined): boolean {
-    return proto3.util.equals(DeployResponse, a, b);
+  static equals(a: DeployProjectResponse | PlainMessage<DeployProjectResponse> | undefined, b: DeployProjectResponse | PlainMessage<DeployProjectResponse> | undefined): boolean {
+    return proto3.util.equals(DeployProjectResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.RedeployProjectRequest
+ */
+export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
+  /**
+   * @generated from field: string org = 1;
+   */
+  org = "";
+
+  /**
+   * @generated from field: string project_name = 2;
+   */
+  projectName = "";
+
+  /**
+   * @generated from field: bool reupload = 3;
+   */
+  reupload = false;
+
+  constructor(data?: PartialMessage<RedeployProjectRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.RedeployProjectRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RedeployProjectRequest {
+    return new RedeployProjectRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RedeployProjectRequest | PlainMessage<RedeployProjectRequest> | undefined, b: RedeployProjectRequest | PlainMessage<RedeployProjectRequest> | undefined): boolean {
+    return proto3.util.equals(RedeployProjectRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.local.v1.RedeployProjectResponse
+ */
+export class RedeployProjectResponse extends Message<RedeployProjectResponse> {
+  constructor(data?: PartialMessage<RedeployProjectResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.local.v1.RedeployProjectResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RedeployProjectResponse {
+    return new RedeployProjectResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RedeployProjectResponse | PlainMessage<RedeployProjectResponse> | undefined, b: RedeployProjectResponse | PlainMessage<RedeployProjectResponse> | undefined): boolean {
+    return proto3.util.equals(RedeployProjectResponse, a, b);
   }
 }
 

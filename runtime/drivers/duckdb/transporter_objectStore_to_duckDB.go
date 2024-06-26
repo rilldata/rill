@@ -106,7 +106,7 @@ func (t *objectStoreToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps 
 				return err
 			}
 
-			err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from))
+			err = t.to.CreateTableAsSelect(ctx, sinkCfg.Table, false, fmt.Sprintf("SELECT * FROM %s", from), nil)
 			if err != nil {
 				return err
 			}
@@ -170,7 +170,7 @@ func (t *objectStoreToDuckDB) ingestDuckDBSQL(ctx context.Context, originalSQL s
 				return err
 			}
 
-			err = t.to.CreateTableAsSelect(ctx, dbSink.Table, false, sql)
+			err = t.to.CreateTableAsSelect(ctx, dbSink.Table, false, sql, nil)
 			if err != nil {
 				return err
 			}

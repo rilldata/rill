@@ -171,26 +171,6 @@ func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql
 	return structTypeToMetricsViewColumn(rows.Schema), data, nil
 }
 
-func olapQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) (*runtimev1.StructType, []*structpb.Struct, error) {
-	rows, err := olap.Execute(ctx, &drivers.Statement{
-		Query:            sql,
-		Args:             args,
-		Priority:         priority,
-		ExecutionTimeout: defaultExecutionTimeout,
-	})
-	if err != nil {
-		return nil, nil, err
-	}
-	defer rows.Close()
-
-	data, err := rowsToData(rows)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return rows.Schema, data, nil
-}
-
 func rowsToData(rows *drivers.Result) ([]*structpb.Struct, error) {
 	var data []*structpb.Struct
 	for rows.Next() {

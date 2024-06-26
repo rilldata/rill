@@ -20,7 +20,8 @@ export const mergeMeasureFilters = (
   );
   return where;
 };
-export const convertDimensionThresholdFilter = (
+
+const convertDimensionThresholdFilter = (
   dtf: DimensionThresholdFilter,
 ): V1Expression => {
   return {

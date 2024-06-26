@@ -15,6 +15,7 @@ of the value.
   } = {
     duration: 25,
   };
+
   const tween = tweened(initialValue, tweenProps);
   $: tween.set(value, tweenProps);
 </script>

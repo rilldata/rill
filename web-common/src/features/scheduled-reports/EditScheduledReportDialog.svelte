@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import { createAdminServiceEditReport } from "@rilldata/web-admin/client";
   import Dialog from "@rilldata/web-common/components/dialog/Dialog.svelte";
+  import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
@@ -32,9 +33,7 @@
   $: organization = $page.params.organization;
   $: project = $page.params.project;
   $: reportName = $page.params.report;
-  $: metricsViewName = reportSpec?.queryArgsJson
-    ? JSON.parse(reportSpec.queryArgsJson).metricsViewName
-    : "";
+  $: metricsViewName = getDashboardNameFromReport(reportSpec) ?? "";
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
@@ -101,6 +100,9 @@
               emailRecipients: values.recipients
                 .map((r) => r.email)
                 .filter(Boolean),
+              webOpenState: (reportSpec.annotations as V1ReportSpecAnnotations)[
+                "web_open_state"
+              ],
             },
           },
         });

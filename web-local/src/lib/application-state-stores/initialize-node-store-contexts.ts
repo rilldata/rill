@@ -1,5 +1,3 @@
-import { browser } from "$app/environment";
-import { createQueryHighlightStore } from "@rilldata/web-common/features/models/query-highlight-store";
 import { createApplicationBuildMetadataStore } from "@rilldata/web-common/layout/build-metadata";
 import { setContext } from "svelte";
 
@@ -9,14 +7,7 @@ import { setContext } from "svelte";
  * deprecate this function.
  */
 export function initializeNodeStoreContexts() {
-  const queryHighlight = createQueryHighlightStore();
-
   /** set build-specific metadata as a context.  */
   const buildMetadataStore = createApplicationBuildMetadataStore();
   setContext("rill:app:metadata", buildMetadataStore);
-
-  /** Set the existing node stores, which are consumed through getContext within routes. */
-  if (browser) {
-    setContext("rill:app:query-highlight", queryHighlight);
-  }
 }

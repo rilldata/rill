@@ -1,5 +1,6 @@
 import { createAdminServiceSearchProjectUsers } from "@rilldata/web-admin/client";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { getDashboardNameFromReport } from "@rilldata/web-common/features/scheduled-reports/utils";
 import {
   createRuntimeServiceGetResource,
   createRuntimeServiceListResources,
@@ -27,17 +28,8 @@ export function useReportDashboardName(instanceId: string, name: string) {
     },
     {
       query: {
-        select: (data) => {
-          const queryArgsJson = JSON.parse(
-            data.resource.report.spec.queryArgsJson,
-          );
-
-          return (
-            queryArgsJson?.metrics_view_name ??
-            queryArgsJson?.metricsViewName ??
-            null
-          );
-        },
+        select: (data) =>
+          getDashboardNameFromReport(data.resource?.report?.spec),
       },
     },
   );

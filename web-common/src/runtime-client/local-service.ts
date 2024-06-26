@@ -3,7 +3,7 @@ import { type ConnectError, createPromiseClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_connect";
 import {
-  DeployRequest,
+  DeployProjectRequest,
   DeployValidationRequest,
   GetCurrentUserRequest,
   GetMetadataRequest,
@@ -139,8 +139,8 @@ export function createLocalServicePushToGithub<
   >(localServicePushToGithub, mutationOptions);
 }
 
-export function localServiceDeploy(args: PartialMessage<DeployRequest>) {
-  return getClient().deploy(new DeployRequest(args));
+export function localServiceDeploy(args: PartialMessage<DeployProjectRequest>) {
+  return getClient().deployProject(new DeployProjectRequest(args));
 }
 export function createLocalServiceDeploy<
   TError = ConnectError,
@@ -149,7 +149,7 @@ export function createLocalServiceDeploy<
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof localServiceDeploy>>,
     TError,
-    PartialMessage<DeployRequest>,
+    PartialMessage<DeployProjectRequest>,
     TContext
   >;
 }) {
@@ -157,7 +157,7 @@ export function createLocalServiceDeploy<
   return createMutation<
     Awaited<ReturnType<typeof localServiceDeploy>>,
     unknown,
-    PartialMessage<DeployRequest>,
+    PartialMessage<DeployProjectRequest>,
     unknown
   >(localServiceDeploy, mutationOptions);
 }

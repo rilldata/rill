@@ -81,6 +81,7 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  archiveAssetId?: string;
   prodSlots?: string;
   provisioner?: string;
   newName?: string;
@@ -102,7 +103,11 @@ export type AdminServiceCreateProjectBody = {
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;
+  /** github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+Either github_url or archive_asset_id should be set. */
   githubUrl?: string;
+  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
+  archiveAssetId?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
   prodVersion?: string;
 };
@@ -110,6 +115,12 @@ export type AdminServiceCreateProjectBody = {
 export type AdminServiceListProjectsForOrganizationParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceCreateAssetBody = {
+  type?: string;
+  name?: string;
+  extension?: string;
 };
 
 export type AdminServiceSearchProjectUsersParams = {
@@ -479,6 +490,7 @@ export interface V1ReportOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  webOpenState?: string;
 }
 
 export interface V1RemoveWhitelistedDomainResponse {
@@ -551,6 +563,7 @@ export interface V1Project {
   githubUrl?: string;
   subpath?: string;
   prodBranch?: string;
+  archiveAssetId?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
@@ -744,6 +757,7 @@ export interface V1GetRepoMetaResponse {
   gitUrl?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
+  archiveDownloadUrl?: string;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
@@ -793,14 +807,6 @@ export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
 }
 
-export interface V1GetGitCredentialsResponse {
-  repoUrl?: string;
-  username?: string;
-  password?: string;
-  subpath?: string;
-  prodBranch?: string;
-}
-
 export interface V1GetDeploymentCredentialsResponse {
   runtimeHost?: string;
   instanceId?: string;
@@ -811,6 +817,15 @@ export interface V1GetDeploymentCredentialsResponse {
 export interface V1GetCurrentUserResponse {
   user?: V1User;
   preferences?: V1UserPreferences;
+}
+
+export interface V1GetCloneCredentialsResponse {
+  gitRepoUrl?: string;
+  gitUsername?: string;
+  gitPassword?: string;
+  gitSubpath?: string;
+  gitProdBranch?: string;
+  archiveDownloadUrl?: string;
 }
 
 export interface V1GetBookmarkResponse {
@@ -951,6 +966,14 @@ export interface V1CreateBookmarkRequest {
   shared?: boolean;
 }
 
+export type V1CreateAssetResponseSigningHeaders = { [key: string]: string };
+
+export interface V1CreateAssetResponse {
+  assetId?: string;
+  signedUrl?: string;
+  signingHeaders?: V1CreateAssetResponseSigningHeaders;
+}
+
 export interface V1CreateAlertResponse {
   name?: string;
 }
@@ -1000,6 +1023,7 @@ export interface V1AlertOptions {
   slackUsers?: string[];
   slackChannels?: string[];
   slackWebhooks?: string[];
+  webOpenState?: string;
 }
 
 export interface V1AddProjectMemberResponse {

@@ -71,39 +71,19 @@ export function prepareSortedQueryBody(
     comparisonTimeRange = undefined;
   }
 
+  let apiSortName = sortMeasureName;
   if (
-    comparisonTimeRange?.start &&
-    comparisonTimeRange?.end &&
-    !!timeControls.selectedComparisonTimeRange &&
-    sortMeasureName
+    !!comparisonTimeRange?.start &&
+    !!comparisonTimeRange?.end &&
+    !!timeControls.selectedComparisonTimeRange
   ) {
-    measures.push(
-      {
-        name: sortMeasureName + ComparisonDeltaPreviousSuffix,
-        comparisonValue: {
-          measure: sortMeasureName,
-        },
-      },
-      {
-        name: sortMeasureName + ComparisonDeltaAbsoluteSuffix,
-        comparisonDelta: {
-          measure: sortMeasureName,
-        },
-      },
-      {
-        name: sortMeasureName + ComparisonDeltaRelativeSuffix,
-        comparisonRatio: {
-          measure: sortMeasureName,
-        },
-      },
-    );
-
+    measures.push(...getComparisonRequestMeasures(sortMeasureName));
     switch (sortType) {
       case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
-        sortMeasureName += ComparisonDeltaAbsoluteSuffix;
+        apiSortName += ComparisonDeltaAbsoluteSuffix;
         break;
       case DashboardState_LeaderboardSortType.DELTA_PERCENT:
-        sortMeasureName += ComparisonDeltaRelativeSuffix;
+        apiSortName += ComparisonDeltaRelativeSuffix;
         break;
     }
   }
@@ -123,11 +103,39 @@ export function prepareSortedQueryBody(
     sort: [
       {
         desc: !sortAscending,
-        name: sortMeasureName,
+        name: apiSortName,
       },
     ],
     where: sanitiseExpression(whereFilterForDimension, undefined),
     limit: limit.toString(),
     offset: "0",
   };
+}
+
+/**
+ * Gets comparison based measures used in MetricsViewAggregationRequest
+ */
+export function getComparisonRequestMeasures(
+  measureName: string,
+): V1MetricsViewAggregationMeasure[] {
+  return [
+    {
+      name: measureName + ComparisonDeltaPreviousSuffix,
+      comparisonValue: {
+        measure: measureName,
+      },
+    },
+    {
+      name: measureName + ComparisonDeltaAbsoluteSuffix,
+      comparisonDelta: {
+        measure: measureName,
+      },
+    },
+    {
+      name: measureName + ComparisonDeltaRelativeSuffix,
+      comparisonRatio: {
+        measure: measureName,
+      },
+    },
+  ];
 }
