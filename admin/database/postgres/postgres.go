@@ -1581,7 +1581,9 @@ func (c *connection) InsertAsset(ctx context.Context, organizationID, path, owne
 }
 
 func (c *connection) DeleteUnusedAssets(ctx context.Context) ([]*database.Asset, error) {
-	rows, err := c.getDB(ctx).QueryxContext(ctx, "DELETE FROM assets WHERE id IN (SELECT a.id FROM assets a LEFT JOIN projects p ON a.id = p.archive_asset_id WHERE p.archive_asset_id IS NULL) RETURNING *")
+	// Delete unused assets that are older than 15 minutes
+	// We skip unused assets created in last 15 minutes to prevent race condition where somebody created an asset but is yet to use it
+	rows, err := c.getDB(ctx).QueryxContext(ctx, "DELETE FROM assets WHERE id IN (SELECT a.id FROM assets a LEFT JOIN projects p ON a.id = p.archive_asset_id WHERE p.archive_asset_id IS NULL AND a.created_on < NOW() - INTERVAL '15 minutes') RETURNING *")
 	if err != nil {
 		return nil, parseErr("assets", err)
 	}
