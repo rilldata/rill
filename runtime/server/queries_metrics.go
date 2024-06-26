@@ -448,29 +448,3 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 
 	return res, spec, nil
 }
-
-func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity) bool {
-	if policy != nil {
-		if !policy.Access {
-			return false
-		}
-
-		if len(policy.Include) > 0 {
-			for _, include := range policy.Include {
-				if include == field {
-					return true
-				}
-			}
-		} else if len(policy.Exclude) > 0 {
-			for _, exclude := range policy.Exclude {
-				if exclude == field {
-					return false
-				}
-			}
-		} else {
-			// if no include/exclude is specified, then all fields are allowed
-			return true
-		}
-	}
-	return true
-}

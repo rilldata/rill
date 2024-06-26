@@ -176,10 +176,14 @@ func (q *MetricsViewToplist) rewriteToMetricsViewQuery(export bool) (*metricsvie
 	}
 
 	if q.TimeStart != nil || q.TimeEnd != nil {
-		qry.TimeRange = &metricsview.TimeRange{
-			Start: q.TimeStart.AsTime(),
-			End:   q.TimeEnd.AsTime(),
+		res := &metricsview.TimeRange{}
+		if q.TimeStart != nil {
+			res.Start = q.TimeStart.AsTime()
 		}
+		if q.TimeEnd != nil {
+			res.End = q.TimeEnd.AsTime()
+		}
+		qry.TimeRange = res
 	}
 
 	if q.Limit != nil {

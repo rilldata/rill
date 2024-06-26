@@ -83,7 +83,7 @@ func TestMetricsViewsToplist_measure_filters(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewSort{
 			{
-				Name:      "domain",
+				Name:      "dom",
 				Ascending: false,
 			},
 		},

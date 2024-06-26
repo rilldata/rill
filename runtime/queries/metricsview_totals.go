@@ -114,10 +114,14 @@ func (q *MetricsViewTotals) rewriteToMetricsViewQuery(exporting bool) (*metricsv
 	}
 
 	if q.TimeStart != nil || q.TimeEnd != nil {
-		qry.TimeRange = &metricsview.TimeRange{
-			Start: q.TimeStart.AsTime(),
-			End:   q.TimeEnd.AsTime(),
+		res := &metricsview.TimeRange{}
+		if q.TimeStart != nil {
+			res.Start = q.TimeStart.AsTime()
 		}
+		if q.TimeEnd != nil {
+			res.End = q.TimeEnd.AsTime()
+		}
+		qry.TimeRange = res
 	}
 
 	if q.Filter != nil { // backwards backwards compatibility

@@ -408,10 +408,14 @@ func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride 
 }
 
 func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverride string, vals []any, not bool) error {
-	var hasNull bool
+	var hasNull, hasNonNull bool
 	for _, v := range vals {
 		if v == nil {
 			hasNull = true
+		} else {
+			hasNonNull = true
+		}
+		if hasNull && hasNonNull {
 			break
 		}
 	}
@@ -425,42 +429,51 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		return nil
 	}
 
-	wrapParens := not || hasNull
+	wrapParens := not || (hasNull && hasNonNull)
 	if wrapParens {
 		b.writeByte('(')
 	}
 
-	if leftOverride != "" {
-		b.writeParenthesizedString(leftOverride)
-	} else {
-		err := b.writeExpression(left)
-		if err != nil {
-			return err
-		}
-	}
-
-	if not {
-		b.writeString(" NOT IN ")
-	} else {
-		b.writeString(" IN ")
-	}
-
-	b.writeByte('(')
-	for i := 0; i < len(vals); i++ {
-		if i == 0 {
-			b.writeString("?")
+	if hasNonNull {
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
 		} else {
-			b.writeString(",?")
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
 		}
+
+		if not {
+			b.writeString(" NOT IN ")
+		} else {
+			b.writeString(" IN ")
+		}
+
+		b.writeByte('(')
+		var comma bool
+		for _, val := range vals {
+			if val == nil {
+				continue
+			}
+			if comma {
+				b.writeString(",?")
+			} else {
+				comma = true
+				b.writeString("?")
+			}
+		}
+		b.writeByte(')')
+		b.args = append(b.args, vals...)
 	}
-	b.writeByte(')')
-	b.args = append(b.args, vals...)
 
 	if hasNull {
-		if not {
-			b.writeString(" AND ")
-		} else {
-			b.writeString(" OR ")
+		if hasNonNull {
+			if not {
+				b.writeString(" AND ")
+			} else {
+				b.writeString(" OR ")
+			}
 		}
 
 		if leftOverride != "" {
