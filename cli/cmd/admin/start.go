@@ -229,7 +229,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				aiClient = ai.NewNoop()
 			}
 
-			// Init Assets handle
+			// Init AssetsBucket handle
 			var clientOpts []option.ClientOption
 			if conf.AssetsBucketGoogleCredentialsJSON != "" {
 				clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.AssetsBucketGoogleCredentialsJSON)))
@@ -238,7 +238,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			if err != nil {
 				logger.Fatal("failed to create assets bucket handle", zap.Error(err))
 			}
-			assetsHandle := storageClient.Bucket(conf.AssetsBucket)
+			assetsBucket := storageClient.Bucket(conf.AssetsBucket)
 
 			// Parse metrics project name
 			var metricsProjectOrg, metricsProjectName string
@@ -264,7 +264,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectName: metricsProjectName,
 				AutoscalerCron:     conf.AutoscalerCron,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsHandle)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}

@@ -56,18 +56,18 @@ func (w *Worker) deleteUnusedAssets(ctx context.Context) error {
 		_ = group.Wait()
 
 		// 3. Delete the assets in the DB
-		var finalIds []string
+		var finalIDs []string
 		for _, id := range ids {
 			if id != "" {
-				finalIds = append(finalIds, id)
+				finalIDs = append(finalIDs, id)
 			}
 		}
-		if len(finalIds) == 0 {
+		if len(finalIDs) == 0 {
 			// No assets were safely deleted so could be an issue with google cloud storage,network etc
 			// we return and execute again in the next run of this job
 			return nil
 		}
-		err = w.admin.DB.DeleteAssets(ctx, finalIds)
+		err = w.admin.DB.DeleteAssets(ctx, finalIDs)
 		if err != nil {
 			return err
 		}

@@ -43,7 +43,7 @@ type Service struct {
 	AutoscalerCron   string
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assetsHandle *storage.BucketHandle) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assetsBucket *storage.BucketHandle) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -105,7 +105,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		VersionCommit:    opts.VersionCommit,
 		metricsProjectID: metricsProjectID,
 		AutoscalerCron:   opts.AutoscalerCron,
-		AssetsBucket:     assetsHandle,
+		AssetsBucket:     assetsBucket,
 	}, nil
 }
 
