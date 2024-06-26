@@ -63,7 +63,7 @@ func (s *Server) CreateAsset(ctx context.Context, req *adminv1.CreateAssetReques
 		Headers: signingHeaders,
 		Expires: time.Now().Add(15 * time.Minute),
 	}
-	signedURL, err := s.assetsBucket.SignedURL(object, opts)
+	signedURL, err := s.admin.AssetsBucket.SignedURL(object, opts)
 	if err != nil {
 		return nil, err
 	}

@@ -38,6 +38,11 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 
 	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
 
+	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
+	if err != nil {
+		return nil, err
+	}
+
 	// Init admin service
 	admOpts := &admin.Options{
 		DatabaseDriver:     "postgres",
@@ -49,7 +54,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		VersionCommit:      "",
 	}
 
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop(), client.Bucket("mock"))
 	if err != nil {
 		return nil, err
 	}
@@ -84,11 +89,7 @@ func AdminServer(ctx context.Context, logger *zap.Logger, adm *admin.Service) (*
 	}
 
 	limiter := ratelimit.NewNoop()
-	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
-	if err != nil {
-		return nil, err
-	}
-	srv, err := server.New(logger, adm, issuer, limiter, activity.NewNoopClient(), client.Bucket("mock"), &server.Options{
+	srv, err := server.New(logger, adm, issuer, limiter, activity.NewNoopClient(), &server.Options{
 		HTTPPort:               conf.HTTPPort,
 		GRPCPort:               conf.GRPCPort,
 		ExternalURL:            conf.ExternalURL,

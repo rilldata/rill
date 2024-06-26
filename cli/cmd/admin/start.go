@@ -229,6 +229,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				aiClient = ai.NewNoop()
 			}
 
+			// Init Assets handle
+			var clientOpts []option.ClientOption
+			if conf.AssetsBucketGoogleCredentialsJSON != "" {
+				clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.AssetsBucketGoogleCredentialsJSON)))
+			}
+			storageClient, err := storage.NewClient(cmd.Context(), clientOpts...)
+			if err != nil {
+				logger.Fatal("failed to create assets bucket handle", zap.Error(err))
+			}
+			assetsHandle := storageClient.Bucket(conf.AssetsBucket)
+
 			// Parse metrics project name
 			var metricsProjectOrg, metricsProjectName string
 			if conf.MetricsProject != "" {
@@ -253,7 +264,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectName: metricsProjectName,
 				AutoscalerCron:     conf.AutoscalerCron,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsHandle)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -292,16 +303,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
 
-				var clientOpts []option.ClientOption
-				if conf.AssetsBucketGoogleCredentialsJSON != "" {
-					clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.AssetsBucketGoogleCredentialsJSON)))
-				}
-				storageClient, err := storage.NewClient(cmd.Context(), clientOpts...)
-				if err != nil {
-					logger.Fatal("failed to create assets bucket handle", zap.Error(err))
-				}
-
-				srv, err := server.New(logger, adm, issuer, limiter, activityClient, storageClient.Bucket(conf.AssetsBucket), &server.Options{
+				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
 					ExternalURL:            conf.ExternalURL,

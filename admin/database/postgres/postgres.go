@@ -1580,6 +1580,27 @@ func (c *connection) InsertAsset(ctx context.Context, organizationID, path, owne
 	return res, nil
 }
 
+func (c *connection) DeleteUnusedAssets(ctx context.Context) ([]*database.Asset, error) {
+	rows, err := c.getDB(ctx).QueryxContext(ctx, "DELETE FROM assets WHERE id IN (SELECT a.id FROM assets a LEFT JOIN projects p ON a.id = p.archive_asset_id WHERE p.archive_asset_id IS NULL) RETURNING *")
+	if err != nil {
+		return nil, parseErr("assets", err)
+	}
+	defer rows.Close()
+	var res []*database.Asset
+	for rows.Next() {
+		var asset database.Asset
+		err = rows.StructScan(&asset)
+		if err != nil {
+			return nil, parseErr("assets", err)
+		}
+		res = append(res, &asset)
+	}
+	if rows.Err() != nil {
+		return nil, parseErr("assets", rows.Err())
+	}
+	return res, nil
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
