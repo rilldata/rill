@@ -462,9 +462,9 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 				comma = true
 				b.writeString("?")
 			}
+			b.args = append(b.args, val)
 		}
 		b.writeByte(')')
-		b.args = append(b.args, vals...)
 	}
 
 	if hasNull {
