@@ -457,9 +457,13 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
+	if opts.DataProps != nil {
+		res.Data = opts.DataProps.AsMap()
+	}
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
 	// Hard code the user id to run for (to avoid exposing data through alert creation)
+	res.For.UserID = ownerUserID
 	res.Query.For.UserID = ownerUserID
 	// Notification options
 	res.Renotify = opts.Renotify
@@ -492,6 +496,9 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
+	if opts.DataProps != nil {
+		res.Data = opts.DataProps.AsMap()
+	}
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args
 	// Notification options
@@ -547,8 +554,7 @@ func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOpti
 	opts := &adminv1.AlertOptions{}
 	opts.Title = spec.Title
 	opts.IntervalDuration = spec.IntervalsIsoDuration
-	opts.QueryName = spec.QueryName
-	opts.QueryArgsJson = spec.QueryArgsJson
+	opts.DataProps = spec.DataProperties
 	opts.Renotify = spec.Renotify
 	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
 	for _, notifier := range spec.Notifiers {
@@ -579,6 +585,10 @@ type alertYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
+	Data map[string]any `yaml:"data"`
+	For  struct {
+		UserID string `yaml:"user_id"`
+	} `yaml:"for"`
 	Query struct {
 		Name     string         `yaml:"name"`
 		Args     map[string]any `yaml:"args,omitempty"`

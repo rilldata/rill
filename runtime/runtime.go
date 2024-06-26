@@ -34,7 +34,7 @@ type Options struct {
 type Runtime struct {
 	Email          *email.Client
 	opts           *Options
-	logger         *zap.Logger
+	Logger         *zap.Logger
 	activity       *activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
@@ -51,7 +51,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 	rt := &Runtime{
 		Email:          emailClient,
 		opts:           opts,
-		logger:         logger,
+		Logger:         logger,
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),

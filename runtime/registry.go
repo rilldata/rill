@@ -103,14 +103,14 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	// Delete the instance
 	completed, err := r.registryCache.delete(ctx, instanceID)
 	if err != nil {
-		r.logger.Error("delete instance: error deleting from registry", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+		r.Logger.Error("delete instance: error deleting from registry", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
 	// Wait for the controller to stop and the connection cache to be evicted
 	<-completed
 
 	if err := os.RemoveAll(filepath.Join(r.opts.DataDir, instanceID)); err != nil {
-		r.logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+		r.Logger.Error("could not drop instance data directory", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 	}
 
 	// If catalog is not embedded, catalog data is in the metastore, and should be cleaned up
@@ -119,7 +119,7 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 		if ok {
 			err = catalog.DeleteResources(ctx)
 			if err != nil {
-				r.logger.Error("delete instance: error deleting catalog", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
+				r.Logger.Error("delete instance: error deleting catalog", zap.Error(err), zap.String("instance_id", instanceID), observability.ZapCtx(ctx))
 			}
 		}
 	}

@@ -951,10 +951,6 @@ export interface V1CreateOrganizationRequest {
   description?: string;
 }
 
-export interface V1CreateBookmarkResponse {
-  bookmark?: V1Bookmark;
-}
-
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
@@ -1011,6 +1007,12 @@ export interface V1Bookmark {
   updatedOn?: string;
 }
 
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
+}
+
+export type V1AlertOptionsDataProps = { [key: string]: any };
+
 export interface V1AlertOptions {
   title?: string;
   intervalDuration?: string;
@@ -1024,6 +1026,7 @@ export interface V1AlertOptions {
   slackChannels?: string[];
   slackWebhooks?: string[];
   webOpenState?: string;
+  dataProps?: V1AlertOptionsDataProps;
 }
 
 export interface V1AddProjectMemberResponse {

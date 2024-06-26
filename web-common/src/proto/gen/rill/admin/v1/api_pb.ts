@@ -9156,6 +9156,11 @@ export class AlertOptions extends Message<AlertOptions> {
    */
   webOpenState = "";
 
+  /**
+   * @generated from field: google.protobuf.Struct data_props = 13;
+   */
+  dataProps?: Struct;
+
   constructor(data?: PartialMessage<AlertOptions>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9176,6 +9181,7 @@ export class AlertOptions extends Message<AlertOptions> {
     { no: 10, name: "slack_channels", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 11, name: "slack_webhooks", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 12, name: "web_open_state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "data_props", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertOptions {

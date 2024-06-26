@@ -1677,4 +1677,5 @@ message AlertOptions {
   repeated string slack_webhooks = 11;
   // base64 state url of the dashboard when it was created
   string web_open_state = 12;
+  google.protobuf.Struct data_props = 13;
 }
