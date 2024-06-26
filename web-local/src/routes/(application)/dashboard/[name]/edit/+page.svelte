@@ -28,6 +28,7 @@
   import { createRuntimeServiceGetFile } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { onMount } from "svelte";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
 
   const { readOnly } = featureFlags;
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
@@ -152,6 +153,7 @@
           status={previewStatus}
           disabled={previewDisabled}
         />
+        <LocalAvatarButton />
       </div>
     </WorkspaceHeader>
 
