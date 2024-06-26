@@ -9,7 +9,7 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
-  import { deploy } from "@rilldata/web-common/features/project/deploy";
+  import { createDeployer } from "@rilldata/web-common/features/project/deploy";
   import { createEventDispatcher } from "svelte";
   import { Button } from "../../../components/button";
 
@@ -21,8 +21,11 @@
     dispatch("close");
   }
 
-  function onDeploy() {
-    void deploy();
+  const deploy = createDeployer();
+  $: ({ mutateAsync, isLoading } = $deploy);
+  async function onDeploy() {
+    await mutateAsync({});
+    open = false;
   }
 </script>
 
@@ -45,7 +48,9 @@
     </AlertDialogHeader>
     <AlertDialogFooter>
       <Button type="secondary" on:click={close}>Back</Button>
-      <Button type="primary" on:click={onDeploy}>Continue</Button>
+      <Button type="primary" on:click={onDeploy} loading={isLoading}>
+        Continue
+      </Button>
     </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
