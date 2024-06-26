@@ -231,10 +231,12 @@ func (p *Parser) parseAlert(node *Node) error {
 		props := map[string]any{
 			"query_name":      tmp.Query.Name,
 			"query_args_json": tmp.Query.ArgsJSON,
-			"format":          true,
-			"limit":           1,
 		}
 		resolverProps, err = structpb.NewStruct(props)
+		if err != nil {
+			return fmt.Errorf("encountered invalid property type: %w", err)
+		}
+		dataProps, err = structpb.NewStruct(props)
 		if err != nil {
 			return fmt.Errorf("encountered invalid property type: %w", err)
 		}

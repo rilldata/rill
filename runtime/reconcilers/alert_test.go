@@ -86,8 +86,10 @@ email:
 					ResolverProperties: must(structpb.NewStruct(map[string]any{
 						"query_name":      "MetricsViewAggregation",
 						"query_args_json": "{\"dimensions\":[{\"name\":\"country\"}],\"having\":{\"cond\":{\"exprs\":[{\"ident\":\"measure_0\"},{\"val\":4}],\"op\":\"OPERATION_GTE\"}},\"measures\":[{\"name\":\"measure_0\"}],\"metrics_view\":\"mv1\",\"time_range\":{\"iso_duration\":\"P1W\"}}",
-						"format":          true,
-						"limit":           1,
+					})),
+					DataProperties: must(structpb.NewStruct(map[string]any{
+						"query_name":      "MetricsViewAggregation",
+						"query_args_json": "{\"dimensions\":[{\"name\":\"country\"}],\"having\":{\"cond\":{\"exprs\":[{\"ident\":\"measure_0\"},{\"val\":4}],\"op\":\"OPERATION_GTE\"}},\"measures\":[{\"name\":\"measure_0\"}],\"metrics_view\":\"mv1\",\"time_range\":{\"iso_duration\":\"P1W\"}}",
 					})),
 					NotifyOnRecover:      false,
 					NotifyOnFail:         true,
@@ -248,8 +250,10 @@ notify:
 					ResolverProperties: must(structpb.NewStruct(map[string]any{
 						"query_name":      "MetricsViewAggregation",
 						"query_args_json": "{\"dimensions\":[{\"name\":\"country\"}],\"having\":{\"cond\":{\"exprs\":[{\"ident\":\"measure_0\"},{\"val\":4}],\"op\":\"OPERATION_GTE\"}},\"measures\":[{\"name\":\"measure_0\"}],\"metrics_view\":\"mv1\",\"time_range\":{\"iso_duration\":\"P1W\"}}",
-						"format":          true,
-						"limit":           1,
+					})),
+					DataProperties: must(structpb.NewStruct(map[string]any{
+						"query_name":      "MetricsViewAggregation",
+						"query_args_json": "{\"dimensions\":[{\"name\":\"country\"}],\"having\":{\"cond\":{\"exprs\":[{\"ident\":\"measure_0\"},{\"val\":4}],\"op\":\"OPERATION_GTE\"}},\"measures\":[{\"name\":\"measure_0\"}],\"metrics_view\":\"mv1\",\"time_range\":{\"iso_duration\":\"P1W\"}}",
 					})),
 					NotifyOnRecover:      false,
 					NotifyOnFail:         true,

@@ -2,6 +2,7 @@ package rillv1
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"maps"
 	"reflect"
@@ -1323,14 +1324,15 @@ annotations:
 				WatermarkInherit:     true,
 				IntervalsIsoDuration: "PT1H",
 				IntervalsLimit:       10,
-				Resolver:             "legacy_query",
+				Resolver:             "legacy_metrics",
 				ResolverProperties: must(structpb.NewStruct(map[string]any{
-					"query_name":      "MetricsViewAggregation",
+					"query_name":      "MetricsViewToplist",
 					"query_args_json": `{"metrics_view":"mv1"}`,
-					"format":          true,
-					"limit":           1,
 				})),
-
+				DataProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				NotifyOnRecover:      true,
 				NotifyOnFail:         true,
@@ -1804,6 +1806,10 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
 				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
+				if want.AlertSpec != nil {
+					fmt.Println(string(must(json.Marshal(want.AlertSpec))))
+					fmt.Println(string(must(json.Marshal(got.AlertSpec))))
+				}
 				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)

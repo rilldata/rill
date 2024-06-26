@@ -561,6 +561,8 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		Args: map[string]any{
 			"priority":       alertQueryPriority,
 			"execution_time": executionTime,
+			"format":         true,
+			"limit":          1,
 		},
 		UserAttributes: queryForAttrs,
 	})

@@ -28,21 +28,19 @@ type legacyMetricsResolver struct {
 	query           runtime.Query
 	args            *legacyMetricsResolverArgs
 	metricsViewName string
-	limit           int
-	format          bool
 	logger          *zap.Logger
 }
 
 type legacyMetricsResolverProps struct {
 	QueryName     string `mapstructure:"query_name"`
 	QueryArgsJSON string `mapstructure:"query_args_json"`
-	Limit         int    `mapstructure:"limit"`
-	Format        bool   `mapstructure:"format"`
 }
 
 type legacyMetricsResolverArgs struct {
 	Priority      int        `mapstructure:"priority"`
 	ExecutionTime *time.Time `mapstructure:"execution_time"`
+	Limit         int        `mapstructure:"limit"`
+	Format        bool       `mapstructure:"format"`
 }
 
 func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
@@ -79,8 +77,6 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 		args:            args,
 		metricsViewName: metricsViewName,
 		logger:          opts.Runtime.Logger,
-		limit:           props.Limit,
-		format:          props.Format,
 	}, nil
 }
 
@@ -128,10 +124,10 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 		schema = q.Result.Schema
 		if q.Result != nil {
 			for i, row := range q.Result.Data {
-				if r.limit > 0 && i >= r.limit {
+				if r.args.Limit > 0 && i >= r.args.Limit {
 					break
 				}
-				if r.format {
+				if r.args.Format {
 					out = append(out, r.formatMetricsViewAggregationResult(row.AsMap(), q, metricsView.GetMetricsView().Spec.Measures))
 					continue
 				}
@@ -141,10 +137,10 @@ func (r *legacyMetricsResolver) ResolveInteractive(ctx context.Context) (runtime
 	case *queries.MetricsViewComparison:
 		if q.Result != nil {
 			for i, row := range q.Result.Rows {
-				if r.limit > 0 && i >= r.limit {
+				if r.args.Limit > 0 && i >= r.args.Limit {
 					break
 				}
-				if r.format {
+				if r.args.Format {
 					out = append(out, r.formatMetricsViewComparisonResult(row, q, metricsView.GetMetricsView().Spec.Measures))
 					continue
 				}
