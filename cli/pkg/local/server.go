@@ -701,11 +701,6 @@ func (s *Server) logoutHandler() http.Handler {
 			return
 		}
 
-		origin := r.URL.Query().Get("redirect")
-		if origin == "" {
-			origin = "/"
-		}
-
 		// reset stored access token
 		err = dotrill.SetAccessToken("")
 		if err != nil {
@@ -714,7 +709,14 @@ func (s *Server) logoutHandler() http.Handler {
 		}
 		s.app.ch.AdminTokenDefault = ""
 
-		http.Redirect(w, r, origin, http.StatusFound)
+		// logout from cloud UI as well
+		redirect := r.URL.Query().Get("redirect")
+		if redirect == "" {
+			redirect = "/"
+		}
+		logoutUrl := fmt.Sprintf("%s/auth/logout?redirect=%s", s.app.adminURL, redirect)
+
+		http.Redirect(w, r, logoutUrl, http.StatusFound)
 	})
 }
 
