@@ -9,27 +9,49 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createDeployer } from "@rilldata/web-common/features/project/deploy";
-  import { createEventDispatcher } from "svelte";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import {
+    createLocalServiceDeployValidation,
+    createLocalServiceRedeploy,
+  } from "@rilldata/web-common/runtime-client/local-service";
   import { Button } from "../../../components/button";
 
-  export let open: boolean;
+  export let type: "primary" | "secondary" = "primary";
 
-  const dispatch = createEventDispatcher();
+  $: deployValidation = createLocalServiceDeployValidation({
+    query: {
+      refetchOnWindowFocus: true,
+    },
+  });
+  $: isDeployed = !!$deployValidation.data?.deployedProjectId;
 
-  function close() {
-    dispatch("close");
+  let open = false;
+  function onShowDeploy() {
+    open = true;
+    void behaviourEvent?.fireDeployIntentEvent();
   }
 
   let deploying = false;
   const deploy = createDeployer();
-  $: ({ mutateAsync, isLoading } = $deploy);
-  async function onDeploy() {
-    deploying = true;
-    if (!(await mutateAsync({}))) return;
+  const redeploy = createLocalServiceRedeploy();
+  $: isLoading = $deploy.isLoading || $redeploy.isLoading;
 
-    deploying = false;
-    open = false;
+  async function onDeploy() {
+    if (isDeployed) {
+      await $redeploy.mutateAsync({
+        projectId: $deployValidation.data?.deployedProjectId,
+        reupload: !$deployValidation.data?.isGithubRepo,
+      });
+    } else {
+      deploying = true;
+      if (!(await $deploy.mutateAsync({}))) return;
+
+      deploying = false;
+      open = false;
+    }
   }
 
   function handleVisibilityChange() {
@@ -40,32 +62,41 @@
 
 <svelte:window on:visibilitychange={handleVisibilityChange} />
 
+<Tooltip distance={8}>
+  <Button on:click={onShowDeploy} {type}
+    >{isDeployed ? "Redeploy" : "Deploy"}</Button
+  >
+  <TooltipContent slot="tooltip-content">
+    Deploy this dashboard to Rill Cloud
+  </TooltipContent>
+</Tooltip>
+
 <AlertDialog bind:open>
   <AlertDialogTrigger asChild>
     <div class="hidden"></div>
   </AlertDialogTrigger>
   <AlertDialogContent>
-    <AlertDialogHeader>
-      <div class="flex flex-row">
-        <DeployIcon size="150px" />
-        <div class="flex flex-col">
+    <div class="flex flex-row">
+      <DeployIcon size="150px" />
+      <div class="flex flex-col">
+        <AlertDialogHeader>
           <AlertDialogTitle>Deploy this project for free</AlertDialogTitle>
           <AlertDialogDescription>
             You’re about to start a 30-day FREE trial of Rill Cloud, where you
             can set alerts, share dashboards, and more.
           </AlertDialogDescription>
-        </div>
+        </AlertDialogHeader>
+        <AlertDialogFooter class="mt-5">
+          <Button type="secondary" on:click={() => (open = false)}>Back</Button>
+          <Button
+            type="primary"
+            on:click={onDeploy}
+            loading={isLoading || deploying}
+          >
+            Continue
+          </Button>
+        </AlertDialogFooter>
       </div>
-    </AlertDialogHeader>
-    <AlertDialogFooter>
-      <Button type="secondary" on:click={close}>Back</Button>
-      <Button
-        type="primary"
-        on:click={onDeploy}
-        loading={isLoading || deploying}
-      >
-        Continue
-      </Button>
-    </AlertDialogFooter>
+    </div>
   </AlertDialogContent>
 </AlertDialog>

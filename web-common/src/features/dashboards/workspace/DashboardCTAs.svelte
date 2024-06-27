@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { page } from "$app/stores";
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
@@ -46,15 +45,6 @@
       )
       .catch(console.error);
   }
-
-  let showDeployDashboardModal = false;
-
-  async function showDeployModal() {
-    showDeployDashboardModal = true;
-    await behaviourEvent?.fireDeployIntentEvent();
-  }
-
-  console.log($page.url);
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
@@ -80,16 +70,6 @@
         {/if}
       </TooltipContent>
     </Tooltip>
-    <Tooltip distance={8}>
-      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
-      <TooltipContent slot="tooltip-content">
-        Deploy this dashboard to Rill Cloud
-      </TooltipContent>
-    </Tooltip>
+    <DeployDashboardCta />
   {/if}
 </div>
-
-<DeployDashboardCta
-  on:close={() => (showDeployDashboardModal = false)}
-  open={showDeployDashboardModal}
-/>
