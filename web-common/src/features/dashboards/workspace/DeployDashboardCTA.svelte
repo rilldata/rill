@@ -21,13 +21,24 @@
     dispatch("close");
   }
 
+  let deploying = false;
   const deploy = createDeployer();
   $: ({ mutateAsync, isLoading } = $deploy);
   async function onDeploy() {
-    await mutateAsync({});
+    deploying = true;
+    if (!(await mutateAsync({}))) return;
+
+    deploying = false;
     open = false;
   }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState !== "visible" || !deploying) return;
+    void onDeploy();
+  }
 </script>
+
+<svelte:window on:visibilitychange={handleVisibilityChange} />
 
 <AlertDialog bind:open>
   <AlertDialogTrigger asChild>
@@ -48,7 +59,11 @@
     </AlertDialogHeader>
     <AlertDialogFooter>
       <Button type="secondary" on:click={close}>Back</Button>
-      <Button type="primary" on:click={onDeploy} loading={isLoading}>
+      <Button
+        type="primary"
+        on:click={onDeploy}
+        loading={isLoading || deploying}
+      >
         Continue
       </Button>
     </AlertDialogFooter>

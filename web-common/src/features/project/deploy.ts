@@ -1,4 +1,3 @@
-import { page } from "$app/stores";
 import type { PartialMessage } from "@bufbuild/protobuf";
 import type { ConnectError } from "@connectrpc/connect";
 import { createMutation, CreateMutationOptions } from "@rilldata/svelte-query";
@@ -7,7 +6,6 @@ import {
   localServiceDeploy,
   localServiceDeployValidation,
 } from "@rilldata/web-common/runtime-client/local-service";
-import { get } from "svelte/store";
 
 export function createDeployer(options?: {
   mutation?: CreateMutationOptions<
@@ -29,17 +27,14 @@ export function createDeployer(options?: {
 async function deploy() {
   const deployValidation = await localServiceDeployValidation();
   if (!deployValidation.isAuthenticated) {
-    const url = new URL(get(page).url);
-    url.searchParams.set("deploying", "true");
-    window.open(
-      `${deployValidation.loginUrl}/?redirect=${url.toString()}`,
-      "_self",
-    );
+    window.open(`${deployValidation.loginUrl}`, "__target");
+    return false;
   }
 
   if (deployValidation.isGithubRepo && !deployValidation.isGithubConnected) {
+    // if the project is a github repo and not connected to github then redirect to grant access
     window.open(`${deployValidation.githubGrantAccessUrl}`, "__target");
-    return;
+    return false;
   }
 
   const resp = await localServiceDeploy({
@@ -48,6 +43,7 @@ async function deploy() {
     upload: !deployValidation.isGithubRepo,
   });
   if (resp.frontendUrl) {
-    window.open(resp.frontendUrl, "_self");
+    window.open(resp.frontendUrl, "__target");
   }
+  return true;
 }
