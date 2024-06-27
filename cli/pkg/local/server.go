@@ -138,6 +138,15 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return nil, err
 	}
 
+	rc, err := dotrillcloud.GetAll(s.app.ProjectPath, s.app.adminURL)
+	if err != nil {
+		return nil, err
+	}
+	var deployedProjectID string
+	if rc != nil {
+		deployedProjectID = rc.ProjectID
+	}
+
 	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 	if err != nil {
 		return nil, err
@@ -161,16 +170,8 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			RillOrgExistsAsGithubUserName: false,
 			RillUserOrgs:                  nil,
 			LocalProjectName:              localProjectName,
+			DeployedProjectId:             deployedProjectID,
 		}), nil
-	}
-
-	rc, err := dotrillcloud.GetAll(s.app.ProjectPath, s.app.adminURL)
-	if err != nil {
-		return nil, err
-	}
-	var deployedProjectID string
-	if rc != nil {
-		deployedProjectID = rc.ProjectID
 	}
 
 	isGithubRepo := true
