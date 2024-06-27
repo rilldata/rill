@@ -583,6 +583,9 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	}
 
 	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
 	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
 	if err != nil {
 		return nil, err
@@ -714,9 +717,9 @@ func (s *Server) logoutHandler() http.Handler {
 		if redirect == "" {
 			redirect = "/"
 		}
-		logoutUrl := fmt.Sprintf("%s/auth/logout?redirect=%s", s.app.adminURL, redirect)
+		logoutURL := fmt.Sprintf("%s/auth/logout?redirect=%s", s.app.adminURL, redirect)
 
-		http.Redirect(w, r, logoutUrl, http.StatusFound)
+		http.Redirect(w, r, logoutURL, http.StatusFound)
 	})
 }
 
