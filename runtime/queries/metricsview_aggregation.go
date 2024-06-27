@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
@@ -33,7 +34,7 @@ type MetricsViewAggregation struct {
 	Exact               bool                                           `json:"exact,omitempty"`
 
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
-	Exporting bool                                      `json:"-"`
+	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
 }
 
 var _ runtime.Query = &MetricsViewAggregation{}
@@ -127,14 +128,14 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	var format string
+	var format drivers.FileFormat
 	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		format = "csv"
+		format = drivers.FileFormatCSV
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		format = "xlsx"
+		format = drivers.FileFormatXLSX
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		format = "parquet"
+		format = drivers.FileFormatParquet
 	default:
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
@@ -263,7 +264,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metric
 		qry.ComparisonTimeRange = res
 	}
 
-	if q.Filter != nil { // backwards backwards compatibility
+	if q.Filter != nil { // Backwards compatibility
 		if q.Where != nil {
 			return nil, fmt.Errorf("both filter and where is provided")
 		}

@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -128,14 +129,14 @@ func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, in
 	}
 	defer e.Close()
 
-	var format string
+	var format drivers.FileFormat
 	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		format = "csv"
+		format = drivers.FileFormatCSV
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		format = "xlsx"
+		format = drivers.FileFormatXLSX
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		format = "parquet"
+		format = drivers.FileFormatParquet
 	default:
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
@@ -201,7 +202,7 @@ func (q *MetricsViewToplist) rewriteToMetricsViewQuery(export bool) (*metricsvie
 		})
 	}
 
-	if q.Filter != nil { // backwards backwards compatibility
+	if q.Filter != nil { // Backwards compatibility
 		if q.Where != nil {
 			return nil, fmt.Errorf("both filter and where is provided")
 		}

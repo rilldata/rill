@@ -124,7 +124,7 @@ func (q *MetricsViewTotals) rewriteToMetricsViewQuery(exporting bool) (*metricsv
 		qry.TimeRange = res
 	}
 
-	if q.Filter != nil { // backwards backwards compatibility
+	if q.Filter != nil { // Backwards compatibility
 		if q.Where != nil {
 			return nil, fmt.Errorf("both filter and where is provided")
 		}

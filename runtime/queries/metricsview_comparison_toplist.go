@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 
@@ -89,7 +90,6 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 		return err
 	}
 
-	// Attempt to route to metricsview executor
 	qry, err := q.rewriteToMetricsViewQuery(false)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
@@ -181,7 +181,6 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 		return err
 	}
 
-	// Attempt to route to metricsview executor
 	qry, err := q.rewriteToMetricsViewQuery(true)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
@@ -193,14 +192,14 @@ func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime,
 	}
 	defer e.Close()
 
-	var format string
+	var format drivers.FileFormat
 	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		format = "csv"
+		format = drivers.FileFormatCSV
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		format = "xlsx"
+		format = drivers.FileFormatXLSX
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		format = "parquet"
+		format = drivers.FileFormatParquet
 	default:
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
@@ -354,7 +353,7 @@ func (q *MetricsViewComparison) rewriteToMetricsViewQuery(export bool) (*metrics
 		})
 	}
 
-	if q.Filter != nil { // backwards backwards compatibility
+	if q.Filter != nil { // Backwards compatibility
 		if q.Where != nil {
 			return nil, fmt.Errorf("both filter and where is provided")
 		}
