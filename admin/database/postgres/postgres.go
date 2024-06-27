@@ -1580,37 +1580,19 @@ func (c *connection) InsertAsset(ctx context.Context, organizationID, path, owne
 	return res, nil
 }
 
-func (c *connection) FindUnusedAssets(ctx context.Context, createdBefore time.Time, limit int) ([]*database.Asset, error) {
-	query := `SELECT a.* FROM assets a 
-	LEFT JOIN projects p 
-	ON a.id = p.archive_asset_id 
-	WHERE p.archive_asset_id IS NULL`
-	var args []any
-	if createdBefore.IsZero() {
-		query += " ORDER BY a.created_on DESC LIMIT $1"
-		args = []any{limit}
-	} else {
-		query += " AND a.created_on < $1 ORDER BY a.created_on DESC LIMIT $2"
-		args = []any{createdBefore, limit}
-	}
-
-	rows, err := c.getDB(ctx).QueryxContext(ctx, query, args...)
+func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*database.Asset, error) {
+	var res []*database.Asset
+	// We skip unused assets created in last 6 hours to prevent race condition
+	// where somebody just created an asset but is yet to use it
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT a.* FROM assets a 
+		WHERE a.created_on < now() - INTERVAL '6 hours'
+		AND NOT EXISTS 
+		(SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
+		ORDER BY a.created_on DESC LIMIT $1
+	`, limit)
 	if err != nil {
 		return nil, parseErr("assets", err)
-	}
-	defer rows.Close()
-
-	var res []*database.Asset
-	for rows.Next() {
-		var asset database.Asset
-		err = rows.StructScan(&asset)
-		if err != nil {
-			return nil, parseErr("assets", err)
-		}
-		res = append(res, &asset)
-	}
-	if rows.Err() != nil {
-		return nil, parseErr("assets", rows.Err())
 	}
 	return res, nil
 }

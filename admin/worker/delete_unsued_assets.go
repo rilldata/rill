@@ -3,78 +3,60 @@ package worker
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 	"strings"
-	"time"
 
 	"cloud.google.com/go/storage"
-	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 )
 
-const _defaultPageSize = 20
+const _unusedAssetsPageSize = 100
 
 func (w *Worker) deleteUnusedAssets(ctx context.Context) error {
-	// We skip unused assets created in last 15 minutes to prevent race condition
-	// where somebody just created an asset but is yet to use it
-	createdBefore := time.Now().Add(-15 * time.Minute)
 	for {
 		// 1. Fetch unused assets
-		assets, err := w.admin.DB.FindUnusedAssets(ctx, createdBefore, _defaultPageSize)
+		assets, err := w.admin.DB.FindUnusedAssets(ctx, _unusedAssetsPageSize)
 		if err != nil {
 			return err
 		}
 		if len(assets) == 0 {
 			return nil
 		}
-		createdBefore = assets[len(assets)-1].CreatedOn
-		ids := make([]string, len(assets))
 
 		// 2. Delete objects from cloud storage
 		// Limit the number of concurrent deletes to 8
 		// TODO: Use batch API once google-cloud-go supports it
 		group, cctx := errgroup.WithContext(ctx)
 		group.SetLimit(8)
-		for j := 0; j < len(assets); j++ {
-			i := j
+		var ids []string
+		for _, asset := range assets {
+			asset := asset
+			ids = append(ids, asset.ID)
 			group.Go(func() error {
-				parsed, err := url.Parse(assets[i].Path)
+				parsed, err := url.Parse(asset.Path)
 				if err != nil {
-					w.logger.Warn("failed to parse asset path", zap.String("path", assets[i].Path), zap.Error(err))
-					return nil
+					return fmt.Errorf("failed to parse asset path %q: %w", asset.Path, err)
 				}
-				err = w.admin.AssetsBucket.Object(strings.TrimPrefix(parsed.Path, "/")).Delete(cctx)
+				err = w.admin.Assets.Object(strings.TrimPrefix(parsed.Path, "/")).Delete(cctx)
 				if err != nil && !errors.Is(err, storage.ErrObjectNotExist) {
-					w.logger.Warn("failed to delete asset", zap.String("path", assets[i].Path), zap.Error(err))
-					return nil
+					return fmt.Errorf("failed to delete asset %q: %w", asset.Path, err)
 				}
-				// collect ids for which delete was successful or object was not found
-				ids[i] = assets[i].ID
 				return nil
 			})
 		}
 		_ = group.Wait()
 
 		// 3. Delete the assets in the DB
-		var finalIDs []string
-		for _, id := range ids {
-			if id != "" {
-				finalIDs = append(finalIDs, id)
-			}
-		}
-		if len(finalIDs) == 0 {
-			// No assets were safely deleted so could be an issue with google cloud storage,network etc
-			// we return and execute again in the next run of this job
-			return nil
-		}
-		err = w.admin.DB.DeleteAssets(ctx, finalIDs)
+		err = w.admin.DB.DeleteAssets(ctx, ids)
 		if err != nil {
 			return err
 		}
 
-		if len(assets) < _defaultPageSize {
+		if len(assets) < _unusedAssetsPageSize {
 			// no more assets to delete
 			return nil
 		}
+		// fetch again could be more unused assets
 	}
 }

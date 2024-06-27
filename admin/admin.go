@@ -27,12 +27,17 @@ type Options struct {
 }
 
 type Service struct {
-	DB               database.DB
-	ProvisionerSet   map[string]provisioner.Provisioner
-	Email            *email.Client
-	Github           Github
-	AI               ai.Client
-	AssetsBucket     *storage.BucketHandle
+	DB             database.DB
+	ProvisionerSet map[string]provisioner.Provisioner
+	Email          *email.Client
+	Github         Github
+	AI             ai.Client
+	// Assets as reduced surface of storage.BucketHandle
+	// enables us to use a mock in tests.
+	Assets interface {
+		SignedURL(object string, opts *storage.SignedURLOptions) (string, error)
+		Object(path string) *storage.ObjectHandle
+	}
 	Used             *usedFlusher
 	Logger           *zap.Logger
 	opts             *Options
@@ -105,7 +110,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		VersionCommit:    opts.VersionCommit,
 		metricsProjectID: metricsProjectID,
 		AutoscalerCron:   opts.AutoscalerCron,
-		AssetsBucket:     assetsBucket,
+		Assets:           assetsBucket,
 	}, nil
 }
 

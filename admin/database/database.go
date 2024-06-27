@@ -215,7 +215,7 @@ type DB interface {
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
-	FindUnusedAssets(ctx context.Context, createdBefore time.Time, limit int) ([]*Asset, error)
+	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
 	InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*Asset, error)
 	DeleteAssets(ctx context.Context, ids []string) error
 }

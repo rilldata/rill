@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"time"
 
-	"cloud.google.com/go/storage"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
@@ -19,7 +18,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/ratelimit"
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
-	"google.golang.org/api/option"
 )
 
 func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (*admin.Service, error) {
@@ -37,12 +35,6 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 	}
 
 	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
-
-	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
-	if err != nil {
-		return nil, err
-	}
-
 	// Init admin service
 	admOpts := &admin.Options{
 		DatabaseDriver:     "postgres",
@@ -54,7 +46,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		VersionCommit:      "",
 	}
 
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop(), client.Bucket("mock"))
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop(), nil)
 	if err != nil {
 		return nil, err
 	}

@@ -6,7 +6,6 @@ import (
 	"strconv"
 	"testing"
 
-	"cloud.google.com/go/storage"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
@@ -19,7 +18,6 @@ import (
 	runtimeauth "github.com/rilldata/rill/runtime/server/auth"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-	"google.golang.org/api/option"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
@@ -48,9 +46,6 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
 
-	client, err := storage.NewClient(ctx, option.WithoutAuthentication())
-	require.NoError(t, err)
-
 	service, err := admin.New(context.Background(),
 		&admin.Options{
 			DatabaseDriver:     "postgres",
@@ -64,7 +59,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		emailClient,
 		github,
 		ai.NewNoop(),
-		client.Bucket("mock"),
+		nil,
 	)
 	require.NoError(t, err)
 
