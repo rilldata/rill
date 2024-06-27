@@ -44,6 +44,32 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
 ]);
 
 /**
+ * @generated from enum rill.runtime.v1.SecurityAction
+ */
+export enum SecurityAction {
+  /**
+   * @generated from enum value: SECURITY_ACTION_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: SECURITY_ACTION_ALLOW = 1;
+   */
+  ALLOW = 1,
+
+  /**
+   * @generated from enum value: SECURITY_ACTION_DENY = 2;
+   */
+  DENY = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(SecurityAction)
+proto3.util.setEnumType(SecurityAction, "rill.runtime.v1.SecurityAction", [
+  { no: 0, name: "SECURITY_ACTION_UNSPECIFIED" },
+  { no: 1, name: "SECURITY_ACTION_ALLOW" },
+  { no: 2, name: "SECURITY_ACTION_DENY" },
+]);
+
+/**
  * @generated from enum rill.runtime.v1.AssertionStatus
  */
 export enum AssertionStatus {
@@ -1070,9 +1096,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Security for the dashboard
    *
-   * @generated from field: rill.runtime.v1.MetricsViewSpec.SecurityV2 security = 11;
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 23;
    */
-  security?: MetricsViewSpec_SecurityV2;
+  securityRules: SecurityRule[] = [];
 
   /**
    * ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
@@ -1139,7 +1165,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "security", kind: "message", T: MetricsViewSpec_SecurityV2 },
+    { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 14, name: "default_comparison_mode", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_ComparisonMode) },
@@ -1518,123 +1544,6 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
 }
 
 /**
- * Security for the dashboard
- *
- * @generated from message rill.runtime.v1.MetricsViewSpec.SecurityV2
- */
-export class MetricsViewSpec_SecurityV2 extends Message<MetricsViewSpec_SecurityV2> {
-  /**
-   * Dashboard level access condition
-   *
-   * @generated from field: string access = 1;
-   */
-  access = "";
-
-  /**
-   * SQL expression to apply in a WHERE clause against the underlying table
-   *
-   * @generated from field: string row_filter = 2;
-   */
-  rowFilter = "";
-
-  /**
-   * Dimension filter to apply to queries against the metrics view.
-   * Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
-   *
-   * @generated from field: rill.runtime.v1.Expression query_filter = 5;
-   */
-  queryFilter?: Expression;
-
-  /**
-   * either one of include or exclude will be specified
-   *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2 include = 3;
-   */
-  include: MetricsViewSpec_SecurityV2_FieldConditionV2[] = [];
-
-  /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2 exclude = 4;
-   */
-  exclude: MetricsViewSpec_SecurityV2_FieldConditionV2[] = [];
-
-  constructor(data?: PartialMessage<MetricsViewSpec_SecurityV2>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.SecurityV2";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "access", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "row_filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "query_filter", kind: "message", T: Expression },
-    { no: 3, name: "include", kind: "message", T: MetricsViewSpec_SecurityV2_FieldConditionV2, repeated: true },
-    { no: 4, name: "exclude", kind: "message", T: MetricsViewSpec_SecurityV2_FieldConditionV2, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewSpec_SecurityV2 | PlainMessage<MetricsViewSpec_SecurityV2> | undefined, b: MetricsViewSpec_SecurityV2 | PlainMessage<MetricsViewSpec_SecurityV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_SecurityV2, a, b);
-  }
-}
-
-/**
- * Dimension/measure level access condition
- *
- * @generated from message rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
- */
-export class MetricsViewSpec_SecurityV2_FieldConditionV2 extends Message<MetricsViewSpec_SecurityV2_FieldConditionV2> {
-  /**
-   * @generated from field: string condition = 1;
-   */
-  condition = "";
-
-  /**
-   * @generated from field: repeated string names = 2;
-   */
-  names: string[] = [];
-
-  constructor(data?: PartialMessage<MetricsViewSpec_SecurityV2_FieldConditionV2>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined, b: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_SecurityV2_FieldConditionV2, a, b);
-  }
-}
-
-/**
  * @generated from message rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
  */
 export class MetricsViewSpec_AvailableComparisonOffset extends Message<MetricsViewSpec_AvailableComparisonOffset> {
@@ -1721,6 +1630,267 @@ export class MetricsViewSpec_AvailableTimeRange extends Message<MetricsViewSpec_
 
   static equals(a: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined, b: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_AvailableTimeRange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRule
+ */
+export class SecurityRule extends Message<SecurityRule> {
+  /**
+   * @generated from oneof rill.runtime.v1.SecurityRule.rule
+   */
+  rule: {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleAccess access = 1;
+     */
+    value: SecurityRuleAccess;
+    case: "access";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleFieldAccess field_access = 2;
+     */
+    value: SecurityRuleFieldAccess;
+    case: "fieldAccess";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleRowFilter row_filter = 3;
+     */
+    value: SecurityRuleRowFilter;
+    case: "rowFilter";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<SecurityRule>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRule";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "access", kind: "message", T: SecurityRuleAccess, oneof: "rule" },
+    { no: 2, name: "field_access", kind: "message", T: SecurityRuleFieldAccess, oneof: "rule" },
+    { no: 3, name: "row_filter", kind: "message", T: SecurityRuleRowFilter, oneof: "rule" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRule {
+    return new SecurityRule().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRule {
+    return new SecurityRule().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRule {
+    return new SecurityRule().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRule | PlainMessage<SecurityRule> | undefined, b: SecurityRule | PlainMessage<SecurityRule> | undefined): boolean {
+    return proto3.util.equals(SecurityRule, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleAccess
+ */
+export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
+  /**
+   * @generated from field: rill.runtime.v1.SecurityCondition condition = 1;
+   */
+  condition?: SecurityCondition;
+
+  /**
+   * @generated from field: rill.runtime.v1.SecurityAction action = 2;
+   */
+  action = SecurityAction.UNSPECIFIED;
+
+  constructor(data?: PartialMessage<SecurityRuleAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "message", T: SecurityCondition },
+    { no: 2, name: "action", kind: "enum", T: proto3.getEnumType(SecurityAction) },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleAccess | PlainMessage<SecurityRuleAccess> | undefined, b: SecurityRuleAccess | PlainMessage<SecurityRuleAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleAccess, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleFieldAccess
+ */
+export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
+  /**
+   * @generated from field: rill.runtime.v1.SecurityCondition condition = 1;
+   */
+  condition?: SecurityCondition;
+
+  /**
+   * @generated from field: rill.runtime.v1.SecurityAction action = 2;
+   */
+  action = SecurityAction.UNSPECIFIED;
+
+  /**
+   * @generated from field: repeated string fields = 3;
+   */
+  fields: string[] = [];
+
+  /**
+   * @generated from field: bool all_except = 4;
+   */
+  allExcept = false;
+
+  constructor(data?: PartialMessage<SecurityRuleFieldAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleFieldAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "message", T: SecurityCondition },
+    { no: 2, name: "action", kind: "enum", T: proto3.getEnumType(SecurityAction) },
+    { no: 3, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "all_except", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleFieldAccess | PlainMessage<SecurityRuleFieldAccess> | undefined, b: SecurityRuleFieldAccess | PlainMessage<SecurityRuleFieldAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleFieldAccess, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleRowFilter
+ */
+export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
+  /**
+   * @generated from field: rill.runtime.v1.SecurityCondition condition = 1;
+   */
+  condition?: SecurityCondition;
+
+  /**
+   * @generated from field: string sql = 2;
+   */
+  sql = "";
+
+  /**
+   * @generated from field: rill.runtime.v1.Expression expression = 3;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<SecurityRuleRowFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleRowFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "message", T: SecurityCondition },
+    { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined, b: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleRowFilter, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityCondition
+ */
+export class SecurityCondition extends Message<SecurityCondition> {
+  /**
+   * @generated from oneof rill.runtime.v1.SecurityCondition.condition
+   */
+  condition: {
+    /**
+     * @generated from field: string expression = 1;
+     */
+    value: string;
+    case: "expression";
+  } | {
+    /**
+     * @generated from field: string resource_kind = 2;
+     */
+    value: string;
+    case: "resourceKind";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.ResourceName resource_name = 3;
+     */
+    value: ResourceName;
+    case: "resourceName";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<SecurityCondition>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityCondition";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "condition" },
+    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "condition" },
+    { no: 3, name: "resource_name", kind: "message", T: ResourceName, oneof: "condition" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityCondition {
+    return new SecurityCondition().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityCondition {
+    return new SecurityCondition().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityCondition {
+    return new SecurityCondition().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityCondition | PlainMessage<SecurityCondition> | undefined, b: SecurityCondition | PlainMessage<SecurityCondition> | undefined): boolean {
+    return proto3.util.equals(SecurityCondition, a, b);
   }
 }
 

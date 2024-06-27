@@ -2768,32 +2768,6 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
-  MetricsViewSpecSecurityV2:
-    type: object
-    properties:
-      access:
-        type: string
-        title: Dashboard level access condition
-      rowFilter:
-        type: string
-        title: SQL expression to apply in a WHERE clause against the underlying table
-      queryFilter:
-        $ref: '#/definitions/v1Expression'
-        description: |-
-          Dimension filter to apply to queries against the metrics view.
-          Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
-      include:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-        title: either one of include or exclude will be specified
-      exclude:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-    title: Security for the dashboard
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -2829,16 +2803,6 @@ definitions:
       count:
         type: integer
         format: int32
-  SecurityV2FieldConditionV2:
-    type: object
-    properties:
-      condition:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
-    title: Dimension/measure level access condition
   StructTypeField:
     type: object
     properties:
@@ -4489,8 +4453,11 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
-      security:
-        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
         title: Security for the dashboard
       firstDayOfWeek:
         type: integer
@@ -5296,6 +5263,60 @@ definitions:
         format: int64
       timeZone:
         type: string
+  v1SecurityAction:
+    type: string
+    enum:
+      - SECURITY_ACTION_UNSPECIFIED
+      - SECURITY_ACTION_ALLOW
+      - SECURITY_ACTION_DENY
+    default: SECURITY_ACTION_UNSPECIFIED
+  v1SecurityCondition:
+    type: object
+    properties:
+      expression:
+        type: string
+      resourceKind:
+        type: string
+      resourceName:
+        $ref: '#/definitions/v1ResourceName'
+  v1SecurityRule:
+    type: object
+    properties:
+      access:
+        $ref: '#/definitions/v1SecurityRuleAccess'
+      fieldAccess:
+        $ref: '#/definitions/v1SecurityRuleFieldAccess'
+      rowFilter:
+        $ref: '#/definitions/v1SecurityRuleRowFilter'
+  v1SecurityRuleAccess:
+    type: object
+    properties:
+      condition:
+        $ref: '#/definitions/v1SecurityCondition'
+      action:
+        $ref: '#/definitions/v1SecurityAction'
+  v1SecurityRuleFieldAccess:
+    type: object
+    properties:
+      condition:
+        $ref: '#/definitions/v1SecurityCondition'
+      action:
+        $ref: '#/definitions/v1SecurityAction'
+      fields:
+        type: array
+        items:
+          type: string
+      allExcept:
+        type: boolean
+  v1SecurityRuleRowFilter:
+    type: object
+    properties:
+      condition:
+        $ref: '#/definitions/v1SecurityCondition'
+      sql:
+        type: string
+      expression:
+        $ref: '#/definitions/v1Expression'
   v1SourceSpec:
     type: object
     properties:

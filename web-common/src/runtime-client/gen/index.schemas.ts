@@ -672,15 +672,12 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export type V1SourceSpecProperties = { [key: string]: any };
-
-export interface V1Schedule {
-  refUpdate?: boolean;
-  disable?: boolean;
-  cron?: string;
-  tickerSeconds?: number;
-  timeZone?: string;
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
+
+export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
   sourceConnector?: string;
@@ -693,9 +690,52 @@ export interface V1SourceSpec {
   trigger?: boolean;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
+export interface V1SecurityRule {
+  access?: V1SecurityRuleAccess;
+  fieldAccess?: V1SecurityRuleFieldAccess;
+  rowFilter?: V1SecurityRuleRowFilter;
+}
+
+export interface V1SecurityCondition {
+  expression?: string;
+  resourceKind?: string;
+  resourceName?: V1ResourceName;
+}
+
+export interface V1SecurityRuleRowFilter {
+  condition?: V1SecurityCondition;
+  sql?: string;
+  expression?: V1Expression;
+}
+
+export type V1SecurityAction =
+  (typeof V1SecurityAction)[keyof typeof V1SecurityAction];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1SecurityAction = {
+  SECURITY_ACTION_UNSPECIFIED: "SECURITY_ACTION_UNSPECIFIED",
+  SECURITY_ACTION_ALLOW: "SECURITY_ACTION_ALLOW",
+  SECURITY_ACTION_DENY: "SECURITY_ACTION_DENY",
+} as const;
+
+export interface V1SecurityRuleFieldAccess {
+  condition?: V1SecurityCondition;
+  action?: V1SecurityAction;
+  fields?: string[];
+  allExcept?: boolean;
+}
+
+export interface V1SecurityRuleAccess {
+  condition?: V1SecurityCondition;
+  action?: V1SecurityAction;
+}
+
+export interface V1Schedule {
+  refUpdate?: boolean;
+  disable?: boolean;
+  cron?: string;
+  tickerSeconds?: number;
+  timeZone?: string;
 }
 
 export interface V1S3Object {
@@ -777,13 +817,6 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
-}
-
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -810,6 +843,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -919,6 +959,12 @@ export interface V1PullTrigger {
   state?: V1PullTriggerState;
 }
 
+export interface V1ProjectParserState {
+  parseErrors?: V1ParseError[];
+  currentCommitSha?: string;
+  watching?: boolean;
+}
+
 export interface V1ProjectParserSpec {
   [key: string]: any;
 }
@@ -944,12 +990,6 @@ export interface V1ParseError {
   filePath?: string;
   startLocation?: V1CharLocation;
   external?: boolean;
-}
-
-export interface V1ProjectParserState {
-  parseErrors?: V1ParseError[];
-  currentCommitSha?: string;
-  watching?: boolean;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -1032,11 +1072,6 @@ export interface V1ModelState {
   incrementalStateSchema?: V1StructType;
 }
 
-export interface V1ModelV2 {
-  spec?: V1ModelSpec;
-  state?: V1ModelState;
-}
-
 export type V1ModelSpecOutputProperties = { [key: string]: any };
 
 export type V1ModelSpecInputProperties = { [key: string]: any };
@@ -1056,6 +1091,11 @@ export interface V1ModelSpec {
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
+}
+
+export interface V1ModelV2 {
+  spec?: V1ModelSpec;
+  state?: V1ModelState;
 }
 
 export interface V1MigrationState {
@@ -1103,25 +1143,18 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
+export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
-  dimensionName?: string;
   measureNames?: string[];
   timeStart?: string;
   timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
+  timeGranularity?: V1TimeGrain;
   where?: V1Expression;
   having?: V1Expression;
+  timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
-}
-
-export interface V1MetricsViewTimeSeriesResponse {
-  meta?: V1MetricsViewColumn[];
-  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsViewTimeRangeResponse {
@@ -1146,7 +1179,7 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
-  security?: MetricsViewSpecSecurityV2;
+  securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
@@ -1190,16 +1223,18 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewTimeSeriesRequest {
+export interface V1MetricsViewToplistRequest {
   instanceId?: string;
   metricsViewName?: string;
+  dimensionName?: string;
   measureNames?: string[];
   timeStart?: string;
   timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
   where?: V1Expression;
   having?: V1Expression;
-  timeZone?: string;
   priority?: number;
   filter?: V1MetricsViewFilter;
 }
@@ -1283,10 +1318,34 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
   nullable?: boolean;
+}
+
+export interface V1MetricsViewTimeSeriesResponse {
+  meta?: V1MetricsViewColumn[];
+  data?: V1TimeSeriesValue[];
 }
 
 export interface V1MetricsViewAggregationSort {
@@ -1359,25 +1418,6 @@ export interface V1MetricsViewAggregationDimension {
   timeGrain?: V1TimeGrain;
   timeZone?: string;
   alias?: string;
-}
-
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MapType {
@@ -1881,6 +1921,10 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -1907,10 +1951,6 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -1925,6 +1965,10 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1935,10 +1979,6 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
-}
-
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2067,6 +2107,14 @@ export interface V1API {
   state?: V1APIState;
 }
 
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
+}
+
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
@@ -2127,14 +2175,6 @@ export const TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
-export interface Runtimev1Type {
-  code?: TypeCode;
-  nullable?: boolean;
-  arrayElementType?: Runtimev1Type;
-  structType?: V1StructType;
-  mapType?: V1MapType;
-}
-
 export interface TopKEntry {
   value?: unknown;
   count?: number;
@@ -2151,11 +2191,6 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
-export interface SecurityV2FieldConditionV2 {
-  condition?: string;
-  names?: string[];
-}
-
 export interface NumericOutliersOutlier {
   bucket?: number;
   low?: number;
@@ -2170,14 +2205,6 @@ export interface NumericHistogramBinsBin {
   midpoint?: number;
   high?: number;
   count?: number;
-}
-
-export interface MetricsViewSpecSecurityV2 {
-  access?: string;
-  rowFilter?: string;
-  queryFilter?: V1Expression;
-  include?: SecurityV2FieldConditionV2[];
-  exclude?: SecurityV2FieldConditionV2[];
 }
 
 export type MetricsViewSpecMeasureType =
