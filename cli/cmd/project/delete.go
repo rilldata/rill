@@ -34,13 +34,13 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			var deployedId string
+			var deployedID string
 			rc, err := dotrillcloud.GetAll(path, ch.AdminURL)
 			if err != nil {
 				return err
 			}
 			if rc != nil {
-				deployedId = rc.ProjectID
+				deployedID = rc.ProjectID
 			}
 
 			if name == "" {
@@ -49,7 +49,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				proj, err := client.GetProjectByID(cmd.Context(), &adminv1.GetProjectByIDRequest{
-					Id: deployedId,
+					Id: deployedID,
 				})
 				if err != nil {
 					return err
@@ -79,7 +79,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if delResp.Id == deployedId {
+			if delResp.Id == deployedID {
 				err = dotrillcloud.Delete(path, ch.AdminURL)
 				if err != nil {
 					return err

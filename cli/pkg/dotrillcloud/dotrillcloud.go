@@ -13,8 +13,8 @@ type RillCloud struct {
 	ProjectID string `yaml:"project_id"`
 }
 
-func GetAll(localProjectPath, adminUrl string) (*RillCloud, error) {
-	confPath, err := getConfPath(localProjectPath, adminUrl)
+func GetAll(localProjectPath, adminURL string) (*RillCloud, error) {
+	confPath, err := getConfPath(localProjectPath, adminURL)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func GetAll(localProjectPath, adminUrl string) (*RillCloud, error) {
 	return conf, nil
 }
 
-func SetAll(localProjectPath, adminUrl string, conf *RillCloud) error {
+func SetAll(localProjectPath, adminURL string, conf *RillCloud) error {
 	err := os.MkdirAll(filepath.Join(localProjectPath, ".rillcloud"), os.ModePerm)
 	if err != nil {
 		return err
@@ -46,7 +46,7 @@ func SetAll(localProjectPath, adminUrl string, conf *RillCloud) error {
 		return err
 	}
 
-	confPath, err := getConfPath(localProjectPath, adminUrl)
+	confPath, err := getConfPath(localProjectPath, adminURL)
 	if err != nil {
 		return err
 	}
@@ -54,8 +54,8 @@ func SetAll(localProjectPath, adminUrl string, conf *RillCloud) error {
 	return os.WriteFile(confPath, data, 0o644)
 }
 
-func Delete(localProjectPath, adminUrl string) error {
-	confPath, err := getConfPath(localProjectPath, adminUrl)
+func Delete(localProjectPath, adminURL string) error {
+	confPath, err := getConfPath(localProjectPath, adminURL)
 	if err != nil {
 		return err
 	}
@@ -63,8 +63,8 @@ func Delete(localProjectPath, adminUrl string) error {
 	return os.Remove(confPath)
 }
 
-func getConfPath(localProjectPath, adminUrl string) (string, error) {
-	env, err := adminenv.Infer(adminUrl)
+func getConfPath(localProjectPath, adminURL string) (string, error) {
+	env, err := adminenv.Infer(adminURL)
 	if err != nil {
 		return "", err
 	}
