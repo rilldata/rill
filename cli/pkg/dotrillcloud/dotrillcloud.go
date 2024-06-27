@@ -60,7 +60,14 @@ func Delete(localProjectPath, adminURL string) error {
 		return err
 	}
 
-	return os.Remove(confPath)
+	err = os.Remove(confPath)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func getConfPath(localProjectPath, adminURL string) (string, error) {
