@@ -45,7 +45,7 @@ type SelectNode struct {
 	LeftJoinSelects      []*SelectNode    // Sub-selects to left join onto FromSelect, to enable "per-dimension" measures
 	JoinComparisonSelect *SelectNode      // Sub-select to join onto FromSelect for comparison measures
 	JoinComparisonType   string           // Type of join to use for JoinComparisonSelect
-	Unnests              []string         // Unnest expressions to add as joins in the FROM clause
+	Unnests              []string         // Unnest expressions to add in the FROM clause
 	Group                bool             // Whether the SELECT is grouped. If yes, it will group by all DimFields.
 	Where                *ExprNode        // Expression for the WHERE clause
 	TimeWhere            *ExprNode        // Expression for the time range to add to the WHERE clause
