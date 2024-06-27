@@ -2653,6 +2653,9 @@ definitions:
     type: object
   v1DeleteProjectResponse:
     type: object
+    properties:
+      id:
+        type: string
   v1DeleteReportResponse:
     type: object
   v1DeleteServiceResponse:

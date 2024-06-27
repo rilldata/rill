@@ -43,3 +43,7 @@ func SetAll(localProjectPath string, conf *RillCloud) error {
 
 	return os.WriteFile(filepath.Join(localProjectPath, confPath), data, 0o644)
 }
+
+func Delete(localProjectPath string) error {
+	return os.Remove(filepath.Join(localProjectPath, confPath))
+}

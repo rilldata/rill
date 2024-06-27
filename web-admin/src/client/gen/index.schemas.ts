@@ -915,7 +915,7 @@ export interface V1DeleteReportResponse {
 }
 
 export interface V1DeleteProjectResponse {
-  [key: string]: any;
+  id?: string;
 }
 
 export interface V1DeleteOrganizationResponse {

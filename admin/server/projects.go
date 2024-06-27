@@ -421,7 +421,9 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.DeleteProjectResponse{}, nil
+	return &adminv1.DeleteProjectResponse{
+		Id: proj.ID,
+	}, nil
 }
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {

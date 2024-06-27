@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
 )
@@ -33,8 +34,27 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			var deployedId string
+			rc, err := dotrillcloud.GetAll(path)
+			if err != nil {
+				return err
+			}
+			if rc != nil {
+				deployedId = rc.ProjectID
+			}
+
 			if name == "" {
-				return fmt.Errorf("please provide a valid project name. Run `rill project list` to see the available projects")
+				if rc == nil {
+					return fmt.Errorf("please provide a valid project name. Run `rill project list` to see the available projects")
+				}
+
+				proj, err := client.GetProjectByID(cmd.Context(), &adminv1.GetProjectByIDRequest{
+					Id: deployedId,
+				})
+				if err != nil {
+					return err
+				}
+				name = proj.Project.Name
 			}
 
 			if !force {
@@ -51,12 +71,19 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			_, err = client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{
+			delResp, err := client.DeleteProject(cmd.Context(), &adminv1.DeleteProjectRequest{
 				OrganizationName: ch.Org,
 				Name:             name,
 			})
 			if err != nil {
 				return err
+			}
+
+			if delResp.Id == deployedId {
+				err = dotrillcloud.Delete(path)
+				if err != nil {
+					return err
+				}
 			}
 
 			ch.PrintfSuccess("Deleted project: %v\n", name)
