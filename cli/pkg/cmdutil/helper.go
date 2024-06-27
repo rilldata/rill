@@ -260,7 +260,7 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, su
 }
 
 func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string, error) {
-	rc, err := dotrillcloud.GetAll(path)
+	rc, err := dotrillcloud.GetAll(path, h.AdminURL)
 	if err != nil {
 		return "", err
 	}

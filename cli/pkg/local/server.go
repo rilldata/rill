@@ -164,7 +164,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		}), nil
 	}
 
-	rc, err := dotrillcloud.GetAll(s.app.ProjectPath)
+	rc, err := dotrillcloud.GetAll(s.app.ProjectPath, s.app.adminURL)
 	if err != nil {
 		return nil, err
 	}
@@ -548,7 +548,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
-	err = dotrillcloud.SetAll(s.app.ProjectPath, &dotrillcloud.RillCloud{
+	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.adminURL, &dotrillcloud.RillCloud{
 		ProjectID: projResp.Project.Id,
 	})
 	if err != nil {

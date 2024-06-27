@@ -35,7 +35,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			var deployedId string
-			rc, err := dotrillcloud.GetAll(path)
+			rc, err := dotrillcloud.GetAll(path, ch.AdminURL)
 			if err != nil {
 				return err
 			}
@@ -80,7 +80,7 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if delResp.Id == deployedId {
-				err = dotrillcloud.Delete(path)
+				err = dotrillcloud.Delete(path, ch.AdminURL)
 				if err != nil {
 					return err
 				}

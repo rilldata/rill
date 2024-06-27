@@ -1,9 +1,11 @@
 package dotrillcloud
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 
+	"github.com/rilldata/rill/admin/pkg/adminenv"
 	"gopkg.in/yaml.v3"
 )
 
@@ -11,10 +13,13 @@ type RillCloud struct {
 	ProjectID string `yaml:"project_id"`
 }
 
-var confPath = filepath.Join(".rillcloud", "project.yaml")
+func GetAll(localProjectPath, adminUrl string) (*RillCloud, error) {
+	confPath, err := getConfPath(localProjectPath, adminUrl)
+	if err != nil {
+		return nil, err
+	}
 
-func GetAll(localProjectPath string) (*RillCloud, error) {
-	data, err := os.ReadFile(filepath.Join(localProjectPath, confPath))
+	data, err := os.ReadFile(confPath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil, nil
@@ -30,7 +35,7 @@ func GetAll(localProjectPath string) (*RillCloud, error) {
 	return conf, nil
 }
 
-func SetAll(localProjectPath string, conf *RillCloud) error {
+func SetAll(localProjectPath, adminUrl string, conf *RillCloud) error {
 	err := os.MkdirAll(filepath.Join(localProjectPath, ".rillcloud"), os.ModePerm)
 	if err != nil {
 		return err
@@ -41,9 +46,31 @@ func SetAll(localProjectPath string, conf *RillCloud) error {
 		return err
 	}
 
-	return os.WriteFile(filepath.Join(localProjectPath, confPath), data, 0o644)
+	confPath, err := getConfPath(localProjectPath, adminUrl)
+	if err != nil {
+		return err
+	}
+
+	return os.WriteFile(confPath, data, 0o644)
 }
 
-func Delete(localProjectPath string) error {
-	return os.Remove(filepath.Join(localProjectPath, confPath))
+func Delete(localProjectPath, adminUrl string) error {
+	confPath, err := getConfPath(localProjectPath, adminUrl)
+	if err != nil {
+		return err
+	}
+
+	return os.Remove(confPath)
+}
+
+func getConfPath(localProjectPath, adminUrl string) (string, error) {
+	env, err := adminenv.Infer(adminUrl)
+	if err != nil {
+		return "", err
+	}
+
+	if env != "prod" {
+		return filepath.Join(localProjectPath, ".rillcloud", fmt.Sprintf("project_%s.yaml", env)), nil
+	}
+	return filepath.Join(localProjectPath, ".rillcloud", "project.yaml"), nil
 }
