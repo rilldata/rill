@@ -215,7 +215,9 @@ type DB interface {
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
 
 	FindAsset(ctx context.Context, id string) (*Asset, error)
+	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
 	InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*Asset, error)
+	DeleteAssets(ctx context.Context, ids []string) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.

@@ -1580,6 +1580,28 @@ func (c *connection) InsertAsset(ctx context.Context, organizationID, path, owne
 	return res, nil
 }
 
+func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*database.Asset, error) {
+	var res []*database.Asset
+	// We skip unused assets created in last 6 hours to prevent race condition
+	// where somebody just created an asset but is yet to use it
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT a.* FROM assets a 
+		WHERE a.created_on < now() - INTERVAL '6 hours'
+		AND NOT EXISTS 
+		(SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
+		ORDER BY a.created_on DESC LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, parseErr("assets", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteAssets(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM assets WHERE id=ANY($1)", ids)
+	return parseErr("asset", err)
+}
+
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
