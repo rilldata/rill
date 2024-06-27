@@ -40,3 +40,25 @@ type ModelExecutorOptions struct {
 	IncrementalRun   bool
 	PreviousResult   *ModelResult
 }
+
+type FileFormat string
+
+const (
+	FileFormatUnspecified FileFormat = ""
+	FileFormatParquet     FileFormat = "parquet"
+	FileFormatCSV         FileFormat = "csv"
+	FileFormatJSON        FileFormat = "json"
+	FileFormatXLSX        FileFormat = "xlsx"
+)
+
+func (f FileFormat) Filename(stem string) string {
+	return stem + "." + string(f)
+}
+
+func (f FileFormat) Valid() bool {
+	switch f {
+	case FileFormatParquet, FileFormatCSV, FileFormatJSON, FileFormatXLSX:
+		return true
+	}
+	return false
+}

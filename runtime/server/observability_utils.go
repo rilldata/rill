@@ -28,18 +28,6 @@ func filterCount(m *runtimev1.Expression) int {
 	return c
 }
 
-func marshalInlineMeasure(ms []*runtimev1.InlineMeasure) []string {
-	if len(ms) == 0 {
-		return make([]string, 0)
-	}
-
-	names := make([]string, len(ms))
-	for i := 0; i < len(ms); i++ {
-		names[i] = ms[i].Name
-	}
-	return nil
-}
-
 func marshalMetricsViewAggregationDimension(ms []*runtimev1.MetricsViewAggregationDimension) []string {
 	if len(ms) == 0 {
 		return make([]string, 0)

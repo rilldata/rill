@@ -62,12 +62,14 @@ func (e *olapToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	defer res.Close()
 
 	switch outputProps.Format {
-	case "csv":
-		err = writeCSV(res, outputProps.Path)
-	case "xlsx":
-		err = writeXLSX(res, outputProps.Path)
-	case "parquet":
+	case drivers.FileFormatParquet:
 		err = writeParquet(res, outputProps.Path)
+	case drivers.FileFormatCSV:
+		err = writeCSV(res, outputProps.Path)
+	case drivers.FileFormatJSON:
+		return nil, errors.New("json file output not currently supported")
+	case drivers.FileFormatXLSX:
+		err = writeXLSX(res, outputProps.Path)
 	default:
 		return nil, fmt.Errorf("unsupported output format %q", outputProps.Format)
 	}

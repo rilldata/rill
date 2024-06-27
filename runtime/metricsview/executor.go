@@ -261,7 +261,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 
 // Export executes and exports the provided query against the metrics view.
 // It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
-func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format string) (string, error) {
+func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat) (string, error) {
 	if e.security != nil && !e.security.Access {
 		return "", runtime.ErrForbidden
 	}
