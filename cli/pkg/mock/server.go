@@ -35,6 +35,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 	}
 
 	provisionerSetJSON := "{\"static\":{\"type\":\"static\",\"spec\":{\"runtimes\":[{\"host\":\"http://localhost:9091\",\"slots\":50,\"data_dir\":\"\",\"audience_url\":\"http://localhost:8081\"}]}}}"
+
 	// Init admin service
 	admOpts := &admin.Options{
 		DatabaseDriver:     "postgres",

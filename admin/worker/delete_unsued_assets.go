@@ -31,7 +31,6 @@ func (w *Worker) deleteUnusedAssets(ctx context.Context) error {
 		group.SetLimit(8)
 		var ids []string
 		for _, asset := range assets {
-			asset := asset
 			ids = append(ids, asset.ID)
 			group.Go(func() error {
 				parsed, err := url.Parse(asset.Path)
@@ -45,7 +44,10 @@ func (w *Worker) deleteUnusedAssets(ctx context.Context) error {
 				return nil
 			})
 		}
-		_ = group.Wait()
+		err = group.Wait()
+		if err != nil {
+			return err
+		}
 
 		// 3. Delete the assets in the DB
 		err = w.admin.DB.DeleteAssets(ctx, ids)
