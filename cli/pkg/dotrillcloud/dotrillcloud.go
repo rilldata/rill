@@ -8,7 +8,7 @@ import (
 )
 
 type RillCloud struct {
-	ProjectID string `json:"project_id"`
+	ProjectID string `yaml:"project_id"`
 }
 
 var confPath = filepath.Join(".rillcloud", "project.yaml")
