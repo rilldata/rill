@@ -87,16 +87,6 @@
     });
 
     let data = getBodyData({ x0, x1, y0, y1 });
-    // Replace undefined with loading placeholders and nulls with null placeholder
-    data.forEach((c, i) => {
-      c.forEach((r, j) => {
-        if (r === undefined) {
-          data[i][j] = LOADING_CELL;
-        } else if (r === null) {
-          data[i][j] = NULL_CELL;
-        }
-      });
-    });
 
     const dataSlice = {
       num_rows: rowCount,
@@ -153,6 +143,7 @@
     const value = meta?.value;
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
+    console.log({ value });
     if (value) td.setAttribute("title", value.toString());
 
     const maybeWidth = getColumnWidth(x);
@@ -162,13 +153,14 @@
       td.style.maxWidth = `${maybeWidth}px`;
     }
 
-    if (
-      typeof value === "string" &&
-      (value?.includes("loading-cell") || value?.includes("null-cell"))
-    ) {
+    if (typeof value === "string") {
       td.innerHTML = value;
-    } else {
-      td.innerHTML = formatter(value as string) ?? "";
+    } else if (value === null) {
+      td.innerHTML = NULL_CELL;
+    } else if (value === undefined) {
+      td.innerHTML = LOADING_CELL;
+    } else if (typeof value === "number") {
+      td.innerHTML = formatter(value) ?? "";
     }
 
     const maybeVal = renderCell({ x, y, value, element: td });
