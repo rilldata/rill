@@ -27,17 +27,12 @@ type Options struct {
 }
 
 type Service struct {
-	DB             database.DB
-	ProvisionerSet map[string]provisioner.Provisioner
-	Email          *email.Client
-	Github         Github
-	AI             ai.Client
-	// Assets as reduced surface of storage.BucketHandle
-	// enables us to use a mock in tests.
-	Assets interface {
-		SignedURL(object string, opts *storage.SignedURLOptions) (string, error)
-		Object(path string) *storage.ObjectHandle
-	}
+	DB               database.DB
+	ProvisionerSet   map[string]provisioner.Provisioner
+	Email            *email.Client
+	Github           Github
+	AI               ai.Client
+	Assets           *storage.BucketHandle
 	Used             *usedFlusher
 	Logger           *zap.Logger
 	opts             *Options
