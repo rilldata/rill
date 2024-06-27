@@ -102,6 +102,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		Email:            emailClient,
 		Github:           github,
 		AI:               aiClient,
+		Assets:           assets,
 		Used:             newUsedFlusher(logger, db),
 		Logger:           logger,
 		opts:             opts,
@@ -110,7 +111,6 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		VersionCommit:    opts.VersionCommit,
 		metricsProjectID: metricsProjectID,
 		AutoscalerCron:   opts.AutoscalerCron,
-		Assets:           assets,
 	}, nil
 }
 
