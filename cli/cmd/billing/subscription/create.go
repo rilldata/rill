@@ -8,7 +8,7 @@ import (
 )
 
 func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
-	var orgName, plan, planID string
+	var orgName, plan string
 
 	createCmd := &cobra.Command{
 		Use:   "create",
@@ -46,10 +46,9 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			resp, err := client.UpdateOrganizationBillingPlan(cmd.Context(), &adminv1.UpdateOrganizationBillingPlanRequest{
-				OrgName:      orgName,
-				PlanName:     &plan,
-				BillerPlanId: &planID,
+			resp, err := client.UpdateOrganizationBillingSubscription(cmd.Context(), &adminv1.UpdateOrganizationBillingSubscriptionRequest{
+				OrgName:  orgName,
+				PlanName: plan,
 			})
 			if err != nil {
 				return err
@@ -63,6 +62,5 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().SortFlags = false
 	createCmd.Flags().StringVar(&orgName, "org", ch.Org, "Organization Name")
 	createCmd.Flags().StringVar(&plan, "plan", "", "Plan Name to subscribe to")
-	createCmd.Flags().StringVar(&planID, "plan-id", "", "Billing Plan ID to subscribe to")
 	return createCmd
 }

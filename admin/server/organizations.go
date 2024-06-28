@@ -212,13 +212,10 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}, nil
 }
 
-func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1.UpdateOrganizationBillingPlanRequest) (*adminv1.UpdateOrganizationBillingPlanResponse, error) {
+func (s *Server) UpdateOrganizationBillingSubscription(ctx context.Context, req *adminv1.UpdateOrganizationBillingSubscriptionRequest) (*adminv1.UpdateOrganizationBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
-	if req.PlanName != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", *req.PlanName))
-	}
-	if req.BillerPlanId != nil {
-		observability.AddRequestAttributes(ctx, attribute.String("args.biller_plan_id", *req.BillerPlanId))
+	if req.PlanName != "" {
+		observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
 	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
@@ -231,19 +228,11 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.PermissionDenied, "not allowed to update org billing plan")
 	}
 
-	planName := valOrDefault(req.PlanName, "")
-	billerPlanID := valOrDefault(req.BillerPlanId, "")
-
-	if planName == "" && billerPlanID == "" {
-		return nil, status.Error(codes.InvalidArgument, "plan name or biller plan id must be provided")
+	if req.PlanName == "" {
+		return nil, status.Error(codes.InvalidArgument, "plan name must be provided")
 	}
 
-	var plan *billing.Plan
-	if req.PlanName != nil {
-		plan, err = s.admin.Biller.GetPlanByName(ctx, *req.PlanName)
-	} else {
-		plan, err = s.admin.Biller.GetPlan(ctx, *req.BillerPlanId)
-	}
+	plan, err := s.admin.Biller.GetPlanByName(ctx, req.PlanName)
 	if err != nil {
 		if errors.Is(err, billing.ErrNotFound) {
 			return nil, status.Error(codes.NotFound, "plan not found")
@@ -333,7 +322,7 @@ func (s *Server) UpdateOrganizationBillingPlan(ctx context.Context, req *adminv1
 		subscriptions = append(subscriptions, subscriptionToDTO(sub))
 	}
 
-	return &adminv1.UpdateOrganizationBillingPlanResponse{
+	return &adminv1.UpdateOrganizationBillingSubscriptionResponse{
 		Organization:  organizationToDTO(org),
 		Subscriptions: subscriptions,
 	}, nil
@@ -373,45 +362,6 @@ func (s *Server) GetOrganizationBillingSubscription(ctx context.Context, req *ad
 		Organization: organizationToDTO(org),
 		Subscription: subscriptionToDTO(subs[0]),
 	}, nil
-}
-
-func (s *Server) DeleteOrganizationBillingSubscription(ctx context.Context, req *adminv1.DeleteOrganizationBillingSubscriptionRequest) (*adminv1.DeleteOrganizationBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName), attribute.String("args.subscription_id", req.SubscriptionId))
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to delete org subscription")
-	}
-
-	if org.BillingCustomerID == "" {
-		return nil, status.Error(codes.FailedPrecondition, "organization has no billing customer")
-	}
-
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	for _, sub := range subs {
-		if sub.ID == req.SubscriptionId {
-			cancelOption := billing.SubscriptionCancellationOptionEndOfSubscriptionTerm
-			if req.SubscriptionCancelEffective == adminv1.SubscriptionCancelEffective_SUBSCRIPTION_CANCEL_EFFECTIVE_NOW {
-				cancelOption = billing.SubscriptionCancellationOptionImmediate
-			}
-			err = s.admin.Biller.CancelSubscription(ctx, sub.ID, cancelOption)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-			return &adminv1.DeleteOrganizationBillingSubscriptionResponse{}, nil
-		}
-	}
-
-	return nil, status.Error(codes.NotFound, "subscription not found")
 }
 
 func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {

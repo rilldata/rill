@@ -219,26 +219,8 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective =
-  (typeof AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective)[keyof typeof AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective =
-  {
-    SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED:
-      "SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED",
-    SUBSCRIPTION_CANCEL_EFFECTIVE_NOW: "SUBSCRIPTION_CANCEL_EFFECTIVE_NOW",
-    SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE:
-      "SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE",
-  } as const;
-
-export type AdminServiceDeleteOrganizationBillingSubscriptionParams = {
-  subscriptionCancelEffective?: AdminServiceDeleteOrganizationBillingSubscriptionSubscriptionCancelEffective;
-};
-
-export type AdminServiceUpdateOrganizationBillingPlanBody = {
+export type AdminServiceUpdateOrganizationBillingSubscriptionBody = {
   planName?: string;
-  billerPlanId?: string;
 };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -345,7 +327,7 @@ export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
 
-export interface V1UpdateOrganizationBillingPlanResponse {
+export interface V1UpdateOrganizationBillingSubscriptionResponse {
   organization?: V1Organization;
   subscriptions?: V1Subscription[];
 }
@@ -416,11 +398,6 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -448,18 +425,6 @@ export interface V1SudoGetResourceResponse {
   instance?: V1Deployment;
 }
 
-export type V1SubscriptionCancelEffective =
-  (typeof V1SubscriptionCancelEffective)[keyof typeof V1SubscriptionCancelEffective];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1SubscriptionCancelEffective = {
-  SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED:
-    "SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED",
-  SUBSCRIPTION_CANCEL_EFFECTIVE_NOW: "SUBSCRIPTION_CANCEL_EFFECTIVE_NOW",
-  SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE:
-    "SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE",
-} as const;
-
 export interface V1Subscription {
   id?: string;
   planId?: string;
@@ -470,6 +435,11 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -997,10 +967,6 @@ export interface V1DeleteProjectResponse {
 }
 
 export interface V1DeleteOrganizationResponse {
-  [key: string]: any;
-}
-
-export interface V1DeleteOrganizationBillingSubscriptionResponse {
   [key: string]: any;
 }
 

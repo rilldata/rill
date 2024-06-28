@@ -45,10 +45,10 @@ service AdminService {
     };
   }
 
-  // UpdateOrganizationBillingPlan updates the billing plan for the organization
-  rpc UpdateOrganizationBillingPlan(UpdateOrganizationBillingPlanRequest) returns (UpdateOrganizationBillingPlanResponse) {
+  // UpdateOrganizationBillingSubscription updates the billing plan for the organization
+  rpc UpdateOrganizationBillingSubscription(UpdateOrganizationBillingSubscriptionRequest) returns (UpdateOrganizationBillingSubscriptionResponse) {
     option (google.api.http) = {
-      patch: "/v1/organizations/{org_name}/billing/plan",
+      patch: "/v1/organizations/{org_name}/billing/subscriptions",
       body: "*"
     };
   }
@@ -56,11 +56,6 @@ service AdminService {
   // GetOrganizationBillingSubscription lists the subscription for the organization
   rpc GetOrganizationBillingSubscription(GetOrganizationBillingSubscriptionRequest) returns (GetOrganizationBillingSubscriptionResponse) {
     option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/subscriptions"};
-  }
-
-  // DeleteOrganizationSubscription deletes the given subscription for the organization
-  rpc DeleteOrganizationBillingSubscription(DeleteOrganizationBillingSubscriptionRequest) returns (DeleteOrganizationBillingSubscriptionResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{org_name}/billing/subscriptions/{subscription_id}"};
   }
 
   // ListProjectsForOrganization lists all the projects currently available for given organizations
@@ -637,13 +632,12 @@ message UpdateOrganizationResponse {
   Organization organization = 1;
 }
 
-message UpdateOrganizationBillingPlanRequest {
+message UpdateOrganizationBillingSubscriptionRequest {
   string org_name = 1;
-  optional string plan_name = 2;
-  optional string biller_plan_id = 3;
+  string plan_name = 2;
 }
 
-message UpdateOrganizationBillingPlanResponse {
+message UpdateOrganizationBillingSubscriptionResponse {
   Organization organization = 1;
   repeated Subscription subscriptions = 2;
 }
@@ -656,20 +650,6 @@ message GetOrganizationBillingSubscriptionResponse {
   Organization organization = 1;
   Subscription subscription = 2;
 }
-
-message DeleteOrganizationBillingSubscriptionRequest {
-  string org_name = 1;
-  string subscription_id = 2;
-  SubscriptionCancelEffective subscription_cancel_effective = 3;
-}
-
-enum SubscriptionCancelEffective {
-  SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED = 0;
-  SUBSCRIPTION_CANCEL_EFFECTIVE_NOW = 1;
-  SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE = 2;
-}
-
-message DeleteOrganizationBillingSubscriptionResponse {}
 
 message ListProjectsForOrganizationRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];

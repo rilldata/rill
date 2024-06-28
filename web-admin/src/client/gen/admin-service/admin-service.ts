@@ -32,11 +32,9 @@ import type {
   V1DeleteOrganizationResponse,
   V1UpdateOrganizationResponse,
   AdminServiceUpdateOrganizationBody,
-  V1UpdateOrganizationBillingPlanResponse,
-  AdminServiceUpdateOrganizationBillingPlanBody,
   V1GetOrganizationBillingSubscriptionResponse,
-  V1DeleteOrganizationBillingSubscriptionResponse,
-  AdminServiceDeleteOrganizationBillingSubscriptionParams,
+  V1UpdateOrganizationBillingSubscriptionResponse,
+  AdminServiceUpdateOrganizationBillingSubscriptionBody,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMembersResponse,
@@ -745,58 +743,6 @@ export const createAdminServiceUpdateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary UpdateOrganizationBillingPlan updates the billing plan for the organization
- */
-export const adminServiceUpdateOrganizationBillingPlan = (
-  orgName: string,
-  adminServiceUpdateOrganizationBillingPlanBody: AdminServiceUpdateOrganizationBillingPlanBody,
-) => {
-  return httpClient<V1UpdateOrganizationBillingPlanResponse>({
-    url: `/v1/organizations/${orgName}/billing/plan`,
-    method: "patch",
-    headers: { "Content-Type": "application/json" },
-    data: adminServiceUpdateOrganizationBillingPlanBody,
-  });
-};
-
-export type AdminServiceUpdateOrganizationBillingPlanMutationResult =
-  NonNullable<
-    Awaited<ReturnType<typeof adminServiceUpdateOrganizationBillingPlan>>
-  >;
-export type AdminServiceUpdateOrganizationBillingPlanMutationBody =
-  AdminServiceUpdateOrganizationBillingPlanBody;
-export type AdminServiceUpdateOrganizationBillingPlanMutationError = RpcStatus;
-
-export const createAdminServiceUpdateOrganizationBillingPlan = <
-  TError = RpcStatus,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceUpdateOrganizationBillingPlan>>,
-    TError,
-    { orgName: string; data: AdminServiceUpdateOrganizationBillingPlanBody },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceUpdateOrganizationBillingPlan>>,
-    { orgName: string; data: AdminServiceUpdateOrganizationBillingPlanBody }
-  > = (props) => {
-    const { orgName, data } = props ?? {};
-
-    return adminServiceUpdateOrganizationBillingPlan(orgName, data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof adminServiceUpdateOrganizationBillingPlan>>,
-    TError,
-    { orgName: string; data: AdminServiceUpdateOrganizationBillingPlanBody },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-/**
  * @summary GetOrganizationBillingSubscription lists the subscription for the organization
  */
 export const adminServiceGetOrganizationBillingSubscription = (
@@ -866,43 +812,43 @@ export const createAdminServiceGetOrganizationBillingSubscription = <
 };
 
 /**
- * @summary DeleteOrganizationSubscription delete the give subscription for the organization
+ * @summary UpdateOrganizationBillingSubscription updates the billing plan for the organization
  */
-export const adminServiceDeleteOrganizationBillingSubscription = (
+export const adminServiceUpdateOrganizationBillingSubscription = (
   orgName: string,
-  subscriptionId: string,
-  params?: AdminServiceDeleteOrganizationBillingSubscriptionParams,
+  adminServiceUpdateOrganizationBillingSubscriptionBody: AdminServiceUpdateOrganizationBillingSubscriptionBody,
 ) => {
-  return httpClient<V1DeleteOrganizationBillingSubscriptionResponse>({
-    url: `/v1/organizations/${orgName}/billing/subscriptions/${subscriptionId}`,
-    method: "delete",
-    params,
+  return httpClient<V1UpdateOrganizationBillingSubscriptionResponse>({
+    url: `/v1/organizations/${orgName}/billing/subscriptions`,
+    method: "patch",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceUpdateOrganizationBillingSubscriptionBody,
   });
 };
 
-export type AdminServiceDeleteOrganizationBillingSubscriptionMutationResult =
+export type AdminServiceUpdateOrganizationBillingSubscriptionMutationResult =
   NonNullable<
     Awaited<
-      ReturnType<typeof adminServiceDeleteOrganizationBillingSubscription>
+      ReturnType<typeof adminServiceUpdateOrganizationBillingSubscription>
     >
   >;
-
-export type AdminServiceDeleteOrganizationBillingSubscriptionMutationError =
+export type AdminServiceUpdateOrganizationBillingSubscriptionMutationBody =
+  AdminServiceUpdateOrganizationBillingSubscriptionBody;
+export type AdminServiceUpdateOrganizationBillingSubscriptionMutationError =
   RpcStatus;
 
-export const createAdminServiceDeleteOrganizationBillingSubscription = <
+export const createAdminServiceUpdateOrganizationBillingSubscription = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
     Awaited<
-      ReturnType<typeof adminServiceDeleteOrganizationBillingSubscription>
+      ReturnType<typeof adminServiceUpdateOrganizationBillingSubscription>
     >,
     TError,
     {
       orgName: string;
-      subscriptionId: string;
-      params?: AdminServiceDeleteOrganizationBillingSubscriptionParams;
+      data: AdminServiceUpdateOrganizationBillingSubscriptionBody;
     },
     TContext
   >;
@@ -911,32 +857,26 @@ export const createAdminServiceDeleteOrganizationBillingSubscription = <
 
   const mutationFn: MutationFunction<
     Awaited<
-      ReturnType<typeof adminServiceDeleteOrganizationBillingSubscription>
+      ReturnType<typeof adminServiceUpdateOrganizationBillingSubscription>
     >,
     {
       orgName: string;
-      subscriptionId: string;
-      params?: AdminServiceDeleteOrganizationBillingSubscriptionParams;
+      data: AdminServiceUpdateOrganizationBillingSubscriptionBody;
     }
   > = (props) => {
-    const { orgName, subscriptionId, params } = props ?? {};
+    const { orgName, data } = props ?? {};
 
-    return adminServiceDeleteOrganizationBillingSubscription(
-      orgName,
-      subscriptionId,
-      params,
-    );
+    return adminServiceUpdateOrganizationBillingSubscription(orgName, data);
   };
 
   return createMutation<
     Awaited<
-      ReturnType<typeof adminServiceDeleteOrganizationBillingSubscription>
+      ReturnType<typeof adminServiceUpdateOrganizationBillingSubscription>
     >,
     TError,
     {
       orgName: string;
-      subscriptionId: string;
-      params?: AdminServiceDeleteOrganizationBillingSubscriptionParams;
+      data: AdminServiceUpdateOrganizationBillingSubscriptionBody;
     },
     TContext
   >(mutationFn, mutationOptions);

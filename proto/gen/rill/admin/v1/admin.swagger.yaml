@@ -274,36 +274,6 @@ paths:
                 type: string
       tags:
         - AdminService
-  /v1/organizations/{orgName}/billing/plan:
-    patch:
-      summary: UpdateOrganizationBillingPlan updates the billing plan for the organization
-      operationId: AdminService_UpdateOrganizationBillingPlan
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1UpdateOrganizationBillingPlanResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: orgName
-          in: path
-          required: true
-          type: string
-        - name: body
-          in: body
-          required: true
-          schema:
-            type: object
-            properties:
-              planName:
-                type: string
-              billerPlanId:
-                type: string
-      tags:
-        - AdminService
   /v1/organizations/{orgName}/billing/subscriptions:
     get:
       summary: GetOrganizationBillingSubscription lists the subscription for the organization
@@ -324,15 +294,14 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/organizations/{orgName}/billing/subscriptions/{subscriptionId}:
-    delete:
-      summary: DeleteOrganizationSubscription delete the give subscription for the organization
-      operationId: AdminService_DeleteOrganizationBillingSubscription
+    patch:
+      summary: UpdateOrganizationBillingSubscription updates the billing plan for the organization
+      operationId: AdminService_UpdateOrganizationBillingSubscription
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1DeleteOrganizationBillingSubscriptionResponse'
+            $ref: '#/definitions/v1UpdateOrganizationBillingSubscriptionResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -342,19 +311,14 @@ paths:
           in: path
           required: true
           type: string
-        - name: subscriptionId
-          in: path
+        - name: body
+          in: body
           required: true
-          type: string
-        - name: subscriptionCancelEffective
-          in: query
-          required: false
-          type: string
-          enum:
-            - SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED
-            - SUBSCRIPTION_CANCEL_EFFECTIVE_NOW
-            - SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE
-          default: SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED
+          schema:
+            type: object
+            properties:
+              planName:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/invites:
@@ -2767,8 +2731,6 @@ definitions:
     type: object
   v1DeleteAlertResponse:
     type: object
-  v1DeleteOrganizationBillingSubscriptionResponse:
-    type: object
   v1DeleteOrganizationResponse:
     type: object
   v1DeleteProjectResponse:
@@ -3592,13 +3554,6 @@ definitions:
       trialEndDate:
         type: string
         format: date-time
-  v1SubscriptionCancelEffective:
-    type: string
-    enum:
-      - SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED
-      - SUBSCRIPTION_CANCEL_EFFECTIVE_NOW
-      - SUBSCRIPTION_CANCEL_EFFECTIVE_END_OF_BILLING_CYCLE
-    default: SUBSCRIPTION_CANCEL_EFFECTIVE_UNSPECIFIED
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -3728,7 +3683,7 @@ definitions:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object
-  v1UpdateOrganizationBillingPlanResponse:
+  v1UpdateOrganizationBillingSubscriptionResponse:
     type: object
     properties:
       organization:
