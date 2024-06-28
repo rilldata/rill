@@ -148,7 +148,7 @@ type connection struct {
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.driverConfig, m)
+	_ = mapstructure.Decode(c.driverConfig, &m)
 	return m
 }
 
