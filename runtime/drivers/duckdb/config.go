@@ -81,7 +81,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		// Override DSN.Path with config.Path
 		if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
 			uri.Path = cfg.Path
-		} else if cfg.DataDir != "" {
+		} else if cfg.DataDir != "" && uri.Path == "" { // if some path is set in DSN, honour that path and ignore DataDir
 			uri.Path = filepath.Join(cfg.DataDir, "main.db")
 		}
 

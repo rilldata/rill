@@ -174,7 +174,7 @@ func (c *Connection) Driver() string {
 // Config implements drivers.Connection.
 func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 
