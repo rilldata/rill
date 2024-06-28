@@ -8,7 +8,7 @@
    */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { AlertCircleIcon, Trash, XIcon } from "lucide-svelte";
+  import { XIcon } from "lucide-svelte";
   import type { createForm } from "svelte-forms-lib";
 
   export let id: string;
