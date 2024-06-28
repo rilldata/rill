@@ -20,6 +20,7 @@ type AST struct {
 	underlyingTable *string
 	underlyingWhere *ExprNode
 	dimFields       []FieldNode
+	unnests         []string
 	nextIdentifier  int
 
 	// Contextual info for building the AST
@@ -44,6 +45,7 @@ type SelectNode struct {
 	LeftJoinSelects      []*SelectNode    // Sub-selects to left join onto FromSelect, to enable "per-dimension" measures
 	JoinComparisonSelect *SelectNode      // Sub-select to join onto FromSelect for comparison measures
 	JoinComparisonType   string           // Type of join to use for JoinComparisonSelect
+	Unnests              []string         // Unnest expressions to add in the FROM clause
 	Group                bool             // Whether the SELECT is grouped. If yes, it will group by all DimFields.
 	Where                *ExprNode        // Expression for the WHERE clause
 	TimeWhere            *ExprNode        // Expression for the time range to add to the WHERE clause
@@ -57,11 +59,9 @@ type SelectNode struct {
 // The Name must always match a the name of a dimension/measure in the metrics view or a computed field specified in the request.
 // This means that if two columns in different places in the AST have the same Name, they're guaranteed to resolve to the same value.
 type FieldNode struct {
-	Name        string
-	Label       string
-	Expr        string
-	Unnest      bool
-	UnnestAlias string
+	Name  string
+	Label string
+	Expr  string
 }
 
 // ExprNode represents an expression for a WHERE clause.
@@ -120,27 +120,35 @@ func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecur
 
 	// Build dimensions to apply against the underlying SELECT.
 	// We cache these in the AST type because when resolving expressions and adding new JOINs, we need the ability to reference these.
-	dimFields := make([]FieldNode, 0, len(ast.query.Dimensions))
+	ast.dimFields = make([]FieldNode, 0, len(ast.query.Dimensions))
 	for _, qd := range ast.query.Dimensions {
 		dim, err := ast.resolveDimension(qd, true)
 		if err != nil {
 			return nil, fmt.Errorf("invalid dimension %q: %w", qd.Name, err)
 		}
 
-		var unnestAlias string
-		if dim.Unnest {
-			unnestAlias = ast.generateIdentifier()
+		f := FieldNode{
+			Name:  dim.Name,
+			Label: dim.Label,
+			Expr:  ast.dialect.MetricsViewDimensionExpression(dim),
 		}
 
-		dimFields = append(dimFields, FieldNode{
-			Name:        dim.Name,
-			Label:       dim.Label,
-			Expr:        ast.dialect.MetricsViewDimensionExpression(dim),
-			Unnest:      dim.Unnest,
-			UnnestAlias: unnestAlias,
-		})
+		if dim.Unnest {
+			unnestAlias := ast.generateIdentifier()
+
+			tblWithAlias, auto, err := ast.dialect.LateralUnnest(f.Expr, unnestAlias, f.Name)
+			if err != nil {
+				return nil, fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
+			}
+
+			if !auto {
+				ast.unnests = append(ast.unnests, tblWithAlias)
+				f.Expr = ast.sqlForMember(unnestAlias, f.Name)
+			}
+		}
+
+		ast.dimFields = append(ast.dimFields, f)
 	}
-	ast.dimFields = dimFields
 
 	// Build underlying SELECT
 	tbl := ast.dialect.EscapeTable(mv.Database, mv.DatabaseSchema, mv.Table)
@@ -523,6 +531,7 @@ func (a *AST) buildBaseSelect(alias string, tr *TimeRange) (*SelectNode, error) 
 	n := &SelectNode{
 		Alias:     alias,
 		DimFields: a.dimFields,
+		Unnests:   a.unnests,
 		Group:     true,
 		FromTable: a.underlyingTable,
 		Where:     a.underlyingWhere,
@@ -567,6 +576,7 @@ func (a *AST) buildSpineSelect(alias string, spine *Spine, tr *TimeRange) (*Sele
 		n := &SelectNode{
 			Alias:     alias,
 			DimFields: a.dimFields,
+			Unnests:   a.unnests,
 			Group:     true,
 			FromTable: a.underlyingTable,
 		}
@@ -867,7 +877,6 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 			Name:  f.Name,
 			Label: f.Label,
 			Expr:  a.sqlForMember(cpy.Alias, f.Name),
-			// Not copying Unnest because we should only unnest once (at the innermost level).
 		})
 	}
 
@@ -886,6 +895,7 @@ func (a *AST) wrapSelect(s *SelectNode, innerAlias string) {
 	s.LeftJoinSelects = nil
 	s.JoinComparisonSelect = nil
 	s.JoinComparisonType = ""
+	s.Unnests = nil
 	s.Group = false
 	s.Where = nil
 	s.TimeWhere = nil
@@ -1043,12 +1053,7 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNod
 				b.WriteString(", ")
 			}
 
-			expr := f.Expr
-			if f.Unnest {
-				expr = a.sqlForMember(f.UnnestAlias, f.Name)
-			}
-
-			b.WriteString(expr)
+			b.WriteString(f.Expr)
 		}
 	}
 	if len(orderFields) > 0 {
@@ -1061,12 +1066,7 @@ func (a *AST) sqlForMeasure(m *runtimev1.MetricsViewSpec_MeasureV2, n *SelectNod
 				b.WriteString(", ")
 			}
 
-			expr := f.Expr
-			if f.Unnest {
-				expr = a.sqlForMember(f.UnnestAlias, f.Name)
-			}
-
-			b.WriteString(expr)
+			b.WriteString(f.Expr)
 			if orderDesc[i] {
 				b.WriteString(" DESC")
 			}
