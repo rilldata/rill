@@ -143,7 +143,7 @@
     const value = meta?.value;
     td.setAttribute("__col", String(x));
     td.setAttribute("__row", String(y));
-    console.log({ value });
+
     if (value) td.setAttribute("title", value.toString());
 
     const maybeWidth = getColumnWidth(x);
