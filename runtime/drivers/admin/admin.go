@@ -134,6 +134,7 @@ var _ drivers.Handle = &Handle{}
 // a smaller subset of relevant parts of rill.yaml
 type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
+	PublicPaths []string `yaml:"public_paths"`
 }
 
 // Driver implements drivers.Handle.

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	"cloud.google.com/go/storage"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
@@ -32,6 +33,7 @@ type Service struct {
 	Email            *email.Client
 	Github           Github
 	AI               ai.Client
+	Assets           *storage.BucketHandle
 	Used             *usedFlusher
 	Logger           *zap.Logger
 	opts             *Options
@@ -43,7 +45,7 @@ type Service struct {
 	Biller           billing.Biller
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, biller billing.Biller) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -97,6 +99,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		Email:            emailClient,
 		Github:           github,
 		AI:               aiClient,
+		Assets:           assets,
 		Used:             newUsedFlusher(logger, db),
 		Logger:           logger,
 		opts:             opts,

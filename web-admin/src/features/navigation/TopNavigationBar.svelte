@@ -24,7 +24,6 @@
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
-  import { isErrorStoreEmpty } from "../errors/error-store";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import { isMetricsExplorerPage, isProjectPage } from "./nav-utils";
@@ -37,6 +36,8 @@
   $: ({ organization, project, dashboard, alert, report } = $page.params);
 
   $: onProjectPage = isProjectPage($page);
+  $: onAlertPage = !!alert;
+  $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
 
   $: organizationQuery = listOrgs(
@@ -56,8 +57,8 @@
 
   $: visualizationsQuery = useValidVisualizations(instanceId);
 
-  $: alertsQuery = useAlerts(instanceId);
-  $: reportsQuery = useReports(instanceId);
+  $: alertsQuery = useAlerts(instanceId, onAlertPage);
+  $: reportsQuery = useReports(instanceId, onReportPage);
 
   $: organizations =
     $organizationQuery.data?.organizations ??
@@ -129,7 +130,7 @@
     </a>
     <TooltipContent slot="tooltip-content">Home</TooltipContent>
   </Tooltip>
-  {#if $isErrorStoreEmpty && organization}
+  {#if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <OrganizationAvatar {organization} slot="icon" />
     </Breadcrumbs>

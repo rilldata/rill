@@ -7,11 +7,12 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	_ "github.com/rilldata/rill/runtime/drivers/duckdb"
 	"github.com/rilldata/rill/runtime/queries"
+	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
 
 func BenchmarkTimeSeries_hourly(b *testing.B) {
-	rt, instanceID, mv := prepareEnvironment(b)
+	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	q := &queries.ColumnTimeseries{
 		TableName:           "ad_bids",
 		TimestampColumnName: "timestamp",
@@ -25,7 +26,6 @@ func BenchmarkTimeSeries_hourly(b *testing.B) {
 				Expression: "avg(bid_price)",
 			},
 		},
-		MetricsView: mv,
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -35,7 +35,7 @@ func BenchmarkTimeSeries_hourly(b *testing.B) {
 	}
 }
 func BenchmarkTimeSeries_daily(b *testing.B) {
-	rt, instanceID, mv := prepareEnvironment(b)
+	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	q := &queries.ColumnTimeseries{
 		TableName:           "ad_bids",
 		TimestampColumnName: "timestamp",
@@ -49,7 +49,6 @@ func BenchmarkTimeSeries_daily(b *testing.B) {
 				Expression: "avg(bid_price)",
 			},
 		},
-		MetricsView: mv,
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -60,7 +59,7 @@ func BenchmarkTimeSeries_daily(b *testing.B) {
 }
 
 func BenchmarkTimeSeries_weekly(b *testing.B) {
-	rt, instanceID, mv := prepareEnvironment(b)
+	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	q := &queries.ColumnTimeseries{
 		TableName:           "ad_bids",
 		TimestampColumnName: "timestamp",
@@ -74,7 +73,6 @@ func BenchmarkTimeSeries_weekly(b *testing.B) {
 				Expression: "avg(bid_price)",
 			},
 		},
-		MetricsView: mv,
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -84,7 +82,7 @@ func BenchmarkTimeSeries_weekly(b *testing.B) {
 	}
 }
 func BenchmarkTimeSeries_weekly_first_day_of_week_Monday(b *testing.B) {
-	rt, instanceID, mv := prepareEnvironment(b)
+	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
 	q := &queries.ColumnTimeseries{
 		TableName:           "ad_bids",
@@ -98,8 +96,7 @@ func BenchmarkTimeSeries_weekly_first_day_of_week_Monday(b *testing.B) {
 				Expression: "avg(bid_price)",
 			},
 		},
-		MetricsView: mv,
-		TimeZone:    "Asia/Kathmandu",
+		TimeZone: "Asia/Kathmandu",
 	}
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
@@ -110,7 +107,7 @@ func BenchmarkTimeSeries_weekly_first_day_of_week_Monday(b *testing.B) {
 }
 
 func BenchmarkTimeSeries_weekly_first_day_of_week_Sunday(b *testing.B) {
-	rt, instanceID, mv := prepareEnvironment(b)
+	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
 	q := &queries.ColumnTimeseries{
 		TableName:           "ad_bids",
@@ -125,7 +122,6 @@ func BenchmarkTimeSeries_weekly_first_day_of_week_Sunday(b *testing.B) {
 			},
 		},
 		FirstDayOfWeek: 7,
-		MetricsView:    mv,
 		TimeZone:       "Asia/Kathmandu",
 	}
 

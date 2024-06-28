@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"go.uber.org/zap"
@@ -48,14 +49,27 @@ var spec = drivers.Spec{
 
 type driver struct{}
 
+type configProperties struct {
+	DSN                string `mapstructure:"dsn"`
+	ParallelFetchLimit int    `mapstructure:"parallel_fetch_limit"`
+	TempDir            string `mapstructure:"temp_dir"`
+}
+
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
 	if instanceID == "" {
 		return nil, errors.New("snowflake driver can't be shared")
 	}
+
+	conf := &configProperties{}
+	err := mapstructure.WeakDecode(config, conf)
+	if err != nil {
+		return nil, err
+	}
+
 	// actual db connection is opened during query
 	return &connection{
-		config: config,
-		logger: logger,
+		configProperties: conf,
+		logger:           logger,
 	}, nil
 }
 
@@ -72,8 +86,8 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 }
 
 type connection struct {
-	config map[string]any
-	logger *zap.Logger
+	configProperties *configProperties
+	logger           *zap.Logger
 }
 
 // Migrate implements drivers.Connection.
@@ -93,7 +107,9 @@ func (c *connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
-	return c.config
+	m := make(map[string]any, 0)
+	_ = mapstructure.Decode(c.configProperties, &m)
+	return m
 }
 
 // Close implements drivers.Connection.

@@ -1553,12 +1553,6 @@ paths:
                 type: array
                 items:
                   type: string
-                title: Required either measure_names or inline_measures
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1624,11 +1618,6 @@ paths:
                 type: array
                 items:
                   type: string
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1693,12 +1682,6 @@ paths:
                 type: array
                 items:
                   type: string
-                title: Required either measure_names or inline_measures
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -3719,9 +3702,6 @@ definitions:
       height:
         type: integer
         format: int64
-      fontSize:
-        type: integer
-        format: int64
   v1DashboardSpec:
     type: object
     properties:
@@ -3894,15 +3874,6 @@ definitions:
       - HISTOGRAM_METHOD_FD
       - HISTOGRAM_METHOD_DIAGNOSTIC
     default: HISTOGRAM_METHOD_UNSPECIFIED
-  v1InlineMeasure:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Required
-      expression:
-        type: string
-        title: Required, ie 'count(*)'
   v1Instance:
     type: object
     properties:
@@ -4572,12 +4543,6 @@ definitions:
         type: array
         items:
           type: string
-        title: Required either measure_names or inline_measures
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time
@@ -4632,11 +4597,6 @@ definitions:
         type: array
         items:
           type: string
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time
@@ -4690,12 +4650,6 @@ definitions:
         type: array
         items:
           type: string
-        title: Required either measure_names or inline_measures
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time

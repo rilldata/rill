@@ -8,6 +8,7 @@ import {
   ComparisonDeltaRelativeSuffix,
   mapExprToMeasureFilter,
 } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import { mergeFilters } from "@rilldata/web-common/features/dashboards/pivot/pivot-merge-filters";
 import {
   SortDirection,
@@ -60,10 +61,20 @@ export async function getDashboardFromAggregationRequest({
     executionTime,
   );
 
-  if (req.where) dashboard.whereFilter = req.where;
+  if (req.where) {
+    const { dimensionFilters, dimensionThresholdFilters } = splitWhereFilter(
+      req.where,
+    );
+    dashboard.whereFilter = dimensionFilters;
+    dashboard.dimensionThresholdFilters = dimensionThresholdFilters;
+  }
   if (req.having?.cond?.exprs?.length && req.dimensions?.[0]?.name) {
     const dimension = req.dimensions[0].name;
-    if (req.having.cond.exprs.length > 1 || exprHasComparison(req.having)) {
+    if (
+      req.having.cond.exprs.length > 1 ||
+      exprHasComparison(req.having) ||
+      dashboard.dimensionThresholdFilters.length > 0
+    ) {
       const expr = await convertExprToToplist(
         queryClient,
         instanceId,

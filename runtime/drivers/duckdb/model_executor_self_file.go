@@ -72,22 +72,22 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	}, nil
 }
 
-func exportSQL(qry, path, format string) (string, error) {
+func exportSQL(qry, path string, format drivers.FileFormat) (string, error) {
 	switch format {
-	case "parquet":
+	case drivers.FileFormatParquet:
 		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT PARQUET)", qry, path), nil
-	case "csv":
+	case drivers.FileFormatCSV:
 		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT CSV, HEADER true)", qry, path), nil
-	case "json":
+	case drivers.FileFormatJSON:
 		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT JSON)", qry, path), nil
 	default:
 		return "", fmt.Errorf("duckdb: unsupported export format %q", format)
 	}
 }
 
-func supportsExportFormat(format string) bool {
+func supportsExportFormat(format drivers.FileFormat) bool {
 	switch format {
-	case "parquet", "csv", "json":
+	case drivers.FileFormatParquet, drivers.FileFormatCSV, drivers.FileFormatJSON:
 		return true
 	default:
 		return false

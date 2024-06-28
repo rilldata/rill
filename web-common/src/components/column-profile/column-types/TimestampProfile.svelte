@@ -15,8 +15,11 @@
   } from "../queries";
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
 
-  export let columnName: string;
+  export let connector: string;
+  export let database: string;
+  export let databaseSchema: string;
   export let objectName: string;
+  export let columnName: string;
   export let type: string;
   export let mode = "summaries";
   export let example: any;
@@ -34,6 +37,9 @@
   /** queries used to power the different plots */
   $: nullPercentage = getNullPercentage(
     $runtime?.instanceId,
+    connector,
+    database,
+    databaseSchema,
     objectName,
     columnName,
     enableProfiling,
@@ -41,6 +47,9 @@
 
   $: timeSeries = getTimeSeriesAndSpark(
     $runtime?.instanceId,
+    connector,
+    database,
+    databaseSchema,
     objectName,
     columnName,
     enableProfiling,

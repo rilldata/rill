@@ -62,6 +62,33 @@
       ],
       "type": "object"
     },
+    "MarkdownProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "content": {
+          "type": "string"
+        },
+        "css": {
+          "type": "object"
+        }
+      },
+      "required": [
+        "content"
+      ],
+      "type": "object"
+    },
+    "MarkdownTemplateT": {
+      "additionalProperties": false,
+      "properties": {
+        "markdown": {
+          "$ref": "#/definitions/MarkdownProperties"
+        }
+      },
+      "required": [
+        "markdown"
+      ],
+      "type": "object"
+    },
     "TableProperties": {
       "additionalProperties": false,
       "properties": {
@@ -154,6 +181,9 @@
         },
         {
           "$ref": "#/definitions/TableTemplateT"
+        },
+        {
+          "$ref": "#/definitions/MarkdownTemplateT"
         }
       ]
     }

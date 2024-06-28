@@ -12,7 +12,7 @@
   import { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { createPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
-  import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
+  import { metricsPlusSQL } from "@rilldata/web-common/components/editor/presets/yamlWithJsonAndSql";
 
   export let filePath: string;
   export let metricViewName: string;
@@ -58,9 +58,9 @@
     }}
     {fileArtifact}
     extensions={[
+      metricsPlusSQL,
       placeholderElements.extension,
       yamlSchema(metricsJsonSchema),
-      FileExtensionToEditorExtension[".yaml"],
     ]}
   />
 </MetricsEditorContainer>

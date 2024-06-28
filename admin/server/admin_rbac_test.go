@@ -60,6 +60,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		emailClient,
 		github,
 		ai.NewNoop(),
+		nil,
 		billing.NewNoop(),
 	)
 	require.NoError(t, err)
