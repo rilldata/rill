@@ -44,15 +44,6 @@ export function getYupSchema(connector: V1ConnectorDriver) {
           .required("Source name is required"),
       });
 
-    case "duckdb":
-      return yup.object().shape({
-        db: yup.string().required("db is required"),
-        sourceName: yup
-          .string()
-          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-          .required("Source name is required"),
-      });
-
     case "sqlite":
       return yup.object().shape({
         db: yup.string().required("db is required"),
@@ -156,7 +147,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
 
     case "clickhouse":
       return yup.object().shape({
-        // User-provided names requires a little refactor. Commenting out for now.
+        // User-provided connector names requires a little refactor. Commenting out for now.
         // sourceName: yup
         //   .string()
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
@@ -170,7 +161,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
 
     case "druid":
       return yup.object().shape({
-        // User-provided names requires a little refactor. Commenting out for now.
+        // User-provided connector names requires a little refactor. Commenting out for now.
         // sourceName: yup
         //   .string()
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
@@ -182,9 +173,19 @@ export function getYupSchema(connector: V1ConnectorDriver) {
         ssl: yup.boolean(),
       });
 
+    case "duckdb":
+      return yup.object().shape({
+        // User-provided connector names requires a little refactor. Commenting out for now.
+        // sourceName: yup
+        //   .string()
+        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+        //   .required("Source name is required"),
+        db: yup.string().required("db is required"),
+      });
+
     case "pinot":
       return yup.object().shape({
-        // User-provided names requires a little refactor. Commenting out for now.
+        // User-provided connector names requires a little refactor. Commenting out for now.
         // sourceName: yup
         //   .string()
         //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
