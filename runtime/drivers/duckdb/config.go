@@ -67,14 +67,6 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		cfg.DSN = strings.Replace(cfg.DSN, ":memory:", "", 1)
 	}
 
-	// add defaults
-	if cfgMap != nil {
-		if _, ok := cfgMap["external_table_storage"]; !ok {
-			// Default to true for non in-memory dbs
-			cfg.ExtTableStorage = !inMemory
-		}
-	}
-
 	// Parse DSN as URL
 	uri, err := url.Parse(cfg.DSN)
 	if err != nil {
