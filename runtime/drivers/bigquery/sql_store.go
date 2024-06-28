@@ -149,7 +149,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		c.logger.Debug("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 	}
 
-	tempDir, err := os.MkdirTemp(c.config.TempDir, "rill-bq")
+	tempDir, err := os.MkdirTemp(c.config.TempDir, "bigquery")
 	if err != nil {
 		return nil, err
 	}

@@ -93,7 +93,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	// the number of returned rows is unknown at this point, only the number of batches and output files
 	p.Target(1, drivers.ProgressUnitFile)
 
-	tempDir, err := os.MkdirTemp(c.configProperties.TempDir, "rill-snowflake")
+	tempDir, err := os.MkdirTemp(c.configProperties.TempDir, "snowflake")
 	if err != nil {
 		return nil, err
 	}
