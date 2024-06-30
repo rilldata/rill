@@ -13,7 +13,6 @@
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
   import { initPylonWidget } from "../features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
-  import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -24,8 +23,6 @@
   // The admin server enables some dashboard features like scheduled reports and alerts
   // Set read-only mode so that the user can't edit the dashboard
   featureFlags.set(true, "adminServer", "readOnly");
-
-  clearViewedAsUserAfterNavigate(queryClient);
 
   let removeJavascriptListeners: () => void;
   initCloudMetrics()

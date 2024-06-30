@@ -1,4 +1,6 @@
+import { QueryClient } from "@tanstack/svelte-query";
 import { writable } from "svelte/store";
+import { invalidateRuntimeQueries } from "./invalidation";
 
 export interface JWT {
   token: string;
@@ -23,7 +25,12 @@ const createRuntimeStore = () => {
     subscribe,
     update,
     set, // backwards-compatibility for web-local (where there's no JWT)
-    setRuntime: (host: string, instanceId: string, jwt?: string) => {
+    setRuntime: async (
+      queryClient: QueryClient,
+      host: string,
+      instanceId: string,
+      jwt?: string,
+    ) => {
       update((current) => {
         // Only update the store (particularly, the JWT `receivedAt`) if the values have changed
         if (
@@ -39,6 +46,8 @@ const createRuntimeStore = () => {
         }
         return current;
       });
+
+      await invalidateRuntimeQueries(queryClient);
     },
   };
 };

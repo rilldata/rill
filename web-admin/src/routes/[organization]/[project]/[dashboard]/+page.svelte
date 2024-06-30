@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceGetCurrentUser,
@@ -9,6 +10,7 @@
   import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
   import { useProjectDeployment } from "@rilldata/web-admin/features/projects/status/selectors";
+  import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
@@ -79,6 +81,13 @@
       body: `The dashboard you requested could not be found. Please check that you provided the name of a working dashboard.`,
     });
   }
+
+  onNavigate(() => {
+    // Temporary: clear the mocked user when navigating away.
+    // In the future, we should be able to handle the mocked user on all project pages.
+    viewAsUserStore.set(null);
+    errorStore.reset();
+  });
 </script>
 
 <svelte:head>
