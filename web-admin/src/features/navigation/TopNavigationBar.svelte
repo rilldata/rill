@@ -1,12 +1,10 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
-  import Home from "@rilldata/web-common/components/icons/Home.svelte";
+  import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import OrganizationAvatar from "@rilldata/web-common/components/navigation/breadcrumbs/OrganizationAvatar.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useValidVisualizations } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -26,19 +24,34 @@
   import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import { useReports } from "../scheduled-reports/selectors";
-  import { isMetricsExplorerPage, isProjectPage } from "./nav-utils";
+  import PageTitle from "../shareable-urls/PageTitle.svelte";
+  import {
+    isMagicLinkPage,
+    isMetricsExplorerPage,
+    isProjectPage,
+  } from "./nav-utils";
 
   const user = createAdminServiceGetCurrentUser();
 
   $: instanceId = $runtime?.instanceId;
 
   // These can be undefined
-  $: ({ organization, project, dashboard, alert, report } = $page.params);
+  $: ({
+    organization,
+    project,
+    dashboard: dashboardParam,
+    alert,
+    report,
+  } = $page.params);
 
   $: onProjectPage = isProjectPage($page);
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
+  $: onMagicLinkPage = isMagicLinkPage($page);
+
+  $: loggedIn = !!$user.data?.user;
+  $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
 
   $: organizationQuery = listOrgs(
     { pageSize: 100 },
@@ -117,6 +130,15 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
+  // When visiting a magic link, the dashboard name won't be in the URL. However, the URL's token will
+  // have access to only one dashboard. So, we can get the dashboard name from the first (and only) visualization resource.
+  $: dashboard = onMagicLinkPage
+    ? visualizations[0]?.meta?.name?.name
+    : dashboardParam;
+
+  $: magicLinkDashboardTitle =
+    visualizations[0]?.metricsView.spec.title ?? dashboard;
+
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
 
@@ -124,17 +146,22 @@
   class="flex items-center w-full pr-4 pl-2 py-1"
   class:border-b={!onProjectPage}
 >
-  <Tooltip distance={2}>
-    <a href="/" class="hover:bg-gray-200 grid place-content-center rounded p-2">
-      <Home color="black" size="20px" />
-    </a>
-    <TooltipContent slot="tooltip-content">Home</TooltipContent>
-  </Tooltip>
-  {#if organization}
+  <!-- Left side -->
+  <a
+    href={rillLogoHref}
+    class="hover:bg-gray-200 grid place-content-center rounded p-2"
+  >
+    <Rill />
+  </a>
+  {#if onMagicLinkPage}
+    <PageTitle title={magicLinkDashboardTitle} />
+  {:else if organization}
     <Breadcrumbs {pathParts} {currentPath}>
       <OrganizationAvatar {organization} slot="icon" />
     </Breadcrumbs>
   {/if}
+
+  <!-- Right side -->
   <div class="flex gap-x-2 items-center ml-auto">
     {#if $viewAsUserStore}
       <ViewAsUserChip />
@@ -142,15 +169,15 @@
     {#if onProjectPage}
       <ShareProjectButton {organization} {project} />
     {/if}
-    {#if onMetricsExplorerPage}
+    {#if onMetricsExplorerPage || onMagicLinkPage}
       <StateManagersProvider metricsViewName={dashboard}>
         <LastRefreshedDate {dashboard} />
         <GlobalDimensionSearch metricsViewName={dashboard} />
-        {#if $user.isSuccess && $user.data.user}
+        {#if $user.isSuccess && $user.data.user && !onMagicLinkPage}
           <CreateAlert />
           <Bookmarks />
+          <ShareDashboardButton />
         {/if}
-        <ShareDashboardButton />
       </StateManagersProvider>
     {/if}
     {#if $user.isSuccess}
