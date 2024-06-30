@@ -2,11 +2,6 @@ import {
   createAdminServiceGetProject,
   V1DeploymentStatus,
 } from "@rilldata/web-admin/client";
-import {
-  PollTimeWhenProjectDeployed,
-  PollTimeWhenProjectDeploymentError,
-  PollTimeWhenProjectDeploymentPending,
-} from "@rilldata/web-admin/features/projects/status/selectors";
 import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors";
 import { refreshResource } from "@rilldata/web-common/features/entity-management/resource-invalidations";
 import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
@@ -70,6 +65,11 @@ export function useDashboardsLastUpdated(
     },
   );
 }
+
+// TODO: we should not be conflating the project deployment status with the dashboard status
+const PollTimeWhenProjectDeploymentPending = 1000;
+const PollTimeWhenProjectDeploymentError = 5000;
+const PollTimeWhenProjectDeployed = 60 * 1000;
 
 export function useDashboardsStatus(instanceId: string) {
   return createRuntimeServiceListResources(

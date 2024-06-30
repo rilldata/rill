@@ -45,7 +45,6 @@
 
   // TODO: consider putting another query observer here
   $: if ($hasAccessToOriginalDashboard) {
-    console.log("You have access to the original dashboard!");
     eventBus.emit("banner", {
       message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/${dashboard}'>original dashboard</a>.`,
       includesHtml: true,
