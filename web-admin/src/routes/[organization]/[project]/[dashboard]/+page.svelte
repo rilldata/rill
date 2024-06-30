@@ -1,15 +1,9 @@
 <script lang="ts">
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
-  import {
-    createAdminServiceGetCurrentUser,
-    V1DeploymentStatus,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
   import DashboardBookmarksStateProvider from "@rilldata/web-admin/features/dashboards/DashboardBookmarksStateProvider.svelte";
-  import { listDashboards } from "@rilldata/web-admin/features/dashboards/listing/selectors";
-  import { invalidateDashboardsQueries } from "@rilldata/web-admin/features/projects/invalidations";
   import ProjectErrored from "@rilldata/web-admin/features/projects/ProjectErrored.svelte";
-  import { useProjectDeployment } from "@rilldata/web-admin/features/projects/status/selectors";
   import { viewAsUserStore } from "@rilldata/web-admin/features/view-as-user/viewAsUserStore";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
   import DashboardThemeProvider from "@rilldata/web-common/features/dashboards/DashboardThemeProvider.svelte";
@@ -17,13 +11,8 @@
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
-  import { getRuntimeServiceGetResourceQueryKey } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { errorStore } from "../../../../features/errors/error-store";
-
-  const queryClient = useQueryClient();
 
   $: instanceId = $runtime?.instanceId;
 
@@ -32,36 +21,6 @@
   $: dashboardName = $page.params.dashboard;
 
   const user = createAdminServiceGetCurrentUser();
-
-  $: projectDeployment = useProjectDeployment(orgName, projectName); // polls
-  $: ({ data: deployment } = $projectDeployment);
-
-  let isProjectOK: boolean;
-
-  $: if (deployment?.status) {
-    const projectWasNotOk = !isProjectOK;
-
-    isProjectOK =
-      deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK;
-
-    if (projectWasNotOk && isProjectOK) {
-      getDashboardsAndInvalidate();
-
-      // Invalidate the query used to assess dashboard validity
-      queryClient.invalidateQueries(
-        getRuntimeServiceGetResourceQueryKey(instanceId, {
-          "name.name": dashboardName,
-          "name.kind": ResourceKind.MetricsView,
-        }),
-      );
-    }
-  }
-
-  async function getDashboardsAndInvalidate() {
-    const dashboards = await listDashboards(queryClient, instanceId);
-    const dashboardNames = dashboards.map((d) => d.meta.name.name);
-    return invalidateDashboardsQueries(queryClient, dashboardNames);
-  }
 
   $: dashboard = useDashboard(instanceId, dashboardName);
   $: isDashboardNotFound =
