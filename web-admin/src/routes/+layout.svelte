@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
+  import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
@@ -49,6 +50,7 @@
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <main class="flex flex-col min-h-screen h-screen">
+      <BannerCenter />
       {#if !isEmbed}
         <TopNavigationBar />
       {/if}
