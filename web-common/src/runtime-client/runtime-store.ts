@@ -47,7 +47,7 @@ const createRuntimeStore = () => {
         return current;
       });
 
-      await invalidateRuntimeQueries(queryClient);
+      await invalidateRuntimeQueries(queryClient, instanceId);
     },
   };
 };
