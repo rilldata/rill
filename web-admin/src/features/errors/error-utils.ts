@@ -2,6 +2,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import {
+  isMagicLinkPage,
   isMetricsExplorerPage,
   isProjectPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -25,7 +26,7 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     errorEventHandler?.requestErrorEventHandler(error, query);
 
     // If an anonymous user hits a 403 error, redirect to the login page
-    if (error.response?.status === 403) {
+    if (error.response?.status === 403 && !isMagicLinkPage(get(page))) {
       // Check for a logged-in user
       const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
         queryKey: getAdminServiceGetCurrentUserQueryKey(),
@@ -105,6 +106,10 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         return;
       }
     }
+
+    // Let the magic link page handle all errors
+    const onMagicLinkPage = isMagicLinkPage(get(page));
+    if (onMagicLinkPage) return;
 
     // Create a pretty message for the error page
     const errorStoreState = createErrorStoreStateFromAxiosError(error);
