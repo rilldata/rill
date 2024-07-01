@@ -1,4 +1,3 @@
-import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { AxiosRequestConfig } from "axios";
 import Axios from "axios";
 
@@ -17,7 +16,3 @@ export const httpClient = async <T>(config: AxiosRequestConfig): Promise<T> => {
 };
 
 export default httpClient;
-
-// This overrides Orval's generated error type. (Orval expects this to be a generic.)
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-export type ErrorType<Error> = HTTPError;
