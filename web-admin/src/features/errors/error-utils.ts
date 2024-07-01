@@ -18,7 +18,6 @@ import {
   getAdminServiceGetCurrentUserQueryKey,
 } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
-import { getProjectRuntimeQueryKey } from "../projects/selectors";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
@@ -66,8 +65,6 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         if (
           (error.response.data as RpcStatus).message === "driver: not found"
         ) {
-          const [, org, proj] = get(page).url.pathname.split("/");
-          void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
           return;
         }
       }

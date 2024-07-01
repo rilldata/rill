@@ -244,6 +244,8 @@ export function useDashboardV2(
     query: {
       enabled: !!instanceId && !!name,
       select: (data) => {
+        if (!name) return;
+
         const dashboard = data.resources.find(
           (res) => res.meta.name.name.toLowerCase() === name.toLowerCase(),
         );

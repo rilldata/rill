@@ -137,7 +137,7 @@
     : dashboardParam;
 
   $: magicLinkDashboardTitle =
-    visualizations[0]?.metricsView.spec.title ?? dashboard;
+    visualizations[0]?.metricsView.spec.title ?? dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
