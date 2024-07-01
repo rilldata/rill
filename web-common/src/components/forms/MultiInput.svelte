@@ -1,6 +1,7 @@
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import { slide } from "svelte/transition";
 
   /**
    * Input that allows to enter multiple items but appears within a single input box.
@@ -42,6 +43,7 @@
   }
 
   $: hasSomeErrors = errs.some((e) => !!e[accessorKey]);
+  $: invalidValues = values.filter((_, i) => !!errs[i][accessorKey]);
 </script>
 
 <div class="flex flex-col">
@@ -73,6 +75,7 @@
       {@const hasError = !!errs[i]?.[accessorKey]}
       <div
         class="flex items-center text-gray-600 text-sm rounded-2xl border border-gray-300 bg-gray-100 pl-2 pr-1 max-w-full"
+        class:border-gray-300={hasError}
       >
         {#if hasError}
           <Tooltip distance={8}>
@@ -103,4 +106,11 @@
       on:focusout={() => (focused = false)}
     />
   </div>
+  {#if hasSomeErrors}
+    <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
+      Invalid {label} value{invalidValues.length > 1 ? "s" : ""}: {invalidValues
+        .map((v) => `"${v[accessorKey]}"`)
+        .join(",")}
+    </div>
+  {/if}
 </div>
