@@ -1,22 +1,45 @@
 <script lang="ts">
+  import CreateShareableURLForm from "@rilldata/web-admin/features/shareable-urls/CreateShareableURLForm.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
+  import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+  } from "@rilldata/web-common/components/popover";
+  import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+  } from "@rilldata/web-common/components/tabs";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 </script>
 
-<DropdownMenu.Root>
-  <DropdownMenu.Trigger asChild let:builder>
+<Popover>
+  <PopoverTrigger asChild let:builder>
     <Button type="secondary" builders={[builder]}>Share</Button>
-  </DropdownMenu.Trigger>
-  <DropdownMenu.Content align="end">
-    <DropdownMenu.Item
-      on:click={() => {
-        copyToClipboard(window.location.href, "Link copied to clipboard");
-      }}
-    >
-      <Link size="16px" className="text-gray-900 mr-2 h-4 w-4" />
-      Copy shareable link
-    </DropdownMenu.Item>
-  </DropdownMenu.Content>
-</DropdownMenu.Root>
+  </PopoverTrigger>
+  <PopoverContent align="end" class="w-[402px] p-0">
+    <Tabs>
+      <TabsList>
+        <TabsTrigger value="tab1">Copy link</TabsTrigger>
+        <TabsTrigger value="tab2">Create public link</TabsTrigger>
+      </TabsList>
+      <TabsContent value="tab1" class="mt-0 p-4">
+        <Button
+          type="secondary"
+          on:click={() => {
+            copyToClipboard(window.location.href, "Link copied to clipboard");
+          }}
+        >
+          <Link size="16px" className="text-gray-900 mr-2 h-4 w-4" />
+          Copy shareable link
+        </Button>
+      </TabsContent>
+      <TabsContent value="tab2" class="mt-0 p-4">
+        <CreateShareableURLForm />
+      </TabsContent>
+    </Tabs>
+  </PopoverContent>
+</Popover>
