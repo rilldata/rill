@@ -9,7 +9,9 @@ import type { QueryFunction } from "@tanstack/svelte-query";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { get } from "svelte/store";
 
-export const load = async ({ params, depends }) => {
+let ran = false;
+
+export const load = async ({ params, depends, url }) => {
   const { instanceId } = get(runtime);
 
   const dashboardName = params.name;
@@ -43,8 +45,57 @@ export const load = async ({ params, depends }) => {
       throw error(404, "Dashboard not found");
     }
 
+    const spec = metricsViewResource?.metricsView?.spec;
+    const state = metricsViewResource?.metricsView?.state;
+
+    if (!spec || !state || !dashboardName) {
+      throw error(404, "Metrics view not found");
+    }
+
+    if (ran) {
+      return {
+        metricsView: metricsViewResource,
+        initDimensions: new Map(),
+      };
+    }
+
+    ran = true;
+
+    const searchParams = new URLSearchParams(url.searchParams);
+
+    const dimensions = spec.dimensions ?? [];
+
+    const initDimensions = new Map<
+      string,
+      { exclude: boolean; values: string[] }
+    >();
+
+    dimensions.forEach(({ name }) => {
+      if (!name) return;
+      const valueStrings = searchParams.getAll(name);
+
+      if (!valueStrings.length || !valueStrings) return;
+
+      valueStrings.forEach((valueString) => {
+        if (valueString) {
+          const values = valueString.split(",") ?? [];
+
+          if (values.length) {
+            const exclude = values[0] === "!";
+
+            if (exclude) {
+              values.shift();
+            }
+
+            initDimensions.set(name, { exclude, values });
+          }
+        }
+      });
+    });
+
     return {
       metricsView: metricsViewResource,
+      initDimensions,
     };
   } catch (e) {
     console.error(e);

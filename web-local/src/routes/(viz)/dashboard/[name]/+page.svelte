@@ -19,6 +19,7 @@
 
   $: metricsViewName = data.metricsView.meta?.name?.name as string;
 
+  $: ({ initDimensions } = data);
   $: ({ instanceId } = $runtime);
 
   $: filePaths = data.metricsView.meta?.filePaths as string[];
@@ -45,7 +46,7 @@
       <DashboardStateProvider metricViewName={metricsViewName}>
         <DashboardURLStateProvider metricViewName={metricsViewName}>
           <DashboardThemeProvider>
-            <Dashboard metricViewName={metricsViewName} />
+            <Dashboard metricViewName={metricsViewName} {initDimensions} />
           </DashboardThemeProvider>
         </DashboardURLStateProvider>
       </DashboardStateProvider>
