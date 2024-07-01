@@ -101,7 +101,7 @@
       on:keydown={handleKeyDown}
       autocomplete="off"
       id="{id}.{values.length}.{accessorKey}"
-      class="focus:outline-white group-hover:text-red-500 text-sm w-full"
+      class="focus:outline-white group-hover:text-red-500 text-sm w-fit px-1"
       on:focusin={() => (focused = true)}
       on:focusout={() => (focused = false)}
     />
