@@ -43,7 +43,6 @@
   }
 
   $: hasSomeErrors = errs.some((e) => !!e[accessorKey]);
-  $: invalidValues = values.filter((_, i) => !!errs[i][accessorKey]);
 </script>
 
 <div class="flex flex-col">
@@ -108,9 +107,7 @@
   </div>
   {#if hasSomeErrors}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
-      Invalid {label} value{invalidValues.length > 1 ? "s" : ""}: {invalidValues
-        .map((v) => `"${v[accessorKey]}"`)
-        .join(",")}
+      {errs[0][accessorKey]}
     </div>
   {/if}
 </div>
