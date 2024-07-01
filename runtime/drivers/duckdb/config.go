@@ -104,9 +104,6 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		threads = cfg.ThreadsOverride
 	} else if cfg.CPU > 0 {
 		threads = cfg.CPU
-		if threads <= 0 {
-			threads = 1
-		}
 	}
 	if threads > 0 { // NOTE: threads=0 or threads=-1 means no limit
 		qry.Add("threads", strconv.Itoa(threads))
