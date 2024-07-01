@@ -11,7 +11,9 @@ import (
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 // maxProjectFiles is the maximum number of files that can be in a project directory.
@@ -204,6 +206,11 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 	return startCmd
 }
 
+// a smaller subset of relevant parts of rill.yaml
+type rillYAML struct {
+	IgnorePaths []string `yaml:"ignore_paths"`
+}
+
 func countFilesInDirectory(path string) (int, error) {
 	var fileCount int
 
@@ -211,11 +218,22 @@ func countFilesInDirectory(path string) (int, error) {
 		path = "."
 	}
 
-	err := filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	var ignorePaths []string
+	// Read rill.yaml and get `ignore_paths`
+	rawYaml, err := os.ReadFile(filepath.Join(path, "/rill.yaml"))
+	if err == nil {
+		yml := &rillYAML{}
+		err = yaml.Unmarshal(rawYaml, yml)
+		if err == nil {
+			ignorePaths = yml.IgnorePaths
+		}
+	}
+
+	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() {
+		if !info.IsDir() && drivers.IsIgnored(path, ignorePaths) {
 			fileCount++
 		}
 		return nil
