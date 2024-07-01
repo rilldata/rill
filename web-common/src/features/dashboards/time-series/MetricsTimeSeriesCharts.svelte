@@ -217,9 +217,11 @@
     showHideMeasures.setAllToVisible();
   };
 
-  $: hasTotalsError = $timeSeriesDataStore?.error.hasOwnProperty("totals");
-  $: hasTimeseriesError =
-    $timeSeriesDataStore?.error.hasOwnProperty("timeseries");
+  $: hasTotalsError = Object.hasOwn($timeSeriesDataStore?.error, "totals");
+  $: hasTimeseriesError = Object.hasOwn(
+    $timeSeriesDataStore?.error,
+    "timeseries",
+  );
 </script>
 
 <TimeSeriesChartContainer
