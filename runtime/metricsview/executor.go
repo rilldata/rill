@@ -30,6 +30,7 @@ type Executor struct {
 	instanceCfg drivers.InstanceConfig
 
 	watermark time.Time
+	tempDir   string
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
@@ -59,6 +60,7 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 // Close releases the resources held by the Executor.
 func (e *Executor) Close() {
 	e.olapRelease()
+	_ = os.RemoveAll(e.tempDir)
 }
 
 // ValidateMetricsView validates the dimensions and measures in the executor's metrics view.
@@ -152,8 +154,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, runtime.ErrForbidden
 	}
 
-	export := qry.Label // TODO: Always set to false once all upstream code uses Export() for exports
-	if err := e.rewriteQueryLimit(qry, export); err != nil {
+	if err := e.rewriteQueryLimit(qry); err != nil {
 		return nil, false, err
 	}
 
@@ -248,7 +249,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		})
 	}
 
-	limitCap := e.queryLimitCap(export)
+	limitCap := e.instanceCfg.InteractiveSQLRowLimit
 	if limitCap > 0 {
 		res.SetCap(limitCap)
 	}
@@ -264,10 +265,6 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat) (string, error) {
 	if e.security != nil && !e.security.Access {
 		return "", runtime.ErrForbidden
-	}
-
-	if err := e.rewriteQueryLimit(qry, true); err != nil {
-		return "", err
 	}
 
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)

@@ -19,8 +19,8 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	ctx, cancel := context.WithTimeout(ctx, defaultExportTimeout)
 	defer cancel()
 
-	path := e.rt.TempDir(e.instanceID, "metrics_export")
-	err := os.MkdirAll(path, os.ModePerm)
+	e.tempDir = e.rt.TempDir(e.instanceID, "metrics_export")
+	err := os.MkdirAll(e.tempDir, os.ModePerm)
 	if err != nil {
 		return "", err
 	}
@@ -30,7 +30,7 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		return "", err
 	}
 	name = format.Filename(name)
-	path = filepath.Join(path, name)
+	path := filepath.Join(e.tempDir, name)
 
 	ic, ir, err := e.rt.AcquireHandle(ctx, e.instanceID, inputConnector)
 	if err != nil {
@@ -59,8 +59,9 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		OutputHandle:    oc,
 		OutputConnector: "file",
 		OutputProperties: map[string]any{
-			"path":   path,
-			"format": format,
+			"path":                  path,
+			"format":                format,
+			"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
 		},
 		Priority: e.priority,
 	}
