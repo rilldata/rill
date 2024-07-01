@@ -14,7 +14,7 @@
   }
 </script>
 
-<div class="flex flex-row text-gray-800 my-1">
+<div class="container">
   <div
     class="p-0.5 border border-gray-200 rounded-bl-sm rounded-tl-sm bg-gray-50 command-text"
   >
@@ -36,11 +36,17 @@
   </div>
 </div>
 
-<style>
+<style lang="postcss">
+  .container {
+    @apply my-1 flex;
+    @apply text-gray-800;
+  }
+
   .command-text {
     font-family: "Source Code Variable", monospace;
     padding-left: 7px;
     padding-right: 7px;
     border-right: 0;
+    @apply truncate;
   }
 </style>
