@@ -632,7 +632,7 @@ export const TIME_COMPARISON = {
   },
 };
 
-export const NO_COMPARISON_LABEL = "No comparison";
+export const NO_COMPARISON_LABEL = "No dimension breakdown";
 
 export const DEFAULT_TIMEZONES = [
   "America/Los_Angeles",

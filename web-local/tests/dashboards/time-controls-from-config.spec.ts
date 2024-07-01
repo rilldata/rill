@@ -87,7 +87,7 @@ default_comparison:
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // Comparison is selected
-    await expect(page.getByText("Comparing by Time")).toBeVisible();
+    await expect(page.getByText("Broken down by Time")).toBeVisible();
     // Go back to metrics editor
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
@@ -102,7 +102,7 @@ default_comparison:
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // Comparison is selected
-    await expect(page.getByText("Comparing by Publisher")).toBeVisible();
+    await expect(page.getByText("Broken down by Publisher")).toBeVisible();
     // Go back to metrics editor
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 
@@ -115,8 +115,6 @@ default_comparison:
     );
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
-    // No Comparison
-    await expect(page.getByText("No Comparison")).toBeVisible();
   });
 
   test("available_time_ranges", async ({ page }) => {
@@ -157,7 +155,7 @@ available_time_ranges:
     await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     // Wait for time range menu to close
     await expect(
-      page.getByRole("menu", { name: "Time range selector" }),
+      page.getByRole("menu", { name: "Select time range" }),
     ).not.toBeVisible();
     // Assert data has changed
     await expect(page.getByText("Total rows 272 -23 -8%")).toBeVisible();

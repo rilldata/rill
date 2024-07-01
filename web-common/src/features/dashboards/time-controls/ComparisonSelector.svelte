@@ -5,12 +5,14 @@ This component needs to do the following:
 3. update comparisons on user interactions
 -->
 <script lang="ts">
-  import { IconSpaceFixer } from "@rilldata/web-common/components/button";
+  import {
+    Button,
+    IconSpaceFixer,
+  } from "@rilldata/web-common/components/button";
   import { Chip } from "@rilldata/web-common/components/chip";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
-  import Compare from "@rilldata/web-common/components/icons/Compare.svelte";
   import {
     Divider,
     Menu,
@@ -28,9 +30,8 @@ This component needs to do the following:
   import type { MetricsViewSpecDimensionV2 } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { matchSorter } from "match-sorter";
-  import SelectorButton from "./SelectorButton.svelte";
 
-  export let metricViewName;
+  export let metricViewName: string;
   export let chipStyle = false;
 
   const TIME = "Time";
@@ -111,16 +112,19 @@ This component needs to do the following:
         </div>
       </Chip>
     {:else}
-      <SelectorButton {active} on:click={toggleFloatingElement}>
-        <div class="flex items-center gap-x-3">
-          <span class="ui-copy-icon"><Compare size="16px" /></span>
-
-          <span style:transform="translateY(-1px)" class="font-normal">
-            {showTimeComparison || selectedDimension ? "Comparing by" : ""}
+      <Button type="text" on:click={toggleFloatingElement}>
+        <div
+          class="flex items-center gap-x-0.5 px-1.5 text-gray-700 hover:text-inherit"
+        >
+          <span class="font-normal">
+            {showTimeComparison || selectedDimension ? "Broken down by" : ""}
             <span class="font-bold">{label}</span>
           </span>
+          <span class="transition-transform" class:-rotate-180={active}>
+            <CaretDownIcon />
+          </span>
         </div>
-      </SelectorButton>
+      </Button>
     {/if}
     <TooltipContent slot="tooltip-content" maxWidth="220px">
       Select a comparison for the dashboard
@@ -173,7 +177,7 @@ This component needs to do the following:
     <Divider marginTop={0.5} marginBottom={0.5} />
 
     <div style:max-height="200px" class="overflow-y-auto">
-      {#each menuOptions as option}
+      {#each menuOptions as option (option.name)}
         <MenuItem
           selected={option.name === intermediateSelection}
           on:before-select={() => {

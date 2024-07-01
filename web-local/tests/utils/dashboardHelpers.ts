@@ -171,17 +171,19 @@ export async function interactWithTimeRangeMenu(
   await cb();
   // Wait for menu to close
   await expect(
-    page.getByRole("menu", { name: "Time range selector" }),
+    page.getByRole("menu", { name: "Select time range" }),
   ).not.toBeVisible();
 }
 
 export async function interactWithComparisonMenu(
   page: Page,
-  curLabel: string,
   cb: (l: Locator) => void | Promise<void>,
+  curLabel?: string,
 ) {
   // Open the menu
-  await page.getByRole("button", { name: curLabel }).click();
+  await page
+    .getByRole("button", { name: curLabel || "No dimension breakdown" })
+    .click();
   // Run the defined interactions
   await cb(page.getByLabel("Comparison selector"));
   // Wait for menu to close

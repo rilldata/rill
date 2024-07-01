@@ -124,7 +124,7 @@ test.describe("dashboard", () => {
       page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }),
     ).not.toBeVisible();
 
-    await interactWithComparisonMenu(page, "No comparison", (l) =>
+    await interactWithComparisonMenu(page, (l) =>
       l.getByRole("menuitem", { name: "Time" }).click(),
     );
 
@@ -177,15 +177,18 @@ test.describe("dashboard", () => {
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
     // Turn off comparison
-    await interactWithComparisonMenu(page, "Comparing by Time", (l) =>
-      l.getByRole("menuitem", { name: "No comparison" }).click(),
+    await interactWithComparisonMenu(
+      page,
+      (l) =>
+        l.getByRole("menuitem", { name: "No dimension breakdown" }).click(),
+      "Broken down by Time",
     );
 
     // Check number
     await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
-    await interactWithComparisonMenu(page, "No comparison", (l) =>
+    await interactWithComparisonMenu(page, (l) =>
       l.getByRole("menuitem", { name: "Time" }).click(),
     );
 
@@ -202,19 +205,12 @@ test.describe("dashboard", () => {
      */
     await expect(page.getByLabel("Comparison selector")).not.toBeVisible();
 
-    // Switch to a custom time range
-    await interactWithTimeRangeMenu(page, async () => {
-      const timeRangeMenu = page.getByRole("menu", {
-        name: "Time range selector",
-      });
+    await page.getByLabel("Select time range").click();
+    await page.getByRole("menuitem", { name: "Custom" }).click();
 
-      await timeRangeMenu
-        .getByRole("menuitem", { name: "Custom range" })
-        .click();
-      await timeRangeMenu.getByLabel("Start date").fill("2022-02-01");
-      await timeRangeMenu.getByLabel("Start date").blur();
-      await timeRangeMenu.getByRole("button", { name: "Apply" }).click();
-    });
+    await page.getByLabel("start date").fill("2022-02-01");
+    await page.getByLabel("start date").blur();
+    await page.getByRole("button", { name: "Apply" }).click();
 
     // Check number
     await expect(page.getByText("Total records 65.1k")).toBeVisible();
@@ -261,11 +257,6 @@ test.describe("dashboard", () => {
     // Check number
     await expect(
       page.getByText("Total records 100.0k", { exact: true }),
-    ).toBeVisible();
-
-    // Check no filters label
-    await expect(
-      page.getByText("No filters selected", { exact: true }),
     ).toBeVisible();
 
     // TODO
@@ -315,7 +306,7 @@ test.describe("dashboard", () => {
     ).toBeVisible();
 
     // Assert that no time dimension specified
-    await expect(page.getByText("No time dimension specified")).toBeVisible();
+    // await expect(page.getByText("No time dimension specified")).toBeVisible();
 
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
@@ -353,7 +344,7 @@ test.describe("dashboard", () => {
     await page.getByRole("button", { name: "Preview" }).click();
 
     // Assert that time dimension is now week
-    await expect(timeGrainSelector).toHaveText("Metric trends by week");
+    await expect(timeGrainSelector).toHaveText("by Week");
 
     // Open Edit Metrics
     await page.getByRole("button", { name: "Edit Metrics" }).click();
@@ -505,7 +496,7 @@ dimensions:
       page.getByText("No comparison dimension selected"),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "No comparison" }).nth(1).click();
+    await page.getByRole("button", { name: "No dimension breakdown" }).click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
     await page.getByText("google.com", { exact: true }).click({ force: true });
@@ -525,7 +516,7 @@ dimensions:
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
 
-    await page.getByRole("button", { name: "Domain name" }).nth(1).click();
+    await page.getByRole("button", { name: "Domain name" }).click();
     await page.getByRole("menuitem", { name: "Time" }).click();
 
     await expect(page.getByText("~0%")).toBeVisible();

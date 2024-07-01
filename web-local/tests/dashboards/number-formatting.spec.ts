@@ -138,7 +138,7 @@ dimensions:
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
-    await interactWithComparisonMenu(page, "No comparison", (l) =>
+    await interactWithComparisonMenu(page, (l) =>
       l.getByRole("menuitem", { name: "Time" }).click(),
     );
 
@@ -154,7 +154,6 @@ dimensions:
     await page.getByRole("button", { name: "Select a context column" }).click();
     await page.getByRole("menuitem", { name: "Percent change" }).click();
 
-    // await page.pause();
     await expect(
       page.getByRole("button", { name: "null 26642.549999999974 -14%" }),
     ).toBeVisible();

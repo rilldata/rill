@@ -12,6 +12,8 @@
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import RangeDisplay from "../time-controls/super-pill/components/RangeDisplay.svelte";
+  import { Interval } from "luxon";
 
   export let metricViewName: string;
   export let showComparison = false;
@@ -26,6 +28,17 @@
   } = StateManagers;
 
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
+
+  $: ({ selectedScrubRange } = $dashboardStore);
+
+  $: selectedSubRange =
+    selectedScrubRange?.start && selectedScrubRange?.end
+      ? getOrderedStartEnd(selectedScrubRange.start, selectedScrubRange.end)
+      : null;
+
+  $: subInterval = selectedSubRange
+    ? Interval.fromDateTimes(selectedSubRange.start, selectedSubRange.end)
+    : null;
 
   function onKeyDown(e: KeyboardEvent) {
     const targetTagName = (e.target as HTMLElement).tagName;
@@ -95,12 +108,18 @@
   }
 </script>
 
-{#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
-  <div class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2">
+{#if $dashboardStore?.selectedScrubRange?.end}
+  <div
+    class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2 z-50 bg-white"
+  >
     <Button compact type="plain" on:click={() => zoomScrub()}>
       <div class="flex items-center gap-x-2">
-        <Zoom size="16px" />
-        Zoom
+        <span class="flex-none">
+          <Zoom size="16px" />
+        </span>
+        {#if subInterval?.isValid && timeGrain}
+          <RangeDisplay interval={subInterval} grain={timeGrain} />
+        {/if}
         <span class="font-semibold">(Z)</span>
       </div>
     </Button>
