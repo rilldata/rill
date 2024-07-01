@@ -123,7 +123,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 		Names:        names,
 		Host:         strings.Split(host, "//")[1], // Remove protocol
 		CPU:          1 * opts.Slots,
-		MemoryGB:     8 * opts.Slots,
+		MemoryGB:     4 * opts.Slots,
 		StorageBytes: 40 * int64(opts.Slots) * int64(datasize.GB),
 		Slots:        opts.Slots,
 		Annotations:  opts.Annotations,
