@@ -694,7 +694,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Label:       dim.Label,
 			Description: dim.Description,
 			Unnest:      dim.Unnest,
-			URI:         dim.URI,
+			Uri:         dim.URI,
 		})
 	}
 	spec.DefaultDimensions = tmp.DefaultDimensions
