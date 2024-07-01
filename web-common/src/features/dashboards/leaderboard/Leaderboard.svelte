@@ -48,6 +48,7 @@
 
   const {
     selectors: {
+      dimensions: { getDimensionByName },
       activeMeasure: { activeMeasureName },
       dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
@@ -63,6 +64,8 @@
     metricsViewName,
     runtime,
   } = getStateManagers();
+
+  $: ({ uri } = $getDimensionByName(dimensionName));
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -144,13 +147,25 @@
     <div class="rounded-b border-gray-200 surface text-gray-800">
       <!-- place the leaderboard entries that are above the fold here -->
       {#each aboveTheFold as itemData (itemData.dimensionValue)}
-        <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
+        <LeaderboardListItem
+          {dimensionName}
+          {itemData}
+          {uri}
+          on:click
+          on:keydown
+        />
       {/each}
       <!-- place the selected values that are not above the fold here -->
       {#if selectedBelowTheFold?.length}
         <hr />
         {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
-          <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
+          <LeaderboardListItem
+            {dimensionName}
+            {itemData}
+            {uri}
+            on:click
+            on:keydown
+          />
         {/each}
         <hr />
       {/if}
