@@ -2,6 +2,7 @@ package start
 
 import (
 	"fmt"
+	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -211,16 +212,16 @@ type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
 }
 
-func countFilesInDirectory(path string) (int, error) {
+func countFilesInDirectory(projectPath string) (int, error) {
 	var fileCount int
 
-	if path == "" {
-		path = "."
+	if projectPath == "" {
+		projectPath = "."
 	}
 
 	var ignorePaths []string
 	// Read rill.yaml and get `ignore_paths`
-	rawYaml, err := os.ReadFile(filepath.Join(path, "/rill.yaml"))
+	rawYaml, err := os.ReadFile(filepath.Join(projectPath, "/rill.yaml"))
 	if err == nil {
 		yml := &rillYAML{}
 		err = yaml.Unmarshal(rawYaml, yml)
@@ -229,11 +230,19 @@ func countFilesInDirectory(path string) (int, error) {
 		}
 	}
 
-	err = filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	err = filepath.WalkDir(projectPath, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
-		if !info.IsDir() && drivers.IsIgnored(path, ignorePaths) {
+		path = strings.TrimPrefix(path, projectPath)
+
+		if drivers.IsIgnored(path, ignorePaths) {
+			if info.IsDir() {
+				return filepath.SkipDir
+			}
+			return nil
+		}
+		if !info.IsDir() {
 			fileCount++
 		}
 		return nil
