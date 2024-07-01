@@ -86,7 +86,14 @@
     hovered = false;
   };
 
-  $: href = uri === "true" ? label : uri.replace(`{{${dimensionName}}}`, label);
+  $: href = makeHref(uri);
+
+  function makeHref(uri: string | undefined) {
+    if (!uri) {
+      return undefined;
+    }
+    return uri === "true" ? label : uri.replace(`{{${dimensionName}}}`, label);
+  }
 </script>
 
 <Tooltip location="right">
@@ -97,7 +104,7 @@
     on:mouseleave={onLeave}
     role="presentation"
   >
-    {#if hovered && uri}
+    {#if hovered && href}
       <a target="_blank" rel="noopener noreferrer" {href}>
         <ExternalLink className="fill-primary-600" />
       </a>
