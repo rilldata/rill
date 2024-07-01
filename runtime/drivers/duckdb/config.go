@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	cpuThreadRatio float64 = 0.5
-	poolSizeMin    int     = 2
-	poolSizeMax    int     = 5
+	poolSizeMin int = 2
+	poolSizeMax int = 5
 )
 
 // config represents the DuckDB driver config
@@ -104,7 +103,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	if cfg.ThreadsOverride != 0 {
 		threads = cfg.ThreadsOverride
 	} else if cfg.CPU > 0 {
-		threads = int(cpuThreadRatio * float64(cfg.CPU))
+		threads = cfg.CPU
 		if threads <= 0 {
 			threads = 1
 		}
