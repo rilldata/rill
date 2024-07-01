@@ -32,7 +32,7 @@ export function createTotalsForMeasure(
         runtime.instanceId,
         metricsViewName,
         {
-          measures: [],
+          measures: measures.map((measure) => ({ name: measure })),
           where: sanitiseExpression(mergeMeasureFilters(dashboard), undefined),
           timeRange: {
             start: isComparison

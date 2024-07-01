@@ -69,7 +69,7 @@ export function createMetricsViewTimeSeries(
         runtime.instanceId,
         metricViewName,
         {
-          measureNames: [],
+          measureNames: measures,
           where: sanitiseExpression(
             mergeMeasureFilters(dashboardStore),
             undefined,
