@@ -28,6 +28,7 @@
   export let open: boolean;
   export let queryName: string;
   export let queryArgs: any;
+  export let metricsViewProto: string;
 
   const user = createAdminServiceGetCurrentUser();
   const createReport = createAdminServiceCreateReport();
@@ -80,6 +81,7 @@
               emailRecipients: values.recipients
                 .map((r) => r.email)
                 .filter(Boolean),
+              webOpenState: metricsViewProto,
             },
           },
         });

@@ -747,15 +747,11 @@ func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
 	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	ctx := testCtx()
-	mvName := "ad_bids_metrics"
-	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName:    "ad_bids_metrics",
-		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		MeasureNames:       []string{"measure_0"},
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
+		MetricsViewName: "ad_bids_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0"},
 	}
 
 	var buf bytes.Buffer
@@ -780,15 +776,11 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	rt, instanceId := testruntime.NewInstanceForProject(t, "ad_bids_2rows")
 
 	ctx := testCtx()
-	mvName := "ad_bids_metrics"
-	mv, security := resolveMVAndSecurity(t, rt, instanceId, mvName)
 
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName:    "ad_bids_metrics",
-		TimeGranularity:    runtimev1.TimeGrain_TIME_GRAIN_DAY,
-		MeasureNames:       []string{"measure_0"},
-		MetricsView:        mv,
-		ResolvedMVSecurity: security,
+		MetricsViewName: "ad_bids_metrics",
+		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+		MeasureNames:    []string{"measure_0"},
 	}
 
 	var buf bytes.Buffer

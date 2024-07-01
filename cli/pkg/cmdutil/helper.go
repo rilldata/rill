@@ -231,7 +231,7 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 	return userID, nil
 }
 
-func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL string) ([]string, error) {
+func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, subPath string) ([]string, error) {
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
@@ -246,7 +246,7 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL str
 
 	names := make([]string, 0)
 	for _, p := range resp.Projects {
-		if strings.EqualFold(p.GithubUrl, githubURL) {
+		if strings.EqualFold(p.GithubUrl, githubURL) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
 			names = append(names, p.Name)
 		}
 	}
@@ -266,7 +266,7 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	}
 
 	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL)
+	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL, "")
 	if err != nil {
 		return "", err
 	}

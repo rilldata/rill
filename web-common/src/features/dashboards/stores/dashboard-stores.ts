@@ -278,6 +278,7 @@ const metricViewReducers = {
   setPivotColumns(name: string, value: PivotChipData[]) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.pivot.rowPage = 1;
+      metricsExplorer.pivot.expanded = {};
 
       const dimensions: PivotChipData[] = [];
       const measures: PivotChipData[] = [];

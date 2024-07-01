@@ -1,30 +1,30 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { createAdminServiceGetCurrentUser } from "@rilldata/web-admin/client";
+  import {
+    V1DeploymentStatus,
+    createAdminServiceGetCurrentUser,
+  } from "@rilldata/web-admin/client";
   import { isProjectPage } from "@rilldata/web-admin/features/navigation/nav-utils";
+  import ProjectBuilding from "@rilldata/web-admin/features/projects/ProjectBuilding.svelte";
   import ProjectDashboardsListener from "@rilldata/web-admin/features/projects/ProjectDashboardsListener.svelte";
+  import RedeployProjectCta from "@rilldata/web-admin/features/projects/RedeployProjectCTA.svelte";
+  import { useProjectDeployment } from "@rilldata/web-admin/features/projects/status/selectors";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import { metricsService } from "@rilldata/web-common/metrics/initMetrics";
   import RuntimeProvider from "@rilldata/web-common/runtime-client/RuntimeProvider.svelte";
   import ProjectTabs from "../../../features/projects/ProjectTabs.svelte";
   import { useProjectRuntime } from "../../../features/projects/selectors";
   import { viewAsUserStore } from "../../../features/view-as-user/viewAsUserStore";
 
+  const user = createAdminServiceGetCurrentUser();
+
   $: ({ organization, project } = $page.params);
 
   $: projRuntime = useProjectRuntime(organization, project);
-  $: ({ data: runtime } = $projRuntime);
+  $: ({ data: runtime, isSuccess: runtimeQueryIsSuccess } = $projRuntime);
 
-  const user = createAdminServiceGetCurrentUser();
-
-  $: isRuntimeHibernating = $projRuntime.isSuccess && !$projRuntime.data;
-
-  $: if (isRuntimeHibernating) {
-    // Redirect any nested routes (notably dashboards) to the project page
-    goto(`/${organization}/${project}`);
-  }
-
-  $: onProjectPage = isProjectPage($page);
+  $: projectDeployment = useProjectDeployment(organization, project);
+  $: ({ data: deployment } = $projectDeployment);
 
   $: if (project && $user.data?.user?.id) {
     metricsService.loadCloudFields({
@@ -34,27 +34,38 @@
       userId: $user.data?.user?.id,
     });
   }
+
+  $: onProjectPage = isProjectPage($page);
 </script>
+
+{#if onProjectPage && deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK}
+  <ProjectTabs />
+{/if}
 
 {#if $viewAsUserStore}
   <!-- When the user is being spoofed via the "View As" functionality, we don't provide the runtime here.
-    In these cases, the "View as" actions manually set the runtime.  -->
+In these cases, the "View as" actions manually set the runtime.  -->
   <slot />
-{:else if isRuntimeHibernating}
-  <!-- When the runtime is hibernating, we omit the RuntimeProvider. -->
-  <slot />
-{:else}
+{:else if !deployment}
+  <!-- No deployment = the project is "hibernating" -->
+  <RedeployProjectCta {organization} {project} />
+{:else if deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING}
+  <ProjectBuilding />
+{:else if deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR}
+  <ErrorPage
+    statusCode={500}
+    header="Deployment Error"
+    body={deployment?.statusMessage !== ""
+      ? deployment?.statusMessage
+      : "There was an error deploying your project. Please contact support."}
+  />
+{:else if deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_OK && runtimeQueryIsSuccess}
   <RuntimeProvider
     host={runtime?.host}
     instanceId={runtime?.instanceId}
     jwt={runtime?.jwt}
   >
     <ProjectDashboardsListener>
-      <!-- We make sure to put the project tabs within the `RuntimeProvider` so we can add decoration 
-        to the tab labels that query the runtime (e.g. the project status badge) -->
-      {#if onProjectPage}
-        <ProjectTabs />
-      {/if}
       <slot />
     </ProjectDashboardsListener>
   </RuntimeProvider>

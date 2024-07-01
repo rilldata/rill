@@ -173,10 +173,10 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
           WITH data_table AS (
             SELECT %[1]s as %[2]s 
             FROM %[3]s
-            WHERE %[2]s IS NOT NULL
+            WHERE %[2]s IS NOT NULL AND NOT isinf(%[2]s)
           ), values AS (
             SELECT %[2]s as value from data_table
-            WHERE %[2]s IS NOT NULL
+            WHERE %[2]s IS NOT NULL AND NOT isinf(%[2]s)
           ), buckets AS (
             SELECT
               `+rangeNumbersCol(olap.Dialect())+`::DOUBLE as bucket,
@@ -293,7 +293,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		WITH data_table AS (
 			SELECT %[1]s as %[2]s
 			FROM %[3]s
-			WHERE %[2]s IS NOT NULL
+			WHERE %[2]s IS NOT NULL AND NOT isinf(%[2]s)
 		), S AS (
 			SELECT
 				min(%[2]s) as minVal,
@@ -398,7 +398,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 				max(%[2]s) AS max,
 				max(%[2]s) - min(%[2]s) AS range
 			FROM %[1]s
-			WHERE %[2]s IS NOT NULL
+			WHERE %[2]s IS NOT NULL AND NOT isinf(%[2]s)
 		`,
 		olap.Dialect().EscapeTable(database, databaseSchema, tableName),
 		selectColumn,

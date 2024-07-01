@@ -27,6 +27,12 @@ func (h *Handle) CommitHash(ctx context.Context) (string, error) {
 	}
 	defer h.repoMu.RUnlock()
 
+	if h.downloadURL != "" {
+		// use downloadURL as a proxy for CommitHash for one-time uploads
+		// It will change when new data is uploaded
+		return h.downloadURL, nil
+	}
+
 	repo, err := git.PlainOpen(h.repoPath)
 	if err != nil {
 		return "", err
@@ -92,10 +98,14 @@ func (h *Handle) Get(ctx context.Context, filePath string) (string, error) {
 	}
 	defer h.repoMu.RUnlock()
 
-	filePath = filepath.Join(h.projPath, filePath)
+	fp := filepath.Join(h.projPath, filePath)
 
-	b, err := os.ReadFile(filePath)
+	b, err := os.ReadFile(fp)
 	if err != nil {
+		// obscure the root directory location
+		if t, ok := err.(*fs.PathError); ok { // nolint:errorlint // we specifically check for a non-wrapped error
+			return "", fmt.Errorf("%s %s %s", t.Op, filePath, t.Err.Error())
+		}
 		return "", err
 	}
 

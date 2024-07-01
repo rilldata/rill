@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	cpuThreadRatio float64 = 0.5
-	poolSizeMin    int     = 2
-	poolSizeMax    int     = 5
+	poolSizeMin int = 2
+	poolSizeMax int = 5
 )
 
 // config represents the DuckDB driver config
@@ -81,7 +80,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 		// Override DSN.Path with config.Path
 		if cfg.Path != "" { // backward compatibility, cfg.Path takes precedence over cfg.DataDir
 			uri.Path = cfg.Path
-		} else if cfg.DataDir != "" {
+		} else if cfg.DataDir != "" && uri.Path == "" { // if some path is set in DSN, honour that path and ignore DataDir
 			uri.Path = filepath.Join(cfg.DataDir, "main.db")
 		}
 
@@ -104,10 +103,7 @@ func newConfig(cfgMap map[string]any) (*config, error) {
 	if cfg.ThreadsOverride != 0 {
 		threads = cfg.ThreadsOverride
 	} else if cfg.CPU > 0 {
-		threads = int(cpuThreadRatio * float64(cfg.CPU))
-		if threads <= 0 {
-			threads = 1
-		}
+		threads = cfg.CPU
 	}
 	if threads > 0 { // NOTE: threads=0 or threads=-1 means no limit
 		qry.Add("threads", strconv.Itoa(threads))

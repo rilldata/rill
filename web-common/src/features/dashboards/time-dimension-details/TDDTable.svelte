@@ -23,12 +23,16 @@
   import { createEventDispatcher } from "svelte";
   import { lastKnownPosition } from "./time-dimension-data-store";
   import type { TDDComparison, TableData, TablePosition } from "./types";
+  import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
+  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let dimensionLabel: string;
   export let measureLabel: string;
   export let excludeMode: boolean;
   export let sortDirection: boolean;
   export let sortType: SortType;
+  export let measure: MetricsViewSpecMeasureV2;
   export let highlightedRow: number | undefined;
   export let highlightedCol: number | undefined;
   export let scrubPos: { start?: number; end?: number };
@@ -179,7 +183,13 @@
     } else {
       element.classList.remove("border-b", "border-gray-200");
     }
-    const total = value.value !== undefined ? value.value : "...";
+    const total =
+      value.value !== undefined
+        ? isNaN(Number(value.value))
+          ? value.value
+          : formatter(Number(value.value))
+        : "...";
+
     const cellBgColor = getClassForCell(
       "fixed",
       rowIdxHover,
@@ -203,15 +213,16 @@
       }
 
       const fontWeight = y === 0 ? "font-semibold" : "font-normal";
-      return `<div class="flex items-center w-full h-full overflow-hidden pr-2 gap-1">
+      return `<div class="flex items-center pointer-events-none  w-full h-full overflow-hidden pr-2 gap-1">
         <div class="w-5 shrink-0 h-full flex items-center justify-center">${marker.icon}</div>
         <div class="truncate text-xs ${fontWeight}">${total}</div></div>`;
     } else if (x === 1)
-      return `<div class="text-xs font-semibold text-right flex items-center justify-end gap-2" >
+      return `<div class="text-xs pointer-events-none font-semibold text-right flex items-center justify-end gap-2" >
         ${total}
         ${value.spark}
         </div>`;
-    else return `<div class="text-xs font-normal text-right" >${total}</div>`;
+    else
+      return `<div class="text-xs pointer-events-none  font-normal text-right" >${total}</div>`;
   };
 
   const renderRowCorner: PivotRenderCallback = (data) => {
@@ -288,6 +299,10 @@
   };
 
   const handleMouseDown = (evt, table) => {
+    if (evt.shiftKey && evt.target.title) {
+      copyToClipboard(evt.target.title);
+      return;
+    }
     handleEvent(evt, table, "__row", toggleVisible);
     handleEvent(evt, table, "sort", (type) => dispatch("toggle-sort", type));
     handleEvent(evt, table, "pin", togglePin);
@@ -358,6 +373,8 @@
   $: cssVarStyles = `--cursor: ${
     comparing === "dimension" ? "pointer" : "default"
   }`;
+
+  $: formatter = createMeasureValueFormatter<null | undefined>(measure);
 </script>
 
 <div
@@ -366,7 +383,7 @@
   on:mouseleave={resetHighlight}
   style:height={comparing === "none" ? "80px" : "calc(100% - 50px)"}
   style={cssVarStyles}
-  class="w-full relative h-full"
+  class="w-full relative h-full select-none"
 >
   <Pivot
     bind:this={pivot}
@@ -382,6 +399,7 @@
     {renderRowHeader}
     {renderRowCorner}
     {getColumnWidth}
+    {formatter}
     {getRowHeaderWidth}
     onMouseDown={handleMouseDown}
     onMouseHover={handleMouseHover}

@@ -29,7 +29,7 @@ func EditCmd(ch *cmdutil.Helper) *cobra.Command {
 				orgName = args[0]
 			}
 			if !cmd.Flags().Changed("org") && len(args) == 0 && ch.Interactive {
-				orgNames, err := orgNames(ctx, ch)
+				orgNames, err := OrgNames(ctx, ch)
 				if err != nil {
 					return err
 				}

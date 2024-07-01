@@ -499,9 +499,9 @@ dimensions:
     await page.getByRole("button", { name: "No dimension breakdown" }).click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.getByText("google.com", { exact: true }).click();
-    await page.getByText("instagram.com").click();
-    await page.getByText("msn.com").click();
+    await page.getByText("google.com", { exact: true }).click({ force: true });
+    await page.getByText("instagram.com").click({ force: true });
+    await page.getByText("msn.com").click({ force: true });
 
     await expect(page.getByText(" Total rows 43.7k")).toBeVisible();
 

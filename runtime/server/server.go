@@ -214,6 +214,8 @@ func (s *Server) HTTPHandler(ctx context.Context, registerAdditionalHandlers fun
 
 	// Add handler for resolving component data
 	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/components/{name}/data", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.componentDataHandler))))
+	// Serving static assets
+	observability.MuxHandle(httpMux, "/v1/instances/{instance_id}/assets/{path...}", observability.Middleware("runtime", s.logger, auth.HTTPMiddleware(s.aud, httputil.Handler(s.assetsHandler))))
 
 	// Add Prometheus
 	if s.opts.ServePrometheus {

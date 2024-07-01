@@ -1470,7 +1470,8 @@ items:
   width: 1
   height: 2
 - component:
-    markdown: Hello world!
+    markdown:
+      content: "Hello world!"
 `,
 	})
 
@@ -1512,7 +1513,7 @@ items:
 			Paths: []string{"/dashboards/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"contents": "Hello world!"})),
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello world!"})),
 				DefinedInDashboard: true,
 			},
 		},

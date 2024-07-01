@@ -1421,11 +1421,6 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
   measureNames: string[] = [];
 
   /**
-   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 12;
-   */
-  inlineMeasures: InlineMeasure[] = [];
-
-  /**
    * @generated from field: google.protobuf.Timestamp time_start = 5;
    */
   timeStart?: Timestamp;
@@ -1484,7 +1479,6 @@ export class MetricsViewToplistRequest extends Message<MetricsViewToplistRequest
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "dimension_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 12, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 5, name: "time_start", kind: "message", T: Timestamp },
     { no: 6, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "limit", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
@@ -2083,16 +2077,9 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
   metricsViewName = "";
 
   /**
-   * Required either measure_names or inline_measures
-   *
    * @generated from field: repeated string measure_names = 3;
    */
   measureNames: string[] = [];
-
-  /**
-   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 9;
-   */
-  inlineMeasures: InlineMeasure[] = [];
 
   /**
    * Optional. Defaults to min
@@ -2159,7 +2146,6 @@ export class MetricsViewTimeSeriesRequest extends Message<MetricsViewTimeSeriesR
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 9, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 6, name: "time_granularity", kind: "enum", T: proto3.getEnumType(TimeGrain) },
@@ -2249,16 +2235,9 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
   metricsViewName = "";
 
   /**
-   * Required either measure_names or inline_measures
-   *
    * @generated from field: repeated string measure_names = 3;
    */
   measureNames: string[] = [];
-
-  /**
-   * @generated from field: repeated rill.runtime.v1.InlineMeasure inline_measures = 9;
-   */
-  inlineMeasures: InlineMeasure[] = [];
 
   /**
    * Optional. Defaults to min
@@ -2304,7 +2283,6 @@ export class MetricsViewTotalsRequest extends Message<MetricsViewTotalsRequest> 
     { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "measure_names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 9, name: "inline_measures", kind: "message", T: InlineMeasure, repeated: true },
     { no: 4, name: "time_start", kind: "message", T: Timestamp },
     { no: 5, name: "time_end", kind: "message", T: Timestamp },
     { no: 7, name: "where", kind: "message", T: Expression },

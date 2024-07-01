@@ -213,6 +213,17 @@ type DB interface {
 	UpsertVirtualFile(ctx context.Context, opts *InsertVirtualFileOptions) error
 	UpdateVirtualFileDeleted(ctx context.Context, projectID, branch, path string) error
 	DeleteExpiredVirtualFiles(ctx context.Context, retention time.Duration) error
+
+	FindAsset(ctx context.Context, id string) (*Asset, error)
+	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
+	InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*Asset, error)
+	DeleteAssets(ctx context.Context, ids []string) error
+
+	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
+	// CountBillingProjectsForOrganization counts the projects which are not hibernated and created before the given time
+	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
+	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
+	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -234,51 +245,60 @@ var ErrNotUnique = errors.New("database: violates unique constraint")
 
 // Organization represents a tenant.
 type Organization struct {
-	ID                      string
-	Name                    string
-	Description             string
-	AllUsergroupID          *string   `db:"all_usergroup_id"`
-	CreatedOn               time.Time `db:"created_on"`
-	UpdatedOn               time.Time `db:"updated_on"`
-	QuotaProjects           int       `db:"quota_projects"`
-	QuotaDeployments        int       `db:"quota_deployments"`
-	QuotaSlotsTotal         int       `db:"quota_slots_total"`
-	QuotaSlotsPerDeployment int       `db:"quota_slots_per_deployment"`
-	QuotaOutstandingInvites int       `db:"quota_outstanding_invites"`
+	ID                                  string
+	Name                                string
+	Description                         string
+	AllUsergroupID                      *string   `db:"all_usergroup_id"`
+	CreatedOn                           time.Time `db:"created_on"`
+	UpdatedOn                           time.Time `db:"updated_on"`
+	QuotaProjects                       int       `db:"quota_projects"`
+	QuotaDeployments                    int       `db:"quota_deployments"`
+	QuotaSlotsTotal                     int       `db:"quota_slots_total"`
+	QuotaSlotsPerDeployment             int       `db:"quota_slots_per_deployment"`
+	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
+	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
+	BillingCustomerID                   string    `db:"billing_customer_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
-	Name                    string `validate:"slug"`
-	Description             string
-	QuotaProjects           int
-	QuotaDeployments        int
-	QuotaSlotsTotal         int
-	QuotaSlotsPerDeployment int
-	QuotaOutstandingInvites int
+	Name                                string `validate:"slug"`
+	Description                         string
+	QuotaProjects                       int
+	QuotaDeployments                    int
+	QuotaSlotsTotal                     int
+	QuotaSlotsPerDeployment             int
+	QuotaOutstandingInvites             int
+	QuotaStorageLimitBytesPerDeployment int64
+	BillingCustomerID                   string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name                    string `validate:"slug"`
-	Description             string
-	QuotaProjects           int
-	QuotaDeployments        int
-	QuotaSlotsTotal         int
-	QuotaSlotsPerDeployment int
-	QuotaOutstandingInvites int
+	Name                                string `validate:"slug"`
+	Description                         string
+	QuotaProjects                       int
+	QuotaDeployments                    int
+	QuotaSlotsTotal                     int
+	QuotaSlotsPerDeployment             int
+	QuotaOutstandingInvites             int
+	QuotaStorageLimitBytesPerDeployment int64
+	BillingCustomerID                   string
 }
 
 // Project represents one Git connection.
 // Projects belong to an organization.
 type Project struct {
-	ID                   string
-	OrganizationID       string `db:"org_id"`
-	Name                 string
-	Description          string
-	Public               bool
-	CreatedByUserID      *string `db:"created_by_user_id"`
-	Provisioner          string
+	ID              string
+	OrganizationID  string `db:"org_id"`
+	Name            string
+	Description     string
+	Public          bool
+	CreatedByUserID *string `db:"created_by_user_id"`
+	Provisioner     string
+	// ArchiveAssetID is set when project files are managed by Rill instead of maintained in Git.
+	// If ArchiveAssetID is set all git related fields will be empty.
+	ArchiveAssetID       *string           `db:"archive_asset_id"`
 	GithubURL            *string           `db:"github_url"`
 	GithubInstallationID *int64            `db:"github_installation_id"`
 	Subpath              string            `db:"subpath"`
@@ -303,6 +323,7 @@ type InsertProjectOptions struct {
 	Public               bool
 	CreatedByUserID      *string
 	Provisioner          string
+	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	Subpath              string
@@ -321,6 +342,7 @@ type UpdateProjectOptions struct {
 	Description          string
 	Public               bool
 	Provisioner          string
+	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
 	ProdVersion          string
@@ -369,7 +391,7 @@ type InsertDeploymentOptions struct {
 	ProvisionID       string
 	RuntimeVersion    string
 	Slots             int
-	Branch            string `validate:"required"`
+	Branch            string
 	RuntimeHost       string `validate:"required"`
 	RuntimeInstanceID string `validate:"required"`
 	RuntimeAudience   string
@@ -732,12 +754,13 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 }
 
 const (
-	DefaultQuotaProjects           = 5
-	DefaultQuotaDeployments        = 10
-	DefaultQuotaSlotsTotal         = 20
-	DefaultQuotaSlotsPerDeployment = 5
-	DefaultQuotaOutstandingInvites = 200
-	DefaultQuotaSingleuserOrgs     = 3
+	DefaultQuotaProjects                       = 5
+	DefaultQuotaDeployments                    = 10
+	DefaultQuotaSlotsTotal                     = 20
+	DefaultQuotaSlotsPerDeployment             = 5
+	DefaultQuotaOutstandingInvites             = 200
+	DefaultQuotaSingleuserOrgs                 = 3
+	DefaultQuotaStorageLimitBytesPerDeployment = int64(5368709120)
 )
 
 type InsertOrganizationInviteOptions struct {
@@ -805,4 +828,12 @@ type InsertVirtualFileOptions struct {
 	Branch    string
 	Path      string `validate:"required"`
 	Data      []byte `validate:"max=8192"` // 8kb
+}
+
+type Asset struct {
+	ID             string
+	OrganizationID string    `db:"org_id"`
+	Path           string    `db:"path"`
+	OwnerID        string    `db:"owner_id"`
+	CreatedOn      time.Time `db:"created_on"`
 }
