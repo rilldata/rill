@@ -26,7 +26,7 @@ func TestConfig(t *testing.T) {
 
 	cfg, err = newConfig(map[string]any{"dsn": "", "memory_limit_gb": "1", "cpu": 2})
 	require.NoError(t, err)
-	require.Equal(t, "?custom_user_agent=rill&max_memory=1GB&threads=1", cfg.DSN)
+	require.Equal(t, "?custom_user_agent=rill&max_memory=1GB&threads=2", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"data_dir": "path/to"})
