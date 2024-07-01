@@ -18,7 +18,7 @@
 
   export let dimensionName: string;
   export let itemData: LeaderboardItemData;
-  export let uri: string;
+  export let uri: string | undefined;
 
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;

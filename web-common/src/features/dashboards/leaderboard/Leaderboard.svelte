@@ -65,7 +65,7 @@
     runtime,
   } = getStateManagers();
 
-  $: ({ uri } = $getDimensionByName(dimensionName));
+  $: dimension = $getDimensionByName(dimensionName);
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -150,7 +150,7 @@
         <LeaderboardListItem
           {dimensionName}
           {itemData}
-          {uri}
+          uri={dimension?.uri}
           on:click
           on:keydown
         />
@@ -162,7 +162,7 @@
           <LeaderboardListItem
             {dimensionName}
             {itemData}
-            {uri}
+            uri={dimension?.uri}
             on:click
             on:keydown
           />
