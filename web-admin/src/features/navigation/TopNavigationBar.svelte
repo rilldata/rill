@@ -4,7 +4,6 @@
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
-  import OrganizationAvatar from "@rilldata/web-common/components/navigation/breadcrumbs/OrganizationAvatar.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useValidVisualizations } from "@rilldata/web-common/features/dashboards/selectors";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
@@ -156,9 +155,7 @@
   {#if onMagicLinkPage}
     <PageTitle title={magicLinkDashboardTitle} />
   {:else if organization}
-    <Breadcrumbs {pathParts} {currentPath}>
-      <OrganizationAvatar {organization} slot="icon" />
-    </Breadcrumbs>
+    <Breadcrumbs {pathParts} {currentPath} />
   {/if}
 
   <!-- Right side -->
