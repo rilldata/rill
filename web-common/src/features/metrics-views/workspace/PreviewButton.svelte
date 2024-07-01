@@ -28,6 +28,8 @@
       )
       .catch(console.error);
   };
+
+  $: loading = $navigating?.to?.route?.id === `/(viz)/${type}/[name]`;
 </script>
 
 <Tooltip
@@ -42,7 +44,7 @@
     href={`/${type}/${dashboardName}`}
     on:click={viewDashboard}
     type="primary"
-    loading={!!$navigating?.to?.route}
+    {loading}
   >
     <Play size="10px" />
     Preview
