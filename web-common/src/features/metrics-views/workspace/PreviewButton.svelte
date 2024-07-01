@@ -42,7 +42,7 @@
     href={`/${type}/${dashboardName}`}
     on:click={viewDashboard}
     type="primary"
-    loading={!!$navigating}
+    loading={!!$navigating?.to?.route}
   >
     <Play size="10px" />
     Preview
