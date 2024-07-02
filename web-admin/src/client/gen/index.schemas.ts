@@ -81,6 +81,7 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  archiveAssetId?: string;
   prodSlots?: string;
   provisioner?: string;
   newName?: string;
@@ -102,7 +103,11 @@ export type AdminServiceCreateProjectBody = {
   prodSlots?: string;
   subpath?: string;
   prodBranch?: string;
+  /** github_url is set for projects whose project files are stored in github. This is set to a github repo url.
+Either github_url or archive_asset_id should be set. */
   githubUrl?: string;
+  /** archive_asset_id is set for projects whose project files are not stored in github but are managed by rill. */
+  archiveAssetId?: string;
   variables?: AdminServiceCreateProjectBodyVariables;
   prodVersion?: string;
 };
@@ -110,6 +115,12 @@ export type AdminServiceCreateProjectBody = {
 export type AdminServiceListProjectsForOrganizationParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceCreateAssetBody = {
+  type?: string;
+  name?: string;
+  extension?: string;
 };
 
 export type AdminServiceSearchProjectUsersParams = {
@@ -206,6 +217,10 @@ export type AdminServiceListOrganizationMembersParams = {
 export type AdminServiceListOrganizationInvitesParams = {
   pageSize?: number;
   pageToken?: string;
+};
+
+export type AdminServiceUpdateOrganizationBillingSubscriptionBody = {
+  planName?: string;
 };
 
 export type AdminServiceUpdateOrganizationBody = {
@@ -375,6 +390,12 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
+  storageLimitBytesPerDeployment?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerRequest {
+  orgName?: string;
+  billingCustomerId?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -397,6 +418,28 @@ export interface V1SudoGetResourceResponse {
   project?: V1Project;
   deployment?: V1Deployment;
   instance?: V1Deployment;
+}
+
+export interface V1Subscription {
+  id?: string;
+  planId?: string;
+  planName?: string;
+  planDisplayName?: string;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
+}
+
+export interface V1UpdateOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -512,6 +555,15 @@ export interface V1RecordEventsRequest {
   events?: V1RecordEventsRequestEventsItem[];
 }
 
+export interface V1Quotas {
+  projects?: string;
+  deployments?: string;
+  slotsTotal?: string;
+  slotsPerDeployment?: string;
+  outstandingInvites?: string;
+  storageLimitBytesPerDeployment?: string;
+}
+
 export interface V1PullVirtualRepoResponse {
   files?: V1VirtualFile[];
   nextPageToken?: string;
@@ -552,6 +604,7 @@ export interface V1Project {
   githubUrl?: string;
   subpath?: string;
   prodBranch?: string;
+  archiveAssetId?: string;
   prodOlapDriver?: string;
   prodOlapDsn?: string;
   prodSlots?: string;
@@ -575,6 +628,7 @@ export interface V1OrganizationQuotas {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
+  storageLimitBytesPerDeployment?: string;
 }
 
 export interface V1OrganizationPermissions {
@@ -592,6 +646,7 @@ export interface V1Organization {
   name?: string;
   description?: string;
   quotas?: V1OrganizationQuotas;
+  billingCustomerId?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -654,6 +709,10 @@ export interface V1ListServicesResponse {
 
 export interface V1ListServiceAuthTokensResponse {
   tokens?: V1ServiceToken[];
+}
+
+export interface V1ListPublicBillingPlansResponse {
+  plans?: V1BillingPlan[];
 }
 
 export interface V1ListProjectsForOrganizationResponse {
@@ -745,6 +804,7 @@ export interface V1GetRepoMetaResponse {
   gitUrl?: string;
   gitUrlExpiresOn?: string;
   gitSubpath?: string;
+  archiveDownloadUrl?: string;
 }
 
 export type V1GetProjectVariablesResponseVariables = { [key: string]: string };
@@ -760,9 +820,18 @@ export interface V1GetProjectResponse {
   projectPermissions?: V1ProjectPermissions;
 }
 
+export interface V1GetProjectByIDResponse {
+  project?: V1Project;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
+}
+
+export interface V1GetOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
 }
 
 export interface V1GetIFrameResponse {
@@ -794,14 +863,6 @@ export interface V1GetGithubRepoStatusResponse {
   defaultBranch?: string;
 }
 
-export interface V1GetGitCredentialsResponse {
-  repoUrl?: string;
-  username?: string;
-  password?: string;
-  subpath?: string;
-  prodBranch?: string;
-}
-
 export interface V1GetDeploymentCredentialsResponse {
   runtimeHost?: string;
   instanceId?: string;
@@ -812,6 +873,15 @@ export interface V1GetDeploymentCredentialsResponse {
 export interface V1GetCurrentUserResponse {
   user?: V1User;
   preferences?: V1UserPreferences;
+}
+
+export interface V1GetCloneCredentialsResponse {
+  gitRepoUrl?: string;
+  gitUsername?: string;
+  gitPassword?: string;
+  gitSubpath?: string;
+  gitProdBranch?: string;
+  archiveDownloadUrl?: string;
 }
 
 export interface V1GetBookmarkResponse {
@@ -897,7 +967,7 @@ export interface V1DeleteReportResponse {
 }
 
 export interface V1DeleteProjectResponse {
-  [key: string]: any;
+  id?: string;
 }
 
 export interface V1DeleteOrganizationResponse {
@@ -937,10 +1007,6 @@ export interface V1CreateOrganizationRequest {
   description?: string;
 }
 
-export interface V1CreateBookmarkResponse {
-  bookmark?: V1Bookmark;
-}
-
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
@@ -950,6 +1016,14 @@ export interface V1CreateBookmarkRequest {
   projectId?: string;
   default?: boolean;
   shared?: boolean;
+}
+
+export type V1CreateAssetResponseSigningHeaders = { [key: string]: string };
+
+export interface V1CreateAssetResponse {
+  assetId?: string;
+  signedUrl?: string;
+  signingHeaders?: V1CreateAssetResponseSigningHeaders;
 }
 
 export interface V1CreateAlertResponse {
@@ -987,6 +1061,20 @@ export interface V1Bookmark {
   shared?: boolean;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
+}
+
+export interface V1BillingPlan {
+  id?: string;
+  name?: string;
+  displayName?: string;
+  description?: string;
+  trialPeriodDays?: number;
+  default?: boolean;
+  quotas?: V1Quotas;
 }
 
 export interface V1AlertOptions {

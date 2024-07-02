@@ -66,6 +66,7 @@ type driver struct{}
 type configProperties struct {
 	SecretJSON      string `mapstructure:"google_application_credentials"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	TempDir         string `mapstructure:"temp_dir"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -116,7 +117,7 @@ func (c *Connection) Driver() string {
 // Config implements drivers.Connection.
 func (c *Connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 

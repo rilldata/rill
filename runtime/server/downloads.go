@@ -15,7 +15,6 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"google.golang.org/grpc/codes"
@@ -66,17 +65,6 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		return nil, ErrForbidden
 	}
 
-	cfg, err := s.runtime.InstanceConfig(ctx, req.InstanceId)
-	if err != nil {
-		return nil, status.Error(codes.FailedPrecondition, err.Error())
-	}
-
-	if cfg.DownloadRowLimit != 0 {
-		if req.Limit > cfg.DownloadRowLimit {
-			return nil, status.Errorf(codes.InvalidArgument, "limit must be less than or equal to %d", cfg.DownloadRowLimit)
-		}
-	}
-
 	if req.BakedQuery != "" {
 		qry, err := UnbakeQuery(req.BakedQuery)
 		if err != nil {
@@ -107,19 +95,13 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	cfg, err := s.runtime.InstanceConfig(req.Context(), request.InstanceId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	var q runtime.Query
 	switch v := request.Query.Query.(type) {
 	case *runtimev1.Query_MetricsViewAggregationRequest:
 		r := v.MetricsViewAggregationRequest
 
 		var limitPtr *int64
-		limit := s.resolveExportLimit(cfg, request.Limit, r.Limit)
+		limit := s.resolveExportLimit(request.Limit, r.Limit)
 		if limit != 0 {
 			limitPtr = &limit
 		}
@@ -153,53 +135,22 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	case *runtimev1.Query_MetricsViewToplistRequest:
 		r := v.MetricsViewToplistRequest
 
-		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs, policy)
-		if err != nil {
-			if errors.Is(err, ErrForbidden) {
-				http.Error(w, "action not allowed", http.StatusUnauthorized)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-		if !checkFieldAccess(r.DimensionName, security) {
-			http.Error(w, "action not allowed", http.StatusUnauthorized)
-			return
-		}
-
-		// validate measures access
-		for _, m := range r.MeasureNames {
-			if !checkFieldAccess(m, security) {
-				http.Error(w, "action not allowed", http.StatusUnauthorized)
-				return
-			}
-		}
-
-		err = validateInlineMeasures(r.InlineMeasures)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		var limitPtr *int64
-		limit := s.resolveExportLimit(cfg, request.Limit, r.Limit)
+		limit := s.resolveExportLimit(request.Limit, r.Limit)
 		if limit != 0 {
 			limitPtr = &limit
 		}
 
 		q = &queries.MetricsViewToplist{
-			MetricsViewName:    r.MetricsViewName,
-			DimensionName:      r.DimensionName,
-			MeasureNames:       r.MeasureNames,
-			InlineMeasures:     r.InlineMeasures,
-			TimeStart:          r.TimeStart,
-			TimeEnd:            r.TimeEnd,
-			Sort:               r.Sort,
-			Where:              r.Where,
-			Having:             r.Having,
-			Limit:              limitPtr,
-			MetricsView:        mv,
-			ResolvedMVSecurity: security,
+			MetricsViewName: r.MetricsViewName,
+			DimensionName:   r.DimensionName,
+			MeasureNames:    r.MeasureNames,
+			TimeStart:       r.TimeStart,
+			TimeEnd:         r.TimeEnd,
+			Sort:            r.Sort,
+			Where:           r.Where,
+			Having:          r.Having,
+			Limit:           limitPtr,
 		}
 	case *runtimev1.Query_MetricsViewRowsRequest:
 		r := v.MetricsViewRowsRequest
@@ -214,7 +165,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		var limitPtr *int64
-		limit := s.resolveExportLimit(cfg, request.Limit, int64(r.Limit))
+		limit := s.resolveExportLimit(request.Limit, int64(r.Limit))
 		if limit != 0 {
 			limitPtr = &limit
 		}
@@ -234,34 +185,15 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	case *runtimev1.Query_MetricsViewTimeSeriesRequest:
 		r := v.MetricsViewTimeSeriesRequest
 
-		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs, policy)
-		if err != nil {
-			if errors.Is(err, ErrForbidden) {
-				http.Error(w, "action not allowed", http.StatusUnauthorized)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
-		err = validateInlineMeasures(r.InlineMeasures)
-		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
-			return
-		}
-
 		q = &queries.MetricsViewTimeSeries{
-			MetricsViewName:    r.MetricsViewName,
-			MeasureNames:       r.MeasureNames,
-			InlineMeasures:     r.InlineMeasures,
-			TimeStart:          r.TimeStart,
-			TimeEnd:            r.TimeEnd,
-			TimeGranularity:    r.TimeGranularity,
-			Where:              r.Where,
-			Having:             r.Having,
-			TimeZone:           r.TimeZone,
-			MetricsView:        mv,
-			ResolvedMVSecurity: security,
+			MetricsViewName: r.MetricsViewName,
+			MeasureNames:    r.MeasureNames,
+			TimeStart:       r.TimeStart,
+			TimeEnd:         r.TimeEnd,
+			TimeGranularity: r.TimeGranularity,
+			Where:           r.Where,
+			Having:          r.Having,
+			TimeZone:        r.TimeZone,
 		}
 	case *runtimev1.Query_MetricsViewComparisonRequest:
 		r := v.MetricsViewComparisonRequest
@@ -272,7 +204,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			ComparisonMeasures:  r.ComparisonMeasures,
 			TimeRange:           r.TimeRange,
 			ComparisonTimeRange: r.ComparisonTimeRange,
-			Limit:               s.resolveExportLimit(cfg, request.Limit, r.Limit),
+			Limit:               s.resolveExportLimit(request.Limit, r.Limit),
 			Offset:              r.Offset,
 			Sort:                r.Sort,
 			Filter:              r.Filter,
@@ -328,15 +260,10 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	}
 }
 
-func (s *Server) resolveExportLimit(cfg drivers.InstanceConfig, base, override int64) int64 {
+func (s *Server) resolveExportLimit(base, override int64) int64 {
 	res := base
 	if override < res {
 		res = override
-	}
-	if cfg.DownloadRowLimit != 0 {
-		if res == 0 || res > cfg.DownloadRowLimit {
-			res = cfg.DownloadRowLimit
-		}
 	}
 	return res
 }

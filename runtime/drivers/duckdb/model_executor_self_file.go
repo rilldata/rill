@@ -3,7 +3,11 @@ package duckdb
 import (
 	"context"
 	"fmt"
+	"os"
+	"sync/atomic"
+	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/file"
@@ -47,13 +51,57 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		return nil, err
 	}
 
+	// Check the output file size does not exceed the configured limit.
+	overLimit := atomic.Bool{}
+	if outputProps.FileSizeLimitBytes > 0 {
+		var cancel context.CancelFunc
+		// override the parent context
+		ctx, cancel = context.WithCancel(ctx)
+		defer cancel()
+		go func() {
+			ticker := time.NewTicker(time.Millisecond * 500)
+			defer ticker.Stop()
+			for {
+				select {
+				case <-ctx.Done():
+					return
+				case <-ticker.C:
+					f, err := os.Stat(outputProps.Path)
+					if err != nil { // ignore error since file may not be created yet
+						continue
+					}
+					if f.Size() > outputProps.FileSizeLimitBytes {
+						overLimit.Store(true)
+						cancel()
+					}
+				}
+			}
+		}()
+	}
+
 	err = olap.Exec(ctx, &drivers.Statement{
 		Query:    sql,
 		Args:     inputProps.Args,
 		Priority: e.opts.Priority,
 	})
 	if err != nil {
+		if overLimit.Load() {
+			return nil, fmt.Errorf("file exceeds size limit %q", datasize.ByteSize(outputProps.FileSizeLimitBytes).HumanReadable())
+		}
 		return nil, fmt.Errorf("failed to execute query: %w", err)
+	}
+
+	// check the size again since duckdb writes data with high throughput
+	// and it is possible that the entire file is written
+	// before we check size in background goroutine
+	if outputProps.FileSizeLimitBytes > 0 {
+		f, err := os.Stat(outputProps.Path)
+		if err != nil {
+			return nil, err
+		}
+		if f.Size() > outputProps.FileSizeLimitBytes {
+			return nil, fmt.Errorf("file exceeds size limit %q", datasize.ByteSize(outputProps.FileSizeLimitBytes).HumanReadable())
+		}
 	}
 
 	// Build result props
@@ -72,22 +120,22 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	}, nil
 }
 
-func exportSQL(qry, path, format string) (string, error) {
+func exportSQL(qry, path string, format drivers.FileFormat) (string, error) {
 	switch format {
-	case "parquet":
+	case drivers.FileFormatParquet:
 		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT PARQUET)", qry, path), nil
-	case "csv":
+	case drivers.FileFormatCSV:
 		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT CSV, HEADER true)", qry, path), nil
-	case "json":
+	case drivers.FileFormatJSON:
 		return fmt.Sprintf("COPY (%s\n) TO '%s' (FORMAT JSON)", qry, path), nil
 	default:
 		return "", fmt.Errorf("duckdb: unsupported export format %q", format)
 	}
 }
 
-func supportsExportFormat(format string) bool {
+func supportsExportFormat(format drivers.FileFormat) bool {
 	switch format {
-	case "parquet", "csv", "json":
+	case drivers.FileFormatParquet, drivers.FileFormatCSV, drivers.FileFormatJSON:
 		return true
 	default:
 		return false

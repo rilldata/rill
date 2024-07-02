@@ -115,10 +115,10 @@ export function getProtoFromDashboardState(
     state.leaderboardMeasure = metrics.leaderboardMeasureName;
   }
 
-  if (metrics.tdd.pinIndex !== undefined) {
+  if (metrics.tdd?.pinIndex !== undefined) {
     state.pinIndex = metrics.tdd.pinIndex;
   }
-  if (metrics.tdd.chartType !== undefined) {
+  if (metrics.tdd?.chartType !== undefined) {
     state.chartType = TDDChartTypeMap[metrics.tdd.chartType];
   }
 

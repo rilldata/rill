@@ -220,7 +220,7 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 	}
 
 	nq := druid.NewNativeQuery(druidSQLDSN.ReplaceAllString(dsn, "/v2/"))
-	req := druid.NewNativeSearchQueryRequest(table, q.Search, q.Dimensions, q.TimeRange.Start.AsTime(), q.TimeRange.End.AsTime(), query)
+	req := druid.NewNativeSearchQueryRequest(table, q.Search, q.Dimensions, q.TimeRange.Start.AsTime(), q.TimeRange.End.AsTime(), query) // TODO: timestamps may be nil!
 	var res druid.NativeSearchQueryResponse
 	err = nq.Do(ctx, req, &res, req.Context.QueryID)
 	if err != nil {

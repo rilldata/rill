@@ -245,7 +245,7 @@ export function useDashboardV2(
       enabled: !!instanceId && !!name,
       select: (data) => {
         const dashboard = data.resources.find(
-          (res) => res.meta.name.name === name,
+          (res) => res.meta.name.name.toLowerCase() === name.toLowerCase(),
         );
         const refreshedOn = getDashboardRefreshedOn(dashboard, data.resources);
         return { resource: dashboard, refreshedOn };

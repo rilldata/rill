@@ -2,6 +2,7 @@
   import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
   import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { getTDDExportArgs } from "@rilldata/web-common/features/dashboards/time-dimension-details/getTDDExportArgs";
   import {
     V1ExportFormat,
     createQueryServiceExport,
@@ -18,7 +19,8 @@
   let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const { runtime } = ctx;
+  const { runtime, dashboardStore } = ctx;
+  $: metricsViewProto = $dashboardStore.proto;
   const metricsView = useDashboard($runtime.instanceId, metricViewName);
 
   const exportDash = createQueryServiceExport();
@@ -45,8 +47,7 @@
     }
   });
 
-  // future work
-  // $: scheduledReportsQueryArgs = getDimensionTableExportArgs(ctx);
+  $: scheduledReportsQueryArgs = getTDDExportArgs(ctx);
 </script>
 
 <WithTogglableFloatingElement
@@ -101,7 +102,7 @@
     >
       Export as XLSX
     </MenuItem>
-    <!-- {#if includeScheduledReport}
+    {#if includeScheduledReport}
       <MenuItem
         on:select={() => {
           toggleFloatingElement();
@@ -110,18 +111,19 @@
       >
         Create scheduled report...
       </MenuItem>
-    {/if} -->
+    {/if}
   </Menu>
 </WithTogglableFloatingElement>
 
 <!-- Including `showScheduledReportDialog` in the conditional ensures we tear 
   down the form state when the dialog closes -->
 {#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog}
-  <!-- <svelte:component
+  <svelte:component
     this={CreateScheduledReportDialog}
-    queryName="MetricsViewComparison"
+    queryName="MetricsViewAggregation"
     queryArgs={$scheduledReportsQueryArgs}
+    {metricsViewProto}
     open={showScheduledReportDialog}
     on:close={() => (showScheduledReportDialog = false)}
-  /> -->
+  />
 {/if}

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -62,14 +63,14 @@ type Options struct {
 // sets defaults if not set by user
 func (opts *Options) validate() {
 	if opts.GlobMaxObjectsMatched == 0 {
-		opts.GlobMaxObjectsMatched = 1000
+		opts.GlobMaxObjectsMatched = math.MaxInt
 	}
 	if opts.GlobMaxObjectsListed == 0 {
-		opts.GlobMaxObjectsListed = 1000 * 1000
+		opts.GlobMaxObjectsListed = math.MaxInt64
 	}
 	if opts.GlobMaxTotalSize == 0 {
-		// 10 GB
-		opts.GlobMaxTotalSize = 10 * 1024 * 1024 * 1024
+		// 100 GB
+		opts.GlobMaxTotalSize = 100 * 1024 * 1024 * 1024
 	}
 	if opts.GlobPageSize == 0 {
 		opts.GlobPageSize = 1000

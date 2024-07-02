@@ -12,7 +12,7 @@
   export let showPanels = true;
   export let isFetching = false;
 
-  const { exports } = featureFlags;
+  const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
   const {
@@ -115,6 +115,6 @@
   {/if}
   <div class="grow" />
   {#if $exports}
-    <PivotExportButton />
+    <PivotExportButton includeScheduledReport={$adminServer} />
   {/if}
 </div>
