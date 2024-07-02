@@ -49,7 +49,9 @@
           project,
           data: {
             metricsView: dashboard,
-            metricsViewFilter: $dashboardStore.whereFilter,
+            metricsViewFilter: hasDashboardWhereFilter()
+              ? $dashboardStore.whereFilter
+              : undefined,
             metricsViewFields: [
               ...$visibleMeasures.map((measure) => measure.name),
               ...$visibleDimensions.map((dimension) => dimension.name),
@@ -64,17 +66,20 @@
     },
   );
 
-  $: if (setExpiration) {
-    // The expiration time should default to 60 days from today
+  $: if (setExpiration && $form.expiresAt === null) {
+    // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
     $form.expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
       .toISOString()
       .slice(0, 10); // ISO string formatted for input[type="date"]
-  } else {
+  } else if (!setExpiration) {
     $form.expiresAt = null;
   }
 
-  $: ({ expiresAt } = $form);
   $: ({ length: allErrorsLength } = $allErrors);
+
+  function hasDashboardWhereFilter() {
+    return $dashboardStore.whereFilter?.cond?.exprs?.length;
+  }
 
   function convertDateToMinutes(date: string) {
     const now = new Date();
@@ -91,7 +96,7 @@
     <ul>
       <li>Measures and dimensions will be limited to current visible set.</li>
       <li>Filters will be locked and hidden.</li>
-      {#if $dashboardStore.whereFilter?.cond?.exprs?.length}
+      {#if hasDashboardWhereFilter()}
         <div class="mt-2 px-[19px]">
           <FilterChipsReadOnly
             metricsViewName={dashboard}
@@ -116,7 +121,7 @@
             Access expires
           </label>
           <!-- TODO: use a Rill date picker, once we have one that can select a single day -->
-          <input id="expires-at" type="date" bind:value={expiresAt} />
+          <input id="expires-at" type="date" bind:value={$form.expiresAt} />
         </div>
       {/if}
     </div>
