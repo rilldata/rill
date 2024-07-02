@@ -55,6 +55,7 @@
   import { RUNTIME_ACCESS_TOKEN_DEFAULT_TTL } from "@rilldata/web-common/runtime-client/constants";
   import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { fixLocalhostRuntimePort } from "@rilldata/web-common/runtime-client/fix-localhost-runtime-port";
+  import type { AuthContext } from "@rilldata/web-common/runtime-client/runtime-store";
   import type { QueryObserverOptions } from "@tanstack/svelte-query";
 
   const user = createAdminServiceGetCurrentUser();
@@ -127,6 +128,13 @@
     onMagicLinkPage ? tokenProjectError : cookieProjectError
   ) as HTTPError;
   $: projectData = onMagicLinkPage ? tokenProjectData : cookieProjectData;
+  $: authContext = (
+    mockedUserId && mockedUserDeploymentCredentials
+      ? "mock"
+      : onMagicLinkPage
+        ? "magic"
+        : "user"
+  ) as AuthContext;
 
   // Load telemetry client with relevant context
   $: if (project && $user.data?.user?.id) {
@@ -174,6 +182,7 @@
       jwt={mockedUserId && mockedUserDeploymentCredentials
         ? mockedUserDeploymentCredentials.accessToken
         : projectData.jwt}
+      {authContext}
     >
       <ProjectDashboardsListener>
         <slot />
