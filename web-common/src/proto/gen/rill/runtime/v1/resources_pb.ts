@@ -1267,6 +1267,11 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
    */
   unnest = false;
 
+  /**
+   * @generated from field: string uri = 7;
+   */
+  uri = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_DimensionV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1281,6 +1286,7 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
     { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionV2 {

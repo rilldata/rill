@@ -144,6 +144,7 @@ message MetricsViewSpec {
     string label = 3;
     string description = 4;
     bool unnest = 5;
+    string uri = 7;
   }
   // Selector for a dimension
   message DimensionSelector {
