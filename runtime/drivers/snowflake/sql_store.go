@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strconv"
 	"sync"
 	"time"
 
@@ -46,18 +45,15 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	var dsn string
 	if srcProps.DSN != "" { // get from src properties
 		dsn = srcProps.DSN
-	} else if url, ok := c.config["dsn"].(string); ok && url != "" { // get from driver configs
-		dsn = url
+	} else if c.configProperties.DSN != "" { // get from driver configs
+		dsn = c.configProperties.DSN
 	} else {
 		return nil, fmt.Errorf("the property 'dsn' is required for Snowflake. Provide 'dsn' in the YAML properties or pass '--var connector.snowflake.dsn=...' to 'rill start'")
 	}
 
 	parallelFetchLimit := 15
-	if limit, ok := c.config["parallel_fetch_limit"].(string); ok {
-		parallelFetchLimit, err = strconv.Atoi(limit)
-		if err != nil {
-			return nil, err
-		}
+	if c.configProperties.ParallelFetchLimit != 0 {
+		parallelFetchLimit = c.configProperties.ParallelFetchLimit
 	}
 
 	db, err := sql.Open("snowflake", dsn)
@@ -97,6 +93,10 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 	// the number of returned rows is unknown at this point, only the number of batches and output files
 	p.Target(1, drivers.ProgressUnitFile)
 
+	tempDir, err := os.MkdirTemp(c.configProperties.TempDir, "snowflake")
+	if err != nil {
+		return nil, err
+	}
 	return &fileIterator{
 		ctx:                ctx,
 		db:                 db,
@@ -107,6 +107,7 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		limitInBytes:       opt.TotalLimitInBytes,
 		parallelFetchLimit: parallelFetchLimit,
 		logger:             c.logger,
+		tempDir:            tempDir,
 	}, nil
 }
 
@@ -119,9 +120,9 @@ type fileIterator struct {
 	progress     drivers.Progress
 	limitInBytes int64
 	logger       *zap.Logger
+	tempDir      string
 	// Computed while iterating
 	totalRecords int64
-	tempFilePath string
 	downloaded   bool
 	// Max number of batches to fetch in parallel
 	parallelFetchLimit int
@@ -129,7 +130,7 @@ type fileIterator struct {
 
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
-	return os.Remove(f.tempFilePath)
+	return os.RemoveAll(f.tempDir)
 }
 
 // Next implements drivers.FileIterator.
@@ -149,12 +150,11 @@ func (f *fileIterator) Next() ([]string, error) {
 	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
 	// create a temp file
-	fw, err := os.CreateTemp("", "temp*.parquet")
+	fw, err := os.CreateTemp(f.tempDir, "temp*.parquet")
 	if err != nil {
 		return nil, err
 	}
 	defer fw.Close()
-	f.tempFilePath = fw.Name()
 	f.downloaded = true
 
 	tf := time.Now()

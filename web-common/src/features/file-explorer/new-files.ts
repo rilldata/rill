@@ -152,8 +152,10 @@ gap: 2
 
 items:
   - component:
-      type: markdown
-      markdown: First component
+      markdown:
+        content: "First Component"
+        css:
+          font-size: "40px"
     width: 4
     height: 3
     x: 2

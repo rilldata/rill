@@ -8006,8 +8006,6 @@ func (m *DashboardItem) validate(all bool) error {
 
 	// no validation rules for DefinedInDashboard
 
-	// no validation rules for FontSize
-
 	if m.X != nil {
 		// no validation rules for X
 	}

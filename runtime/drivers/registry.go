@@ -60,6 +60,8 @@ type Instance struct {
 	EmbedCatalog bool `db:"embed_catalog"`
 	// WatchRepo indicates whether to watch the repo for file changes and reconcile them automatically.
 	WatchRepo bool `db:"watch_repo"`
+	// Paths to expose over HTTP (defaults to ./public)
+	PublicPaths []string `db:"public_paths"`
 	// IgnoreInitialInvalidProjectError indicates whether to ignore an invalid project error when the instance is initially created.
 	IgnoreInitialInvalidProjectError bool `db:"-"`
 }

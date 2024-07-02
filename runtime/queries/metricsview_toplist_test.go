@@ -6,7 +6,6 @@ import (
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
-	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -56,18 +55,11 @@ func TestMetricsViewsToplist_measure_filters(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	lmt := int64(250)
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"measure_1"},
-		MetricsView:     mv.Spec,
 		TimeStart:       ctr.Result.Min,
 		TimeEnd:         timestamppb.New(maxTime),
 		Having: &runtimev1.Expression{
@@ -91,7 +83,7 @@ func TestMetricsViewsToplist_measure_filters(t *testing.T) {
 		},
 		Sort: []*runtimev1.MetricsViewSort{
 			{
-				Name:      "domain",
+				Name:      "dom",
 				Ascending: false,
 			},
 		},
@@ -119,18 +111,11 @@ func TestMetricsViewsToplist_measure_filters_same_name(t *testing.T) {
 	diff := ctr.Result.Max.AsTime().Sub(ctr.Result.Min.AsTime())
 	maxTime := ctr.Result.Min.AsTime().Add(diff / 2)
 
-	ctrl, err := rt.Controller(context.Background(), instanceID)
-	require.NoError(t, err)
-	r, err := ctrl.Get(context.Background(), &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: "ad_bids_metrics"}, false)
-	require.NoError(t, err)
-	mv := r.GetMetricsView()
-
 	lmt := int64(250)
 	q := &queries.MetricsViewToplist{
 		MetricsViewName: "ad_bids_metrics",
 		DimensionName:   "dom",
 		MeasureNames:    []string{"bid_price"},
-		MetricsView:     mv.Spec,
 		TimeStart:       ctr.Result.Min,
 		TimeEnd:         timestamppb.New(maxTime),
 		Having: &runtimev1.Expression{

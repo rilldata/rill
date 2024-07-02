@@ -45,6 +45,19 @@ service AdminService {
     };
   }
 
+  // UpdateOrganizationBillingSubscription updates the billing plan for the organization
+  rpc UpdateOrganizationBillingSubscription(UpdateOrganizationBillingSubscriptionRequest) returns (UpdateOrganizationBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      patch: "/v1/organizations/{org_name}/billing/subscriptions",
+      body: "*"
+    };
+  }
+
+  // GetOrganizationBillingSubscription lists the subscription for the organization
+  rpc GetOrganizationBillingSubscription(GetOrganizationBillingSubscriptionRequest) returns (GetOrganizationBillingSubscriptionResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/subscriptions"};
+  }
+
   // ListProjectsForOrganization lists all the projects currently available for given organizations
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
@@ -318,6 +331,14 @@ service AdminService {
     };
   }
 
+  // SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+  rpc SudoUpdateOrganizationBillingCustomer(SudoUpdateOrganizationBillingCustomerRequest) returns (SudoUpdateOrganizationBillingCustomerResponse) {
+    option (google.api.http) = {
+      patch: "/v1/superuser/organization/billing/customer_id",
+      body: "*"
+    };
+  }
+
   // SudoUpdateAnnotations endpoint for superusers to update project annotations
   rpc SudoUpdateAnnotations(SudoUpdateAnnotationsRequest) returns (SudoUpdateAnnotationsResponse) {
     option (google.api.http) = {
@@ -558,6 +579,11 @@ service AdminService {
       get: "/v1/organizations/{organization}/projects/{project}/alerts/{name}/yaml",
     };
   }
+
+  // ListPublicBillingPlans lists all public billing plans
+  rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
+    option (google.api.http) = {get: "/v1/billing/plans"};
+  }
 }
 
 message PingRequest {}
@@ -609,6 +635,25 @@ message UpdateOrganizationRequest {
 
 message UpdateOrganizationResponse {
   Organization organization = 1;
+}
+
+message UpdateOrganizationBillingSubscriptionRequest {
+  string org_name = 1;
+  string plan_name = 2;
+}
+
+message UpdateOrganizationBillingSubscriptionResponse {
+  Organization organization = 1;
+  repeated Subscription subscriptions = 2;
+}
+
+message GetOrganizationBillingSubscriptionRequest {
+  string org_name = 1;
+}
+
+message GetOrganizationBillingSubscriptionResponse {
+  Organization organization = 1;
+  Subscription subscription = 2;
 }
 
 message ListProjectsForOrganizationRequest {
@@ -965,10 +1010,21 @@ message SudoUpdateOrganizationQuotasRequest {
   optional uint32 slots_total = 4;
   optional uint32 slots_per_deployment = 5;
   optional uint32 outstanding_invites = 6;
+  optional uint64 storage_limit_bytes_per_deployment = 7;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
   Organization organization = 1;
+}
+
+message SudoUpdateOrganizationBillingCustomerRequest {
+  string org_name = 1;
+  string billing_customer_id = 2;
+}
+
+message SudoUpdateOrganizationBillingCustomerResponse {
+  Organization organization = 1;
+  repeated Subscription subscriptions = 2;
 }
 
 message SudoUpdateUserQuotasRequest {
@@ -1471,6 +1527,12 @@ message GetAlertYAMLResponse {
   string yaml = 1;
 }
 
+message ListPublicBillingPlansRequest {}
+
+message ListPublicBillingPlansResponse {
+  repeated BillingPlan plans = 1;
+}
+
 message TelemetryRequest {
   // Name passed to activity module's name arg
   string name = 1;
@@ -1506,8 +1568,21 @@ message Organization {
   string name = 2; // Globally unique
   string description = 3;
   OrganizationQuotas quotas = 4;
+  string billing_customer_id = 7;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
+}
+
+message Subscription {
+  string id = 1;
+  string plan_id = 2;
+  string plan_name = 3;
+  string plan_display_name = 4;
+  google.protobuf.Timestamp start_date = 5;
+  google.protobuf.Timestamp end_date = 6;
+  google.protobuf.Timestamp current_billing_cycle_start_date = 7;
+  google.protobuf.Timestamp current_billing_cycle_end_date = 8;
+  google.protobuf.Timestamp trial_end_date = 9;
 }
 
 message UserQuotas {
@@ -1520,6 +1595,7 @@ message OrganizationQuotas {
   uint32 slots_total = 3;
   uint32 slots_per_deployment = 4;
   uint32 outstanding_invites = 5;
+  uint64 storage_limit_bytes_per_deployment = 6;
 }
 
 message Project {
@@ -1692,4 +1768,24 @@ message AlertOptions {
   repeated string slack_webhooks = 11;
   // base64 state url of the dashboard when it was created
   string web_open_state = 12;
+}
+
+message BillingPlan {
+  string id = 1;
+  string name = 2;
+  string display_name = 3;
+  string description = 4;
+  uint32 trial_period_days = 5;
+  bool default = 6;
+  Quotas quotas = 7;
+  // TODO expose pricing information
+}
+
+message Quotas {
+  string projects = 1;
+  string deployments = 2;
+  string slots_total = 3;
+  string slots_per_deployment = 4;
+  string outstanding_invites = 5;
+  string storage_limit_bytes_per_deployment = 6;
 }

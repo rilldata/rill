@@ -1,8 +1,11 @@
 <script lang="ts">
   import MetadataLabel from "@rilldata/web-admin/features/scheduled-reports/metadata/MetadataLabel.svelte";
   import DimensionFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/dimension-filters/DimensionFilterReadOnlyChip.svelte";
+  import { splitWhereFilter } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { getDimensionFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
+  import { getMeasureFilters } from "@rilldata/web-common/features/dashboards/state-managers/selectors/measure-filters";
+  import type { DimensionThresholdFilter } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
   import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
   import type {
     V1Expression,
@@ -12,6 +15,7 @@
   import { flip } from "svelte/animate";
   import { fly } from "svelte/transition";
   import TimeRangeReadOnly from "@rilldata/web-common/features/dashboards/filters/TimeRangeReadOnly.svelte";
+  import MeasureFilterReadOnlyChip from "@rilldata/web-common/features/dashboards/filters/measure-filters/MeasureFilterReadOnlyChip.svelte";
 
   export let metricsViewName: string;
   export let filters: V1Expression | undefined;
@@ -23,14 +27,27 @@
   $: filtersLength =
     (filters?.cond?.exprs?.length ?? 0) + (hasTimeRange ? 1 : 0);
 
+  let whereFilter: V1Expression;
+  let havingFilter: DimensionThresholdFilter[];
+  $: {
+    const { dimensionFilters, dimensionThresholdFilters } =
+      splitWhereFilter(filters);
+    whereFilter = dimensionFilters;
+    havingFilter = dimensionThresholdFilters;
+  }
+
   $: dashboard = useDashboard($runtime.instanceId, metricsViewName);
-  $: dimensions =
-    $dashboard.data?.metricsView?.state?.validSpec?.dimensions ?? [];
   $: dimensionIdMap = getMapFromArray(
-    dimensions,
+    $dashboard.data?.metricsView?.state?.validSpec?.dimensions ?? [],
     (dimension) => dimension.name,
   );
-  $: currentDimensionFilters = getDimensionFilters(dimensionIdMap, filters);
+  $: measureIdMap = getMapFromArray(
+    $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [],
+    (measure) => measure.name,
+  );
+
+  $: currentDimensionFilters = getDimensionFilters(dimensionIdMap, whereFilter);
+  $: currentMeasureFilters = getMeasureFilters(measureIdMap, havingFilter);
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -41,7 +58,7 @@
         <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
       {/if}
       {#each currentDimensionFilters as { name, label, selectedValues, isInclude } (name)}
-        {@const dimension = dimensions.find((d) => d.name === name)}
+        {@const dimension = dimensionIdMap.get(name)}
         <div animate:flip={{ duration: 200 }}>
           {#if dimension?.column}
             <DimensionFilterReadOnlyChip
@@ -52,6 +69,17 @@
           {/if}
         </div>
       {/each}
+      {#if currentMeasureFilters.length > 0}
+        {#each currentMeasureFilters as { name, label, dimensionName, filter } (name)}
+          <div animate:flip={{ duration: 200 }}>
+            <MeasureFilterReadOnlyChip
+              label={label ?? name}
+              {dimensionName}
+              {filter}
+            />
+          </div>
+        {/each}
+      {/if}
     {:else}
       <div
         in:fly|local={{ duration: 200, x: 8 }}

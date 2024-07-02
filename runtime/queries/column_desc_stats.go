@@ -60,20 +60,14 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 	switch olap.Dialect() {
 	case drivers.DialectDuckDB:
 		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
-			"min(%s)::DOUBLE as min, "+
-			"approx_quantile(%s, 0.25)::DOUBLE as q25, "+
-			"approx_quantile(%s, 0.5)::DOUBLE as q50, "+
-			"approx_quantile(%s, 0.75)::DOUBLE as q75, "+
-			"max(%s)::DOUBLE as max, "+
-			"avg(%s)::DOUBLE as mean, "+
-			"stddev_pop(%s)::DOUBLE as sd "+
-			"FROM %s",
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
+			"min(%[1]s)::DOUBLE as min, "+
+			"approx_quantile(%[1]s, 0.25)::DOUBLE as q25, "+
+			"approx_quantile(%[1]s, 0.5)::DOUBLE as q50, "+
+			"approx_quantile(%[1]s, 0.75)::DOUBLE as q75, "+
+			"max(%[1]s)::DOUBLE as max, "+
+			"avg(%[1]s)::DOUBLE as mean, "+
+			"'NaN'::DOUBLE as sd "+
+			"FROM %[2]s WHERE NOT isinf(%[1]s) ",
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	case drivers.DialectClickHouse:
