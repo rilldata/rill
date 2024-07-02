@@ -92,14 +92,14 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 			name:    "all applicable ",
 			spec:    spec,
 			opts:    &ProvisionOptions{Slots: 1},
-			want:    &Allocation{CPU: 1, MemoryGB: 2, StorageBytes: int64(40) * int64(datasize.GB)},
+			want:    &Allocation{CPU: 1, MemoryGB: 4, StorageBytes: int64(40) * int64(datasize.GB)},
 			wantErr: false,
 		},
 		{
 			name:    "one applicable ",
 			spec:    spec,
 			opts:    &ProvisionOptions{Slots: 4},
-			want:    &Allocation{CPU: 4, MemoryGB: 8, StorageBytes: int64(160) * int64(datasize.GB), Host: "host_1"},
+			want:    &Allocation{CPU: 4, MemoryGB: 16, StorageBytes: int64(160) * int64(datasize.GB), Host: "host_1"},
 			wantErr: false,
 		},
 		{

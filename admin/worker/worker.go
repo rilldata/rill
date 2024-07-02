@@ -68,6 +68,12 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "delete_unused_assets", w.deleteUnusedAssets, 6*time.Hour)
 	})
 
+	if w.admin.Biller.GetReportingWorkerCron() != "" {
+		group.Go(func() error {
+			return w.scheduleCron(ctx, "run_billing_reporter", w.reportUsage, w.admin.Biller.GetReportingWorkerCron())
+		})
+	}
+
 	// NOTE: Add new scheduled jobs here
 
 	w.logger.Info("worker started")

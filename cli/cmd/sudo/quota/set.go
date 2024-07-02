@@ -10,7 +10,8 @@ import (
 
 func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	var org, email string
-	var singleUser, projects, deployments, slotsTotal, slotsPerDeployment, outstandingInvites uint32
+	var singleUser, projects, deployments, slotsTotal, slotsPerDeployment, outstandingInvites, numUsers uint32
+	var storageLimitBytesPerDeployment uint64
 	setCmd := &cobra.Command{
 		Use:   "set",
 		Args:  cobra.NoArgs,
@@ -43,6 +44,9 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				if cmd.Flags().Changed("outstanding-invites") {
 					req.OutstandingInvites = &outstandingInvites
 				}
+				if cmd.Flags().Changed("storage-limit-bytes-per-deployment") {
+					req.StorageLimitBytesPerDeployment = &storageLimitBytesPerDeployment
+				}
 
 				res, err := client.SudoUpdateOrganizationQuotas(ctx, req)
 				if err != nil {
@@ -57,6 +61,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 				fmt.Printf("Slots total: %d\n", orgQuotas.SlotsTotal)
 				fmt.Printf("Slots per deployment: %d\n", orgQuotas.SlotsPerDeployment)
 				fmt.Printf("Outstanding invites: %d\n", orgQuotas.OutstandingInvites)
+				fmt.Printf("Storage limit bytes per deployment: %d\n", orgQuotas.StorageLimitBytesPerDeployment)
 			} else if email != "" {
 				req := &adminv1.SudoUpdateUserQuotasRequest{
 					Email: email,
@@ -92,5 +97,7 @@ func SetCmd(ch *cmdutil.Helper) *cobra.Command {
 	setCmd.Flags().Uint32Var(&slotsTotal, "slots-total", 0, "Quota slots total")
 	setCmd.Flags().Uint32Var(&slotsPerDeployment, "slots-per-deployment", 0, "Quota slots per deployment")
 	setCmd.Flags().Uint32Var(&outstandingInvites, "outstanding-invites", 0, "Quota outstanding invites")
+	setCmd.Flags().Uint32Var(&numUsers, "num-users", 0, "Number of users")
+	setCmd.Flags().Uint64Var(&storageLimitBytesPerDeployment, "storage-limit-bytes-per-deployment", 0, "Quota storage limit bytes per deployment")
 	return setCmd
 }
