@@ -41,7 +41,7 @@ There are two roles available at the project-level: **Viewer** and **Admin**.
 | `manage_prod`              | Trigger actions on the production deployment               |        |     ✔ |
 | `read_project_members`     | View members of the project                                |        |     ✔ |
 | `manage_project_members`   | Add, remove or change roles of project members             |        |     ✔ |
-| `create_magic_auth_tokens` | Create shareable URLs                                      |        |     ✔ |
+| `create_magic_auth_tokens` | Create shareable URLs                                      |      ✔ |     ✔ |
 | `manage_magic_auth_tokens` | Remove shareable URLs created by others                    |        |     ✔ |
 | `create_reports`           | Create and edit new scheduled reports                      |      ✔ |     ✔ |
 | `manage_reports`           | Edit and change scheduled reports created by others        |        |     ✔ |
