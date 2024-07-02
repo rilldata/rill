@@ -9,7 +9,7 @@
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
-
+  import { SortType } from "../proto-state/derived-types";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
   import {
@@ -17,6 +17,9 @@
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import { onMount } from "svelte";
+  import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
+  import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
+  import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
 
   const slice = 7;
 
@@ -48,6 +51,14 @@
 
   const {
     selectors: {
+      contextColumn: {
+        contextColumn,
+        isDeltaAbsolute,
+        isDeltaPercent,
+        isPercentOfTotal,
+        isHidden,
+      },
+      dimensions: { getDimensionByName },
       activeMeasure: { activeMeasureName },
       dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
@@ -56,13 +67,18 @@
         leaderboardDimensionTotalQueryBody,
         leaderboardDimensionTotalQueryOptions,
       },
+      sorting: { sortedAscending, sortType },
+      timeRangeSelectors: { isTimeComparisonActive },
     },
     actions: {
+      sorting: { toggleSort, toggleSortByActiveContextColumn },
       dimensions: { setPrimaryDimension },
     },
     metricsViewName,
     runtime,
   } = getStateManagers();
+
+  $: dimension = $getDimensionByName(dimensionName);
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -109,6 +125,7 @@
   }
 
   let hovered: boolean;
+  $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
 </script>
 
 <div
@@ -176,3 +193,92 @@
     </div>
   {/if}
 </div>
+
+<table class="outline">
+  <colgroup>
+    <col style:width="200px" />
+    <col style:width="40px" />
+    <col style:width="40px" />
+    <col style:width="40px" />
+  </colgroup>
+  <thead>
+    <tr>
+      <td>{dimensionName}</td>
+      <td>
+        <button
+          on:click={() => toggleSort(SortType.VALUE)}
+          class="shrink flex flex-row items-center justify-end min-w-[40px]"
+          aria-label="Toggle sort leaderboards by value"
+        >
+          #{#if $sortType === SortType.VALUE}
+            <ArrowDown transform={arrowTransform} />
+          {/if}
+        </button>
+      </td>
+      {#if $isTimeComparisonActive}
+        <td>
+          <button
+            on:click={toggleSortByActiveContextColumn}
+            class="flex flex-row items-center justify-end"
+            aria-label="Toggle sort leaderboards by context column"
+          >
+            <Delta /> %
+          </button>
+        </td>
+        <td>
+          <button
+            on:click={toggleSortByActiveContextColumn}
+            class="flex flex-row items-center justify-end"
+            aria-label="Toggle sort leaderboards by context column"
+          >
+            <Delta />
+          </button>
+        </td>
+      {:else if $isPercentOfTotal}
+        <td>
+          <button
+            on:click={toggleSortByActiveContextColumn}
+            class="flex flex-row items-center justify-end"
+            aria-label="Toggle sort leaderboards by context column"
+          >
+            <PieChart /> %
+          </button>
+        </td>
+      {/if}
+    </tr>
+  </thead>
+  <tbody>
+    {#each aboveTheFold as itemData (itemData.dimensionValue)}
+      <tr>
+        <td>{itemData.dimensionValue}</td>
+        <td>{itemData.value}</td>
+        {#if $isTimeComparisonActive}
+          <td>{itemData.deltaRel}</td>
+          <td>{itemData.deltaAbs}</td>
+        {:else if $isPercentOfTotal}
+          <td>{itemData.pctOfTotal}</td>
+        {/if}
+      </tr>
+    {/each}
+    <!-- place the selected values that are not above the fold here -->
+    {#if selectedBelowTheFold?.length}
+      <hr />
+      {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
+        <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
+      {/each}
+      <hr />
+    {/if}
+  </tbody>
+</table>
+
+<style lang="postcss">
+  table {
+    @apply p-0 m-0 border-spacing-0 border-separate w-fit;
+    @apply font-normal cursor-pointer select-none;
+    @apply table-fixed;
+  }
+
+  td {
+    @apply text-right truncate;
+  }
+</style>

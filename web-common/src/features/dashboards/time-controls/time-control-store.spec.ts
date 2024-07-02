@@ -202,7 +202,7 @@ describe("time-control-store", () => {
       {} as any,
       AD_BIDS_INIT_WITH_TIME,
     );
-    expect(get(timeControlsStore).showComparison).toBeFalsy();
+    expect(get(timeControlsStore).showTimeComparison).toBeFalsy();
 
     metricsExplorerStore.setSelectedTimeRange(AD_BIDS_NAME, {
       name: TimeRangePreset.LAST_7_DAYS,

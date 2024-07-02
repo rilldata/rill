@@ -50,7 +50,7 @@ export type TimeRangeState = {
   adjustedEnd?: string;
 };
 export type ComparisonTimeRangeState = {
-  showComparison?: boolean;
+  showTimeComparison?: boolean;
   selectedComparisonTimeRange?: DashboardTimeControls;
   comparisonTimeStart?: string;
   comparisonAdjustedStart?: string;
@@ -226,12 +226,10 @@ function calculateComparisonTimeRangePartial(
     timeRangeState.selectedTimeRange,
     metricsExplorer.selectedComparisonTimeRange,
   );
-  const showComparison = Boolean(
-    metricsExplorer.showTimeComparison && selectedComparisonTimeRange?.start,
-  );
+
   let comparisonAdjustedStart: string | undefined = undefined;
   let comparisonAdjustedEnd: string | undefined = undefined;
-  if (showComparison && selectedComparisonTimeRange) {
+  if (selectedComparisonTimeRange) {
     const adjustedComparisonTime = getAdjustedFetchTime(
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
@@ -263,7 +261,7 @@ function calculateComparisonTimeRangePartial(
   }
 
   return {
-    showComparison,
+    showTimeComparison: metricsExplorer.showTimeComparison,
     selectedComparisonTimeRange,
     comparisonTimeStart: comparisonTimeStart?.toISOString(),
     comparisonAdjustedStart,
@@ -382,8 +380,6 @@ function getComparisonTimeRange(
     }
   } else if (comparisonTimeRange.name === TimeComparisonOption.CUSTOM) {
     selectedComparisonTimeRange = comparisonTimeRange;
-  } else if (!metricsExplorer.showTimeComparison) {
-    return undefined;
   } else {
     // variable time range of some kind.
     const comparisonOption = comparisonTimeRange.name as TimeComparisonOption;

@@ -38,7 +38,6 @@
   import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
-  import ComparisonSelector from "../time-controls/ComparisonSelector.svelte";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -81,7 +80,7 @@
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparison = Boolean(
-    !comparisonDimension && $timeControlsStore.showComparison,
+    !comparisonDimension && $timeControlsStore.showTimeComparison,
   );
   $: tddChartType = $dashboardStore?.tdd?.chartType;
   $: interval =
@@ -252,7 +251,6 @@
       {#if minTimeGrain}
         <TimeGrainSelector {metricViewName} />
       {/if}
-      <ComparisonSelector {metricViewName} />
     {/if}
   </div>
 

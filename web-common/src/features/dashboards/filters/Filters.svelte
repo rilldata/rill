@@ -13,6 +13,7 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import { fly } from "svelte/transition";
+  import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
 
   export let readOnly = false;
 
@@ -39,7 +40,7 @@
   $: ({
     selectedTimeRange,
     allTimeRange,
-    showComparison,
+    showTimeComparison,
     selectedComparisonTimeRange,
   } = $timeControlsStore);
 
@@ -90,7 +91,12 @@
       <SuperPill
         {allTimeRange}
         {selectedTimeRange}
-        {showComparison}
+        {selectedComparisonTimeRange}
+      />
+      <ComparisonPill
+        {allTimeRange}
+        {selectedTimeRange}
+        {showTimeComparison}
         {selectedComparisonTimeRange}
       />
     {/if}

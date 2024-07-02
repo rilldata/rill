@@ -53,12 +53,14 @@
       }, 17);
     }
   }
+
+  // $: console.log({ itemData });
 </script>
 
-{#if !$isHidden}
-  <div style:width={widthPx} class="overflow-hidden">
-    <div class="inline-block" bind:this={element}>
-      {#if $isPercentOfTotal}
+<!-- {#if !$isHidden} -->
+<div style:width={widthPx} class="overflow-hidden">
+  <div class="inline-block" bind:this={element}>
+    <!-- {#if $isPercentOfTotal}
         <PercentageChange
           value={itemData.pctOfTotal
             ? formatProperFractionAsPercent(itemData.pctOfTotal)
@@ -66,21 +68,21 @@
         />
       {:else if noChangeData}
         <span class="text-gray-400">-</span>
-      {:else if $isDeltaPercent}
-        <PercentageChange
-          value={itemData.deltaRel
-            ? formatMeasurePercentageDifference(itemData.deltaRel)
-            : null}
-        />
-      {:else if $isDeltaAbsolute}
-        <FormattedDataType
-          type="INTEGER"
-          value={itemData.deltaAbs
-            ? $activeMeasureFormatter(itemData.deltaAbs)
-            : null}
-          customStyle={negativeChange ? "text-red-500" : ""}
-        />
-      {/if}
-    </div>
+      {:else if $isDeltaPercent} -->
+    <!-- <PercentageChange
+      value={itemData.deltaRel
+        ? formatMeasurePercentageDifference(itemData.deltaRel)
+        : null}
+    /> -->
+    <!-- {:else if $isDeltaAbsolute} -->
+    <FormattedDataType
+      type="INTEGER"
+      value={itemData.deltaAbs
+        ? $activeMeasureFormatter(itemData.deltaAbs)
+        : null}
+      customStyle={negativeChange ? "text-red-500" : ""}
+    />
+    <!-- {/if} -->
   </div>
-{/if}
+</div>
+<!-- {/if} -->

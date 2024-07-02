@@ -72,6 +72,7 @@ export function prepareSortedQueryBody(
   }
 
   let apiSortName = sortMeasureName;
+
   if (
     !!comparisonTimeRange?.start &&
     !!comparisonTimeRange?.end &&

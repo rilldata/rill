@@ -125,24 +125,22 @@
         {/if}
       </button>
 
-      {#if !$isHidden}
-        <button
-          on:click={toggleSortByActiveContextColumn}
-          class="shrink flex flex-row items-center justify-end"
-          aria-label="Toggle sort leaderboards by context column"
-          style:width={widthPx}
-        >
-          {#if $isDeltaPercent}
-            <Delta /> %
-          {:else if $isDeltaAbsolute}
-            <Delta />
-          {:else if $isPercentOfTotal}
-            <PieChart /> %
-          {/if}{#if $sortType !== SortType.VALUE}
-            <ArrowDown transform={arrowTransform} />
-          {/if}
-        </button>
-      {/if}
+      <button
+        on:click={toggleSortByActiveContextColumn}
+        class="shrink flex flex-row items-center justify-end"
+        aria-label="Toggle sort leaderboards by context column"
+        style:width={widthPx}
+      >
+        {#if $isDeltaPercent}
+          <Delta /> %
+        {:else if $isDeltaAbsolute}
+          <Delta />
+        {:else if $isPercentOfTotal}
+          <PieChart /> %
+        {/if}{#if $sortType !== SortType.VALUE}
+          <ArrowDown transform={arrowTransform} />
+        {/if}
+      </button>
     </div>
   </div>
 </div>

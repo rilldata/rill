@@ -29,7 +29,6 @@
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
-  export let showComparison: boolean | undefined;
   export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
@@ -66,7 +65,6 @@
 
   $: availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
-  $: showComparisonTimeSeries = !comparisonDimension && showComparison;
 
   $: metricsViewSpec = $metricsView.data ?? {};
 
@@ -215,11 +213,9 @@
       end: end,
     };
 
-    const comparisonTimeRange = showComparisonTimeSeries
-      ? ({
-          name: TimeComparisonOption.CONTIGUOUS,
-        } as DashboardTimeControls) // FIXME wrong typecasting across application
-      : undefined;
+    const comparisonTimeRange = {
+      name: TimeComparisonOption.CONTIGUOUS,
+    } as DashboardTimeControls; // FIXME wrong typecasting across application
 
     if (!activeTimeGrain) return;
     metricsExplorerStore.selectTimeRange(
@@ -227,22 +223,6 @@
       timeRange as TimeRange,
       activeTimeGrain,
       comparisonTimeRange,
-      metricsViewSpec,
-    );
-  }
-
-  function onSelectComparisonRange(
-    name: TimeComparisonOption,
-    start: Date,
-    end: Date,
-  ) {
-    metricsExplorerStore.setSelectedComparisonRange(
-      metricViewName,
-      {
-        name,
-        start,
-        end,
-      },
       metricsViewSpec,
     );
   }
@@ -289,17 +269,6 @@
       {activeTimeZone}
       {availableTimeZones}
       {onSelectTimeZone}
-    />
-  {/if}
-  {#if $timeComparisonOptionsState && interval.isValid}
-    <Elements.Comparison
-      {metricViewName}
-      timeComparisonOptionsState={$timeComparisonOptionsState}
-      selectedComparison={selectedComparisonTimeRange}
-      showComparison={showComparisonTimeSeries}
-      currentInterval={interval}
-      zone={activeTimeZone}
-      {onSelectComparisonRange}
     />
   {/if}
 </div>

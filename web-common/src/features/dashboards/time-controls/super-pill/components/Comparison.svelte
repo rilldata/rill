@@ -10,6 +10,7 @@
   import { DateTime, Interval } from "luxon";
   import { metricsExplorerStore } from "../../../stores/dashboard-stores";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
+  import RangeDisplay from "./RangeDisplay.svelte";
 
   type Option = {
     name: TimeComparisonOption;
@@ -24,11 +25,14 @@
   export let selectedComparison: DashboardTimeControls | undefined;
   export let metricViewName: string;
   export let zone: string;
+  export let grain: string;
   export let onSelectComparisonRange: (
     name: string,
     start: Date,
     end: Date,
   ) => void;
+
+  $: console.log({ selectedComparison });
 
   let open = false;
   let showSelector = false;
@@ -95,12 +99,14 @@
       {...builder}
       aria-label="Select time comparison option"
     >
-      <div class="gap-x-2 flex">
+      <div class="gap-x-2 flex" class:opacity-50={!showComparison}>
         {#if !timeComparisonOptionsState.length && !showComparison}
           <p>no comparison period</p>
         {:else}
-          <b>vs</b>
-          <p class="line-clamp-1">{label.toLowerCase()}</p>
+          <b class="line-clamp-1">{label}</b>
+          {#if interval.isValid}
+            <RangeDisplay {interval} {grain} />
+          {/if}
         {/if}
       </div>
       <span class="flex-none transition-transform" class:-rotate-180={open}>
