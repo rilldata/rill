@@ -15,7 +15,7 @@ import (
 // executeExport works by simulating a model that outputs to a file.
 // This means it creates a ModelExecutor with the provided input connector and props as input,
 // and with the "file" driver as the output connector targeting a temporary output path.
-func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any) (res string, resErr error) {
+func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat, inputConnector string, inputProps map[string]any) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultExportTimeout)
 	defer cancel()
 
