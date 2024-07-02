@@ -51,6 +51,7 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		return nil, err
 	}
 
+	// Check the output file size does not exceed the configured limit.
 	overLimit := atomic.Bool{}
 	if outputProps.FileSizeLimitBytes > 0 {
 		var cancel context.CancelFunc
