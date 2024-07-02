@@ -11,8 +11,8 @@
   $: user = createLocalServiceGetCurrentUser();
   $: deployValidation = createLocalServiceDeployValidation();
 
-  function handleSignIn() {
-    window.location.href = `${$deployValidation.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
+  function makeLogInHref() {
+    return `${$deployValidation.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
   }
 
   function makeLogOutHref(): string {
@@ -67,7 +67,7 @@
         </DropdownMenu.Item>
       {:else}
         <DropdownMenu.Item
-          on:click={handleSignIn}
+          href={makeLogInHref()}
           class="text-gray-800 font-normal"
         >
           Log in / Sign up
