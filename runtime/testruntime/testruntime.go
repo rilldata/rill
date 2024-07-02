@@ -233,6 +233,7 @@ func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string, error) {
 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
+	var err error
 	creds := os.Getenv("METRICS_CREDS")
 	data, err := base64.StdEncoding.DecodeString(creds)
 	if err != nil {
@@ -262,7 +263,7 @@ func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string, error) {
 			{
 				Type:   "druid",
 				Name:   "druid",
-				Config: map[string]string{"dsn": fmt.Sprintf("https://%s:%s@druid.metrics.in.rilldata.io/druid/v2/sql", splits[0], splits[1])},
+				Config: map[string]string{"dsn": fmt.Sprintf("https://%s:%s@druid.master.in.rilldata.io/druid/v2/sql", splits[0], splits[1])},
 			},
 			{
 				Type: "sqlite",

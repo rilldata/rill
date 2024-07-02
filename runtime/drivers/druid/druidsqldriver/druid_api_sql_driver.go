@@ -3,17 +3,28 @@ package druidsqldriver
 import (
 	"bytes"
 	"context"
+	"crypto/x509"
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"reflect"
+	"regexp"
 	"strconv"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/rilldata/rill/runtime/drivers/druid/retrier"
+)
+
+// non-retryable HTTP errors
+var (
+	redirectsErrorRe  = regexp.MustCompile(`stopped after \d+ redirects\z`)
+	schemeErrorRe     = regexp.MustCompile(`unsupported protocol scheme`)
+	notTrustedErrorRe = regexp.MustCompile(`certificate is not trusted`)
 )
 
 type druidSQLDriver struct{}
@@ -40,187 +51,275 @@ type sqlConnection struct {
 
 var _ driver.QueryerContext = &sqlConnection{}
 
-func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
-	dr := newDruidRequest(query, args)
+type coordinatorHTTPCheck struct {
+	c *sqlConnection
+}
+
+var _ retrier.AdditionalTest = &coordinatorHTTPCheck{}
+
+func (chc *coordinatorHTTPCheck) EnsureHardFailure(ctx context.Context) (bool, error) {
+	dr := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil)
 	b, err := json.Marshal(dr)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	bodyReader := bytes.NewReader(b)
 
-	context.AfterFunc(ctx, func() {
-		tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-		defer cancel()
-		r, err := http.NewRequestWithContext(tctx, http.MethodDelete, c.dsn+"/"+dr.Context.SQLQueryID, http.NoBody)
-		if err != nil {
-			return
-		}
-
-		resp, err := c.client.Do(r)
-		if err != nil {
-			return
-		}
-		resp.Body.Close()
-	})
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.dsn, bodyReader)
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, chc.c.dsn, bodyReader)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	req.Header.Add("Content-Type", "application/json")
-	resp, err := c.client.Do(req)
+	resp, err := chc.c.client.Do(req)
 	if err != nil {
-		return nil, err
+		return false, err
 	}
 
 	dec := json.NewDecoder(resp.Body)
 
 	var obj any
 	err = dec.Decode(&obj)
+	resp.Body.Close()
 	if err != nil {
-		resp.Body.Close()
-		return nil, err
+		return false, err
 	}
 	switch v := obj.(type) {
 	case map[string]any:
-		resp.Body.Close()
-		return nil, fmt.Errorf("%v", obj)
+		if v["errorCode"] != "invalidInput" {
+			return false, fmt.Errorf("%v", obj)
+		}
+		return true, nil
 	case []any:
-		columns := toStringArray(v)
+		return true, nil
+	default:
+		return false, fmt.Errorf("unexpected response: %v", obj)
+	}
+}
+
+func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
+	// total sum is 126 seconds (sum(2*2^x) from 0 to 5)
+	re := retrier.NewRetrier(6, 2*time.Second, &coordinatorHTTPCheck{
+		c: c,
+	})
+	return re.RunCtx(ctx, func(ctx2 context.Context) (driver.Rows, retrier.Action, error) {
+		dr := newDruidRequest(query, args)
+		b, err := json.Marshal(dr)
+		if err != nil {
+			return nil, retrier.Fail, err
+		}
+
+		bodyReader := bytes.NewReader(b)
+
+		context.AfterFunc(ctx, func() {
+			tctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			defer cancel()
+			r, err := http.NewRequestWithContext(tctx, http.MethodDelete, c.dsn+"/"+dr.Context.SQLQueryID, http.NoBody)
+			if err != nil {
+				return
+			}
+
+			resp, err := c.client.Do(r)
+			if err != nil {
+				return
+			}
+			resp.Body.Close()
+		})
+
+		req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.dsn, bodyReader)
+		if err != nil {
+			return nil, retrier.Fail, err
+		}
+
+		req.Header.Add("Content-Type", "application/json")
+		resp, err := c.client.Do(req)
+		if err != nil {
+			// nolint:errorlint // there's no wrapping
+			if v, ok := err.(*url.Error); ok {
+				// Don't retry if the error was due to too many redirects.
+				if redirectsErrorRe.MatchString(v.Error()) {
+					return nil, retrier.Fail, v
+				}
+
+				// Don't retry if the error was due to an invalid protocol scheme.
+				if schemeErrorRe.MatchString(v.Error()) {
+					return nil, retrier.Fail, v
+				}
+
+				// Don't retry if the error was due to TLS cert verification failure.
+				if notTrustedErrorRe.MatchString(v.Error()) {
+					return nil, retrier.Fail, v
+				}
+
+				// nolint:errorlint // there's no wrapping
+				if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
+					return nil, retrier.Fail, v
+				}
+			}
+
+			return nil, retrier.Retry, err
+		}
+
+		switch resp.StatusCode {
+		case http.StatusTooManyRequests:
+			return nil, retrier.Retry, fmt.Errorf("Too many requests")
+		case http.StatusUnauthorized, http.StatusForbidden:
+			return nil, retrier.Fail, fmt.Errorf("Unauthorized request")
+		}
+
+		dec := json.NewDecoder(resp.Body)
+
+		var obj any
 		err = dec.Decode(&obj)
 		if err != nil {
 			resp.Body.Close()
-			return nil, err
+			return nil, retrier.Fail, err
 		}
+		switch v := obj.(type) {
+		case map[string]any:
+			resp.Body.Close()
+			a := retrier.Retry
+			if v["errorCode"] == "invalidInput" { // hard fail all invalid-syntax errors
+				a = retrier.AdditionalCheck
+			}
+			return nil, a, fmt.Errorf("%v", obj)
+		case []any:
+			columns := toStringArray(v)
+			err = dec.Decode(&obj)
+			if err != nil {
+				resp.Body.Close()
+				return nil, retrier.Fail, err
+			}
 
-		types := toStringArray(obj.([]any))
+			types := toStringArray(obj.([]any))
 
-		transformers := make([]func(any) (any, error), len(columns))
-		for i, c := range types {
-			transformers[i] = identityTransformer
-			switch c {
-			case "TINYINT":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case float64:
-						return int8(v), nil
-					default:
-						return v, nil
+			transformers := make([]func(any) (any, error), len(columns))
+			for i, c := range types {
+				transformers[i] = identityTransformer
+				switch c {
+				case "TINYINT":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case float64:
+							return int8(v), nil
+						default:
+							return v, nil
+						}
 					}
-				}
-			case "SMALLINT":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case float64:
-						return int16(v), nil
-					default:
-						return v, nil
+				case "SMALLINT":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case float64:
+							return int16(v), nil
+						default:
+							return v, nil
+						}
 					}
-				}
-			case "INTEGER":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case float64:
-						return int32(v), nil
-					default:
-						return v, nil
+				case "INTEGER":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case float64:
+							return int32(v), nil
+						default:
+							return v, nil
+						}
 					}
-				}
-			case "BIGINT":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case float64:
-						return int64(v), nil
-					default:
-						return v, nil
+				case "BIGINT":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case float64:
+							return int64(v), nil
+						default:
+							return v, nil
+						}
 					}
-				}
-			case "FLOAT":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case float64:
-						return float32(v), nil
-					case string:
-						return strconv.ParseFloat(v, 32)
-					default:
-						return v, nil
+				case "FLOAT":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case float64:
+							return float32(v), nil
+						case string:
+							return strconv.ParseFloat(v, 32)
+						default:
+							return v, nil
+						}
 					}
-				}
-			case "DOUBLE":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case string:
-						return strconv.ParseFloat(v, 64)
-					default:
-						return v, nil
+				case "DOUBLE":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case string:
+							return strconv.ParseFloat(v, 64)
+						default:
+							return v, nil
+						}
 					}
-				}
-			case "REAL":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case string:
-						return strconv.ParseFloat(v, 64)
-					default:
-						return v, nil
+				case "REAL":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case string:
+							return strconv.ParseFloat(v, 64)
+						default:
+							return v, nil
+						}
 					}
-				}
-			case "DECIMAL":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case string:
-						return strconv.ParseFloat(v, 64)
-					default:
-						return v, nil
+				case "DECIMAL":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case string:
+							return strconv.ParseFloat(v, 64)
+						default:
+							return v, nil
+						}
 					}
-				}
-			case "TIMESTAMP":
-				transformers[i] = func(v any) (any, error) {
-					switch v := v.(type) {
-					case string:
-						t, err := time.Parse(time.RFC3339, v)
+				case "TIMESTAMP":
+					transformers[i] = func(v any) (any, error) {
+						switch v := v.(type) {
+						case string:
+							t, err := time.Parse(time.RFC3339, v)
+							if err != nil {
+								return nil, err
+							}
+							return t, nil
+						default:
+							return v, nil
+						}
+					}
+				case "ARRAY":
+					transformers[i] = func(v any) (any, error) {
+						var l []any
+						err := json.Unmarshal([]byte(v.(string)), &l)
 						if err != nil {
 							return nil, err
 						}
-						return t, nil
-					default:
-						return v, nil
+						return l, nil
 					}
-				}
-			case "ARRAY":
-				transformers[i] = func(v any) (any, error) {
-					var l []any
-					err := json.Unmarshal([]byte(v.(string)), &l)
-					if err != nil {
-						return nil, err
+				case "OTHER":
+					transformers[i] = func(v any) (any, error) {
+						var l map[string]any
+						err := json.Unmarshal([]byte(v.(string)), &l)
+						if err != nil {
+							return nil, err
+						}
+						return l, nil
 					}
-					return l, nil
-				}
-			case "OTHER":
-				transformers[i] = func(v any) (any, error) {
-					var l map[string]any
-					err := json.Unmarshal([]byte(v.(string)), &l)
-					if err != nil {
-						return nil, err
-					}
-					return l, nil
 				}
 			}
-		}
 
-		druidRows := &druidRows{
-			closer:        resp.Body,
-			dec:           dec,
-			columns:       columns,
-			types:         types,
-			transformers:  transformers,
-			currentValues: make([]any, len(columns)),
+			druidRows := &druidRows{
+				closer:        resp.Body,
+				dec:           dec,
+				columns:       columns,
+				types:         types,
+				transformers:  transformers,
+				currentValues: make([]any, len(columns)),
+			}
+			return druidRows, retrier.Succeed, nil
+		default:
+			resp.Body.Close()
+			return nil, retrier.Fail, fmt.Errorf("unexpected response: %v", obj)
 		}
-		return druidRows, nil
-	default:
-		resp.Body.Close()
-		return nil, fmt.Errorf("unexpected response: %v", obj)
-	}
+	})
 }
 
 type druidRows struct {
