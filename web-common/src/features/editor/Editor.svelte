@@ -10,6 +10,11 @@
   import { FILE_SAVE_DEBOUNCE_TIME } from "./config";
   import { FileArtifact } from "../entity-management/file-artifact";
   import Codespace from "./Codespace.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import MetaKey from "@rilldata/web-common/components/tooltip/MetaKey.svelte";
 
   export let fileArtifact: FileArtifact;
   export let extensions: Extension[] = [];
@@ -76,10 +81,24 @@
     <footer>
       <div class="flex gap-x-3">
         {#if !autoSave || disableAutoSave || forceDisableAutoSave}
-          <Button type="subtle" disabled={!$hasUnsavedChanges} on:click={save}>
-            <Check size="14px" />
-            Save
-          </Button>
+          <Tooltip distance={8} activeDelay={300}>
+            <Button
+              type="subtle"
+              disabled={!$hasUnsavedChanges}
+              on:click={save}
+            >
+              <Check size="14px" />
+              Save
+            </Button>
+            <TooltipContent slot="tooltip-content">
+              <TooltipShortcutContainer pad={false}>
+                Save
+                <Shortcut>
+                  <MetaKey action="S" />
+                </Shortcut>
+              </TooltipShortcutContainer>
+            </TooltipContent>
+          </Tooltip>
 
           <Button
             type="text"
