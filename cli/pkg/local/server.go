@@ -147,6 +147,18 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		deployedProjectID = rc.ProjectID
 	}
 
+	// get rill user orgs
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	userOrgs := make([]string, 0, len(resp.Organizations))
+	for _, org := range resp.Organizations {
+		userOrgs = append(userOrgs, org.Name)
+	}
+	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
+
 	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 	if err != nil {
 		return nil, err
@@ -168,10 +180,25 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			GithubUrl:                     "",
 			HasUncommittedChanges:         nil,
 			RillOrgExistsAsGithubUserName: false,
-			RillUserOrgs:                  nil,
+			RillUserOrgs:                  userOrgs,
 			LocalProjectName:              localProjectName,
 			DeployedProjectId:             deployedProjectID,
 		}), nil
+	}
+
+	rillOrgExistsAsGitUserName := false
+	// if user does not any have orgs, check if any orgs exist as github username as we suggest this as org name
+	if len(userOrgs) == 0 {
+		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
+			Name: userStatus.Account,
+		})
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, err
+			}
+		} else {
+			rillOrgExistsAsGitUserName = true
+		}
 	}
 
 	isGithubRepo := true
@@ -224,38 +251,11 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				IsGithubRepoAccessGranted:     repoAccess,
 				GithubUrl:                     "",
 				HasUncommittedChanges:         hasUncommittedChanges,
-				RillOrgExistsAsGithubUserName: false,
-				RillUserOrgs:                  nil,
+				RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
+				RillUserOrgs:                  userOrgs,
 				LocalProjectName:              localProjectName,
 				DeployedProjectId:             deployedProjectID,
 			}), nil
-		}
-	}
-
-	// get rill user orgs
-	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	userOrgs := make([]string, 0, len(resp.Organizations))
-	for _, org := range resp.Organizations {
-		userOrgs = append(userOrgs, org.Name)
-	}
-	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
-
-	rillOrgExistsAsGitUserName := false
-	// if user does not any have orgs, check if any orgs exist as github username as we suggest this as org name
-	if len(userOrgs) == 0 {
-		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-			Name: userStatus.Account,
-		})
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
-		} else {
-			rillOrgExistsAsGitUserName = true
 		}
 	}
 
