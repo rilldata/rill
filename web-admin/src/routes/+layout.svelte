@@ -26,10 +26,18 @@
 
   clearViewedAsUserAfterNavigate(queryClient);
 
-  initCloudMetrics();
+  let removeJavascriptListeners: () => void;
+  initCloudMetrics()
+    .then(() => {
+      removeJavascriptListeners =
+        errorEventHandler.addJavascriptErrorListeners();
+    })
+    .catch(console.error);
   initPylonWidget();
 
-  onMount(() => errorEventHandler?.addJavascriptErrorListeners());
+  onMount(() => {
+    return () => removeJavascriptListeners();
+  });
 
   $: isEmbed = $page.url.pathname === "/-/embed";
 </script>

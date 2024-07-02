@@ -64,6 +64,15 @@ func (w *Worker) Run(ctx context.Context) error {
 	group.Go(func() error {
 		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
 	})
+	group.Go(func() error {
+		return w.schedule(ctx, "delete_unused_assets", w.deleteUnusedAssets, 6*time.Hour)
+	})
+
+	if w.admin.Biller.GetReportingWorkerCron() != "" {
+		group.Go(func() error {
+			return w.scheduleCron(ctx, "run_billing_reporter", w.reportUsage, w.admin.Biller.GetReportingWorkerCron())
+		})
+	}
 
 	// NOTE: Add new scheduled jobs here
 

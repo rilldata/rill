@@ -115,7 +115,7 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 }
 
 // executePivotExport executes a PIVOT query prepared using rewriteQueryForPivot, and exports the result to a file in the given format.
-func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivotAST, format string) (string, error) {
+func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivotAST, format drivers.FileFormat) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultPivotExportTimeout)
 	defer cancel()
 

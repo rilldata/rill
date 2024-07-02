@@ -32,6 +32,21 @@ paths:
             $ref: '#/definitions/v1CompleteRequest'
       tags:
         - AIService
+  /v1/billing/plans:
+    get:
+      summary: ListPublicBillingPlans lists all public billing plans
+      operationId: AdminService_ListPublicBillingPlans
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListPublicBillingPlansResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
   /v1/deployments/{deploymentId}/reconcile:
     post:
       summary: TriggerReconcile triggers reconcile for the project's prod deployment
@@ -256,6 +271,53 @@ paths:
               description:
                 type: string
               newName:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{orgName}/billing/subscriptions:
+    get:
+      summary: GetOrganizationBillingSubscription lists the subscription for the organization
+      operationId: AdminService_GetOrganizationBillingSubscription
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationBillingSubscriptionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    patch:
+      summary: UpdateOrganizationBillingSubscription updates the billing plan for the organization
+      operationId: AdminService_UpdateOrganizationBillingSubscription
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1UpdateOrganizationBillingSubscriptionResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              planName:
                 type: string
       tags:
         - AdminService
@@ -2032,6 +2094,27 @@ paths:
             $ref: '#/definitions/v1SetSuperuserRequest'
       tags:
         - AdminService
+  /v1/superuser/organization/billing/customer_id:
+    patch:
+      summary: SudoUpdateOrganizationBillingCustomer update the billing customer for the organization
+      operationId: AdminService_SudoUpdateOrganizationBillingCustomer
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoUpdateOrganizationBillingCustomerRequest'
+      tags:
+        - AdminService
   /v1/superuser/projects/annotations:
     patch:
       summary: SudoUpdateAnnotations endpoint for superusers to update project annotations
@@ -2495,6 +2578,25 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the dashboard when it was created
+  v1BillingPlan:
+    type: object
+    properties:
+      id:
+        type: string
+      name:
+        type: string
+      displayName:
+        type: string
+      description:
+        type: string
+      trialPeriodDays:
+        type: integer
+        format: int64
+      default:
+        type: boolean
+      quotas:
+        $ref: '#/definitions/v1Quotas'
+        title: TODO expose pricing information
   v1Bookmark:
     type: object
     properties:
@@ -2805,6 +2907,13 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationBillingSubscriptionResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscription:
+        $ref: '#/definitions/v1Subscription'
   v1GetOrganizationResponse:
     type: object
     properties:
@@ -2979,6 +3088,14 @@ definitions:
           $ref: '#/definitions/v1Project'
       nextPageToken:
         type: string
+  v1ListPublicBillingPlansResponse:
+    type: object
+    properties:
+      plans:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1BillingPlan'
   v1ListServiceAuthTokensResponse:
     type: object
     properties:
@@ -3087,6 +3204,8 @@ definitions:
         type: string
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
+      billingCustomerId:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -3128,6 +3247,9 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
+      storageLimitBytesPerDeployment:
+        type: string
+        format: uint64
   v1PingResponse:
     type: object
     properties:
@@ -3238,6 +3360,21 @@ definitions:
           type: object
           $ref: '#/definitions/v1VirtualFile'
       nextPageToken:
+        type: string
+  v1Quotas:
+    type: object
+    properties:
+      projects:
+        type: string
+      deployments:
+        type: string
+      slotsTotal:
+        type: string
+      slotsPerDeployment:
+        type: string
+      outstandingInvites:
+        type: string
+      storageLimitBytesPerDeployment:
         type: string
   v1RecordEventsRequest:
     type: object
@@ -3391,6 +3528,32 @@ definitions:
         $ref: '#/definitions/v1Expression'
       having:
         $ref: '#/definitions/v1Expression'
+  v1Subscription:
+    type: object
+    properties:
+      id:
+        type: string
+      planId:
+        type: string
+      planName:
+        type: string
+      planDisplayName:
+        type: string
+      startDate:
+        type: string
+        format: date-time
+      endDate:
+        type: string
+        format: date-time
+      currentBillingCycleStartDate:
+        type: string
+        format: date-time
+      currentBillingCycleEndDate:
+        type: string
+        format: date-time
+      trialEndDate:
+        type: string
+        format: date-time
   v1SudoGetResourceResponse:
     type: object
     properties:
@@ -3420,6 +3583,23 @@ definitions:
     properties:
       project:
         $ref: '#/definitions/v1Project'
+  v1SudoUpdateOrganizationBillingCustomerRequest:
+    type: object
+    properties:
+      orgName:
+        type: string
+      billingCustomerId:
+        type: string
+  v1SudoUpdateOrganizationBillingCustomerResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscriptions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Subscription'
   v1SudoUpdateOrganizationQuotasRequest:
     type: object
     properties:
@@ -3440,6 +3620,9 @@ definitions:
       outstandingInvites:
         type: integer
         format: int64
+      storageLimitBytesPerDeployment:
+        type: string
+        format: uint64
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
@@ -3500,6 +3683,16 @@ definitions:
         type: boolean
   v1UpdateBookmarkResponse:
     type: object
+  v1UpdateOrganizationBillingSubscriptionResponse:
+    type: object
+    properties:
+      organization:
+        $ref: '#/definitions/v1Organization'
+      subscriptions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1Subscription'
   v1UpdateOrganizationResponse:
     type: object
     properties:

@@ -99,6 +99,7 @@
       // Also, in the future, they might even be editable.
       metricsViewName: $metricsViewName,
       whereFilter: $dashboardStore.whereFilter,
+      dimensionThresholdFilters: $dashboardStore.dimensionThresholdFilters,
       timeRange: timeRange
         ? {
             ...timeRange,

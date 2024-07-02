@@ -20,7 +20,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
   import { errorStore } from "../../../../features/errors/error-store";
-  import ProjectBuilding from "../../../../features/projects/ProjectBuilding.svelte";
 
   const queryClient = useQueryClient();
 
@@ -34,11 +33,6 @@
 
   $: projectDeployment = useProjectDeployment(orgName, projectName); // polls
   $: ({ data: deployment } = $projectDeployment);
-  $: isProjectPending =
-    deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_PENDING;
-  $: isProjectErrored =
-    deployment?.status === V1DeploymentStatus.DEPLOYMENT_STATUS_ERROR;
-  $: isProjectBuilt = isProjectOK || isProjectErrored;
 
   let isProjectOK: boolean;
 
@@ -78,7 +72,7 @@
   $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
 
   // If no dashboard is found, show a 404 page
-  $: if (isProjectBuilt && isDashboardNotFound) {
+  $: if (isDashboardNotFound) {
     errorStore.set({
       statusCode: 404,
       header: "Dashboard not found",
@@ -94,9 +88,7 @@
 <!-- Note: Project and dashboard states might appear to diverge. A project could be errored 
   because dashboard #1 is errored, but dashboard #2 could be OK.  -->
 
-{#if isProjectPending && isDashboardNotFound}
-  <ProjectBuilding organization={orgName} project={projectName} />
-{:else if $dashboard.isSuccess}
+{#if $dashboard.isSuccess}
   {#if isDashboardErrored}
     <ProjectErrored organization={orgName} project={projectName} />
   {:else}

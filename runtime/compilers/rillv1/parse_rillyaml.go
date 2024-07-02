@@ -21,6 +21,7 @@ type RillYAML struct {
 	Variables     []*VariableDef
 	Defaults      map[ResourceKind]yaml.Node
 	FeatureFlags  map[string]bool
+	PublicPaths   []string
 }
 
 // ConnectorDef is a subtype of RillYAML, defining connectors required by the project
@@ -68,6 +69,8 @@ type rillYAML struct {
 	Migrations yaml.Node `yaml:"migrations"`
 	// Feature flags (preferably a map[string]bool, but can also be a []string for backwards compatibility)
 	Features yaml.Node `yaml:"features"`
+	// Paths to expose over HTTP (defaults to ./public)
+	PublicPaths []string `yaml:"public_paths"`
 }
 
 // parseRillYAML parses rill.yaml
@@ -161,6 +164,10 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 		}
 	}
 
+	if len(tmp.PublicPaths) == 0 {
+		tmp.PublicPaths = []string{"public"}
+	}
+
 	res := &RillYAML{
 		Title:         tmp.Title,
 		Description:   tmp.Description,
@@ -174,6 +181,7 @@ func (p *Parser) parseRillYAML(ctx context.Context, path string) error {
 			ResourceKindMigration:   tmp.Migrations,
 		},
 		FeatureFlags: featureFlags,
+		PublicPaths:  tmp.PublicPaths,
 	}
 
 	for i, c := range tmp.Connectors {
