@@ -26,6 +26,7 @@ const (
 	LocalService_PushToGithub_FullMethodName     = "/rill.local.v1.LocalService/PushToGithub"
 	LocalService_DeployProject_FullMethodName    = "/rill.local.v1.LocalService/DeployProject"
 	LocalService_RedeployProject_FullMethodName  = "/rill.local.v1.LocalService/RedeployProject"
+	LocalService_GetCurrentUser_FullMethodName   = "/rill.local.v1.LocalService/GetCurrentUser"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -46,6 +47,8 @@ type LocalServiceClient interface {
 	DeployProject(ctx context.Context, in *DeployProjectRequest, opts ...grpc.CallOption) (*DeployProjectResponse, error)
 	// RedeployProject updates a deployed project.
 	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
+	// User returns the locally logged in user
+	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 }
 
 type localServiceClient struct {
@@ -126,6 +129,16 @@ func (c *localServiceClient) RedeployProject(ctx context.Context, in *RedeployPr
 	return out, nil
 }
 
+func (c *localServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCurrentUserResponse)
+	err := c.cc.Invoke(ctx, LocalService_GetCurrentUser_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalServiceServer is the server API for LocalService service.
 // All implementations must embed UnimplementedLocalServiceServer
 // for forward compatibility
@@ -144,6 +157,8 @@ type LocalServiceServer interface {
 	DeployProject(context.Context, *DeployProjectRequest) (*DeployProjectResponse, error)
 	// RedeployProject updates a deployed project.
 	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
+	// User returns the locally logged in user
+	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -171,6 +186,9 @@ func (UnimplementedLocalServiceServer) DeployProject(context.Context, *DeployPro
 }
 func (UnimplementedLocalServiceServer) RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RedeployProject not implemented")
+}
+func (UnimplementedLocalServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 
@@ -311,6 +329,24 @@ func _LocalService_RedeployProject_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GetCurrentUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GetCurrentUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalService_ServiceDesc is the grpc.ServiceDesc for LocalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -345,6 +381,10 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RedeployProject",
 			Handler:    _LocalService_RedeployProject_Handler,
+		},
+		{
+			MethodName: "GetCurrentUser",
+			Handler:    _LocalService_GetCurrentUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

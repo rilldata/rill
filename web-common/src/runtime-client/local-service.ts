@@ -5,6 +5,7 @@ import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_c
 import {
   DeployProjectRequest,
   DeployValidationRequest,
+  GetCurrentUserRequest,
   GetMetadataRequest,
   GetVersionRequest,
   PushToGithubRequest,
@@ -159,4 +160,28 @@ export function createLocalServiceDeploy<
     PartialMessage<DeployProjectRequest>,
     unknown
   >(localServiceDeploy, mutationOptions);
+}
+
+export function localServiceGetCurrentUser() {
+  return getClient().getCurrentUser(new GetCurrentUserRequest());
+}
+export const getLocalServiceGetCurrentUserQueryKey = () => [
+  `/v1/local/get-user`,
+];
+export function createLocalServiceGetCurrentUser<
+  TData = Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
+  TError = ConnectError,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof localServiceGetCurrentUser>>,
+    TError,
+    TData
+  >;
+}) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey: queryOptions?.queryKey ?? getLocalServiceGetCurrentUserQueryKey(),
+    queryFn: queryOptions?.queryFn ?? localServiceGetCurrentUser,
+  });
 }

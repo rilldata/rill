@@ -19,6 +19,10 @@ test.describe("leaderboard and dimension table sorting", () => {
   test("leaderboard and dimension table sorting", async ({ page }) => {
     await page.getByRole("button", { name: "Preview" }).click();
 
+    // Change time zone to UTC
+    await page.getByLabel("Timezone selector").click();
+    await page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }).click();
+
     /**
      * LEADERBOARD
      */
@@ -195,7 +199,11 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // sort by pct change ONCE to sort by pct change descending
-    await page.locator("button:nth-child(3)").first().click();
+    await page
+      .getByRole("table", { name: "Dimension table" })
+      .locator("button:nth-child(3)")
+      .first()
+      .click();
     await assertAAboveB(
       page
         .locator("div")
@@ -208,7 +216,11 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // sort by pct change TWICE to sort by pct change ascending
-    await page.locator("button:nth-child(3)").first().click();
+    await page
+      .getByRole("table", { name: "Dimension table" })
+      .locator("button:nth-child(3)")
+      .first()
+      .click();
     await assertAAboveB(
       page
         .locator("div")
@@ -221,7 +233,11 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // sort by pct of total ONCE to sort by pct of total descending
-    await page.locator("button:nth-child(4)").first().click();
+    await page
+      .getByRole("table", { name: "Dimension table" })
+      .locator("button:nth-child(4)")
+      .first()
+      .click();
     await assertAAboveB(
       page
         .locator("div")
@@ -233,7 +249,11 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" }),
     );
     // sort by pct of total TWICE to sort by pct of total ascending
-    await page.locator("button:nth-child(4)").first().click();
+    await page
+      .getByRole("table", { name: "Dimension table" })
+      .locator("button:nth-child(4)")
+      .first()
+      .click();
     await assertAAboveB(
       page
         .locator("div")
