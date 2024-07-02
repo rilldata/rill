@@ -92,13 +92,16 @@
 
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
-    <h3>Create a public link that you can send to anyone.</h3>
+    <div class="information-container">
+      <h3>Create a public link that you can send to anyone.</h3>
+      <ul>
+        <li>Measures and dimensions will be limited to current visible set.</li>
+        <li>Filters will be locked and hidden.</li>
+      </ul>
 
-    <ul>
-      <li>Measures and dimensions will be limited to current visible set.</li>
-      <li>Filters will be locked and hidden.</li>
+      <!-- Filters -->
       {#if hasDashboardWhereFilter()}
-        <div class="mt-2 px-[19px]">
+        <div>
           <FilterChipsReadOnly
             metricsViewName={dashboard}
             filters={$dashboardStore.whereFilter}
@@ -108,7 +111,7 @@
           />
         </div>
       {/if}
-    </ul>
+    </div>
 
     <!-- Expiration -->
     <div>
@@ -158,7 +161,11 @@
 
 <style lang="postcss">
   form {
-    @apply flex flex-col gap-y-6;
+    @apply flex flex-col gap-y-4;
+  }
+
+  .information-container {
+    @apply flex flex-col gap-y-2;
   }
 
   ul {
