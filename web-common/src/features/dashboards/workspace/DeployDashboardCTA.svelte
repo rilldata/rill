@@ -1,40 +1,101 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@rilldata/web-common/components/alert-dialog";
+  import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { createDeployer } from "@rilldata/web-common/features/project/deploy";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import {
+    createLocalServiceDeployValidation,
+    createLocalServiceRedeploy,
+  } from "@rilldata/web-common/runtime-client/local-service";
   import { Button } from "../../../components/button";
-  import CliCommandDisplay from "../../../components/commands/CLICommandDisplay.svelte";
-  import Dialog from "../../../components/dialog/Dialog.svelte";
 
-  export let open: boolean;
+  export let type: "primary" | "secondary" = "primary";
 
-  const dispatch = createEventDispatcher();
+  $: deployValidation = createLocalServiceDeployValidation({
+    query: {
+      refetchOnWindowFocus: true,
+    },
+  });
+  $: isDeployed = !!$deployValidation.data?.deployedProjectId;
 
-  function close() {
-    dispatch("close");
+  let open = false;
+  function onShowDeploy() {
+    if (isDeployed) {
+      return onDeploy();
+    }
+    open = true;
+    void behaviourEvent?.fireDeployIntentEvent();
+  }
+
+  let deploying = false;
+  const deploy = createDeployer();
+  const redeploy = createLocalServiceRedeploy();
+  $: isLoading = $deploy.isLoading || $redeploy.isLoading;
+
+  async function onDeploy() {
+    deploying = true;
+
+    await waitUntil(() => !$deployValidation.isLoading);
+    if (!(await $deploy.mutateAsync($deployValidation.data!))) return;
+
+    deploying = false;
+    open = false;
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState !== "visible" || !deploying) return;
+    void onDeploy();
   }
 </script>
 
-<Dialog titleMarginBottomOverride="mb-4" on:close {open}>
-  <svelte:fragment slot="title">
-    Deploy your project to Rill Cloud
-  </svelte:fragment>
+<svelte:window on:visibilitychange={handleVisibilityChange} />
 
-  <div class="flex flex-col items-center" slot="body">
-    <div class="text-left text-sm text-gray-500 w-full">
-      Run this command from your project directory. <a
-        href="https://docs.rilldata.com/deploy/existing-project"
-        target="_blank"
-        rel="noreferrer noopener">See docs</a
-      >
-    </div>
-    <div class="pt-4 pb-2">
-      <CliCommandDisplay command="rill deploy" />
-    </div>
-  </div>
+<Tooltip distance={8}>
+  <Button on:click={onShowDeploy} {type} loading={$deployValidation.isLoading}>
+    {isDeployed ? "Redeploy" : "Deploy"}
+  </Button>
+  <TooltipContent slot="tooltip-content">
+    Deploy this dashboard to Rill Cloud
+  </TooltipContent>
+</Tooltip>
 
-  <svelte:fragment slot="footer">
-    <div class="flex">
-      <div class="grow" />
-      <Button type="secondary" on:click={close}>Close</Button>
+<AlertDialog bind:open>
+  <AlertDialogTrigger asChild>
+    <div class="hidden"></div>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <div class="flex flex-row">
+      <DeployIcon size="150px" />
+      <div class="flex flex-col">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Deploy this project for free</AlertDialogTitle>
+          <AlertDialogDescription>
+            You’re about to start a 30-day FREE trial of Rill Cloud, where you
+            can set alerts, share dashboards, and more.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter class="mt-5">
+          <Button type="secondary" on:click={() => (open = false)}>Back</Button>
+          <Button
+            type="primary"
+            on:click={onDeploy}
+            loading={isLoading || deploying}
+          >
+            Continue
+          </Button>
+        </AlertDialogFooter>
+      </div>
     </div>
-  </svelte:fragment>
-</Dialog>
+  </AlertDialogContent>
+</AlertDialog>

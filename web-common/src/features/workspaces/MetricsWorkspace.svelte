@@ -1,8 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/connectors/olap/selectors";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
   import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
@@ -26,7 +23,6 @@
 
   export let fileArtifact: FileArtifact;
 
-  let showDeployModal = false;
   let previewStatus: string[] = [];
 
   $: ({ instanceId } = $runtime);
@@ -93,14 +89,7 @@
     on:change={onChangeCallback}
   >
     <div slot="cta" class="flex gap-x-2">
-      <Tooltip distance={8}>
-        <Button on:click={() => (showDeployModal = true)} type="secondary">
-          Deploy
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Deploy this dashboard to Rill Cloud
-        </TooltipContent>
-      </Tooltip>
+      <DeployDashboardCta type="secondary" />
       <PreviewButton
         dashboardName={metricViewName}
         status={previewStatus}
@@ -120,8 +109,3 @@
 
   <MetricsInspector yaml={$remoteContent ?? ""} slot="inspector" />
 </WorkspaceContainer>
-
-<DeployDashboardCta
-  on:close={() => (showDeployModal = false)}
-  open={showDeployModal}
-/>

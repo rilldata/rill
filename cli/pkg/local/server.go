@@ -147,6 +147,18 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		deployedProjectID = rc.ProjectID
 	}
 
+	// get rill user orgs
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	userOrgs := make([]string, 0, len(resp.Organizations))
+	for _, org := range resp.Organizations {
+		userOrgs = append(userOrgs, org.Name)
+	}
+	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
+
 	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 	if err != nil {
 		return nil, err
@@ -168,10 +180,25 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			GithubUrl:                     "",
 			HasUncommittedChanges:         nil,
 			RillOrgExistsAsGithubUserName: false,
-			RillUserOrgs:                  nil,
+			RillUserOrgs:                  userOrgs,
 			LocalProjectName:              localProjectName,
 			DeployedProjectId:             deployedProjectID,
 		}), nil
+	}
+
+	rillOrgExistsAsGitUserName := false
+	// if user does not any have orgs, check if any orgs exist as github username as we suggest this as org name
+	if len(userOrgs) == 0 {
+		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
+			Name: userStatus.Account,
+		})
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, err
+			}
+		} else {
+			rillOrgExistsAsGitUserName = true
+		}
 	}
 
 	isGithubRepo := true
@@ -224,38 +251,11 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				IsGithubRepoAccessGranted:     repoAccess,
 				GithubUrl:                     "",
 				HasUncommittedChanges:         hasUncommittedChanges,
-				RillOrgExistsAsGithubUserName: false,
-				RillUserOrgs:                  nil,
+				RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
+				RillUserOrgs:                  userOrgs,
 				LocalProjectName:              localProjectName,
 				DeployedProjectId:             deployedProjectID,
 			}), nil
-		}
-	}
-
-	// get rill user orgs
-	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	userOrgs := make([]string, 0, len(resp.Organizations))
-	for _, org := range resp.Organizations {
-		userOrgs = append(userOrgs, org.Name)
-	}
-	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
-
-	rillOrgExistsAsGitUserName := false
-	// if user does not any have orgs, check if any orgs exist as github username as we suggest this as org name
-	if len(userOrgs) == 0 {
-		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-			Name: userStatus.Account,
-		})
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
-		} else {
-			rillOrgExistsAsGitUserName = true
 		}
 	}
 
@@ -574,6 +574,13 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		return nil, err
 	}
 
+	projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: r.Msg.ProjectId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	if r.Msg.Reupload {
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
@@ -581,24 +588,26 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		}
 		defer release()
 
-		projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-			Id: r.Msg.ProjectId,
-		})
-		if err != nil {
-			return nil, err
-		}
-
 		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, projResp.Project.OrgName, projResp.Project.Name)
 		if err != nil {
 			return nil, err
 		}
-		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{ArchiveAssetId: &assetID})
+		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+			ArchiveAssetId:   &assetID,
+			OrganizationName: projResp.Project.OrgName,
+			Name:             projResp.Project.Name,
+		})
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		// TODO: should we push change to github for redeploy on github connected project?
 	}
+
 	// TODO : Add other update project fields
-	return connect.NewResponse(&localv1.RedeployProjectResponse{}), nil
+	return connect.NewResponse(&localv1.RedeployProjectResponse{
+		FrontendUrl: projResp.Project.FrontendUrl,
+	}), nil
 }
 
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
