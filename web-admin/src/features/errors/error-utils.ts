@@ -25,8 +25,26 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
 
+    // Let the magic link page handle all errors
+    const onMagicLinkPage = isMagicLinkPage(get(page));
+    if (onMagicLinkPage) {
+      // If the magic link page throws a 401, show a specific Link Expired error
+      if (error.response?.status === 401) {
+        errorStore.set({
+          statusCode: 401,
+          header: "Oops! This link has expired",
+          body: "It looks like this link is no longer active. Please reach out to the sender to request a new link.",
+          fatal: true,
+        });
+        return;
+      }
+
+      // Let the magic link page handle all other errors
+      return;
+    }
+
     // If an anonymous user hits a 403 error, redirect to the login page
-    if (error.response?.status === 403 && !isMagicLinkPage(get(page))) {
+    if (error.response?.status === 403) {
       // Check for a logged-in user
       const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
         queryKey: getAdminServiceGetCurrentUserQueryKey(),
@@ -108,10 +126,6 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
         return;
       }
     }
-
-    // Let the magic link page handle all errors
-    const onMagicLinkPage = isMagicLinkPage(get(page));
-    if (onMagicLinkPage) return;
 
     // Create a pretty message for the error page
     const errorStoreState = createErrorStoreStateFromAxiosError(error);
