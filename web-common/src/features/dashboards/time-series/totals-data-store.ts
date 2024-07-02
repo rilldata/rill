@@ -11,6 +11,7 @@ import {
   createQueryServiceMetricsViewAggregation,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
+import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
@@ -18,7 +19,7 @@ export function createTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
   isComparison = false,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
     [
       ctx.runtime,
@@ -56,7 +57,7 @@ export function createUnfilteredTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
   dimensionName: string,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
     [
       ctx.runtime,
