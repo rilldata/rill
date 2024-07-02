@@ -22,7 +22,7 @@ import (
 	"github.com/xuri/excelize/v2"
 )
 
-const maxParquetRowGroupLen = 4 * 1024 * 1024
+const maxParquetRowGroupSize = 512 * int64(datasize.MB)
 
 type olapToSelfExecutor struct {
 	c    *connection
@@ -340,22 +340,24 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 			}
 		}
 		rows++
-		// We write the data to the underlying file to not buffer entire data in memory till it is written to parquet file.
-		// Since the check is not on memory but on number of rows this can still consume lot of memory
-		// so we set the limit to a much aggressive value than the default which is 64M.
-		if rows == maxParquetRowGroupLen {
+		if rows == 1000 {
 			rec := recordBuilder.NewRecord()
-			if err := parquetwriter.Write(rec); err != nil {
+			if err := parquetwriter.WriteBuffered(rec); err != nil {
 				rec.Release()
 				return err
 			}
 			rec.Release()
+			if parquetwriter.RowGroupTotalBytesWritten() >= maxParquetRowGroupSize {
+				// Also flushes the data to the disk freeing memory
+				parquetwriter.NewBufferedRowGroup()
+			}
+			rows = 0
 		}
 	}
 	if res.Err() != nil {
 		return res.Err()
 	}
-	if rows%maxParquetRowGroupLen == 0 {
+	if rows == 0 {
 		return nil
 	}
 	rec := recordBuilder.NewRecord()
@@ -368,7 +370,7 @@ func writeParquet(res *drivers.Result, fw io.Writer) error {
 // A limitedWriter writes to W but limits the amount of
 // data written to just N bytes.
 //
-// Copied from github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/util/ioutils/ioutils.go
+// Modified from github.com/kubernetes/kubernetes/blob/master/pkg/kubelet/util/ioutils/ioutils.go
 type limitedWriter struct {
 	W io.Writer // underlying writer
 	N int64     // max bytes remaining
@@ -378,15 +380,10 @@ func (l *limitedWriter) Write(p []byte) (n int, err error) {
 	if l.N <= 0 {
 		return 0, io.ErrShortWrite
 	}
-	truncated := false
 	if int64(len(p)) > l.N {
-		p = p[0:l.N]
-		truncated = true
+		return 0, io.ErrShortWrite
 	}
 	n, err = l.W.Write(p)
 	l.N -= int64(n)
-	if err == nil && truncated {
-		err = io.ErrShortWrite
-	}
 	return
 }

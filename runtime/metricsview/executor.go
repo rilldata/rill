@@ -30,7 +30,6 @@ type Executor struct {
 	instanceCfg drivers.InstanceConfig
 
 	watermark time.Time
-	tempDir   string
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
@@ -60,7 +59,6 @@ func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv
 // Close releases the resources held by the Executor.
 func (e *Executor) Close() {
 	e.olapRelease()
-	_ = os.RemoveAll(e.tempDir)
 }
 
 // ValidateMetricsView validates the dimensions and measures in the executor's metrics view.
