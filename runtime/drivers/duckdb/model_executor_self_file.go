@@ -71,8 +71,8 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 						continue
 					}
 					if f.Size() > outputProps.FileSizeLimitBytes {
-						cancel()
 						overLimit.Store(true)
+						cancel()
 					}
 				}
 			}
@@ -94,12 +94,14 @@ func (e *selfToFileExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 	// check the size again since duckdb writes data with high throughput
 	// and it is possible that the entire file is written
 	// before we check size in background goroutine
-	f, err := os.Stat(outputProps.Path)
-	if err != nil {
-		return nil, err
-	}
-	if f.Size() > outputProps.FileSizeLimitBytes {
-		return nil, fmt.Errorf("file exceeds size limit %q", datasize.ByteSize(outputProps.FileSizeLimitBytes).HumanReadable())
+	if outputProps.FileSizeLimitBytes > 0 {
+		f, err := os.Stat(outputProps.Path)
+		if err != nil {
+			return nil, err
+		}
+		if f.Size() > outputProps.FileSizeLimitBytes {
+			return nil, fmt.Errorf("file exceeds size limit %q", datasize.ByteSize(outputProps.FileSizeLimitBytes).HumanReadable())
+		}
 	}
 
 	// Build result props
