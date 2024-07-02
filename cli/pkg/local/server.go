@@ -549,7 +549,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
-	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.adminURL, &dotrillcloud.RillCloud{
+	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.adminURL, &dotrillcloud.Config{
 		ProjectID: projResp.Project.Id,
 	})
 	if err != nil {

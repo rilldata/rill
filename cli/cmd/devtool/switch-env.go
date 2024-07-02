@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/rilldata/rill/admin/pkg/adminenv"
 	"github.com/rilldata/rill/cli/cmd/auth"
+	"github.com/rilldata/rill/cli/pkg/adminenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"

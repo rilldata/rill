@@ -294,11 +294,13 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		return fmt.Errorf("create project failed with error %w", err)
 	}
 
-	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL, &dotrillcloud.RillCloud{
-		ProjectID: res.Project.Id,
-	})
-	if err != nil {
-		return err
+	if localProjectPath != "" {
+		err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL, &dotrillcloud.Config{
+			ProjectID: res.Project.Id,
+		})
+		if err != nil {
+			return err
+		}
 	}
 
 	// Success!
@@ -434,7 +436,7 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 		return fmt.Errorf("create project failed with error %w", err)
 	}
 
-	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL, &dotrillcloud.RillCloud{
+	err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL, &dotrillcloud.Config{
 		ProjectID: res.Project.Id,
 	})
 	if err != nil {

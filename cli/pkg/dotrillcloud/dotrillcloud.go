@@ -5,15 +5,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rilldata/rill/admin/pkg/adminenv"
+	"github.com/rilldata/rill/cli/pkg/adminenv"
 	"gopkg.in/yaml.v3"
 )
 
-type RillCloud struct {
+type Config struct {
 	ProjectID string `yaml:"project_id"`
 }
 
-func GetAll(localProjectPath, adminURL string) (*RillCloud, error) {
+func GetAll(localProjectPath, adminURL string) (*Config, error) {
 	confPath, err := getConfPath(localProjectPath, adminURL)
 	if err != nil {
 		return nil, err
@@ -27,7 +27,7 @@ func GetAll(localProjectPath, adminURL string) (*RillCloud, error) {
 		return nil, err
 	}
 
-	conf := &RillCloud{}
+	conf := &Config{}
 	err = yaml.Unmarshal(data, conf)
 	if err != nil {
 		return nil, err
@@ -35,7 +35,7 @@ func GetAll(localProjectPath, adminURL string) (*RillCloud, error) {
 	return conf, nil
 }
 
-func SetAll(localProjectPath, adminURL string, conf *RillCloud) error {
+func SetAll(localProjectPath, adminURL string, conf *Config) error {
 	err := os.MkdirAll(filepath.Join(localProjectPath, ".rillcloud"), os.ModePerm)
 	if err != nil {
 		return err

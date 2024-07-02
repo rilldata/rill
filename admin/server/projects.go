@@ -230,6 +230,12 @@ func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByID
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ReadProject && !proj.Public && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
+
 	return &adminv1.GetProjectByIDResponse{
 		Project: s.projToDTO(proj, org.Name),
 	}, nil
