@@ -6,7 +6,6 @@
     createLocalServiceDeployValidation,
     createLocalServiceGetCurrentUser,
   } from "@rilldata/web-common/runtime-client/local-service";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: user = createLocalServiceGetCurrentUser();
   $: deployValidation = createLocalServiceDeployValidation();
@@ -17,7 +16,7 @@
 
   function makeLogOutHref(): string {
     // Create the logout URL, providing the current URL
-    return `${$runtime.host}/auth/logout?redirect=${$page.url.href}`;
+    return `${$deployValidation.data?.loginUrl}/logout?redirect=${$page.url.href}`;
   }
 
   $: loggedIn = $user.isSuccess && $user.data?.user;
