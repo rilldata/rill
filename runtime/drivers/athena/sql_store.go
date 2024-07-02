@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"net/url"
 	"strings"
 	"time"
@@ -87,8 +88,13 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 	}
 
 	opts := rillblob.Options{
-		GlobPattern: unloadPath + "/**",
-		Format:      "parquet",
+		GlobPattern:           unloadPath + "/**",
+		Format:                "parquet",
+		// All the glob limits are set to max values since these files are created by Rill.
+		// Limits if any on data imported by connector should be imposed before these files are created.
+		GlobMaxTotalSize:      math.MaxInt64,
+		GlobMaxObjectsMatched: math.MaxInt,
+		GlobMaxObjectsListed:  math.MaxInt64,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
