@@ -35,11 +35,15 @@ const createRuntimeStore = () => {
       jwt?: string,
       authContext?: AuthContext,
     ) => {
+      if (jwt && !authContext) {
+        throw new Error("authContext is required if jwt is provided");
+      }
+
       let invalidate = false;
 
       update((current) => {
         // Invalidate the runtime if the auth context has changed
-        // E.g. when switching from a normal user to a mocked user or magic link
+        // E.g. when switching from a normal user to a mocked user
         if (
           !!current.jwt?.authContext &&
           authContext !== current.jwt?.authContext
@@ -57,17 +61,16 @@ const createRuntimeStore = () => {
           return {
             host,
             instanceId,
-            jwt: jwt
-              ? { token: jwt, receivedAt: Date.now(), authContext }
-              : undefined,
+            jwt:
+              jwt && authContext
+                ? { token: jwt, receivedAt: Date.now(), authContext }
+                : undefined,
           };
         }
         return current;
       });
 
-      if (invalidate) {
-        await invalidateRuntimeQueries(queryClient, instanceId);
-      }
+      if (invalidate) await invalidateRuntimeQueries(queryClient, instanceId);
     },
   };
 };
