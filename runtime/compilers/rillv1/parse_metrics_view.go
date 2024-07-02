@@ -57,19 +57,8 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	DefaultMeasures []string `yaml:"default_measures"`
-	Security        *struct {
-		Access    string `yaml:"access"`
-		RowFilter string `yaml:"row_filter"`
-		Include   []*struct {
-			Names     []string
-			Condition string `yaml:"if"`
-		}
-		Exclude []*struct {
-			Names     []string
-			Condition string `yaml:"if"`
-		}
-	}
+	DefaultMeasures   []string `yaml:"default_measures"`
+	Security          *MetricsViewSecurityPolicyYAML
 	DefaultComparison struct {
 		Mode      string `yaml:"mode"`
 		Dimension string `yaml:"dimension"`
@@ -282,6 +271,221 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	}
 
 	return nil
+}
+
+type MetricsViewSecurityPolicyYAML struct {
+	Access    string `yaml:"access"`
+	RowFilter string `yaml:"row_filter"`
+	Include   []*struct {
+		Names     []string
+		Condition string `yaml:"if"`
+	}
+	Exclude []*struct {
+		Names     []string
+		Condition string `yaml:"if"`
+	}
+	Rules []*MetricsViewSecurityRuleYAML `yaml:"rules"`
+}
+
+func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	if p == nil {
+		return rules, nil
+	}
+
+	if p.Access != "" {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: &runtimev1.SecurityCondition{
+						Condition: &runtimev1.SecurityCondition_Expression{
+							Expression: p.Access,
+						},
+					},
+					Action: runtimev1.SecurityAction_SECURITY_ACTION_ALLOW,
+				},
+			},
+		})
+	}
+
+	if p.RowFilter != "" {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					Sql: p.RowFilter,
+				},
+			},
+		})
+	}
+
+	for _, inc := range p.Include {
+		var cond *runtimev1.SecurityCondition
+		if inc.Condition != "" {
+			cond = &runtimev1.SecurityCondition{
+				Condition: &runtimev1.SecurityCondition_Expression{
+					Expression: inc.Condition,
+				},
+			}
+		}
+
+		names := inc.Names
+		allExcept := false
+		if len(inc.Names) == 1 && inc.Names[0] == "*" {
+			names = nil
+			allExcept = true
+		}
+
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Condition: cond,
+					Action:    runtimev1.SecurityAction_SECURITY_ACTION_ALLOW,
+					Fields:    names,
+					AllExcept: allExcept,
+				},
+			},
+		})
+	}
+
+	for _, exc := range p.Exclude {
+		var cond *runtimev1.SecurityCondition
+		if exc.Condition != "" {
+			cond = &runtimev1.SecurityCondition{
+				Condition: &runtimev1.SecurityCondition_Expression{
+					Expression: exc.Condition,
+				},
+			}
+		}
+
+		names := exc.Names
+		allExcept := false
+		if len(exc.Names) == 1 && exc.Names[0] == "*" {
+			names = nil
+			allExcept = true
+		}
+
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Condition: cond,
+					Action:    runtimev1.SecurityAction_SECURITY_ACTION_DENY,
+					Fields:    names,
+					AllExcept: allExcept,
+				},
+			},
+		})
+	}
+
+	for _, r := range p.Rules {
+		if r == nil {
+			continue
+		}
+
+		rule, err := r.Proto()
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, rule)
+	}
+
+	return rules, nil
+}
+
+type MetricsViewSecurityRuleYAML struct {
+	Type      string
+	Action    string
+	If        string
+	Names     []string
+	AllExcept []string
+	SQL       string
+}
+
+func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
+	var condition *runtimev1.SecurityCondition
+	if r.If != "" {
+		condition = &runtimev1.SecurityCondition{
+			Condition: &runtimev1.SecurityCondition_Expression{
+				Expression: r.If,
+			},
+		}
+	}
+
+	var action runtimev1.SecurityAction
+	switch r.Action {
+	case "allow":
+		action = runtimev1.SecurityAction_SECURITY_ACTION_ALLOW
+	case "deny":
+		action = runtimev1.SecurityAction_SECURITY_ACTION_DENY
+	default:
+		if r.Action != "" {
+			return nil, fmt.Errorf("invalid security rule action %q", r.Action)
+		}
+	}
+
+	switch r.Type {
+	case "access":
+		if action == runtimev1.SecurityAction_SECURITY_ACTION_UNSPECIFIED {
+			if condition == nil {
+				return nil, fmt.Errorf("invalid security rule of type %q: must specify at least an action or a condition", r.Type)
+			}
+			action = runtimev1.SecurityAction_SECURITY_ACTION_ALLOW
+		}
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: condition,
+					Action:    action,
+				},
+			},
+		}, nil
+	case "field_access":
+		if len(r.Names) == 0 && len(r.AllExcept) == 0 {
+			return nil, fmt.Errorf("invalid security rule of type %q: must specify at least one field name", r.Type)
+		}
+		if len(r.Names) > 0 && len(r.AllExcept) > 0 {
+			return nil, fmt.Errorf("invalid security rule of type %q: cannot specify both 'names' and 'all_except'", r.Type)
+		}
+		if action == runtimev1.SecurityAction_SECURITY_ACTION_UNSPECIFIED {
+			action = runtimev1.SecurityAction_SECURITY_ACTION_ALLOW
+		}
+		names := r.Names
+		allExcept := false
+		if len(r.AllExcept) > 0 {
+			names = r.AllExcept
+			allExcept = true
+		}
+		if len(names) == 1 && names[0] == "*" {
+			r.Names = nil
+			allExcept = !allExcept
+		}
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Condition: condition,
+					Action:    action,
+					Fields:    r.Names,
+					AllExcept: allExcept,
+				},
+			},
+		}, nil
+	case "row_filter":
+		if action != runtimev1.SecurityAction_SECURITY_ACTION_UNSPECIFIED {
+			return nil, fmt.Errorf("invalid security rule of type %q: cannot specify an action", r.Type)
+		}
+		if r.SQL == "" {
+			return nil, fmt.Errorf("invalid security rule of type %q: must provide a 'sql' property", r.Type)
+		}
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					Condition: condition,
+					Sql:       r.SQL,
+				},
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("invalid security rule type %q", r.Type)
+	}
 }
 
 var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
@@ -567,6 +771,11 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
+	securityRules, err := tmp.Security.Proto()
+	if err != nil {
+		return err
+	}
+
 	if tmp.Security != nil {
 		templateData := TemplateData{
 			Environment: p.Environment,
@@ -723,30 +932,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
-	if tmp.Security != nil {
-		if spec.Security == nil {
-			spec.Security = &runtimev1.MetricsViewSpec_SecurityV2{}
-		}
-		spec.Security.Access = tmp.Security.Access
-		spec.Security.RowFilter = tmp.Security.RowFilter
-		// validation has been done above, only one of these will be set
-		if tmp.Security.Include != nil {
-			for _, include := range tmp.Security.Include {
-				spec.Security.Include = append(spec.Security.Include, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
-					Condition: include.Condition,
-					Names:     include.Names,
-				})
-			}
-		}
-		if tmp.Security.Exclude != nil {
-			for _, exclude := range tmp.Security.Exclude {
-				spec.Security.Exclude = append(spec.Security.Exclude, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
-					Condition: exclude.Condition,
-					Names:     exclude.Names,
-				})
-			}
-		}
-	}
+	spec.SecurityRules = securityRules
 
 	return nil
 }
