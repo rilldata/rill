@@ -28,7 +28,7 @@
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
         <div class="flex flex-col gap-y-2">
-          <h3>Share your current view with a fellow member of the project.</h3>
+          <h3>Share your current view with another project member.</h3>
           <Button
             type="secondary"
             on:click={() => {
