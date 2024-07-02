@@ -744,7 +744,11 @@ func (s *Server) logoutHandler() http.Handler {
 		if redirect == "" {
 			redirect = "/"
 		}
-		logoutURL := fmt.Sprintf("%s/auth/logout?redirect=%s", s.app.adminURL, redirect)
+		baseURL := s.app.adminURL
+		if strings.Contains(baseURL, "http://localhost:9090") {
+			baseURL = "http://localhost:8080"
+		}
+		logoutURL := fmt.Sprintf("%s/auth/logout?redirect=%s", baseURL, redirect)
 
 		http.Redirect(w, r, logoutURL, http.StatusFound)
 	})
