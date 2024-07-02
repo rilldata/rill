@@ -68,6 +68,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects/{name}"};
   }
 
+  // GetProject returns information about a specific project
+  rpc GetProjectByID(GetProjectByIDRequest) returns (GetProjectByIDResponse) {
+    option (google.api.http) = {get: "/v1/projects/{id}"};
+  }
+
   // SearchProjectNames returns project names matching the pattern
   rpc SearchProjectNames(SearchProjectNamesRequest) returns (SearchProjectNamesResponse) {
     option (google.api.http) = {get: "/v1/superuser/projects/search"};
@@ -675,6 +680,14 @@ message GetProjectResponse {
   ProjectPermissions project_permissions = 4;
 }
 
+message GetProjectByIDRequest {
+  string id = 1;
+}
+
+message GetProjectByIDResponse {
+  Project project = 1;
+}
+
 message SearchProjectNamesRequest {
   string name_pattern = 1;
   map<string, string> annotations = 5;
@@ -834,7 +847,9 @@ message DeleteProjectRequest {
   string name = 2;
 }
 
-message DeleteProjectResponse {}
+message DeleteProjectResponse {
+  string id = 1;
+}
 
 message UpdateProjectRequest {
   string organization_name = 1 [(validate.rules).string.min_len = 1];
