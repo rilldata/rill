@@ -47,6 +47,5 @@
     padding-left: 7px;
     padding-right: 7px;
     border-right: 0;
-    @apply truncate;
   }
 </style>

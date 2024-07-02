@@ -2,11 +2,12 @@
   import { page } from "$app/stores";
   import { createAdminServiceIssueMagicAuthToken } from "@rilldata/web-admin/client";
   import { Button } from "@rilldata/web-common/components/button";
-  import CliCommandDisplay from "@rilldata/web-common/components/commands/CLICommandDisplay.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -137,10 +138,21 @@
     {/if}
   </form>
 {:else}
-  <!-- A successful form submission will result in a CLI command to display -->
-  <CliCommandDisplay
-    command={`${window.location.origin}/${organization}/${project}/-/share/${token}`}
-  />
+  <!-- A successful form submission will result in a link to copy -->
+  <div class="flex flex-col">
+    <Button
+      type="secondary"
+      on:click={() => {
+        copyToClipboard(
+          `${window.location.origin}/${organization}/${project}/-/share/${token}`,
+          "Link copied to clipboard",
+        );
+      }}
+    >
+      <Link size="16px" className="text-primary-500" />
+      Copy public link
+    </Button>
+  </div>
 {/if}
 
 <style lang="postcss">
