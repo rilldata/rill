@@ -121,9 +121,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -141,7 +141,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, updated_on=now() WHERE id=$8 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, updated_on=now() WHERE id=$10 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -1578,6 +1578,63 @@ func (c *connection) InsertAsset(ctx context.Context, organizationID, path, owne
 		return nil, parseErr("asset", err)
 	}
 	return res, nil
+}
+
+func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*database.Asset, error) {
+	var res []*database.Asset
+	// We skip unused assets created in last 6 hours to prevent race condition
+	// where somebody just created an asset but is yet to use it
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT a.* FROM assets a 
+		WHERE a.created_on < now() - INTERVAL '6 hours'
+		AND NOT EXISTS 
+		(SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
+		ORDER BY a.created_on DESC LIMIT $1
+	`, limit)
+	if err != nil {
+		return nil, parseErr("assets", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteAssets(ctx context.Context, ids []string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM assets WHERE id=ANY($1)", ids)
+	return parseErr("asset", err)
+}
+
+func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id <> ''`)
+	if err != nil {
+		return nil, parseErr("billing orgs", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
+	if err != nil {
+		return 0, parseErr("billing projects", err)
+	}
+	return count, nil
+}
+
+func (c *connection) FindBillingUsageReportedOn(ctx context.Context) (time.Time, error) {
+	var usageReportedOn sql.NullTime
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT usage_reported_on FROM billing_reporting_time`).Scan(&usageReportedOn)
+	if err != nil {
+		return time.Time{}, parseErr("billing usage", err)
+	}
+	if !usageReportedOn.Valid {
+		return time.Time{}, nil
+	}
+	return usageReportedOn.Time, nil
+}
+
+func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_reporting_time SET usage_reported_on=$1`, usageReportedOn)
+	return checkUpdateRow("billing usage", res, err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

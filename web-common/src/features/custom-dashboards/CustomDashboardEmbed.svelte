@@ -48,7 +48,6 @@
         {scale}
         {radius}
         padding={gapSize}
-        fontSize={component.fontSize}
         width={Number(component.width ?? defaults.COMPONENT_WIDTH) * gridCell}
         height={Number(component.height ?? defaults.COMPONENT_HEIGHT) *
           gridCell}

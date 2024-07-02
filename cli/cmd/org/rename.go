@@ -29,7 +29,7 @@ func RenameCmd(ch *cmdutil.Helper) *cobra.Command {
 			fmt.Println("Warn: Renaming an org would invalidate dashboard URLs")
 
 			if !cmd.Flags().Changed("org") && ch.Interactive {
-				orgNames, err := orgNames(ctx, ch)
+				orgNames, err := OrgNames(ctx, ch)
 				if err != nil {
 					return err
 				}

@@ -26,7 +26,7 @@ It should have the following structure:
     
     ```yaml
     type: api
-    metrics_sql: SELECT dimension, AGGREGATE(measure) FROM my_metrics GROUP BY dimension
+    metrics_sql: SELECT dimension, measure FROM my_metrics
     ```
     where `my_metrics` is your metrics view name, `measure` is a custom metrics that you have defined. 
     Read more details about [Metrics SQL API](./metrics-sql-api.md).

@@ -2,6 +2,7 @@ package printer
 
 import (
 	"path/filepath"
+	"strconv"
 	"strings"
 	"time"
 
@@ -296,4 +297,94 @@ type magicAuthToken struct {
 	CreatedOn string `header:"created on" json:"created_on"`
 	UsedOn    string `header:"last used on" json:"used_on"`
 	ExpiresOn string `header:"expires on" json:"expires_on"`
+}
+
+func (p *Printer) PrintSubscriptions(subs []*adminv1.Subscription) {
+	if len(subs) == 0 {
+		return
+	}
+	p.PrintData(toSubscriptionsTable(subs))
+}
+
+func toSubscriptionsTable(subs []*adminv1.Subscription) []*subscription {
+	subscriptions := make([]*subscription, 0, len(subs))
+
+	for _, s := range subs {
+		subscriptions = append(subscriptions, toSubscriptionRow(s))
+	}
+
+	return subscriptions
+}
+
+func toSubscriptionRow(s *adminv1.Subscription) *subscription {
+	return &subscription{
+		ID:                           s.Id,
+		PlanName:                     s.PlanName,
+		PlanDisplayName:              s.PlanDisplayName,
+		StartDate:                    s.StartDate.AsTime().Local().Format(time.DateTime),
+		EndDate:                      s.EndDate.AsTime().Local().Format(time.DateTime),
+		CurrentBillingCycleStartDate: s.CurrentBillingCycleStartDate.AsTime().Local().Format(time.DateTime),
+		CurrentBillingCycleEndDate:   s.CurrentBillingCycleEndDate.AsTime().Local().Format(time.DateTime),
+		TrialEndDate:                 s.TrialEndDate.AsTime().Local().Format(time.DateTime),
+	}
+}
+
+type subscription struct {
+	ID                           string `header:"id" json:"id"`
+	PlanName                     string `header:"plan_name" json:"plan_name"`
+	PlanDisplayName              string `header:"plan_display_name" json:"plan_display_name"`
+	StartDate                    string `header:"start_date,timestamp(ms|utc|human)" json:"start_date"`
+	EndDate                      string `header:"end_date,timestamp(ms|utc|human)" json:"end_date"`
+	CurrentBillingCycleStartDate string `header:"current_billing_cycle_start_date,timestamp(ms|utc|human)" json:"current_billing_cycle_start_date"`
+	CurrentBillingCycleEndDate   string `header:"current_billing_cycle_end_date,timestamp(ms|utc|human)" json:"current_billing_cycle_end_date"`
+	TrialEndDate                 string `header:"trial_end_date,timestamp(ms|utc|human)" json:"trial_end_date"`
+}
+
+func (p *Printer) PrintPlans(plans []*adminv1.BillingPlan) {
+	if len(plans) == 0 {
+		return
+	}
+	p.PrintData(toPlansTable(plans))
+}
+
+func toPlansTable(plans []*adminv1.BillingPlan) []*plan {
+	allPlans := make([]*plan, 0, len(plans))
+
+	for _, p := range plans {
+		allPlans = append(allPlans, toPlanRow(p))
+	}
+
+	return allPlans
+}
+
+func toPlanRow(p *adminv1.BillingPlan) *plan {
+	return &plan{
+		ID:                                  p.Id,
+		Name:                                p.Name,
+		DisplayName:                         p.DisplayName,
+		Description:                         p.Description,
+		TrialDays:                           strconv.Itoa(int(p.TrialPeriodDays)),
+		Default:                             p.Default,
+		QuotaNumProjects:                    p.Quotas.Projects,
+		QuotaNumDeployments:                 p.Quotas.Deployments,
+		QuotaNumSlotsTotal:                  p.Quotas.SlotsTotal,
+		QuotaNumSlotsPerDeployment:          p.Quotas.SlotsPerDeployment,
+		QuotaNumOutstandingInvites:          p.Quotas.OutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: p.Quotas.StorageLimitBytesPerDeployment,
+	}
+}
+
+type plan struct {
+	ID                                  string `header:"id" json:"id"`
+	Name                                string `header:"name" json:"name"`
+	DisplayName                         string `header:"display_name" json:"display_name"`
+	Description                         string `header:"description" json:"description"`
+	TrialDays                           string `header:"trial_days" json:"trial_days"`
+	Default                             bool   `header:"default" json:"default"`
+	QuotaNumProjects                    string `header:"quota_num_projects" json:"quota_num_projects"`
+	QuotaNumDeployments                 string `header:"quota_num_deployments" json:"quota_num_deployments"`
+	QuotaNumSlotsTotal                  string `header:"quota_num_slots_total" json:"quota_num_slots_total"`
+	QuotaNumSlotsPerDeployment          string `header:"quota_num_slots_per_deployment" json:"quota_num_slots_per_deployment"`
+	QuotaNumOutstandingInvites          string `header:"quota_num_outstanding_invites" json:"quota_num_outstanding_invites"`
+	QuotaStorageLimitBytesPerDeployment string `header:"quota_storage_limit_bytes_per_deployment" json:"quota_storage_limit_bytes_per_deployment"`
 }

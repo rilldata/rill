@@ -215,6 +215,32 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}, nil
 }
 
+func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByIDRequest) (*adminv1.GetProjectByIDResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.Id),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ReadProject && !proj.Public && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
+
+	return &adminv1.GetProjectByIDResponse{
+		Project: s.projToDTO(proj, org.Name),
+	}, nil
+}
+
 func (s *Server) SearchProjectNames(ctx context.Context, req *adminv1.SearchProjectNamesRequest) (*adminv1.SearchProjectNamesResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.pattern", req.NamePattern),
@@ -401,7 +427,9 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.DeleteProjectResponse{}, nil
+	return &adminv1.DeleteProjectResponse{
+		Id: proj.ID,
+	}, nil
 }
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {

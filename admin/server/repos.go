@@ -151,7 +151,7 @@ func (s *Server) generateV4GetObjectSignedURL(objectpath string) (string, error)
 		Expires: time.Now().Add(15 * time.Minute),
 	}
 
-	signedURL, err := s.assetsBucket.SignedURL(strings.TrimPrefix(u.Path, "/"), opts)
+	signedURL, err := s.admin.Assets.SignedURL(strings.TrimPrefix(u.Path, "/"), opts)
 	if err != nil {
 		return "", err
 	}

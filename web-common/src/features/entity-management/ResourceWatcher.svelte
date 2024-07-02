@@ -2,7 +2,6 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { WatchFilesClient } from "@rilldata/web-common/features/entity-management/WatchFilesClient";
   import { WatchResourcesClient } from "@rilldata/web-common/features/entity-management/WatchResourcesClient";
-  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
@@ -24,14 +23,11 @@
   $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;
 
   onMount(() => {
-    const stopJavascriptErrorListeners =
-      errorEventHandler?.addJavascriptErrorListeners();
     void fileArtifacts.init(queryClient, instanceId);
 
     return () => {
       fileWatcher.close();
       resourceWatcher.close();
-      stopJavascriptErrorListeners?.();
     };
   });
 

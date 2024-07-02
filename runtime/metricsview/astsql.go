@@ -1,7 +1,6 @@
 package metricsview
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -82,13 +81,8 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 
-		expr := f.Expr
-		if f.Unnest {
-			expr = b.ast.sqlForMember(f.UnnestAlias, f.Name)
-		}
-
 		b.out.WriteByte('(')
-		b.out.WriteString(expr)
+		b.out.WriteString(f.Expr)
 		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
@@ -109,22 +103,9 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteString(*n.FromTable)
 
 		// Add unnest joins. We only and always apply these against FromPlain (ensuring they are already unnested when referenced in outer SELECTs).
-		for _, f := range n.DimFields {
-			if !f.Unnest {
-				continue
-			}
-
-			tblWithAlias, auto, err := b.ast.dialect.LateralUnnest(f.Expr, f.UnnestAlias, f.Name)
-			if err != nil {
-				return fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
-			}
-
-			if auto {
-				continue
-			}
-
+		for _, u := range n.Unnests {
 			b.out.WriteString(", ")
-			b.out.WriteString(tblWithAlias)
+			b.out.WriteString(u)
 		}
 	} else if n.FromSelect != nil {
 		b.out.WriteByte('(')
@@ -137,6 +118,13 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		for _, ljs := range n.LeftJoinSelects {
 			err := b.writeJoin("LEFT", n.FromSelect, ljs)
+			if err != nil {
+				return err
+			}
+		}
+
+		if n.SpineSelect != nil {
+			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
 			if err != nil {
 				return err
 			}

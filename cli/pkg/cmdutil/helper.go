@@ -10,6 +10,7 @@ import (
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -259,6 +260,25 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, su
 }
 
 func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string, error) {
+	rc, err := dotrillcloud.GetAll(path, h.AdminURL)
+	if err != nil {
+		return "", err
+	}
+	if rc != nil {
+		c, err := h.Client()
+		if err != nil {
+			return "", err
+		}
+
+		proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+			Id: rc.ProjectID,
+		})
+		if err != nil {
+			return "", err
+		}
+		return proj.Project.Name, nil
+	}
+
 	// Verify projectPath is a Git repo with remote on Github
 	_, githubURL, err := gitutil.ExtractGitRemote(path, "", true)
 	if err != nil {

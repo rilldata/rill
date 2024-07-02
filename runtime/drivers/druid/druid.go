@@ -195,7 +195,7 @@ func (c *connection) Driver() string {
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 

@@ -379,6 +379,13 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 			},
 		},
 		Limit: 250,
+		Aliases: []*runtimev1.MetricsViewComparisonMeasureAlias{
+			{
+				Name:  "measure_1",
+				Type:  runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
+				Alias: "measure_1_something_else",
+			},
+		},
 		Having: &runtimev1.Expression{
 			Expression: &runtimev1.Expression_Cond{
 				Cond: &runtimev1.Condition{
@@ -401,7 +408,7 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
-	require.ErrorContains(t, err, "unknown column filter: measure_1__delta_rel")
+	require.ErrorContains(t, err, `name "measure_1__delta_rel" in expression is not a dimension or measure available in the current context`)
 }
 
 func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *testing.T) {
@@ -581,7 +588,8 @@ func TestMetricsViewsComparison_export_xlsx(t *testing.T) {
 	var buf bytes.Buffer
 
 	err = q.Export(context.Background(), rt, instanceId, &buf, &runtime.ExportOptions{
-		Format: runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+		Format:       runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+		PreWriteHook: func(filename string) error { return nil },
 	})
 	require.NoError(t, err)
 
@@ -633,7 +641,8 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	var buf bytes.Buffer
 
 	err = q.Export(context.Background(), rt, instanceId, &buf, &runtime.ExportOptions{
-		Format: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+		Format:       runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+		PreWriteHook: func(filename string) error { return nil },
 	})
 	require.NoError(t, err)
 

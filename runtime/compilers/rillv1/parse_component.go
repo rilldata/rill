@@ -28,8 +28,6 @@ type ComponentYAML struct {
 	Subtitle   string                    `yaml:"subtitle"`
 	Data       *DataYAML                 `yaml:"data"`
 	VegaLite   *string                   `yaml:"vega_lite"`
-	Markdown   *string                   `yaml:"markdown"`
-	Image      *string                   `yaml:"image"`
 	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 }
 
@@ -100,16 +98,6 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 
 		renderer = "vega_lite"
 		rendererProps = must(structpb.NewStruct(map[string]any{"spec": *tmp.VegaLite}))
-	}
-	if tmp.Markdown != nil {
-		n++
-		renderer = "markdown"
-		rendererProps = must(structpb.NewStruct(map[string]any{"content": *tmp.Markdown}))
-	}
-	if tmp.Image != nil {
-		n++
-		renderer = "image"
-		rendererProps = must(structpb.NewStruct(map[string]any{"url": *tmp.Image}))
 	}
 	if len(tmp.Other) == 1 {
 		n++
