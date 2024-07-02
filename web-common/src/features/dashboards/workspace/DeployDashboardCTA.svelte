@@ -12,6 +12,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { createDeployer } from "@rilldata/web-common/features/project/deploy";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import {
     createLocalServiceDeployValidation,
@@ -30,6 +31,9 @@
 
   let open = false;
   function onShowDeploy() {
+    if (isDeployed) {
+      return onDeploy();
+    }
     open = true;
     void behaviourEvent?.fireDeployIntentEvent();
   }
@@ -40,18 +44,13 @@
   $: isLoading = $deploy.isLoading || $redeploy.isLoading;
 
   async function onDeploy() {
-    if (isDeployed) {
-      await $redeploy.mutateAsync({
-        projectId: $deployValidation.data?.deployedProjectId,
-        reupload: !$deployValidation.data?.isGithubRepo,
-      });
-    } else {
-      deploying = true;
-      if (!(await $deploy.mutateAsync({}))) return;
+    deploying = true;
 
-      deploying = false;
-      open = false;
-    }
+    await waitUntil(() => !$deployValidation.isLoading);
+    if (!(await $deploy.mutateAsync($deployValidation.data!))) return;
+
+    deploying = false;
+    open = false;
   }
 
   function handleVisibilityChange() {
@@ -63,9 +62,9 @@
 <svelte:window on:visibilitychange={handleVisibilityChange} />
 
 <Tooltip distance={8}>
-  <Button on:click={onShowDeploy} {type}
-    >{isDeployed ? "Redeploy" : "Deploy"}</Button
-  >
+  <Button on:click={onShowDeploy} {type} loading={$deployValidation.isLoading}>
+    {isDeployed ? "Redeploy" : "Deploy"}
+  </Button>
   <TooltipContent slot="tooltip-content">
     Deploy this dashboard to Rill Cloud
   </TooltipContent>

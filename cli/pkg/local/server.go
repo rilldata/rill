@@ -574,6 +574,13 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		return nil, err
 	}
 
+	projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: r.Msg.ProjectId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	if r.Msg.Reupload {
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
@@ -581,24 +588,26 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		}
 		defer release()
 
-		projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-			Id: r.Msg.ProjectId,
-		})
-		if err != nil {
-			return nil, err
-		}
-
 		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, projResp.Project.OrgName, projResp.Project.Name)
 		if err != nil {
 			return nil, err
 		}
-		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{ArchiveAssetId: &assetID})
+		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+			ArchiveAssetId:   &assetID,
+			OrganizationName: projResp.Project.OrgName,
+			Name:             projResp.Project.Name,
+		})
 		if err != nil {
 			return nil, err
 		}
+	} else {
+		// TODO: should we push change to github for redeploy on github connected project?
 	}
+
 	// TODO : Add other update project fields
-	return connect.NewResponse(&localv1.RedeployProjectResponse{}), nil
+	return connect.NewResponse(&localv1.RedeployProjectResponse{
+		FrontendUrl: projResp.Project.FrontendUrl,
+	}), nil
 }
 
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.

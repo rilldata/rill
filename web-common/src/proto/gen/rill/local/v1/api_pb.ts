@@ -698,6 +698,11 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
  * @generated from message rill.local.v1.RedeployProjectResponse
  */
 export class RedeployProjectResponse extends Message<RedeployProjectResponse> {
+  /**
+   * @generated from field: string frontend_url = 1;
+   */
+  frontendUrl = "";
+
   constructor(data?: PartialMessage<RedeployProjectResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -706,6 +711,7 @@ export class RedeployProjectResponse extends Message<RedeployProjectResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.local.v1.RedeployProjectResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "frontend_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectResponse {

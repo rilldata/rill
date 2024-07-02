@@ -1,17 +1,16 @@
-import type { PartialMessage } from "@bufbuild/protobuf";
 import type { ConnectError } from "@connectrpc/connect";
 import { createMutation, CreateMutationOptions } from "@rilldata/svelte-query";
-import { PushToGithubRequest } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
+import { DeployValidationResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import {
   localServiceDeploy,
-  localServiceDeployValidation,
+  localServiceRedeploy,
 } from "@rilldata/web-common/runtime-client/local-service";
 
 export function createDeployer(options?: {
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof deploy>>,
     ConnectError,
-    PartialMessage<PushToGithubRequest>,
+    DeployValidationResponse,
     unknown
   >;
 }) {
@@ -19,13 +18,12 @@ export function createDeployer(options?: {
   return createMutation<
     Awaited<ReturnType<typeof deploy>>,
     unknown,
-    PartialMessage<PushToGithubRequest>,
+    DeployValidationResponse,
     unknown
   >(deploy, mutationOptions);
 }
 
-async function deploy() {
-  const deployValidation = await localServiceDeployValidation();
+async function deploy(deployValidation: DeployValidationResponse) {
   if (!deployValidation.isAuthenticated) {
     window.open(`${deployValidation.loginUrl}`, "__target");
     return false;
@@ -37,13 +35,23 @@ async function deploy() {
     return false;
   }
 
-  const resp = await localServiceDeploy({
-    projectName: deployValidation.localProjectName,
-    org: deployValidation.rillUserOrgs[0],
-    upload: !deployValidation.isGithubRepo,
-  });
-  if (resp.frontendUrl) {
-    window.open(resp.frontendUrl, "__target");
+  if (deployValidation.deployedProjectId) {
+    const resp = await localServiceRedeploy({
+      projectId: deployValidation.deployedProjectId,
+      reupload: !deployValidation.isGithubRepo,
+    });
+    if (resp.frontendUrl) {
+      window.open(resp.frontendUrl, "__target");
+    }
+  } else {
+    const resp = await localServiceDeploy({
+      projectName: deployValidation.localProjectName,
+      org: deployValidation.rillUserOrgs[0],
+      upload: !deployValidation.isGithubRepo,
+    });
+    if (resp.frontendUrl) {
+      window.open(resp.frontendUrl, "__target");
+    }
   }
   return true;
 }

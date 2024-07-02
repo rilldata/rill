@@ -107,4 +107,5 @@ message RedeployProjectRequest {
 }
 
 message RedeployProjectResponse {
+  string frontend_url = 1;
 }
