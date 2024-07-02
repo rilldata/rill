@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
+  import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
   import Home from "@rilldata/web-common/components/icons/Home.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -149,8 +150,8 @@
         {#if $user.isSuccess && $user.data.user}
           <CreateAlert />
           <Bookmarks />
+          <UserInviteButton />
         {/if}
-        <ShareDashboardButton />
       </StateManagersProvider>
     {/if}
     {#if $user.isSuccess}
