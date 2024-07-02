@@ -27,15 +27,17 @@
         <TabsTrigger value="tab2">Create public link</TabsTrigger>
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
-        <Button
-          type="secondary"
-          on:click={() => {
-            copyToClipboard(window.location.href, "Link copied to clipboard");
-          }}
-        >
-          <Link size="16px" className="text-gray-900 mr-2 h-4 w-4" />
-          Copy shareable link
-        </Button>
+        <div class="flex flex-col">
+          <Button
+            type="secondary"
+            on:click={() => {
+              copyToClipboard(window.location.href, "Link copied to clipboard");
+            }}
+          >
+            <Link size="16px" className="text-primary-500" />
+            Copy shareable link
+          </Button>
+        </div>
       </TabsContent>
       <TabsContent value="tab2" class="mt-0 p-4">
         <CreateShareableURLForm />

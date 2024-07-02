@@ -82,8 +82,6 @@
     const diff = future.getTime() - now.getTime();
     return Math.floor(diff / 60000);
   }
-
-  $: console.log("$dashboardStore.whereFilter", $dashboardStore.whereFilter);
 </script>
 
 {#if !token}
@@ -93,7 +91,7 @@
     <ul>
       <li>Measures and dimensions will be limited to current visible set.</li>
       <li>Filters will be locked and hidden.</li>
-      {#if $dashboardStore.whereFilter}
+      {#if $dashboardStore.whereFilter?.cond?.exprs?.length}
         <div class="mt-2 px-[19px]">
           <FilterChipsReadOnly
             metricsViewName={dashboard}
