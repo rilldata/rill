@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
+  import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import RillTheme from "@rilldata/web-common/layout/RillTheme.svelte";
@@ -12,7 +13,6 @@
   import { createGlobalErrorCallback } from "../features/errors/error-utils";
   import { initPylonWidget } from "../features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
-  import { clearViewedAsUserAfterNavigate } from "../features/view-as-user/clearViewedAsUser";
 
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
@@ -23,8 +23,6 @@
   // The admin server enables some dashboard features like scheduled reports and alerts
   // Set read-only mode so that the user can't edit the dashboard
   featureFlags.set(true, "adminServer", "readOnly");
-
-  clearViewedAsUserAfterNavigate(queryClient);
 
   let removeJavascriptListeners: () => void;
   initCloudMetrics()
@@ -49,6 +47,7 @@
 <RillTheme>
   <QueryClientProvider client={queryClient}>
     <main class="flex flex-col min-h-screen h-screen">
+      <BannerCenter />
       {#if !isEmbed}
         <TopNavigationBar />
       {/if}

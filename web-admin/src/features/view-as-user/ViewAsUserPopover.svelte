@@ -6,15 +6,13 @@
   import Check from "@rilldata/web-common/components/icons/Check.svelte";
   import Spacer from "@rilldata/web-common/components/icons/Spacer.svelte";
   import { Search } from "@rilldata/web-common/components/search";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { matchSorter } from "match-sorter";
   import { createEventDispatcher } from "svelte";
   import {
-    type V1User,
     createAdminServiceSearchProjectUsers,
+    type V1User,
   } from "../../client";
   import { errorStore } from "../../features/errors/error-store";
-  import { setViewedAsUser } from "./setViewedAsUser";
   import { viewAsUserStore } from "./viewAsUserStore";
 
   export let organization: string;
@@ -29,10 +27,8 @@
 
   const dispatch = createEventDispatcher();
 
-  const queryClient = useQueryClient();
-
-  async function handleViewAsUser(user: V1User) {
-    await setViewedAsUser(queryClient, organization, project, user);
+  function handleViewAsUser(user: V1User) {
+    viewAsUserStore.set(user);
     errorStore.reset();
     dispatch("select");
   }
