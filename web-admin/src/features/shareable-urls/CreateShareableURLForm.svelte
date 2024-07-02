@@ -92,7 +92,7 @@
 
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
-    <h3>Create a shareable public link for this view</h3>
+    <h3>Create a public link that you can send to anyone.</h3>
 
     <ul>
       <li>Measures and dimensions will be limited to current visible set.</li>
@@ -128,7 +128,7 @@
     </div>
 
     <Button type="primary" disabled={$submitting} form={formId} submitForm>
-      Create
+      Create link
     </Button>
 
     {#if allErrorsLength > 0}
@@ -139,7 +139,8 @@
   </form>
 {:else}
   <!-- A successful form submission will result in a link to copy -->
-  <div class="flex flex-col">
+  <div class="flex flex-col gap-y-2">
+    <h3>Success!</h3>
     <Button
       type="secondary"
       on:click={() => {
@@ -169,7 +170,7 @@
   }
 
   .expires-at-container {
-    @apply pl-[30px] mt-2;
+    @apply mt-2;
     @apply flex items-center gap-x-2;
   }
 

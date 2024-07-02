@@ -27,7 +27,8 @@
         <TabsTrigger value="tab2">Create public link</TabsTrigger>
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
-        <div class="flex flex-col">
+        <div class="flex flex-col gap-y-2">
+          <h3>Share your current view with a fellow member of the project.</h3>
           <Button
             type="secondary"
             on:click={() => {
@@ -35,7 +36,7 @@
             }}
           >
             <Link size="16px" className="text-primary-500" />
-            Copy shareable link
+            Copy link
           </Button>
         </div>
       </TabsContent>
