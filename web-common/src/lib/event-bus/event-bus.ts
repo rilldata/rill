@@ -1,5 +1,5 @@
-import { NotificationMessage } from "./events";
 import type { Reference } from "@rilldata/web-common/features/models/utils/get-table-references";
+import { BannerMessage, NotificationMessage } from "./events";
 
 class EventBus {
   private listeners: EventMap = new Map();
@@ -52,6 +52,7 @@ export const eventBus = new EventBus();
 
 export interface Events {
   notification: NotificationMessage;
+  banner: BannerMessage;
   highlightSelection: Reference[];
   "shift-click": null;
   "command-click": null;

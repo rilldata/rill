@@ -47,6 +47,10 @@ export function isReportExportPage(page: Page): boolean {
   );
 }
 
+export function isMagicLinkPage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/share/[token]";
+}
+
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):

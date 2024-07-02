@@ -7,11 +7,14 @@ import type { Query, QueryClient } from "@tanstack/svelte-query";
 
 // invalidation helpers
 
-export function invalidateRuntimeQueries(queryClient: QueryClient) {
+export function invalidateRuntimeQueries(
+  queryClient: QueryClient,
+  instanceId: string,
+) {
   return queryClient.resetQueries({
     predicate: (query) =>
       typeof query.queryKey[0] === "string" &&
-      query.queryKey[0].startsWith("/v1/instances"),
+      query.queryKey[0].startsWith(`/v1/instances/${instanceId}`),
   });
 }
 
