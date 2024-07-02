@@ -23,6 +23,7 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	"github.com/rilldata/rill/cli/pkg/update"
@@ -138,6 +139,15 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return nil, err
 	}
 
+	rc, err := dotrillcloud.GetAll(s.app.ProjectPath, s.app.adminURL)
+	if err != nil {
+		return nil, err
+	}
+	var deployedProjectID string
+	if rc != nil {
+		deployedProjectID = rc.ProjectID
+	}
+
 	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 	if err != nil {
 		return nil, err
@@ -161,6 +171,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			RillOrgExistsAsGithubUserName: false,
 			RillUserOrgs:                  nil,
 			LocalProjectName:              localProjectName,
+			DeployedProjectId:             deployedProjectID,
 		}), nil
 	}
 
@@ -217,6 +228,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				RillOrgExistsAsGithubUserName: false,
 				RillUserOrgs:                  nil,
 				LocalProjectName:              localProjectName,
+				DeployedProjectId:             deployedProjectID,
 			}), nil
 		}
 	}
@@ -264,6 +276,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
 		RillUserOrgs:                  userOrgs,
 		LocalProjectName:              localProjectName,
+		DeployedProjectId:             deployedProjectID,
 	}), nil
 }
 
@@ -441,7 +454,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Description:      "Auto created by Rill",
 			Provisioner:      "",
 			ProdVersion:      "",
-			ProdOlapDriver:   "",
+			ProdOlapDriver:   "duckdb",
 			ProdOlapDsn:      "",
 			ProdSlots:        2,
 			Public:           false,
@@ -490,7 +503,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Description:      "Auto created by Rill",
 			Provisioner:      "",
 			ProdVersion:      "",
-			ProdOlapDriver:   "",
+			ProdOlapDriver:   "duckdb",
 			ProdOlapDsn:      "",
 			ProdSlots:        2,
 			Public:           false,
@@ -537,6 +550,13 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
+	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.adminURL, &dotrillcloud.Config{
+		ProjectID: projResp.Project.Id,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return connect.NewResponse(&localv1.DeployProjectResponse{
 		DeployId:    projResp.Project.ProdDeploymentId,
 		Org:         projResp.Project.OrgName,
@@ -562,7 +582,14 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		}
 		defer release()
 
-		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+			Id: r.Msg.ProjectId,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, projResp.Project.OrgName, projResp.Project.Name)
 		if err != nil {
 			return nil, err
 		}

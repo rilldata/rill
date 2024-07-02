@@ -77,6 +77,7 @@ message DeployValidationResponse {
   bool rill_org_exists_as_github_user_name = 13; // only applicable when user does not have any orgs
   repeated string rill_user_orgs = 14;
   string local_project_name = 15;
+  string deployed_project_id = 16;
 }
 
 message PushToGithubRequest {
@@ -104,9 +105,8 @@ message DeployProjectResponse {
 }
 
 message RedeployProjectRequest {
-  string org = 1;
-  string project_name = 2;
-  bool reupload = 3;
+  string project_id = 1;
+  bool reupload = 2;
 }
 
 message RedeployProjectResponse {

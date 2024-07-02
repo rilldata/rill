@@ -407,6 +407,11 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
    */
   localProjectName = "";
 
+  /**
+   * @generated from field: string deployed_project_id = 16;
+   */
+  deployedProjectId = "";
+
   constructor(data?: PartialMessage<DeployValidationResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -430,6 +435,7 @@ export class DeployValidationResponse extends Message<DeployValidationResponse> 
     { no: 13, name: "rill_org_exists_as_github_user_name", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "rill_user_orgs", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
     { no: 15, name: "local_project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 16, name: "deployed_project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeployValidationResponse {
@@ -650,17 +656,12 @@ export class DeployProjectResponse extends Message<DeployProjectResponse> {
  */
 export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   /**
-   * @generated from field: string org = 1;
+   * @generated from field: string project_id = 1;
    */
-  org = "";
+  projectId = "";
 
   /**
-   * @generated from field: string project_name = 2;
-   */
-  projectName = "";
-
-  /**
-   * @generated from field: bool reupload = 3;
+   * @generated from field: bool reupload = 2;
    */
   reupload = false;
 
@@ -672,9 +673,8 @@ export class RedeployProjectRequest extends Message<RedeployProjectRequest> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.local.v1.RedeployProjectRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "project_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 1, name: "project_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "reupload", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RedeployProjectRequest {
