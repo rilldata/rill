@@ -42,32 +42,31 @@ const createRuntimeStore = () => {
       let invalidate = false;
 
       update((current) => {
-        // Invalidate the runtime if the auth context has changed
-        // E.g. when switching from a normal user to a mocked user
+        // Don't update the store if the values have not changed
+        // (especially, don't update the JWT `receivedAt`)
         if (
-          !!current.jwt?.authContext &&
-          authContext !== current.jwt?.authContext
+          host === current.host &&
+          instanceId === current.instanceId &&
+          jwt === current.jwt?.token &&
+          authContext === current.jwt?.authContext
         ) {
-          invalidate = true;
+          return current;
         }
 
-        // Only update the store (particularly, the JWT `receivedAt`) if the values have changed
-        if (
-          host !== current.host ||
-          instanceId !== current.instanceId ||
-          jwt !== current.jwt?.token ||
-          authContext !== current.jwt?.authContext
-        ) {
-          return {
-            host,
-            instanceId,
-            jwt:
-              jwt && authContext
-                ? { token: jwt, receivedAt: Date.now(), authContext }
-                : undefined,
-          };
-        }
-        return current;
+        // Mark the runtime queries for invalidation if the auth context has changed
+        // E.g. when switching from a normal user to a mocked user
+        const authContextChanged =
+          !!current.jwt?.authContext && authContext !== current.jwt.authContext;
+        if (authContextChanged) invalidate = true;
+
+        return {
+          host,
+          instanceId,
+          jwt:
+            jwt && authContext
+              ? { token: jwt, receivedAt: Date.now(), authContext }
+              : undefined,
+        };
       });
 
       if (invalidate) await invalidateRuntimeQueries(queryClient, instanceId);
