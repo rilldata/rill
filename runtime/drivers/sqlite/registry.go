@@ -51,7 +51,8 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			feature_flags,
 			annotations,
 			embed_catalog,
-			watch_repo
+			watch_repo,
+			public_paths
 		FROM instances %s ORDER BY id
 	`, whereClause)
 
@@ -64,7 +65,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 	var res []*drivers.Instance
 	for rows.Next() {
 		// sqlite doesn't support maps need to read as bytes and convert to map
-		var variables, projectVariables, featureFlags, annotations, connectors, projectConnectors []byte
+		var variables, projectVariables, featureFlags, annotations, connectors, projectConnectors, publicPaths []byte
 		i := &drivers.Instance{}
 		err := rows.Scan(
 			&i.ID,
@@ -85,6 +86,7 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 			&annotations,
 			&i.EmbedCatalog,
 			&i.WatchRepo,
+			&publicPaths,
 		)
 		if err != nil {
 			return nil, err
@@ -116,6 +118,11 @@ func (c *connection) findInstances(_ context.Context, whereClause string, args .
 		}
 
 		i.Annotations, err = mapFromJSON[string](annotations)
+		if err != nil {
+			return nil, err
+		}
+
+		i.PublicPaths, err = arrayFromJSON[string](publicPaths)
 		if err != nil {
 			return nil, err
 		}
@@ -166,6 +173,11 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		return err
 	}
 
+	publicPaths, err := arrayToJSON(inst.PublicPaths)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
@@ -188,9 +200,10 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 			feature_flags,
 			annotations,
 			embed_catalog,
-			watch_repo
+			watch_repo,
+			public_paths
 		)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
 		`,
 		inst.ID,
 		inst.Environment,
@@ -210,6 +223,7 @@ func (c *connection) CreateInstance(_ context.Context, inst *drivers.Instance) e
 		annotations,
 		inst.EmbedCatalog,
 		inst.WatchRepo,
+		publicPaths,
 	)
 	if err != nil {
 		return err
@@ -257,6 +271,11 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		return err
 	}
 
+	publicPaths, err := arrayToJSON(inst.PublicPaths)
+	if err != nil {
+		return err
+	}
+
 	now := time.Now()
 	_, err = c.db.ExecContext(
 		ctx,
@@ -277,7 +296,8 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 			feature_flags = $14,
 			annotations = $15,
 			embed_catalog = $16,
-			watch_repo = $17
+			watch_repo = $17,
+			public_paths = $18
 		WHERE id = $1
 		`,
 		inst.ID,
@@ -297,6 +317,7 @@ func (c *connection) EditInstance(_ context.Context, inst *drivers.Instance) err
 		annotations,
 		inst.EmbedCatalog,
 		inst.WatchRepo,
+		publicPaths,
 	)
 	if err != nil {
 		return err
@@ -327,6 +348,19 @@ func mapFromJSON[T any](data []byte) (map[string]T, error) {
 	var m map[string]T
 	err := json.Unmarshal(data, &m)
 	return m, err
+}
+
+func arrayToJSON[T any](data []T) ([]byte, error) {
+	return json.Marshal(data)
+}
+
+func arrayFromJSON[T any](data []byte) ([]T, error) {
+	if len(data) == 0 {
+		return []T{}, nil
+	}
+	var a []T
+	err := json.Unmarshal(data, &a)
+	return a, err
 }
 
 func unmarshalConnectors(s []byte) ([]*runtimev1.Connector, error) {

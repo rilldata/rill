@@ -14,19 +14,19 @@ To ingest data using glob patterns, you include the pattern in the URI of the so
 gs://my-bucket/y=2023/m=01/*.parquet
 `
 
-By default, Rill applies certain limits when using glob patterns to ingest data. The default limits are as follows:
-- **Total size of all matching files**: 10GB
-- **Total file matches**: 1000
-- **Total files listed**: 1 million
+By default, Rill can apply certain limits when using glob patterns to ingest data. The default limits are as follows:
+- **Total size of all matching files**: 100GB
+- **Total file matches**: unlimited
+- **Total files listed**: unlimited
 
 These limits can be configured in the `.yaml` file for the source. To modify the default limits, you can update the `.yaml` file with following fields:
 - `glob.max_total_size`: The maximum total size (in bytes) of all objects. 
 - `glob.max_objects_matched`: The total file matches allowed.
 - `glob.max_objects_listed`: The total files listed to match against the glob pattern. 
 
-For example, to increase the limit on the total bytes downloaded to 100GB, you would add the following line to the `source.yaml` file:
+For example, to set the limit on the total bytes downloaded to 1GB, you would add the following line to the `source.yaml` file:
 ```yaml
-glob.max_total_size: 1073741824000
+glob.max_total_size: 1073741824
 ```
 
 ## Extract policies

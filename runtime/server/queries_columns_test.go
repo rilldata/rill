@@ -3,6 +3,7 @@ package server_test
 import (
 	"context"
 	"fmt"
+	"math"
 	"testing"
 	"time"
 
@@ -144,7 +145,7 @@ func TestServer_ColumnDescriptiveStatistics(t *testing.T) {
 	_, err := server.ColumnDescriptiveStatistics(testCtx(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "col"})
 	if err != nil {
 		// "col" is a varchar column, so this should fail
-		require.ErrorContains(t, err, "No function matches the given name and argument types 'approx_quantile(VARCHAR, DECIMAL(3,2))'")
+		require.ErrorContains(t, err, "No function matches the given name and argument types 'isinf(VARCHAR)'")
 	}
 
 	res, err := server.ColumnDescriptiveStatistics(testCtx(), &runtimev1.ColumnDescriptiveStatisticsRequest{InstanceId: instanceId, TableName: "test", ColumnName: "val"})
@@ -156,7 +157,7 @@ func TestServer_ColumnDescriptiveStatistics(t *testing.T) {
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericStatistics().Q25)
 	require.Equal(t, 1.0, res.NumericSummary.GetNumericStatistics().Q50)
 	require.Equal(t, 4.0, res.NumericSummary.GetNumericStatistics().Q75)
-	require.Equal(t, 1.6, res.NumericSummary.GetNumericStatistics().Sd)
+	require.True(t, math.IsNaN(res.NumericSummary.GetNumericStatistics().Sd))
 }
 
 func TestServer_ColumnDescriptiveStatistics_EmptyModel(t *testing.T) {

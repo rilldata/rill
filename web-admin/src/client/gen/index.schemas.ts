@@ -219,6 +219,10 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
+export type AdminServiceUpdateOrganizationBillingSubscriptionBody = {
+  planName?: string;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
@@ -386,6 +390,12 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
+  storageLimitBytesPerDeployment?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerRequest {
+  orgName?: string;
+  billingCustomerId?: string;
 }
 
 export interface V1SudoUpdateAnnotationsResponse {
@@ -408,6 +418,28 @@ export interface V1SudoGetResourceResponse {
   project?: V1Project;
   deployment?: V1Deployment;
   instance?: V1Deployment;
+}
+
+export interface V1Subscription {
+  id?: string;
+  planId?: string;
+  planName?: string;
+  planDisplayName?: string;
+  startDate?: string;
+  endDate?: string;
+  currentBillingCycleStartDate?: string;
+  currentBillingCycleEndDate?: string;
+  trialEndDate?: string;
+}
+
+export interface V1UpdateOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -523,6 +555,15 @@ export interface V1RecordEventsRequest {
   events?: V1RecordEventsRequestEventsItem[];
 }
 
+export interface V1Quotas {
+  projects?: string;
+  deployments?: string;
+  slotsTotal?: string;
+  slotsPerDeployment?: string;
+  outstandingInvites?: string;
+  storageLimitBytesPerDeployment?: string;
+}
+
 export interface V1PullVirtualRepoResponse {
   files?: V1VirtualFile[];
   nextPageToken?: string;
@@ -587,6 +628,7 @@ export interface V1OrganizationQuotas {
   slotsTotal?: number;
   slotsPerDeployment?: number;
   outstandingInvites?: number;
+  storageLimitBytesPerDeployment?: string;
 }
 
 export interface V1OrganizationPermissions {
@@ -604,6 +646,7 @@ export interface V1Organization {
   name?: string;
   description?: string;
   quotas?: V1OrganizationQuotas;
+  billingCustomerId?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -666,6 +709,10 @@ export interface V1ListServicesResponse {
 
 export interface V1ListServiceAuthTokensResponse {
   tokens?: V1ServiceToken[];
+}
+
+export interface V1ListPublicBillingPlansResponse {
+  plans?: V1BillingPlan[];
 }
 
 export interface V1ListProjectsForOrganizationResponse {
@@ -773,9 +820,18 @@ export interface V1GetProjectResponse {
   projectPermissions?: V1ProjectPermissions;
 }
 
+export interface V1GetProjectByIDResponse {
+  project?: V1Project;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
+}
+
+export interface V1GetOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
 }
 
 export interface V1GetIFrameResponse {
@@ -911,7 +967,7 @@ export interface V1DeleteReportResponse {
 }
 
 export interface V1DeleteProjectResponse {
-  [key: string]: any;
+  id?: string;
 }
 
 export interface V1DeleteOrganizationResponse {
@@ -949,10 +1005,6 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
-}
-
-export interface V1CreateBookmarkResponse {
-  bookmark?: V1Bookmark;
 }
 
 export interface V1CreateBookmarkRequest {
@@ -1009,6 +1061,20 @@ export interface V1Bookmark {
   shared?: boolean;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
+}
+
+export interface V1BillingPlan {
+  id?: string;
+  name?: string;
+  displayName?: string;
+  description?: string;
+  trialPeriodDays?: number;
+  default?: boolean;
+  quotas?: V1Quotas;
 }
 
 export interface V1AlertOptions {
