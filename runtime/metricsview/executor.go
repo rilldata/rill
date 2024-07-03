@@ -81,6 +81,10 @@ func (e *Executor) Watermark(ctx context.Context) (time.Time, error) {
 
 // Schema returns a schema for the metrics view's dimensions and measures.
 func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
+	if e.security != nil && !e.security.Access {
+		return nil, runtime.ErrForbidden
+	}
+
 	// Build a query that selects all dimensions and measures
 	qry := &Query{}
 
@@ -97,11 +101,15 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	for _, d := range e.metricsView.Dimensions {
-		qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
+		if e.security.CanAccessField(d.Name) {
+			qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
+		}
 	}
 
 	for _, m := range e.metricsView.Measures {
-		qry.Measures = append(qry.Measures, Measure{Name: m.Name})
+		if e.security.CanAccessField(m.Name) {
+			qry.Measures = append(qry.Measures, Measure{Name: m.Name})
+		}
 	}
 
 	// Setting both base and comparison time ranges in case there are time_comparison measures.

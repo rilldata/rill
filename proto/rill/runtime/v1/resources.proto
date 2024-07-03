@@ -253,35 +253,21 @@ message SecurityRule {
 }
   
 message SecurityRuleAccess {
-  SecurityCondition condition = 1;
-  SecurityAction action = 2;
+  string condition = 1;
+  bool allow = 2;
 }
 
 message SecurityRuleFieldAccess {
-  SecurityCondition condition = 1;
-  SecurityAction action = 2;
+  string condition = 1;
+  bool allow = 2;
   repeated string fields = 3;
-  bool all_except = 4;
+  bool all_fields = 4;
 }
 
 message SecurityRuleRowFilter {
-  SecurityCondition condition = 1;
-  string sql = 2;
-  Expression expression = 3;
-}
-
-message SecurityCondition {
-  oneof condition {
-    string expression = 1;
-    string resource_kind = 2;
-    ResourceName resource_name = 3;
-  }
-}
-
-enum SecurityAction {
-  SECURITY_ACTION_UNSPECIFIED = 0;
-  SECURITY_ACTION_ALLOW = 1;
-  SECURITY_ACTION_DENY = 2;
+  string condition = 1;
+  string sql = 2; // Raw SQL expression to apply to the underlying table
+  Expression expression = 3; // Regular query expression referencing dimension names
 }
 
 message MetricsViewState {

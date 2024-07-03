@@ -19,16 +19,16 @@ import (
 )
 
 type MetricsViewSearch struct {
-	MetricsViewName    string                                `json:"metrics_view_name,omitempty"`
-	Dimensions         []string                              `json:"dimensions,omitempty"`
-	Search             string                                `json:"search,omitempty"`
-	TimeRange          *runtimev1.TimeRange                  `json:"time_range,omitempty"`
-	Where              *runtimev1.Expression                 `json:"where,omitempty"`
-	Having             *runtimev1.Expression                 `json:"having,omitempty"`
-	Priority           int32                                 `json:"priority,omitempty"`
-	Limit              *int64                                `json:"limit,omitempty"`
-	SecurityAttributes map[string]any                        `json:"security_attributes,omitempty"`
-	SecurityPolicy     *runtimev1.MetricsViewSpec_SecurityV2 `json:"security_policy,omitempty"`
+	MetricsViewName    string                    `json:"metrics_view_name,omitempty"`
+	Dimensions         []string                  `json:"dimensions,omitempty"`
+	Search             string                    `json:"search,omitempty"`
+	TimeRange          *runtimev1.TimeRange      `json:"time_range,omitempty"`
+	Where              *runtimev1.Expression     `json:"where,omitempty"`
+	Having             *runtimev1.Expression     `json:"having,omitempty"`
+	Priority           int32                     `json:"priority,omitempty"`
+	Limit              *int64                    `json:"limit,omitempty"`
+	SecurityAttributes map[string]any            `json:"security_attributes,omitempty"`
+	SecurityRules      []*runtimev1.SecurityRule `json:"security_policy,omitempty"`
 
 	Result *runtimev1.MetricsViewSearchResponse
 }
@@ -64,12 +64,13 @@ func (q *MetricsViewSearch) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, nil, nil)
+	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityRules)
 	if err != nil {
 		return err
 	}
+
 	for _, d := range q.Dimensions {
-		if !checkFieldAccess(d, sec) {
+		if !sec.CanAccessField(d) {
 			return ErrForbidden
 		}
 	}

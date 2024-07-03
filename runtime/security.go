@@ -18,6 +18,38 @@ import (
 
 var ErrForbidden = errors.New("action not allowed")
 
+type ResolvedMetricsViewSecurity struct {
+	Access      bool
+	FieldAccess map[string]bool
+	RowFilter   string
+	QueryFilter *runtimev1.Expression
+}
+
+func (r *ResolvedMetricsViewSecurity) CanAccessField(field string) bool {
+	if r == nil {
+		return true
+	}
+
+	if !r.Access {
+		return false
+	}
+
+	// If there are no field access rules, all fields are allowed
+	if r.FieldAccess == nil {
+		return true
+	}
+
+	// If not explicitly allowed, it's an implicit deny
+	return r.FieldAccess[field]
+}
+
+var openAccess = &ResolvedMetricsViewSecurity{
+	Access:      true,
+	FieldAccess: nil,
+	RowFilter:   "",
+	QueryFilter: nil,
+}
+
 type securityEngine struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
@@ -32,60 +64,194 @@ func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
 	return &securityEngine{cache: cache, logger: logger}
 }
 
-var openAccess = &ResolvedMetricsViewSecurity{
-	Access:      true,
-	RowFilter:   "",
-	QueryFilter: nil,
-	Include:     nil,
-	Exclude:     nil,
-}
-
-type ResolvedMetricsViewSecurity struct {
-	Access      bool
-	RowFilter   string
-	QueryFilter *runtimev1.Expression
-	Include     []string
-	Exclude     []string
-	ExcludeAll  bool
-}
-
-func (r *ResolvedMetricsViewSecurity) CanAccessField(field string) bool {
-	if r == nil {
-		return true
+func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment string, attributes map[string]any, rules []*runtimev1.SecurityRule, mv *runtimev1.Resource) (*ResolvedMetricsViewSecurity, error) {
+	// Combine rules with the metrics view's rules
+	spec := mv.GetMetricsView().State.ValidSpec
+	if spec != nil {
+		rules = append(rules, spec.SecurityRules...)
 	}
 
-	if !r.Access {
-		return false
+	// Exit early if all rules are nil
+	var validRule bool
+	for _, rule := range rules {
+		if rule != nil {
+			validRule = true
+			break
+		}
+	}
+	if !validRule {
+		return nil, nil
 	}
 
-	if r.ExcludeAll {
-		return false
+	// If attributes is empty that means auth is disabled and no user context is available.
+	// Since we are controlling the attributes we can safely return the open policy.
+	// TODO: Make this more explicit!
+	if len(attributes) == 0 {
+		return openAccess, nil
 	}
 
-	if len(r.Include) > 0 {
-		for _, include := range r.Include {
-			if include == field {
-				return true
+	cacheKey, err := computeCacheKey(instanceID, environment, attributes, rules, mv)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compute cache key: %w", err)
+	}
+
+	p.lock.Lock()
+	defer p.lock.Unlock()
+
+	cached, ok := p.cache.Get(cacheKey)
+	if ok {
+		return cached.(*ResolvedMetricsViewSecurity), nil
+	}
+
+	templateData := rillv1.TemplateData{
+		Environment: environment,
+		User:        attributes,
+		Self:        rillv1.TemplateResource{Meta: mv.Meta},
+	}
+
+	// Apply rules
+	var access *bool
+	var rowFilter string
+	var queryFilter *runtimev1.Expression
+	var fieldAccess map[string]bool
+	for _, rule := range rules {
+		if rule == nil {
+			continue
+		}
+
+		switch r := rule.Rule.(type) {
+		case *runtimev1.SecurityRule_Access:
+			// Determine if the rule should be applied
+			apply := true
+			if r.Access.Condition != "" {
+				expr, err := rillv1.ResolveTemplate(r.Access.Condition, templateData)
+				if err != nil {
+					return nil, err
+				}
+				res, err := rillv1.EvaluateBoolExpression(expr)
+				if err != nil {
+					return nil, err
+				}
+				apply = res
+			}
+			if !apply {
+				continue
+			}
+
+			// Explicit denies take precedence
+			if access == nil {
+				access = &r.Access.Allow
+			} else {
+				tmp := *access && r.Access.Allow
+				access = &tmp
+			}
+		case *runtimev1.SecurityRule_FieldAccess:
+			// As soon as we see a field access rule, we set fieldAccess, which entails an implicit deny for all fields not mentioned
+			if fieldAccess == nil {
+				fieldAccess = make(map[string]bool)
+			}
+
+			// Determine if the rule should be applied
+			apply := true
+			if r.FieldAccess.Condition != "" {
+				expr, err := rillv1.ResolveTemplate(r.FieldAccess.Condition, templateData)
+				if err != nil {
+					return nil, err
+				}
+				res, err := rillv1.EvaluateBoolExpression(expr)
+				if err != nil {
+					return nil, err
+				}
+				apply = res
+			}
+			if !apply {
+				continue
+			}
+
+			// Set if the field should be allowed or denied
+			if r.FieldAccess.AllFields {
+				for _, f := range spec.Dimensions {
+					v, ok := fieldAccess[f.Name]
+					if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
+						fieldAccess[f.Name] = r.FieldAccess.Allow
+					}
+				}
+				for _, f := range spec.Measures {
+					v, ok := fieldAccess[f.Name]
+					if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
+						fieldAccess[f.Name] = r.FieldAccess.Allow
+					}
+				}
+			} else {
+				for _, f := range r.FieldAccess.Fields {
+					v, ok := fieldAccess[f]
+					if !ok || v { // Only update if not already denied (because deny takes precedence over allow)
+						fieldAccess[f] = r.FieldAccess.Allow
+					}
+				}
+			}
+		case *runtimev1.SecurityRule_RowFilter:
+			// Determine if the rule should be applied
+			apply := true
+			if r.RowFilter.Condition != "" {
+				expr, err := rillv1.ResolveTemplate(r.RowFilter.Condition, templateData)
+				if err != nil {
+					return nil, err
+				}
+				res, err := rillv1.EvaluateBoolExpression(expr)
+				if err != nil {
+					return nil, err
+				}
+				apply = res
+			}
+			if !apply {
+				continue
+			}
+
+			// Handle raw SQL row filters
+			if r.RowFilter.Sql != "" {
+				sql, err := rillv1.ResolveTemplate(r.RowFilter.Sql, templateData)
+				if err != nil {
+					return nil, err
+				}
+
+				if rowFilter == "" {
+					rowFilter = sql
+				} else {
+					rowFilter = fmt.Sprintf("(%s) AND (%s)", rowFilter, sql)
+				}
+			}
+
+			// Handle query expression filters
+			if r.RowFilter.Expression != nil {
+				if queryFilter == nil {
+					queryFilter = r.RowFilter.Expression
+				} else {
+					queryFilter = expressionpb.AndAll(queryFilter, r.RowFilter.Expression)
+				}
 			}
 		}
-		return false
 	}
 
-	if len(r.Exclude) > 0 {
-		for _, exclude := range r.Exclude {
-			if exclude == field {
-				return false
-			}
-		}
-		return true
+	resolved := &ResolvedMetricsViewSecurity{
+		Access:      access != nil && *access, // Access defaults to false
+		FieldAccess: fieldAccess,
+		RowFilter:   rowFilter,
+		QueryFilter: queryFilter,
 	}
 
-	return true
+	p.cache.Add(cacheKey, resolved)
+
+	return resolved, nil
 }
 
-func computeCacheKey(instanceID string, r *runtimev1.Resource, attributes map[string]any, policies ...*runtimev1.MetricsViewSpec_SecurityV2) (string, error) {
+func computeCacheKey(instanceID, environment string, attributes map[string]any, rules []*runtimev1.SecurityRule, r *runtimev1.Resource) (string, error) {
 	hash := md5.New()
 	_, err := hash.Write([]byte(instanceID))
+	if err != nil {
+		return "", err
+	}
+	_, err = hash.Write([]byte(environment))
 	if err != nil {
 		return "", err
 	}
@@ -118,11 +284,11 @@ func computeCacheKey(instanceID string, r *runtimev1.Resource, attributes map[st
 			}
 		}
 	}
-	for _, p := range policies {
-		if p == nil {
+	for _, r := range rules {
+		if r == nil {
 			continue
 		}
-		res, err := protojson.Marshal(p)
+		res, err := protojson.Marshal(r)
 		if err != nil {
 			return "", err
 		}
@@ -132,206 +298,4 @@ func computeCacheKey(instanceID string, r *runtimev1.Resource, attributes map[st
 		}
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
-}
-
-func (p *securityEngine) resolveMetricsViewSecurity(instanceID, environment string, attributes map[string]any, mv *runtimev1.Resource, policies ...*runtimev1.MetricsViewSpec_SecurityV2) (*ResolvedMetricsViewSecurity, error) {
-	// Exit early if all policies are nil
-	var validPolicy bool
-	for _, policy := range policies {
-		if policy != nil {
-			validPolicy = true
-			break
-		}
-	}
-	if !validPolicy {
-		return nil, nil
-	}
-
-	// if attributes is empty that means auth is disabled and also no user context is available
-	// since we are controlling the attributes we can safely return the open policy
-	if len(attributes) == 0 {
-		return openAccess, nil
-	}
-
-	cacheKey, err := computeCacheKey(instanceID, mv, attributes, policies...)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compute cache key: %w", err)
-	}
-
-	p.lock.Lock()
-	defer p.lock.Unlock()
-
-	cached, ok := p.cache.Get(cacheKey)
-	if ok {
-		return cached.(*ResolvedMetricsViewSecurity), nil
-	}
-
-	resolved := &ResolvedMetricsViewSecurity{Access: true}
-	templateData := rillv1.TemplateData{
-		Environment: environment,
-		User:        attributes,
-		Self:        rillv1.TemplateResource{Meta: mv.Meta},
-	}
-
-	for _, policy := range policies {
-		if policy == nil {
-			continue
-		}
-
-		if policy.Access != "" {
-			accessExpr, err := rillv1.ResolveTemplate(policy.Access, templateData)
-			if err != nil {
-				return nil, err
-			}
-			access, err := rillv1.EvaluateBoolExpression(accessExpr)
-			if err != nil {
-				return nil, err
-			}
-
-			resolved.Access = resolved.Access && access
-		} else {
-			resolved.Access = false
-		}
-
-		if policy.RowFilter != "" {
-			filter, err := rillv1.ResolveTemplate(policy.RowFilter, templateData)
-			if err != nil {
-				return nil, err
-			}
-
-			if resolved.RowFilter == "" {
-				resolved.RowFilter = filter
-			} else {
-				resolved.RowFilter = fmt.Sprintf("(%s) AND (%s)", resolved.RowFilter, filter)
-			}
-		}
-
-		if policy.QueryFilter != nil {
-			if resolved.QueryFilter == nil {
-				resolved.QueryFilter = policy.QueryFilter
-			} else {
-				resolved.QueryFilter = expressionpb.And([]*runtimev1.Expression{resolved.QueryFilter, policy.QueryFilter})
-			}
-		}
-
-		var include, exclude []string
-		var excludeAll bool
-		seen := map[string]bool{}
-
-		for _, inc := range policy.Include {
-			cond, err := rillv1.ResolveTemplate(inc.Condition, templateData)
-			if err != nil {
-				return nil, err
-			}
-			incCond, err := rillv1.EvaluateBoolExpression(cond)
-			if err != nil {
-				return nil, err
-			}
-			if incCond {
-				for _, name := range inc.Names {
-					if seen[name] {
-						continue
-					}
-					seen[name] = true
-					include = append(include, name)
-				}
-			}
-		}
-
-		// this is to handle the case where include filter was present but none of them evaluted to true
-		if len(policy.Include) > 0 && len(include) == 0 {
-			excludeAll = true
-		}
-
-		for _, exc := range policy.Exclude {
-			cond, err := rillv1.ResolveTemplate(exc.Condition, templateData)
-			if err != nil {
-				return nil, err
-			}
-			excCond, err := rillv1.EvaluateBoolExpression(cond)
-			if err != nil {
-				return nil, err
-			}
-			if excCond {
-				for _, name := range exc.Names {
-					if seen[name] {
-						continue
-					}
-					seen[name] = true
-					exclude = append(exclude, name)
-				}
-			}
-		}
-
-		// Merge into resolved
-		mergeIncludeExcludes(resolved, include, exclude, excludeAll)
-	}
-
-	p.cache.Add(cacheKey, resolved)
-	return resolved, nil
-}
-
-func mergeIncludeExcludes(resolved *ResolvedMetricsViewSecurity, include, exclude []string, excludeAll bool) {
-	if resolved.ExcludeAll {
-		return
-	}
-
-	if excludeAll {
-		resolved.Include = nil
-		resolved.Exclude = nil
-		resolved.ExcludeAll = true
-		return
-	}
-
-	if len(resolved.Include) == 0 && len(resolved.Exclude) == 0 {
-		resolved.Include = include
-		resolved.Exclude = exclude
-		return
-	}
-
-	if len(resolved.Include) == 0 && len(include) == 0 {
-		resolved.Exclude = append(resolved.Exclude, exclude...)
-		return
-	}
-
-	// Build a new include list that is the intersection of resolved.Include and include, minus any fields in exclude.
-	var newInclude []string
-	for _, f := range include {
-		// Check it's also in resolved.Include
-		found := false
-		for _, f2 := range resolved.Include {
-			if f == f2 {
-				found = true
-				break
-			}
-		}
-		if !found {
-			continue
-		}
-
-		// Check it's not in resolved.Exclude
-		found = false
-		for _, f2 := range resolved.Exclude {
-			if f == f2 {
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-
-		// Can add to newInclude
-		newInclude = append(newInclude, f)
-	}
-
-	// If newInclude is empty, exclude all fields
-	if len(newInclude) == 0 {
-		resolved.Include = nil
-		resolved.Exclude = nil
-		resolved.ExcludeAll = true
-	} else {
-		resolved.Include = newInclude
-		resolved.Exclude = nil
-	}
 }

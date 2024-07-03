@@ -33,7 +33,7 @@ type Compiler struct {
 	controller     *runtime.Controller
 	instanceID     string
 	userAttributes map[string]any
-	securityPolicy *runtimev1.MetricsViewSpec_SecurityV2 // Optional additional security policy to apply
+	securityRules  []*runtimev1.SecurityRule // Optional additional security rules to apply
 	priority       int
 }
 
@@ -77,7 +77,7 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 		controller:     c.controller,
 		instanceID:     c.instanceID,
 		userAttributes: c.userAttributes,
-		securityPolicy: c.securityPolicy,
+		securityRules:  c.securityRules,
 		priority:       c.priority,
 	}
 	compiledSQL, err := t.transformSelectStmt(ctx, stmt)
@@ -92,7 +92,7 @@ type transformer struct {
 	controller     *runtime.Controller
 	instanceID     string
 	userAttributes map[string]any
-	securityPolicy *runtimev1.MetricsViewSpec_SecurityV2
+	securityRules  []*runtimev1.SecurityRule
 
 	metricsView *runtimev1.MetricsViewV2
 	refs        []*runtimev1.ResourceName
@@ -702,7 +702,7 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 	defer release()
 	dialect := olap.Dialect()
 
-	security, err := t.controller.Runtime.ResolveMetricsViewSecurity(t.instanceID, t.userAttributes, mv, spec.Security, t.securityPolicy)
+	security, err := t.controller.Runtime.ResolveMetricsViewSecurity(t.instanceID, t.userAttributes, t.securityRules, mv)
 	if err != nil {
 		return "", err
 	}
@@ -725,29 +725,19 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 		return dialect.EscapeIdentifier(spec.Table), nil
 	}
 
-	if !security.Access || security.ExcludeAll {
+	if !security.Access {
 		return "", fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name.Name)
 	}
 
-	if len(security.Include) != 0 {
-		for measure := range t.measureToExpr {
-			if !slices.Contains(security.Include, measure) { // measures not part of include clause should not be accessible
-				t.measureToExpr[measure] = "null"
-			}
-		}
-
-		for dimension := range t.dimsToExpr {
-			if !slices.Contains(security.Include, dimension) { // dimensions not part of include clause should not be accessible
-				t.dimsToExpr[dimension] = "null"
-			}
+	for dimension := range t.dimsToExpr {
+		if !security.CanAccessField(dimension) {
+			t.dimsToExpr[dimension] = "null"
 		}
 	}
 
-	for _, exclude := range security.Exclude {
-		if _, ok := t.dimsToExpr[exclude]; ok {
-			t.dimsToExpr[exclude] = "null"
-		} else {
-			t.measureToExpr[exclude] = "null"
+	for measure := range t.measureToExpr {
+		if !security.CanAccessField(measure) {
+			t.measureToExpr[measure] = "null"
 		}
 	}
 
@@ -755,6 +745,7 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 	if security.RowFilter != "" {
 		sql += " WHERE " + security.RowFilter
 	}
+	// TODO: Incorporate security.QueryFilter
 	return fmt.Sprintf("(%s)", sql), nil
 }
 

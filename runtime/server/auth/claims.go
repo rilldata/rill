@@ -18,10 +18,10 @@ type Claims interface {
 	CanInstance(instanceID string, p Permission) bool
 	// Attributes returns the token attributes used in template rendering.
 	Attributes() map[string]any
-	// SecurityPolicy is an optional security policy to apply *in addition* to the security policies defined in the requested resources themselves.
+	// SecurityRules are optional security rules to apply *in addition* to the rules defined in the requested resources themselves.
 	// This provides a way to embed/inline additional security restrictions for a specific token.
 	// This option is currently leveraged by the admin service to enforce restrictions for magic auth tokens.
-	SecurityPolicy() *runtimev1.MetricsViewSpec_SecurityV2
+	SecurityRules() []*runtimev1.SecurityRule
 }
 
 // jwtClaims implements Claims and resolve permissions based on a JWT payload.
@@ -30,7 +30,7 @@ type jwtClaims struct {
 	System    []Permission            `json:"sys,omitempty"`
 	Instances map[string][]Permission `json:"ins,omitempty"`
 	Attrs     map[string]any          `json:"attr,omitempty"`
-	Security  json.RawMessage         `json:"sec,omitempty"` // *runtimev1.MetricsViewSpec_SecurityV2 serialized with protojson
+	Security  []json.RawMessage       `json:"sec,omitempty"` // []*runtimev1.SecurityRule serialized with protojson
 }
 
 var _ Claims = (*jwtClaims)(nil)
@@ -61,18 +61,22 @@ func (c *jwtClaims) Attributes() map[string]any {
 	return c.Attrs
 }
 
-func (c jwtClaims) SecurityPolicy() *runtimev1.MetricsViewSpec_SecurityV2 {
+func (c jwtClaims) SecurityRules() []*runtimev1.SecurityRule {
 	if len(c.Security) == 0 {
 		return nil
 	}
 
-	sec := &runtimev1.MetricsViewSpec_SecurityV2{}
-	err := protojson.Unmarshal(c.Security, sec)
-	if err != nil {
-		panic(err)
+	rules := make([]*runtimev1.SecurityRule, len(c.Security))
+	for i, data := range c.Security {
+		rule := &runtimev1.SecurityRule{}
+		err := protojson.Unmarshal(data, rule)
+		if err != nil {
+			panic(err)
+		}
+		rules[i] = rule
 	}
 
-	return sec
+	return rules
 }
 
 // openClaims implements Claims and allows all actions.
@@ -97,7 +101,7 @@ func (c openClaims) Attributes() map[string]any {
 	return nil
 }
 
-func (c openClaims) SecurityPolicy() *runtimev1.MetricsViewSpec_SecurityV2 {
+func (c openClaims) SecurityRules() []*runtimev1.SecurityRule {
 	return nil
 }
 
@@ -123,7 +127,7 @@ func (c anonClaims) Attributes() map[string]any {
 	return nil
 }
 
-func (c anonClaims) SecurityPolicy() *runtimev1.MetricsViewSpec_SecurityV2 {
+func (c anonClaims) SecurityRules() []*runtimev1.SecurityRule {
 	return nil
 }
 
@@ -152,6 +156,6 @@ func (c devJWTClaims) Attributes() map[string]any {
 	return c.Attrs
 }
 
-func (c devJWTClaims) SecurityPolicy() *runtimev1.MetricsViewSpec_SecurityV2 {
+func (c devJWTClaims) SecurityRules() []*runtimev1.SecurityRule {
 	return nil
 }

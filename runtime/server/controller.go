@@ -244,18 +244,9 @@ func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID stri
 
 	mv := r.GetMetricsView()
 	attrs := auth.GetClaims(ctx).Attributes()
-	claimsPolicy := auth.GetClaims(ctx).SecurityPolicy()
-	var mvPolicy *runtimev1.MetricsViewSpec_SecurityV2
-	if mv.State.ValidSpec != nil {
-		mvPolicy = mv.State.ValidSpec.Security
-	}
+	rules := auth.GetClaims(ctx).SecurityRules()
 
-	if claimsPolicy == nil && mvPolicy == nil {
-		// Allow if there is no security policy to apply
-		return r, true, nil
-	}
-
-	security, err := s.runtime.ResolveMetricsViewSecurity(instID, attrs, r, mvPolicy, claimsPolicy)
+	security, err := s.runtime.ResolveMetricsViewSecurity(instID, attrs, rules, r)
 	if err != nil {
 		return nil, false, err
 	}
@@ -264,7 +255,7 @@ func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID stri
 		return nil, false, nil
 	}
 
-	mv, changed := s.applySecurityPolicyMetricsViewIncludesAndExcludes(mv, security)
+	mv, changed := s.applySecurityPolicyMetricsViewResolved(mv, security)
 	if changed {
 		// We mustn't modify the resource in-place
 		r = &runtimev1.Resource{
@@ -276,106 +267,62 @@ func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID stri
 	return r, true, nil
 }
 
-// applySecurityPolicyIncludesAndExcludes rewrites a metrics view based on the include/exclude conditions of a security policy.
-func (s *Server) applySecurityPolicyMetricsViewIncludesAndExcludes(mv *runtimev1.MetricsViewV2, policy *runtime.ResolvedMetricsViewSecurity) (*runtimev1.MetricsViewV2, bool) {
+// applySecurityPolicyMetricsViewResolved rewrites a metrics view based on the field access conditions of a security policy.
+func (s *Server) applySecurityPolicyMetricsViewResolved(mv *runtimev1.MetricsViewV2, policy *runtime.ResolvedMetricsViewSecurity) (*runtimev1.MetricsViewV2, bool) {
 	if policy == nil {
 		return mv, false
 	}
+	if policy.FieldAccess == nil {
+		return mv, false
+	}
+
+	specDims, specMeasures, specChanged := s.applySecurityPolicyMetricsViewSpecResolved(mv.Spec, policy)
+	validSpecDims, validSpecMeasures, validSpecChanged := s.applySecurityPolicyMetricsViewSpecResolved(mv.State.ValidSpec, policy)
+
+	if !specChanged && !validSpecChanged {
+		return mv, false
+	}
+
 	mv = proto.Clone(mv).(*runtimev1.MetricsViewV2)
 
-	if policy.ExcludeAll {
-		mv.Spec.Measures = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-		mv.Spec.Dimensions = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-		if mv.State.ValidSpec != nil {
-			mv.State.ValidSpec.Measures = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-			mv.State.ValidSpec.Dimensions = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-		}
-		return mv, true
+	if specChanged {
+		mv.Spec.Dimensions = specDims
+		mv.Spec.Measures = specMeasures
 	}
 
-	if len(policy.Include) > 0 {
-		allowed := make(map[string]bool)
-		for _, include := range policy.Include {
-			allowed[include] = true
-		}
-
-		dims := make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-		for _, dim := range mv.Spec.Dimensions {
-			if allowed[dim.Name] {
-				dims = append(dims, dim)
-			}
-		}
-		mv.Spec.Dimensions = dims
-
-		ms := make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-		for _, m := range mv.Spec.Measures {
-			if allowed[m.Name] {
-				ms = append(ms, m)
-			}
-		}
-		mv.Spec.Measures = ms
-
-		if mv.State.ValidSpec != nil {
-			dims = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-			for _, dim := range mv.State.ValidSpec.Dimensions {
-				if allowed[dim.Name] {
-					dims = append(dims, dim)
-				}
-			}
-			mv.State.ValidSpec.Dimensions = dims
-
-			ms = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-			for _, m := range mv.State.ValidSpec.Measures {
-				if allowed[m.Name] {
-					ms = append(ms, m)
-				}
-			}
-			mv.State.ValidSpec.Measures = ms
-		}
-	}
-
-	if len(policy.Exclude) > 0 {
-		restricted := make(map[string]bool)
-		for _, exclude := range policy.Exclude {
-			restricted[exclude] = true
-		}
-
-		dims := make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-		for _, dim := range mv.Spec.Dimensions {
-			if !restricted[dim.Name] {
-				dims = append(dims, dim)
-			}
-		}
-		mv.Spec.Dimensions = dims
-
-		ms := make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-		for _, m := range mv.Spec.Measures {
-			if !restricted[m.Name] {
-				ms = append(ms, m)
-			}
-		}
-		mv.Spec.Measures = ms
-
-		if mv.State.ValidSpec != nil {
-			dims = make([]*runtimev1.MetricsViewSpec_DimensionV2, 0)
-			for _, dim := range mv.State.ValidSpec.Dimensions {
-				if !restricted[dim.Name] {
-					dims = append(dims, dim)
-				}
-			}
-			mv.State.ValidSpec.Dimensions = dims
-
-			ms = make([]*runtimev1.MetricsViewSpec_MeasureV2, 0)
-			for _, m := range mv.State.ValidSpec.Measures {
-				if !restricted[m.Name] {
-					ms = append(ms, m)
-				}
-			}
-			mv.State.ValidSpec.Measures = ms
-		}
+	if validSpecChanged {
+		mv.State.ValidSpec.Dimensions = validSpecDims
+		mv.State.ValidSpec.Measures = validSpecMeasures
 	}
 
 	return mv, true
+}
+
+// applySecurityPolicyMetricsViewSpecResolved rewrites a metrics view spec based on the field access conditions of a security policy.
+func (s *Server) applySecurityPolicyMetricsViewSpecResolved(spec *runtimev1.MetricsViewSpec, policy *runtime.ResolvedMetricsViewSecurity) ([]*runtimev1.MetricsViewSpec_DimensionV2, []*runtimev1.MetricsViewSpec_MeasureV2, bool) {
+	if spec == nil {
+		return nil, nil, false
+	}
+
+	var dims []*runtimev1.MetricsViewSpec_DimensionV2
+	for _, dim := range spec.Dimensions {
+		if policy.CanAccessField(dim.Name) {
+			dims = append(dims, dim)
+		}
+	}
+
+	var ms []*runtimev1.MetricsViewSpec_MeasureV2
+	for _, m := range spec.Measures {
+		if policy.CanAccessField(m.Name) {
+			ms = append(ms, m)
+		}
+	}
+
+	if len(dims) == len(spec.Dimensions) && len(ms) == len(spec.Measures) {
+		return nil, nil, false
+	}
+
+	return dims, ms, true
 }
 
 // applySecurityPolicyReport applies security policies to a report.

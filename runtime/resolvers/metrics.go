@@ -58,7 +58,7 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err := opts.Runtime.ResolveMetricsViewSecurity(opts.InstanceID, opts.UserAttributes, res, mv.Security, opts.Security)
+	security, err := opts.Runtime.ResolveMetricsViewSecurity(opts.InstanceID, opts.UserAttributes, opts.SecurityRules, res)
 	if err != nil {
 		return nil, err
 	}

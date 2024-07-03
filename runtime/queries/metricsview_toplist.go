@@ -16,19 +16,19 @@ import (
 )
 
 type MetricsViewToplist struct {
-	MetricsViewName    string                                `json:"metrics_view_name,omitempty"`
-	DimensionName      string                                `json:"dimension_name,omitempty"`
-	MeasureNames       []string                              `json:"measure_names,omitempty"`
-	TimeStart          *timestamppb.Timestamp                `json:"time_start,omitempty"`
-	TimeEnd            *timestamppb.Timestamp                `json:"time_end,omitempty"`
-	Limit              *int64                                `json:"limit,omitempty"`
-	Offset             int64                                 `json:"offset,omitempty"`
-	Sort               []*runtimev1.MetricsViewSort          `json:"sort,omitempty"`
-	Where              *runtimev1.Expression                 `json:"where,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter          `json:"filter,omitempty"` // backwards compatibility
-	Having             *runtimev1.Expression                 `json:"having,omitempty"`
-	SecurityAttributes map[string]any                        `json:"security_attributes,omitempty"`
-	SecurityPolicy     *runtimev1.MetricsViewSpec_SecurityV2 `json:"security_policy,omitempty"`
+	MetricsViewName    string                       `json:"metrics_view_name,omitempty"`
+	DimensionName      string                       `json:"dimension_name,omitempty"`
+	MeasureNames       []string                     `json:"measure_names,omitempty"`
+	TimeStart          *timestamppb.Timestamp       `json:"time_start,omitempty"`
+	TimeEnd            *timestamppb.Timestamp       `json:"time_end,omitempty"`
+	Limit              *int64                       `json:"limit,omitempty"`
+	Offset             int64                        `json:"offset,omitempty"`
+	Sort               []*runtimev1.MetricsViewSort `json:"sort,omitempty"`
+	Where              *runtimev1.Expression        `json:"where,omitempty"`
+	Filter             *runtimev1.MetricsViewFilter `json:"filter,omitempty"` // backwards compatibility
+	Having             *runtimev1.Expression        `json:"having,omitempty"`
+	SecurityAttributes map[string]any               `json:"security_attributes,omitempty"`
+	SecurityRules      []*runtimev1.SecurityRule    `json:"security_policy,omitempty"`
 
 	Result *runtimev1.MetricsViewToplistResponse `json:"-"`
 }
@@ -66,13 +66,7 @@ func (q *MetricsViewToplist) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	ds := []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}
-	ms := make([]*runtimev1.MetricsViewAggregationMeasure, len(q.MeasureNames))
-	for i, m := range q.MeasureNames {
-		ms[i] = &runtimev1.MetricsViewAggregationMeasure{Name: m}
-	}
-
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, ds, ms)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityRules)
 	if err != nil {
 		return err
 	}
@@ -107,13 +101,7 @@ func (q *MetricsViewToplist) Resolve(ctx context.Context, rt *runtime.Runtime, i
 }
 
 func (q *MetricsViewToplist) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	ds := []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}
-	ms := make([]*runtimev1.MetricsViewAggregationMeasure, len(q.MeasureNames))
-	for i, m := range q.MeasureNames {
-		ms[i] = &runtimev1.MetricsViewAggregationMeasure{Name: m}
-	}
-
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, ds, ms)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityRules)
 	if err != nil {
 		return err
 	}

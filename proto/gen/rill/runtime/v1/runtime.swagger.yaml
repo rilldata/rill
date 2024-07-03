@@ -5263,22 +5263,6 @@ definitions:
         format: int64
       timeZone:
         type: string
-  v1SecurityAction:
-    type: string
-    enum:
-      - SECURITY_ACTION_UNSPECIFIED
-      - SECURITY_ACTION_ALLOW
-      - SECURITY_ACTION_DENY
-    default: SECURITY_ACTION_UNSPECIFIED
-  v1SecurityCondition:
-    type: object
-    properties:
-      expression:
-        type: string
-      resourceKind:
-        type: string
-      resourceName:
-        $ref: '#/definitions/v1ResourceName'
   v1SecurityRule:
     type: object
     properties:
@@ -5292,31 +5276,33 @@ definitions:
     type: object
     properties:
       condition:
-        $ref: '#/definitions/v1SecurityCondition'
-      action:
-        $ref: '#/definitions/v1SecurityAction'
+        type: string
+      allow:
+        type: boolean
   v1SecurityRuleFieldAccess:
     type: object
     properties:
       condition:
-        $ref: '#/definitions/v1SecurityCondition'
-      action:
-        $ref: '#/definitions/v1SecurityAction'
+        type: string
+      allow:
+        type: boolean
       fields:
         type: array
         items:
           type: string
-      allExcept:
+      allFields:
         type: boolean
   v1SecurityRuleRowFilter:
     type: object
     properties:
       condition:
-        $ref: '#/definitions/v1SecurityCondition'
+        type: string
       sql:
         type: string
+        title: Raw SQL expression to apply to the underlying table
       expression:
         $ref: '#/definitions/v1Expression'
+        title: Regular query expression referencing dimension names
   v1SourceSpec:
     type: object
     properties:

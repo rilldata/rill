@@ -1036,8 +1036,11 @@ security:
 				},
 				FirstDayOfWeek:     7,
 				AvailableTimeZones: []string{"America/New_York"},
-				Security: &runtimev1.MetricsViewSpec_SecurityV2{
-					Access: "true",
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
 				},
 			},
 		},
@@ -1056,9 +1059,14 @@ security:
 				},
 				FirstDayOfWeek:     1,
 				AvailableTimeZones: []string{},
-				Security: &runtimev1.MetricsViewSpec_SecurityV2{
-					Access:    "true",
-					RowFilter: "true",
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Sql: "true",
+					}}},
 				},
 			},
 		},
@@ -1124,6 +1132,85 @@ env:
 	p, err = Parse(ctx, repo, "", "test", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
+}
+
+func TestMetricsViewSecurity(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`dashboards/d1.yaml`: `
+table: t1
+dimensions:
+  - name: a
+    column: a
+measures:
+  - name: b
+    expression: count(*)
+security:
+  row_filter: true
+  include:
+    - if: "'{{ .user.domain }}' = 'example.com'"
+      all: true
+    - if: true
+      names: [a]
+  exclude:
+    - # Whoopsie empty
+    - if: "'{{ .user.domain }}' = 'bad.com'"
+      all: true
+    - if: true
+      names: [b]
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector: "duckdb",
+				Table:     "t1",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "a", Column: "a"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "",
+						Allow:     false,
+					}}},
+					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Sql: "true",
+					}}},
+					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: "'{{ .user.domain }}' = 'example.com'",
+						Allow:     true,
+						AllFields: true,
+					}}},
+					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: "true",
+						Allow:     true,
+						Fields:    []string{"a"},
+					}}},
+					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: "'{{ .user.domain }}' = 'bad.com'",
+						Allow:     false,
+						AllFields: true,
+					}}},
+					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: "true",
+						Allow:     false,
+						Fields:    []string{"b"},
+					}}},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
 }
 
 func TestReport(t *testing.T) {

@@ -56,7 +56,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Offset:              req.Offset,
 		PivotOn:             req.PivotOn,
 		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
-		SecurityPolicy:      auth.GetClaims(ctx).SecurityPolicy(),
+		SecurityRules:       auth.GetClaims(ctx).SecurityRules(),
 		Exact:               req.Exact,
 		Aliases:             req.Aliases,
 	}
@@ -95,17 +95,19 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	}
 
 	q := &queries.MetricsViewToplist{
-		MetricsViewName: req.MetricsViewName,
-		DimensionName:   req.DimensionName,
-		MeasureNames:    req.MeasureNames,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Limit:           &req.Limit,
-		Offset:          req.Offset,
-		Sort:            req.Sort,
-		Where:           req.Where,
-		Having:          req.Having,
-		Filter:          req.Filter,
+		MetricsViewName:    req.MetricsViewName,
+		DimensionName:      req.DimensionName,
+		MeasureNames:       req.MeasureNames,
+		TimeStart:          req.TimeStart,
+		TimeEnd:            req.TimeEnd,
+		Limit:              &req.Limit,
+		Offset:             req.Offset,
+		Sort:               req.Sort,
+		Where:              req.Where,
+		Having:             req.Having,
+		Filter:             req.Filter,
+		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
+		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -168,7 +170,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Exact:               req.Exact,
 		Filter:              req.Filter,
 		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
-		SecurityPolicy:      auth.GetClaims(ctx).SecurityPolicy(),
+		SecurityRules:       auth.GetClaims(ctx).SecurityRules(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -198,15 +200,17 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	}
 
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName: req.MetricsViewName,
-		MeasureNames:    req.MeasureNames,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		TimeGranularity: req.TimeGranularity,
-		Where:           req.Where,
-		Having:          req.Having,
-		TimeZone:        req.TimeZone,
-		Filter:          req.Filter,
+		MetricsViewName:    req.MetricsViewName,
+		MeasureNames:       req.MeasureNames,
+		TimeStart:          req.TimeStart,
+		TimeEnd:            req.TimeEnd,
+		TimeGranularity:    req.TimeGranularity,
+		Where:              req.Where,
+		Having:             req.Having,
+		TimeZone:           req.TimeZone,
+		Filter:             req.Filter,
+		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
+		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -234,12 +238,14 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	}
 
 	q := &queries.MetricsViewTotals{
-		MetricsViewName: req.MetricsViewName,
-		MeasureNames:    req.MeasureNames,
-		TimeStart:       req.TimeStart,
-		TimeEnd:         req.TimeEnd,
-		Where:           req.Where,
-		Filter:          req.Filter,
+		MetricsViewName:    req.MetricsViewName,
+		MeasureNames:       req.MeasureNames,
+		TimeStart:          req.TimeStart,
+		TimeEnd:            req.TimeEnd,
+		Where:              req.Where,
+		Filter:             req.Filter,
+		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
+		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -346,7 +352,7 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 	q := &queries.MetricsViewSchema{
 		MetricsViewName:    req.MetricsViewName,
 		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
-		SecurityPolicy:     auth.GetClaims(ctx).SecurityPolicy(),
+		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -383,7 +389,7 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		Priority:           req.Priority,
 		Limit:              &limit,
 		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
-		SecurityPolicy:     auth.GetClaims(ctx).SecurityPolicy(),
+		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -399,7 +405,7 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, auth.GetClaims(ctx).Attributes(), res, mv.Security, auth.GetClaims(ctx).SecurityPolicy())
+	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, auth.GetClaims(ctx).Attributes(), auth.GetClaims(ctx).SecurityRules(), res)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -410,13 +416,13 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 	return mv, resolvedSecurity, nil
 }
 
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, policy *runtimev1.MetricsViewSpec_SecurityV2) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, rules []*runtimev1.SecurityRule) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, attrs, res, mv.Security, policy)
+	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, attrs, rules, res)
 	if err != nil {
 		return nil, nil, err
 	}

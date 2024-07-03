@@ -44,32 +44,6 @@ proto3.util.setEnumType(ReconcileStatus, "rill.runtime.v1.ReconcileStatus", [
 ]);
 
 /**
- * @generated from enum rill.runtime.v1.SecurityAction
- */
-export enum SecurityAction {
-  /**
-   * @generated from enum value: SECURITY_ACTION_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: SECURITY_ACTION_ALLOW = 1;
-   */
-  ALLOW = 1,
-
-  /**
-   * @generated from enum value: SECURITY_ACTION_DENY = 2;
-   */
-  DENY = 2,
-}
-// Retrieve enum metadata with: proto3.getEnumType(SecurityAction)
-proto3.util.setEnumType(SecurityAction, "rill.runtime.v1.SecurityAction", [
-  { no: 0, name: "SECURITY_ACTION_UNSPECIFIED" },
-  { no: 1, name: "SECURITY_ACTION_ALLOW" },
-  { no: 2, name: "SECURITY_ACTION_DENY" },
-]);
-
-/**
  * @generated from enum rill.runtime.v1.AssertionStatus
  */
 export enum AssertionStatus {
@@ -1695,14 +1669,14 @@ export class SecurityRule extends Message<SecurityRule> {
  */
 export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
   /**
-   * @generated from field: rill.runtime.v1.SecurityCondition condition = 1;
+   * @generated from field: string condition = 1;
    */
-  condition?: SecurityCondition;
+  condition = "";
 
   /**
-   * @generated from field: rill.runtime.v1.SecurityAction action = 2;
+   * @generated from field: bool allow = 2;
    */
-  action = SecurityAction.UNSPECIFIED;
+  allow = false;
 
   constructor(data?: PartialMessage<SecurityRuleAccess>) {
     super();
@@ -1712,8 +1686,8 @@ export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleAccess";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "message", T: SecurityCondition },
-    { no: 2, name: "action", kind: "enum", T: proto3.getEnumType(SecurityAction) },
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleAccess {
@@ -1738,14 +1712,14 @@ export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
  */
 export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
   /**
-   * @generated from field: rill.runtime.v1.SecurityCondition condition = 1;
+   * @generated from field: string condition = 1;
    */
-  condition?: SecurityCondition;
+  condition = "";
 
   /**
-   * @generated from field: rill.runtime.v1.SecurityAction action = 2;
+   * @generated from field: bool allow = 2;
    */
-  action = SecurityAction.UNSPECIFIED;
+  allow = false;
 
   /**
    * @generated from field: repeated string fields = 3;
@@ -1753,9 +1727,9 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
   fields: string[] = [];
 
   /**
-   * @generated from field: bool all_except = 4;
+   * @generated from field: bool all_fields = 4;
    */
-  allExcept = false;
+  allFields = false;
 
   constructor(data?: PartialMessage<SecurityRuleFieldAccess>) {
     super();
@@ -1765,10 +1739,10 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleFieldAccess";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "message", T: SecurityCondition },
-    { no: 2, name: "action", kind: "enum", T: proto3.getEnumType(SecurityAction) },
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 3, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 4, name: "all_except", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "all_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleFieldAccess {
@@ -1793,16 +1767,20 @@ export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
  */
 export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
   /**
-   * @generated from field: rill.runtime.v1.SecurityCondition condition = 1;
+   * @generated from field: string condition = 1;
    */
-  condition?: SecurityCondition;
+  condition = "";
 
   /**
+   * Raw SQL expression to apply to the underlying table
+   *
    * @generated from field: string sql = 2;
    */
   sql = "";
 
   /**
+   * Regular query expression referencing dimension names
+   *
    * @generated from field: rill.runtime.v1.Expression expression = 3;
    */
   expression?: Expression;
@@ -1815,7 +1793,7 @@ export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.SecurityRuleRowFilter";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "message", T: SecurityCondition },
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "expression", kind: "message", T: Expression },
   ]);
@@ -1834,63 +1812,6 @@ export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
 
   static equals(a: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined, b: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined): boolean {
     return proto3.util.equals(SecurityRuleRowFilter, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.SecurityCondition
- */
-export class SecurityCondition extends Message<SecurityCondition> {
-  /**
-   * @generated from oneof rill.runtime.v1.SecurityCondition.condition
-   */
-  condition: {
-    /**
-     * @generated from field: string expression = 1;
-     */
-    value: string;
-    case: "expression";
-  } | {
-    /**
-     * @generated from field: string resource_kind = 2;
-     */
-    value: string;
-    case: "resourceKind";
-  } | {
-    /**
-     * @generated from field: rill.runtime.v1.ResourceName resource_name = 3;
-     */
-    value: ResourceName;
-    case: "resourceName";
-  } | { case: undefined; value?: undefined } = { case: undefined };
-
-  constructor(data?: PartialMessage<SecurityCondition>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.SecurityCondition";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "expression", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "condition" },
-    { no: 2, name: "resource_kind", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "condition" },
-    { no: 3, name: "resource_name", kind: "message", T: ResourceName, oneof: "condition" },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityCondition {
-    return new SecurityCondition().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityCondition {
-    return new SecurityCondition().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityCondition {
-    return new SecurityCondition().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: SecurityCondition | PlainMessage<SecurityCondition> | undefined, b: SecurityCondition | PlainMessage<SecurityCondition> | undefined): boolean {
-    return proto3.util.equals(SecurityCondition, a, b);
   }
 }
 

@@ -87,7 +87,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 		req.BakedQuery = ""
 	}
 
-	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).Attributes(), auth.GetClaims(ctx).SecurityPolicy())
+	tkn, err := s.generateDownloadToken(req, auth.GetClaims(ctx).Attributes(), auth.GetClaims(ctx).SecurityRules())
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "failed to generate download token: %s", err.Error())
 	}
@@ -101,7 +101,7 @@ func (s *Server) Export(ctx context.Context, req *runtimev1.ExportRequest) (*run
 
 func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 	rawTkn := req.URL.Query().Get("token")
-	request, attrs, policy, err := s.parseDownloadToken(rawTkn)
+	request, attrs, rules, err := s.parseDownloadToken(rawTkn)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("failed to parse download token: %s", err.Error()), http.StatusBadRequest)
 		return
@@ -146,7 +146,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Offset:              r.Offset,
 			PivotOn:             r.PivotOn,
 			SecurityAttributes:  attrs,
-			SecurityPolicy:      policy,
+			SecurityRules:       rules,
 			Aliases:             r.Aliases,
 			Exact:               r.Exact,
 		}
@@ -160,19 +160,22 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		}
 
 		q = &queries.MetricsViewToplist{
-			MetricsViewName: r.MetricsViewName,
-			DimensionName:   r.DimensionName,
-			MeasureNames:    r.MeasureNames,
-			TimeStart:       r.TimeStart,
-			TimeEnd:         r.TimeEnd,
-			Sort:            r.Sort,
-			Where:           r.Where,
-			Having:          r.Having,
-			Limit:           limitPtr,
+			MetricsViewName:    r.MetricsViewName,
+			DimensionName:      r.DimensionName,
+			MeasureNames:       r.MeasureNames,
+			TimeStart:          r.TimeStart,
+			TimeEnd:            r.TimeEnd,
+			Limit:              limitPtr,
+			Sort:               r.Sort,
+			Where:              r.Where,
+			Filter:             r.Filter,
+			Having:             r.Having,
+			SecurityAttributes: attrs,
+			SecurityRules:      rules,
 		}
 	case *runtimev1.Query_MetricsViewRowsRequest:
 		r := v.MetricsViewRowsRequest
-		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs, policy)
+		mv, security, err := resolveMVAndSecurityFromAttributes(req.Context(), s.runtime, request.InstanceId, r.MetricsViewName, attrs, rules)
 		if err != nil {
 			if errors.Is(err, ErrForbidden) {
 				http.Error(w, "action not allowed", http.StatusUnauthorized)
@@ -204,14 +207,16 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 		r := v.MetricsViewTimeSeriesRequest
 
 		q = &queries.MetricsViewTimeSeries{
-			MetricsViewName: r.MetricsViewName,
-			MeasureNames:    r.MeasureNames,
-			TimeStart:       r.TimeStart,
-			TimeEnd:         r.TimeEnd,
-			TimeGranularity: r.TimeGranularity,
-			Where:           r.Where,
-			Having:          r.Having,
-			TimeZone:        r.TimeZone,
+			MetricsViewName:    r.MetricsViewName,
+			MeasureNames:       r.MeasureNames,
+			TimeStart:          r.TimeStart,
+			TimeEnd:            r.TimeEnd,
+			Where:              r.Where,
+			Having:             r.Having,
+			TimeGranularity:    r.TimeGranularity,
+			TimeZone:           r.TimeZone,
+			SecurityAttributes: attrs,
+			SecurityRules:      rules,
 		}
 	case *runtimev1.Query_MetricsViewComparisonRequest:
 		r := v.MetricsViewComparisonRequest
@@ -229,7 +234,7 @@ func (s *Server) downloadHandler(w http.ResponseWriter, req *http.Request) {
 			Where:               r.Where,
 			Having:              r.Having,
 			SecurityAttributes:  attrs,
-			SecurityPolicy:      policy,
+			SecurityRules:       rules,
 		}
 	case *runtimev1.Query_TableRowsRequest:
 		r := v.TableRowsRequest
@@ -296,10 +301,10 @@ const downloadTokenTTL = 1 * time.Hour
 
 // downloadToken is the non-encrypted representation of a download token.
 type downloadToken struct {
-	Request    []byte         `json:"req"`
-	Attributes map[string]any `json:"attrs"`
-	Security   []byte         `json:"sec"` // Proto encoded *runtimev1.MetricsViewSpec_SecurityV2
-	ExpiresOn  time.Time      `json:"exp"`
+	Request       []byte         `json:"req"`
+	Attributes    map[string]any `json:"attrs"`
+	SecurityRules [][]byte       `json:"sec"` // Proto encoded *runtimev1.SecurityRule
+	ExpiresOn     time.Time      `json:"exp"`
 }
 
 // register downloadToken for gob encoding
@@ -308,7 +313,7 @@ func init() {
 }
 
 // generateDownloadToken generates and encrypts a download token for the given request and attributes.
-func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[string]any, sec *runtimev1.MetricsViewSpec_SecurityV2) (string, error) {
+func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[string]any, sec []*runtimev1.SecurityRule) (string, error) {
 	r, err := proto.Marshal(req)
 	if err != nil {
 		return "", err
@@ -319,16 +324,20 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 		return "", err
 	}
 
-	secData, err := proto.Marshal(sec)
-	if err != nil {
-		return "", err
+	secData := make([][]byte, len(sec))
+	for i, s := range sec {
+		data, err := proto.Marshal(s)
+		if err != nil {
+			return "", err
+		}
+		secData[i] = data
 	}
 
 	tkn := downloadToken{
-		Request:    r,
-		Attributes: attrs,
-		Security:   secData,
-		ExpiresOn:  time.Now().Add(downloadTokenTTL),
+		Request:       r,
+		Attributes:    attrs,
+		SecurityRules: secData,
+		ExpiresOn:     time.Now().Add(downloadTokenTTL),
 	}
 
 	res, err := s.codec.Encode(tkn)
@@ -340,7 +349,7 @@ func (s *Server) generateDownloadToken(req *runtimev1.ExportRequest, attrs map[s
 }
 
 // parseDownloadToken decrypts and parses a download token and returns the request and attributes.
-func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, map[string]any, *runtimev1.MetricsViewSpec_SecurityV2, error) {
+func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, map[string]any, []*runtimev1.SecurityRule, error) {
 	tkn := downloadToken{}
 	err := s.codec.Decode(tknStr, &tkn)
 	if err != nil {
@@ -351,13 +360,14 @@ func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, ma
 		return nil, nil, nil, fmt.Errorf("download token expired")
 	}
 
-	var sec *runtimev1.MetricsViewSpec_SecurityV2
-	if len(tkn.Security) > 0 {
-		sec = &runtimev1.MetricsViewSpec_SecurityV2{}
-		err = proto.Unmarshal(tkn.Security, sec)
+	var rules []*runtimev1.SecurityRule
+	for _, ruleData := range tkn.SecurityRules {
+		rule := &runtimev1.SecurityRule{}
+		err = proto.Unmarshal(ruleData, rule)
 		if err != nil {
 			return nil, nil, nil, err
 		}
+		rules = append(rules, rule)
 	}
 
 	r, err := gzipDecompress(tkn.Request)
@@ -371,7 +381,7 @@ func (s *Server) parseDownloadToken(tknStr string) (*runtimev1.ExportRequest, ma
 		return nil, nil, nil, err
 	}
 
-	return req, tkn.Attributes, sec, nil
+	return req, tkn.Attributes, rules, nil
 }
 
 // gzipCompress compress the input bytes using gzip.

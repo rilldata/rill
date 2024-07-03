@@ -34,7 +34,7 @@ type MetricsViewComparison struct {
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact"`
 	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
-	SecurityPolicy      *runtimev1.MetricsViewSpec_SecurityV2          `json:"security_policy,omitempty"`
+	SecurityRules       []*runtimev1.SecurityRule                      `json:"security_policy,omitempty"`
 
 	Result       *runtimev1.MetricsViewComparisonResponse `json:"-"`
 	measuresMeta map[string]metricsViewMeasureMeta        `json:"-"`
@@ -80,7 +80,7 @@ func (q *MetricsViewComparison) UnmarshalResult(v any) error {
 
 func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityRules)
 	if err != nil {
 		return err
 	}
@@ -171,7 +171,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 
 func (q *MetricsViewComparison) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, []*runtimev1.MetricsViewAggregationDimension{{Name: q.DimensionName}}, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityRules)
 	if err != nil {
 		return err
 	}

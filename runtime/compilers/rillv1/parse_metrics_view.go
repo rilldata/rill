@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -277,12 +276,14 @@ type MetricsViewSecurityPolicyYAML struct {
 	Access    string `yaml:"access"`
 	RowFilter string `yaml:"row_filter"`
 	Include   []*struct {
-		Names     []string
 		Condition string `yaml:"if"`
+		All       bool
+		Names     []string
 	}
 	Exclude []*struct {
-		Names     []string
 		Condition string `yaml:"if"`
+		All       bool
+		Names     []string
 	}
 	Rules []*MetricsViewSecurityRuleYAML `yaml:"rules"`
 }
@@ -294,21 +295,40 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 	}
 
 	if p.Access != "" {
+		tmp, err := ResolveTemplate(p.Access, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
+		}
+		_, err = EvaluateBoolExpression(tmp)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
+		}
+
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
-					Condition: &runtimev1.SecurityCondition{
-						Condition: &runtimev1.SecurityCondition_Expression{
-							Expression: p.Access,
-						},
-					},
-					Action: runtimev1.SecurityAction_SECURITY_ACTION_ALLOW,
+					Condition: p.Access,
+					Allow:     true,
+				},
+			},
+		})
+	} else {
+		// If "security:" is present, but "access:" is not, default to deny all
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow: false,
 				},
 			},
 		})
 	}
 
 	if p.RowFilter != "" {
+		_, err := ResolveTemplate(p.RowFilter, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
+		}
+
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_RowFilter{
 				RowFilter: &runtimev1.SecurityRuleRowFilter{
@@ -319,58 +339,75 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 	}
 
 	for _, inc := range p.Include {
-		var cond *runtimev1.SecurityCondition
-		if inc.Condition != "" {
-			cond = &runtimev1.SecurityCondition{
-				Condition: &runtimev1.SecurityCondition_Expression{
-					Expression: inc.Condition,
-				},
-			}
+		if inc == nil {
+			continue
 		}
 
-		names := inc.Names
-		allExcept := false
-		if len(inc.Names) == 1 && inc.Names[0] == "*" {
-			names = nil
-			allExcept = true
+		tmp, err := ResolveTemplate(inc.Condition, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
+		}
+		_, err = EvaluateBoolExpression(tmp)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'if' condition expression error: %w`, err)
+		}
+
+		if inc.All && len(inc.Names) > 0 {
+			return nil, fmt.Errorf(`invalid 'security': 'include' cannot have both 'all: true' and specific 'names' fields`)
+		} else if !inc.All && len(inc.Names) == 0 {
+			return nil, fmt.Errorf(`invalid 'security': 'include' must have 'all: true' or a valid 'names' list`)
 		}
 
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Condition: cond,
-					Action:    runtimev1.SecurityAction_SECURITY_ACTION_ALLOW,
-					Fields:    names,
-					AllExcept: allExcept,
+					Condition: inc.Condition,
+					Allow:     true,
+					Fields:    inc.Names,
+					AllFields: inc.All,
+				},
+			},
+		})
+	}
+
+	if len(p.Include) == 0 && len(p.Exclude) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Allow:     true,
+					AllFields: true,
 				},
 			},
 		})
 	}
 
 	for _, exc := range p.Exclude {
-		var cond *runtimev1.SecurityCondition
-		if exc.Condition != "" {
-			cond = &runtimev1.SecurityCondition{
-				Condition: &runtimev1.SecurityCondition_Expression{
-					Expression: exc.Condition,
-				},
-			}
+		if exc == nil {
+			continue
 		}
 
-		names := exc.Names
-		allExcept := false
-		if len(exc.Names) == 1 && exc.Names[0] == "*" {
-			names = nil
-			allExcept = true
+		tmp, err := ResolveTemplate(exc.Condition, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
+		}
+		_, err = EvaluateBoolExpression(tmp)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'if' condition expression error: %w`, err)
+		}
+
+		if exc.All && len(exc.Names) > 0 {
+			return nil, fmt.Errorf(`invalid 'security': 'exclude' cannot have both 'all: true' and specific 'names' fields`)
+		} else if !exc.All && len(exc.Names) == 0 {
+			return nil, fmt.Errorf(`invalid 'security': 'exclude' must have 'all: true' or a valid 'names' list`)
 		}
 
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
-					Condition: cond,
-					Action:    runtimev1.SecurityAction_SECURITY_ACTION_DENY,
-					Fields:    names,
-					AllExcept: allExcept,
+					Condition: exc.Condition,
+					Allow:     false,
+					Fields:    exc.Names,
+					AllFields: exc.All,
 				},
 			},
 		})
@@ -392,30 +429,35 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 }
 
 type MetricsViewSecurityRuleYAML struct {
-	Type      string
-	Action    string
-	If        string
-	Names     []string
-	AllExcept []string
-	SQL       string
+	Type   string
+	Action string
+	If     string
+	Names  []string
+	All    bool
+	SQL    string
 }
 
 func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
-	var condition *runtimev1.SecurityCondition
-	if r.If != "" {
-		condition = &runtimev1.SecurityCondition{
-			Condition: &runtimev1.SecurityCondition_Expression{
-				Expression: r.If,
-			},
+	condition := r.If
+	if condition != "" {
+		tmp, err := ResolveTemplate(condition, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'if': templating is not valid: %w`, err)
+		}
+		_, err = EvaluateBoolExpression(tmp)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'if': expression error: %w`, err)
 		}
 	}
 
-	var action runtimev1.SecurityAction
+	var allow *bool
 	switch r.Action {
 	case "allow":
-		action = runtimev1.SecurityAction_SECURITY_ACTION_ALLOW
+		tmp := true
+		allow = &tmp
 	case "deny":
-		action = runtimev1.SecurityAction_SECURITY_ACTION_DENY
+		tmp := false
+		allow = &tmp
 	default:
 		if r.Action != "" {
 			return nil, fmt.Errorf("invalid security rule action %q", r.Action)
@@ -424,52 +466,45 @@ func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 
 	switch r.Type {
 	case "access":
-		if action == runtimev1.SecurityAction_SECURITY_ACTION_UNSPECIFIED {
-			if condition == nil {
+		if allow == nil {
+			if r.If == "" {
 				return nil, fmt.Errorf("invalid security rule of type %q: must specify at least an action or a condition", r.Type)
 			}
-			action = runtimev1.SecurityAction_SECURITY_ACTION_ALLOW
+			tmp := true
+			allow = &tmp
 		}
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
 					Condition: condition,
-					Action:    action,
+					Allow:     *allow,
 				},
 			},
 		}, nil
 	case "field_access":
-		if len(r.Names) == 0 && len(r.AllExcept) == 0 {
-			return nil, fmt.Errorf("invalid security rule of type %q: must specify at least one field name", r.Type)
+		if allow == nil {
+			tmp := true
+			allow = &tmp
 		}
-		if len(r.Names) > 0 && len(r.AllExcept) > 0 {
-			return nil, fmt.Errorf("invalid security rule of type %q: cannot specify both 'names' and 'all_except'", r.Type)
+
+		if r.All && len(r.Names) > 0 {
+			return nil, fmt.Errorf(`invalid security rule of type %q: cannot have both 'all: true' and specific 'names' fields`, r.Type)
+		} else if !r.All && len(r.Names) == 0 {
+			return nil, fmt.Errorf(`invalid security rule of type %q: must have 'all: true' or a valid 'names' list`, r.Type)
 		}
-		if action == runtimev1.SecurityAction_SECURITY_ACTION_UNSPECIFIED {
-			action = runtimev1.SecurityAction_SECURITY_ACTION_ALLOW
-		}
-		names := r.Names
-		allExcept := false
-		if len(r.AllExcept) > 0 {
-			names = r.AllExcept
-			allExcept = true
-		}
-		if len(names) == 1 && names[0] == "*" {
-			r.Names = nil
-			allExcept = !allExcept
-		}
+
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_FieldAccess{
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
 					Condition: condition,
-					Action:    action,
+					Allow:     *allow,
 					Fields:    r.Names,
-					AllExcept: allExcept,
+					AllFields: r.All,
 				},
 			},
 		}, nil
 	case "row_filter":
-		if action != runtimev1.SecurityAction_SECURITY_ACTION_UNSPECIFIED {
+		if allow != nil {
 			return nil, fmt.Errorf("invalid security rule of type %q: cannot specify an action", r.Type)
 		}
 		if r.SQL == "" {
@@ -776,93 +811,6 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		return err
 	}
 
-	if tmp.Security != nil {
-		templateData := TemplateData{
-			Environment: p.Environment,
-			User: map[string]interface{}{
-				"name":   "dummy",
-				"email":  "mock@example.org",
-				"domain": "example.org",
-				"groups": []interface{}{"all"},
-				"admin":  false,
-			},
-		}
-
-		if tmp.Security.Access != "" {
-			access, err := ResolveTemplate(tmp.Security.Access, templateData)
-			if err != nil {
-				return fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
-			}
-			_, err = EvaluateBoolExpression(access)
-			if err != nil {
-				return fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
-			}
-		}
-
-		if tmp.Security.RowFilter != "" {
-			_, err := ResolveTemplate(tmp.Security.RowFilter, templateData)
-			if err != nil {
-				return fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
-			}
-		}
-
-		if len(tmp.Security.Include) > 0 && len(tmp.Security.Exclude) > 0 {
-			return errors.New("invalid 'security': only one of 'include' and 'exclude' can be specified")
-		}
-		if tmp.Security.Include != nil {
-			for _, include := range tmp.Security.Include {
-				if include == nil || len(include.Names) == 0 || include.Condition == "" {
-					return fmt.Errorf("invalid 'security': 'include' fields must have a valid 'if' condition and 'names' list")
-				}
-				seen := make(map[string]bool)
-				for _, name := range include.Names {
-					lower := strings.ToLower(name)
-					if seen[lower] {
-						return fmt.Errorf("invalid 'security': 'include' property %q is duplicated", name)
-					}
-					seen[lower] = true
-					if _, ok := names[lower]; !ok {
-						return fmt.Errorf("invalid 'security': 'include' property %q does not exists in dimensions or measures list", name)
-					}
-				}
-				cond, err := ResolveTemplate(include.Condition, templateData)
-				if err != nil {
-					return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, include.Names, err)
-				}
-				_, err = EvaluateBoolExpression(cond)
-				if err != nil {
-					return fmt.Errorf(`invalid 'security': 'if' condition for field %q not evaluating to a boolean: %w`, include.Names, err)
-				}
-			}
-		}
-		if tmp.Security.Exclude != nil {
-			for _, exclude := range tmp.Security.Exclude {
-				if exclude == nil || len(exclude.Names) == 0 || exclude.Condition == "" {
-					return fmt.Errorf("invalid 'security': 'exclude' fields must have a valid 'if' condition and 'names' list")
-				}
-				seen := make(map[string]bool)
-				for _, name := range exclude.Names {
-					lower := strings.ToLower(name)
-					if seen[lower] {
-						return fmt.Errorf("invalid 'security': 'exclude' property %q is duplicated", name)
-					}
-					seen[lower] = true
-					if _, ok := names[lower]; !ok {
-						return fmt.Errorf("invalid 'security': 'exclude' property %q does not exists in dimensions or measures list", name)
-					}
-				}
-				cond, err := ResolveTemplate(exclude.Condition, templateData)
-				if err != nil {
-					return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, exclude.Names, err)
-				}
-				_, err = EvaluateBoolExpression(cond)
-				if err != nil {
-					return fmt.Errorf(`invalid 'security': 'if' condition for field %q not evaluating to a boolean: %w`, exclude.Names, err)
-				}
-			}
-		}
-	}
-
 	node.Refs = append(node.Refs, ResourceName{Name: table})
 	if tmp.DefaultTheme != "" {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindTheme, Name: tmp.DefaultTheme})
@@ -1016,4 +964,15 @@ func validateISO8601(isoDuration string, onlyStandard, onlyOneComponent bool) er
 	}
 
 	return nil
+}
+
+var validationTemplateData = TemplateData{
+	Environment: "dev",
+	User: map[string]interface{}{
+		"name":   "dummy",
+		"email":  "mock@example.org",
+		"domain": "example.org",
+		"groups": []interface{}{"all"},
+		"admin":  false,
+	},
 }
