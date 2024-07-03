@@ -28,8 +28,11 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     // Let the magic link page handle all errors
     const onMagicLinkPage = isMagicLinkPage(get(page));
     if (onMagicLinkPage) {
-      // If the magic link page throws a 401, show a specific Link Expired error
-      if (error.response?.status === 401) {
+      // When a token is expired, show a specific error page
+      if (
+        error.response?.status === 401 &&
+        (error.response.data as RpcStatus)?.message === "auth token is expired"
+      ) {
         errorStore.set({
           statusCode: 401,
           header: "Oops! This link has expired",

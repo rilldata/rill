@@ -18,7 +18,7 @@ export function useShareableURLMetricsView(
     {
       query: {
         select: (data) => data?.resources?.[0],
-        enabled,
+        enabled: !!instanceId && enabled,
       },
     },
   );
