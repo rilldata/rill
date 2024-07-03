@@ -81,6 +81,20 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		fields[strings.ToLower(f.Name)] = f
 	}
 
+	// Check security policy rules apply to fields that exist
+	for _, rule := range mv.SecurityRules {
+		fa := rule.GetFieldAccess()
+		if fa == nil {
+			continue
+		}
+
+		for _, f := range fa.Fields {
+			if _, ok := fields[strings.ToLower(f)]; !ok {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("field %q referenced in 'security' is not a dimension or measure", f))
+			}
+		}
+	}
+
 	// Check time dimension exists
 	if mv.TimeDimension != "" {
 		f, ok := fields[strings.ToLower(mv.TimeDimension)]
