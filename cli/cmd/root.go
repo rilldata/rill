@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/rilldata/rill/cli/cmd/usergroup"
 	"os"
 	"strings"
 
@@ -24,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/uninstall"
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
+	"github.com/rilldata/rill/cli/cmd/usergroup"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"

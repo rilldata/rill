@@ -2,10 +2,11 @@ package usergroup
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/spf13/cobra"
-	"strings"
 )
 
 func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {

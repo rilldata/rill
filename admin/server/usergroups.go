@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"errors"
+
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"

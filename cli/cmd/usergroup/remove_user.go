@@ -46,5 +46,4 @@ func RemoveUserCmd(ch *cmdutil.Helper) *cobra.Command {
 	removeCmd.Flags().StringVar(&group, "group", "", "Name of the user group")
 
 	return removeCmd
-
 }

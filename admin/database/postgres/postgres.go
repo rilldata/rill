@@ -1409,6 +1409,7 @@ func (c *connection) UpsertProjectUsergroup(ctx context.Context, groupID, projec
 	}
 	return nil
 }
+
 func (c *connection) DeleteProjectUsergroup(ctx context.Context, projectID, groupID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_projects_roles WHERE usergroup_id = $1 AND project_id = $2", groupID, projectID)
 	return checkDeleteRow("project group member", res, err)

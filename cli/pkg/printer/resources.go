@@ -407,7 +407,6 @@ func toUsergroupsTable(usergroups []*adminv1.Usergroup) []*usergroup {
 	}
 
 	return allUsergroups
-
 }
 
 func toUsergroupRows(ug *adminv1.Usergroup) []*usergroup {
@@ -485,7 +484,6 @@ func toUsergroupMembersTable(members []*adminv1.UsergroupMember) []*usergroupMem
 	}
 
 	return allMembers
-
 }
 
 func toUsergroupMemberRow(m *adminv1.UsergroupMember) *usergroupMember {
