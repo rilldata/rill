@@ -31,6 +31,7 @@ func (w *Worker) deleteUnusedAssets(ctx context.Context) error {
 		group.SetLimit(8)
 		var ids []string
 		for _, asset := range assets {
+			asset := asset
 			ids = append(ids, asset.ID)
 			group.Go(func() error {
 				parsed, err := url.Parse(asset.Path)

@@ -74,9 +74,6 @@ type Instance struct {
 type InstanceConfig struct {
 	// DownloadLimitBytes is the limit on size of exported file. If set to 0, there is no limit.
 	DownloadLimitBytes int64 `mapstructure:"rill.download_row_limit_bytes"`
-	// PivotCellLimit is the maximum number of cells allowed in a single pivot query.
-	// Note that it does not limit the UI's pivot table because it paginates the requests.
-	PivotCellLimit int64 `mapstructure:"rill.pivot_cell_limit"`
 	// InteractiveSQLRowLimit is the row limit for interactive SQL queries. It does not apply to exports of SQL queries. If set to 0, there is no limit.
 	InteractiveSQLRowLimit int64 `mapstructure:"rill.interactive_sql_row_limit"`
 	// StageChanges indicates whether to keep previously ingested tables for sources/models, and only override them if ingestion of a new table is successful.
@@ -127,7 +124,6 @@ func (i *Instance) Config() (InstanceConfig, error) {
 	// Default config
 	res := InstanceConfig{
 		DownloadLimitBytes:                int64(datasize.MB * 128),
-		PivotCellLimit:                    2_000_000,
 		InteractiveSQLRowLimit:            10_000,
 		StageChanges:                      true,
 		ModelDefaultMaterialize:           false,
