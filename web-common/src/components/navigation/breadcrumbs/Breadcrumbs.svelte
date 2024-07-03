@@ -1,6 +1,6 @@
 <script context="module" lang="ts">
-  import Slash from "./Slash.svelte";
   import BreadcrumbItem from "./BreadcrumbItem.svelte";
+  import Slash from "./Slash.svelte";
 
   type Param = string;
 
@@ -21,7 +21,7 @@
   $: currentPage = currentPath.findLastIndex(Boolean);
 </script>
 
-<nav class="flex gap-x-2 pl-1.5 items-center">
+<nav class="flex gap-x-2 items-center">
   <slot name="icon" />
   <ol class="flex flex-row items-center">
     {#each pathParts as options, depth (depth)}

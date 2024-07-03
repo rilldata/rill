@@ -4,16 +4,9 @@
   import { Chip } from "@rilldata/web-common/components/chip";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { errorStore } from "../../features/errors/error-store";
   import ViewAsUserPopover from "./ViewAsUserPopover.svelte";
-  import { clearViewedAsUserWithinProject } from "./clearViewedAsUser";
   import { viewAsUserStore } from "./viewAsUserStore";
-
-  const queryClient = useQueryClient();
-
-  $: org = $page.params.organization;
-  $: project = $page.params.project;
 
   let active: boolean;
 </script>
@@ -22,8 +15,8 @@
   <DropdownMenu.Trigger>
     <Chip
       removable
-      on:remove={async () => {
-        await clearViewedAsUserWithinProject(queryClient, org, project);
+      on:remove={() => {
+        viewAsUserStore.set(null);
         errorStore.reset();
       }}
       {active}
