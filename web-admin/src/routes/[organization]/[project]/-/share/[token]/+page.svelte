@@ -16,13 +16,13 @@
   $: ({ organization, project } = $page.params);
 
   $: ({ instanceId } = $runtime);
-  $: metricsViewQuery = useShareableURLMetricsView(instanceId);
+  $: metricsViewQuery = useShareableURLMetricsView(instanceId, true);
   $: ({
     data: resource,
     error: resourceError,
     isLoading: resourceIsLoading,
   } = $metricsViewQuery);
-  $: metricsViewName = resource?.resource?.meta?.name?.name;
+  $: metricsViewName = resource?.meta?.name?.name;
 
   // Query the `GetProject` API with cookie-based auth to determine if the user has access to the original dashboard
   $: cookieProjectQuery = createAdminServiceGetProject(organization, project);

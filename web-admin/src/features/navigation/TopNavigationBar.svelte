@@ -132,15 +132,13 @@
 
   // When visiting a magic link, the metrics view name won't be in the URL. However, the URL's token will
   // have access to only one metrics view. So, we can get the metrics view name from the first (and only) metrics view resource.
-  $: metricsViewQuery = useShareableURLMetricsView(instanceId);
+  $: metricsViewQuery = useShareableURLMetricsView(instanceId, onMagicLinkPage);
   $: dashboard = onMagicLinkPage
-    ? $metricsViewQuery.data?.resource?.meta?.name?.name
+    ? $metricsViewQuery.data?.meta?.name?.name
     : dashboardParam;
 
   $: magicLinkDashboardTitle =
-    $metricsViewQuery.data?.resource?.metricsView?.spec?.title ??
-    dashboard ??
-    "";
+    $metricsViewQuery.data?.metricsView?.spec?.title ?? dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
