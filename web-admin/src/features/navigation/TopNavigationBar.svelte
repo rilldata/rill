@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
+  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/shareable-urls/selectors";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -129,14 +130,17 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  // When visiting a magic link, the dashboard name won't be in the URL. However, the URL's token will
-  // have access to only one dashboard. So, we can get the dashboard name from the first (and only) visualization resource.
+  // When visiting a magic link, the metrics view name won't be in the URL. However, the URL's token will
+  // have access to only one metrics view. So, we can get the metrics view name from the first (and only) metrics view resource.
+  $: metricsViewQuery = useShareableURLMetricsView(instanceId);
   $: dashboard = onMagicLinkPage
-    ? visualizations[0]?.meta?.name?.name
+    ? $metricsViewQuery.data?.resource?.meta?.name?.name
     : dashboardParam;
 
   $: magicLinkDashboardTitle =
-    visualizations[0]?.metricsView?.spec?.title ?? dashboard ?? "";
+    $metricsViewQuery.data?.resource?.metricsView?.spec?.title ??
+    dashboard ??
+    "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
 </script>
