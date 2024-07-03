@@ -3,7 +3,6 @@ package retrier
 import (
 	"context"
 	"database/sql/driver"
-	"fmt"
 	"math/rand"
 	"time"
 )
