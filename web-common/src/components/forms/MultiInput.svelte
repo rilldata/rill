@@ -32,8 +32,10 @@
     if (event.key !== "Enter" || editingInput === "") return;
 
     event.preventDefault();
-    $form[id] = $form[id].concat({ email: editingInput });
-    errs = errs.concat({ email: "" });
+    editingInput.split(",").map((email) => {
+      $form[id] = $form[id].concat({ email });
+      errs = errs.concat({ email: "" });
+    });
     editingInput = "";
     validateField(`${id}.${$form[id].length - 1}.${accessorKey}`);
   }

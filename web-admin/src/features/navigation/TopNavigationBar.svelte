@@ -24,7 +24,6 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
   import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import { isMetricsExplorerPage, isProjectPage } from "./nav-utils";
