@@ -13,7 +13,7 @@
   let open = false;
 </script>
 
-<DropdownMenu bind:open typeahead={false}>
+<DropdownMenu bind:open>
   <DropdownMenuTrigger asChild let:builder>
     <Button builders={[builder]} type="secondary">Share</Button>
   </DropdownMenuTrigger>

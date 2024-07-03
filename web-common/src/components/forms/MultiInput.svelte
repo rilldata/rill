@@ -17,6 +17,7 @@
   export let description = "";
   export let accessorKey: string;
   export let hint = "";
+  export let contentClassName = "";
 
   export let formState: ReturnType<typeof createForm<Record<string, any>>>;
   const { form, errors, validateField } = formState;
@@ -28,7 +29,7 @@
   let editingInput = "";
   let focused = false;
   function handleKeyDown(event: KeyboardEvent) {
-    if (event.key !== "Enter") return;
+    if (event.key !== "Enter" || editingInput === "") return;
 
     event.preventDefault();
     $form[id] = $form[id].concat({ email: editingInput });
@@ -43,6 +44,7 @@
   }
 
   $: hasSomeErrors = errs.some((e) => !!e[accessorKey]);
+  $: console.log(errs);
 </script>
 
 <div class="flex flex-col">
@@ -65,7 +67,7 @@
     </div>
   {/if}
   <div
-    class="flex flex-wrap gap-2 bg-white rounded-sm border border-gray-300 px-3 py-[5px] w-full"
+    class="flex flex-wrap gap-2 bg-white rounded-sm border border-gray-300 px-3 py-[5px] w-full {contentClassName}"
     class:outline={focused || hasSomeErrors}
     class:outline-red-500={hasSomeErrors}
     class:outline-primary-500={focused && !hasSomeErrors}
@@ -100,10 +102,11 @@
       on:keydown={handleKeyDown}
       autocomplete="off"
       id="{id}.{values.length}.{accessorKey}"
-      class="focus:outline-white group-hover:text-red-500 text-sm w-fit px-1"
+      class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
       on:focusin={() => (focused = true)}
       on:focusout={() => (focused = false)}
     />
+    <slot name="adjacent-content" />
   </div>
   {#if hasSomeErrors}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
