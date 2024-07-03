@@ -251,7 +251,7 @@ func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID stri
 		return nil, false, err
 	}
 
-	if !security.Access {
+	if security != nil && !security.Access {
 		return nil, false, nil
 	}
 
