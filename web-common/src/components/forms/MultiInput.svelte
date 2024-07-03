@@ -44,7 +44,6 @@
   }
 
   $: hasSomeErrors = errs.some((e) => !!e[accessorKey]);
-  $: console.log(errs);
 </script>
 
 <div class="flex flex-col">

@@ -1,6 +1,7 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import UserInvite from "@rilldata/web-admin/features/projects/user-invite/UserInvite.svelte";
+  import UserInviteAllowlist from "@rilldata/web-admin/features/projects/user-invite/UserInviteAllowlist.svelte";
+  import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import {
     DropdownMenu,
@@ -18,6 +19,14 @@
     <Button builders={[builder]} type="secondary">Share</Button>
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[520px] p-4">
-    <UserInvite {organization} {project} onInvited={() => (open = false)} />
+    <div class="flex flex-col gap-1.5">
+      <div class="text-base font-medium">Share this project</div>
+      <UserInviteForm
+        {organization}
+        {project}
+        onInvite={() => (open = false)}
+      />
+      <UserInviteAllowlist {organization} {project} />
+    </div>
   </DropdownMenuContent>
 </DropdownMenu>
