@@ -54,7 +54,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 	}
 
 	// All org members as a group get viewer role
-	err = s.DB.InsertProjectMemberUsergroup(txCtx, *org.AllUsergroupID, proj.ID, viewerRole.ID)
+	err = s.DB.UpsertProjectUsergroup(txCtx, *org.AllUsergroupID, proj.ID, viewerRole.ID)
 	if err != nil {
 		return nil, err
 	}

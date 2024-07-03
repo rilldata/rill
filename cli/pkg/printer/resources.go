@@ -1,6 +1,7 @@
 package printer
 
 import (
+	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -387,4 +388,114 @@ type plan struct {
 	QuotaNumSlotsPerDeployment          string `header:"quota_num_slots_per_deployment" json:"quota_num_slots_per_deployment"`
 	QuotaNumOutstandingInvites          string `header:"quota_num_outstanding_invites" json:"quota_num_outstanding_invites"`
 	QuotaStorageLimitBytesPerDeployment string `header:"quota_storage_limit_bytes_per_deployment" json:"quota_storage_limit_bytes_per_deployment"`
+}
+
+func (p *Printer) PrintUsergroups(usergroups []*adminv1.Usergroup) {
+	if len(usergroups) == 0 {
+		p.PrintfWarn("No user groups found\n")
+		return
+	}
+
+	p.PrintData(toUsergroupsTable(usergroups))
+}
+
+func toUsergroupsTable(usergroups []*adminv1.Usergroup) []*usergroup {
+	allUsergroups := make([]*usergroup, 0, len(usergroups))
+
+	for _, ug := range usergroups {
+		allUsergroups = append(allUsergroups, toUsergroupRows(ug)...)
+	}
+
+	return allUsergroups
+
+}
+
+func toUsergroupRows(ug *adminv1.Usergroup) []*usergroup {
+	usergroups := make([]*usergroup, 0, len(ug.ProjectRoles)+1)
+	var roleLevels []*roleLevel
+	if ug.OrgRole != nil {
+		roleLevels = append(roleLevels, &roleLevel{
+			role:  ug.OrgRole.Role,
+			level: fmt.Sprintf("Organization: %s", ug.OrgRole.OrgName),
+		})
+	}
+	for _, pr := range ug.ProjectRoles {
+		roleLevels = append(roleLevels, &roleLevel{
+			role:  pr.Role,
+			level: fmt.Sprintf("Project: %s", pr.ProjectName),
+		})
+	}
+	if len(roleLevels) == 0 {
+		usergroups = append(usergroups, &usergroup{
+			Name:      ug.GroupName,
+			CreatedOn: ug.CreatedOn.AsTime().Local().Format(time.DateTime),
+			UpdatedOn: ug.UpdatedOn.AsTime().Local().Format(time.DateTime),
+			Role:      "-",
+			RoleLevel: "-",
+		})
+	} else {
+		// take the first role level and iterate over the rest
+		usergroups = append(usergroups, &usergroup{
+			Name:      ug.GroupName,
+			CreatedOn: ug.CreatedOn.AsTime().Local().Format(time.DateTime),
+			UpdatedOn: ug.UpdatedOn.AsTime().Local().Format(time.DateTime),
+			Role:      roleLevels[0].role,
+			RoleLevel: roleLevels[0].level,
+		})
+		for _, rl := range roleLevels[1:] {
+			usergroups = append(usergroups, &usergroup{
+				Name:      ">",
+				CreatedOn: "",
+				UpdatedOn: "",
+				Role:      rl.role,
+				RoleLevel: rl.level,
+			})
+		}
+	}
+	return usergroups
+}
+
+type roleLevel struct {
+	role  string
+	level string
+}
+
+type usergroup struct {
+	Name      string `header:"name" json:"name"`
+	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_at"`
+	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
+	Role      string `header:"role" json:"role"`
+	RoleLevel string `header:"role_level" json:"role_level"`
+}
+
+func (p *Printer) PrintUsergroupMembers(members []*adminv1.UsergroupMember) {
+	if len(members) == 0 {
+		p.PrintfWarn("No members found\n")
+		return
+	}
+
+	p.PrintData(toUsergroupMembersTable(members))
+}
+
+func toUsergroupMembersTable(members []*adminv1.UsergroupMember) []*usergroupMember {
+	allMembers := make([]*usergroupMember, 0, len(members))
+
+	for _, m := range members {
+		allMembers = append(allMembers, toUsergroupMemberRow(m))
+	}
+
+	return allMembers
+
+}
+
+func toUsergroupMemberRow(m *adminv1.UsergroupMember) *usergroupMember {
+	return &usergroupMember{
+		Name:  m.UserName,
+		Email: m.UserEmail,
+	}
+}
+
+type usergroupMember struct {
+	Name  string `header:"name" json:"name"`
+	Email string `header:"email" json:"email"`
 }

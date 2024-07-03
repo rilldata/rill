@@ -123,6 +123,20 @@ export type AdminServiceCreateAssetBody = {
   extension?: string;
 };
 
+export type AdminServiceGetUsergroupParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceCreateUsergroupBody = {
+  name?: string;
+};
+
+export type AdminServiceListUsergroupsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceSearchProjectUsersParams = {
   emailQuery?: string;
   pageSize?: number;
@@ -273,6 +287,32 @@ export interface V1VirtualFile {
   data?: string;
   deleted?: boolean;
   updatedOn?: string;
+}
+
+export interface V1UsergroupProjectRole {
+  projectName?: string;
+  role?: string;
+}
+
+export interface V1UsergroupOrgRole {
+  orgName?: string;
+  role?: string;
+}
+
+export interface V1UsergroupMember {
+  usergroupId?: string;
+  userId?: string;
+  userEmail?: string;
+  userName?: string;
+}
+
+export interface V1Usergroup {
+  groupId?: string;
+  groupName?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  orgRole?: V1UsergroupOrgRole;
+  projectRoles?: V1UsergroupProjectRole[];
 }
 
 export interface V1UserQuotas {
@@ -458,7 +498,15 @@ export interface V1SetSuperuserRequest {
   superuser?: boolean;
 }
 
+export interface V1SetProjectUsergroupRoleResponse {
+  [key: string]: any;
+}
+
 export interface V1SetProjectMemberRoleResponse {
+  [key: string]: any;
+}
+
+export interface V1SetOrganizationUsergroupRoleResponse {
   [key: string]: any;
 }
 
@@ -500,6 +548,14 @@ export interface V1RevokeServiceAuthTokenResponse {
   [key: string]: any;
 }
 
+export interface V1RevokeProjectUsergroupRoleResponse {
+  [key: string]: any;
+}
+
+export interface V1RevokeOrganizationUsergroupRoleResponse {
+  [key: string]: any;
+}
+
 export interface V1RevokeMagicAuthTokenResponse {
   [key: string]: any;
 }
@@ -526,6 +582,14 @@ export interface V1ReportOptions {
 }
 
 export interface V1RemoveWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveUsergroupResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveUsergroupMemberResponse {
   [key: string]: any;
 }
 
@@ -699,6 +763,15 @@ export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
+export interface V1ListUsergroupsResponse {
+  usergroups?: V1Usergroup[];
+  nextPageToken?: string;
+}
+
+export interface V1ListUsergroupMembersResponse {
+  members?: V1UsergroupMember[];
+}
+
 export interface V1ListSuperusersResponse {
   users?: V1User[];
 }
@@ -789,6 +862,11 @@ export const V1GithubPermission = {
   GITHUB_PERMISSION_READ: "GITHUB_PERMISSION_READ",
   GITHUB_PERMISSION_WRITE: "GITHUB_PERMISSION_WRITE",
 } as const;
+
+export interface V1GetUsergroupResponse {
+  usergroup?: V1Usergroup;
+  nextPageToken?: string;
+}
 
 export interface V1GetUserResponse {
   user?: V1User;
@@ -982,6 +1060,10 @@ export interface V1CreateWhitelistedDomainResponse {
   [key: string]: any;
 }
 
+export interface V1CreateUsergroupResponse {
+  [key: string]: any;
+}
+
 export interface V1CreateServiceResponse {
   service?: V1Service;
 }
@@ -1092,6 +1174,10 @@ export interface V1AlertOptions {
   webOpenState?: string;
 }
 
+export interface V1AddUsergroupMemberResponse {
+  [key: string]: any;
+}
+
 export interface V1AddProjectMemberResponse {
   pendingSignup?: boolean;
 }
@@ -1110,7 +1196,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

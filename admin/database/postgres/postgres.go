@@ -703,6 +703,20 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 	return res, nil
 }
 
+func (c *connection) DeleteUsergroup(ctx context.Context, groupID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups WHERE id=$1", groupID)
+	return checkDeleteRow("usergroup", res, err)
+}
+
+func (c *connection) FindUsergroupByName(ctx context.Context, usergroup, orgID string) (*database.Usergroup, error) {
+	res := &database.Usergroup{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM usergroups WHERE org_id=$1 AND lower(name)=lower($2)", orgID, usergroup).StructScan(res)
+	if err != nil {
+		return nil, parseErr("usergroup", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
 	var res []*database.Usergroup
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -721,6 +735,19 @@ func (c *connection) InsertUsergroupMember(ctx context.Context, groupID, userID 
 		return parseErr("usergroup member", err)
 	}
 	return nil
+}
+
+func (c *connection) FindUsergroupMembers(ctx context.Context, groupID string) ([]*database.UsergroupMember, error) {
+	var res []*database.UsergroupMember
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT uug.usergroup_id, uug.user_id, u.email, u.display_name FROM usergroups_users uug
+		JOIN users u ON uug.user_id = u.id
+		WHERE uug.usergroup_id = $1
+	`, groupID)
+	if err != nil {
+		return nil, parseErr("usergroup members", err)
+	}
+	return res, nil
 }
 
 func (c *connection) DeleteUsergroupMember(ctx context.Context, groupID, userID string) error {
@@ -1285,12 +1312,106 @@ func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, use
 	return nil
 }
 
-func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id) VALUES ($1, $2, $3)", groupID, projectID, roleID)
+func (c *connection) FindOrganizationUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*database.Usergroup, error) {
+	var res []*database.Usergroup
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT * FROM usergroups 
+		WHERE org_id=$1 AND lower(name) > lower($2)
+		ORDER BY lower(name) LIMIT $3
+	`, orgID, afterName, limit)
+	if err != nil {
+		return nil, parseErr("org groups", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindAllUsergroupOrganizationRoles(ctx context.Context, orgID string) ([]*database.UsergroupOrgRole, error) {
+	var res []*database.UsergroupOrgRole
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT uor.usergroup_id, o.name as "org_name", r.name as "role_name" FROM orgs o
+		JOIN usergroups_orgs_roles uor ON o.id = uor.org_id
+		JOIN org_roles r ON uor.org_role_id = r.id
+		WHERE uor.org_id=$1
+	`, orgID)
+	if err != nil {
+		return nil, parseErr("org group roles", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindUsergroupOrganizationRole(ctx context.Context, groupID, orgID string) (*database.UsergroupOrgRole, error) {
+	res := &database.UsergroupOrgRole{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT uor.usergroup_id, o.name as "org_name", r.name as "role_name" FROM orgs o
+		JOIN usergroups_orgs_roles uor ON o.id = uor.org_id
+		JOIN org_roles r ON uor.org_role_id = r.id
+		WHERE uor.usergroup_id=$1 AND uor.org_id=$2
+	`, groupID, orgID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("org group role", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindUsergroupAllProjectOrganizationRoles(ctx context.Context, orgID string) ([]*database.UsergroupProjectRole, error) {
+	var res []*database.UsergroupProjectRole
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT upr.usergroup_id, p.id as "project_id", p.name as "project_name", r.name as "role_name" FROM projects p
+		JOIN usergroups_projects_roles upr ON p.id = upr.project_id
+		JOIN project_roles r ON upr.project_role_id = r.id
+		WHERE p.org_id=$1
+	`, orgID)
+	if err != nil {
+		return nil, parseErr("project group roles", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindUsergroupProjectRoles(ctx context.Context, groupID, orgID string) ([]*database.UsergroupProjectRole, error) {
+	var res []*database.UsergroupProjectRole
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT upr.usergroup_id, p.id as "project_id", p.name as "project_name", r.name as "role_name" FROM projects p
+		JOIN usergroups_projects_roles upr ON p.id = upr.project_id
+		JOIN project_roles r ON upr.project_role_id = r.id
+		WHERE upr.usergroup_id=$1 AND p.org_id=$2
+	`, groupID, orgID)
+	if err != nil {
+		return nil, parseErr("project group roles", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpsertOrganizationUsergroup(ctx context.Context, groupID, orgID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_orgs_roles (usergroup_id, org_id, org_role_id)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (usergroup_id, org_id) DO UPDATE SET org_role_id = $3
+	`, groupID, orgID, roleID)
+	if err != nil {
+		return parseErr("org group member", err)
+	}
+	return nil
+}
+
+func (c *connection) DeleteOrganizationUsergroup(ctx context.Context, groupID, orgID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_orgs_roles WHERE usergroup_id = $1 AND org_id = $2", groupID, orgID)
+	return checkDeleteRow("org group member", res, err)
+}
+
+func (c *connection) UpsertProjectUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id)
+		VALUES ($1, $2, $3)
+		ON CONFLICT (usergroup_id, project_id) DO UPDATE SET project_role_id = $3
+	`, groupID, projectID, roleID)
 	if err != nil {
 		return parseErr("project group member", err)
 	}
 	return nil
+}
+func (c *connection) DeleteProjectUsergroup(ctx context.Context, projectID, groupID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_projects_roles WHERE usergroup_id = $1 AND project_id = $2", groupID, projectID)
+	return checkDeleteRow("project group member", res, err)
 }
 
 func (c *connection) DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error {

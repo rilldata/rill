@@ -154,7 +154,7 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/invites"};
   }
 
-  // AddOrganizationMember lists all the org members
+  // AddOrganizationMember adds a user to the organization
   rpc AddOrganizationMember(AddOrganizationMemberRequest) returns (AddOrganizationMemberResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/members",
@@ -209,6 +209,75 @@ service AdminService {
       put: "/v1/organizations/{organization}/projects/{project}/members/{email}",
       body: "*"
     };
+  }
+
+  // CreateUsergroup creates a user group in the organization
+  rpc CreateUsergroup(CreateUsergroupRequest) returns (CreateUsergroupResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/usergroups",
+      body: "*"
+    };
+  }
+
+  // GetUsergroups returns the user group details
+  rpc GetUsergroup(GetUsergroupRequest) returns (GetUsergroupResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups/{usergroup}"};
+  }
+
+  // ListUsergroups lists the org's user groups
+  rpc ListUsergroups(ListUsergroupsRequest) returns (ListUsergroupsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups"};
+  }
+
+  // RemoveUsergroup removes the user group from the organization
+  rpc RemoveUsergroup(RemoveUsergroupRequest) returns (RemoveUsergroupResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}"};
+  }
+
+  // SetOrganizationUsergroupRole sets the role for the user group
+  rpc SetOrganizationUsergroupRole(SetOrganizationUsergroupRoleRequest) returns (SetOrganizationUsergroupRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/usergroups/{usergroup}/role",
+      body: "*"
+    };
+  }
+
+  // RevokeOrganizationUsergroupRole revokes the organization-level role for the user group
+  rpc RevokeOrganizationUsergroupRole(RevokeOrganizationUsergroupRoleRequest) returns (RevokeOrganizationUsergroupRoleResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/role"};
+  }
+
+  // SetProjectUsergroupRole sets the role for the user group
+  rpc SetProjectUsergroupRole(SetProjectUsergroupRoleRequest) returns (SetProjectUsergroupRoleResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles",
+      body: "*"
+    };
+  }
+
+  // RevokeProjectUsergroupRole revokes the project-level role for the user group
+  rpc RevokeProjectUsergroupRole(RevokeProjectUsergroupRoleRequest) returns (RevokeProjectUsergroupRoleResponse) {
+    option (google.api.http) = {
+      delete: "/v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles",
+    };
+  }
+
+  // AddUsergroupMember adds a member to the user group
+  rpc AddUsergroupMember(AddUsergroupMemberRequest) returns (AddUsergroupMemberResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}",
+      body: "*"
+    };
+  }
+
+  // ListUsergroupMembers lists all the user group members
+  rpc ListUsergroupMembers(ListUsergroupMembersRequest) returns (ListUsergroupMembersResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups/{usergroup}/members"};
+  }
+
+  // RemoveUsergroupMember removes member from the user group
+  rpc RemoveUsergroupMember(RemoveUsergroupMemberRequest) returns (RemoveUsergroupMemberResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}"};
   }
 
   // GetCurrentUser returns the currently authenticated user (if any)
@@ -390,7 +459,7 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization_name}/services/{name}"};
   }
 
-   // ListServiceAuthTokens lists all the service auth tokens
+  // ListServiceAuthTokens lists all the service auth tokens
   rpc ListServiceAuthTokens(ListServiceAuthTokensRequest) returns (ListServiceAuthTokensResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/services/{service_name}/tokens"};
   }
@@ -925,6 +994,101 @@ message ListOrganizationMembersRequest {
 message ListOrganizationMembersResponse {
   repeated Member members = 1;
   string next_page_token = 2;
+}
+
+message CreateUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message CreateUsergroupResponse {
+}
+
+message GetUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message GetUsergroupResponse {
+  Usergroup usergroup = 1;
+  string next_page_token = 2;
+}
+
+message ListUsergroupsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
+}
+
+message ListUsergroupsResponse {
+  repeated Usergroup usergroups = 1;
+  string next_page_token = 2;
+}
+
+message RemoveUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveUsergroupResponse {}
+
+message SetOrganizationUsergroupRoleRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string role = 3 [(validate.rules).string.min_len = 1];
+}
+
+message SetOrganizationUsergroupRoleResponse {}
+
+message RevokeOrganizationUsergroupRoleRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+}
+
+message RevokeOrganizationUsergroupRoleResponse {}
+
+message SetProjectUsergroupRoleRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string usergroup = 3 [(validate.rules).string.min_len = 1];
+  string role = 4 [(validate.rules).string.min_len = 1];
+}
+
+message SetProjectUsergroupRoleResponse {}
+
+message RevokeProjectUsergroupRoleRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string usergroup = 3 [(validate.rules).string.min_len = 1];
+}
+
+message RevokeProjectUsergroupRoleResponse {}
+
+message AddUsergroupMemberRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+}
+
+message AddUsergroupMemberResponse {}
+
+message RemoveUsergroupMemberRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+}
+
+message RemoveUsergroupMemberResponse {}
+
+message ListUsergroupMembersRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+}
+
+message ListUsergroupMembersResponse {
+  repeated UsergroupMember members = 1;
 }
 
 message ListOrganizationInvitesRequest {
@@ -1788,4 +1952,30 @@ message Quotas {
   string slots_per_deployment = 4;
   string outstanding_invites = 5;
   string storage_limit_bytes_per_deployment = 6;
+}
+
+message Usergroup {
+  string group_id = 1;
+  string group_name = 2;
+  google.protobuf.Timestamp created_on = 3;
+  google.protobuf.Timestamp updated_on = 4;
+  UsergroupOrgRole org_role = 5;
+  repeated UsergroupProjectRole project_roles = 6;
+}
+
+message UsergroupOrgRole {
+  string org_name = 1;
+  string role = 2;
+}
+
+message UsergroupProjectRole {
+  string project_name = 1;
+  string role = 2;
+}
+
+message UsergroupMember {
+  string usergroup_id = 1;
+  string user_id = 2;
+  string user_email = 3;
+  string user_name = 4;
 }

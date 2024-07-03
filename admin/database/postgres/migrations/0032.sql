@@ -1,0 +1,3 @@
+ALTER TABLE usergroups ADD COLUMN description TEXT;
+ALTER TABLE usergroups ADD COLUMN created_on TIMESTAMPTZ DEFAULT now() NOT NULL;
+ALTER TABLE usergroups ADD COLUMN updated_on TIMESTAMPTZ DEFAULT now() NOT NULL;

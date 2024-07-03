@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/rilldata/rill/cli/cmd/usergroup"
 	"os"
 	"strings"
 
@@ -146,6 +147,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		deploy.DeployCmd(ch),
 		env.EnvCmd(ch),
 		user.UserCmd(ch),
+		usergroup.UsergroupCmd(ch),
 		org.OrgCmd(ch),
 		project.ProjectCmd(ch),
 		shareurl.ShareURLCmd(ch),
