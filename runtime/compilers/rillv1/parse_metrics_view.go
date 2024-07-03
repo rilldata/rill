@@ -276,14 +276,12 @@ type MetricsViewSecurityPolicyYAML struct {
 	Access    string `yaml:"access"`
 	RowFilter string `yaml:"row_filter"`
 	Include   []*struct {
-		Condition string `yaml:"if"`
-		All       bool
-		Names     []string
+		Condition string    `yaml:"if"`
+		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
 	}
 	Exclude []*struct {
-		Condition string `yaml:"if"`
-		All       bool
-		Names     []string
+		Condition string    `yaml:"if"`
+		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
 	}
 	Rules []*MetricsViewSecurityRuleYAML `yaml:"rules"`
 }
@@ -352,9 +350,14 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 			return nil, fmt.Errorf(`invalid 'security': 'if' condition expression error: %w`, err)
 		}
 
-		if inc.All && len(inc.Names) > 0 {
+		names, all, err := parseNamesYAML(inc.Names)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'include' names: %w`, err)
+		}
+
+		if all && len(names) > 0 {
 			return nil, fmt.Errorf(`invalid 'security': 'include' cannot have both 'all: true' and specific 'names' fields`)
-		} else if !inc.All && len(inc.Names) == 0 {
+		} else if !all && len(names) == 0 {
 			return nil, fmt.Errorf(`invalid 'security': 'include' must have 'all: true' or a valid 'names' list`)
 		}
 
@@ -363,8 +366,8 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
 					Condition: inc.Condition,
 					Allow:     true,
-					Fields:    inc.Names,
-					AllFields: inc.All,
+					Fields:    names,
+					AllFields: all,
 				},
 			},
 		})
@@ -395,9 +398,14 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 			return nil, fmt.Errorf(`invalid 'security': 'if' condition expression error: %w`, err)
 		}
 
-		if exc.All && len(exc.Names) > 0 {
+		names, all, err := parseNamesYAML(exc.Names)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'exclude' names: %w`, err)
+		}
+
+		if all && len(names) > 0 {
 			return nil, fmt.Errorf(`invalid 'security': 'exclude' cannot have both 'all: true' and specific 'names' fields`)
-		} else if !exc.All && len(exc.Names) == 0 {
+		} else if !all && len(names) == 0 {
 			return nil, fmt.Errorf(`invalid 'security': 'exclude' must have 'all: true' or a valid 'names' list`)
 		}
 
@@ -406,8 +414,8 @@ func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, erro
 				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
 					Condition: exc.Condition,
 					Allow:     false,
-					Fields:    exc.Names,
-					AllFields: exc.All,
+					Fields:    names,
+					AllFields: all,
 				},
 			},
 		})
@@ -975,4 +983,28 @@ var validationTemplateData = TemplateData{
 		"groups": []interface{}{"all"},
 		"admin":  false,
 	},
+}
+
+// parseNamesYAML parses a []string or a '*' denoting "all names" from a YAML node.
+func parseNamesYAML(n yaml.Node) (names []string, all bool, err error) {
+	switch n.Kind {
+	case yaml.ScalarNode:
+		if n.Value == "*" {
+			all = true
+			return
+		}
+		err = fmt.Errorf("unexpected scalar %q", n.Value)
+	case yaml.SequenceNode:
+		names = make([]string, len(n.Content))
+		for i, c := range n.Content {
+			if c.Kind != yaml.ScalarNode {
+				err = fmt.Errorf("unexpected non-string list entry on line %d", c.Line)
+				return
+			}
+			names[i] = c.Value
+		}
+	default:
+		err = fmt.Errorf("invalid field names %v", n)
+	}
+	return
 }
