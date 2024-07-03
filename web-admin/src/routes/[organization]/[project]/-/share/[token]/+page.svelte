@@ -2,6 +2,7 @@
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/shareable-urls/selectors";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import LoadingPage from "@rilldata/web-common/components/LoadingPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
@@ -9,43 +10,26 @@
   import DashboardURLStateProvider from "@rilldata/web-common/features/dashboards/proto-state/DashboardURLStateProvider.svelte";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardStateProvider from "@rilldata/web-common/features/dashboards/stores/DashboardStateProvider.svelte";
-  import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { createRuntimeServiceListResources } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: ({ organization, project } = $page.params);
 
   $: ({ instanceId } = $runtime);
-  // Use the ListResources API to get the target dashboard
-  // The provided JWT will only have access to one dashboard, so we can assume the first one is the correct one
-  $: resourceQuery = createRuntimeServiceListResources(
-    instanceId,
-    {
-      kind: ResourceKind.MetricsView,
-    },
-    {
-      query: {
-        select: (data) => ({
-          resource: data.resources[0],
-        }),
-      },
-    },
-  );
+  $: metricsViewQuery = useShareableURLMetricsView(instanceId);
   $: ({
     data: resource,
     error: resourceError,
     isLoading: resourceIsLoading,
-  } = $resourceQuery);
-
-  $: dashboard = resource?.resource?.meta?.name?.name;
+  } = $metricsViewQuery);
+  $: metricsViewName = resource?.resource?.meta?.name?.name;
 
   // Query the `GetProject` API with cookie-based auth to determine if the user has access to the original dashboard
   $: cookieProjectQuery = createAdminServiceGetProject(organization, project);
   $: ({ data: cookieProject } = $cookieProjectQuery);
   $: if (cookieProject) {
     eventBus.emit("banner", {
-      message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/${dashboard}'>original dashboard</a>.`,
+      message: `Limited view. For full access and features, visit the <a href='/${organization}/${project}/${metricsViewName}'>original dashboard</a>.`,
       includesHtml: true,
     });
   }
@@ -64,12 +48,12 @@
     body={resourceError?.response?.data?.message}
   />
 {:else if resource}
-  {#key dashboard}
-    <StateManagersProvider metricsViewName={dashboard}>
-      <DashboardStateProvider metricViewName={dashboard}>
-        <DashboardURLStateProvider metricViewName={dashboard}>
+  {#key metricsViewName}
+    <StateManagersProvider {metricsViewName}>
+      <DashboardStateProvider metricViewName={metricsViewName}>
+        <DashboardURLStateProvider metricViewName={metricsViewName}>
           <DashboardThemeProvider>
-            <Dashboard metricViewName={dashboard} />
+            <Dashboard metricViewName={metricsViewName} />
           </DashboardThemeProvider>
         </DashboardURLStateProvider>
       </DashboardStateProvider>
