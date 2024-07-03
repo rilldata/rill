@@ -20,14 +20,15 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/druid/retrier"
 )
 
-// non-retryable HTTP errors
 var (
+	// non-retryable HTTP errors
 	tooManyRedirects = regexp.MustCompile(`stopped after \d+ redirects\z`)
 	invalidProtocol  = regexp.MustCompile(`unsupported protocol scheme`)
 	TLSCert          = regexp.MustCompile(`certificate is not trusted`)
-	coordinatorDown  = regexp.MustCompile("A leader node could not be found for")
-	brokerDown       = regexp.MustCompile("There are no available brokers")
-	noObject         = regexp.MustCompile("Object '.*' not found")
+	// retryable Druid errors
+	coordinatorDown = regexp.MustCompile("A leader node could not be found for")
+	brokerDown      = regexp.MustCompile("There are no available brokers")
+	noObject        = regexp.MustCompile("Object '.*' not found")
 )
 
 type druidSQLDriver struct{}
