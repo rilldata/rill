@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -146,6 +147,108 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 		comparisonDims = append(comparisonDims, r.DimensionValue.GetStringValue())
 	}
 	require.Equal(t, dims, comparisonDims)
+}
+
+// broken: due to unsorted subselect
+// func TestMetricsViewsComparison_Druid_dim_order_limit(t *testing.T) {
+// 	if os.Getenv("METRICS_CREDS") == "" {
+// 		t.Skip("skipping the test without the test instance")
+// 	}
+
+// 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+// 	require.NoError(t, err)
+
+// 	q := &queries.MetricsViewComparison{
+// 		MetricsViewName: "ad_bids_metrics",
+// 		DimensionName:   "dom",
+// 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+// 			{
+// 				Name: "m1",
+// 			},
+// 		},
+// 		TimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		ComparisonTimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		Sort: []*runtimev1.MetricsViewComparisonSort{
+// 			{
+// 				Name: "dom",
+// 				Desc: true,
+// 			},
+// 		},
+// 		Limit:  1,
+// 		Offset: 1,
+// 	}
+
+// 	err = q.Resolve(context.Background(), rt, instanceID, 0)
+// 	require.NoError(t, err)
+// 	for i, row := range q.Result.Rows {
+// 		fmt.Printf("%s %d \n", compRowToStr(row), i)
+// 	}
+// 	require.NotEmpty(t, q.Result)
+// 	require.Equal(t, 1, len(q.Result.Rows))
+// 	require.Equal(t, "news.yahoo.com m1 1.50 1.53 -0.03 -0.02 ", compRowToStr(q.Result.Rows[0]))
+// }
+
+func TestMetricsViewsComparison_Druid_dim_order(t *testing.T) {
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without the test instance")
+	}
+
+	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
+	require.NoError(t, err)
+
+	q := &queries.MetricsViewComparison{
+		MetricsViewName: "ad_bids_metrics",
+		DimensionName:   "dom",
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Sort: []*runtimev1.MetricsViewComparisonSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+		Limit: 250,
+	}
+
+	err = q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	for i, row := range q.Result.Rows {
+		fmt.Printf("%s %d \n", compRowToStr(row), i)
+	}
+	require.NotEmpty(t, q.Result)
+	require.Equal(t, 7, len(q.Result.Rows))
+	require.Equal(t, "sports.yahoo.com m1 3.74 3.76 -0.02 -0.00 ", compRowToStr(q.Result.Rows[0]))
+	require.Equal(t, "news.yahoo.com m1 1.50 1.53 -0.03 -0.02 ", compRowToStr(q.Result.Rows[1]))
+}
+
+func compRowToStr(row *runtimev1.MetricsViewComparisonRow) string {
+	s := fmt.Sprintf("%v ", row.DimensionValue.AsInterface())
+
+	for _, m := range row.MeasureValues {
+		s += fmt.Sprintf("%v ", m.MeasureName)
+		s += fmt.Sprintf("%.2f ", m.BaseValue.GetNumberValue())
+		s += fmt.Sprintf("%.2f ", m.ComparisonValue.GetNumberValue())
+		s += fmt.Sprintf("%.2f ", m.DeltaAbs.GetNumberValue())
+		s += fmt.Sprintf("%.2f ", m.DeltaRel.GetNumberValue())
+	}
+	return s
 }
 
 func TestMetricsViewsComparison_dim_order(t *testing.T) {
@@ -651,7 +754,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	require.Equal(t, "Domain Label,Total volume", rowStrings[0])
 }
 
-// broken: ORDER BY non-timestamp column requires GROUP BY
+// broken: ORDER BY <measure> column requires GROUP BY
 // func TestMetricsViewsComparison_Druid_comparsion_no_dim_values(t *testing.T) {
 // 	if os.Getenv("METRICS_CREDS") == "" {
 // 		t.Skip("skipping the test without the test instance")
