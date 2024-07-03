@@ -2,12 +2,15 @@ package testruntime
 
 import (
 	"context"
+	"encoding/base64"
 	"fmt"
 	"maps"
+	"net/url"
 	"os"
 	"path/filepath"
 	goruntime "runtime"
 	"strconv"
+	"strings"
 
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -65,9 +68,11 @@ func New(t TestingT) *runtime.Runtime {
 	}
 
 	logger := zap.NewNop()
-	// nolint
-	// logger, err := zap.NewDevelopment()
-	// require.NoError(t, err)
+	var err error
+	if os.Getenv("DEBUG") == "1" {
+		logger, err = zap.NewDevelopment()
+		require.NoError(t, err)
+	}
 
 	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
@@ -224,11 +229,25 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	return rt, inst.ID
 }
 
-func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
+func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string, error) {
 	rt := New(t)
 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
+	var err error
+	creds := os.Getenv("METRICS_CREDS")
+	data, err := base64.StdEncoding.DecodeString(creds)
+	if err != nil {
+		return nil, "", err
+	}
+
+	splits := strings.Split(string(data), ":")
+	if len(splits) < 2 {
+		return nil, "", fmt.Errorf("incorrect credentials")
+	}
+	for i := range splits {
+		splits[i] = url.QueryEscape(splits[i])
+	}
 
 	inst := &drivers.Instance{
 		Environment:      "test",
@@ -245,7 +264,7 @@ func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
 			{
 				Type:   "druid",
 				Name:   "druid",
-				Config: map[string]string{"dsn": "http://localhost:8888/druid/v2/sql"},
+				Config: map[string]string{"dsn": fmt.Sprintf("https://%s:%s@druid.master.in.rilldata.io/druid/v2/sql", splits[0], splits[1])},
 			},
 			{
 				Type: "sqlite",
@@ -258,7 +277,7 @@ func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
 		// EmbedCatalog: true,
 	}
 
-	err := rt.CreateInstance(context.Background(), inst)
+	err = rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
@@ -271,5 +290,5 @@ func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string) {
 	err = ctrl.WaitUntilIdle(context.Background(), false)
 	require.NoError(t, err)
 
-	return rt, inst.ID
+	return rt, inst.ID, nil
 }

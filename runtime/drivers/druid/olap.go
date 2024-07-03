@@ -196,7 +196,15 @@ func (i informationSchema) All(ctx context.Context) ([]*drivers.Table, error) {
 }
 
 func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) (*drivers.Table, error) {
-	q := `
+	// ensure Coordinator is ready
+	q := "SELECT * FROM sys.segments LIMIT 1"
+	rows, err := i.c.db.QueryxContext(ctx, q, name)
+	if err != nil {
+		return nil, err
+	}
+	rows.Close()
+
+	q = `
 		SELECT
 			T.TABLE_SCHEMA AS SCHEMA,
 			T.TABLE_NAME AS NAME,
@@ -210,7 +218,7 @@ func (i informationSchema) Lookup(ctx context.Context, db, schema, name string) 
 		ORDER BY SCHEMA, NAME, TABLE_TYPE, C.ORDINAL_POSITION
 	`
 
-	rows, err := i.c.db.QueryxContext(ctx, q, name)
+	rows, err = i.c.db.QueryxContext(ctx, q, name)
 	if err != nil {
 		return nil, err
 	}
