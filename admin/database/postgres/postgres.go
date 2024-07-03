@@ -703,14 +703,23 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 	return res, nil
 }
 
+func (c *connection) UpdateUsergroupName(ctx context.Context, name, groupID, orgID string) (*database.Usergroup, error) {
+	res := &database.Usergroup{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET name=$1 WHERE id=$2 AND org_id=$3 RETURNING *", name, groupID, orgID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("usergroup", err)
+	}
+	return res, nil
+}
+
 func (c *connection) DeleteUsergroup(ctx context.Context, groupID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups WHERE id=$1", groupID)
 	return checkDeleteRow("usergroup", res, err)
 }
 
-func (c *connection) FindUsergroupByName(ctx context.Context, usergroup, orgID string) (*database.Usergroup, error) {
+func (c *connection) FindUsergroupByName(ctx context.Context, name, orgID string) (*database.Usergroup, error) {
 	res := &database.Usergroup{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM usergroups WHERE org_id=$1 AND lower(name)=lower($2)", orgID, usergroup).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM usergroups WHERE org_id=$1 AND lower(name)=lower($2)", orgID, name).StructScan(res)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}

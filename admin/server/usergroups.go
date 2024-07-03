@@ -87,6 +87,43 @@ func (s *Server) GetUsergroup(ctx context.Context, req *adminv1.GetUsergroupRequ
 	}, nil
 }
 
+func (s *Server) RenameUsergroup(ctx context.Context, req *adminv1.RenameUsergroupRequest) (*adminv1.RenameUsergroupResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.usergroup", req.Usergroup),
+		attribute.String("args.name", req.Name),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot rename all-users group")
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to rename org usergroup")
+	}
+
+	_, err = s.admin.DB.UpdateUsergroupName(ctx, req.Name, usergroup.ID, org.ID)
+	if errors.Is(err, database.ErrNotUnique) {
+		return nil, status.Error(codes.AlreadyExists, err.Error())
+	}
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.RenameUsergroupResponse{}, nil
+}
+
 func (s *Server) ListUsergroups(ctx context.Context, req *adminv1.ListUsergroupsRequest) (*adminv1.ListUsergroupsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),

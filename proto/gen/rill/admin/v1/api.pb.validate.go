@@ -7945,6 +7945,243 @@ var _ interface {
 	ErrorName() string
 } = GetUsergroupResponseValidationError{}
 
+// Validate checks the field values on RenameUsergroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RenameUsergroupRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RenameUsergroupRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RenameUsergroupRequestMultiError, or nil if none found.
+func (m *RenameUsergroupRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RenameUsergroupRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RenameUsergroupRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUsergroup()) < 1 {
+		err := RenameUsergroupRequestValidationError{
+			field:  "Usergroup",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetName()) < 1 {
+		err := RenameUsergroupRequestValidationError{
+			field:  "Name",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RenameUsergroupRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// RenameUsergroupRequestMultiError is an error wrapping multiple validation
+// errors returned by RenameUsergroupRequest.ValidateAll() if the designated
+// constraints aren't met.
+type RenameUsergroupRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RenameUsergroupRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RenameUsergroupRequestMultiError) AllErrors() []error { return m }
+
+// RenameUsergroupRequestValidationError is the validation error returned by
+// RenameUsergroupRequest.Validate if the designated constraints aren't met.
+type RenameUsergroupRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RenameUsergroupRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RenameUsergroupRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RenameUsergroupRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RenameUsergroupRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RenameUsergroupRequestValidationError) ErrorName() string {
+	return "RenameUsergroupRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RenameUsergroupRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRenameUsergroupRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RenameUsergroupRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RenameUsergroupRequestValidationError{}
+
+// Validate checks the field values on RenameUsergroupResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RenameUsergroupResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RenameUsergroupResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// RenameUsergroupResponseMultiError, or nil if none found.
+func (m *RenameUsergroupResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RenameUsergroupResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RenameUsergroupResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RenameUsergroupResponseMultiError is an error wrapping multiple validation
+// errors returned by RenameUsergroupResponse.ValidateAll() if the designated
+// constraints aren't met.
+type RenameUsergroupResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RenameUsergroupResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RenameUsergroupResponseMultiError) AllErrors() []error { return m }
+
+// RenameUsergroupResponseValidationError is the validation error returned by
+// RenameUsergroupResponse.Validate if the designated constraints aren't met.
+type RenameUsergroupResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RenameUsergroupResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RenameUsergroupResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RenameUsergroupResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RenameUsergroupResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RenameUsergroupResponseValidationError) ErrorName() string {
+	return "RenameUsergroupResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RenameUsergroupResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRenameUsergroupResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RenameUsergroupResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RenameUsergroupResponseValidationError{}
+
 // Validate checks the field values on ListUsergroupsRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

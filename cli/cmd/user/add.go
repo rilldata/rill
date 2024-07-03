@@ -11,6 +11,7 @@ import (
 
 func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
+	var group string
 	var email string
 	var role string
 
@@ -18,12 +19,14 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "add",
 		Short: "Add",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
-			if err != nil {
-				return err
+			if group == "" {
+				err := cmdutil.SelectPromptIfEmpty(&role, "Select role", userRoles, "")
+				if err != nil {
+					return err
+				}
 			}
 
-			err = cmdutil.StringPromptIfEmpty(&email, "Enter email")
+			err := cmdutil.StringPromptIfEmpty(&email, "Enter email")
 			if err != nil {
 				return err
 			}
@@ -33,7 +36,18 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if projectName != "" {
+			if group != "" {
+				_, err := client.AddUsergroupMember(cmd.Context(), &adminv1.AddUsergroupMemberRequest{
+					Organization: ch.Org,
+					Usergroup:    group,
+					Email:        email,
+				})
+				if err != nil {
+					return err
+				}
+
+				ch.PrintfSuccess("User %q added to the user group %q\n", email, group)
+			} else if projectName != "" {
 				res, err := client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
 					Organization: ch.Org,
 					Project:      projectName,
@@ -72,6 +86,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	addCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	addCmd.Flags().StringVar(&projectName, "project", "", "Project")
+	addCmd.Flags().StringVar(&group, "group", "", "User group")
 	addCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user (options: %s)", strings.Join(userRoles, ", ")))
 

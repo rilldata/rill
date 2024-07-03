@@ -128,10 +128,6 @@ export type AdminServiceGetUsergroupParams = {
   pageToken?: string;
 };
 
-export type AdminServiceCreateUsergroupBody = {
-  name?: string;
-};
-
 export type AdminServiceListUsergroupsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -251,6 +247,10 @@ export type AdminServiceGetGithubRepoStatusParams = { githubUrl?: string };
 
 export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
+};
+
+export type AdminServiceCreateUsergroupBodyBody = {
+  name?: string;
 };
 
 export type AdminServiceCreateReportBodyBody = {
@@ -433,6 +433,11 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -473,11 +478,6 @@ export interface V1Subscription {
 }
 
 export interface V1UpdateOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
   organization?: V1Organization;
   subscriptions?: V1Subscription[];
 }
@@ -579,6 +579,10 @@ export interface V1ReportOptions {
   slackChannels?: string[];
   slackWebhooks?: string[];
   webOpenState?: string;
+}
+
+export interface V1RenameUsergroupResponse {
+  [key: string]: any;
 }
 
 export interface V1RemoveWhitelistedDomainResponse {

@@ -1542,6 +1542,37 @@ paths:
           type: string
       tags:
         - AdminService
+    post:
+      summary: RenameUsergroup renames the user group
+      operationId: AdminService_RenameUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenameUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/usergroups/{usergroup}/members:
     get:
       summary: ListUsergroupMembers lists all the user group members
@@ -3769,6 +3800,8 @@ definitions:
   v1RemoveUsergroupResponse:
     type: object
   v1RemoveWhitelistedDomainResponse:
+    type: object
+  v1RenameUsergroupResponse:
     type: object
   v1ReportOptions:
     type: object

@@ -53,6 +53,7 @@ const (
 	AdminService_SetProjectMemberRole_FullMethodName                  = "/rill.admin.v1.AdminService/SetProjectMemberRole"
 	AdminService_CreateUsergroup_FullMethodName                       = "/rill.admin.v1.AdminService/CreateUsergroup"
 	AdminService_GetUsergroup_FullMethodName                          = "/rill.admin.v1.AdminService/GetUsergroup"
+	AdminService_RenameUsergroup_FullMethodName                       = "/rill.admin.v1.AdminService/RenameUsergroup"
 	AdminService_ListUsergroups_FullMethodName                        = "/rill.admin.v1.AdminService/ListUsergroups"
 	AdminService_RemoveUsergroup_FullMethodName                       = "/rill.admin.v1.AdminService/RemoveUsergroup"
 	AdminService_SetOrganizationUsergroupRole_FullMethodName          = "/rill.admin.v1.AdminService/SetOrganizationUsergroupRole"
@@ -193,6 +194,8 @@ type AdminServiceClient interface {
 	CreateUsergroup(ctx context.Context, in *CreateUsergroupRequest, opts ...grpc.CallOption) (*CreateUsergroupResponse, error)
 	// GetUsergroups returns the user group details
 	GetUsergroup(ctx context.Context, in *GetUsergroupRequest, opts ...grpc.CallOption) (*GetUsergroupResponse, error)
+	// RenameUsergroup renames the user group
+	RenameUsergroup(ctx context.Context, in *RenameUsergroupRequest, opts ...grpc.CallOption) (*RenameUsergroupResponse, error)
 	// ListUsergroups lists the org's user groups
 	ListUsergroups(ctx context.Context, in *ListUsergroupsRequest, opts ...grpc.CallOption) (*ListUsergroupsResponse, error)
 	// RemoveUsergroup removes the user group from the organization
@@ -671,6 +674,16 @@ func (c *adminServiceClient) GetUsergroup(ctx context.Context, in *GetUsergroupR
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetUsergroupResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetUsergroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RenameUsergroup(ctx context.Context, in *RenameUsergroupRequest, opts ...grpc.CallOption) (*RenameUsergroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RenameUsergroupResponse)
+	err := c.cc.Invoke(ctx, AdminService_RenameUsergroup_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1409,6 +1422,8 @@ type AdminServiceServer interface {
 	CreateUsergroup(context.Context, *CreateUsergroupRequest) (*CreateUsergroupResponse, error)
 	// GetUsergroups returns the user group details
 	GetUsergroup(context.Context, *GetUsergroupRequest) (*GetUsergroupResponse, error)
+	// RenameUsergroup renames the user group
+	RenameUsergroup(context.Context, *RenameUsergroupRequest) (*RenameUsergroupResponse, error)
 	// ListUsergroups lists the org's user groups
 	ListUsergroups(context.Context, *ListUsergroupsRequest) (*ListUsergroupsResponse, error)
 	// RemoveUsergroup removes the user group from the organization
@@ -1651,6 +1666,9 @@ func (UnimplementedAdminServiceServer) CreateUsergroup(context.Context, *CreateU
 }
 func (UnimplementedAdminServiceServer) GetUsergroup(context.Context, *GetUsergroupRequest) (*GetUsergroupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetUsergroup not implemented")
+}
+func (UnimplementedAdminServiceServer) RenameUsergroup(context.Context, *RenameUsergroupRequest) (*RenameUsergroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RenameUsergroup not implemented")
 }
 func (UnimplementedAdminServiceServer) ListUsergroups(context.Context, *ListUsergroupsRequest) (*ListUsergroupsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListUsergroups not implemented")
@@ -2471,6 +2489,24 @@ func _AdminService_GetUsergroup_Handler(srv interface{}, ctx context.Context, de
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetUsergroup(ctx, req.(*GetUsergroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RenameUsergroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RenameUsergroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RenameUsergroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RenameUsergroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RenameUsergroup(ctx, req.(*RenameUsergroupRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3805,6 +3841,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetUsergroup",
 			Handler:    _AdminService_GetUsergroup_Handler,
+		},
+		{
+			MethodName: "RenameUsergroup",
+			Handler:    _AdminService_RenameUsergroup_Handler,
 		},
 		{
 			MethodName: "ListUsergroups",

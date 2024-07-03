@@ -116,8 +116,9 @@ type DB interface {
 	CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
+	UpdateUsergroupName(ctx context.Context, name, groupID, orgID string) (*Usergroup, error)
 	DeleteUsergroup(ctx context.Context, groupID string) error
-	FindUsergroupByName(ctx context.Context, usergroup, orgID string) (*Usergroup, error)
+	FindUsergroupByName(ctx context.Context, name, orgID string) (*Usergroup, error)
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
 	FindUsergroupMembers(ctx context.Context, groupID string) ([]*UsergroupMember, error)

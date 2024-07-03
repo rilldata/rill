@@ -2983,6 +2983,86 @@ export class GetUsergroupResponse extends Message<GetUsergroupResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.RenameUsergroupRequest
+ */
+export class RenameUsergroupRequest extends Message<RenameUsergroupRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string usergroup = 2;
+   */
+  usergroup = "";
+
+  /**
+   * @generated from field: string name = 3;
+   */
+  name = "";
+
+  constructor(data?: PartialMessage<RenameUsergroupRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RenameUsergroupRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RenameUsergroupRequest {
+    return new RenameUsergroupRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RenameUsergroupRequest {
+    return new RenameUsergroupRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RenameUsergroupRequest {
+    return new RenameUsergroupRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RenameUsergroupRequest | PlainMessage<RenameUsergroupRequest> | undefined, b: RenameUsergroupRequest | PlainMessage<RenameUsergroupRequest> | undefined): boolean {
+    return proto3.util.equals(RenameUsergroupRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RenameUsergroupResponse
+ */
+export class RenameUsergroupResponse extends Message<RenameUsergroupResponse> {
+  constructor(data?: PartialMessage<RenameUsergroupResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RenameUsergroupResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RenameUsergroupResponse {
+    return new RenameUsergroupResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RenameUsergroupResponse {
+    return new RenameUsergroupResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RenameUsergroupResponse {
+    return new RenameUsergroupResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RenameUsergroupResponse | PlainMessage<RenameUsergroupResponse> | undefined, b: RenameUsergroupResponse | PlainMessage<RenameUsergroupResponse> | undefined): boolean {
+    return proto3.util.equals(RenameUsergroupResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListUsergroupsRequest
  */
 export class ListUsergroupsRequest extends Message<ListUsergroupsRequest> {

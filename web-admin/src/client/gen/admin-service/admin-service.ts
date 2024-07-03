@@ -87,10 +87,11 @@ import type {
   V1ListUsergroupsResponse,
   AdminServiceListUsergroupsParams,
   V1CreateUsergroupResponse,
-  AdminServiceCreateUsergroupBody,
+  AdminServiceCreateUsergroupBodyBody,
   V1GetUsergroupResponse,
   AdminServiceGetUsergroupParams,
   V1RemoveUsergroupResponse,
+  V1RenameUsergroupResponse,
   V1ListUsergroupMembersResponse,
   V1RemoveUsergroupMemberResponse,
   V1AddUsergroupMemberResponse,
@@ -3157,13 +3158,13 @@ export const createAdminServiceListUsergroups = <
  */
 export const adminServiceCreateUsergroup = (
   organization: string,
-  adminServiceCreateUsergroupBody: AdminServiceCreateUsergroupBody,
+  adminServiceCreateUsergroupBodyBody: AdminServiceCreateUsergroupBodyBody,
 ) => {
   return httpClient<V1CreateUsergroupResponse>({
     url: `/v1/organizations/${organization}/usergroups`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceCreateUsergroupBody,
+    data: adminServiceCreateUsergroupBodyBody,
   });
 };
 
@@ -3171,7 +3172,7 @@ export type AdminServiceCreateUsergroupMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceCreateUsergroup>>
 >;
 export type AdminServiceCreateUsergroupMutationBody =
-  AdminServiceCreateUsergroupBody;
+  AdminServiceCreateUsergroupBodyBody;
 export type AdminServiceCreateUsergroupMutationError = RpcStatus;
 
 export const createAdminServiceCreateUsergroup = <
@@ -3181,7 +3182,7 @@ export const createAdminServiceCreateUsergroup = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof adminServiceCreateUsergroup>>,
     TError,
-    { organization: string; data: AdminServiceCreateUsergroupBody },
+    { organization: string; data: AdminServiceCreateUsergroupBodyBody },
     TContext
   >;
 }) => {
@@ -3189,7 +3190,7 @@ export const createAdminServiceCreateUsergroup = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof adminServiceCreateUsergroup>>,
-    { organization: string; data: AdminServiceCreateUsergroupBody }
+    { organization: string; data: AdminServiceCreateUsergroupBodyBody }
   > = (props) => {
     const { organization, data } = props ?? {};
 
@@ -3199,7 +3200,7 @@ export const createAdminServiceCreateUsergroup = <
   return createMutation<
     Awaited<ReturnType<typeof adminServiceCreateUsergroup>>,
     TError,
-    { organization: string; data: AdminServiceCreateUsergroupBody },
+    { organization: string; data: AdminServiceCreateUsergroupBodyBody },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -3321,6 +3322,70 @@ export const createAdminServiceRemoveUsergroup = <
     Awaited<ReturnType<typeof adminServiceRemoveUsergroup>>,
     TError,
     { organization: string; usergroup: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary RenameUsergroup renames the user group
+ */
+export const adminServiceRenameUsergroup = (
+  organization: string,
+  usergroup: string,
+  adminServiceCreateUsergroupBodyBody: AdminServiceCreateUsergroupBodyBody,
+) => {
+  return httpClient<V1RenameUsergroupResponse>({
+    url: `/v1/organizations/${organization}/usergroups/${usergroup}`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceCreateUsergroupBodyBody,
+  });
+};
+
+export type AdminServiceRenameUsergroupMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRenameUsergroup>>
+>;
+export type AdminServiceRenameUsergroupMutationBody =
+  AdminServiceCreateUsergroupBodyBody;
+export type AdminServiceRenameUsergroupMutationError = RpcStatus;
+
+export const createAdminServiceRenameUsergroup = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRenameUsergroup>>,
+    TError,
+    {
+      organization: string;
+      usergroup: string;
+      data: AdminServiceCreateUsergroupBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRenameUsergroup>>,
+    {
+      organization: string;
+      usergroup: string;
+      data: AdminServiceCreateUsergroupBodyBody;
+    }
+  > = (props) => {
+    const { organization, usergroup, data } = props ?? {};
+
+    return adminServiceRenameUsergroup(organization, usergroup, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRenameUsergroup>>,
+    TError,
+    {
+      organization: string;
+      usergroup: string;
+      data: AdminServiceCreateUsergroupBodyBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };

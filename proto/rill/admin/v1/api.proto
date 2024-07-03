@@ -224,6 +224,14 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups/{usergroup}"};
   }
 
+  // RenameUsergroup renames the user group
+  rpc RenameUsergroup(RenameUsergroupRequest) returns (RenameUsergroupResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/usergroups/{usergroup}",
+      body: "*"
+    };
+  }
+
   // ListUsergroups lists the org's user groups
   rpc ListUsergroups(ListUsergroupsRequest) returns (ListUsergroupsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups"};
@@ -1014,6 +1022,15 @@ message GetUsergroupRequest {
 message GetUsergroupResponse {
   Usergroup usergroup = 1;
   string next_page_token = 2;
+}
+
+message RenameUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string name = 3 [(validate.rules).string.min_len = 1];
+}
+
+message RenameUsergroupResponse {
 }
 
 message ListUsergroupsRequest {
