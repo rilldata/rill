@@ -180,8 +180,8 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 
 	// Merge opts.Variables with some local overrides of the defaults in runtime/drivers.InstanceConfig.
 	vars := map[string]string{
-		"rill.download_row_limit": "0", // 0 means unlimited
-		"rill.stage_changes":      "false",
+		"rill.download_limit_bytes": "0", // 0 means unlimited
+		"rill.stage_changes":        "false",
 	}
 	for k, v := range opts.Variables {
 		vars[k] = v
