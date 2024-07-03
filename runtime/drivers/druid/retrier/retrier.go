@@ -68,7 +68,6 @@ func (r *Retrier) RunCtx(ctx context.Context, work func(ctx context.Context) (dr
 
 			dur := r.backoff[retries]
 			timeout := time.After(dur)
-			fmt.Println("coord dur", dur)
 			if err := r.sleep(ctx, timeout); err != nil {
 				return nil, err
 			}
@@ -81,7 +80,6 @@ func (r *Retrier) RunCtx(ctx context.Context, work func(ctx context.Context) (dr
 
 			dur := r.backoff[retries]
 			timeout := time.After(dur)
-			fmt.Println("dur", dur)
 
 			if err := r.sleep(ctx, timeout); err != nil {
 				return nil, err
