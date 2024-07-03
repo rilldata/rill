@@ -1150,13 +1150,13 @@ security:
   row_filter: true
   include:
     - if: "'{{ .user.domain }}' = 'example.com'"
-      all: true
+      names: '*'
     - if: true
       names: [a]
   exclude:
     - # Whoopsie empty
     - if: "'{{ .user.domain }}' = 'bad.com'"
-      all: true
+      names: '*'
     - if: true
       names: [b]
 `,
