@@ -15,8 +15,12 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/ping"};
   }
 
-  rpc Healthz(HealthzRequest) returns (HealthzResponse) {
-    option (google.api.http) = {get: "/v1/healthz"};
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {get: "/v1/health"};
+  }
+
+  rpc InstanceHealth(InstanceHealthRequest) returns (InstanceHealthResponse) {
+    option (google.api.http) = {get: "/v1/health/instances/{instance_id}"};
   }
 
   // Instances
@@ -219,22 +223,22 @@ message PingResponse {
   google.protobuf.Timestamp time = 2;
 }
 
-message HealthzRequest {}
+message HealthRequest {}
 
-// Response message for RuntimeService.Healthz
-// The fields will be set to corresponding errors if any.
-message HealthzResponse {
-  string limiter = 1;
-  string conn_cache = 2;
-  string metastore = 3;
-  string network = 4;
-  map<string, InstanceHealth> instances = 5;
+message HealthResponse {
+  string limiter_error = 1;
+  string conn_cache_error = 2;
+  string metastore_error = 3;
+  string network_error = 4;
 }
 
-message InstanceHealth {
-  string controller = 1;
-  string repo_sync = 2;
-  string admin_connect = 3;
+message InstanceHealthRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message InstanceHealthResponse {
+  string controller_error = 1;
+  string repo_error = 2;
 }
 
 // **********

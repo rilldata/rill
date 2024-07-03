@@ -7,35 +7,37 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
 
-// Healthz implements RuntimeService
-func (s *Server) Healthz(ctx context.Context, req *runtimev1.HealthzRequest) (*runtimev1.HealthzResponse, error) {
-	resp := &runtimev1.HealthzResponse{}
+// Health implements RuntimeService
+func (s *Server) Health(ctx context.Context, req *runtimev1.HealthRequest) (*runtimev1.HealthResponse, error) {
+	resp := &runtimev1.HealthResponse{}
 
 	// limiter
 	if err := s.limiter.Ping(ctx); err != nil {
-		resp.Limiter = err.Error()
+		resp.LimiterError = err.Error()
 	}
 
 	// internet access
 	if err := pingCloudfareDNS(ctx); err != nil {
-		resp.Network = err.Error()
+		resp.NetworkError = err.Error()
 	}
 
 	// get runtime health
 	status := s.runtime.Health(ctx)
-	// hung connections
-	if status.HungConn {
-		resp.ConnCache = "found hung connections"
-	}
-	// metastore
-	resp.Metastore = status.Registry.Error()
-
-	// instance specific health
-	resp.Instances = make(map[string]*runtimev1.InstanceHealth)
-	for k, v := range status.Instances {
-		resp.Instances[k] = v.To()
-	}
+	resp.ConnCacheError = status.HungConn.Error()
+	resp.MetastoreError = status.Registry.Error()
 	return resp, nil
+}
+
+// InstanceHealth implements RuntimeService
+func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHealthRequest) (*runtimev1.InstanceHealthResponse, error) {
+	h, err := s.runtime.InstanceHealth(ctx, req.InstanceId)
+	if err != nil {
+		return nil, err
+	}
+	return &runtimev1.InstanceHealthResponse{
+		ControllerError: h.Controller.Error(),
+		RepoError:       h.Repo.Error(),
+	}, nil
 }
 
 func pingCloudfareDNS(ctx context.Context) error {

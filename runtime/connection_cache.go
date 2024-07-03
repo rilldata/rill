@@ -25,11 +25,6 @@ var (
 	connCacheCloseLatencyMS = observability.Must(meter.Int64Histogram("connnection_cache.close_latency", metric.WithUnit("ms")))
 )
 
-type connectionCache struct {
-	conncache.Cache
-	hasHungConn bool
-}
-
 type cachedConnectionConfig struct {
 	instanceID string // Empty if connection is shared
 	driver     string
@@ -40,9 +35,8 @@ type cachedConnectionConfig struct {
 // Connections should preferably be opened only via the connection cache.
 // It's implementation handles issues such as concurrent open/close/eviction of a connection.
 // It also monitors for hanging connections.
-func (r *Runtime) newConnectionCache() *connectionCache {
-	c := &connectionCache{}
-	c.Cache = conncache.New(conncache.Options{
+func (r *Runtime) newConnectionCache() conncache.Cache {
+	return conncache.New(conncache.Options{
 		MaxIdleConnections:   r.opts.ConnectionCacheSize,
 		OpenTimeout:          10 * time.Minute,
 		CloseTimeout:         10 * time.Minute,
@@ -56,8 +50,6 @@ func (r *Runtime) newConnectionCache() *connectionCache {
 			return generateKey(x)
 		},
 		HangingFunc: func(cfg any, open bool) {
-			// There is no way to reset this flag since a hung connection will mostly require a server restart
-			c.hasHungConn = true
 			x := cfg.(cachedConnectionConfig)
 			r.logger.Error("connection cache: connection has been working for too long", zap.String("instance_id", x.instanceID), zap.String("driver", x.driver), zap.Bool("open", open))
 		},
@@ -70,7 +62,6 @@ func (r *Runtime) newConnectionCache() *connectionCache {
 			CloseLatencyMS: connCacheCloseLatencyMS,
 		},
 	})
-	return c
 }
 
 // getConnection returns a cached connection for the given driver configuration.

@@ -3,6 +3,7 @@ package conncache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -29,10 +30,14 @@ type Cache interface {
 	// Close closes all open connections and prevents new connections from being acquired.
 	// It returns when all cached connections have been closed or when the provided ctx is cancelled.
 	Close(ctx context.Context) error
+
+	// HangingErr returns an error containing the name of the first connection that is hanging
+	HangingErr() error
 }
 
 // Connection is a connection that may be cached.
 type Connection interface {
+	Driver() string
 	Close() error
 }
 
@@ -84,6 +89,7 @@ type cacheImpl struct {
 	closed       bool
 	mu           sync.Mutex
 	entries      map[string]*entry
+	hungConnErr  error
 	lru          *simplelru.LRU
 	singleflight map[string]chan struct{}
 	ctx          context.Context
@@ -321,6 +327,12 @@ func (c *cacheImpl) Close(ctx context.Context) error {
 	}
 }
 
+func (c *cacheImpl) HangingErr() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.hungConnErr
+}
+
 // beginClose must be called while c.mu is held.
 func (c *cacheImpl) beginClose(k string, e *entry) {
 	if e.status == entryStatusClosing || e.status == entryStatusClosed {
@@ -433,15 +445,19 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 		select {
 		case <-ticker.C:
 			c.mu.Lock()
+			var hungConnErr error
 			for k := range c.singleflight {
 				e := c.entries[k]
 				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) > c.opts.OpenTimeout {
+					hungConnErr = fmt.Errorf("a %q connection has been in opening state for too long", e.handle.Driver())
 					c.opts.HangingFunc(e.cfg, true)
 				}
 				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) > c.opts.CloseTimeout {
+					hungConnErr = fmt.Errorf("a %q connection has been in closing state for too long", e.handle.Driver())
 					c.opts.HangingFunc(e.cfg, false)
 				}
 			}
+			c.hungConnErr = hungConnErr
 			c.mu.Unlock()
 		case <-c.ctx.Done():
 			return

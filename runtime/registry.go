@@ -243,34 +243,29 @@ func (r *registryCache) list() ([]*drivers.Instance, error) {
 	return res, nil
 }
 
-func (r *registryCache) health(ctx context.Context) map[string]*InstanceHealth {
-	r.mu.RLock()
-
-	res := make(map[string]*InstanceHealth, len(r.instances))
-	for _, iwc := range r.instances {
-		h := &InstanceHealth{}
-		res[iwc.instanceID] = h
-		if !iwc.running {
-			res[iwc.instanceID].Controller = iwc.controllerErr
-			continue
-		}
+func (r *registryCache) health(ctx context.Context, instanceID string) (InstanceHealth, error) {
+	r.mu.Lock()
+	inst, ok := r.instances[instanceID]
+	if !ok {
+		r.mu.Unlock()
+		return InstanceHealth{}, drivers.ErrNotFound
 	}
-	r.mu.RUnlock()
+	r.mu.Unlock()
 
-	for k, v := range res {
-		repo, release, err := r.rt.Repo(ctx, k)
-		if err != nil {
-			release()
-			v.RepoSync = err
-			continue
-		}
+	res := InstanceHealth{
+		Controller: inst.controllerErr,
+	}
 
-		rh := repo.Health(ctx)
-		v.RepoSync = rh.Sync
-		v.AdminConnect = rh.AdminConnect
+	// check repo error
+	repo, release, err := r.rt.Repo(ctx, instanceID)
+	if err != nil {
 		release()
+		res.Repo = err
+		return res, nil
 	}
-	return res
+	res.Repo = repo.(drivers.Handle).Ping(ctx)
+	release()
+	return res, nil
 }
 
 func (r *registryCache) get(instanceID string) (*drivers.Instance, error) {

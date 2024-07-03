@@ -12,9 +12,6 @@ import (
 
 // RegistryStore is implemented by drivers capable of storing and looking up instances and repos.
 type RegistryStore interface {
-	// Ping returns a non nil error if RegistryStore is not in a healthy state. It is used for health checks.
-	Ping(ctx context.Context) error
-
 	FindInstances(ctx context.Context) ([]*Instance, error)
 	FindInstance(ctx context.Context, id string) (*Instance, error)
 	CreateInstance(ctx context.Context, instance *Instance) error

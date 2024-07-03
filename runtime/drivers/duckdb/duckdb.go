@@ -310,6 +310,11 @@ type connection struct {
 
 var _ drivers.OLAPStore = &connection{}
 
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return drivers.ErrNotImplemented
+}
+
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
 	return c.driverName

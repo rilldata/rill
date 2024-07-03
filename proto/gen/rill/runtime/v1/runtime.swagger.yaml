@@ -293,18 +293,37 @@ paths:
           type: string
       tags:
         - ConnectorService
-  /v1/healthz:
+  /v1/health:
     get:
-      operationId: RuntimeService_Healthz
+      operationId: RuntimeService_Health
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1HealthzResponse'
+            $ref: '#/definitions/v1HealthResponse'
         default:
           description: An unexpected error response.
           schema:
             $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/health/instances/{instanceId}:
+    get:
+      operationId: RuntimeService_InstanceHealth
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1InstanceHealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
       tags:
         - RuntimeService
   /v1/instances:
@@ -3881,24 +3900,17 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
-  v1HealthzResponse:
+  v1HealthResponse:
     type: object
     properties:
-      limiter:
+      limiterError:
         type: string
-      connCache:
+      connCacheError:
         type: string
-      metastore:
+      metastoreError:
         type: string
-      network:
+      networkError:
         type: string
-      instances:
-        type: object
-        additionalProperties:
-          $ref: '#/definitions/v1InstanceHealth'
-    description: |-
-      Response message for RuntimeService.Healthz
-      The fields will be set to corresponding errors if any.
   v1HistogramMethod:
     type: string
     enum:
@@ -3964,14 +3976,12 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
-  v1InstanceHealth:
+  v1InstanceHealthResponse:
     type: object
     properties:
-      controller:
+      controllerError:
         type: string
-      repoSync:
-        type: string
-      adminConnect:
+      repoError:
         type: string
   v1IssueDevJWTResponse:
     type: object

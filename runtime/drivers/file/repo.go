@@ -21,11 +21,6 @@ func (c *connection) Driver() string {
 	return "file"
 }
 
-// Health implements drivers.RepoStore.
-func (c *connection) Health(_ context.Context) drivers.RepoHealth {
-	return drivers.RepoHealth{}
-}
-
 // Root implements drivers.RepoStore.
 func (c *connection) Root() string {
 	return c.root

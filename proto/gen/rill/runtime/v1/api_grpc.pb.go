@@ -20,7 +20,8 @@ const _ = grpc.SupportPackageIsVersion8
 
 const (
 	RuntimeService_Ping_FullMethodName                    = "/rill.runtime.v1.RuntimeService/Ping"
-	RuntimeService_Healthz_FullMethodName                 = "/rill.runtime.v1.RuntimeService/Healthz"
+	RuntimeService_Health_FullMethodName                  = "/rill.runtime.v1.RuntimeService/Health"
+	RuntimeService_InstanceHealth_FullMethodName          = "/rill.runtime.v1.RuntimeService/InstanceHealth"
 	RuntimeService_ListInstances_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListInstances"
 	RuntimeService_GetInstance_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetInstance"
 	RuntimeService_CreateInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateInstance"
@@ -60,7 +61,8 @@ const (
 type RuntimeServiceClient interface {
 	// Ping returns information about the runtime
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
-	Healthz(ctx context.Context, in *HealthzRequest, opts ...grpc.CallOption) (*HealthzResponse, error)
+	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
+	InstanceHealth(ctx context.Context, in *InstanceHealthRequest, opts ...grpc.CallOption) (*InstanceHealthResponse, error)
 	// ListInstances lists all the instances currently managed by the runtime
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
 	// GetInstance returns information about a specific instance
@@ -140,10 +142,20 @@ func (c *runtimeServiceClient) Ping(ctx context.Context, in *PingRequest, opts .
 	return out, nil
 }
 
-func (c *runtimeServiceClient) Healthz(ctx context.Context, in *HealthzRequest, opts ...grpc.CallOption) (*HealthzResponse, error) {
+func (c *runtimeServiceClient) Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(HealthzResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_Healthz_FullMethodName, in, out, cOpts...)
+	out := new(HealthResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_Health_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) InstanceHealth(ctx context.Context, in *InstanceHealthRequest, opts ...grpc.CallOption) (*InstanceHealthResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(InstanceHealthResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_InstanceHealth_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -508,7 +520,8 @@ func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTR
 type RuntimeServiceServer interface {
 	// Ping returns information about the runtime
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
-	Healthz(context.Context, *HealthzRequest) (*HealthzResponse, error)
+	Health(context.Context, *HealthRequest) (*HealthResponse, error)
+	InstanceHealth(context.Context, *InstanceHealthRequest) (*InstanceHealthResponse, error)
 	// ListInstances lists all the instances currently managed by the runtime
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
 	// GetInstance returns information about a specific instance
@@ -578,8 +591,11 @@ type UnimplementedRuntimeServiceServer struct {
 func (UnimplementedRuntimeServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
 }
-func (UnimplementedRuntimeServiceServer) Healthz(context.Context, *HealthzRequest) (*HealthzResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Healthz not implemented")
+func (UnimplementedRuntimeServiceServer) Health(context.Context, *HealthRequest) (*HealthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Health not implemented")
+}
+func (UnimplementedRuntimeServiceServer) InstanceHealth(context.Context, *InstanceHealthRequest) (*InstanceHealthResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method InstanceHealth not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
@@ -696,20 +712,38 @@ func _RuntimeService_Ping_Handler(srv interface{}, ctx context.Context, dec func
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_Healthz_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(HealthzRequest)
+func _RuntimeService_Health_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HealthRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(RuntimeServiceServer).Healthz(ctx, in)
+		return srv.(RuntimeServiceServer).Health(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: RuntimeService_Healthz_FullMethodName,
+		FullMethod: RuntimeService_Health_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).Healthz(ctx, req.(*HealthzRequest))
+		return srv.(RuntimeServiceServer).Health(ctx, req.(*HealthRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_InstanceHealth_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(InstanceHealthRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).InstanceHealth(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_InstanceHealth_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).InstanceHealth(ctx, req.(*InstanceHealthRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1239,8 +1273,12 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _RuntimeService_Ping_Handler,
 		},
 		{
-			MethodName: "Healthz",
-			Handler:    _RuntimeService_Healthz_Handler,
+			MethodName: "Health",
+			Handler:    _RuntimeService_Health_Handler,
+		},
+		{
+			MethodName: "InstanceHealth",
+			Handler:    _RuntimeService_InstanceHealth_Handler,
 		},
 		{
 			MethodName: "ListInstances",

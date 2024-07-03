@@ -14,8 +14,6 @@ import (
 // It mirrors a file system, but may be virtualized by a database for non-local deployments.
 type RepoStore interface {
 	Driver() string
-	Health(ctx context.Context) RepoHealth
-
 	// Root returns directory where artifacts are stored.
 	Root() string
 	CommitHash(ctx context.Context) (string, error)
@@ -28,11 +26,6 @@ type RepoStore interface {
 	Delete(ctx context.Context, path string, force bool) error
 	Sync(ctx context.Context) error
 	Watch(ctx context.Context, cb WatchCallback) error
-}
-
-type RepoHealth struct {
-	Sync         error
-	AdminConnect error
 }
 
 type WatchCallback func(event []WatchEvent)
