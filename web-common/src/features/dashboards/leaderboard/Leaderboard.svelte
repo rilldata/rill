@@ -20,6 +20,8 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
+  import LeaderboardValueCell from "./LeaderboardValueCell.svelte";
+  import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
 
   const slice = 7;
 
@@ -58,7 +60,7 @@
         isPercentOfTotal,
         isHidden,
       },
-      dimensions: { getDimensionByName },
+      dimensions: { getDimensionByName, getDimensionDisplayName },
       activeMeasure: { activeMeasureName },
       dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
@@ -203,39 +205,37 @@
   </colgroup>
   <thead>
     <tr>
-      <td>{dimensionName}</td>
-      <td>
+      <th>{$getDimensionDisplayName(dimensionName)}</th>
+      <th>
         <button
           on:click={() => toggleSort(SortType.VALUE)}
-          class="shrink flex flex-row items-center justify-end min-w-[40px]"
           aria-label="Toggle sort leaderboards by value"
         >
           #{#if $sortType === SortType.VALUE}
             <ArrowDown transform={arrowTransform} />
           {/if}
         </button>
-      </td>
+      </th>
       {#if $isTimeComparisonActive}
-        <td>
+        <th>
           <button
             on:click={toggleSortByActiveContextColumn}
-            class="flex flex-row items-center justify-end"
             aria-label="Toggle sort leaderboards by context column"
           >
             <Delta /> %
           </button>
-        </td>
-        <td>
+        </th>
+        <th>
           <button
             on:click={toggleSortByActiveContextColumn}
-            class="flex flex-row items-center justify-end"
+            class="size-full"
             aria-label="Toggle sort leaderboards by context column"
           >
             <Delta />
           </button>
-        </td>
+        </th>
       {:else if $isPercentOfTotal}
-        <td>
+        <th>
           <button
             on:click={toggleSortByActiveContextColumn}
             class="flex flex-row items-center justify-end"
@@ -243,15 +243,19 @@
           >
             <PieChart /> %
           </button>
-        </td>
+        </th>
       {/if}
     </tr>
   </thead>
   <tbody>
     {#each aboveTheFold as itemData (itemData.dimensionValue)}
       <tr>
-        <td>{itemData.dimensionValue}</td>
-        <td>{itemData.value}</td>
+        <td>
+          <LeaderboardValueCell {itemData} {dimensionName} />
+        </td>
+        <td>
+          <FormattedDataType type="INTEGER" value={itemData.value} />
+        </td>
         {#if $isTimeComparisonActive}
           <td>{itemData.deltaRel}</td>
           <td>{itemData.deltaAbs}</td>
@@ -273,12 +277,37 @@
 
 <style lang="postcss">
   table {
-    @apply p-0 m-0 border-spacing-0 border-separate w-fit;
+    @apply p-0 m-0 border-spacing-0 border-collapse w-fit;
     @apply font-normal cursor-pointer select-none;
     @apply table-fixed;
   }
 
   td {
-    @apply text-right truncate;
+    @apply text-right truncate border;
+  }
+
+  td:first-of-type {
+    @apply text-left;
+  }
+
+  tr:hover {
+    @apply bg-gray-100;
+  }
+
+  td,
+  th {
+    @apply p-0;
+  }
+
+  th {
+    @apply text-right;
+  }
+
+  button {
+    @apply size-full flex items-center justify-end;
+  }
+
+  th:first-of-type {
+    @apply text-left;
   }
 </style>
