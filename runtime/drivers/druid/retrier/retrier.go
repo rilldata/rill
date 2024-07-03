@@ -93,10 +93,10 @@ func (r *Retrier) RunCtx(ctx context.Context, work func(ctx context.Context) (dr
 type Action int
 
 const (
-	Succeed Action = iota // Succeed indicates the Retrier should treat this value as a success.
-	Fail                  // Fail indicates the Retrier should treat this value as a hard failure and not retry.
-	Retry                 // Retry indicates the Retrier should treat this value as a soft failure and retry.
-	AdditionalCheck
+	Succeed         Action = iota // Succeed indicates the Retrier should treat this value as a success.
+	Fail                          // Fail indicates the Retrier should treat this value as a hard failure and not retry.
+	Retry                         // Retry indicates the Retrier should treat this value as a soft failure and retry.
+	AdditionalCheck               // Additional check is required to determine if it's Fail or Retry
 )
 
 func ExponentialBackoff(n int, initialAmount time.Duration) []time.Duration {
