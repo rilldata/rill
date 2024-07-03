@@ -172,6 +172,10 @@ func (s *Server) RemoveUsergroup(ctx context.Context, req *adminv1.RemoveUsergro
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot remove all-users group")
+	}
+
 	err = s.admin.DB.DeleteUsergroup(ctx, usergroup.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -199,6 +203,10 @@ func (s *Server) SetOrganizationUsergroupRole(ctx context.Context, req *adminv1.
 	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot set role for all-users group")
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
@@ -275,6 +283,15 @@ func (s *Server) SetProjectUsergroupRole(ctx context.Context, req *adminv1.SetPr
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot set role for all-users group")
+	}
+
 	err = s.admin.DB.UpsertProjectUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -305,6 +322,15 @@ func (s *Server) RevokeProjectUsergroupRole(ctx context.Context, req *adminv1.Re
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot revoke role from all-users group")
+	}
+
 	err = s.admin.DB.DeleteProjectUsergroup(ctx, usergroup.ID, proj.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -327,6 +353,10 @@ func (s *Server) AddUsergroupMember(ctx context.Context, req *adminv1.AddUsergro
 	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && group.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot add member to all-users group")
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
@@ -441,6 +471,10 @@ func (s *Server) RemoveUsergroupMember(ctx context.Context, req *adminv1.RemoveU
 	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && group.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot remove member from all-users group")
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
