@@ -16,6 +16,7 @@
 
   let token: string;
   let setExpiration = false;
+  let apiError: string;
 
   const {
     dashboardStore,
@@ -45,24 +46,28 @@
         if (!form.valid) return;
         const values = form.data;
 
-        const { token: _token } = await $issueMagicAuthToken.mutateAsync({
-          organization,
-          project,
-          data: {
-            metricsView: dashboard,
-            metricsViewFilter: hasDashboardWhereFilter()
-              ? $dashboardStore.whereFilter
-              : undefined,
-            metricsViewFields: [
-              ...$visibleMeasures.map((measure) => measure.name),
-              ...$visibleDimensions.map((dimension) => dimension.name),
-            ],
-            ttlMinutes: setExpiration
-              ? convertDateToMinutes(values.expiresAt).toString()
-              : "0",
-          },
-        });
-        token = _token;
+        try {
+          const { token: _token } = await $issueMagicAuthToken.mutateAsync({
+            organization,
+            project,
+            data: {
+              metricsView: dashboard,
+              metricsViewFilter: hasDashboardWhereFilter()
+                ? $dashboardStore.whereFilter
+                : undefined,
+              metricsViewFields: [
+                ...$visibleMeasures.map((measure) => measure.name),
+                ...$visibleDimensions.map((dimension) => dimension.name),
+              ],
+              ttlMinutes: setExpiration
+                ? convertDateToMinutes(values.expiresAt).toString()
+                : "0",
+            },
+          });
+          token = _token;
+        } catch (error) {
+          apiError = (error as Error).message;
+        }
       },
     },
   );
@@ -138,6 +143,8 @@
       {#each $allErrors as error (error.path)}
         <div class="text-red-500">{error.messages}</div>
       {/each}
+    {:else if apiError}
+      <div class="text-red-500">{apiError}</div>
     {/if}
   </form>
 {:else}
