@@ -243,6 +243,36 @@ func (r *registryCache) list() ([]*drivers.Instance, error) {
 	return res, nil
 }
 
+func (r *registryCache) health(ctx context.Context) map[string]*InstanceHealth {
+	r.mu.RLock()
+
+	res := make(map[string]*InstanceHealth, len(r.instances))
+	for _, iwc := range r.instances {
+		h := &InstanceHealth{}
+		res[iwc.instanceID] = h
+		if !iwc.running {
+			res[iwc.instanceID].Controller = iwc.controllerErr
+			continue
+		}
+	}
+	r.mu.RUnlock()
+
+	for k, v := range res {
+		repo, release, err := r.rt.Repo(ctx, k)
+		if err != nil {
+			release()
+			v.RepoSync = err
+			continue
+		}
+
+		rh := repo.Health(ctx)
+		v.RepoSync = rh.Sync
+		v.AdminConnect = rh.AdminConnect
+		release()
+	}
+	return res
+}
+
 func (r *registryCache) get(instanceID string) (*drivers.Instance, error) {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

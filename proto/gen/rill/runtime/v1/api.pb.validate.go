@@ -264,6 +264,366 @@ var _ interface {
 	ErrorName() string
 } = PingResponseValidationError{}
 
+// Validate checks the field values on HealthzRequest with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *HealthzRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on HealthzRequest with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in HealthzRequestMultiError,
+// or nil if none found.
+func (m *HealthzRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *HealthzRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return HealthzRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// HealthzRequestMultiError is an error wrapping multiple validation errors
+// returned by HealthzRequest.ValidateAll() if the designated constraints
+// aren't met.
+type HealthzRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m HealthzRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m HealthzRequestMultiError) AllErrors() []error { return m }
+
+// HealthzRequestValidationError is the validation error returned by
+// HealthzRequest.Validate if the designated constraints aren't met.
+type HealthzRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e HealthzRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e HealthzRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e HealthzRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e HealthzRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e HealthzRequestValidationError) ErrorName() string { return "HealthzRequestValidationError" }
+
+// Error satisfies the builtin error interface
+func (e HealthzRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sHealthzRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = HealthzRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = HealthzRequestValidationError{}
+
+// Validate checks the field values on HealthzResponse with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// first error encountered is returned, or nil if there are no violations.
+func (m *HealthzResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on HealthzResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// HealthzResponseMultiError, or nil if none found.
+func (m *HealthzResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *HealthzResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Limiter
+
+	// no validation rules for ConnCache
+
+	// no validation rules for Metastore
+
+	// no validation rules for Network
+
+	{
+		sorted_keys := make([]string, len(m.GetInstances()))
+		i := 0
+		for key := range m.GetInstances() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetInstances()[key]
+			_ = val
+
+			// no validation rules for Instances[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, HealthzResponseValidationError{
+							field:  fmt.Sprintf("Instances[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, HealthzResponseValidationError{
+							field:  fmt.Sprintf("Instances[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return HealthzResponseValidationError{
+						field:  fmt.Sprintf("Instances[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
+	if len(errors) > 0 {
+		return HealthzResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// HealthzResponseMultiError is an error wrapping multiple validation errors
+// returned by HealthzResponse.ValidateAll() if the designated constraints
+// aren't met.
+type HealthzResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m HealthzResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m HealthzResponseMultiError) AllErrors() []error { return m }
+
+// HealthzResponseValidationError is the validation error returned by
+// HealthzResponse.Validate if the designated constraints aren't met.
+type HealthzResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e HealthzResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e HealthzResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e HealthzResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e HealthzResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e HealthzResponseValidationError) ErrorName() string { return "HealthzResponseValidationError" }
+
+// Error satisfies the builtin error interface
+func (e HealthzResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sHealthzResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = HealthzResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = HealthzResponseValidationError{}
+
+// Validate checks the field values on InstanceHealth with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *InstanceHealth) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on InstanceHealth with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in InstanceHealthMultiError,
+// or nil if none found.
+func (m *InstanceHealth) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *InstanceHealth) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Controller
+
+	// no validation rules for RepoSync
+
+	// no validation rules for AdminConnect
+
+	if len(errors) > 0 {
+		return InstanceHealthMultiError(errors)
+	}
+
+	return nil
+}
+
+// InstanceHealthMultiError is an error wrapping multiple validation errors
+// returned by InstanceHealth.ValidateAll() if the designated constraints
+// aren't met.
+type InstanceHealthMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m InstanceHealthMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m InstanceHealthMultiError) AllErrors() []error { return m }
+
+// InstanceHealthValidationError is the validation error returned by
+// InstanceHealth.Validate if the designated constraints aren't met.
+type InstanceHealthValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e InstanceHealthValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e InstanceHealthValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e InstanceHealthValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e InstanceHealthValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e InstanceHealthValidationError) ErrorName() string { return "InstanceHealthValidationError" }
+
+// Error satisfies the builtin error interface
+func (e InstanceHealthValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sInstanceHealth.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = InstanceHealthValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = InstanceHealthValidationError{}
+
 // Validate checks the field values on Instance with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
 // error encountered is returned, or nil if there are no violations.

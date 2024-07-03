@@ -11,6 +11,12 @@ import (
 // NOTE: Not using RETURNING, indexes, transactions or any other fancy features to avoid DuckDB bugs.
 // The DuckDB database lock and acquireMetaConn anyway ensure we don't need to worry about concurrency.
 
+func (c *connection) Ping(ctx context.Context) error {
+	var r int
+	err := c.db.QueryRowxContext(ctx, "SELECT 1").Scan(&r)
+	return err
+}
+
 func (c *connection) NextControllerVersion(ctx context.Context) (int64, error) {
 	conn, release, err := c.acquireMetaConn(ctx)
 	if err != nil {

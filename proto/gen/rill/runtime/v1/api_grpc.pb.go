@@ -20,6 +20,7 @@ const _ = grpc.SupportPackageIsVersion8
 
 const (
 	RuntimeService_Ping_FullMethodName                    = "/rill.runtime.v1.RuntimeService/Ping"
+	RuntimeService_Healthz_FullMethodName                 = "/rill.runtime.v1.RuntimeService/Healthz"
 	RuntimeService_ListInstances_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListInstances"
 	RuntimeService_GetInstance_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetInstance"
 	RuntimeService_CreateInstance_FullMethodName          = "/rill.runtime.v1.RuntimeService/CreateInstance"
@@ -59,6 +60,7 @@ const (
 type RuntimeServiceClient interface {
 	// Ping returns information about the runtime
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	Healthz(ctx context.Context, in *HealthzRequest, opts ...grpc.CallOption) (*HealthzResponse, error)
 	// ListInstances lists all the instances currently managed by the runtime
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
 	// GetInstance returns information about a specific instance
@@ -132,6 +134,16 @@ func (c *runtimeServiceClient) Ping(ctx context.Context, in *PingRequest, opts .
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(PingResponse)
 	err := c.cc.Invoke(ctx, RuntimeService_Ping_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *runtimeServiceClient) Healthz(ctx context.Context, in *HealthzRequest, opts ...grpc.CallOption) (*HealthzResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HealthzResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_Healthz_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -496,6 +508,7 @@ func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTR
 type RuntimeServiceServer interface {
 	// Ping returns information about the runtime
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	Healthz(context.Context, *HealthzRequest) (*HealthzResponse, error)
 	// ListInstances lists all the instances currently managed by the runtime
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
 	// GetInstance returns information about a specific instance
@@ -564,6 +577,9 @@ type UnimplementedRuntimeServiceServer struct {
 
 func (UnimplementedRuntimeServiceServer) Ping(context.Context, *PingRequest) (*PingResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method Ping not implemented")
+}
+func (UnimplementedRuntimeServiceServer) Healthz(context.Context, *HealthzRequest) (*HealthzResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method Healthz not implemented")
 }
 func (UnimplementedRuntimeServiceServer) ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListInstances not implemented")
@@ -676,6 +692,24 @@ func _RuntimeService_Ping_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(RuntimeServiceServer).Ping(ctx, req.(*PingRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _RuntimeService_Healthz_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HealthzRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).Healthz(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_Healthz_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).Healthz(ctx, req.(*HealthzRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1203,6 +1237,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "Ping",
 			Handler:    _RuntimeService_Ping_Handler,
+		},
+		{
+			MethodName: "Healthz",
+			Handler:    _RuntimeService_Healthz_Handler,
 		},
 		{
 			MethodName: "ListInstances",

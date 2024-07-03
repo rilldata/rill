@@ -11,10 +11,24 @@ import (
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/go-git/go-git/v5"
+	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
 var listFileslimit = 2000
+
+func (h *Handle) Health(ctx context.Context) drivers.RepoHealth {
+	res := drivers.RepoHealth{
+		Sync: h.syncErr,
+	}
+
+	// check connectivity with admin service
+	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
+	if err != nil {
+		res.AdminConnect = err
+	}
+	return res
+}
 
 func (h *Handle) Root() string {
 	return h.projPath
@@ -149,7 +163,8 @@ func (h *Handle) Delete(ctx context.Context, filePath string, force bool) error 
 }
 
 func (h *Handle) Sync(ctx context.Context) error {
-	return h.cloneOrPull(ctx)
+	h.syncErr = h.cloneOrPull(ctx)
+	return h.syncErr
 }
 
 func (h *Handle) Watch(ctx context.Context, callback drivers.WatchCallback) error {

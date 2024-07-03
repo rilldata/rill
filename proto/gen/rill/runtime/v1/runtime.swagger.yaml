@@ -293,6 +293,20 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/healthz:
+    get:
+      operationId: RuntimeService_Healthz
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1HealthzResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -3867,6 +3881,24 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
+  v1HealthzResponse:
+    type: object
+    properties:
+      limiter:
+        type: string
+      connCache:
+        type: string
+      metastore:
+        type: string
+      network:
+        type: string
+      instances:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1InstanceHealth'
+    description: |-
+      Response message for RuntimeService.Healthz
+      The fields will be set to corresponding errors if any.
   v1HistogramMethod:
     type: string
     enum:
@@ -3932,6 +3964,15 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
+  v1InstanceHealth:
+    type: object
+    properties:
+      controller:
+        type: string
+      repoSync:
+        type: string
+      adminConnect:
+        type: string
   v1IssueDevJWTResponse:
     type: object
     properties:

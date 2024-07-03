@@ -15,6 +15,10 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/ping"};
   }
 
+  rpc Healthz(HealthzRequest) returns (HealthzResponse) {
+    option (google.api.http) = {get: "/v1/healthz"};
+  }
+
   // Instances
 
   // ListInstances lists all the instances currently managed by the runtime
@@ -213,6 +217,24 @@ message PingResponse {
 
   // Runtime server time
   google.protobuf.Timestamp time = 2;
+}
+
+message HealthzRequest {}
+
+// Response message for RuntimeService.Healthz
+// The fields will be set to corresponding errors if any.
+message HealthzResponse {
+  string limiter = 1;
+  string conn_cache = 2;
+  string metastore = 3;
+  string network = 4;
+  map<string, InstanceHealth> instances = 5;
+}
+
+message InstanceHealth {
+  string controller = 1;
+  string repo_sync = 2;
+  string admin_connect = 3;
 }
 
 // **********

@@ -758,25 +758,6 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  dashboard?: V1Dashboard;
-  api?: V1API;
-  connector?: V1ConnectorV2;
-}
-
 export interface V1ReportState {
   nextRunOn?: string;
   currentExecution?: V1ReportExecution;
@@ -832,6 +813,25 @@ export interface V1RefreshTriggerSpec {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
+}
+
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  dashboard?: V1Dashboard;
+  api?: V1API;
+  connector?: V1ConnectorV2;
 }
 
 export type V1ReconcileStatus =
@@ -1124,6 +1124,20 @@ export interface V1MetricsViewTimeSeriesResponse {
   data?: V1TimeSeriesValue[];
 }
 
+export interface V1MetricsViewTimeSeriesRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  measureNames?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  timeGranularity?: V1TimeGrain;
+  where?: V1Expression;
+  having?: V1Expression;
+  timeZone?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewTimeRangeResponse {
   timeRangeSummary?: V1TimeRangeSummary;
 }
@@ -1190,20 +1204,6 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
-export interface V1MetricsViewTimeSeriesRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  timeGranularity?: V1TimeGrain;
-  where?: V1Expression;
-  having?: V1Expression;
-  timeZone?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1244,13 +1244,6 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1277,10 +1270,36 @@ export const V1MetricsViewComparisonMeasureType = {
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
   type?: V1MetricsViewComparisonMeasureType;
   alias?: string;
+}
+
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewColumn {
@@ -1299,27 +1318,6 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  having?: V1Expression;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
@@ -1361,23 +1359,25 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
+export interface V1MetricsViewAggregationRequest {
   instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
+  sort?: V1MetricsViewAggregationSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
   priority?: number;
-  exact?: boolean;
   filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -1434,6 +1434,12 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+export interface V1InstanceHealth {
+  controller?: string;
+  repoSync?: string;
+  adminConnect?: string;
+}
+
 export type V1InstanceAnnotations = { [key: string]: string };
 
 export type V1InstanceFeatureFlags = { [key: string]: boolean };
@@ -1478,6 +1484,20 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
+
+export type V1HealthzResponseInstances = { [key: string]: V1InstanceHealth };
+
+/**
+ * Response message for RuntimeService.Healthz
+The fields will be set to corresponding errors if any.
+ */
+export interface V1HealthzResponse {
+  limiter?: string;
+  connCache?: string;
+  metastore?: string;
+  network?: string;
+  instances?: V1HealthzResponseInstances;
+}
 
 export interface V1GetResourceResponse {
   resource?: V1Resource;

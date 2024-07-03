@@ -11,6 +11,13 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+// Ping implements drivers.RegistryStore.
+func (c *connection) Ping(ctx context.Context) error {
+	var r int
+	err := c.db.QueryRowxContext(ctx, "SELECT 1").Scan(&r)
+	return err
+}
+
 // FindInstances implements drivers.RegistryStore.
 func (c *connection) FindInstances(ctx context.Context) ([]*drivers.Instance, error) {
 	return c.findInstances(ctx, "")

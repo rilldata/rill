@@ -10,7 +10,6 @@ import (
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
-	"github.com/rilldata/rill/runtime/pkg/conncache"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
@@ -38,7 +37,7 @@ type Runtime struct {
 	activity       *activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
-	connCache      conncache.Cache
+	connCache      *connectionCache
 	queryCache     *queryCache
 	securityEngine *securityEngine
 }

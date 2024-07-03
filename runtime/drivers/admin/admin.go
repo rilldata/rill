@@ -114,6 +114,7 @@ type Handle struct {
 	repoMu               ctxsync.RWMutex
 	repoSF               *singleflight.Group
 	cloned               bool
+	syncErr              error
 	repoPath             string
 	projPath             string
 	virtualNextPageToken string
