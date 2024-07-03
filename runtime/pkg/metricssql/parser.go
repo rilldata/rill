@@ -692,7 +692,7 @@ func (t *transformer) transformValueExpr(_ context.Context, node ast.ValueExpr) 
 func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1.Resource) (string, error) {
 	spec := mv.GetMetricsView().State.ValidSpec
 	if spec == nil {
-		return "", fmt.Errorf("metrics view %q is not ready for querying, reconcile status: %q", mv.Meta.GetName(), mv.Meta.ReconcileStatus)
+		return "", fmt.Errorf("metrics view %q is not valid: (status: %q, error: %q)", mv.Meta.GetName(), mv.Meta.ReconcileStatus, mv.Meta.ReconcileError)
 	}
 
 	olap, release, err := t.controller.Runtime.OLAP(ctx, t.instanceID, spec.Connector)

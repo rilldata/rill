@@ -75,29 +75,14 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		}
 		return nil, fmt.Errorf("could not find table %q: %w", mv.Table, err)
 	}
-
-	fields := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
+	cols := make(map[string]*runtimev1.StructType_Field, len(t.Schema.Fields))
 	for _, f := range t.Schema.Fields {
-		fields[strings.ToLower(f.Name)] = f
-	}
-
-	// Check security policy rules apply to fields that exist
-	for _, rule := range mv.SecurityRules {
-		fa := rule.GetFieldAccess()
-		if fa == nil {
-			continue
-		}
-
-		for _, f := range fa.Fields {
-			if _, ok := fields[strings.ToLower(f)]; !ok {
-				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("field %q referenced in 'security' is not a dimension or measure", f))
-			}
-		}
+		cols[strings.ToLower(f.Name)] = f
 	}
 
 	// Check time dimension exists
 	if mv.TimeDimension != "" {
-		f, ok := fields[strings.ToLower(mv.TimeDimension)]
+		f, ok := cols[strings.ToLower(mv.TimeDimension)]
 		if !ok {
 			res.TimeDimensionErr = fmt.Errorf("timeseries %q is not a column in table %q", mv.TimeDimension, mv.Table)
 		} else if f.Type.Code != runtimev1.Type_CODE_TIMESTAMP && f.Type.Code != runtimev1.Type_CODE_DATE {
@@ -105,11 +90,31 @@ func (r *Runtime) ValidateMetricsView(ctx context.Context, instanceID string, mv
 		}
 	}
 
+	// Check security policy rules apply to fields that exist
+	fields := make(map[string]bool, len(mv.Dimensions)+len(mv.Measures))
+	for _, d := range mv.Dimensions {
+		fields[strings.ToLower(d.Name)] = true
+	}
+	for _, m := range mv.Measures {
+		fields[strings.ToLower(m.Name)] = true
+	}
+	for _, rule := range mv.SecurityRules {
+		fa := rule.GetFieldAccess()
+		if fa == nil {
+			continue
+		}
+		for _, f := range fa.Fields {
+			if _, ok := fields[strings.ToLower(f)]; !ok {
+				res.OtherErrs = append(res.OtherErrs, fmt.Errorf("field %q referenced in 'security' is not a dimension or measure", f))
+			}
+		}
+	}
+
 	// For performance, attempt to validate all dimensions and measures at once
 	err = validateAllDimensionsAndMeasures(ctx, olap, t, mv)
 	if err != nil {
 		// One or more dimension/measure expressions failed to validate. We need to check each one individually to provide useful errors.
-		validateIndividualDimensionsAndMeasures(ctx, olap, t, mv, fields, res)
+		validateIndividualDimensionsAndMeasures(ctx, olap, t, mv, cols, res)
 	}
 
 	// Pinot does have any native support for time shift using time grain specifiers
@@ -191,7 +196,7 @@ func validateAllDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStor
 
 // validateIndividualDimensionsAndMeasures validates each dimension and measure individually.
 // It adds validation errors to the provided res.
-func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, mv *runtimev1.MetricsViewSpec, fields map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
+func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.OLAPStore, t *drivers.Table, mv *runtimev1.MetricsViewSpec, cols map[string]*runtimev1.StructType_Field, res *ValidateMetricsViewResult) {
 	// Validate dimensions and measures concurrently with a limit of 10 concurrent validations
 	var mu sync.Mutex
 	var grp errgroup.Group
@@ -202,7 +207,7 @@ func validateIndividualDimensionsAndMeasures(ctx context.Context, olap drivers.O
 		idx := idx
 		d := d
 		grp.Go(func() error {
-			err := validateDimension(ctx, olap, t, d, fields)
+			err := validateDimension(ctx, olap, t, d, cols)
 			if err != nil {
 				mu.Lock()
 				defer mu.Unlock()
