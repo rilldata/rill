@@ -19,6 +19,7 @@ func GetAll(localProjectPath, adminURL string) (*Config, error) {
 		return nil, err
 	}
 
+	fmt.Println("GetAll", confPath)
 	data, err := os.ReadFile(confPath)
 	if err != nil {
 		if os.IsNotExist(err) {

@@ -273,10 +273,11 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 		proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
 			Id: rc.ProjectID,
 		})
-		if err != nil {
-			return "", err
+		// do not error here.
+		// this could be because the locally saved project id might not be available when project is deleted outside the project path
+		if err == nil {
+			return proj.Project.Name, nil
 		}
-		return proj.Project.Name, nil
 	}
 
 	// Verify projectPath is a Git repo with remote on Github

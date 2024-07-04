@@ -78,7 +78,7 @@ export class ProjectDeployer {
     return true;
   }
 
-  public async deploy() {
+  public async deploy(org?: string) {
     // safeguard around deploy
     if (!(await this.validate())) return;
 
@@ -92,7 +92,7 @@ export class ProjectDeployer {
     } else {
       const resp = await get(this.deployMutation).mutateAsync({
         projectName: validation.localProjectName,
-        org: validation.rillUserOrgs[0],
+        org: org ?? validation.rillUserOrgs[0],
         upload: !validation.isGithubRepo,
       });
       window.open(resp.frontendUrl, "__target");

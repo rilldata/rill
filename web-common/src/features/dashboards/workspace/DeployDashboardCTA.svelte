@@ -12,6 +12,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { ProjectDeployer } from "@rilldata/web-common/features/project/deploy";
+  import OrgSelectorDialog from "@rilldata/web-common/features/project/OrgSelectorDialog.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
   import { get } from "svelte/store";
@@ -30,6 +31,7 @@
   const deploying = deployer.deploying;
 
   let open = false;
+  let orgSelectorOpen = false;
   function onShowDeploy() {
     if (deployer.isDeployed) {
       return deployer.deploy();
@@ -40,7 +42,20 @@
 
   async function onDeploy() {
     if (!(await deployer.validate())) return;
+    if (
+      $deployValidation.data?.rillUserOrgs?.length &&
+      $deployValidation.data?.rillUserOrgs?.length > 1
+    ) {
+      orgSelectorOpen = true;
+      return;
+    }
+
     await deployer.deploy();
+    open = false;
+  }
+
+  async function onDeployToOrg(org: string) {
+    await deployer.deploy(org);
     open = false;
   }
 
@@ -48,8 +63,6 @@
     if (document.visibilityState !== "visible" || !get(deploying)) return;
     void deployer.validate();
   }
-
-  $: console.log($deployerStatus);
 </script>
 
 <svelte:window on:visibilitychange={handleVisibilityChange} />
@@ -92,3 +105,9 @@
     </div>
   </AlertDialogContent>
 </AlertDialog>
+
+<OrgSelectorDialog
+  bind:open={orgSelectorOpen}
+  orgs={$deployValidation.data?.rillUserOrgs ?? []}
+  onSelect={onDeployToOrg}
+/>
