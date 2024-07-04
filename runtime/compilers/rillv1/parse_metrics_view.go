@@ -475,11 +475,7 @@ func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 	switch r.Type {
 	case "access":
 		if allow == nil {
-			if r.If == "" {
-				return nil, fmt.Errorf("invalid security rule of type %q: must specify at least an action or a condition", r.Type)
-			}
-			tmp := true
-			allow = &tmp
+			return nil, fmt.Errorf("invalid security rule of type %q: must specify an action", r.Type)
 		}
 		return &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
@@ -491,8 +487,7 @@ func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
 		}, nil
 	case "field_access":
 		if allow == nil {
-			tmp := true
-			allow = &tmp
+			return nil, fmt.Errorf("invalid security rule of type %q: must specify an action", r.Type)
 		}
 
 		if r.All && len(r.Names) > 0 {
