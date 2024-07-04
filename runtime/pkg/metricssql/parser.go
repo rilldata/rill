@@ -702,7 +702,7 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 	defer release()
 	dialect := olap.Dialect()
 
-	security, err := t.controller.Runtime.ResolveMetricsViewSecurity(t.instanceID, t.userAttributes, t.securityRules, mv)
+	security, err := t.controller.Runtime.ResolveSecurity(t.instanceID, t.userAttributes, t.securityRules, mv)
 	if err != nil {
 		return "", err
 	}
@@ -725,7 +725,7 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 		return dialect.EscapeIdentifier(spec.Table), nil
 	}
 
-	if !security.Access {
+	if !security.CanAccess() {
 		return "", fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name.Name)
 	}
 
@@ -742,8 +742,8 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 	}
 
 	sql := "SELECT * FROM " + dialect.EscapeIdentifier(spec.Table)
-	if security.RowFilter != "" {
-		sql += " WHERE " + security.RowFilter
+	if rf := security.RowFilter(); rf != "" {
+		sql += " WHERE " + rf
 	}
 	// TODO: Incorporate security.QueryFilter
 	return fmt.Sprintf("(%s)", sql), nil

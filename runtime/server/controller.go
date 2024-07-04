@@ -11,12 +11,9 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
-	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -225,62 +222,42 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 // applySecurityPolicy applies relevant security policies to the resource.
 // The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
 func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	switch r.Resource.(type) {
-	case *runtimev1.Resource_MetricsView:
-		return s.applySecurityPolicyMetricsView(ctx, instID, r)
-	case *runtimev1.Resource_Report:
-		return s.applySecurityPolicyReport(ctx, r)
-	case *runtimev1.Resource_Alert:
-		return s.applySecurityPolicyAlert(ctx, r)
-	default:
-		return r, true, nil
-	}
-}
-
-// applySecurityPolicyMetricsView applies relevant security policies to a metrics view.
-func (s *Server) applySecurityPolicyMetricsView(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	ctx, span := tracer.Start(ctx, "applySecurityPolicyMetricsView", trace.WithAttributes(attribute.String("instance_id", instID), attribute.String("kind", r.Meta.Name.Kind), attribute.String("name", r.Meta.Name.Name)))
-	defer span.End()
-
-	mv := r.GetMetricsView()
-	attrs := auth.GetClaims(ctx).Attributes()
-	rules := auth.GetClaims(ctx).SecurityRules()
-
-	security, err := s.runtime.ResolveMetricsViewSecurity(instID, attrs, rules, r)
+	security, err := s.runtime.ResolveSecurity(instID, auth.GetClaims(ctx).Attributes(), auth.GetClaims(ctx).SecurityRules(), r)
 	if err != nil {
 		return nil, false, err
 	}
 
-	if security != nil && !security.Access {
+	if security == nil {
+		return r, true, nil
+	}
+
+	if !security.CanAccess() {
 		return nil, false, nil
 	}
 
-	mv, changed := s.applySecurityPolicyMetricsViewResolved(mv, security)
-	if changed {
-		// We mustn't modify the resource in-place
-		r = &runtimev1.Resource{
-			Meta:     r.Meta,
-			Resource: &runtimev1.Resource_MetricsView{MetricsView: mv},
-		}
+	// Some resources may need deeper checks than just access.
+	switch r.Resource.(type) {
+	case *runtimev1.Resource_MetricsView:
+		// For metrics views, we need to remove fields excluded by the field access rules.
+		return s.applyMetricsViewSecurity(r, security), true, nil
+	default:
+		// The resource can be returned as is.
+		return r, true, nil
 	}
-
-	return r, true, nil
 }
 
-// applySecurityPolicyMetricsViewResolved rewrites a metrics view based on the field access conditions of a security policy.
-func (s *Server) applySecurityPolicyMetricsViewResolved(mv *runtimev1.MetricsViewV2, policy *runtime.ResolvedMetricsViewSecurity) (*runtimev1.MetricsViewV2, bool) {
-	if policy == nil {
-		return mv, false
-	}
-	if policy.FieldAccess == nil {
-		return mv, false
+// applyMetricsViewSecurity rewrites a metrics view based on the field access conditions of a security policy.
+func (s *Server) applyMetricsViewSecurity(r *runtimev1.Resource, security *runtime.ResolvedSecurity) *runtimev1.Resource {
+	if security.CanAccessAllFields() {
+		return r
 	}
 
-	specDims, specMeasures, specChanged := s.applySecurityPolicyMetricsViewSpecResolved(mv.Spec, policy)
-	validSpecDims, validSpecMeasures, validSpecChanged := s.applySecurityPolicyMetricsViewSpecResolved(mv.State.ValidSpec, policy)
+	mv := r.GetMetricsView()
+	specDims, specMeasures, specChanged := s.applyMetricsViewSpecSecurity(mv.Spec, security)
+	validSpecDims, validSpecMeasures, validSpecChanged := s.applyMetricsViewSpecSecurity(mv.State.ValidSpec, security)
 
 	if !specChanged && !validSpecChanged {
-		return mv, false
+		return r
 	}
 
 	mv = proto.Clone(mv).(*runtimev1.MetricsViewV2)
@@ -295,11 +272,15 @@ func (s *Server) applySecurityPolicyMetricsViewResolved(mv *runtimev1.MetricsVie
 		mv.State.ValidSpec.Measures = validSpecMeasures
 	}
 
-	return mv, true
+	// We mustn't modify the resource in-place
+	return &runtimev1.Resource{
+		Meta:     r.Meta,
+		Resource: &runtimev1.Resource_MetricsView{MetricsView: mv},
+	}
 }
 
-// applySecurityPolicyMetricsViewSpecResolved rewrites a metrics view spec based on the field access conditions of a security policy.
-func (s *Server) applySecurityPolicyMetricsViewSpecResolved(spec *runtimev1.MetricsViewSpec, policy *runtime.ResolvedMetricsViewSecurity) ([]*runtimev1.MetricsViewSpec_DimensionV2, []*runtimev1.MetricsViewSpec_MeasureV2, bool) {
+// applyMetricsViewSpecSecurity rewrites a metrics view spec based on the field access conditions of a security policy.
+func (s *Server) applyMetricsViewSpecSecurity(spec *runtimev1.MetricsViewSpec, policy *runtime.ResolvedSecurity) ([]*runtimev1.MetricsViewSpec_DimensionV2, []*runtimev1.MetricsViewSpec_MeasureV2, bool) {
 	if spec == nil {
 		return nil, nil, false
 	}
@@ -323,106 +304,4 @@ func (s *Server) applySecurityPolicyMetricsViewSpecResolved(spec *runtimev1.Metr
 	}
 
 	return dims, ms, true
-}
-
-// applySecurityPolicyReport applies security policies to a report.
-// TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
-func (s *Server) applySecurityPolicyReport(ctx context.Context, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	report := r.GetReport()
-	claims := auth.GetClaims(ctx)
-
-	// Allow if the owner is accessing the report
-	if report.Spec.Annotations != nil && claims.Subject() == report.Spec.Annotations["admin_owner_user_id"] {
-		return r, true, nil
-	}
-
-	// Extract admin attributes
-	var email string
-	admin := true // If no attributes are set, assume it's an admin
-	if attrs := claims.Attributes(); len(attrs) != 0 {
-		email, _ = attrs["email"].(string)
-		admin, _ = attrs["admin"].(bool)
-	}
-
-	// Allow if the user is an admin
-	if admin {
-		return r, true, nil
-	}
-
-	// Allow if the user is a recipient
-	for _, notifier := range report.Spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				if recipient == email {
-					return r, true, nil
-				}
-			}
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				return nil, false, err
-			}
-			for _, user := range props.Users {
-				if user == email {
-					return r, true, nil
-				}
-			}
-		}
-	}
-
-	// Don't allow
-	return nil, false, nil
-}
-
-// applySecurityPolicyAlert applies security policies to an alert.
-// TODO: This implementation is very specific to properties currently set by the admin server. Consider refactoring to a more generic implementation.
-func (s *Server) applySecurityPolicyAlert(ctx context.Context, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	alert := r.GetAlert()
-	claims := auth.GetClaims(ctx)
-
-	// Allow if the owner is accessing the alert
-	if alert.Spec.Annotations != nil && claims.Subject() == alert.Spec.Annotations["admin_owner_user_id"] {
-		return r, true, nil
-	}
-
-	// Extract admin attributes
-	var email string
-	admin := true // If no attributes are set, assume it's an admin
-	if attrs := claims.Attributes(); len(attrs) != 0 {
-		email, _ = attrs["email"].(string)
-		admin, _ = attrs["admin"].(bool)
-	}
-
-	// Allow if the user is an admin
-	if admin {
-		return r, true, nil
-	}
-
-	// Allow if the user is an email recipient
-	for _, notifier := range alert.Spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			recipients := pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-			for _, recipient := range recipients {
-				if recipient == email {
-					return r, true, nil
-				}
-			}
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				return nil, false, err
-			}
-			for _, user := range props.Users {
-				if user == email {
-					return r, true, nil
-				}
-			}
-		}
-	}
-
-	// Don't allow
-	return nil, false, nil
 }

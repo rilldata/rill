@@ -22,7 +22,7 @@ type Executor struct {
 	rt          *runtime.Runtime
 	instanceID  string
 	metricsView *runtimev1.MetricsViewSpec
-	security    *runtime.ResolvedMetricsViewSecurity
+	security    *runtime.ResolvedSecurity
 	priority    int
 
 	olap        drivers.OLAPStore
@@ -33,7 +33,7 @@ type Executor struct {
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
-func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, priority int) (*Executor, error) {
+func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -81,7 +81,7 @@ func (e *Executor) Watermark(ctx context.Context) (time.Time, error) {
 
 // Schema returns a schema for the metrics view's dimensions and measures.
 func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
-	if e.security != nil && !e.security.Access {
+	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
 
@@ -156,7 +156,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 // Query executes the provided query against the metrics view.
 func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Time) (*drivers.Result, bool, error) {
-	if e.security != nil && !e.security.Access {
+	if !e.security.CanAccess() {
 		return nil, false, runtime.ErrForbidden
 	}
 
@@ -269,7 +269,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 // Export executes and exports the provided query against the metrics view.
 // It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
 func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat) (string, error) {
-	if e.security != nil && !e.security.Access {
+	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
 	}
 

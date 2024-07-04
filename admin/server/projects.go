@@ -153,24 +153,6 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-
-		// Non-admins should be denied access to certain resource kinds
-		if !permissions.ManageProject {
-			rules = append(rules, &runtimev1.SecurityRule{
-				Rule: &runtimev1.SecurityRule_Access{
-					Access: &runtimev1.SecurityRuleAccess{
-						Condition: fmt.Sprintf(
-							"'{{ .self.kind }}' IN ('%s', '%s', '%s', '%s')",
-							runtime.ResourceKindSource,
-							runtime.ResourceKindModel,
-							runtime.ResourceKindMigration,
-							runtime.ResourceKindConnector,
-						),
-						Allow: false,
-					},
-				},
-			})
-		}
 	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 		if !ok {

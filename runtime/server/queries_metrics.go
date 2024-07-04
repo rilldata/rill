@@ -399,35 +399,35 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 	return q.Result, nil
 }
 
-func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, auth.GetClaims(ctx).Attributes(), auth.GetClaims(ctx).SecurityRules(), res)
+	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).Attributes(), auth.GetClaims(ctx).SecurityRules(), res)
 	if err != nil {
 		return nil, nil, err
 	}
-	if resolvedSecurity != nil && !resolvedSecurity.Access {
+	if !resolvedSecurity.CanAccess() {
 		return nil, nil, ErrForbidden
 	}
 
 	return mv, resolvedSecurity, nil
 }
 
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, rules []*runtimev1.SecurityRule) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, rules []*runtimev1.SecurityRule) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, attrs, rules, res)
+	resolvedSecurity, err := rt.ResolveSecurity(instanceID, attrs, rules, res)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if resolvedSecurity != nil && !resolvedSecurity.Access {
+	if !resolvedSecurity.CanAccess() {
 		return nil, nil, ErrForbidden
 	}
 

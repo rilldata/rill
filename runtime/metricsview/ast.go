@@ -25,7 +25,7 @@ type AST struct {
 
 	// Contextual info for building the AST
 	metricsView *runtimev1.MetricsViewSpec
-	security    *runtime.ResolvedMetricsViewSecurity
+	security    *runtime.ResolvedSecurity
 	query       *Query
 	dialect     drivers.Dialect
 }
@@ -101,7 +101,7 @@ type OrderFieldNode struct {
 // This is due to NewAST not being able (or intended) to resolve external time anchors such as watermarks.
 //
 // The qry's PivotOn must be empty. Pivot queries must be rewritten/handled upstream of NewAST.
-func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
+func NewAST(mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, qry *Query, dialect drivers.Dialect) (*AST, error) {
 	// Validation
 	if len(qry.PivotOn) > 0 {
 		return nil, errors.New("cannot build AST for pivot queries")
@@ -510,8 +510,8 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 	}
 	res = res.and(expr, args)
 
-	if a.security != nil && a.security.QueryFilter != nil {
-		e := NewExpressionFromProto(a.security.QueryFilter)
+	if qf := a.security.QueryFilter(); qf != nil {
+		e := NewExpressionFromProto(qf)
 		expr, args, err = a.sqlForExpression(e, nil, false, false)
 		if err != nil {
 			return nil, fmt.Errorf("failed to compile the security policy's query filter: %w", err)
@@ -519,8 +519,8 @@ func (a *AST) buildUnderlyingWhere() (*ExprNode, error) {
 		res = res.and(expr, args)
 	}
 
-	if a.security != nil && a.security.RowFilter != "" {
-		res = res.and(a.security.RowFilter, nil)
+	if rf := a.security.RowFilter(); rf != "" {
+		res = res.and(rf, nil)
 	}
 
 	return res, nil

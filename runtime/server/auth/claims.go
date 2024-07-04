@@ -58,6 +58,7 @@ func (c *jwtClaims) CanInstance(instanceID string, p Permission) bool {
 }
 
 func (c *jwtClaims) Attributes() map[string]any {
+	c.Attrs["sub"] = c.Subject()
 	return c.Attrs
 }
 

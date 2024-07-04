@@ -156,11 +156,11 @@ func (q *MetricsViewSearch) Export(ctx context.Context, rt *runtime.Runtime, ins
 
 var druidSQLDSN = regexp.MustCompile(`/v2/sql/?`)
 
-func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, olap drivers.OLAPStore, instanceID, table string, policy *runtime.ResolvedMetricsViewSecurity) (bool, error) {
+func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, olap drivers.OLAPStore, instanceID, table string, policy *runtime.ResolvedSecurity) (bool, error) {
 	var query map[string]interface{}
-	if policy != nil && policy.RowFilter != "" {
+	if rf := policy.RowFilter(); rf != "" {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", table, policy.RowFilter),
+			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", table, rf),
 			Args:             nil,
 			DryRun:           false,
 			Priority:         0,
@@ -245,10 +245,10 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 	return true, nil
 }
 
-func (q *MetricsViewSearch) buildSearchQuerySQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewSearch) buildSearchQuerySQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedSecurity) (string, []any, error) {
 	var baseWhereClause string
-	if policy != nil && policy.RowFilter != "" {
-		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	if rf := policy.RowFilter(); rf != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", rf)
 	}
 
 	var args []any

@@ -1,11 +1,11 @@
 package runtime
 
 import (
-	"reflect"
 	"strings"
 	"testing"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
@@ -16,11 +16,13 @@ func TestResolveMetricsView(t *testing.T) {
 		mv   *runtimev1.MetricsViewSpec
 	}
 	tests := []struct {
-		name           string
-		args           args
-		want           *ResolvedMetricsViewSecurity
-		wantErr        bool
-		errMsgContains string
+		name            string
+		args            args
+		wantAccess      bool
+		wantRowFilter   string
+		wantFieldAccess map[string]bool
+		wantErr         bool
+		errMsgContains  string
 	}{
 		{
 			name: "test_domain",
@@ -39,11 +41,9 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:    true,
-				RowFilter: "domain = 'rilldata.com'",
-			},
-			wantErr: false,
+			wantAccess:    true,
+			wantRowFilter: "domain = 'rilldata.com'",
+			wantErr:       false,
 		},
 		{
 			name: "test_group",
@@ -62,11 +62,9 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:    true,
-				RowFilter: "groups IN ('test')",
-			},
-			wantErr: false,
+			wantAccess:    true,
+			wantRowFilter: "groups IN ('test')",
+			wantErr:       false,
 		},
 		{
 			name: "test_groups",
@@ -85,11 +83,9 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:    true,
-				RowFilter: "groups IN ('g1', 'g2')",
-			},
-			wantErr: false,
+			wantAccess:    true,
+			wantRowFilter: "groups IN ('g1', 'g2')",
+			wantErr:       false,
 		},
 		{
 			name: "test_no_groups",
@@ -108,11 +104,9 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:    false,
-				RowFilter: "groups IN ('')",
-			},
-			wantErr: false,
+			wantAccess:    false,
+			wantRowFilter: "groups IN ('')",
+			wantErr:       false,
 		},
 		{
 			name: "test_include",
@@ -146,12 +140,10 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:      true,
-				FieldAccess: map[string]bool{"col2": true, "col3": true},
-				RowFilter:   "groups IN ('all')",
-			},
-			wantErr: false,
+			wantAccess:      true,
+			wantFieldAccess: map[string]bool{"col2": true, "col3": true},
+			wantRowFilter:   "groups IN ('all')",
+			wantErr:         false,
 		},
 		{
 			name: "test_include_list",
@@ -185,12 +177,10 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:      true,
-				FieldAccess: map[string]bool{"col2": true, "col3": true},
-				RowFilter:   "groups IN ('all')",
-			},
-			wantErr: false,
+			wantAccess:      true,
+			wantFieldAccess: map[string]bool{"col2": true, "col3": true},
+			wantRowFilter:   "groups IN ('all')",
+			wantErr:         false,
 		},
 		{
 			name: "test_include_empty_condition",
@@ -217,10 +207,8 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:      false,
-				FieldAccess: map[string]bool{"col1": true, "col2": true},
-			},
+			wantAccess:      false,
+			wantFieldAccess: map[string]bool{"col1": true, "col2": true},
 		},
 		{
 			name: "test_no_include_matched",
@@ -247,9 +235,7 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				FieldAccess: map[string]bool{},
-			},
+			wantFieldAccess: map[string]bool{},
 		},
 		{
 			name: "test_exclude",
@@ -276,10 +262,8 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				FieldAccess: map[string]bool{"col2": false},
-			},
-			wantErr: false,
+			wantFieldAccess: map[string]bool{"col2": false},
+			wantErr:         false,
 		},
 		{
 			name: "test_exclude_list",
@@ -306,10 +290,8 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				FieldAccess: map[string]bool{},
-			},
-			wantErr: false,
+			wantFieldAccess: map[string]bool{},
+			wantErr:         false,
 		},
 		{
 			name: "test_deny_precedence",
@@ -344,10 +326,8 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				FieldAccess: map[string]bool{"col1": true, "col2": false},
-			},
-			wantErr: false,
+			wantFieldAccess: map[string]bool{"col1": true, "col2": false},
+			wantErr:         false,
 		},
 		{
 			name: "test_no_exclude_matched",
@@ -382,10 +362,8 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				FieldAccess: map[string]bool{"col1": true, "col2": true},
-			},
-			wantErr: false,
+			wantFieldAccess: map[string]bool{"col1": true, "col2": true},
+			wantErr:         false,
 		},
 		{
 			name: "test_empty_Security",
@@ -399,8 +377,8 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{},
 			},
-			want:    nil,
-			wantErr: false,
+			wantAccess: true,
+			wantErr:    false,
 		},
 		{
 			name: "test_nil_Security",
@@ -414,8 +392,8 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 				mv: &runtimev1.MetricsViewSpec{},
 			},
-			want:    nil,
-			wantErr: false,
+			wantAccess: true,
+			wantErr:    false,
 		},
 		{
 			name: "test_empty_user_attr",
@@ -429,10 +407,9 @@ func TestResolveMetricsView(t *testing.T) {
 				},
 			},
 			// since aud is nil in test case, open policy will be applied which same as local dev experience
-			want: &ResolvedMetricsViewSecurity{
-				Access: true,
-			},
-			wantErr: false,
+
+			wantAccess: true,
+			wantErr:    false,
 		},
 		{
 			name: "test_empty_access",
@@ -450,11 +427,9 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:    false,
-				RowFilter: "domain = 'rilldata.com'",
-			},
-			wantErr: false,
+			wantAccess:    false,
+			wantRowFilter: "domain = 'rilldata.com'",
+			wantErr:       false,
 		},
 		{
 			name: "test_composite_condition_1",
@@ -473,11 +448,9 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:    false,
-				RowFilter: "groups IN ('test')",
-			},
-			wantErr: false,
+			wantAccess:    false,
+			wantRowFilter: "groups IN ('test')",
+			wantErr:       false,
 		},
 		{
 			name: "test_composite_condition_2",
@@ -496,11 +469,9 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			want: &ResolvedMetricsViewSecurity{
-				Access:    true,
-				RowFilter: "groups IN ('test')",
-			},
-			wantErr: false,
+			wantAccess:    true,
+			wantRowFilter: "groups IN ('test')",
+			wantErr:       false,
 		},
 	}
 	for _, tt := range tests {
@@ -524,19 +495,22 @@ func TestResolveMetricsView(t *testing.T) {
 			}
 
 			p := newSecurityEngine(1, zap.NewNop())
-			got, err := p.resolveMetricsViewSecurity("", "test", tt.args.attr, nil, r)
+			got, err := p.resolveSecurity("", "test", tt.args.attr, nil, r)
 			if tt.wantErr {
 				if err == nil || !strings.Contains(err.Error(), tt.errMsgContains) {
-					t.Errorf("ResolveMetricsViewSecurity() error = %v, wantErr %v", err, tt.wantErr)
+					t.Errorf("ResolveSecurity() error = %v, wantErr %v", err, tt.wantErr)
 				}
 				return
 			}
 			if err != nil {
-				t.Errorf("ResolveMetricsViewSecurity() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ResolveSecurity() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ResolveMetricsViewSecurity() got = %v, want %v", got, tt.want)
+
+			require.Equal(t, tt.wantAccess, got.CanAccess())
+			require.Equal(t, tt.wantRowFilter, got.RowFilter())
+			if tt.wantFieldAccess != nil || got != nil {
+				require.Equal(t, tt.wantFieldAccess, got.fieldAccess)
 			}
 		})
 	}
