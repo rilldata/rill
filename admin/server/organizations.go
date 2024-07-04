@@ -776,8 +776,8 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// delete from all user group
-	err = s.admin.DB.DeleteUsergroupMember(ctx, *org.AllUsergroupID, claims.OwnerID())
+	// delete from all user groups of the org
+	err = s.admin.DB.DeleteUsergroupsMember(ctx, claims.OwnerID(), org.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
