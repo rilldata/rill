@@ -223,6 +223,10 @@ export type AdminServiceUpdateOrganizationBillingSubscriptionBody = {
   planName?: string;
 };
 
+export type AdminServiceGetOrganizationBillingSessionURLParams = {
+  returnUrl?: string;
+};
+
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
@@ -325,11 +329,6 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
-}
-
-export interface V1UpdateOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1UpdateBookmarkResponse {
@@ -435,6 +434,11 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1UpdateOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
@@ -647,6 +651,7 @@ export interface V1Organization {
   description?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
+  paymentCustomerId?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -828,6 +833,12 @@ export interface V1GetOrganizationResponse {
 export interface V1GetOrganizationBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
+  billingPortalUrl?: string;
+  hasPaymentMethod?: boolean;
+}
+
+export interface V1GetOrganizationBillingSessionURLResponse {
+  url?: string;
 }
 
 export interface V1GetIFrameResponse {

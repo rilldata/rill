@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"net"
 	"strconv"
 	"testing"
@@ -62,6 +63,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		ai.NewNoop(),
 		nil,
 		billing.NewNoop(),
+		payment.NewNoop(),
 	)
 	require.NoError(t, err)
 

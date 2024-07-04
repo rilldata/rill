@@ -1966,6 +1966,10 @@ func (m *GetOrganizationBillingSubscriptionResponse) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for BillingPortalUrl
+
+	// no validation rules for HasPaymentMethod
+
 	if len(errors) > 0 {
 		return GetOrganizationBillingSubscriptionResponseMultiError(errors)
 	}
@@ -2047,6 +2051,224 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetOrganizationBillingSubscriptionResponseValidationError{}
+
+// Validate checks the field values on GetOrganizationBillingSessionURLRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *GetOrganizationBillingSessionURLRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// GetOrganizationBillingSessionURLRequest with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// GetOrganizationBillingSessionURLRequestMultiError, or nil if none found.
+func (m *GetOrganizationBillingSessionURLRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetOrganizationBillingSessionURLRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for OrgName
+
+	// no validation rules for ReturnUrl
+
+	if len(errors) > 0 {
+		return GetOrganizationBillingSessionURLRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetOrganizationBillingSessionURLRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// GetOrganizationBillingSessionURLRequest.ValidateAll() if the designated
+// constraints aren't met.
+type GetOrganizationBillingSessionURLRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetOrganizationBillingSessionURLRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetOrganizationBillingSessionURLRequestMultiError) AllErrors() []error { return m }
+
+// GetOrganizationBillingSessionURLRequestValidationError is the validation
+// error returned by GetOrganizationBillingSessionURLRequest.Validate if the
+// designated constraints aren't met.
+type GetOrganizationBillingSessionURLRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetOrganizationBillingSessionURLRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetOrganizationBillingSessionURLRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetOrganizationBillingSessionURLRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetOrganizationBillingSessionURLRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetOrganizationBillingSessionURLRequestValidationError) ErrorName() string {
+	return "GetOrganizationBillingSessionURLRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetOrganizationBillingSessionURLRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetOrganizationBillingSessionURLRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetOrganizationBillingSessionURLRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetOrganizationBillingSessionURLRequestValidationError{}
+
+// Validate checks the field values on GetOrganizationBillingSessionURLResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *GetOrganizationBillingSessionURLResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// GetOrganizationBillingSessionURLResponse with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// GetOrganizationBillingSessionURLResponseMultiError, or nil if none found.
+func (m *GetOrganizationBillingSessionURLResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *GetOrganizationBillingSessionURLResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Url
+
+	if len(errors) > 0 {
+		return GetOrganizationBillingSessionURLResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// GetOrganizationBillingSessionURLResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// GetOrganizationBillingSessionURLResponse.ValidateAll() if the designated
+// constraints aren't met.
+type GetOrganizationBillingSessionURLResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m GetOrganizationBillingSessionURLResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m GetOrganizationBillingSessionURLResponseMultiError) AllErrors() []error { return m }
+
+// GetOrganizationBillingSessionURLResponseValidationError is the validation
+// error returned by GetOrganizationBillingSessionURLResponse.Validate if the
+// designated constraints aren't met.
+type GetOrganizationBillingSessionURLResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e GetOrganizationBillingSessionURLResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e GetOrganizationBillingSessionURLResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e GetOrganizationBillingSessionURLResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e GetOrganizationBillingSessionURLResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e GetOrganizationBillingSessionURLResponseValidationError) ErrorName() string {
+	return "GetOrganizationBillingSessionURLResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e GetOrganizationBillingSessionURLResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sGetOrganizationBillingSessionURLResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = GetOrganizationBillingSessionURLResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = GetOrganizationBillingSessionURLResponseValidationError{}
 
 // Validate checks the field values on ListProjectsForOrganizationRequest with
 // the rules defined in the proto definition for this message. If any rules
@@ -23110,6 +23332,8 @@ func (m *Organization) validate(all bool) error {
 	}
 
 	// no validation rules for BillingCustomerId
+
+	// no validation rules for PaymentCustomerId
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

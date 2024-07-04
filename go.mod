@@ -80,6 +80,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/startreedata/pinot-client-go v0.4.0
 	github.com/stretchr/testify v1.9.0
+	github.com/stripe/stripe-go/v79 v79.0.0
 	github.com/testcontainers/testcontainers-go v0.27.0
 	github.com/testcontainers/testcontainers-go/modules/clickhouse v0.27.0
 	github.com/xuri/excelize/v2 v2.7.1

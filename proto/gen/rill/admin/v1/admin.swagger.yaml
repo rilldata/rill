@@ -274,6 +274,30 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{orgName}/billing/payments/session-url:
+    get:
+      summary: GetOrganizationBillingSessionURL returns the URL for the billing session to collect payment method
+      operationId: AdminService_GetOrganizationBillingSessionURL
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetOrganizationBillingSessionURLResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: orgName
+          in: path
+          required: true
+          type: string
+        - name: returnUrl
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{orgName}/billing/subscriptions:
     get:
       summary: GetOrganizationBillingSubscription lists the subscription for the organization
@@ -2907,6 +2931,11 @@ definitions:
       ttlSeconds:
         type: integer
         format: int64
+  v1GetOrganizationBillingSessionURLResponse:
+    type: object
+    properties:
+      url:
+        type: string
   v1GetOrganizationBillingSubscriptionResponse:
     type: object
     properties:
@@ -2914,6 +2943,10 @@ definitions:
         $ref: '#/definitions/v1Organization'
       subscription:
         $ref: '#/definitions/v1Subscription'
+      billingPortalUrl:
+        type: string
+      hasPaymentMethod:
+        type: boolean
   v1GetOrganizationResponse:
     type: object
     properties:
@@ -3205,6 +3238,8 @@ definitions:
       quotas:
         $ref: '#/definitions/v1OrganizationQuotas'
       billingCustomerId:
+        type: string
+      paymentCustomerId:
         type: string
       createdOn:
         type: string

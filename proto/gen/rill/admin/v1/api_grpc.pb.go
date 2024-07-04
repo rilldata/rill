@@ -27,6 +27,7 @@ const (
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
 	AdminService_UpdateOrganizationBillingSubscription_FullMethodName = "/rill.admin.v1.AdminService/UpdateOrganizationBillingSubscription"
 	AdminService_GetOrganizationBillingSubscription_FullMethodName    = "/rill.admin.v1.AdminService/GetOrganizationBillingSubscription"
+	AdminService_GetOrganizationBillingSessionURL_FullMethodName      = "/rill.admin.v1.AdminService/GetOrganizationBillingSessionURL"
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_SearchProjectNames_FullMethodName                    = "/rill.admin.v1.AdminService/SearchProjectNames"
@@ -129,6 +130,8 @@ type AdminServiceClient interface {
 	UpdateOrganizationBillingSubscription(ctx context.Context, in *UpdateOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateOrganizationBillingSubscriptionResponse, error)
 	// GetOrganizationBillingSubscription lists the subscription for the organization
 	GetOrganizationBillingSubscription(ctx context.Context, in *GetOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSubscriptionResponse, error)
+	// GetOrganizationBillingSessionURL returns the URL for the billing session to collect payment method
+	GetOrganizationBillingSessionURL(ctx context.Context, in *GetOrganizationBillingSessionURLRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSessionURLResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -375,6 +378,16 @@ func (c *adminServiceClient) GetOrganizationBillingSubscription(ctx context.Cont
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetOrganizationBillingSubscriptionResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetOrganizationBillingSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetOrganizationBillingSessionURL(ctx context.Context, in *GetOrganizationBillingSessionURLRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSessionURLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetOrganizationBillingSessionURLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetOrganizationBillingSessionURL_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1201,6 +1214,8 @@ type AdminServiceServer interface {
 	UpdateOrganizationBillingSubscription(context.Context, *UpdateOrganizationBillingSubscriptionRequest) (*UpdateOrganizationBillingSubscriptionResponse, error)
 	// GetOrganizationBillingSubscription lists the subscription for the organization
 	GetOrganizationBillingSubscription(context.Context, *GetOrganizationBillingSubscriptionRequest) (*GetOrganizationBillingSubscriptionResponse, error)
+	// GetOrganizationBillingSessionURL returns the URL for the billing session to collect payment method
+	GetOrganizationBillingSessionURL(context.Context, *GetOrganizationBillingSessionURLRequest) (*GetOrganizationBillingSessionURLResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -1393,6 +1408,9 @@ func (UnimplementedAdminServiceServer) UpdateOrganizationBillingSubscription(con
 }
 func (UnimplementedAdminServiceServer) GetOrganizationBillingSubscription(context.Context, *GetOrganizationBillingSubscriptionRequest) (*GetOrganizationBillingSubscriptionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationBillingSubscription not implemented")
+}
+func (UnimplementedAdminServiceServer) GetOrganizationBillingSessionURL(context.Context, *GetOrganizationBillingSessionURLRequest) (*GetOrganizationBillingSessionURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationBillingSessionURL not implemented")
 }
 func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganization not implemented")
@@ -1787,6 +1805,24 @@ func _AdminService_GetOrganizationBillingSubscription_Handler(srv interface{}, c
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetOrganizationBillingSubscription(ctx, req.(*GetOrganizationBillingSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetOrganizationBillingSessionURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetOrganizationBillingSessionURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetOrganizationBillingSessionURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetOrganizationBillingSessionURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetOrganizationBillingSessionURL(ctx, req.(*GetOrganizationBillingSessionURLRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3269,6 +3305,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetOrganizationBillingSubscription",
 			Handler:    _AdminService_GetOrganizationBillingSubscription_Handler,
+		},
+		{
+			MethodName: "GetOrganizationBillingSessionURL",
+			Handler:    _AdminService_GetOrganizationBillingSessionURL_Handler,
 		},
 		{
 			MethodName: "ListProjectsForOrganization",

@@ -32,6 +32,8 @@ import type {
   V1DeleteOrganizationResponse,
   V1UpdateOrganizationResponse,
   AdminServiceUpdateOrganizationBody,
+  V1GetOrganizationBillingSessionURLResponse,
+  AdminServiceGetOrganizationBillingSessionURLParams,
   V1GetOrganizationBillingSubscriptionResponse,
   V1UpdateOrganizationBillingSubscriptionResponse,
   AdminServiceUpdateOrganizationBillingSubscriptionBody,
@@ -742,6 +744,79 @@ export const createAdminServiceUpdateOrganization = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary GetOrganizationBillingSessionURL returns the URL for the billing session to collect payment method
+ */
+export const adminServiceGetOrganizationBillingSessionURL = (
+  orgName: string,
+  params?: AdminServiceGetOrganizationBillingSessionURLParams,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetOrganizationBillingSessionURLResponse>({
+    url: `/v1/organizations/${orgName}/billing/payments/session-url`,
+    method: "get",
+    params,
+    signal,
+  });
+};
+
+export const getAdminServiceGetOrganizationBillingSessionURLQueryKey = (
+  orgName: string,
+  params?: AdminServiceGetOrganizationBillingSessionURLParams,
+) => [
+  `/v1/organizations/${orgName}/billing/payments/session-url`,
+  ...(params ? [params] : []),
+];
+
+export type AdminServiceGetOrganizationBillingSessionURLQueryResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>>
+  >;
+export type AdminServiceGetOrganizationBillingSessionURLQueryError = RpcStatus;
+
+export const createAdminServiceGetOrganizationBillingSessionURL = <
+  TData = Awaited<
+    ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>
+  >,
+  TError = RpcStatus,
+>(
+  orgName: string,
+  params?: AdminServiceGetOrganizationBillingSessionURLParams,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetOrganizationBillingSessionURLQueryKey(orgName, params);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>>
+  > = ({ signal }) =>
+    adminServiceGetOrganizationBillingSessionURL(orgName, params, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!orgName,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary GetOrganizationBillingSubscription lists the subscription for the organization
  */
