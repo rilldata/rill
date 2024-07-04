@@ -85,15 +85,15 @@ var _ Cache = (*cacheImpl)(nil)
 // - If the ctx for an open call is cancelled, the entry will continue opening in the background (and will be put in the LRU).
 // - If attempting to open a closing entry, or close an opening entry, we wait for the singleflight to complete and then retry once. To avoid infinite loops, we don't retry more than once.
 type cacheImpl struct {
-	opts         Options
-	closed       bool
-	mu           sync.Mutex
-	entries      map[string]*entry
-	hungConnErr  error
-	lru          *simplelru.LRU
-	singleflight map[string]chan struct{}
-	ctx          context.Context
-	cancel       context.CancelFunc
+	opts           Options
+	closed         bool
+	mu             sync.Mutex
+	entries        map[string]*entry
+	hangingConnErr error
+	lru            *simplelru.LRU
+	singleflight   map[string]chan struct{}
+	ctx            context.Context
+	cancel         context.CancelFunc
 }
 
 type entry struct {
@@ -330,7 +330,7 @@ func (c *cacheImpl) Close(ctx context.Context) error {
 func (c *cacheImpl) HangingErr() error {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	return c.hungConnErr
+	return c.hangingConnErr
 }
 
 // beginClose must be called while c.mu is held.
@@ -449,7 +449,7 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 			for k := range c.singleflight {
 				e := c.entries[k]
 				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) > c.opts.OpenTimeout {
-					hungConnErr = fmt.Errorf("a %q connection has been in opening state for too long", e.handle.Driver())
+					hungConnErr = fmt.Errorf("a connection has been in opening state for too long")
 					c.opts.HangingFunc(e.cfg, true)
 				}
 				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) > c.opts.CloseTimeout {
@@ -457,7 +457,7 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 					c.opts.HangingFunc(e.cfg, false)
 				}
 			}
-			c.hungConnErr = hungConnErr
+			c.hangingConnErr = hungConnErr
 			c.mu.Unlock()
 		case <-c.ctx.Done():
 			return

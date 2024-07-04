@@ -141,14 +141,12 @@ type rillYAML struct {
 
 // Ping implements drivers.Handle.
 func (h *Handle) Ping(ctx context.Context) error {
-	h.repoMu.Lock(ctx)
-	syncErr := h.syncErr
-	h.repoMu.Unlock()
-
 	// check connectivity with admin service
 	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
 
-	return multierr.Combine(syncErr, err)
+	_ = h.repoMu.Lock(ctx)
+	defer h.repoMu.Unlock()
+	return multierr.Combine(err, h.syncErr)
 }
 
 // Driver implements drivers.Handle.
