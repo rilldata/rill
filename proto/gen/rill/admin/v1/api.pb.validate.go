@@ -8680,6 +8680,250 @@ var _ interface {
 	ErrorName() string
 } = DeleteUsergroupResponseValidationError{}
 
+// Validate checks the field values on AddOrganizationMemberUsergroupRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *AddOrganizationMemberUsergroupRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AddOrganizationMemberUsergroupRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// AddOrganizationMemberUsergroupRequestMultiError, or nil if none found.
+func (m *AddOrganizationMemberUsergroupRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddOrganizationMemberUsergroupRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := AddOrganizationMemberUsergroupRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUsergroup()) < 1 {
+		err := AddOrganizationMemberUsergroupRequestValidationError{
+			field:  "Usergroup",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := AddOrganizationMemberUsergroupRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return AddOrganizationMemberUsergroupRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddOrganizationMemberUsergroupRequestMultiError is an error wrapping
+// multiple validation errors returned by
+// AddOrganizationMemberUsergroupRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AddOrganizationMemberUsergroupRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddOrganizationMemberUsergroupRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddOrganizationMemberUsergroupRequestMultiError) AllErrors() []error { return m }
+
+// AddOrganizationMemberUsergroupRequestValidationError is the validation error
+// returned by AddOrganizationMemberUsergroupRequest.Validate if the
+// designated constraints aren't met.
+type AddOrganizationMemberUsergroupRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddOrganizationMemberUsergroupRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddOrganizationMemberUsergroupRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddOrganizationMemberUsergroupRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddOrganizationMemberUsergroupRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddOrganizationMemberUsergroupRequestValidationError) ErrorName() string {
+	return "AddOrganizationMemberUsergroupRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddOrganizationMemberUsergroupRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddOrganizationMemberUsergroupRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddOrganizationMemberUsergroupRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddOrganizationMemberUsergroupRequestValidationError{}
+
+// Validate checks the field values on AddOrganizationMemberUsergroupResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *AddOrganizationMemberUsergroupResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// AddOrganizationMemberUsergroupResponse with the rules defined in the proto
+// definition for this message. If any rules are violated, the result is a
+// list of violation errors wrapped in
+// AddOrganizationMemberUsergroupResponseMultiError, or nil if none found.
+func (m *AddOrganizationMemberUsergroupResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddOrganizationMemberUsergroupResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return AddOrganizationMemberUsergroupResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddOrganizationMemberUsergroupResponseMultiError is an error wrapping
+// multiple validation errors returned by
+// AddOrganizationMemberUsergroupResponse.ValidateAll() if the designated
+// constraints aren't met.
+type AddOrganizationMemberUsergroupResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddOrganizationMemberUsergroupResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddOrganizationMemberUsergroupResponseMultiError) AllErrors() []error { return m }
+
+// AddOrganizationMemberUsergroupResponseValidationError is the validation
+// error returned by AddOrganizationMemberUsergroupResponse.Validate if the
+// designated constraints aren't met.
+type AddOrganizationMemberUsergroupResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddOrganizationMemberUsergroupResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddOrganizationMemberUsergroupResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddOrganizationMemberUsergroupResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddOrganizationMemberUsergroupResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddOrganizationMemberUsergroupResponseValidationError) ErrorName() string {
+	return "AddOrganizationMemberUsergroupResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddOrganizationMemberUsergroupResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddOrganizationMemberUsergroupResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddOrganizationMemberUsergroupResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddOrganizationMemberUsergroupResponseValidationError{}
+
 // Validate checks the field values on
 // SetOrganizationMemberUsergroupRoleRequest with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -9158,6 +9402,260 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = RemoveOrganizationMemberUsergroupResponseValidationError{}
+
+// Validate checks the field values on AddProjectMemberUsergroupRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *AddProjectMemberUsergroupRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AddProjectMemberUsergroupRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// AddProjectMemberUsergroupRequestMultiError, or nil if none found.
+func (m *AddProjectMemberUsergroupRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddProjectMemberUsergroupRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := AddProjectMemberUsergroupRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetProject()) < 1 {
+		err := AddProjectMemberUsergroupRequestValidationError{
+			field:  "Project",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetUsergroup()) < 1 {
+		err := AddProjectMemberUsergroupRequestValidationError{
+			field:  "Usergroup",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if utf8.RuneCountInString(m.GetRole()) < 1 {
+		err := AddProjectMemberUsergroupRequestValidationError{
+			field:  "Role",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return AddProjectMemberUsergroupRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddProjectMemberUsergroupRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// AddProjectMemberUsergroupRequest.ValidateAll() if the designated
+// constraints aren't met.
+type AddProjectMemberUsergroupRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddProjectMemberUsergroupRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddProjectMemberUsergroupRequestMultiError) AllErrors() []error { return m }
+
+// AddProjectMemberUsergroupRequestValidationError is the validation error
+// returned by AddProjectMemberUsergroupRequest.Validate if the designated
+// constraints aren't met.
+type AddProjectMemberUsergroupRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddProjectMemberUsergroupRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddProjectMemberUsergroupRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddProjectMemberUsergroupRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddProjectMemberUsergroupRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddProjectMemberUsergroupRequestValidationError) ErrorName() string {
+	return "AddProjectMemberUsergroupRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddProjectMemberUsergroupRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddProjectMemberUsergroupRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddProjectMemberUsergroupRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddProjectMemberUsergroupRequestValidationError{}
+
+// Validate checks the field values on AddProjectMemberUsergroupResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *AddProjectMemberUsergroupResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on AddProjectMemberUsergroupResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// AddProjectMemberUsergroupResponseMultiError, or nil if none found.
+func (m *AddProjectMemberUsergroupResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *AddProjectMemberUsergroupResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return AddProjectMemberUsergroupResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// AddProjectMemberUsergroupResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// AddProjectMemberUsergroupResponse.ValidateAll() if the designated
+// constraints aren't met.
+type AddProjectMemberUsergroupResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m AddProjectMemberUsergroupResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m AddProjectMemberUsergroupResponseMultiError) AllErrors() []error { return m }
+
+// AddProjectMemberUsergroupResponseValidationError is the validation error
+// returned by AddProjectMemberUsergroupResponse.Validate if the designated
+// constraints aren't met.
+type AddProjectMemberUsergroupResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e AddProjectMemberUsergroupResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e AddProjectMemberUsergroupResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e AddProjectMemberUsergroupResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e AddProjectMemberUsergroupResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e AddProjectMemberUsergroupResponseValidationError) ErrorName() string {
+	return "AddProjectMemberUsergroupResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e AddProjectMemberUsergroupResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sAddProjectMemberUsergroupResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = AddProjectMemberUsergroupResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = AddProjectMemberUsergroupResponseValidationError{}
 
 // Validate checks the field values on SetProjectMemberUsergroupRoleRequest
 // with the rules defined in the proto definition for this message. If any
@@ -29738,22 +30236,22 @@ var _ interface {
 	ErrorName() string
 } = UsergroupValidationError{}
 
-// Validate checks the field values on UsergroupOrgRole with the rules defined
-// in the proto definition for this message. If any rules are violated, the
-// first error encountered is returned, or nil if there are no violations.
-func (m *UsergroupOrgRole) Validate() error {
+// Validate checks the field values on OrgMemberUsergroupRole with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *OrgMemberUsergroupRole) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UsergroupOrgRole with the rules
+// ValidateAll checks the field values on OrgMemberUsergroupRole with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// UsergroupOrgRoleMultiError, or nil if none found.
-func (m *UsergroupOrgRole) ValidateAll() error {
+// OrgMemberUsergroupRoleMultiError, or nil if none found.
+func (m *OrgMemberUsergroupRole) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UsergroupOrgRole) validate(all bool) error {
+func (m *OrgMemberUsergroupRole) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -29765,19 +30263,19 @@ func (m *UsergroupOrgRole) validate(all bool) error {
 	// no validation rules for Role
 
 	if len(errors) > 0 {
-		return UsergroupOrgRoleMultiError(errors)
+		return OrgMemberUsergroupRoleMultiError(errors)
 	}
 
 	return nil
 }
 
-// UsergroupOrgRoleMultiError is an error wrapping multiple validation errors
-// returned by UsergroupOrgRole.ValidateAll() if the designated constraints
-// aren't met.
-type UsergroupOrgRoleMultiError []error
+// OrgMemberUsergroupRoleMultiError is an error wrapping multiple validation
+// errors returned by OrgMemberUsergroupRole.ValidateAll() if the designated
+// constraints aren't met.
+type OrgMemberUsergroupRoleMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UsergroupOrgRoleMultiError) Error() string {
+func (m OrgMemberUsergroupRoleMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -29786,11 +30284,11 @@ func (m UsergroupOrgRoleMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UsergroupOrgRoleMultiError) AllErrors() []error { return m }
+func (m OrgMemberUsergroupRoleMultiError) AllErrors() []error { return m }
 
-// UsergroupOrgRoleValidationError is the validation error returned by
-// UsergroupOrgRole.Validate if the designated constraints aren't met.
-type UsergroupOrgRoleValidationError struct {
+// OrgMemberUsergroupRoleValidationError is the validation error returned by
+// OrgMemberUsergroupRole.Validate if the designated constraints aren't met.
+type OrgMemberUsergroupRoleValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -29798,22 +30296,24 @@ type UsergroupOrgRoleValidationError struct {
 }
 
 // Field function returns field value.
-func (e UsergroupOrgRoleValidationError) Field() string { return e.field }
+func (e OrgMemberUsergroupRoleValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UsergroupOrgRoleValidationError) Reason() string { return e.reason }
+func (e OrgMemberUsergroupRoleValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UsergroupOrgRoleValidationError) Cause() error { return e.cause }
+func (e OrgMemberUsergroupRoleValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UsergroupOrgRoleValidationError) Key() bool { return e.key }
+func (e OrgMemberUsergroupRoleValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UsergroupOrgRoleValidationError) ErrorName() string { return "UsergroupOrgRoleValidationError" }
+func (e OrgMemberUsergroupRoleValidationError) ErrorName() string {
+	return "OrgMemberUsergroupRoleValidationError"
+}
 
 // Error satisfies the builtin error interface
-func (e UsergroupOrgRoleValidationError) Error() string {
+func (e OrgMemberUsergroupRoleValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -29825,14 +30325,14 @@ func (e UsergroupOrgRoleValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUsergroupOrgRole.%s: %s%s",
+		"invalid %sOrgMemberUsergroupRole.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UsergroupOrgRoleValidationError{}
+var _ error = OrgMemberUsergroupRoleValidationError{}
 
 var _ interface {
 	Field() string
@@ -29840,24 +30340,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UsergroupOrgRoleValidationError{}
+} = OrgMemberUsergroupRoleValidationError{}
 
-// Validate checks the field values on UsergroupProjectRole with the rules
-// defined in the proto definition for this message. If any rules are
+// Validate checks the field values on ProjectMemberUsergroupRole with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *UsergroupProjectRole) Validate() error {
+func (m *ProjectMemberUsergroupRole) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on UsergroupProjectRole with the rules
-// defined in the proto definition for this message. If any rules are
+// ValidateAll checks the field values on ProjectMemberUsergroupRole with the
+// rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// UsergroupProjectRoleMultiError, or nil if none found.
-func (m *UsergroupProjectRole) ValidateAll() error {
+// ProjectMemberUsergroupRoleMultiError, or nil if none found.
+func (m *ProjectMemberUsergroupRole) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *UsergroupProjectRole) validate(all bool) error {
+func (m *ProjectMemberUsergroupRole) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -29869,19 +30369,19 @@ func (m *UsergroupProjectRole) validate(all bool) error {
 	// no validation rules for Role
 
 	if len(errors) > 0 {
-		return UsergroupProjectRoleMultiError(errors)
+		return ProjectMemberUsergroupRoleMultiError(errors)
 	}
 
 	return nil
 }
 
-// UsergroupProjectRoleMultiError is an error wrapping multiple validation
-// errors returned by UsergroupProjectRole.ValidateAll() if the designated
-// constraints aren't met.
-type UsergroupProjectRoleMultiError []error
+// ProjectMemberUsergroupRoleMultiError is an error wrapping multiple
+// validation errors returned by ProjectMemberUsergroupRole.ValidateAll() if
+// the designated constraints aren't met.
+type ProjectMemberUsergroupRoleMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m UsergroupProjectRoleMultiError) Error() string {
+func (m ProjectMemberUsergroupRoleMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -29890,11 +30390,11 @@ func (m UsergroupProjectRoleMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m UsergroupProjectRoleMultiError) AllErrors() []error { return m }
+func (m ProjectMemberUsergroupRoleMultiError) AllErrors() []error { return m }
 
-// UsergroupProjectRoleValidationError is the validation error returned by
-// UsergroupProjectRole.Validate if the designated constraints aren't met.
-type UsergroupProjectRoleValidationError struct {
+// ProjectMemberUsergroupRoleValidationError is the validation error returned
+// by ProjectMemberUsergroupRole.Validate if the designated constraints aren't met.
+type ProjectMemberUsergroupRoleValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -29902,24 +30402,24 @@ type UsergroupProjectRoleValidationError struct {
 }
 
 // Field function returns field value.
-func (e UsergroupProjectRoleValidationError) Field() string { return e.field }
+func (e ProjectMemberUsergroupRoleValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e UsergroupProjectRoleValidationError) Reason() string { return e.reason }
+func (e ProjectMemberUsergroupRoleValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e UsergroupProjectRoleValidationError) Cause() error { return e.cause }
+func (e ProjectMemberUsergroupRoleValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e UsergroupProjectRoleValidationError) Key() bool { return e.key }
+func (e ProjectMemberUsergroupRoleValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e UsergroupProjectRoleValidationError) ErrorName() string {
-	return "UsergroupProjectRoleValidationError"
+func (e ProjectMemberUsergroupRoleValidationError) ErrorName() string {
+	return "ProjectMemberUsergroupRoleValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e UsergroupProjectRoleValidationError) Error() string {
+func (e ProjectMemberUsergroupRoleValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -29931,14 +30431,14 @@ func (e UsergroupProjectRoleValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sUsergroupProjectRole.%s: %s%s",
+		"invalid %sProjectMemberUsergroupRole.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = UsergroupProjectRoleValidationError{}
+var _ error = ProjectMemberUsergroupRoleValidationError{}
 
 var _ interface {
 	Field() string
@@ -29946,4 +30446,4 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = UsergroupProjectRoleValidationError{}
+} = ProjectMemberUsergroupRoleValidationError{}

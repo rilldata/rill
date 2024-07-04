@@ -188,14 +188,16 @@ type DB interface {
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 	FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*Usergroup, error)
+	InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
+	UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error
-	UpsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
-	UpsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
-	DeleteProjectMemberUsergroup(ctx context.Context, projectID, groupID string) error
-	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*UsergroupOrgRole, error)
-	FindOrganizationAllMemberUsergroupRoles(ctx context.Context, orgID string) ([]*UsergroupOrgRole, error)
-	FindProjectMemberUsergroupRoles(ctx context.Context, groupID, orgID string) ([]*UsergroupProjectRole, error)
-	FindUsergroupAllProjectOrganizationRoles(ctx context.Context, orgID string) ([]*UsergroupProjectRole, error)
+	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	UpdatedProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
+	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrgMemberUsergroupRole, error)
+	FindOrganizationAllMemberUsergroupRoles(ctx context.Context, orgID string) ([]*OrgMemberUsergroupRole, error)
+	FindProjectMemberUsergroupRoles(ctx context.Context, groupID, orgID string) ([]*ProjectMemberUsergroupRole, error)
+	FindUsergroupAllProjectOrganizationRoles(ctx context.Context, orgID string) ([]*ProjectMemberUsergroupRole, error)
 
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
@@ -486,15 +488,15 @@ type Usergroup struct {
 	UpdatedOn   time.Time `db:"updated_on"`
 }
 
-// UsergroupOrgRole represents an organization role of Usergroup
-type UsergroupOrgRole struct {
+// OrgMemberUsergroupRole represents an organization role of Usergroup
+type OrgMemberUsergroupRole struct {
 	UsergroupID string `db:"usergroup_id"`
 	OrgName     string `db:"org_name"`
 	RoleName    string `db:"role_name"`
 }
 
-// UsergroupProjectRole represents a project role of Usergroup
-type UsergroupProjectRole struct {
+// ProjectMemberUsergroupRole represents a project role of Usergroup
+type ProjectMemberUsergroupRole struct {
 	UsergroupID string `db:"usergroup_id"`
 	ProjectID   string `db:"project_id"`
 	ProjectName string `db:"project_name"`

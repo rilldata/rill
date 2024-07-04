@@ -242,6 +242,14 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}"};
   }
 
+  // AddOrganizationMemberUsergroupRole adds the role for the user group
+  rpc AddOrganizationMemberUsergroup(AddOrganizationMemberUsergroupRequest) returns (AddOrganizationMemberUsergroupResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/usergroups/{usergroup}/role",
+      body: "*"
+    };
+  }
+
   // SetOrganizationMemberUsergroupRole sets the role for the user group
   rpc SetOrganizationMemberUsergroupRole(SetOrganizationMemberUsergroupRoleRequest) returns (SetOrganizationMemberUsergroupRoleResponse) {
     option (google.api.http) = {
@@ -253,6 +261,14 @@ service AdminService {
   // RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
   rpc RemoveOrganizationMemberUsergroup(RemoveOrganizationMemberUsergroupRequest) returns (RemoveOrganizationMemberUsergroupResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/role"};
+  }
+
+  // AddProjectMemberUsergroupRole adds the role for the user group
+  rpc AddProjectMemberUsergroup(AddProjectMemberUsergroupRequest) returns (AddProjectMemberUsergroupResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles",
+      body: "*"
+    };
   }
 
   // SetProjectMemberUsergroupRole sets the role for the user group
@@ -1056,6 +1072,14 @@ message DeleteUsergroupRequest {
 
 message DeleteUsergroupResponse {}
 
+message AddOrganizationMemberUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string role = 3 [(validate.rules).string.min_len = 1];
+}
+
+message AddOrganizationMemberUsergroupResponse {}
+
 message SetOrganizationMemberUsergroupRoleRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
@@ -1070,6 +1094,15 @@ message RemoveOrganizationMemberUsergroupRequest {
 }
 
 message RemoveOrganizationMemberUsergroupResponse {}
+
+message AddProjectMemberUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string usergroup = 3 [(validate.rules).string.min_len = 1];
+  string role = 4 [(validate.rules).string.min_len = 1];
+}
+
+message AddProjectMemberUsergroupResponse {}
 
 message SetProjectMemberUsergroupRoleRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
@@ -1988,16 +2021,16 @@ message Usergroup {
   string group_name = 2;
   google.protobuf.Timestamp created_on = 3;
   google.protobuf.Timestamp updated_on = 4;
-  UsergroupOrgRole org_role = 5;
-  repeated UsergroupProjectRole project_roles = 6;
+  OrgMemberUsergroupRole org_role = 5;
+  repeated ProjectMemberUsergroupRole project_roles = 6;
 }
 
-message UsergroupOrgRole {
+message OrgMemberUsergroupRole {
   string org_name = 1;
   string role = 2;
 }
 
-message UsergroupProjectRole {
+message ProjectMemberUsergroupRole {
   string project_name = 1;
   string role = 2;
 }

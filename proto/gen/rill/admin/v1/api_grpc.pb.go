@@ -56,8 +56,10 @@ const (
 	AdminService_RenameUsergroup_FullMethodName                       = "/rill.admin.v1.AdminService/RenameUsergroup"
 	AdminService_ListUsergroups_FullMethodName                        = "/rill.admin.v1.AdminService/ListUsergroups"
 	AdminService_DeleteUsergroup_FullMethodName                       = "/rill.admin.v1.AdminService/DeleteUsergroup"
+	AdminService_AddOrganizationMemberUsergroup_FullMethodName        = "/rill.admin.v1.AdminService/AddOrganizationMemberUsergroup"
 	AdminService_SetOrganizationMemberUsergroupRole_FullMethodName    = "/rill.admin.v1.AdminService/SetOrganizationMemberUsergroupRole"
 	AdminService_RemoveOrganizationMemberUsergroup_FullMethodName     = "/rill.admin.v1.AdminService/RemoveOrganizationMemberUsergroup"
+	AdminService_AddProjectMemberUsergroup_FullMethodName             = "/rill.admin.v1.AdminService/AddProjectMemberUsergroup"
 	AdminService_SetProjectMemberUsergroupRole_FullMethodName         = "/rill.admin.v1.AdminService/SetProjectMemberUsergroupRole"
 	AdminService_RemoveProjectMemberUsergroup_FullMethodName          = "/rill.admin.v1.AdminService/RemoveProjectMemberUsergroup"
 	AdminService_AddUsergroupMemberUser_FullMethodName                = "/rill.admin.v1.AdminService/AddUsergroupMemberUser"
@@ -201,10 +203,14 @@ type AdminServiceClient interface {
 	ListUsergroups(ctx context.Context, in *ListUsergroupsRequest, opts ...grpc.CallOption) (*ListUsergroupsResponse, error)
 	// DeleteUsergroup deletes the user group from the organization
 	DeleteUsergroup(ctx context.Context, in *DeleteUsergroupRequest, opts ...grpc.CallOption) (*DeleteUsergroupResponse, error)
+	// AddOrganizationMemberUsergroupRole adds the role for the user group
+	AddOrganizationMemberUsergroup(ctx context.Context, in *AddOrganizationMemberUsergroupRequest, opts ...grpc.CallOption) (*AddOrganizationMemberUsergroupResponse, error)
 	// SetOrganizationMemberUsergroupRole sets the role for the user group
 	SetOrganizationMemberUsergroupRole(ctx context.Context, in *SetOrganizationMemberUsergroupRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUsergroupRoleResponse, error)
 	// RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
 	RemoveOrganizationMemberUsergroup(ctx context.Context, in *RemoveOrganizationMemberUsergroupRequest, opts ...grpc.CallOption) (*RemoveOrganizationMemberUsergroupResponse, error)
+	// AddProjectMemberUsergroupRole adds the role for the user group
+	AddProjectMemberUsergroup(ctx context.Context, in *AddProjectMemberUsergroupRequest, opts ...grpc.CallOption) (*AddProjectMemberUsergroupResponse, error)
 	// SetProjectMemberUsergroupRole sets the role for the user group
 	SetProjectMemberUsergroupRole(ctx context.Context, in *SetProjectMemberUsergroupRoleRequest, opts ...grpc.CallOption) (*SetProjectMemberUsergroupRoleResponse, error)
 	// RemoveProjectMemberUsergroup revokes the project-level role for the user group
@@ -713,6 +719,16 @@ func (c *adminServiceClient) DeleteUsergroup(ctx context.Context, in *DeleteUser
 	return out, nil
 }
 
+func (c *adminServiceClient) AddOrganizationMemberUsergroup(ctx context.Context, in *AddOrganizationMemberUsergroupRequest, opts ...grpc.CallOption) (*AddOrganizationMemberUsergroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddOrganizationMemberUsergroupResponse)
+	err := c.cc.Invoke(ctx, AdminService_AddOrganizationMemberUsergroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) SetOrganizationMemberUsergroupRole(ctx context.Context, in *SetOrganizationMemberUsergroupRoleRequest, opts ...grpc.CallOption) (*SetOrganizationMemberUsergroupRoleResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SetOrganizationMemberUsergroupRoleResponse)
@@ -727,6 +743,16 @@ func (c *adminServiceClient) RemoveOrganizationMemberUsergroup(ctx context.Conte
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RemoveOrganizationMemberUsergroupResponse)
 	err := c.cc.Invoke(ctx, AdminService_RemoveOrganizationMemberUsergroup_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) AddProjectMemberUsergroup(ctx context.Context, in *AddProjectMemberUsergroupRequest, opts ...grpc.CallOption) (*AddProjectMemberUsergroupResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(AddProjectMemberUsergroupResponse)
+	err := c.cc.Invoke(ctx, AdminService_AddProjectMemberUsergroup_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1441,10 +1467,14 @@ type AdminServiceServer interface {
 	ListUsergroups(context.Context, *ListUsergroupsRequest) (*ListUsergroupsResponse, error)
 	// DeleteUsergroup deletes the user group from the organization
 	DeleteUsergroup(context.Context, *DeleteUsergroupRequest) (*DeleteUsergroupResponse, error)
+	// AddOrganizationMemberUsergroupRole adds the role for the user group
+	AddOrganizationMemberUsergroup(context.Context, *AddOrganizationMemberUsergroupRequest) (*AddOrganizationMemberUsergroupResponse, error)
 	// SetOrganizationMemberUsergroupRole sets the role for the user group
 	SetOrganizationMemberUsergroupRole(context.Context, *SetOrganizationMemberUsergroupRoleRequest) (*SetOrganizationMemberUsergroupRoleResponse, error)
 	// RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
 	RemoveOrganizationMemberUsergroup(context.Context, *RemoveOrganizationMemberUsergroupRequest) (*RemoveOrganizationMemberUsergroupResponse, error)
+	// AddProjectMemberUsergroupRole adds the role for the user group
+	AddProjectMemberUsergroup(context.Context, *AddProjectMemberUsergroupRequest) (*AddProjectMemberUsergroupResponse, error)
 	// SetProjectMemberUsergroupRole sets the role for the user group
 	SetProjectMemberUsergroupRole(context.Context, *SetProjectMemberUsergroupRoleRequest) (*SetProjectMemberUsergroupRoleResponse, error)
 	// RemoveProjectMemberUsergroup revokes the project-level role for the user group
@@ -1691,11 +1721,17 @@ func (UnimplementedAdminServiceServer) ListUsergroups(context.Context, *ListUser
 func (UnimplementedAdminServiceServer) DeleteUsergroup(context.Context, *DeleteUsergroupRequest) (*DeleteUsergroupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method DeleteUsergroup not implemented")
 }
+func (UnimplementedAdminServiceServer) AddOrganizationMemberUsergroup(context.Context, *AddOrganizationMemberUsergroupRequest) (*AddOrganizationMemberUsergroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddOrganizationMemberUsergroup not implemented")
+}
 func (UnimplementedAdminServiceServer) SetOrganizationMemberUsergroupRole(context.Context, *SetOrganizationMemberUsergroupRoleRequest) (*SetOrganizationMemberUsergroupRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetOrganizationMemberUsergroupRole not implemented")
 }
 func (UnimplementedAdminServiceServer) RemoveOrganizationMemberUsergroup(context.Context, *RemoveOrganizationMemberUsergroupRequest) (*RemoveOrganizationMemberUsergroupResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveOrganizationMemberUsergroup not implemented")
+}
+func (UnimplementedAdminServiceServer) AddProjectMemberUsergroup(context.Context, *AddProjectMemberUsergroupRequest) (*AddProjectMemberUsergroupResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method AddProjectMemberUsergroup not implemented")
 }
 func (UnimplementedAdminServiceServer) SetProjectMemberUsergroupRole(context.Context, *SetProjectMemberUsergroupRoleRequest) (*SetProjectMemberUsergroupRoleResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SetProjectMemberUsergroupRole not implemented")
@@ -2565,6 +2601,24 @@ func _AdminService_DeleteUsergroup_Handler(srv interface{}, ctx context.Context,
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_AddOrganizationMemberUsergroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddOrganizationMemberUsergroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).AddOrganizationMemberUsergroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_AddOrganizationMemberUsergroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).AddOrganizationMemberUsergroup(ctx, req.(*AddOrganizationMemberUsergroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_SetOrganizationMemberUsergroupRole_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(SetOrganizationMemberUsergroupRoleRequest)
 	if err := dec(in); err != nil {
@@ -2597,6 +2651,24 @@ func _AdminService_RemoveOrganizationMemberUsergroup_Handler(srv interface{}, ct
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).RemoveOrganizationMemberUsergroup(ctx, req.(*RemoveOrganizationMemberUsergroupRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_AddProjectMemberUsergroup_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(AddProjectMemberUsergroupRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).AddProjectMemberUsergroup(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_AddProjectMemberUsergroup_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).AddProjectMemberUsergroup(ctx, req.(*AddProjectMemberUsergroupRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3891,12 +3963,20 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_DeleteUsergroup_Handler,
 		},
 		{
+			MethodName: "AddOrganizationMemberUsergroup",
+			Handler:    _AdminService_AddOrganizationMemberUsergroup_Handler,
+		},
+		{
 			MethodName: "SetOrganizationMemberUsergroupRole",
 			Handler:    _AdminService_SetOrganizationMemberUsergroupRole_Handler,
 		},
 		{
 			MethodName: "RemoveOrganizationMemberUsergroup",
 			Handler:    _AdminService_RemoveOrganizationMemberUsergroup_Handler,
+		},
+		{
+			MethodName: "AddProjectMemberUsergroup",
+			Handler:    _AdminService_AddProjectMemberUsergroup_Handler,
 		},
 		{
 			MethodName: "SetProjectMemberUsergroupRole",

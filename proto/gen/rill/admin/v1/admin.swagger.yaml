@@ -1273,6 +1273,41 @@ paths:
           type: string
       tags:
         - AdminService
+    post:
+      summary: AddProjectMemberUsergroupRole adds the role for the user group
+      operationId: AdminService_AddProjectMemberUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddProjectMemberUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
     put:
       summary: SetProjectMemberUsergroupRole sets the role for the user group
       operationId: AdminService_SetProjectMemberUsergroupRole
@@ -1679,6 +1714,37 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+    post:
+      summary: AddOrganizationMemberUsergroupRole adds the role for the user group
+      operationId: AdminService_AddOrganizationMemberUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddOrganizationMemberUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
       tags:
         - AdminService
     put:
@@ -2925,11 +2991,15 @@ definitions:
     properties:
       pendingSignup:
         type: boolean
+  v1AddOrganizationMemberUsergroupResponse:
+    type: object
   v1AddProjectMemberUserResponse:
     type: object
     properties:
       pendingSignup:
         type: boolean
+  v1AddProjectMemberUsergroupResponse:
+    type: object
   v1AddUsergroupMemberUserResponse:
     type: object
   v1AlertOptions:
@@ -3620,6 +3690,13 @@ definitions:
       - OPERATION_LIKE
       - OPERATION_NLIKE
     default: OPERATION_UNSPECIFIED
+  v1OrgMemberUsergroupRole:
+    type: object
+    properties:
+      orgName:
+        type: string
+      role:
+        type: string
   v1Organization:
     type: object
     properties:
@@ -3740,6 +3817,13 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1ProjectMemberUsergroupRole:
+    type: object
+    properties:
+      projectName:
+        type: string
+      role:
+        type: string
   v1ProjectPermissions:
     type: object
     properties:
@@ -4220,26 +4304,12 @@ definitions:
         type: string
         format: date-time
       orgRole:
-        $ref: '#/definitions/v1UsergroupOrgRole'
+        $ref: '#/definitions/v1OrgMemberUsergroupRole'
       projectRoles:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1UsergroupProjectRole'
-  v1UsergroupOrgRole:
-    type: object
-    properties:
-      orgName:
-        type: string
-      role:
-        type: string
-  v1UsergroupProjectRole:
-    type: object
-    properties:
-      projectName:
-        type: string
-      role:
-        type: string
+          $ref: '#/definitions/v1ProjectMemberUsergroupRole'
   v1VirtualFile:
     type: object
     properties:

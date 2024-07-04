@@ -289,23 +289,13 @@ export interface V1VirtualFile {
   updatedOn?: string;
 }
 
-export interface V1UsergroupProjectRole {
-  projectName?: string;
-  role?: string;
-}
-
-export interface V1UsergroupOrgRole {
-  orgName?: string;
-  role?: string;
-}
-
 export interface V1Usergroup {
   groupId?: string;
   groupName?: string;
   createdOn?: string;
   updatedOn?: string;
-  orgRole?: V1UsergroupOrgRole;
-  projectRoles?: V1UsergroupProjectRole[];
+  orgRole?: V1OrgMemberUsergroupRole;
+  projectRoles?: V1ProjectMemberUsergroupRole[];
 }
 
 export interface V1UserQuotas {
@@ -358,6 +348,11 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1UpdateOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1UpdateBookmarkResponse {
@@ -468,11 +463,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1UpdateOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -651,6 +641,11 @@ export interface V1ProjectPermissions {
   manageBookmarks?: boolean;
 }
 
+export interface V1ProjectMemberUsergroupRole {
+  projectName?: string;
+  role?: string;
+}
+
 export type V1ProjectAnnotations = { [key: string]: string };
 
 export interface V1Project {
@@ -710,6 +705,11 @@ export interface V1Organization {
   billingCustomerId?: string;
   createdOn?: string;
   updatedOn?: string;
+}
+
+export interface V1OrgMemberUsergroupRole {
+  orgName?: string;
+  role?: string;
 }
 
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
@@ -1090,6 +1090,10 @@ export interface V1CreateOrganizationRequest {
   description?: string;
 }
 
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
+}
+
 export interface V1CreateBookmarkRequest {
   displayName?: string;
   description?: string;
@@ -1146,10 +1150,6 @@ export interface V1Bookmark {
   updatedOn?: string;
 }
 
-export interface V1CreateBookmarkResponse {
-  bookmark?: V1Bookmark;
-}
-
 export interface V1BillingPlan {
   id?: string;
   name?: string;
@@ -1179,8 +1179,16 @@ export interface V1AddUsergroupMemberUserResponse {
   [key: string]: any;
 }
 
+export interface V1AddProjectMemberUsergroupResponse {
+  [key: string]: any;
+}
+
 export interface V1AddProjectMemberUserResponse {
   pendingSignup?: boolean;
+}
+
+export interface V1AddOrganizationMemberUsergroupResponse {
+  [key: string]: any;
 }
 
 export interface V1AddOrganizationMemberUserResponse {

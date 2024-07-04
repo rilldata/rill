@@ -155,7 +155,7 @@ func (s *Server) ListUsergroups(ctx context.Context, req *adminv1.ListUsergroups
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	orgRolesMap := make(map[string]*database.UsergroupOrgRole)
+	orgRolesMap := make(map[string]*database.OrgMemberUsergroupRole)
 	for _, orgRole := range orgRoles {
 		orgRolesMap[orgRole.UsergroupID] = orgRole
 	}
@@ -165,7 +165,7 @@ func (s *Server) ListUsergroups(ctx context.Context, req *adminv1.ListUsergroups
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	projRolesMap := make(map[string][]*database.UsergroupProjectRole)
+	projRolesMap := make(map[string][]*database.ProjectMemberUsergroupRole)
 	for _, projRole := range projRoles {
 		projRolesMap[projRole.UsergroupID] = append(projRolesMap[projRole.UsergroupID], projRole)
 	}
@@ -220,6 +220,45 @@ func (s *Server) DeleteUsergroup(ctx context.Context, req *adminv1.DeleteUsergro
 	return &adminv1.DeleteUsergroupResponse{}, nil
 }
 
+func (s *Server) AddOrganizationMemberUsergroup(ctx context.Context, req *adminv1.AddOrganizationMemberUsergroupRequest) (*adminv1.AddOrganizationMemberUsergroupResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.usergroup", req.Usergroup),
+		attribute.String("args.role", req.Role),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to set org usergroup role")
+	}
+
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot set role for all-users group")
+	}
+
+	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	err = s.admin.DB.InsertOrganizationMemberUsergroup(ctx, usergroup.ID, org.ID, role.ID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.AddOrganizationMemberUsergroupResponse{}, nil
+}
+
 func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *adminv1.SetOrganizationMemberUsergroupRoleRequest) (*adminv1.SetOrganizationMemberUsergroupRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
@@ -251,7 +290,7 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.admin.DB.UpsertOrganizationMemberUsergroup(ctx, usergroup.ID, org.ID, role.ID)
+	err = s.admin.DB.UpdateOrganizationMemberUsergroup(ctx, usergroup.ID, org.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -292,6 +331,51 @@ func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adm
 	return &adminv1.RemoveOrganizationMemberUsergroupResponse{}, nil
 }
 
+func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.AddProjectMemberUsergroupRequest) (*adminv1.AddProjectMemberUsergroupResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.usergroup", req.Usergroup),
+		attribute.String("args.role", req.Role),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to set project usergroup role")
+	}
+
+	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot set role for all-users group")
+	}
+
+	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.AddProjectMemberUsergroupResponse{}, nil
+}
+
 func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1.SetProjectMemberUsergroupRoleRequest) (*adminv1.SetProjectMemberUsergroupRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
@@ -329,7 +413,7 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.InvalidArgument, "cannot set role for all-users group")
 	}
 
-	err = s.admin.DB.UpsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
+	err = s.admin.DB.UpdatedProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -579,7 +663,7 @@ func (s *Server) RemoveUsergroupsMemberUser(ctx context.Context, req *adminv1.Re
 	return &adminv1.RemoveUsergroupsMemberUserResponse{}, nil
 }
 
-func usergroupToPB(group *database.Usergroup, orgRole *database.UsergroupOrgRole, projectRoles []*database.UsergroupProjectRole) *adminv1.Usergroup {
+func usergroupToPB(group *database.Usergroup, orgRole *database.OrgMemberUsergroupRole, projectRoles []*database.ProjectMemberUsergroupRole) *adminv1.Usergroup {
 	return &adminv1.Usergroup{
 		GroupId:      group.ID,
 		GroupName:    group.Name,
@@ -590,20 +674,20 @@ func usergroupToPB(group *database.Usergroup, orgRole *database.UsergroupOrgRole
 	}
 }
 
-func orgRoleToPB(role *database.UsergroupOrgRole) *adminv1.UsergroupOrgRole {
+func orgRoleToPB(role *database.OrgMemberUsergroupRole) *adminv1.OrgMemberUsergroupRole {
 	if role == nil {
 		return nil
 	}
-	return &adminv1.UsergroupOrgRole{
+	return &adminv1.OrgMemberUsergroupRole{
 		OrgName: role.OrgName,
 		Role:    role.RoleName,
 	}
 }
 
-func projectRolesToPB(roles []*database.UsergroupProjectRole) []*adminv1.UsergroupProjectRole {
-	pbRoles := make([]*adminv1.UsergroupProjectRole, len(roles))
+func projectRolesToPB(roles []*database.ProjectMemberUsergroupRole) []*adminv1.ProjectMemberUsergroupRole {
+	pbRoles := make([]*adminv1.ProjectMemberUsergroupRole, len(roles))
 	for i, role := range roles {
-		pbRoles[i] = &adminv1.UsergroupProjectRole{
+		pbRoles[i] = &adminv1.ProjectMemberUsergroupRole{
 			ProjectName: role.ProjectName,
 			Role:        role.RoleName,
 		}
