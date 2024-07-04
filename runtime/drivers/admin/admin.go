@@ -27,7 +27,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/ctxsync"
 	"go.opentelemetry.io/otel"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sync/singleflight"
 	"gopkg.in/yaml.v3"
@@ -144,9 +143,9 @@ func (h *Handle) Ping(ctx context.Context) error {
 	// check connectivity with admin service
 	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
 
-	_ = h.repoMu.Lock(ctx)
-	defer h.repoMu.Unlock()
-	return multierr.Combine(err, h.syncErr)
+	_ = h.repoMu.RLock(ctx)
+	defer h.repoMu.RUnlock()
+	return errors.Join(err, h.syncErr)
 }
 
 // Driver implements drivers.Handle.

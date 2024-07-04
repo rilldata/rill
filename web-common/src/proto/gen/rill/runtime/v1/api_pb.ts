@@ -242,6 +242,11 @@ export class HealthResponse extends Message<HealthResponse> {
    */
   networkError = "";
 
+  /**
+   * @generated from field: map<string, rill.runtime.v1.InstanceHealth> instancesHealth = 5;
+   */
+  instancesHealth: { [key: string]: InstanceHealth } = {};
+
   constructor(data?: PartialMessage<HealthResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -254,6 +259,7 @@ export class HealthResponse extends Message<HealthResponse> {
     { no: 2, name: "conn_cache_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "metastore_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "network_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "instancesHealth", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: InstanceHealth} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HealthResponse {
@@ -315,19 +321,9 @@ export class InstanceHealthRequest extends Message<InstanceHealthRequest> {
  */
 export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
   /**
-   * @generated from field: string controller_error = 1;
+   * @generated from field: rill.runtime.v1.InstanceHealth instanceHealth = 1;
    */
-  controllerError = "";
-
-  /**
-   * @generated from field: string olap_error = 2;
-   */
-  olapError = "";
-
-  /**
-   * @generated from field: string repo_error = 3;
-   */
-  repoError = "";
+  instanceHealth?: InstanceHealth;
 
   constructor(data?: PartialMessage<InstanceHealthResponse>) {
     super();
@@ -337,9 +333,7 @@ export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.InstanceHealthResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "controller_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "olap_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 1, name: "instanceHealth", kind: "message", T: InstanceHealth },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealthResponse {
@@ -356,6 +350,55 @@ export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
 
   static equals(a: InstanceHealthResponse | PlainMessage<InstanceHealthResponse> | undefined, b: InstanceHealthResponse | PlainMessage<InstanceHealthResponse> | undefined): boolean {
     return proto3.util.equals(InstanceHealthResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.InstanceHealth
+ */
+export class InstanceHealth extends Message<InstanceHealth> {
+  /**
+   * @generated from field: string controller_error = 1;
+   */
+  controllerError = "";
+
+  /**
+   * @generated from field: string olap_error = 2;
+   */
+  olapError = "";
+
+  /**
+   * @generated from field: string repo_error = 3;
+   */
+  repoError = "";
+
+  constructor(data?: PartialMessage<InstanceHealth>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InstanceHealth";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "controller_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "olap_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InstanceHealth | PlainMessage<InstanceHealth> | undefined, b: InstanceHealth | PlainMessage<InstanceHealth> | undefined): boolean {
+    return proto3.util.equals(InstanceHealth, a, b);
   }
 }
 

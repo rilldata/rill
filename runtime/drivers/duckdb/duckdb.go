@@ -29,7 +29,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/metric"
-	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
 )
@@ -317,7 +316,7 @@ func (c *connection) Ping(ctx context.Context) error {
 	err := c.db.PingContext(ctx)
 	c.connTimesMu.Lock()
 	defer c.connTimesMu.Unlock()
-	return multierr.Combine(err, c.hangingConnErr)
+	return errors.Join(err, c.hangingConnErr)
 }
 
 // Driver implements drivers.Connection.

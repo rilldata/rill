@@ -394,6 +394,52 @@ func (m *HealthResponse) validate(all bool) error {
 
 	// no validation rules for NetworkError
 
+	{
+		sorted_keys := make([]string, len(m.GetInstancesHealth()))
+		i := 0
+		for key := range m.GetInstancesHealth() {
+			sorted_keys[i] = key
+			i++
+		}
+		sort.Slice(sorted_keys, func(i, j int) bool { return sorted_keys[i] < sorted_keys[j] })
+		for _, key := range sorted_keys {
+			val := m.GetInstancesHealth()[key]
+			_ = val
+
+			// no validation rules for InstancesHealth[key]
+
+			if all {
+				switch v := interface{}(val).(type) {
+				case interface{ ValidateAll() error }:
+					if err := v.ValidateAll(); err != nil {
+						errors = append(errors, HealthResponseValidationError{
+							field:  fmt.Sprintf("InstancesHealth[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				case interface{ Validate() error }:
+					if err := v.Validate(); err != nil {
+						errors = append(errors, HealthResponseValidationError{
+							field:  fmt.Sprintf("InstancesHealth[%v]", key),
+							reason: "embedded message failed validation",
+							cause:  err,
+						})
+					}
+				}
+			} else if v, ok := interface{}(val).(interface{ Validate() error }); ok {
+				if err := v.Validate(); err != nil {
+					return HealthResponseValidationError{
+						field:  fmt.Sprintf("InstancesHealth[%v]", key),
+						reason: "embedded message failed validation",
+						cause:  err,
+					}
+				}
+			}
+
+		}
+	}
+
 	if len(errors) > 0 {
 		return HealthResponseMultiError(errors)
 	}
@@ -609,11 +655,34 @@ func (m *InstanceHealthResponse) validate(all bool) error {
 
 	var errors []error
 
-	// no validation rules for ControllerError
-
-	// no validation rules for OlapError
-
-	// no validation rules for RepoError
+	if all {
+		switch v := interface{}(m.GetInstanceHealth()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, InstanceHealthResponseValidationError{
+					field:  "InstanceHealth",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, InstanceHealthResponseValidationError{
+					field:  "InstanceHealth",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetInstanceHealth()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return InstanceHealthResponseValidationError{
+				field:  "InstanceHealth",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	if len(errors) > 0 {
 		return InstanceHealthResponseMultiError(errors)
@@ -694,6 +763,112 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = InstanceHealthResponseValidationError{}
+
+// Validate checks the field values on InstanceHealth with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *InstanceHealth) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on InstanceHealth with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in InstanceHealthMultiError,
+// or nil if none found.
+func (m *InstanceHealth) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *InstanceHealth) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for ControllerError
+
+	// no validation rules for OlapError
+
+	// no validation rules for RepoError
+
+	if len(errors) > 0 {
+		return InstanceHealthMultiError(errors)
+	}
+
+	return nil
+}
+
+// InstanceHealthMultiError is an error wrapping multiple validation errors
+// returned by InstanceHealth.ValidateAll() if the designated constraints
+// aren't met.
+type InstanceHealthMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m InstanceHealthMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m InstanceHealthMultiError) AllErrors() []error { return m }
+
+// InstanceHealthValidationError is the validation error returned by
+// InstanceHealth.Validate if the designated constraints aren't met.
+type InstanceHealthValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e InstanceHealthValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e InstanceHealthValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e InstanceHealthValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e InstanceHealthValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e InstanceHealthValidationError) ErrorName() string { return "InstanceHealthValidationError" }
+
+// Error satisfies the builtin error interface
+func (e InstanceHealthValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sInstanceHealth.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = InstanceHealthValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = InstanceHealthValidationError{}
 
 // Validate checks the field values on Instance with the rules defined in the
 // proto definition for this message. If any rules are violated, the first

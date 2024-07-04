@@ -5,10 +5,15 @@ import (
 	"net"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/server/auth"
 )
 
 // Health implements RuntimeService
 func (s *Server) Health(ctx context.Context, req *runtimev1.HealthRequest) (*runtimev1.HealthResponse, error) {
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
 	resp := &runtimev1.HealthResponse{}
 
 	// limiter
@@ -21,23 +26,38 @@ func (s *Server) Health(ctx context.Context, req *runtimev1.HealthRequest) (*run
 		resp.NetworkError = err.Error()
 	}
 
-	// get runtime health
-	status := s.runtime.Health(ctx)
-	resp.ConnCacheError = status.HangingConn.Error()
-	resp.MetastoreError = status.Registry.Error()
+	// runtime health
+	status, err := s.runtime.Health(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if status.HangingConn != nil {
+		resp.ConnCacheError = status.HangingConn.Error()
+	}
+	if status.Registry != nil {
+		resp.MetastoreError = status.Registry.Error()
+	}
+	resp.InstancesHealth = make(map[string]*runtimev1.InstanceHealth, len(status.InstancesHealth))
+	for id, h := range status.InstancesHealth {
+		resp.InstancesHealth[id] = h.To()
+	}
+
 	return resp, nil
 }
 
 // InstanceHealth implements RuntimeService
 func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHealthRequest) (*runtimev1.InstanceHealthResponse, error) {
+	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+		return nil, ErrForbidden
+	}
+
 	h, err := s.runtime.InstanceHealth(ctx, req.InstanceId)
 	if err != nil {
 		return nil, err
 	}
 	return &runtimev1.InstanceHealthResponse{
-		ControllerError: h.Controller.Error(),
-		RepoError:       h.Repo.Error(),
-		OlapError:       h.OLAP.Error(),
+		InstanceHealth: h.To(),
 	}, nil
 }
 

@@ -3911,6 +3911,10 @@ definitions:
         type: string
       networkError:
         type: string
+      instancesHealth:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1InstanceHealth'
   v1HistogramMethod:
     type: string
     enum:
@@ -3976,7 +3980,7 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
-  v1InstanceHealthResponse:
+  v1InstanceHealth:
     type: object
     properties:
       controllerError:
@@ -3985,6 +3989,11 @@ definitions:
         type: string
       repoError:
         type: string
+  v1InstanceHealthResponse:
+    type: object
+    properties:
+      instanceHealth:
+        $ref: '#/definitions/v1InstanceHealth'
   v1IssueDevJWTResponse:
     type: object
     properties:

@@ -230,6 +230,7 @@ message HealthResponse {
   string conn_cache_error = 2;
   string metastore_error = 3;
   string network_error = 4;
+  map<string, InstanceHealth> instancesHealth = 5;
 }
 
 message InstanceHealthRequest {
@@ -237,6 +238,10 @@ message InstanceHealthRequest {
 }
 
 message InstanceHealthResponse {
+  InstanceHealth instanceHealth = 1;
+}
+
+message InstanceHealth {
   string controller_error = 1;
   string olap_error = 2;
   string repo_error = 3;
