@@ -262,8 +262,8 @@ func (r *registryCache) health(ctx context.Context, instanceID string) (Instance
 		res.OLAP = err
 	} else {
 		res.OLAP = olap.(drivers.Handle).Ping(ctx)
+		or()
 	}
-	or()
 
 	// check repo error
 	repo, rr, err := r.rt.Repo(ctx, instanceID)
@@ -271,8 +271,8 @@ func (r *registryCache) health(ctx context.Context, instanceID string) (Instance
 		res.Repo = err
 	} else {
 		res.Repo = repo.(drivers.Handle).Ping(ctx)
+		rr()
 	}
-	rr()
 	return res, nil
 }
 
