@@ -293,6 +293,39 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/health:
+    get:
+      operationId: RuntimeService_Health
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1HealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/health/instances/{instanceId}:
+    get:
+      operationId: RuntimeService_InstanceHealth
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1InstanceHealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -3867,6 +3900,21 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
+  v1HealthResponse:
+    type: object
+    properties:
+      limiterError:
+        type: string
+      connCacheError:
+        type: string
+      metastoreError:
+        type: string
+      networkError:
+        type: string
+      instancesHealth:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1InstanceHealth'
   v1HistogramMethod:
     type: string
     enum:
@@ -3932,6 +3980,20 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
+  v1InstanceHealth:
+    type: object
+    properties:
+      controllerError:
+        type: string
+      olapError:
+        type: string
+      repoError:
+        type: string
+  v1InstanceHealthResponse:
+    type: object
+    properties:
+      instanceHealth:
+        $ref: '#/definitions/v1InstanceHealth'
   v1IssueDevJWTResponse:
     type: object
     properties:
