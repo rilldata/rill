@@ -55,7 +55,7 @@ func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHeal
 	)
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
 
-	if !auth.GetClaims(ctx).Can(auth.ManageInstances) {
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadInstance) {
 		return nil, ErrForbidden
 	}
 
