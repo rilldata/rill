@@ -68,7 +68,7 @@ type Driver interface {
 // Handle represents a connection to an external service, such as a database, object store, etc.
 // It should implement one or more of the As...() functions.
 type Handle interface {
-	// Ping verifies any error in the connection
+	// Ping verifies a connection to an external service is healthy
 	Ping(ctx context.Context) error
 
 	// Driver name used to open the handle.

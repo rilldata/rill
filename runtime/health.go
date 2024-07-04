@@ -7,8 +7,8 @@ import (
 )
 
 type Health struct {
-	HungConn error
-	Registry error
+	HangingConn error
+	Registry    error
 }
 
 type InstanceHealth struct {
@@ -19,7 +19,7 @@ type InstanceHealth struct {
 
 func (r *Runtime) Health(ctx context.Context) Health {
 	s := Health{}
-	s.HungConn = r.connCache.HangingErr()
+	s.HangingConn = r.connCache.HangingErr()
 	s.Registry = r.registryCache.store.(drivers.Handle).Ping(ctx)
 	return s
 }

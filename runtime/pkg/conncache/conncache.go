@@ -31,7 +31,7 @@ type Cache interface {
 	// It returns when all cached connections have been closed or when the provided ctx is cancelled.
 	Close(ctx context.Context) error
 
-	// HangingErr returns an error containing the name of the first connection that is hanging
+	// HangingErr returns an error containing the name of a connection that is hanging
 	HangingErr() error
 }
 
@@ -445,19 +445,19 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 		select {
 		case <-ticker.C:
 			c.mu.Lock()
-			var hungConnErr error
+			var hangingConnErr error
 			for k := range c.singleflight {
 				e := c.entries[k]
 				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) > c.opts.OpenTimeout {
-					hungConnErr = fmt.Errorf("a connection has been in opening state for too long")
+					hangingConnErr = fmt.Errorf("a connection has been in opening state for too long")
 					c.opts.HangingFunc(e.cfg, true)
 				}
 				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) > c.opts.CloseTimeout {
-					hungConnErr = fmt.Errorf("a %q connection has been in closing state for too long", e.handle.Driver())
+					hangingConnErr = fmt.Errorf("a %q connection has been in closing state for too long", e.handle.Driver())
 					c.opts.HangingFunc(e.cfg, false)
 				}
 			}
-			c.hangingConnErr = hungConnErr
+			c.hangingConnErr = hangingConnErr
 			c.mu.Unlock()
 		case <-c.ctx.Done():
 			return

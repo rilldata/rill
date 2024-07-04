@@ -23,7 +23,7 @@ func (s *Server) Health(ctx context.Context, req *runtimev1.HealthRequest) (*run
 
 	// get runtime health
 	status := s.runtime.Health(ctx)
-	resp.ConnCacheError = status.HungConn.Error()
+	resp.ConnCacheError = status.HangingConn.Error()
 	resp.MetastoreError = status.Registry.Error()
 	return resp, nil
 }
