@@ -243,20 +243,6 @@ func (r *registryCache) list() ([]*drivers.Instance, error) {
 	return res, nil
 }
 
-func (r *registryCache) instancesHealth(ctx context.Context) (map[string]*InstanceHealth, error) {
-	instances, err := r.list()
-	if err != nil {
-		return nil, err
-	}
-
-	res := make(map[string]*InstanceHealth, len(instances))
-	for _, inst := range instances {
-		// ignore error since instance may be deleted
-		res[inst.ID], _ = r.instanceHealth(ctx, inst.ID)
-	}
-	return res, nil
-}
-
 func (r *registryCache) instanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error) {
 	r.mu.RLock()
 	inst, ok := r.instances[instanceID]

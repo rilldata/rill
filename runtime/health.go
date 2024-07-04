@@ -37,9 +37,15 @@ func (h *InstanceHealth) To() *runtimev1.InstanceHealth {
 }
 
 func (r *Runtime) Health(ctx context.Context) (*Health, error) {
-	ih, err := r.registryCache.instancesHealth(ctx)
+	instances, err := r.registryCache.list()
 	if err != nil {
 		return nil, err
+	}
+
+	ih := make(map[string]*InstanceHealth, len(instances))
+	for _, inst := range instances {
+		// ignore error since instance may be deleted
+		ih[inst.ID], _ = r.InstanceHealth(ctx, inst.ID)
 	}
 	return &Health{
 		HangingConn:     r.connCache.HangingErr(),
