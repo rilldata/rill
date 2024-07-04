@@ -114,6 +114,7 @@ type Handle struct {
 	repoMu               ctxsync.RWMutex
 	repoSF               *singleflight.Group
 	cloned               bool
+	syncErr              error
 	repoPath             string
 	projPath             string
 	virtualNextPageToken string
@@ -135,6 +136,16 @@ var _ drivers.Handle = &Handle{}
 type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
 	PublicPaths []string `yaml:"public_paths"`
+}
+
+// Ping implements drivers.Handle.
+func (h *Handle) Ping(ctx context.Context) error {
+	// check connectivity with admin service
+	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
+
+	_ = h.repoMu.RLock(ctx)
+	defer h.repoMu.RUnlock()
+	return errors.Join(err, h.syncErr)
 }
 
 // Driver implements drivers.Handle.
@@ -280,9 +291,9 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		defer cancel()
 
 		r := retrier.New(retrier.ExponentialBackoff(pullRetryN, pullRetryWait), retryErrClassifier{})
-		err = r.Run(func() error { return h.cloneOrPullInner(ctx) })
-		if err != nil {
-			return nil, err
+		h.syncErr = r.Run(func() error { return h.cloneOrPullInner(ctx) })
+		if h.syncErr != nil {
+			return nil, h.syncErr
 		}
 
 		// Read rill.yaml and fill in `ignore_paths`
