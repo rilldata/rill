@@ -11,13 +11,10 @@
   import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { createDeployer } from "@rilldata/web-common/features/project/deploy";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+  import { ProjectDeployer } from "@rilldata/web-common/features/project/deploy";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
-  import {
-    createLocalServiceDeployValidation,
-    createLocalServiceRedeploy,
-  } from "@rilldata/web-common/runtime-client/local-service";
+  import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
+  import { get } from "svelte/store";
   import { Button } from "../../../components/button";
 
   export let type: "primary" | "secondary" = "primary";
@@ -28,41 +25,37 @@
     },
   });
   $: isDeployed = !!$deployValidation.data?.deployedProjectId;
+  const deployer = new ProjectDeployer();
+  const deployerStatus = deployer.getStatus();
+  const deploying = deployer.deploying;
 
   let open = false;
   function onShowDeploy() {
-    if (isDeployed) {
-      return onDeploy();
+    if (deployer.isDeployed) {
+      return deployer.deploy();
     }
     open = true;
     void behaviourEvent?.fireDeployIntentEvent();
   }
 
-  let deploying = false;
-  const deploy = createDeployer();
-  const redeploy = createLocalServiceRedeploy();
-  $: isLoading = $deploy.isLoading || $redeploy.isLoading;
-
   async function onDeploy() {
-    deploying = true;
-
-    await waitUntil(() => !$deployValidation.isLoading);
-    if (!(await $deploy.mutateAsync($deployValidation.data!))) return;
-
-    deploying = false;
+    if (!(await deployer.validate())) return;
+    await deployer.deploy();
     open = false;
   }
 
   function handleVisibilityChange() {
-    if (document.visibilityState !== "visible" || !deploying) return;
-    void onDeploy();
+    if (document.visibilityState !== "visible" || !get(deploying)) return;
+    void deployer.validate();
   }
+
+  $: console.log($deployerStatus);
 </script>
 
 <svelte:window on:visibilitychange={handleVisibilityChange} />
 
 <Tooltip distance={8}>
-  <Button on:click={onShowDeploy} {type} loading={$deployValidation.isLoading}>
+  <Button on:click={onShowDeploy} {type} loading={$deployerStatus.isLoading}>
     {isDeployed ? "Redeploy" : "Deploy"}
   </Button>
   <TooltipContent slot="tooltip-content">
@@ -90,7 +83,7 @@
           <Button
             type="primary"
             on:click={onDeploy}
-            loading={isLoading || deploying}
+            loading={$deployerStatus.isLoading || $deploying}
           >
             Continue
           </Button>

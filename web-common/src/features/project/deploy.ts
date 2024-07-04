@@ -1,57 +1,101 @@
-import type { ConnectError } from "@connectrpc/connect";
-import { createMutation, CreateMutationOptions } from "@rilldata/svelte-query";
+import { ConnectError } from "@connectrpc/connect";
+import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { DeployValidationResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import {
-  localServiceDeploy,
-  localServiceRedeploy,
+  createLocalServiceDeploy,
+  createLocalServiceDeployValidation,
+  createLocalServiceRedeploy,
 } from "@rilldata/web-common/runtime-client/local-service";
+import { derived, get, writable } from "svelte/store";
 
-export function createDeployer(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof deploy>>,
-    ConnectError,
-    DeployValidationResponse,
-    unknown
-  >;
-}) {
-  const { mutation: mutationOptions } = options ?? {};
-  return createMutation<
-    Awaited<ReturnType<typeof deploy>>,
-    unknown,
-    DeployValidationResponse,
-    unknown
-  >(deploy, mutationOptions);
-}
+export class ProjectDeployer {
+  public readonly validation: ReturnType<
+    typeof createLocalServiceDeployValidation
+  > = createLocalServiceDeployValidation({
+    query: {
+      refetchOnWindowFocus: true,
+    },
+  });
+  public readonly deploying = writable(false);
 
-async function deploy(deployValidation: DeployValidationResponse) {
-  if (!deployValidation.isAuthenticated) {
-    window.open(`${deployValidation.loginUrl}`, "__target");
-    return false;
+  private readonly deployMutation = createLocalServiceDeploy();
+  private readonly redeployMutation = createLocalServiceRedeploy();
+
+  public getStatus() {
+    return derived(
+      [this.validation, this.deployMutation, this.redeployMutation],
+      ([validation, deployMutation, redeployMutation]) => {
+        if (
+          validation.isFetching ||
+          deployMutation.isLoading ||
+          redeployMutation.isLoading
+        ) {
+          return {
+            isLoading: true,
+            error: undefined,
+          };
+        }
+
+        return {
+          isLoading: false,
+          error:
+            (validation.error as ConnectError)?.message ??
+            (deployMutation.error as ConnectError)?.message ??
+            (redeployMutation.error as ConnectError)?.message,
+        };
+      },
+    );
   }
 
-  if (deployValidation.isGithubRepo && !deployValidation.isGithubConnected) {
-    // if the project is a github repo and not connected to github then redirect to grant access
-    window.open(`${deployValidation.githubGrantAccessUrl}`, "__target");
-    return false;
+  public get isDeployed() {
+    const validation = get(this.validation).data as DeployValidationResponse;
+    return !!validation?.deployedProjectId;
   }
 
-  if (deployValidation.deployedProjectId) {
-    const resp = await localServiceRedeploy({
-      projectId: deployValidation.deployedProjectId,
-      reupload: !deployValidation.isGithubRepo,
-    });
-    if (resp.frontendUrl) {
+  public async validate() {
+    this.deploying.set(false);
+    let validation = get(this.validation).data as DeployValidationResponse;
+    if (validation?.deployedProjectId) {
+      return true;
+    }
+
+    await waitUntil(() => !get(this.validation).isFetching);
+    validation = get(this.validation).data as DeployValidationResponse;
+
+    if (!validation.isAuthenticated) {
+      window.open(`${validation.loginUrl}`, "__target");
+      this.deploying.set(true);
+      return false;
+    }
+
+    if (validation.isGithubRepo && !validation.isGithubConnected) {
+      // if the project is a github repo and not connected to github then redirect to grant access
+      window.open(`${validation.githubGrantAccessUrl}`, "__target");
+      this.deploying.set(true);
+      return false;
+    }
+
+    return true;
+  }
+
+  public async deploy() {
+    // safeguard around deploy
+    if (!(await this.validate())) return;
+
+    const validation = get(this.validation).data as DeployValidationResponse;
+    if (validation.deployedProjectId) {
+      const resp = await get(this.redeployMutation).mutateAsync({
+        projectId: validation.deployedProjectId,
+        reupload: !validation.isGithubRepo,
+      });
+      window.open(resp.frontendUrl, "__target");
+    } else {
+      const resp = await get(this.deployMutation).mutateAsync({
+        projectName: validation.localProjectName,
+        org: validation.rillUserOrgs[0],
+        upload: !validation.isGithubRepo,
+      });
       window.open(resp.frontendUrl, "__target");
     }
-  } else {
-    const resp = await localServiceDeploy({
-      projectName: deployValidation.localProjectName,
-      org: deployValidation.rillUserOrgs[0],
-      upload: !deployValidation.isGithubRepo,
-    });
-    if (resp.frontendUrl) {
-      window.open(resp.frontendUrl, "__target");
-    }
   }
-  return true;
 }

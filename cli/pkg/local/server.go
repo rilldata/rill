@@ -600,8 +600,6 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		if err != nil {
 			return nil, err
 		}
-	} else {
-		// TODO: should we push change to github for redeploy on github connected project?
 	}
 
 	// TODO : Add other update project fields
