@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"context"
+	"errors"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -44,8 +45,10 @@ func (r *Runtime) Health(ctx context.Context) (*Health, error) {
 
 	ih := make(map[string]*InstanceHealth, len(instances))
 	for _, inst := range instances {
-		// ignore error since instance may be deleted
-		ih[inst.ID], _ = r.InstanceHealth(ctx, inst.ID)
+		ih[inst.ID], err = r.InstanceHealth(ctx, inst.ID)
+		if err != nil && !errors.Is(err, drivers.ErrNotFound) {
+			return nil, err
+		}
 	}
 	return &Health{
 		HangingConn:     r.connCache.HangingErr(),
