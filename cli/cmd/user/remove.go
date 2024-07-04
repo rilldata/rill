@@ -27,7 +27,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if groupName != "" {
-				_, err = client.RemoveUsergroupMember(cmd.Context(), &adminv1.RemoveUsergroupMemberRequest{
+				_, err = client.RemoveUsergroupMemberUser(cmd.Context(), &adminv1.RemoveUsergroupMemberUserRequest{
 					Organization: ch.Org,
 					Usergroup:    groupName,
 					Email:        email,

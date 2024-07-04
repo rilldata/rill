@@ -491,7 +491,7 @@ export interface V1SetSuperuserRequest {
   superuser?: boolean;
 }
 
-export interface V1SetProjectUsergroupRoleResponse {
+export interface V1SetProjectMemberUsergroupRoleResponse {
   [key: string]: any;
 }
 
@@ -499,7 +499,7 @@ export interface V1SetProjectMemberUserRoleResponse {
   [key: string]: any;
 }
 
-export interface V1SetOrganizationUsergroupRoleResponse {
+export interface V1SetOrganizationMemberUsergroupRoleResponse {
   [key: string]: any;
 }
 
@@ -541,14 +541,6 @@ export interface V1RevokeServiceAuthTokenResponse {
   [key: string]: any;
 }
 
-export interface V1RevokeProjectUsergroupRoleResponse {
-  [key: string]: any;
-}
-
-export interface V1RevokeOrganizationUsergroupRoleResponse {
-  [key: string]: any;
-}
-
 export interface V1RevokeMagicAuthTokenResponse {
   [key: string]: any;
 }
@@ -582,11 +574,11 @@ export interface V1RemoveWhitelistedDomainResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveUsergroupsMemberResponse {
+export interface V1RemoveUsergroupsMemberUserResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveUsergroupMemberResponse {
+export interface V1RemoveUsergroupMemberUserResponse {
   [key: string]: any;
 }
 
@@ -594,7 +586,15 @@ export interface V1RemoveProjectWhitelistedDomainResponse {
   [key: string]: any;
 }
 
+export interface V1RemoveProjectMemberUsergroupResponse {
+  [key: string]: any;
+}
+
 export interface V1RemoveProjectMemberUserResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveOrganizationMemberUsergroupResponse {
   [key: string]: any;
 }
 
@@ -765,7 +765,7 @@ export interface V1ListUsergroupsResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListUsergroupMembersResponse {
+export interface V1ListUsergroupMemberUsersResponse {
   members?: V1MemberUser[];
 }
 
@@ -1175,7 +1175,7 @@ export interface V1AlertOptions {
   webOpenState?: string;
 }
 
-export interface V1AddUsergroupMemberResponse {
+export interface V1AddUsergroupMemberUserResponse {
   [key: string]: any;
 }
 

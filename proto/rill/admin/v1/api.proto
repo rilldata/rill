@@ -242,53 +242,54 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}"};
   }
 
-  // SetOrganizationUsergroupRole sets the role for the user group
-  rpc SetOrganizationUsergroupRole(SetOrganizationUsergroupRoleRequest) returns (SetOrganizationUsergroupRoleResponse) {
+  // SetOrganizationMemberUsergroupRole sets the role for the user group
+  rpc SetOrganizationMemberUsergroupRole(SetOrganizationMemberUsergroupRoleRequest) returns (SetOrganizationMemberUsergroupRoleResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/usergroups/{usergroup}/role",
       body: "*"
     };
   }
 
-  // RevokeOrganizationUsergroupRole revokes the organization-level role for the user group
-  rpc RevokeOrganizationUsergroupRole(RevokeOrganizationUsergroupRoleRequest) returns (RevokeOrganizationUsergroupRoleResponse) {
+  // RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
+  rpc RemoveOrganizationMemberUsergroup(RemoveOrganizationMemberUsergroupRequest) returns (RemoveOrganizationMemberUsergroupResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/role"};
   }
 
-  // SetProjectUsergroupRole sets the role for the user group
-  rpc SetProjectUsergroupRole(SetProjectUsergroupRoleRequest) returns (SetProjectUsergroupRoleResponse) {
+  // SetProjectMemberUsergroupRole sets the role for the user group
+  rpc SetProjectMemberUsergroupRole(SetProjectMemberUsergroupRoleRequest) returns (SetProjectMemberUsergroupRoleResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles",
       body: "*"
     };
   }
 
-  // RevokeProjectUsergroupRole revokes the project-level role for the user group
-  rpc RevokeProjectUsergroupRole(RevokeProjectUsergroupRoleRequest) returns (RevokeProjectUsergroupRoleResponse) {
+  // RemoveProjectMemberUsergroup revokes the project-level role for the user group
+  rpc RemoveProjectMemberUsergroup(RemoveProjectMemberUsergroupRequest) returns (RemoveProjectMemberUsergroupResponse) {
     option (google.api.http) = {
       delete: "/v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles",
     };
   }
 
-  // AddUsergroupMember adds a member to the user group
-  rpc AddUsergroupMember(AddUsergroupMemberRequest) returns (AddUsergroupMemberResponse) {
+  // AddUsergroupMemberUser adds a member to the user group
+  rpc AddUsergroupMemberUser(AddUsergroupMemberUserRequest) returns (AddUsergroupMemberUserResponse) {
     option (google.api.http) = {
       put: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}",
       body: "*"
     };
   }
 
-  // ListUsergroupMembers lists all the user group members
-  rpc ListUsergroupMembers(ListUsergroupMembersRequest) returns (ListUsergroupMembersResponse) {
+  // ListUsergroupMemberUsers lists all the user group members
+  rpc ListUsergroupMemberUsers(ListUsergroupMemberUsersRequest) returns (ListUsergroupMemberUsersResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups/{usergroup}/members"};
   }
 
-  // RemoveUsergroupMember removes member from the user group
-  rpc RemoveUsergroupMember(RemoveUsergroupMemberRequest) returns (RemoveUsergroupMemberResponse) {
+  // RemoveUsergroupMemberUser removes member from the user group
+  rpc RemoveUsergroupMemberUser(RemoveUsergroupMemberUserRequest) returns (RemoveUsergroupMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}"};
   }
 
-  rpc RemoveUsergroupsMember(RemoveUsergroupsMemberRequest) returns (RemoveUsergroupsMemberResponse) {
+  // RemoveUsergroupsMemberUser removes member from the organization's user groups
+  rpc RemoveUsergroupsMemberUser(RemoveUsergroupsMemberUserRequest) returns (RemoveUsergroupsMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/members/{email}"};
   }
 
@@ -1055,67 +1056,67 @@ message DeleteUsergroupRequest {
 
 message DeleteUsergroupResponse {}
 
-message SetOrganizationUsergroupRoleRequest {
+message SetOrganizationMemberUsergroupRoleRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
   string role = 3 [(validate.rules).string.min_len = 1];
 }
 
-message SetOrganizationUsergroupRoleResponse {}
+message SetOrganizationMemberUsergroupRoleResponse {}
 
-message RevokeOrganizationUsergroupRoleRequest {
+message RemoveOrganizationMemberUsergroupRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
 }
 
-message RevokeOrganizationUsergroupRoleResponse {}
+message RemoveOrganizationMemberUsergroupResponse {}
 
-message SetProjectUsergroupRoleRequest {
+message SetProjectMemberUsergroupRoleRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
   string role = 4 [(validate.rules).string.min_len = 1];
 }
 
-message SetProjectUsergroupRoleResponse {}
+message SetProjectMemberUsergroupRoleResponse {}
 
-message RevokeProjectUsergroupRoleRequest {
+message RemoveProjectMemberUsergroupRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string project = 2 [(validate.rules).string.min_len = 1];
   string usergroup = 3 [(validate.rules).string.min_len = 1];
 }
 
-message RevokeProjectUsergroupRoleResponse {}
+message RemoveProjectMemberUsergroupResponse {}
 
-message AddUsergroupMemberRequest {
+message AddUsergroupMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
 }
 
-message AddUsergroupMemberResponse {}
+message AddUsergroupMemberUserResponse {}
 
-message RemoveUsergroupMemberRequest {
+message RemoveUsergroupMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
   string email = 3 [(validate.rules).string.email = true];
 }
 
-message RemoveUsergroupMemberResponse {}
+message RemoveUsergroupMemberUserResponse {}
 
-message RemoveUsergroupsMemberRequest {
+message RemoveUsergroupsMemberUserRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string email = 2 [(validate.rules).string.email = true];
 }
 
-message RemoveUsergroupsMemberResponse {}
+message RemoveUsergroupsMemberUserResponse {}
 
-message ListUsergroupMembersRequest {
+message ListUsergroupMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
 }
 
-message ListUsergroupMembersResponse {
+message ListUsergroupMemberUsersResponse {
   repeated MemberUser members = 1;
 }
 

@@ -34,7 +34,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if projectName != "" {
-				_, err = client.SetProjectUsergroupRole(cmd.Context(), &adminv1.SetProjectUsergroupRoleRequest{
+				_, err = client.SetProjectMemberUsergroupRole(cmd.Context(), &adminv1.SetProjectMemberUsergroupRoleRequest{
 					Organization: ch.Org,
 					Project:      projectName,
 					Usergroup:    groupName,
@@ -45,7 +45,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				ch.PrintfSuccess("Updated role of user group %q to %q in project %q\n", groupName, role, projectName)
 			} else {
-				_, err = client.SetOrganizationUsergroupRole(cmd.Context(), &adminv1.SetOrganizationUsergroupRoleRequest{
+				_, err = client.SetOrganizationMemberUsergroupRole(cmd.Context(), &adminv1.SetOrganizationMemberUsergroupRoleRequest{
 					Organization: ch.Org,
 					Usergroup:    groupName,
 					Role:         role,

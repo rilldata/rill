@@ -90,7 +90,7 @@ func listUsergroupMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, group str
 		return err
 	}
 
-	members, err := client.ListUsergroupMembers(cmd.Context(), &adminv1.ListUsergroupMembersRequest{
+	members, err := client.ListUsergroupMemberUsers(cmd.Context(), &adminv1.ListUsergroupMemberUsersRequest{
 		Organization: org,
 		Usergroup:    group,
 	})

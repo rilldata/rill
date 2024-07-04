@@ -37,7 +37,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if group != "" {
-				_, err := client.AddUsergroupMember(cmd.Context(), &adminv1.AddUsergroupMemberRequest{
+				_, err := client.AddUsergroupMemberUser(cmd.Context(), &adminv1.AddUsergroupMemberUserRequest{
 					Organization: ch.Org,
 					Usergroup:    group,
 					Email:        email,

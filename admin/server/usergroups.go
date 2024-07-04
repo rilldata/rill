@@ -220,7 +220,7 @@ func (s *Server) DeleteUsergroup(ctx context.Context, req *adminv1.DeleteUsergro
 	return &adminv1.DeleteUsergroupResponse{}, nil
 }
 
-func (s *Server) SetOrganizationUsergroupRole(ctx context.Context, req *adminv1.SetOrganizationUsergroupRoleRequest) (*adminv1.SetOrganizationUsergroupRoleResponse, error) {
+func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *adminv1.SetOrganizationMemberUsergroupRoleRequest) (*adminv1.SetOrganizationMemberUsergroupRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.usergroup", req.Usergroup),
@@ -256,10 +256,10 @@ func (s *Server) SetOrganizationUsergroupRole(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.SetOrganizationUsergroupRoleResponse{}, nil
+	return &adminv1.SetOrganizationMemberUsergroupRoleResponse{}, nil
 }
 
-func (s *Server) RevokeOrganizationUsergroupRole(ctx context.Context, req *adminv1.RevokeOrganizationUsergroupRoleRequest) (*adminv1.RevokeOrganizationUsergroupRoleResponse, error) {
+func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adminv1.RemoveOrganizationMemberUsergroupRequest) (*adminv1.RemoveOrganizationMemberUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.usergroup", req.Usergroup),
@@ -289,10 +289,10 @@ func (s *Server) RevokeOrganizationUsergroupRole(ctx context.Context, req *admin
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RevokeOrganizationUsergroupRoleResponse{}, nil
+	return &adminv1.RemoveOrganizationMemberUsergroupResponse{}, nil
 }
 
-func (s *Server) SetProjectUsergroupRole(ctx context.Context, req *adminv1.SetProjectUsergroupRoleRequest) (*adminv1.SetProjectUsergroupRoleResponse, error) {
+func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1.SetProjectMemberUsergroupRoleRequest) (*adminv1.SetProjectMemberUsergroupRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -334,10 +334,10 @@ func (s *Server) SetProjectUsergroupRole(ctx context.Context, req *adminv1.SetPr
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.SetProjectUsergroupRoleResponse{}, nil
+	return &adminv1.SetProjectMemberUsergroupRoleResponse{}, nil
 }
 
-func (s *Server) RevokeProjectUsergroupRole(ctx context.Context, req *adminv1.RevokeProjectUsergroupRoleRequest) (*adminv1.RevokeProjectUsergroupRoleResponse, error) {
+func (s *Server) RemoveProjectMemberUsergroup(ctx context.Context, req *adminv1.RemoveProjectMemberUsergroupRequest) (*adminv1.RemoveProjectMemberUsergroupResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -373,10 +373,10 @@ func (s *Server) RevokeProjectUsergroupRole(ctx context.Context, req *adminv1.Re
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RevokeProjectUsergroupRoleResponse{}, nil
+	return &adminv1.RemoveProjectMemberUsergroupResponse{}, nil
 }
 
-func (s *Server) AddUsergroupMember(ctx context.Context, req *adminv1.AddUsergroupMemberRequest) (*adminv1.AddUsergroupMemberResponse, error) {
+func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUsergroupMemberUserRequest) (*adminv1.AddUsergroupMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.usergroup", req.Usergroup),
@@ -433,10 +433,10 @@ func (s *Server) AddUsergroupMember(ctx context.Context, req *adminv1.AddUsergro
 		return nil, err
 	}
 
-	return &adminv1.AddUsergroupMemberResponse{}, nil
+	return &adminv1.AddUsergroupMemberUserResponse{}, nil
 }
 
-func (s *Server) ListUsergroupMembers(ctx context.Context, req *adminv1.ListUsergroupMembersRequest) (*adminv1.ListUsergroupMembersResponse, error) {
+func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.ListUsergroupMemberUsersRequest) (*adminv1.ListUsergroupMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.usergroup", req.Usergroup),
@@ -490,10 +490,10 @@ func (s *Server) ListUsergroupMembers(ctx context.Context, req *adminv1.ListUser
 		}
 	}
 
-	return &adminv1.ListUsergroupMembersResponse{Members: usergroupMembers}, nil
+	return &adminv1.ListUsergroupMemberUsersResponse{Members: usergroupMembers}, nil
 }
 
-func (s *Server) RemoveUsergroupMember(ctx context.Context, req *adminv1.RemoveUsergroupMemberRequest) (*adminv1.RemoveUsergroupMemberResponse, error) {
+func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.RemoveUsergroupMemberUserRequest) (*adminv1.RemoveUsergroupMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.usergroup", req.Usergroup),
@@ -547,10 +547,10 @@ func (s *Server) RemoveUsergroupMember(ctx context.Context, req *adminv1.RemoveU
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RemoveUsergroupMemberResponse{}, nil
+	return &adminv1.RemoveUsergroupMemberUserResponse{}, nil
 }
 
-func (s *Server) RemoveUsergroupsMember(ctx context.Context, req *adminv1.RemoveUsergroupsMemberRequest) (*adminv1.RemoveUsergroupsMemberResponse, error) {
+func (s *Server) RemoveUsergroupsMemberUser(ctx context.Context, req *adminv1.RemoveUsergroupsMemberUserRequest) (*adminv1.RemoveUsergroupsMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 	)
@@ -576,7 +576,7 @@ func (s *Server) RemoveUsergroupsMember(ctx context.Context, req *adminv1.Remove
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RemoveUsergroupsMemberResponse{}, nil
+	return &adminv1.RemoveUsergroupsMemberUserResponse{}, nil
 }
 
 func usergroupToPB(group *database.Usergroup, orgRole *database.UsergroupOrgRole, projectRoles []*database.UsergroupProjectRole) *adminv1.Usergroup {
