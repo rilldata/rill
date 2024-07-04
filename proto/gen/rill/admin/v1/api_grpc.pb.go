@@ -63,6 +63,7 @@ const (
 	AdminService_AddUsergroupMember_FullMethodName                    = "/rill.admin.v1.AdminService/AddUsergroupMember"
 	AdminService_ListUsergroupMembers_FullMethodName                  = "/rill.admin.v1.AdminService/ListUsergroupMembers"
 	AdminService_RemoveUsergroupMember_FullMethodName                 = "/rill.admin.v1.AdminService/RemoveUsergroupMember"
+	AdminService_RemoveUsergroupsMember_FullMethodName                = "/rill.admin.v1.AdminService/RemoveUsergroupsMember"
 	AdminService_GetCurrentUser_FullMethodName                        = "/rill.admin.v1.AdminService/GetCurrentUser"
 	AdminService_IssueRepresentativeAuthToken_FullMethodName          = "/rill.admin.v1.AdminService/IssueRepresentativeAuthToken"
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
@@ -214,6 +215,7 @@ type AdminServiceClient interface {
 	ListUsergroupMembers(ctx context.Context, in *ListUsergroupMembersRequest, opts ...grpc.CallOption) (*ListUsergroupMembersResponse, error)
 	// RemoveUsergroupMember removes member from the user group
 	RemoveUsergroupMember(ctx context.Context, in *RemoveUsergroupMemberRequest, opts ...grpc.CallOption) (*RemoveUsergroupMemberResponse, error)
+	RemoveUsergroupsMember(ctx context.Context, in *RemoveUsergroupsMemberRequest, opts ...grpc.CallOption) (*RemoveUsergroupsMemberResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email
@@ -774,6 +776,16 @@ func (c *adminServiceClient) RemoveUsergroupMember(ctx context.Context, in *Remo
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RemoveUsergroupMemberResponse)
 	err := c.cc.Invoke(ctx, AdminService_RemoveUsergroupMember_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) RemoveUsergroupsMember(ctx context.Context, in *RemoveUsergroupsMemberRequest, opts ...grpc.CallOption) (*RemoveUsergroupsMemberResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RemoveUsergroupsMemberResponse)
+	err := c.cc.Invoke(ctx, AdminService_RemoveUsergroupsMember_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1442,6 +1454,7 @@ type AdminServiceServer interface {
 	ListUsergroupMembers(context.Context, *ListUsergroupMembersRequest) (*ListUsergroupMembersResponse, error)
 	// RemoveUsergroupMember removes member from the user group
 	RemoveUsergroupMember(context.Context, *RemoveUsergroupMemberRequest) (*RemoveUsergroupMemberResponse, error)
+	RemoveUsergroupsMember(context.Context, *RemoveUsergroupsMemberRequest) (*RemoveUsergroupsMemberResponse, error)
 	// GetCurrentUser returns the currently authenticated user (if any)
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	// IssueRepresentativeAuthToken returns the temporary token for given email
@@ -1696,6 +1709,9 @@ func (UnimplementedAdminServiceServer) ListUsergroupMembers(context.Context, *Li
 }
 func (UnimplementedAdminServiceServer) RemoveUsergroupMember(context.Context, *RemoveUsergroupMemberRequest) (*RemoveUsergroupMemberResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RemoveUsergroupMember not implemented")
+}
+func (UnimplementedAdminServiceServer) RemoveUsergroupsMember(context.Context, *RemoveUsergroupsMemberRequest) (*RemoveUsergroupsMemberResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RemoveUsergroupsMember not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
@@ -2669,6 +2685,24 @@ func _AdminService_RemoveUsergroupMember_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).RemoveUsergroupMember(ctx, req.(*RemoveUsergroupMemberRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_RemoveUsergroupsMember_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RemoveUsergroupsMemberRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RemoveUsergroupsMember(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RemoveUsergroupsMember_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RemoveUsergroupsMember(ctx, req.(*RemoveUsergroupsMemberRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3881,6 +3915,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "RemoveUsergroupMember",
 			Handler:    _AdminService_RemoveUsergroupMember_Handler,
+		},
+		{
+			MethodName: "RemoveUsergroupsMember",
+			Handler:    _AdminService_RemoveUsergroupsMember_Handler,
 		},
 		{
 			MethodName: "GetCurrentUser",

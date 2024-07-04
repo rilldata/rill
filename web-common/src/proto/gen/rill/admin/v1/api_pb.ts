@@ -3709,6 +3709,80 @@ export class RemoveUsergroupMemberResponse extends Message<RemoveUsergroupMember
 }
 
 /**
+ * @generated from message rill.admin.v1.RemoveUsergroupsMemberRequest
+ */
+export class RemoveUsergroupsMemberRequest extends Message<RemoveUsergroupsMemberRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string email = 2;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<RemoveUsergroupsMemberRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RemoveUsergroupsMemberRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveUsergroupsMemberRequest {
+    return new RemoveUsergroupsMemberRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveUsergroupsMemberRequest {
+    return new RemoveUsergroupsMemberRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveUsergroupsMemberRequest {
+    return new RemoveUsergroupsMemberRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RemoveUsergroupsMemberRequest | PlainMessage<RemoveUsergroupsMemberRequest> | undefined, b: RemoveUsergroupsMemberRequest | PlainMessage<RemoveUsergroupsMemberRequest> | undefined): boolean {
+    return proto3.util.equals(RemoveUsergroupsMemberRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.RemoveUsergroupsMemberResponse
+ */
+export class RemoveUsergroupsMemberResponse extends Message<RemoveUsergroupsMemberResponse> {
+  constructor(data?: PartialMessage<RemoveUsergroupsMemberResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.RemoveUsergroupsMemberResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveUsergroupsMemberResponse {
+    return new RemoveUsergroupsMemberResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveUsergroupsMemberResponse {
+    return new RemoveUsergroupsMemberResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveUsergroupsMemberResponse {
+    return new RemoveUsergroupsMemberResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: RemoveUsergroupsMemberResponse | PlainMessage<RemoveUsergroupsMemberResponse> | undefined, b: RemoveUsergroupsMemberResponse | PlainMessage<RemoveUsergroupsMemberResponse> | undefined): boolean {
+    return proto3.util.equals(RemoveUsergroupsMemberResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListUsergroupMembersRequest
  */
 export class ListUsergroupMembersRequest extends Message<ListUsergroupMembersRequest> {

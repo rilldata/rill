@@ -551,6 +551,35 @@ func (s *Server) RemoveUsergroupMember(ctx context.Context, req *adminv1.RemoveU
 	return &adminv1.RemoveUsergroupMemberResponse{}, nil
 }
 
+func (s *Server) RemoveUsergroupsMember(ctx context.Context, req *adminv1.RemoveUsergroupsMemberRequest) (*adminv1.RemoveUsergroupsMemberResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+	)
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to remove usergroup members")
+	}
+
+	err = s.admin.DB.DeleteUsergroupsMember(ctx, user.ID, org.ID, *org.AllUsergroupID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.RemoveUsergroupsMemberResponse{}, nil
+}
+
 func usergroupToPB(group *database.Usergroup, orgRole *database.UsergroupOrgRole, projectRoles []*database.UsergroupProjectRole) *adminv1.Usergroup {
 	return &adminv1.Usergroup{
 		GroupId:      group.ID,

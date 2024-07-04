@@ -764,9 +764,15 @@ func (c *connection) DeleteUsergroupMember(ctx context.Context, groupID, userID 
 	return checkDeleteRow("usergroup member", res, err)
 }
 
-func (c *connection) DeleteUsergroupsMember(ctx context.Context, userID, orgID string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id IN (SELECT id FROM usergroups WHERE org_id = $2)", userID, orgID)
-	return checkDeleteRow("usergroup member", res, err)
+func (c *connection) DeleteUsergroupsMember(ctx context.Context, userID, orgID, allUsergroupID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM usergroups_users 
+		WHERE user_id = $1 AND usergroup_id IN (SELECT id FROM usergroups WHERE org_id = $2) AND usergroup_id != $3
+	`, userID, orgID, allUsergroupID)
+	if err != nil {
+		return parseErr("usergroup member", err)
+	}
+	return nil
 }
 
 func (c *connection) FindUserAuthTokens(ctx context.Context, userID string) ([]*database.UserAuthToken, error) {

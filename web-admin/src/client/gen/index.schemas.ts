@@ -589,6 +589,10 @@ export interface V1RemoveWhitelistedDomainResponse {
   [key: string]: any;
 }
 
+export interface V1RemoveUsergroupsMemberResponse {
+  [key: string]: any;
+}
+
 export interface V1RemoveUsergroupResponse {
   [key: string]: any;
 }

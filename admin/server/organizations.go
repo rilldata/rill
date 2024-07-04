@@ -777,10 +777,16 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	}
 
 	// delete from all user groups of the org
-	err = s.admin.DB.DeleteUsergroupsMember(ctx, claims.OwnerID(), org.ID)
+	err = s.admin.DB.DeleteUsergroupMember(ctx, *org.AllUsergroupID, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
+	err = s.admin.DB.DeleteUsergroupsMember(ctx, claims.OwnerID(), org.ID, *org.AllUsergroupID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	err = tx.Commit()
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())

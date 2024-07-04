@@ -9,6 +9,7 @@ import (
 func RemoveUserCmd(ch *cmdutil.Helper) *cobra.Command {
 	var email string
 	var group string
+	var fromAllGroups bool
 
 	removeCmd := &cobra.Command{
 		Use:   "remove-user <email>",
@@ -21,6 +22,20 @@ func RemoveUserCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			email = args[0]
+
+			if fromAllGroups {
+				_, err = client.RemoveUsergroupsMember(cmd.Context(), &adminv1.RemoveUsergroupsMemberRequest{
+					Organization: ch.Org,
+					Email:        email,
+				})
+				if err != nil {
+					return err
+				}
+
+				ch.PrintfSuccess("User %q removed from all user groups of the organization\n", email)
+
+				return nil
+			}
 
 			err = cmdutil.StringPromptIfEmpty(&group, "Enter user group name")
 			if err != nil {
@@ -44,6 +59,7 @@ func RemoveUserCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	removeCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	removeCmd.Flags().StringVar(&group, "group", "", "Name of the user group")
+	removeCmd.Flags().BoolVar(&fromAllGroups, "all-groups", false, "Remove the user from all user groups of the organization")
 
 	return removeCmd
 }

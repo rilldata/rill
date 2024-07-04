@@ -288,6 +288,10 @@ service AdminService {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}"};
   }
 
+  rpc RemoveUsergroupsMember(RemoveUsergroupsMemberRequest) returns (RemoveUsergroupsMemberResponse) {
+    option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/members/{email}"};
+  }
+
   // GetCurrentUser returns the currently authenticated user (if any)
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {
     option (google.api.http) = {
@@ -1098,6 +1102,13 @@ message RemoveUsergroupMemberRequest {
 }
 
 message RemoveUsergroupMemberResponse {}
+
+message RemoveUsergroupsMemberRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string email = 2 [(validate.rules).string.email = true];
+}
+
+message RemoveUsergroupsMemberResponse {}
 
 message ListUsergroupMembersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];

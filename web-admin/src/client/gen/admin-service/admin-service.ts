@@ -97,6 +97,7 @@ import type {
   V1AddUsergroupMemberResponse,
   V1RevokeOrganizationUsergroupRoleResponse,
   V1SetOrganizationUsergroupRoleResponse,
+  V1RemoveUsergroupsMemberResponse,
   V1ListWhitelistedDomainsResponse,
   V1CreateWhitelistedDomainResponse,
   V1RemoveWhitelistedDomainResponse,
@@ -3688,6 +3689,51 @@ export const createAdminServiceSetOrganizationUsergroupRole = <
       usergroup: string;
       data: AdminServiceSetOrganizationMemberRoleBodyBody;
     },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const adminServiceRemoveUsergroupsMember = (
+  organization: string,
+  email: string,
+) => {
+  return httpClient<V1RemoveUsergroupsMemberResponse>({
+    url: `/v1/organizations/${organization}/usergroups/members/${email}`,
+    method: "delete",
+  });
+};
+
+export type AdminServiceRemoveUsergroupsMemberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRemoveUsergroupsMember>>
+>;
+
+export type AdminServiceRemoveUsergroupsMemberMutationError = RpcStatus;
+
+export const createAdminServiceRemoveUsergroupsMember = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRemoveUsergroupsMember>>,
+    TError,
+    { organization: string; email: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRemoveUsergroupsMember>>,
+    { organization: string; email: string }
+  > = (props) => {
+    const { organization, email } = props ?? {};
+
+    return adminServiceRemoveUsergroupsMember(organization, email);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRemoveUsergroupsMember>>,
+    TError,
+    { organization: string; email: string },
     TContext
   >(mutationFn, mutationOptions);
 };

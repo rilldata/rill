@@ -1712,6 +1712,29 @@ paths:
                 type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/usergroups/members/{email}:
+    delete:
+      operationId: AdminService_RemoveUsergroupsMember
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveUsergroupsMemberResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/whitelisted:
     get:
       summary: ListWhitelistedDomains lists all the whitelisted domains for the organization
@@ -3798,6 +3821,8 @@ definitions:
   v1RemoveUsergroupMemberResponse:
     type: object
   v1RemoveUsergroupResponse:
+    type: object
+  v1RemoveUsergroupsMemberResponse:
     type: object
   v1RemoveWhitelistedDomainResponse:
     type: object

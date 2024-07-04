@@ -123,7 +123,7 @@ type DB interface {
 	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
 	FindUsergroupMembers(ctx context.Context, groupID string) ([]*UsergroupMember, error)
 	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
-	DeleteUsergroupsMember(ctx context.Context, userID, orgID string) error
+	DeleteUsergroupsMember(ctx context.Context, userID, orgID, allUsergroupID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)

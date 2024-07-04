@@ -10224,6 +10224,285 @@ var _ interface {
 	ErrorName() string
 } = RemoveUsergroupMemberResponseValidationError{}
 
+// Validate checks the field values on RemoveUsergroupsMemberRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RemoveUsergroupsMemberRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveUsergroupsMemberRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RemoveUsergroupsMemberRequestMultiError, or nil if none found.
+func (m *RemoveUsergroupsMemberRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveUsergroupsMemberRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if utf8.RuneCountInString(m.GetOrganization()) < 1 {
+		err := RemoveUsergroupsMemberRequestValidationError{
+			field:  "Organization",
+			reason: "value length must be at least 1 runes",
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if err := m._validateEmail(m.GetEmail()); err != nil {
+		err = RemoveUsergroupsMemberRequestValidationError{
+			field:  "Email",
+			reason: "value must be a valid email address",
+			cause:  err,
+		}
+		if !all {
+			return err
+		}
+		errors = append(errors, err)
+	}
+
+	if len(errors) > 0 {
+		return RemoveUsergroupsMemberRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+func (m *RemoveUsergroupsMemberRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *RemoveUsergroupsMemberRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
+}
+
+// RemoveUsergroupsMemberRequestMultiError is an error wrapping multiple
+// validation errors returned by RemoveUsergroupsMemberRequest.ValidateAll()
+// if the designated constraints aren't met.
+type RemoveUsergroupsMemberRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveUsergroupsMemberRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveUsergroupsMemberRequestMultiError) AllErrors() []error { return m }
+
+// RemoveUsergroupsMemberRequestValidationError is the validation error
+// returned by RemoveUsergroupsMemberRequest.Validate if the designated
+// constraints aren't met.
+type RemoveUsergroupsMemberRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveUsergroupsMemberRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveUsergroupsMemberRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveUsergroupsMemberRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveUsergroupsMemberRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveUsergroupsMemberRequestValidationError) ErrorName() string {
+	return "RemoveUsergroupsMemberRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveUsergroupsMemberRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveUsergroupsMemberRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveUsergroupsMemberRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveUsergroupsMemberRequestValidationError{}
+
+// Validate checks the field values on RemoveUsergroupsMemberResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *RemoveUsergroupsMemberResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on RemoveUsergroupsMemberResponse with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// RemoveUsergroupsMemberResponseMultiError, or nil if none found.
+func (m *RemoveUsergroupsMemberResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *RemoveUsergroupsMemberResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return RemoveUsergroupsMemberResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// RemoveUsergroupsMemberResponseMultiError is an error wrapping multiple
+// validation errors returned by RemoveUsergroupsMemberResponse.ValidateAll()
+// if the designated constraints aren't met.
+type RemoveUsergroupsMemberResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m RemoveUsergroupsMemberResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m RemoveUsergroupsMemberResponseMultiError) AllErrors() []error { return m }
+
+// RemoveUsergroupsMemberResponseValidationError is the validation error
+// returned by RemoveUsergroupsMemberResponse.Validate if the designated
+// constraints aren't met.
+type RemoveUsergroupsMemberResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e RemoveUsergroupsMemberResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e RemoveUsergroupsMemberResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e RemoveUsergroupsMemberResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e RemoveUsergroupsMemberResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e RemoveUsergroupsMemberResponseValidationError) ErrorName() string {
+	return "RemoveUsergroupsMemberResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e RemoveUsergroupsMemberResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sRemoveUsergroupsMemberResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = RemoveUsergroupsMemberResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = RemoveUsergroupsMemberResponseValidationError{}
+
 // Validate checks the field values on ListUsergroupMembersRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
