@@ -61,6 +61,7 @@ func New(t TestingT) *runtime.Runtime {
 		ControllerLogBufferCapacity:  10000,
 		ControllerLogBufferSizeBytes: int64(datasize.MB * 16),
 		AllowHostAccess:              true,
+		DataDir:                      t.TempDir(),
 	}
 
 	logger := zap.NewNop()

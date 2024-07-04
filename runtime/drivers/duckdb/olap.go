@@ -744,10 +744,9 @@ func (c *connection) execWithLimits(parentCtx context.Context, stmt *drivers.Sta
 	}
 
 	// check current size
-	currentSize, _ := c.EstimateSize()
-	storageLimit -= currentSize
+	sz, _ := c.EstimateSize()
 	// current size already exceeds limit
-	if storageLimit <= 0 {
+	if sz >= storageLimit {
 		return drivers.ErrStorageLimitExceeded
 	}
 
