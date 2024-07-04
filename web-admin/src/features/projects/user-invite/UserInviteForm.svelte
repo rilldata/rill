@@ -3,8 +3,9 @@
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-invite/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
-  import { createForm } from "svelte-forms-lib";
-  import * as yup from "yup";
+  import { defaults, superForm } from "sveltekit-superforms";
+  import { yup } from "sveltekit-superforms/adapters";
+  import { array, object, string } from "yup";
 
   export let organization: string;
   export let project: string;
@@ -12,62 +13,72 @@
 
   const userInvite = createAdminServiceAddProjectMember();
 
-  const formState = createForm<{
-    emails: Array<{ email: "" }>;
+  const initialValues: {
+    emails: string[];
     role: string;
-  }>({
-    initialValues: {
-      emails: [],
-      role: "viewer",
-    },
-    validationSchema: yup.object({
-      emails: yup.array().of(
-        yup.object().shape({
-          email: yup.string().email("Invalid email"),
-        }),
-      ),
+  } = {
+    emails: [],
+    role: "viewer",
+  };
+  const schema = yup(
+    object({
+      emails: array(string().email("Invalid email")).min(1).max(2),
+      role: string().required(),
     }),
-    onSubmit: async (values) => {
-      await Promise.all(
-        values.emails.map(({ email }) => {
-          return $userInvite.mutateAsync({
-            organization,
-            project,
-            data: {
-              email,
-              role: values.role,
-            },
-          });
-        }),
-      );
-      onInvite();
-    },
-  });
+  );
 
-  const { form, handleSubmit } = formState;
+  const { form, errors, enhance, submit, submitting } = superForm(
+    defaults(initialValues, schema),
+    {
+      SPA: true,
+      validators: schema,
+      async onUpdate({ form }) {
+        if (!form.valid) return;
+        const values = form.data;
+
+        await Promise.all(
+          values.emails.map((email) => {
+            return $userInvite.mutateAsync({
+              organization,
+              project,
+              data: {
+                email,
+                role: values.role,
+              },
+            });
+          }),
+        );
+        onInvite();
+      },
+    },
+  );
 </script>
 
 <form
   id="user-invite-form"
-  on:submit|preventDefault={handleSubmit}
-  class="flex flex-row items-center gap-1.5"
+  on:submit|preventDefault={submit}
+  class="w-full"
+  use:enhance
 >
-  <div class="w-full">
-    <MultiInput
-      id="emails"
-      label=""
-      description=""
-      accessorKey="email"
-      {formState}
-      contentClassName="relative"
+  <MultiInput
+    id="emails"
+    placeholder="Invite by email, separated by commas"
+    contentClassName="relative"
+    bind:values={$form.emails}
+    errors={$errors.emails}
+  >
+    <div
+      slot="within-input"
+      class="absolute right-0 top-0 h-full items-center flex"
     >
-      <div
-        slot="adjacent-content"
-        class="absolute right-0 top-0 h-full items-center flex"
-      >
-        <UserRoleSelect bind:value={$form.role} />
-      </div>
-    </MultiInput>
-  </div>
-  <Button submitForm type="primary" form="user-invite-form">Invite</Button>
+      <UserRoleSelect bind:value={$form.role} />
+    </div>
+    <Button
+      submitForm
+      type="primary"
+      form="user-invite-form"
+      slot="beside-input"
+      disabled={$submitting}>Invite</Button
+    >
+  </MultiInput>
 </form>

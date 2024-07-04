@@ -23,7 +23,6 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import ShareProjectButton from "../projects/ShareProjectButton.svelte";
   import { useReports } from "../scheduled-reports/selectors";
   import PageTitle from "../shareable-urls/PageTitle.svelte";
   import {
@@ -167,7 +166,7 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage}
-      <ShareProjectButton {organization} {project} />
+      <UserInviteButton />
     {/if}
     {#if onMetricsExplorerPage || onMagicLinkPage}
       <StateManagersProvider metricsViewName={dashboard}>
@@ -176,7 +175,6 @@
         {#if $user.isSuccess && $user.data.user && !onMagicLinkPage}
           <CreateAlert />
           <Bookmarks />
-          <UserInviteButton />
           <ShareDashboardButton />
         {/if}
       </StateManagersProvider>

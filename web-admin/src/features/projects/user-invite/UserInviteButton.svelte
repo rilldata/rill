@@ -18,7 +18,7 @@
   <DropdownMenuTrigger asChild let:builder>
     <Button builders={[builder]} type="secondary">Share</Button>
   </DropdownMenuTrigger>
-  <DropdownMenuContent class="w-[520px] p-4">
+  <DropdownMenuContent class="w-[520px] p-4" side="bottom" align="end">
     <div class="flex flex-col gap-1.5">
       <div class="text-base font-medium">Share this project</div>
       <UserInviteForm
