@@ -230,7 +230,7 @@ message HealthResponse {
   string conn_cache_error = 2;
   string metastore_error = 3;
   string network_error = 4;
-  map<string, InstanceHealth> instancesHealth = 5;
+  map<string, InstanceHealth> instances_health = 5;
 }
 
 message InstanceHealthRequest {
@@ -238,7 +238,7 @@ message InstanceHealthRequest {
 }
 
 message InstanceHealthResponse {
-  InstanceHealth instanceHealth = 1;
+  InstanceHealth instance_health = 1;
 }
 
 message InstanceHealth {

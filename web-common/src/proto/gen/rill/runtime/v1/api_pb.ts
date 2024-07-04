@@ -243,7 +243,7 @@ export class HealthResponse extends Message<HealthResponse> {
   networkError = "";
 
   /**
-   * @generated from field: map<string, rill.runtime.v1.InstanceHealth> instancesHealth = 5;
+   * @generated from field: map<string, rill.runtime.v1.InstanceHealth> instances_health = 5;
    */
   instancesHealth: { [key: string]: InstanceHealth } = {};
 
@@ -259,7 +259,7 @@ export class HealthResponse extends Message<HealthResponse> {
     { no: 2, name: "conn_cache_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "metastore_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "network_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "instancesHealth", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: InstanceHealth} },
+    { no: 5, name: "instances_health", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: InstanceHealth} },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HealthResponse {
@@ -321,7 +321,7 @@ export class InstanceHealthRequest extends Message<InstanceHealthRequest> {
  */
 export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
   /**
-   * @generated from field: rill.runtime.v1.InstanceHealth instanceHealth = 1;
+   * @generated from field: rill.runtime.v1.InstanceHealth instance_health = 1;
    */
   instanceHealth?: InstanceHealth;
 
@@ -333,7 +333,7 @@ export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.runtime.v1.InstanceHealthResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "instanceHealth", kind: "message", T: InstanceHealth },
+    { no: 1, name: "instance_health", kind: "message", T: InstanceHealth },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealthResponse {
