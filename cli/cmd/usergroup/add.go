@@ -9,21 +9,21 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
+func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
 	var role string
-	var group string
+	var groupName string
 
-	setRoleCmd := &cobra.Command{
-		Use:   "set-role",
-		Short: "Set role of a user group in an organization or project",
+	addCmd := &cobra.Command{
+		Use:   "add",
+		Short: "Add role to a user group in an organization or project",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			err := cmdutil.SelectPromptIfEmpty(&role, "Select role", usergroupRoles, "")
 			if err != nil {
 				return err
 			}
 
-			err = cmdutil.StringPromptIfEmpty(&group, "Enter user group name")
+			err = cmdutil.StringPromptIfEmpty(&groupName, "Enter user group name")
 			if err != nil {
 				return err
 			}
@@ -37,33 +37,33 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				_, err = client.SetProjectUsergroupRole(cmd.Context(), &adminv1.SetProjectUsergroupRoleRequest{
 					Organization: ch.Org,
 					Project:      projectName,
-					Usergroup:    group,
+					Usergroup:    groupName,
 					Role:         role,
 				})
 				if err != nil {
 					return err
 				}
-				ch.PrintfSuccess("Updated role of user group %q to %q in project %q\n", group, role, projectName)
+				ch.PrintfSuccess("Updated role of user group %q to %q in project %q\n", groupName, role, projectName)
 			} else {
 				_, err = client.SetOrganizationUsergroupRole(cmd.Context(), &adminv1.SetOrganizationUsergroupRoleRequest{
 					Organization: ch.Org,
-					Usergroup:    group,
+					Usergroup:    groupName,
 					Role:         role,
 				})
 				if err != nil {
 					return err
 				}
-				ch.PrintfSuccess("Updated role of user group %q to %q in organization %q\n", group, role, ch.Org)
+				ch.PrintfSuccess("Updated role of user group %q to %q in organization %q\n", groupName, role, ch.Org)
 			}
 
 			return nil
 		},
 	}
 
-	setRoleCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
-	setRoleCmd.Flags().StringVar(&projectName, "project", "", "Project")
-	setRoleCmd.Flags().StringVar(&group, "group", "", "User group")
-	setRoleCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user group (options: %s)", strings.Join(usergroupRoles, ", ")))
+	addCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
+	addCmd.Flags().StringVar(&projectName, "project", "", "Project")
+	addCmd.Flags().StringVar(&groupName, "group", "", "User group")
+	addCmd.Flags().StringVar(&role, "role", "", fmt.Sprintf("Role of the user group (options: %s)", strings.Join(usergroupRoles, ", ")))
 
-	return setRoleCmd
+	return addCmd
 }

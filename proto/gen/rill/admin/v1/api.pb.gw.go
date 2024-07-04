@@ -1206,11 +1206,11 @@ func local_request_AdminService_TriggerRedeploy_0(ctx context.Context, marshaler
 }
 
 var (
-	filter_AdminService_ListOrganizationMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
+	filter_AdminService_ListOrganizationMemberUsers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0}, Base: []int{1, 1, 0}, Check: []int{0, 1, 2}}
 )
 
-func request_AdminService_ListOrganizationMembers_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListOrganizationMembersRequest
+func request_AdminService_ListOrganizationMemberUsers_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListOrganizationMemberUsersRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1233,17 +1233,17 @@ func request_AdminService_ListOrganizationMembers_0(ctx context.Context, marshal
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListOrganizationMembers_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListOrganizationMemberUsers_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ListOrganizationMembers(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListOrganizationMemberUsers(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_ListOrganizationMembers_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListOrganizationMembersRequest
+func local_request_AdminService_ListOrganizationMemberUsers_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListOrganizationMemberUsersRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1266,11 +1266,11 @@ func local_request_AdminService_ListOrganizationMembers_0(ctx context.Context, m
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListOrganizationMembers_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListOrganizationMemberUsers_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.ListOrganizationMembers(ctx, &protoReq)
+	msg, err := server.ListOrganizationMemberUsers(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -1345,8 +1345,8 @@ func local_request_AdminService_ListOrganizationInvites_0(ctx context.Context, m
 
 }
 
-func request_AdminService_AddOrganizationMember_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AddOrganizationMemberRequest
+func request_AdminService_AddOrganizationMemberUser_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq AddOrganizationMemberUserRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -1370,13 +1370,13 @@ func request_AdminService_AddOrganizationMember_0(ctx context.Context, marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	msg, err := client.AddOrganizationMember(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.AddOrganizationMemberUser(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_AddOrganizationMember_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AddOrganizationMemberRequest
+func local_request_AdminService_AddOrganizationMemberUser_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq AddOrganizationMemberUserRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -1400,17 +1400,17 @@ func local_request_AdminService_AddOrganizationMember_0(ctx context.Context, mar
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
 	}
 
-	msg, err := server.AddOrganizationMember(ctx, &protoReq)
+	msg, err := server.AddOrganizationMemberUser(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
 var (
-	filter_AdminService_RemoveOrganizationMember_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "email": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_AdminService_RemoveOrganizationMemberUser_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "email": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_AdminService_RemoveOrganizationMember_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RemoveOrganizationMemberRequest
+func request_AdminService_RemoveOrganizationMemberUser_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq RemoveOrganizationMemberUserRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1443,17 +1443,17 @@ func request_AdminService_RemoveOrganizationMember_0(ctx context.Context, marsha
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_RemoveOrganizationMember_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_RemoveOrganizationMemberUser_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.RemoveOrganizationMember(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.RemoveOrganizationMemberUser(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_RemoveOrganizationMember_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RemoveOrganizationMemberRequest
+func local_request_AdminService_RemoveOrganizationMemberUser_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq RemoveOrganizationMemberUserRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1486,11 +1486,11 @@ func local_request_AdminService_RemoveOrganizationMember_0(ctx context.Context, 
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_RemoveOrganizationMember_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_RemoveOrganizationMemberUser_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.RemoveOrganizationMember(ctx, &protoReq)
+	msg, err := server.RemoveOrganizationMemberUser(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -1547,8 +1547,8 @@ func local_request_AdminService_LeaveOrganization_0(ctx context.Context, marshal
 
 }
 
-func request_AdminService_SetOrganizationMemberRole_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq SetOrganizationMemberRoleRequest
+func request_AdminService_SetOrganizationMemberUserRole_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq SetOrganizationMemberUserRoleRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -1582,13 +1582,13 @@ func request_AdminService_SetOrganizationMemberRole_0(ctx context.Context, marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "email", err)
 	}
 
-	msg, err := client.SetOrganizationMemberRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.SetOrganizationMemberUserRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_SetOrganizationMemberRole_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq SetOrganizationMemberRoleRequest
+func local_request_AdminService_SetOrganizationMemberUserRole_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq SetOrganizationMemberUserRoleRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -1622,17 +1622,17 @@ func local_request_AdminService_SetOrganizationMemberRole_0(ctx context.Context,
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "email", err)
 	}
 
-	msg, err := server.SetOrganizationMemberRole(ctx, &protoReq)
+	msg, err := server.SetOrganizationMemberUserRole(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
 var (
-	filter_AdminService_ListProjectMembers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "project": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+	filter_AdminService_ListProjectMemberUsers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "project": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
 )
 
-func request_AdminService_ListProjectMembers_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListProjectMembersRequest
+func request_AdminService_ListProjectMemberUsers_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListProjectMemberUsersRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1665,17 +1665,17 @@ func request_AdminService_ListProjectMembers_0(ctx context.Context, marshaler ru
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListProjectMembers_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListProjectMemberUsers_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := client.ListProjectMembers(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.ListProjectMemberUsers(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_ListProjectMembers_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq ListProjectMembersRequest
+func local_request_AdminService_ListProjectMemberUsers_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListProjectMemberUsersRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1708,11 +1708,11 @@ func local_request_AdminService_ListProjectMembers_0(ctx context.Context, marsha
 	if err := req.ParseForm(); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
-	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListProjectMembers_0); err != nil {
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListProjectMemberUsers_0); err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
-	msg, err := server.ListProjectMembers(ctx, &protoReq)
+	msg, err := server.ListProjectMemberUsers(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -1807,8 +1807,8 @@ func local_request_AdminService_ListProjectInvites_0(ctx context.Context, marsha
 
 }
 
-func request_AdminService_AddProjectMember_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AddProjectMemberRequest
+func request_AdminService_AddProjectMemberUser_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq AddProjectMemberUserRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -1842,13 +1842,13 @@ func request_AdminService_AddProjectMember_0(ctx context.Context, marshaler runt
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
-	msg, err := client.AddProjectMember(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.AddProjectMemberUser(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_AddProjectMember_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq AddProjectMemberRequest
+func local_request_AdminService_AddProjectMemberUser_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq AddProjectMemberUserRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -1882,13 +1882,13 @@ func local_request_AdminService_AddProjectMember_0(ctx context.Context, marshale
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
 	}
 
-	msg, err := server.AddProjectMember(ctx, &protoReq)
+	msg, err := server.AddProjectMemberUser(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_AdminService_RemoveProjectMember_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RemoveProjectMemberRequest
+func request_AdminService_RemoveProjectMemberUser_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq RemoveProjectMemberUserRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1928,13 +1928,13 @@ func request_AdminService_RemoveProjectMember_0(ctx context.Context, marshaler r
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "email", err)
 	}
 
-	msg, err := client.RemoveProjectMember(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.RemoveProjectMemberUser(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_RemoveProjectMember_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RemoveProjectMemberRequest
+func local_request_AdminService_RemoveProjectMemberUser_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq RemoveProjectMemberUserRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -1974,63 +1974,13 @@ func local_request_AdminService_RemoveProjectMember_0(ctx context.Context, marsh
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "email", err)
 	}
 
-	msg, err := server.RemoveProjectMember(ctx, &protoReq)
+	msg, err := server.RemoveProjectMemberUser(ctx, &protoReq)
 	return msg, metadata, err
 
 }
 
-func request_AdminService_SetProjectMemberRole_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq SetProjectMemberRoleRequest
-	var metadata runtime.ServerMetadata
-
-	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
-	}
-
-	var (
-		val string
-		ok  bool
-		err error
-		_   = err
-	)
-
-	val, ok = pathParams["organization"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
-	}
-
-	protoReq.Organization, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
-	}
-
-	val, ok = pathParams["project"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
-	}
-
-	protoReq.Project, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
-	}
-
-	val, ok = pathParams["email"]
-	if !ok {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "email")
-	}
-
-	protoReq.Email, err = runtime.String(val)
-	if err != nil {
-		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "email", err)
-	}
-
-	msg, err := client.SetProjectMemberRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
-	return msg, metadata, err
-
-}
-
-func local_request_AdminService_SetProjectMemberRole_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq SetProjectMemberRoleRequest
+func request_AdminService_SetProjectMemberUserRole_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq SetProjectMemberUserRoleRequest
 	var metadata runtime.ServerMetadata
 
 	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
@@ -2074,7 +2024,57 @@ func local_request_AdminService_SetProjectMemberRole_0(ctx context.Context, mars
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "email", err)
 	}
 
-	msg, err := server.SetProjectMemberRole(ctx, &protoReq)
+	msg, err := client.SetProjectMemberUserRole(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func local_request_AdminService_SetProjectMemberUserRole_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq SetProjectMemberUserRoleRequest
+	var metadata runtime.ServerMetadata
+
+	if err := marshaler.NewDecoder(req.Body).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["organization"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "organization")
+	}
+
+	protoReq.Organization, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "organization", err)
+	}
+
+	val, ok = pathParams["project"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "project")
+	}
+
+	protoReq.Project, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "project", err)
+	}
+
+	val, ok = pathParams["email"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "email")
+	}
+
+	protoReq.Email, err = runtime.String(val)
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "email", err)
+	}
+
+	msg, err := server.SetProjectMemberUserRole(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -2379,8 +2379,8 @@ func local_request_AdminService_ListUsergroups_0(ctx context.Context, marshaler 
 
 }
 
-func request_AdminService_RemoveUsergroup_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RemoveUsergroupRequest
+func request_AdminService_DeleteUsergroup_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeleteUsergroupRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2410,13 +2410,13 @@ func request_AdminService_RemoveUsergroup_0(ctx context.Context, marshaler runti
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "usergroup", err)
 	}
 
-	msg, err := client.RemoveUsergroup(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	msg, err := client.DeleteUsergroup(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
 
-func local_request_AdminService_RemoveUsergroup_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
-	var protoReq RemoveUsergroupRequest
+func local_request_AdminService_DeleteUsergroup_0(ctx context.Context, marshaler runtime.Marshaler, server AdminServiceServer, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq DeleteUsergroupRequest
 	var metadata runtime.ServerMetadata
 
 	var (
@@ -2446,7 +2446,7 @@ func local_request_AdminService_RemoveUsergroup_0(ctx context.Context, marshaler
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "usergroup", err)
 	}
 
-	msg, err := server.RemoveUsergroup(ctx, &protoReq)
+	msg, err := server.DeleteUsergroup(ctx, &protoReq)
 	return msg, metadata, err
 
 }
@@ -7076,7 +7076,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_ListOrganizationMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AdminService_ListOrganizationMemberUsers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7084,12 +7084,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListOrganizationMembers", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListOrganizationMemberUsers", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_ListOrganizationMembers_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_ListOrganizationMemberUsers_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7097,7 +7097,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_ListOrganizationMembers_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_ListOrganizationMemberUsers_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -7126,7 +7126,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("POST", pattern_AdminService_AddOrganizationMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AdminService_AddOrganizationMemberUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7134,12 +7134,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/AddOrganizationMember", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/AddOrganizationMemberUser", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_AddOrganizationMember_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_AddOrganizationMemberUser_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7147,11 +7147,11 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_AddOrganizationMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_AddOrganizationMemberUser_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_AdminService_RemoveOrganizationMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_AdminService_RemoveOrganizationMemberUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7159,12 +7159,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveOrganizationMember", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members/{email}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveOrganizationMemberUser", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members/{email}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_RemoveOrganizationMember_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_RemoveOrganizationMemberUser_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7172,7 +7172,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_RemoveOrganizationMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_RemoveOrganizationMemberUser_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -7201,7 +7201,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("PUT", pattern_AdminService_SetOrganizationMemberRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_AdminService_SetOrganizationMemberUserRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7209,12 +7209,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetOrganizationMemberRole", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members/{email}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetOrganizationMemberUserRole", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members/{email}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_SetOrganizationMemberRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_SetOrganizationMemberUserRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7222,11 +7222,11 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_SetOrganizationMemberRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_SetOrganizationMemberUserRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_ListProjectMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AdminService_ListProjectMemberUsers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7234,12 +7234,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMembers", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMemberUsers", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_ListProjectMembers_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_ListProjectMemberUsers_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7247,7 +7247,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_ListProjectMembers_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_ListProjectMemberUsers_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -7276,7 +7276,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("POST", pattern_AdminService_AddProjectMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AdminService_AddProjectMemberUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7284,12 +7284,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/AddProjectMember", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/AddProjectMemberUser", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_AddProjectMember_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_AddProjectMemberUser_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7297,11 +7297,11 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_AddProjectMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_AddProjectMemberUser_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_AdminService_RemoveProjectMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_AdminService_RemoveProjectMemberUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7309,12 +7309,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveProjectMember", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members/{email}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveProjectMemberUser", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members/{email}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_RemoveProjectMember_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_RemoveProjectMemberUser_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7322,11 +7322,11 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_RemoveProjectMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_RemoveProjectMemberUser_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_AdminService_SetProjectMemberRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_AdminService_SetProjectMemberUserRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7334,12 +7334,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetProjectMemberRole", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members/{email}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetProjectMemberUserRole", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members/{email}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_SetProjectMemberRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_SetProjectMemberUserRole_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7347,7 +7347,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_SetProjectMemberRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_SetProjectMemberUserRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -7451,7 +7451,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("DELETE", pattern_AdminService_RemoveUsergroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_AdminService_DeleteUsergroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		var stream runtime.ServerTransportStream
@@ -7459,12 +7459,12 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveUsergroup", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/usergroups/{usergroup}"))
+		annotatedContext, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteUsergroup", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/usergroups/{usergroup}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_AdminService_RemoveUsergroup_0(annotatedContext, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_AdminService_DeleteUsergroup_0(annotatedContext, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
@@ -7472,7 +7472,7 @@ func RegisterAdminServiceHandlerServer(ctx context.Context, mux *runtime.ServeMu
 			return
 		}
 
-		forward_AdminService_RemoveUsergroup_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_DeleteUsergroup_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -9604,25 +9604,25 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_ListOrganizationMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AdminService_ListOrganizationMemberUsers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListOrganizationMembers", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListOrganizationMemberUsers", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_ListOrganizationMembers_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_ListOrganizationMemberUsers_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_ListOrganizationMembers_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_ListOrganizationMemberUsers_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -9648,47 +9648,47 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("POST", pattern_AdminService_AddOrganizationMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AdminService_AddOrganizationMemberUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/AddOrganizationMember", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/AddOrganizationMemberUser", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_AddOrganizationMember_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_AddOrganizationMemberUser_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_AddOrganizationMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_AddOrganizationMemberUser_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_AdminService_RemoveOrganizationMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_AdminService_RemoveOrganizationMemberUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveOrganizationMember", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members/{email}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveOrganizationMemberUser", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members/{email}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_RemoveOrganizationMember_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_RemoveOrganizationMemberUser_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_RemoveOrganizationMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_RemoveOrganizationMemberUser_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -9714,47 +9714,47 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("PUT", pattern_AdminService_SetOrganizationMemberRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_AdminService_SetOrganizationMemberUserRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetOrganizationMemberRole", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members/{email}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetOrganizationMemberUserRole", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/members/{email}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_SetOrganizationMemberRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_SetOrganizationMemberUserRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_SetOrganizationMemberRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_SetOrganizationMemberUserRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("GET", pattern_AdminService_ListProjectMembers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("GET", pattern_AdminService_ListProjectMemberUsers_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMembers", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/ListProjectMemberUsers", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_ListProjectMembers_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_ListProjectMemberUsers_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_ListProjectMembers_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_ListProjectMemberUsers_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -9780,69 +9780,69 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("POST", pattern_AdminService_AddProjectMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("POST", pattern_AdminService_AddProjectMemberUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/AddProjectMember", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/AddProjectMemberUser", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_AddProjectMember_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_AddProjectMemberUser_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_AddProjectMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_AddProjectMemberUser_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("DELETE", pattern_AdminService_RemoveProjectMember_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_AdminService_RemoveProjectMemberUser_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveProjectMember", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members/{email}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveProjectMemberUser", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members/{email}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_RemoveProjectMember_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_RemoveProjectMemberUser_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_RemoveProjectMember_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_RemoveProjectMemberUser_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
-	mux.Handle("PUT", pattern_AdminService_SetProjectMemberRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("PUT", pattern_AdminService_SetProjectMemberUserRole_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetProjectMemberRole", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members/{email}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/SetProjectMemberUserRole", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/projects/{project}/members/{email}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_SetProjectMemberRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_SetProjectMemberUserRole_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_SetProjectMemberRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_SetProjectMemberUserRole_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -9934,25 +9934,25 @@ func RegisterAdminServiceHandlerClient(ctx context.Context, mux *runtime.ServeMu
 
 	})
 
-	mux.Handle("DELETE", pattern_AdminService_RemoveUsergroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+	mux.Handle("DELETE", pattern_AdminService_DeleteUsergroup_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
 		var err error
 		var annotatedContext context.Context
-		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/RemoveUsergroup", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/usergroups/{usergroup}"))
+		annotatedContext, err = runtime.AnnotateContext(ctx, mux, req, "/rill.admin.v1.AdminService/DeleteUsergroup", runtime.WithHTTPPathPattern("/v1/organizations/{organization}/usergroups/{usergroup}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_AdminService_RemoveUsergroup_0(annotatedContext, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_AdminService_DeleteUsergroup_0(annotatedContext, inboundMarshaler, client, req, pathParams)
 		annotatedContext = runtime.NewServerMetadataContext(annotatedContext, md)
 		if err != nil {
 			runtime.HTTPError(annotatedContext, mux, outboundMarshaler, w, req, err)
 			return
 		}
 
-		forward_AdminService_RemoveUsergroup_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+		forward_AdminService_DeleteUsergroup_0(annotatedContext, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
 
 	})
 
@@ -11432,27 +11432,27 @@ var (
 
 	pattern_AdminService_TriggerRedeploy_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 2, 2, 2, 3}, []string{"v1", "projects", "-", "redeploy"}, ""))
 
-	pattern_AdminService_ListOrganizationMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization", "members"}, ""))
+	pattern_AdminService_ListOrganizationMemberUsers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization", "members"}, ""))
 
 	pattern_AdminService_ListOrganizationInvites_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization", "invites"}, ""))
 
-	pattern_AdminService_AddOrganizationMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization", "members"}, ""))
+	pattern_AdminService_AddOrganizationMemberUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization", "members"}, ""))
 
-	pattern_AdminService_RemoveOrganizationMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "organizations", "organization", "members", "email"}, ""))
+	pattern_AdminService_RemoveOrganizationMemberUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "organizations", "organization", "members", "email"}, ""))
 
 	pattern_AdminService_LeaveOrganization_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 2, 4}, []string{"v1", "organizations", "organization", "members", "current"}, ""))
 
-	pattern_AdminService_SetOrganizationMemberRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "organizations", "organization", "members", "email"}, ""))
+	pattern_AdminService_SetOrganizationMemberUserRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "organizations", "organization", "members", "email"}, ""))
 
-	pattern_AdminService_ListProjectMembers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "organizations", "organization", "projects", "project", "members"}, ""))
+	pattern_AdminService_ListProjectMemberUsers_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "organizations", "organization", "projects", "project", "members"}, ""))
 
 	pattern_AdminService_ListProjectInvites_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "organizations", "organization", "projects", "project", "invites"}, ""))
 
-	pattern_AdminService_AddProjectMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "organizations", "organization", "projects", "project", "members"}, ""))
+	pattern_AdminService_AddProjectMemberUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "organizations", "organization", "projects", "project", "members"}, ""))
 
-	pattern_AdminService_RemoveProjectMember_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "organizations", "organization", "projects", "project", "members", "email"}, ""))
+	pattern_AdminService_RemoveProjectMemberUser_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "organizations", "organization", "projects", "project", "members", "email"}, ""))
 
-	pattern_AdminService_SetProjectMemberRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "organizations", "organization", "projects", "project", "members", "email"}, ""))
+	pattern_AdminService_SetProjectMemberUserRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5, 1, 0, 4, 1, 5, 6}, []string{"v1", "organizations", "organization", "projects", "project", "members", "email"}, ""))
 
 	pattern_AdminService_CreateUsergroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization", "usergroups"}, ""))
 
@@ -11462,7 +11462,7 @@ var (
 
 	pattern_AdminService_ListUsergroups_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3}, []string{"v1", "organizations", "organization", "usergroups"}, ""))
 
-	pattern_AdminService_RemoveUsergroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "organizations", "organization", "usergroups", "usergroup"}, ""))
+	pattern_AdminService_DeleteUsergroup_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4}, []string{"v1", "organizations", "organization", "usergroups", "usergroup"}, ""))
 
 	pattern_AdminService_SetOrganizationUsergroupRole_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 2, 1, 1, 0, 4, 1, 5, 2, 2, 3, 1, 0, 4, 1, 5, 4, 2, 5}, []string{"v1", "organizations", "organization", "usergroups", "usergroup", "role"}, ""))
 
@@ -11638,27 +11638,27 @@ var (
 
 	forward_AdminService_TriggerRedeploy_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_ListOrganizationMembers_0 = runtime.ForwardResponseMessage
+	forward_AdminService_ListOrganizationMemberUsers_0 = runtime.ForwardResponseMessage
 
 	forward_AdminService_ListOrganizationInvites_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_AddOrganizationMember_0 = runtime.ForwardResponseMessage
+	forward_AdminService_AddOrganizationMemberUser_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_RemoveOrganizationMember_0 = runtime.ForwardResponseMessage
+	forward_AdminService_RemoveOrganizationMemberUser_0 = runtime.ForwardResponseMessage
 
 	forward_AdminService_LeaveOrganization_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_SetOrganizationMemberRole_0 = runtime.ForwardResponseMessage
+	forward_AdminService_SetOrganizationMemberUserRole_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_ListProjectMembers_0 = runtime.ForwardResponseMessage
+	forward_AdminService_ListProjectMemberUsers_0 = runtime.ForwardResponseMessage
 
 	forward_AdminService_ListProjectInvites_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_AddProjectMember_0 = runtime.ForwardResponseMessage
+	forward_AdminService_AddProjectMemberUser_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_RemoveProjectMember_0 = runtime.ForwardResponseMessage
+	forward_AdminService_RemoveProjectMemberUser_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_SetProjectMemberRole_0 = runtime.ForwardResponseMessage
+	forward_AdminService_SetProjectMemberUserRole_0 = runtime.ForwardResponseMessage
 
 	forward_AdminService_CreateUsergroup_0 = runtime.ForwardResponseMessage
 
@@ -11668,7 +11668,7 @@ var (
 
 	forward_AdminService_ListUsergroups_0 = runtime.ForwardResponseMessage
 
-	forward_AdminService_RemoveUsergroup_0 = runtime.ForwardResponseMessage
+	forward_AdminService_DeleteUsergroup_0 = runtime.ForwardResponseMessage
 
 	forward_AdminService_SetOrganizationUsergroupRole_0 = runtime.ForwardResponseMessage
 

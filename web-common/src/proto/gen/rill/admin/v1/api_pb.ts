@@ -2719,9 +2719,9 @@ export class TriggerRedeployResponse extends Message<TriggerRedeployResponse> {
 }
 
 /**
- * @generated from message rill.admin.v1.ListOrganizationMembersRequest
+ * @generated from message rill.admin.v1.ListOrganizationMemberUsersRequest
  */
-export class ListOrganizationMembersRequest extends Message<ListOrganizationMembersRequest> {
+export class ListOrganizationMemberUsersRequest extends Message<ListOrganizationMemberUsersRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -2737,76 +2737,76 @@ export class ListOrganizationMembersRequest extends Message<ListOrganizationMemb
    */
   pageToken = "";
 
-  constructor(data?: PartialMessage<ListOrganizationMembersRequest>) {
+  constructor(data?: PartialMessage<ListOrganizationMemberUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListOrganizationMembersRequest";
+  static readonly typeName = "rill.admin.v1.ListOrganizationMemberUsersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationMembersRequest {
-    return new ListOrganizationMembersRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationMemberUsersRequest {
+    return new ListOrganizationMemberUsersRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationMembersRequest {
-    return new ListOrganizationMembersRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationMemberUsersRequest {
+    return new ListOrganizationMemberUsersRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationMembersRequest {
-    return new ListOrganizationMembersRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationMemberUsersRequest {
+    return new ListOrganizationMemberUsersRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListOrganizationMembersRequest | PlainMessage<ListOrganizationMembersRequest> | undefined, b: ListOrganizationMembersRequest | PlainMessage<ListOrganizationMembersRequest> | undefined): boolean {
-    return proto3.util.equals(ListOrganizationMembersRequest, a, b);
+  static equals(a: ListOrganizationMemberUsersRequest | PlainMessage<ListOrganizationMemberUsersRequest> | undefined, b: ListOrganizationMemberUsersRequest | PlainMessage<ListOrganizationMemberUsersRequest> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationMemberUsersRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.ListOrganizationMembersResponse
+ * @generated from message rill.admin.v1.ListOrganizationMemberUsersResponse
  */
-export class ListOrganizationMembersResponse extends Message<ListOrganizationMembersResponse> {
+export class ListOrganizationMemberUsersResponse extends Message<ListOrganizationMemberUsersResponse> {
   /**
-   * @generated from field: repeated rill.admin.v1.Member members = 1;
+   * @generated from field: repeated rill.admin.v1.MemberUser members = 1;
    */
-  members: Member[] = [];
+  members: MemberUser[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
 
-  constructor(data?: PartialMessage<ListOrganizationMembersResponse>) {
+  constructor(data?: PartialMessage<ListOrganizationMemberUsersResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListOrganizationMembersResponse";
+  static readonly typeName = "rill.admin.v1.ListOrganizationMemberUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "members", kind: "message", T: Member, repeated: true },
+    { no: 1, name: "members", kind: "message", T: MemberUser, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationMembersResponse {
-    return new ListOrganizationMembersResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListOrganizationMemberUsersResponse {
+    return new ListOrganizationMemberUsersResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationMembersResponse {
-    return new ListOrganizationMembersResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListOrganizationMemberUsersResponse {
+    return new ListOrganizationMemberUsersResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationMembersResponse {
-    return new ListOrganizationMembersResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListOrganizationMemberUsersResponse {
+    return new ListOrganizationMemberUsersResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListOrganizationMembersResponse | PlainMessage<ListOrganizationMembersResponse> | undefined, b: ListOrganizationMembersResponse | PlainMessage<ListOrganizationMembersResponse> | undefined): boolean {
-    return proto3.util.equals(ListOrganizationMembersResponse, a, b);
+  static equals(a: ListOrganizationMemberUsersResponse | PlainMessage<ListOrganizationMemberUsersResponse> | undefined, b: ListOrganizationMemberUsersResponse | PlainMessage<ListOrganizationMemberUsersResponse> | undefined): boolean {
+    return proto3.util.equals(ListOrganizationMemberUsersResponse, a, b);
   }
 }
 
@@ -3155,9 +3155,9 @@ export class ListUsergroupsResponse extends Message<ListUsergroupsResponse> {
 }
 
 /**
- * @generated from message rill.admin.v1.RemoveUsergroupRequest
+ * @generated from message rill.admin.v1.DeleteUsergroupRequest
  */
-export class RemoveUsergroupRequest extends Message<RemoveUsergroupRequest> {
+export class DeleteUsergroupRequest extends Message<DeleteUsergroupRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -3168,63 +3168,63 @@ export class RemoveUsergroupRequest extends Message<RemoveUsergroupRequest> {
    */
   usergroup = "";
 
-  constructor(data?: PartialMessage<RemoveUsergroupRequest>) {
+  constructor(data?: PartialMessage<DeleteUsergroupRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.RemoveUsergroupRequest";
+  static readonly typeName = "rill.admin.v1.DeleteUsergroupRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveUsergroupRequest {
-    return new RemoveUsergroupRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteUsergroupRequest {
+    return new DeleteUsergroupRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveUsergroupRequest {
-    return new RemoveUsergroupRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteUsergroupRequest {
+    return new DeleteUsergroupRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveUsergroupRequest {
-    return new RemoveUsergroupRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteUsergroupRequest {
+    return new DeleteUsergroupRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: RemoveUsergroupRequest | PlainMessage<RemoveUsergroupRequest> | undefined, b: RemoveUsergroupRequest | PlainMessage<RemoveUsergroupRequest> | undefined): boolean {
-    return proto3.util.equals(RemoveUsergroupRequest, a, b);
+  static equals(a: DeleteUsergroupRequest | PlainMessage<DeleteUsergroupRequest> | undefined, b: DeleteUsergroupRequest | PlainMessage<DeleteUsergroupRequest> | undefined): boolean {
+    return proto3.util.equals(DeleteUsergroupRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.RemoveUsergroupResponse
+ * @generated from message rill.admin.v1.DeleteUsergroupResponse
  */
-export class RemoveUsergroupResponse extends Message<RemoveUsergroupResponse> {
-  constructor(data?: PartialMessage<RemoveUsergroupResponse>) {
+export class DeleteUsergroupResponse extends Message<DeleteUsergroupResponse> {
+  constructor(data?: PartialMessage<DeleteUsergroupResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.RemoveUsergroupResponse";
+  static readonly typeName = "rill.admin.v1.DeleteUsergroupResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveUsergroupResponse {
-    return new RemoveUsergroupResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DeleteUsergroupResponse {
+    return new DeleteUsergroupResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveUsergroupResponse {
-    return new RemoveUsergroupResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DeleteUsergroupResponse {
+    return new DeleteUsergroupResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveUsergroupResponse {
-    return new RemoveUsergroupResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DeleteUsergroupResponse {
+    return new DeleteUsergroupResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: RemoveUsergroupResponse | PlainMessage<RemoveUsergroupResponse> | undefined, b: RemoveUsergroupResponse | PlainMessage<RemoveUsergroupResponse> | undefined): boolean {
-    return proto3.util.equals(RemoveUsergroupResponse, a, b);
+  static equals(a: DeleteUsergroupResponse | PlainMessage<DeleteUsergroupResponse> | undefined, b: DeleteUsergroupResponse | PlainMessage<DeleteUsergroupResponse> | undefined): boolean {
+    return proto3.util.equals(DeleteUsergroupResponse, a, b);
   }
 }
 
@@ -3830,9 +3830,9 @@ export class ListUsergroupMembersRequest extends Message<ListUsergroupMembersReq
  */
 export class ListUsergroupMembersResponse extends Message<ListUsergroupMembersResponse> {
   /**
-   * @generated from field: repeated rill.admin.v1.UsergroupMember members = 1;
+   * @generated from field: repeated rill.admin.v1.MemberUser members = 1;
    */
-  members: UsergroupMember[] = [];
+  members: MemberUser[] = [];
 
   constructor(data?: PartialMessage<ListUsergroupMembersResponse>) {
     super();
@@ -3842,7 +3842,7 @@ export class ListUsergroupMembersResponse extends Message<ListUsergroupMembersRe
   static readonly runtime: typeof proto3 = proto3;
   static readonly typeName = "rill.admin.v1.ListUsergroupMembersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "members", kind: "message", T: UsergroupMember, repeated: true },
+    { no: 1, name: "members", kind: "message", T: MemberUser, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupMembersResponse {
@@ -3955,9 +3955,9 @@ export class ListOrganizationInvitesResponse extends Message<ListOrganizationInv
 }
 
 /**
- * @generated from message rill.admin.v1.AddOrganizationMemberRequest
+ * @generated from message rill.admin.v1.AddOrganizationMemberUserRequest
  */
-export class AddOrganizationMemberRequest extends Message<AddOrganizationMemberRequest> {
+export class AddOrganizationMemberUserRequest extends Message<AddOrganizationMemberUserRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -3973,77 +3973,77 @@ export class AddOrganizationMemberRequest extends Message<AddOrganizationMemberR
    */
   role = "";
 
-  constructor(data?: PartialMessage<AddOrganizationMemberRequest>) {
+  constructor(data?: PartialMessage<AddOrganizationMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.AddOrganizationMemberRequest";
+  static readonly typeName = "rill.admin.v1.AddOrganizationMemberUserRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddOrganizationMemberRequest {
-    return new AddOrganizationMemberRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddOrganizationMemberUserRequest {
+    return new AddOrganizationMemberUserRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddOrganizationMemberRequest {
-    return new AddOrganizationMemberRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddOrganizationMemberUserRequest {
+    return new AddOrganizationMemberUserRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddOrganizationMemberRequest {
-    return new AddOrganizationMemberRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddOrganizationMemberUserRequest {
+    return new AddOrganizationMemberUserRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: AddOrganizationMemberRequest | PlainMessage<AddOrganizationMemberRequest> | undefined, b: AddOrganizationMemberRequest | PlainMessage<AddOrganizationMemberRequest> | undefined): boolean {
-    return proto3.util.equals(AddOrganizationMemberRequest, a, b);
+  static equals(a: AddOrganizationMemberUserRequest | PlainMessage<AddOrganizationMemberUserRequest> | undefined, b: AddOrganizationMemberUserRequest | PlainMessage<AddOrganizationMemberUserRequest> | undefined): boolean {
+    return proto3.util.equals(AddOrganizationMemberUserRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.AddOrganizationMemberResponse
+ * @generated from message rill.admin.v1.AddOrganizationMemberUserResponse
  */
-export class AddOrganizationMemberResponse extends Message<AddOrganizationMemberResponse> {
+export class AddOrganizationMemberUserResponse extends Message<AddOrganizationMemberUserResponse> {
   /**
    * @generated from field: bool pending_signup = 1;
    */
   pendingSignup = false;
 
-  constructor(data?: PartialMessage<AddOrganizationMemberResponse>) {
+  constructor(data?: PartialMessage<AddOrganizationMemberUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.AddOrganizationMemberResponse";
+  static readonly typeName = "rill.admin.v1.AddOrganizationMemberUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "pending_signup", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddOrganizationMemberResponse {
-    return new AddOrganizationMemberResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddOrganizationMemberUserResponse {
+    return new AddOrganizationMemberUserResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddOrganizationMemberResponse {
-    return new AddOrganizationMemberResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddOrganizationMemberUserResponse {
+    return new AddOrganizationMemberUserResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddOrganizationMemberResponse {
-    return new AddOrganizationMemberResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddOrganizationMemberUserResponse {
+    return new AddOrganizationMemberUserResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: AddOrganizationMemberResponse | PlainMessage<AddOrganizationMemberResponse> | undefined, b: AddOrganizationMemberResponse | PlainMessage<AddOrganizationMemberResponse> | undefined): boolean {
-    return proto3.util.equals(AddOrganizationMemberResponse, a, b);
+  static equals(a: AddOrganizationMemberUserResponse | PlainMessage<AddOrganizationMemberUserResponse> | undefined, b: AddOrganizationMemberUserResponse | PlainMessage<AddOrganizationMemberUserResponse> | undefined): boolean {
+    return proto3.util.equals(AddOrganizationMemberUserResponse, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.RemoveOrganizationMemberRequest
+ * @generated from message rill.admin.v1.RemoveOrganizationMemberUserRequest
  */
-export class RemoveOrganizationMemberRequest extends Message<RemoveOrganizationMemberRequest> {
+export class RemoveOrganizationMemberUserRequest extends Message<RemoveOrganizationMemberUserRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -4059,64 +4059,64 @@ export class RemoveOrganizationMemberRequest extends Message<RemoveOrganizationM
    */
   keepProjectRoles = false;
 
-  constructor(data?: PartialMessage<RemoveOrganizationMemberRequest>) {
+  constructor(data?: PartialMessage<RemoveOrganizationMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.RemoveOrganizationMemberRequest";
+  static readonly typeName = "rill.admin.v1.RemoveOrganizationMemberUserRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "keep_project_roles", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveOrganizationMemberRequest {
-    return new RemoveOrganizationMemberRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveOrganizationMemberUserRequest {
+    return new RemoveOrganizationMemberUserRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveOrganizationMemberRequest {
-    return new RemoveOrganizationMemberRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveOrganizationMemberUserRequest {
+    return new RemoveOrganizationMemberUserRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveOrganizationMemberRequest {
-    return new RemoveOrganizationMemberRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveOrganizationMemberUserRequest {
+    return new RemoveOrganizationMemberUserRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: RemoveOrganizationMemberRequest | PlainMessage<RemoveOrganizationMemberRequest> | undefined, b: RemoveOrganizationMemberRequest | PlainMessage<RemoveOrganizationMemberRequest> | undefined): boolean {
-    return proto3.util.equals(RemoveOrganizationMemberRequest, a, b);
+  static equals(a: RemoveOrganizationMemberUserRequest | PlainMessage<RemoveOrganizationMemberUserRequest> | undefined, b: RemoveOrganizationMemberUserRequest | PlainMessage<RemoveOrganizationMemberUserRequest> | undefined): boolean {
+    return proto3.util.equals(RemoveOrganizationMemberUserRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.RemoveOrganizationMemberResponse
+ * @generated from message rill.admin.v1.RemoveOrganizationMemberUserResponse
  */
-export class RemoveOrganizationMemberResponse extends Message<RemoveOrganizationMemberResponse> {
-  constructor(data?: PartialMessage<RemoveOrganizationMemberResponse>) {
+export class RemoveOrganizationMemberUserResponse extends Message<RemoveOrganizationMemberUserResponse> {
+  constructor(data?: PartialMessage<RemoveOrganizationMemberUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.RemoveOrganizationMemberResponse";
+  static readonly typeName = "rill.admin.v1.RemoveOrganizationMemberUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveOrganizationMemberResponse {
-    return new RemoveOrganizationMemberResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveOrganizationMemberUserResponse {
+    return new RemoveOrganizationMemberUserResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveOrganizationMemberResponse {
-    return new RemoveOrganizationMemberResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveOrganizationMemberUserResponse {
+    return new RemoveOrganizationMemberUserResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveOrganizationMemberResponse {
-    return new RemoveOrganizationMemberResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveOrganizationMemberUserResponse {
+    return new RemoveOrganizationMemberUserResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: RemoveOrganizationMemberResponse | PlainMessage<RemoveOrganizationMemberResponse> | undefined, b: RemoveOrganizationMemberResponse | PlainMessage<RemoveOrganizationMemberResponse> | undefined): boolean {
-    return proto3.util.equals(RemoveOrganizationMemberResponse, a, b);
+  static equals(a: RemoveOrganizationMemberUserResponse | PlainMessage<RemoveOrganizationMemberUserResponse> | undefined, b: RemoveOrganizationMemberUserResponse | PlainMessage<RemoveOrganizationMemberUserResponse> | undefined): boolean {
+    return proto3.util.equals(RemoveOrganizationMemberUserResponse, a, b);
   }
 }
 
@@ -4189,9 +4189,9 @@ export class LeaveOrganizationResponse extends Message<LeaveOrganizationResponse
 }
 
 /**
- * @generated from message rill.admin.v1.SetOrganizationMemberRoleRequest
+ * @generated from message rill.admin.v1.SetOrganizationMemberUserRoleRequest
  */
-export class SetOrganizationMemberRoleRequest extends Message<SetOrganizationMemberRoleRequest> {
+export class SetOrganizationMemberUserRoleRequest extends Message<SetOrganizationMemberUserRoleRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -4207,64 +4207,64 @@ export class SetOrganizationMemberRoleRequest extends Message<SetOrganizationMem
    */
   role = "";
 
-  constructor(data?: PartialMessage<SetOrganizationMemberRoleRequest>) {
+  constructor(data?: PartialMessage<SetOrganizationMemberUserRoleRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SetOrganizationMemberRoleRequest";
+  static readonly typeName = "rill.admin.v1.SetOrganizationMemberUserRoleRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberRoleRequest {
-    return new SetOrganizationMemberRoleRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberUserRoleRequest {
+    return new SetOrganizationMemberUserRoleRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetOrganizationMemberRoleRequest {
-    return new SetOrganizationMemberRoleRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetOrganizationMemberUserRoleRequest {
+    return new SetOrganizationMemberUserRoleRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetOrganizationMemberRoleRequest {
-    return new SetOrganizationMemberRoleRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetOrganizationMemberUserRoleRequest {
+    return new SetOrganizationMemberUserRoleRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SetOrganizationMemberRoleRequest | PlainMessage<SetOrganizationMemberRoleRequest> | undefined, b: SetOrganizationMemberRoleRequest | PlainMessage<SetOrganizationMemberRoleRequest> | undefined): boolean {
-    return proto3.util.equals(SetOrganizationMemberRoleRequest, a, b);
+  static equals(a: SetOrganizationMemberUserRoleRequest | PlainMessage<SetOrganizationMemberUserRoleRequest> | undefined, b: SetOrganizationMemberUserRoleRequest | PlainMessage<SetOrganizationMemberUserRoleRequest> | undefined): boolean {
+    return proto3.util.equals(SetOrganizationMemberUserRoleRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.SetOrganizationMemberRoleResponse
+ * @generated from message rill.admin.v1.SetOrganizationMemberUserRoleResponse
  */
-export class SetOrganizationMemberRoleResponse extends Message<SetOrganizationMemberRoleResponse> {
-  constructor(data?: PartialMessage<SetOrganizationMemberRoleResponse>) {
+export class SetOrganizationMemberUserRoleResponse extends Message<SetOrganizationMemberUserRoleResponse> {
+  constructor(data?: PartialMessage<SetOrganizationMemberUserRoleResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SetOrganizationMemberRoleResponse";
+  static readonly typeName = "rill.admin.v1.SetOrganizationMemberUserRoleResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberRoleResponse {
-    return new SetOrganizationMemberRoleResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetOrganizationMemberUserRoleResponse {
+    return new SetOrganizationMemberUserRoleResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetOrganizationMemberRoleResponse {
-    return new SetOrganizationMemberRoleResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetOrganizationMemberUserRoleResponse {
+    return new SetOrganizationMemberUserRoleResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetOrganizationMemberRoleResponse {
-    return new SetOrganizationMemberRoleResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetOrganizationMemberUserRoleResponse {
+    return new SetOrganizationMemberUserRoleResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SetOrganizationMemberRoleResponse | PlainMessage<SetOrganizationMemberRoleResponse> | undefined, b: SetOrganizationMemberRoleResponse | PlainMessage<SetOrganizationMemberRoleResponse> | undefined): boolean {
-    return proto3.util.equals(SetOrganizationMemberRoleResponse, a, b);
+  static equals(a: SetOrganizationMemberUserRoleResponse | PlainMessage<SetOrganizationMemberUserRoleResponse> | undefined, b: SetOrganizationMemberUserRoleResponse | PlainMessage<SetOrganizationMemberUserRoleResponse> | undefined): boolean {
+    return proto3.util.equals(SetOrganizationMemberUserRoleResponse, a, b);
   }
 }
 
@@ -4915,9 +4915,9 @@ export class SudoUpdateAnnotationsResponse extends Message<SudoUpdateAnnotations
 }
 
 /**
- * @generated from message rill.admin.v1.ListProjectMembersRequest
+ * @generated from message rill.admin.v1.ListProjectMemberUsersRequest
  */
-export class ListProjectMembersRequest extends Message<ListProjectMembersRequest> {
+export class ListProjectMemberUsersRequest extends Message<ListProjectMemberUsersRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -4938,13 +4938,13 @@ export class ListProjectMembersRequest extends Message<ListProjectMembersRequest
    */
   pageToken = "";
 
-  constructor(data?: PartialMessage<ListProjectMembersRequest>) {
+  constructor(data?: PartialMessage<ListProjectMemberUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListProjectMembersRequest";
+  static readonly typeName = "rill.admin.v1.ListProjectMemberUsersRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -4952,63 +4952,63 @@ export class ListProjectMembersRequest extends Message<ListProjectMembersRequest
     { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectMembersRequest {
-    return new ListProjectMembersRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectMemberUsersRequest {
+    return new ListProjectMemberUsersRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectMembersRequest {
-    return new ListProjectMembersRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectMemberUsersRequest {
+    return new ListProjectMemberUsersRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectMembersRequest {
-    return new ListProjectMembersRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectMemberUsersRequest {
+    return new ListProjectMemberUsersRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListProjectMembersRequest | PlainMessage<ListProjectMembersRequest> | undefined, b: ListProjectMembersRequest | PlainMessage<ListProjectMembersRequest> | undefined): boolean {
-    return proto3.util.equals(ListProjectMembersRequest, a, b);
+  static equals(a: ListProjectMemberUsersRequest | PlainMessage<ListProjectMemberUsersRequest> | undefined, b: ListProjectMemberUsersRequest | PlainMessage<ListProjectMemberUsersRequest> | undefined): boolean {
+    return proto3.util.equals(ListProjectMemberUsersRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.ListProjectMembersResponse
+ * @generated from message rill.admin.v1.ListProjectMemberUsersResponse
  */
-export class ListProjectMembersResponse extends Message<ListProjectMembersResponse> {
+export class ListProjectMemberUsersResponse extends Message<ListProjectMemberUsersResponse> {
   /**
-   * @generated from field: repeated rill.admin.v1.Member members = 1;
+   * @generated from field: repeated rill.admin.v1.MemberUser members = 1;
    */
-  members: Member[] = [];
+  members: MemberUser[] = [];
 
   /**
    * @generated from field: string next_page_token = 2;
    */
   nextPageToken = "";
 
-  constructor(data?: PartialMessage<ListProjectMembersResponse>) {
+  constructor(data?: PartialMessage<ListProjectMemberUsersResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.ListProjectMembersResponse";
+  static readonly typeName = "rill.admin.v1.ListProjectMemberUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "members", kind: "message", T: Member, repeated: true },
+    { no: 1, name: "members", kind: "message", T: MemberUser, repeated: true },
     { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectMembersResponse {
-    return new ListProjectMembersResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListProjectMemberUsersResponse {
+    return new ListProjectMemberUsersResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectMembersResponse {
-    return new ListProjectMembersResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListProjectMemberUsersResponse {
+    return new ListProjectMemberUsersResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectMembersResponse {
-    return new ListProjectMembersResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListProjectMemberUsersResponse {
+    return new ListProjectMemberUsersResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: ListProjectMembersResponse | PlainMessage<ListProjectMembersResponse> | undefined, b: ListProjectMembersResponse | PlainMessage<ListProjectMembersResponse> | undefined): boolean {
-    return proto3.util.equals(ListProjectMembersResponse, a, b);
+  static equals(a: ListProjectMemberUsersResponse | PlainMessage<ListProjectMemberUsersResponse> | undefined, b: ListProjectMemberUsersResponse | PlainMessage<ListProjectMemberUsersResponse> | undefined): boolean {
+    return proto3.util.equals(ListProjectMemberUsersResponse, a, b);
   }
 }
 
@@ -5111,9 +5111,9 @@ export class ListProjectInvitesResponse extends Message<ListProjectInvitesRespon
 }
 
 /**
- * @generated from message rill.admin.v1.AddProjectMemberRequest
+ * @generated from message rill.admin.v1.AddProjectMemberUserRequest
  */
-export class AddProjectMemberRequest extends Message<AddProjectMemberRequest> {
+export class AddProjectMemberUserRequest extends Message<AddProjectMemberUserRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -5134,13 +5134,13 @@ export class AddProjectMemberRequest extends Message<AddProjectMemberRequest> {
    */
   role = "";
 
-  constructor(data?: PartialMessage<AddProjectMemberRequest>) {
+  constructor(data?: PartialMessage<AddProjectMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.AddProjectMemberRequest";
+  static readonly typeName = "rill.admin.v1.AddProjectMemberUserRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -5148,64 +5148,64 @@ export class AddProjectMemberRequest extends Message<AddProjectMemberRequest> {
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberRequest {
-    return new AddProjectMemberRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUserRequest {
+    return new AddProjectMemberUserRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddProjectMemberRequest {
-    return new AddProjectMemberRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddProjectMemberUserRequest {
+    return new AddProjectMemberUserRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddProjectMemberRequest {
-    return new AddProjectMemberRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddProjectMemberUserRequest {
+    return new AddProjectMemberUserRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: AddProjectMemberRequest | PlainMessage<AddProjectMemberRequest> | undefined, b: AddProjectMemberRequest | PlainMessage<AddProjectMemberRequest> | undefined): boolean {
-    return proto3.util.equals(AddProjectMemberRequest, a, b);
+  static equals(a: AddProjectMemberUserRequest | PlainMessage<AddProjectMemberUserRequest> | undefined, b: AddProjectMemberUserRequest | PlainMessage<AddProjectMemberUserRequest> | undefined): boolean {
+    return proto3.util.equals(AddProjectMemberUserRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.AddProjectMemberResponse
+ * @generated from message rill.admin.v1.AddProjectMemberUserResponse
  */
-export class AddProjectMemberResponse extends Message<AddProjectMemberResponse> {
+export class AddProjectMemberUserResponse extends Message<AddProjectMemberUserResponse> {
   /**
    * @generated from field: bool pending_signup = 1;
    */
   pendingSignup = false;
 
-  constructor(data?: PartialMessage<AddProjectMemberResponse>) {
+  constructor(data?: PartialMessage<AddProjectMemberUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.AddProjectMemberResponse";
+  static readonly typeName = "rill.admin.v1.AddProjectMemberUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "pending_signup", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberResponse {
-    return new AddProjectMemberResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AddProjectMemberUserResponse {
+    return new AddProjectMemberUserResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddProjectMemberResponse {
-    return new AddProjectMemberResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AddProjectMemberUserResponse {
+    return new AddProjectMemberUserResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddProjectMemberResponse {
-    return new AddProjectMemberResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AddProjectMemberUserResponse {
+    return new AddProjectMemberUserResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: AddProjectMemberResponse | PlainMessage<AddProjectMemberResponse> | undefined, b: AddProjectMemberResponse | PlainMessage<AddProjectMemberResponse> | undefined): boolean {
-    return proto3.util.equals(AddProjectMemberResponse, a, b);
+  static equals(a: AddProjectMemberUserResponse | PlainMessage<AddProjectMemberUserResponse> | undefined, b: AddProjectMemberUserResponse | PlainMessage<AddProjectMemberUserResponse> | undefined): boolean {
+    return proto3.util.equals(AddProjectMemberUserResponse, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.RemoveProjectMemberRequest
+ * @generated from message rill.admin.v1.RemoveProjectMemberUserRequest
  */
-export class RemoveProjectMemberRequest extends Message<RemoveProjectMemberRequest> {
+export class RemoveProjectMemberUserRequest extends Message<RemoveProjectMemberUserRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -5221,71 +5221,71 @@ export class RemoveProjectMemberRequest extends Message<RemoveProjectMemberReque
    */
   email = "";
 
-  constructor(data?: PartialMessage<RemoveProjectMemberRequest>) {
+  constructor(data?: PartialMessage<RemoveProjectMemberUserRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.RemoveProjectMemberRequest";
+  static readonly typeName = "rill.admin.v1.RemoveProjectMemberUserRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveProjectMemberRequest {
-    return new RemoveProjectMemberRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveProjectMemberUserRequest {
+    return new RemoveProjectMemberUserRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveProjectMemberRequest {
-    return new RemoveProjectMemberRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveProjectMemberUserRequest {
+    return new RemoveProjectMemberUserRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveProjectMemberRequest {
-    return new RemoveProjectMemberRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveProjectMemberUserRequest {
+    return new RemoveProjectMemberUserRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: RemoveProjectMemberRequest | PlainMessage<RemoveProjectMemberRequest> | undefined, b: RemoveProjectMemberRequest | PlainMessage<RemoveProjectMemberRequest> | undefined): boolean {
-    return proto3.util.equals(RemoveProjectMemberRequest, a, b);
+  static equals(a: RemoveProjectMemberUserRequest | PlainMessage<RemoveProjectMemberUserRequest> | undefined, b: RemoveProjectMemberUserRequest | PlainMessage<RemoveProjectMemberUserRequest> | undefined): boolean {
+    return proto3.util.equals(RemoveProjectMemberUserRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.RemoveProjectMemberResponse
+ * @generated from message rill.admin.v1.RemoveProjectMemberUserResponse
  */
-export class RemoveProjectMemberResponse extends Message<RemoveProjectMemberResponse> {
-  constructor(data?: PartialMessage<RemoveProjectMemberResponse>) {
+export class RemoveProjectMemberUserResponse extends Message<RemoveProjectMemberUserResponse> {
+  constructor(data?: PartialMessage<RemoveProjectMemberUserResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.RemoveProjectMemberResponse";
+  static readonly typeName = "rill.admin.v1.RemoveProjectMemberUserResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveProjectMemberResponse {
-    return new RemoveProjectMemberResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RemoveProjectMemberUserResponse {
+    return new RemoveProjectMemberUserResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveProjectMemberResponse {
-    return new RemoveProjectMemberResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RemoveProjectMemberUserResponse {
+    return new RemoveProjectMemberUserResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveProjectMemberResponse {
-    return new RemoveProjectMemberResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RemoveProjectMemberUserResponse {
+    return new RemoveProjectMemberUserResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: RemoveProjectMemberResponse | PlainMessage<RemoveProjectMemberResponse> | undefined, b: RemoveProjectMemberResponse | PlainMessage<RemoveProjectMemberResponse> | undefined): boolean {
-    return proto3.util.equals(RemoveProjectMemberResponse, a, b);
+  static equals(a: RemoveProjectMemberUserResponse | PlainMessage<RemoveProjectMemberUserResponse> | undefined, b: RemoveProjectMemberUserResponse | PlainMessage<RemoveProjectMemberUserResponse> | undefined): boolean {
+    return proto3.util.equals(RemoveProjectMemberUserResponse, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.SetProjectMemberRoleRequest
+ * @generated from message rill.admin.v1.SetProjectMemberUserRoleRequest
  */
-export class SetProjectMemberRoleRequest extends Message<SetProjectMemberRoleRequest> {
+export class SetProjectMemberUserRoleRequest extends Message<SetProjectMemberUserRoleRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -5306,13 +5306,13 @@ export class SetProjectMemberRoleRequest extends Message<SetProjectMemberRoleReq
    */
   role = "";
 
-  constructor(data?: PartialMessage<SetProjectMemberRoleRequest>) {
+  constructor(data?: PartialMessage<SetProjectMemberUserRoleRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SetProjectMemberRoleRequest";
+  static readonly typeName = "rill.admin.v1.SetProjectMemberUserRoleRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -5320,51 +5320,51 @@ export class SetProjectMemberRoleRequest extends Message<SetProjectMemberRoleReq
     { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetProjectMemberRoleRequest {
-    return new SetProjectMemberRoleRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetProjectMemberUserRoleRequest {
+    return new SetProjectMemberUserRoleRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetProjectMemberRoleRequest {
-    return new SetProjectMemberRoleRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetProjectMemberUserRoleRequest {
+    return new SetProjectMemberUserRoleRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetProjectMemberRoleRequest {
-    return new SetProjectMemberRoleRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetProjectMemberUserRoleRequest {
+    return new SetProjectMemberUserRoleRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SetProjectMemberRoleRequest | PlainMessage<SetProjectMemberRoleRequest> | undefined, b: SetProjectMemberRoleRequest | PlainMessage<SetProjectMemberRoleRequest> | undefined): boolean {
-    return proto3.util.equals(SetProjectMemberRoleRequest, a, b);
+  static equals(a: SetProjectMemberUserRoleRequest | PlainMessage<SetProjectMemberUserRoleRequest> | undefined, b: SetProjectMemberUserRoleRequest | PlainMessage<SetProjectMemberUserRoleRequest> | undefined): boolean {
+    return proto3.util.equals(SetProjectMemberUserRoleRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.SetProjectMemberRoleResponse
+ * @generated from message rill.admin.v1.SetProjectMemberUserRoleResponse
  */
-export class SetProjectMemberRoleResponse extends Message<SetProjectMemberRoleResponse> {
-  constructor(data?: PartialMessage<SetProjectMemberRoleResponse>) {
+export class SetProjectMemberUserRoleResponse extends Message<SetProjectMemberUserRoleResponse> {
+  constructor(data?: PartialMessage<SetProjectMemberUserRoleResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.SetProjectMemberRoleResponse";
+  static readonly typeName = "rill.admin.v1.SetProjectMemberUserRoleResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetProjectMemberRoleResponse {
-    return new SetProjectMemberRoleResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SetProjectMemberUserRoleResponse {
+    return new SetProjectMemberUserRoleResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetProjectMemberRoleResponse {
-    return new SetProjectMemberRoleResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SetProjectMemberUserRoleResponse {
+    return new SetProjectMemberUserRoleResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetProjectMemberRoleResponse {
-    return new SetProjectMemberRoleResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SetProjectMemberUserRoleResponse {
+    return new SetProjectMemberUserRoleResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: SetProjectMemberRoleResponse | PlainMessage<SetProjectMemberRoleResponse> | undefined, b: SetProjectMemberRoleResponse | PlainMessage<SetProjectMemberRoleResponse> | undefined): boolean {
-    return proto3.util.equals(SetProjectMemberRoleResponse, a, b);
+  static equals(a: SetProjectMemberUserRoleResponse | PlainMessage<SetProjectMemberUserRoleResponse> | undefined, b: SetProjectMemberUserRoleResponse | PlainMessage<SetProjectMemberUserRoleResponse> | undefined): boolean {
+    return proto3.util.equals(SetProjectMemberUserRoleResponse, a, b);
   }
 }
 
@@ -10066,9 +10066,9 @@ export class ProjectPermissions extends Message<ProjectPermissions> {
 }
 
 /**
- * @generated from message rill.admin.v1.Member
+ * @generated from message rill.admin.v1.MemberUser
  */
-export class Member extends Message<Member> {
+export class MemberUser extends Message<MemberUser> {
   /**
    * @generated from field: string user_id = 1;
    */
@@ -10099,13 +10099,13 @@ export class Member extends Message<Member> {
    */
   updatedOn?: Timestamp;
 
-  constructor(data?: PartialMessage<Member>) {
+  constructor(data?: PartialMessage<MemberUser>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.Member";
+  static readonly typeName = "rill.admin.v1.MemberUser";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -10115,20 +10115,20 @@ export class Member extends Message<Member> {
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): Member {
-    return new Member().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MemberUser {
+    return new MemberUser().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): Member {
-    return new Member().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MemberUser {
+    return new MemberUser().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): Member {
-    return new Member().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MemberUser {
+    return new MemberUser().fromJsonString(jsonString, options);
   }
 
-  static equals(a: Member | PlainMessage<Member> | undefined, b: Member | PlainMessage<Member> | undefined): boolean {
-    return proto3.util.equals(Member, a, b);
+  static equals(a: MemberUser | PlainMessage<MemberUser> | undefined, b: MemberUser | PlainMessage<MemberUser> | undefined): boolean {
+    return proto3.util.equals(MemberUser, a, b);
   }
 }
 
@@ -11042,61 +11042,6 @@ export class UsergroupProjectRole extends Message<UsergroupProjectRole> {
 
   static equals(a: UsergroupProjectRole | PlainMessage<UsergroupProjectRole> | undefined, b: UsergroupProjectRole | PlainMessage<UsergroupProjectRole> | undefined): boolean {
     return proto3.util.equals(UsergroupProjectRole, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.UsergroupMember
- */
-export class UsergroupMember extends Message<UsergroupMember> {
-  /**
-   * @generated from field: string usergroup_id = 1;
-   */
-  usergroupId = "";
-
-  /**
-   * @generated from field: string user_id = 2;
-   */
-  userId = "";
-
-  /**
-   * @generated from field: string user_email = 3;
-   */
-  userEmail = "";
-
-  /**
-   * @generated from field: string user_name = 4;
-   */
-  userName = "";
-
-  constructor(data?: PartialMessage<UsergroupMember>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.UsergroupMember";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "usergroup_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "user_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "user_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UsergroupMember {
-    return new UsergroupMember().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UsergroupMember {
-    return new UsergroupMember().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UsergroupMember {
-    return new UsergroupMember().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: UsergroupMember | PlainMessage<UsergroupMember> | undefined, b: UsergroupMember | PlainMessage<UsergroupMember> | undefined): boolean {
-    return proto3.util.equals(UsergroupMember, a, b);
   }
 }
 

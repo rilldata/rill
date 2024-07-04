@@ -352,13 +352,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/members:
     get:
-      summary: ListOrganizationMembers lists all the org members
-      operationId: AdminService_ListOrganizationMembers
+      summary: ListOrganizationMemberUsers lists all the org members
+      operationId: AdminService_ListOrganizationMemberUsers
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListOrganizationMembersResponse'
+            $ref: '#/definitions/v1ListOrganizationMemberUsersResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -380,13 +380,13 @@ paths:
       tags:
         - AdminService
     post:
-      summary: AddOrganizationMember adds a user to the organization
-      operationId: AdminService_AddOrganizationMember
+      summary: AddOrganizationMemberUser adds a user to the organization
+      operationId: AdminService_AddOrganizationMemberUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1AddOrganizationMemberResponse'
+            $ref: '#/definitions/v1AddOrganizationMemberUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -410,13 +410,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/members/{email}:
     delete:
-      summary: RemoveOrganizationMember removes member from the organization
-      operationId: AdminService_RemoveOrganizationMember
+      summary: RemoveOrganizationMemberUser removes member from the organization
+      operationId: AdminService_RemoveOrganizationMemberUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RemoveOrganizationMemberResponse'
+            $ref: '#/definitions/v1RemoveOrganizationMemberUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -437,13 +437,13 @@ paths:
       tags:
         - AdminService
     put:
-      summary: SetOrganizationMemberRole sets the role for the member
-      operationId: AdminService_SetOrganizationMemberRole
+      summary: SetOrganizationMemberUserRole sets the role for the member
+      operationId: AdminService_SetOrganizationMemberUserRole
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SetOrganizationMemberRoleResponse'
+            $ref: '#/definitions/v1SetOrganizationMemberUserRoleResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -844,13 +844,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/members:
     get:
-      summary: ListProjectMembers lists all the project members
-      operationId: AdminService_ListProjectMembers
+      summary: ListProjectMemberUsers lists all the project members
+      operationId: AdminService_ListProjectMemberUsers
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListProjectMembersResponse'
+            $ref: '#/definitions/v1ListProjectMemberUsersResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -876,13 +876,13 @@ paths:
       tags:
         - AdminService
     post:
-      summary: AddProjectMember adds a member to the project
-      operationId: AdminService_AddProjectMember
+      summary: AddProjectMemberUser adds a member to the project
+      operationId: AdminService_AddProjectMemberUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1AddProjectMemberResponse'
+            $ref: '#/definitions/v1AddProjectMemberUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -910,13 +910,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/members/{email}:
     delete:
-      summary: RemoveProjectMember removes member from the project
-      operationId: AdminService_RemoveProjectMember
+      summary: RemoveProjectMemberUser removes member from the project
+      operationId: AdminService_RemoveProjectMemberUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RemoveProjectMemberResponse'
+            $ref: '#/definitions/v1RemoveProjectMemberUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -937,13 +937,13 @@ paths:
       tags:
         - AdminService
     put:
-      summary: SetProjectMemberRole sets the role for the member
-      operationId: AdminService_SetProjectMemberRole
+      summary: SetProjectMemberUserRole sets the role for the member
+      operationId: AdminService_SetProjectMemberUserRole
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SetProjectMemberRoleResponse'
+            $ref: '#/definitions/v1SetProjectMemberUserRoleResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1520,13 +1520,13 @@ paths:
       tags:
         - AdminService
     delete:
-      summary: RemoveUsergroup removes the user group from the organization
-      operationId: AdminService_RemoveUsergroup
+      summary: DeleteUsergroup deletes the user group from the organization
+      operationId: AdminService_DeleteUsergroup
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RemoveUsergroupResponse'
+            $ref: '#/definitions/v1DeleteUsergroupResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -2919,12 +2919,12 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
-  v1AddOrganizationMemberResponse:
+  v1AddOrganizationMemberUserResponse:
     type: object
     properties:
       pendingSignup:
         type: boolean
-  v1AddProjectMemberResponse:
+  v1AddProjectMemberUserResponse:
     type: object
     properties:
       pendingSignup:
@@ -3137,6 +3137,8 @@ definitions:
     properties:
       service:
         $ref: '#/definitions/v1Service'
+  v1DeleteUsergroupResponse:
+    type: object
   v1Deployment:
     type: object
     properties:
@@ -3437,14 +3439,14 @@ definitions:
           $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
-  v1ListOrganizationMembersResponse:
+  v1ListOrganizationMemberUsersResponse:
     type: object
     properties:
       members:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Member'
+          $ref: '#/definitions/v1MemberUser'
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
@@ -3467,14 +3469,14 @@ definitions:
           $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
-  v1ListProjectMembersResponse:
+  v1ListProjectMemberUsersResponse:
     type: object
     properties:
       members:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Member'
+          $ref: '#/definitions/v1MemberUser'
       nextPageToken:
         type: string
   v1ListProjectWhitelistedDomainsResponse:
@@ -3534,7 +3536,7 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1UsergroupMember'
+          $ref: '#/definitions/v1MemberUser'
   v1ListUsergroupsResponse:
     type: object
     properties:
@@ -3583,7 +3585,7 @@ definitions:
         type: array
         items:
           type: string
-  v1Member:
+  v1MemberUser:
     type: object
     properties:
       userId:
@@ -3812,15 +3814,13 @@ definitions:
     type: object
   v1RemoveBookmarkResponse:
     type: object
-  v1RemoveOrganizationMemberResponse:
+  v1RemoveOrganizationMemberUserResponse:
     type: object
-  v1RemoveProjectMemberResponse:
+  v1RemoveProjectMemberUserResponse:
     type: object
   v1RemoveProjectWhitelistedDomainResponse:
     type: object
   v1RemoveUsergroupMemberResponse:
-    type: object
-  v1RemoveUsergroupResponse:
     type: object
   v1RemoveUsergroupsMemberResponse:
     type: object
@@ -3939,11 +3939,11 @@ definitions:
       expiresOn:
         type: string
         format: date-time
-  v1SetOrganizationMemberRoleResponse:
+  v1SetOrganizationMemberUserRoleResponse:
     type: object
   v1SetOrganizationUsergroupRoleResponse:
     type: object
-  v1SetProjectMemberRoleResponse:
+  v1SetProjectMemberUserRoleResponse:
     type: object
   v1SetProjectUsergroupRoleResponse:
     type: object
@@ -4225,17 +4225,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1UsergroupProjectRole'
-  v1UsergroupMember:
-    type: object
-    properties:
-      usergroupId:
-        type: string
-      userId:
-        type: string
-      userEmail:
-        type: string
-      userName:
-        type: string
   v1UsergroupOrgRole:
     type: object
     properties:

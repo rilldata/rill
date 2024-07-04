@@ -10,6 +10,7 @@ import (
 
 func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
+	var groupName string
 	var pageSize uint32
 	var pageToken string
 
@@ -17,7 +18,12 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Use:   "list",
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if projectName != "" {
+			if groupName != "" {
+				err := listUsergroupMembers(cmd, ch, ch.Org, groupName)
+				if err != nil {
+					return err
+				}
+			} else if projectName != "" {
 				if strings.HasPrefix(pageToken, "usr") {
 					err := listProjectMembers(cmd, ch, ch.Org, projectName, strings.TrimPrefix(pageToken, "usr"), pageSize)
 					if err != nil {
@@ -39,8 +45,6 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 						return err
 					}
 				}
-
-				// TODO: user groups
 			} else {
 				if strings.HasPrefix(pageToken, "usr") {
 					err := listOrgMembers(cmd, ch, ch.Org, strings.TrimPrefix(pageToken, "usr"), pageSize)
@@ -65,8 +69,6 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 
 				ch.Printf("\nShowing organization members only. Use the --project flag to list members of a specific project.\n")
-
-				// TODO: user groups
 			}
 
 			return nil
@@ -75,10 +77,30 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	listCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	listCmd.Flags().StringVar(&projectName, "project", "", "Project")
+	listCmd.Flags().StringVar(&groupName, "group", "", "User group")
 	listCmd.Flags().Uint32Var(&pageSize, "page-size", 50, "Number of users to return per page")
 	listCmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return listCmd
+}
+
+func listUsergroupMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, group string) error {
+	client, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
+	members, err := client.ListUsergroupMembers(cmd.Context(), &adminv1.ListUsergroupMembersRequest{
+		Organization: org,
+		Usergroup:    group,
+	})
+	if err != nil {
+		return err
+	}
+
+	ch.PrintUsergroupMembers(members.Members)
+
+	return nil
 }
 
 func listProjectMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pageToken string, pageSize uint32) error {
@@ -87,7 +109,7 @@ func listProjectMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, project, pa
 		return err
 	}
 
-	members, err := client.ListProjectMembers(cmd.Context(), &adminv1.ListProjectMembersRequest{
+	members, err := client.ListProjectMemberUsers(cmd.Context(), &adminv1.ListProjectMemberUsersRequest{
 		Organization: org,
 		Project:      project,
 		PageSize:     pageSize,
@@ -148,7 +170,7 @@ func listOrgMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, pageToken strin
 		return err
 	}
 
-	members, err := client.ListOrganizationMembers(cmd.Context(), &adminv1.ListOrganizationMembersRequest{
+	members, err := client.ListOrganizationMemberUsers(cmd.Context(), &adminv1.ListOrganizationMemberUsersRequest{
 		Organization: org,
 		PageSize:     pageSize,
 		PageToken:    pageToken,

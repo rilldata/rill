@@ -116,7 +116,7 @@ type user struct {
 	Email string `header:"email" json:"email"`
 }
 
-func (p *Printer) PrintMembers(members []*adminv1.Member) {
+func (p *Printer) PrintMembers(members []*adminv1.MemberUser) {
 	if len(members) == 0 {
 		p.PrintfWarn("No members found\n")
 		return
@@ -125,7 +125,7 @@ func (p *Printer) PrintMembers(members []*adminv1.Member) {
 	p.PrintData(toMemberTable(members))
 }
 
-func toMemberTable(members []*adminv1.Member) []*member {
+func toMemberTable(members []*adminv1.MemberUser) []*member {
 	allMembers := make([]*member, 0, len(members))
 
 	for _, m := range members {
@@ -135,7 +135,7 @@ func toMemberTable(members []*adminv1.Member) []*member {
 	return allMembers
 }
 
-func toMemberRow(m *adminv1.Member) *member {
+func toMemberRow(m *adminv1.MemberUser) *member {
 	return &member{
 		Name:      m.UserName,
 		Email:     m.UserEmail,
@@ -467,7 +467,7 @@ type usergroup struct {
 	RoleLevel string `header:"role_level" json:"role_level"`
 }
 
-func (p *Printer) PrintUsergroupMembers(members []*adminv1.UsergroupMember) {
+func (p *Printer) PrintUsergroupMembers(members []*adminv1.MemberUser) {
 	if len(members) == 0 {
 		p.PrintfWarn("No members found\n")
 		return
@@ -476,7 +476,7 @@ func (p *Printer) PrintUsergroupMembers(members []*adminv1.UsergroupMember) {
 	p.PrintData(toUsergroupMembersTable(members))
 }
 
-func toUsergroupMembersTable(members []*adminv1.UsergroupMember) []*usergroupMember {
+func toUsergroupMembersTable(members []*adminv1.MemberUser) []*usergroupMember {
 	allMembers := make([]*usergroupMember, 0, len(members))
 
 	for _, m := range members {
@@ -486,7 +486,7 @@ func toUsergroupMembersTable(members []*adminv1.UsergroupMember) []*usergroupMem
 	return allMembers
 }
 
-func toUsergroupMemberRow(m *adminv1.UsergroupMember) *usergroupMember {
+func toUsergroupMemberRow(m *adminv1.MemberUser) *usergroupMember {
 	return &usergroupMember{
 		Name:  m.UserName,
 		Email: m.UserEmail,

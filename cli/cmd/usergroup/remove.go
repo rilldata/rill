@@ -7,35 +7,51 @@ import (
 )
 
 func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
-	var name string
+	var projectName string
+	var groupName string
 
 	removeCmd := &cobra.Command{
-		Use:   "remove <name>",
-		Short: "Remove a user group",
-		Args:  cobra.ExactArgs(1),
+		Use:   "remove",
+		Short: "Remove role of a user group in an organization or project",
 		RunE: func(cmd *cobra.Command, args []string) error {
+			err := cmdutil.StringPromptIfEmpty(&groupName, "Enter user group name")
+			if err != nil {
+				return err
+			}
+
 			client, err := ch.Client()
 			if err != nil {
 				return err
 			}
 
-			name = args[0]
-
-			_, err = client.RemoveUsergroup(cmd.Context(), &adminv1.RemoveUsergroupRequest{
-				Organization: ch.Org,
-				Usergroup:    name,
-			})
-			if err != nil {
-				return err
+			if projectName != "" {
+				_, err = client.RevokeProjectUsergroupRole(cmd.Context(), &adminv1.RevokeProjectUsergroupRoleRequest{
+					Organization: ch.Org,
+					Project:      projectName,
+					Usergroup:    groupName,
+				})
+				if err != nil {
+					return err
+				}
+				ch.PrintfSuccess("Removed role of user group %q in the project %q\n", groupName, projectName)
+			} else {
+				_, err = client.RevokeOrganizationUsergroupRole(cmd.Context(), &adminv1.RevokeOrganizationUsergroupRoleRequest{
+					Organization: ch.Org,
+					Usergroup:    groupName,
+				})
+				if err != nil {
+					return err
+				}
+				ch.PrintfSuccess("Removed role of user group %q in the organization %q\n", groupName, ch.Org)
 			}
-
-			ch.PrintfSuccess("User group %q of organization %q removed\n", name, ch.Org)
 
 			return nil
 		},
 	}
 
 	removeCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
+	removeCmd.Flags().StringVar(&projectName, "project", "", "Project")
+	removeCmd.Flags().StringVar(&groupName, "group", "", "User group")
 
 	return removeCmd
 }

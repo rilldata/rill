@@ -155,7 +155,7 @@ export type AdminServiceListMagicAuthTokensParams = {
   pageToken?: string;
 };
 
-export type AdminServiceListProjectMembersParams = {
+export type AdminServiceListProjectMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -215,11 +215,11 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
 };
 
-export type AdminServiceRemoveOrganizationMemberParams = {
+export type AdminServiceRemoveOrganizationMemberUserParams = {
   keepProjectRoles?: boolean;
 };
 
-export type AdminServiceListOrganizationMembersParams = {
+export type AdminServiceListOrganizationMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -261,7 +261,7 @@ export type AdminServiceCreateAlertBodyBody = {
   options?: V1AlertOptions;
 };
 
-export type AdminServiceAddOrganizationMemberBodyBody = {
+export type AdminServiceAddOrganizationMemberUserBodyBody = {
   email?: string;
   role?: string;
 };
@@ -271,7 +271,7 @@ export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
   role?: string;
 };
 
-export type AdminServiceSetOrganizationMemberRoleBodyBody = {
+export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
   role?: string;
 };
 
@@ -297,13 +297,6 @@ export interface V1UsergroupProjectRole {
 export interface V1UsergroupOrgRole {
   orgName?: string;
   role?: string;
-}
-
-export interface V1UsergroupMember {
-  usergroupId?: string;
-  userId?: string;
-  userEmail?: string;
-  userName?: string;
 }
 
 export interface V1Usergroup {
@@ -502,7 +495,7 @@ export interface V1SetProjectUsergroupRoleResponse {
   [key: string]: any;
 }
 
-export interface V1SetProjectMemberRoleResponse {
+export interface V1SetProjectMemberUserRoleResponse {
   [key: string]: any;
 }
 
@@ -510,7 +503,7 @@ export interface V1SetOrganizationUsergroupRoleResponse {
   [key: string]: any;
 }
 
-export interface V1SetOrganizationMemberRoleResponse {
+export interface V1SetOrganizationMemberUserRoleResponse {
   [key: string]: any;
 }
 
@@ -593,10 +586,6 @@ export interface V1RemoveUsergroupsMemberResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveUsergroupResponse {
-  [key: string]: any;
-}
-
 export interface V1RemoveUsergroupMemberResponse {
   [key: string]: any;
 }
@@ -605,11 +594,11 @@ export interface V1RemoveProjectWhitelistedDomainResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveProjectMemberResponse {
+export interface V1RemoveProjectMemberUserResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveOrganizationMemberResponse {
+export interface V1RemoveOrganizationMemberUserResponse {
   [key: string]: any;
 }
 
@@ -742,7 +731,7 @@ export const V1Operation = {
   OPERATION_NLIKE: "OPERATION_NLIKE",
 } as const;
 
-export interface V1Member {
+export interface V1MemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
@@ -777,7 +766,7 @@ export interface V1ListUsergroupsResponse {
 }
 
 export interface V1ListUsergroupMembersResponse {
-  members?: V1UsergroupMember[];
+  members?: V1MemberUser[];
 }
 
 export interface V1ListSuperusersResponse {
@@ -805,8 +794,8 @@ export interface V1ListProjectWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
-export interface V1ListProjectMembersResponse {
-  members?: V1Member[];
+export interface V1ListProjectMemberUsersResponse {
+  members?: V1MemberUser[];
   nextPageToken?: string;
 }
 
@@ -820,8 +809,8 @@ export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListOrganizationMembersResponse {
-  members?: V1Member[];
+export interface V1ListOrganizationMemberUsersResponse {
+  members?: V1MemberUser[];
   nextPageToken?: string;
 }
 
@@ -1044,6 +1033,10 @@ export interface V1Deployment {
   updatedOn?: string;
 }
 
+export interface V1DeleteUsergroupResponse {
+  [key: string]: any;
+}
+
 export interface V1DeleteServiceResponse {
   service?: V1Service;
 }
@@ -1186,11 +1179,11 @@ export interface V1AddUsergroupMemberResponse {
   [key: string]: any;
 }
 
-export interface V1AddProjectMemberResponse {
+export interface V1AddProjectMemberUserResponse {
   pendingSignup?: boolean;
 }
 
-export interface V1AddOrganizationMemberResponse {
+export interface V1AddOrganizationMemberUserResponse {
   pendingSignup?: boolean;
 }
 

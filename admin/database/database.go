@@ -2,7 +2,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"errors"
 	"fmt"
 	"time"
@@ -116,14 +115,14 @@ type DB interface {
 	CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
-	UpdateUsergroupName(ctx context.Context, name, groupID, orgID string) (*Usergroup, error)
+	UpdateUsergroupName(ctx context.Context, name, groupID string) (*Usergroup, error)
 	DeleteUsergroup(ctx context.Context, groupID string) error
 	FindUsergroupByName(ctx context.Context, name, orgID string) (*Usergroup, error)
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
-	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
-	FindUsergroupMembers(ctx context.Context, groupID string) ([]*UsergroupMember, error)
-	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
-	DeleteUsergroupsMember(ctx context.Context, userID, orgID, allUsergroupID string) error
+	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
+	FindUsergroupMembersUsers(ctx context.Context, groupID string) ([]*MemberUser, error)
+	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
+	DeleteUsergroupsMemberUser(ctx context.Context, userID, orgID, allUsergroupID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -176,27 +175,27 @@ type DB interface {
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*Member, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*MemberUser, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
 
-	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*Member, error)
+	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*MemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
-	FindOrganizationUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*Usergroup, error)
-	FindAllUsergroupOrganizationRoles(ctx context.Context, orgID string) ([]*UsergroupOrgRole, error)
-	FindUsergroupOrganizationRole(ctx context.Context, groupID, orgID string) (*UsergroupOrgRole, error)
+	FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*Usergroup, error)
+	DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error
+	UpsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
+	UpsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	DeleteProjectMemberUsergroup(ctx context.Context, projectID, groupID string) error
+	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*UsergroupOrgRole, error)
+	FindOrganizationAllMemberUsergroupRoles(ctx context.Context, orgID string) ([]*UsergroupOrgRole, error)
+	FindProjectMemberUsergroupRoles(ctx context.Context, groupID, orgID string) ([]*UsergroupProjectRole, error)
 	FindUsergroupAllProjectOrganizationRoles(ctx context.Context, orgID string) ([]*UsergroupProjectRole, error)
-	FindUsergroupProjectRoles(ctx context.Context, groupID, orgID string) ([]*UsergroupProjectRole, error)
-	UpsertOrganizationUsergroup(ctx context.Context, groupID, orgID, roleID string) error
-	DeleteOrganizationUsergroup(ctx context.Context, groupID, orgID string) error
-	UpsertProjectUsergroup(ctx context.Context, groupID, projectID, roleID string) error
-	DeleteProjectUsergroup(ctx context.Context, projectID, groupID string) error
 
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
@@ -479,12 +478,12 @@ type UpdateServiceOptions struct {
 
 // Usergroup represents a group of org members
 type Usergroup struct {
-	ID          string         `db:"id"`
-	OrgID       string         `db:"org_id"`
-	Name        string         `db:"name" validate:"slug"`
-	Description sql.NullString `db:"description"`
-	CreatedOn   time.Time      `db:"created_on"`
-	UpdatedOn   time.Time      `db:"updated_on"`
+	ID          string    `db:"id"`
+	OrgID       string    `db:"org_id"`
+	Name        string    `db:"name" validate:"slug"`
+	Description string    `db:"description"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
 }
 
 // UsergroupOrgRole represents an organization role of Usergroup
@@ -500,13 +499,6 @@ type UsergroupProjectRole struct {
 	ProjectID   string `db:"project_id"`
 	ProjectName string `db:"project_name"`
 	RoleName    string `db:"role_name"`
-}
-
-type UsergroupMember struct {
-	UsergroupID string `db:"usergroup_id"`
-	UserID      string `db:"user_id"`
-	Email       string `db:"email"`
-	DisplayName string `db:"display_name"`
 }
 
 // InsertUsergroupOptions defines options for inserting a new usergroup
@@ -709,8 +701,8 @@ type ProjectRole struct {
 	ManageBookmarks       bool `db:"manage_bookmarks"`
 }
 
-// Member is a convenience type used for display-friendly representation of an org or project member.
-type Member struct {
+// MemberUser is a convenience type used for display-friendly representation of an org or project member.
+type MemberUser struct {
 	ID          string
 	Email       string
 	DisplayName string    `db:"display_name"`

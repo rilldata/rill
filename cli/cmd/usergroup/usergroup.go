@@ -17,14 +17,10 @@ func UsergroupCmd(ch *cmdutil.Helper) *cobra.Command {
 	userCmd.AddCommand(RenameCmd(ch))
 	userCmd.AddCommand(ShowCmd(ch))
 	userCmd.AddCommand(ListCmd(ch))
-	userCmd.AddCommand(RemoveCmd(ch))
+	userCmd.AddCommand(DeleteCmd(ch))
 	// Manage user group roles
-	userCmd.AddCommand(SetRoleCmd(ch))
-	userCmd.AddCommand(RevokeRoleCmd(ch))
-	// Manage user group members
-	userCmd.AddCommand(AddUserCmd(ch))
-	userCmd.AddCommand(ListUserCmd(ch))
-	userCmd.AddCommand(RemoveUserCmd(ch))
+	userCmd.AddCommand(AddCmd(ch))
+	userCmd.AddCommand(RemoveCmd(ch))
 
 	return userCmd
 }

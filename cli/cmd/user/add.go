@@ -48,7 +48,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				ch.PrintfSuccess("User %q added to the user group %q\n", email, group)
 			} else if projectName != "" {
-				res, err := client.AddProjectMember(cmd.Context(), &adminv1.AddProjectMemberRequest{
+				res, err := client.AddProjectMemberUser(cmd.Context(), &adminv1.AddProjectMemberUserRequest{
 					Organization: ch.Org,
 					Project:      projectName,
 					Email:        email,
@@ -64,7 +64,7 @@ func AddCmd(ch *cmdutil.Helper) *cobra.Command {
 					ch.PrintfSuccess("User %q added to the project \"%s/%s\" as %q\n", email, ch.Org, projectName, role)
 				}
 			} else {
-				res, err := client.AddOrganizationMember(cmd.Context(), &adminv1.AddOrganizationMemberRequest{
+				res, err := client.AddOrganizationMemberUser(cmd.Context(), &adminv1.AddOrganizationMemberUserRequest{
 					Organization: ch.Org,
 					Email:        email,
 					Role:         role,

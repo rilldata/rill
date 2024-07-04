@@ -37,14 +37,14 @@ import type {
   AdminServiceUpdateOrganizationBillingSubscriptionBody,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
-  V1ListOrganizationMembersResponse,
-  AdminServiceListOrganizationMembersParams,
-  V1AddOrganizationMemberResponse,
-  AdminServiceAddOrganizationMemberBodyBody,
-  V1RemoveOrganizationMemberResponse,
-  AdminServiceRemoveOrganizationMemberParams,
-  V1SetOrganizationMemberRoleResponse,
-  AdminServiceSetOrganizationMemberRoleBodyBody,
+  V1ListOrganizationMemberUsersResponse,
+  AdminServiceListOrganizationMemberUsersParams,
+  V1AddOrganizationMemberUserResponse,
+  AdminServiceAddOrganizationMemberUserBodyBody,
+  V1RemoveOrganizationMemberUserResponse,
+  AdminServiceRemoveOrganizationMemberUserParams,
+  V1SetOrganizationMemberUserRoleResponse,
+  AdminServiceSetOrganizationMemberUserRoleBodyBody,
   V1LeaveOrganizationResponse,
   V1CreateAlertResponse,
   AdminServiceCreateAlertBodyBody,
@@ -60,11 +60,11 @@ import type {
   AdminServiceGetIFrameBody,
   V1ListProjectInvitesResponse,
   AdminServiceListProjectInvitesParams,
-  V1ListProjectMembersResponse,
-  AdminServiceListProjectMembersParams,
-  V1AddProjectMemberResponse,
-  V1RemoveProjectMemberResponse,
-  V1SetProjectMemberRoleResponse,
+  V1ListProjectMemberUsersResponse,
+  AdminServiceListProjectMemberUsersParams,
+  V1AddProjectMemberUserResponse,
+  V1RemoveProjectMemberUserResponse,
+  V1SetProjectMemberUserRoleResponse,
   V1CreateReportResponse,
   AdminServiceCreateReportBodyBody,
   V1GenerateReportYAMLResponse,
@@ -90,7 +90,7 @@ import type {
   AdminServiceCreateUsergroupBodyBody,
   V1GetUsergroupResponse,
   AdminServiceGetUsergroupParams,
-  V1RemoveUsergroupResponse,
+  V1DeleteUsergroupResponse,
   V1RenameUsergroupResponse,
   V1ListUsergroupMembersResponse,
   V1RemoveUsergroupMemberResponse,
@@ -966,14 +966,14 @@ export const createAdminServiceListOrganizationInvites = <
 };
 
 /**
- * @summary ListOrganizationMembers lists all the org members
+ * @summary ListOrganizationMemberUsers lists all the org members
  */
-export const adminServiceListOrganizationMembers = (
+export const adminServiceListOrganizationMemberUsers = (
   organization: string,
-  params?: AdminServiceListOrganizationMembersParams,
+  params?: AdminServiceListOrganizationMemberUsersParams,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ListOrganizationMembersResponse>({
+  return httpClient<V1ListOrganizationMemberUsersResponse>({
     url: `/v1/organizations/${organization}/members`,
     method: "get",
     params,
@@ -981,25 +981,25 @@ export const adminServiceListOrganizationMembers = (
   });
 };
 
-export const getAdminServiceListOrganizationMembersQueryKey = (
+export const getAdminServiceListOrganizationMemberUsersQueryKey = (
   organization: string,
-  params?: AdminServiceListOrganizationMembersParams,
+  params?: AdminServiceListOrganizationMemberUsersParams,
 ) => [`/v1/organizations/${organization}/members`, ...(params ? [params] : [])];
 
-export type AdminServiceListOrganizationMembersQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListOrganizationMembers>>
+export type AdminServiceListOrganizationMemberUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>
 >;
-export type AdminServiceListOrganizationMembersQueryError = RpcStatus;
+export type AdminServiceListOrganizationMemberUsersQueryError = RpcStatus;
 
-export const createAdminServiceListOrganizationMembers = <
-  TData = Awaited<ReturnType<typeof adminServiceListOrganizationMembers>>,
+export const createAdminServiceListOrganizationMemberUsers = <
+  TData = Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
   TError = RpcStatus,
 >(
   organization: string,
-  params?: AdminServiceListOrganizationMembersParams,
+  params?: AdminServiceListOrganizationMemberUsersParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceListOrganizationMembers>>,
+      Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
       TError,
       TData
     >;
@@ -1009,15 +1009,15 @@ export const createAdminServiceListOrganizationMembers = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceListOrganizationMembersQueryKey(organization, params);
+    getAdminServiceListOrganizationMemberUsersQueryKey(organization, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListOrganizationMembers>>
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>
   > = ({ signal }) =>
-    adminServiceListOrganizationMembers(organization, params, signal);
+    adminServiceListOrganizationMemberUsers(organization, params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceListOrganizationMembers>>,
+    Awaited<ReturnType<typeof adminServiceListOrganizationMemberUsers>>,
     TError,
     TData
   >({
@@ -1033,88 +1033,98 @@ export const createAdminServiceListOrganizationMembers = <
 };
 
 /**
- * @summary AddOrganizationMember adds a user to the organization
+ * @summary AddOrganizationMemberUser adds a user to the organization
  */
-export const adminServiceAddOrganizationMember = (
+export const adminServiceAddOrganizationMemberUser = (
   organization: string,
-  adminServiceAddOrganizationMemberBodyBody: AdminServiceAddOrganizationMemberBodyBody,
+  adminServiceAddOrganizationMemberUserBodyBody: AdminServiceAddOrganizationMemberUserBodyBody,
 ) => {
-  return httpClient<V1AddOrganizationMemberResponse>({
+  return httpClient<V1AddOrganizationMemberUserResponse>({
     url: `/v1/organizations/${organization}/members`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceAddOrganizationMemberBodyBody,
+    data: adminServiceAddOrganizationMemberUserBodyBody,
   });
 };
 
-export type AdminServiceAddOrganizationMemberMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceAddOrganizationMember>>
+export type AdminServiceAddOrganizationMemberUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>
 >;
-export type AdminServiceAddOrganizationMemberMutationBody =
-  AdminServiceAddOrganizationMemberBodyBody;
-export type AdminServiceAddOrganizationMemberMutationError = RpcStatus;
+export type AdminServiceAddOrganizationMemberUserMutationBody =
+  AdminServiceAddOrganizationMemberUserBodyBody;
+export type AdminServiceAddOrganizationMemberUserMutationError = RpcStatus;
 
-export const createAdminServiceAddOrganizationMember = <
+export const createAdminServiceAddOrganizationMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAddOrganizationMember>>,
+    Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
     TError,
-    { organization: string; data: AdminServiceAddOrganizationMemberBodyBody },
+    {
+      organization: string;
+      data: AdminServiceAddOrganizationMemberUserBodyBody;
+    },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceAddOrganizationMember>>,
-    { organization: string; data: AdminServiceAddOrganizationMemberBodyBody }
+    Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
+    {
+      organization: string;
+      data: AdminServiceAddOrganizationMemberUserBodyBody;
+    }
   > = (props) => {
     const { organization, data } = props ?? {};
 
-    return adminServiceAddOrganizationMember(organization, data);
+    return adminServiceAddOrganizationMemberUser(organization, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceAddOrganizationMember>>,
+    Awaited<ReturnType<typeof adminServiceAddOrganizationMemberUser>>,
     TError,
-    { organization: string; data: AdminServiceAddOrganizationMemberBodyBody },
+    {
+      organization: string;
+      data: AdminServiceAddOrganizationMemberUserBodyBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary RemoveOrganizationMember removes member from the organization
+ * @summary RemoveOrganizationMemberUser removes member from the organization
  */
-export const adminServiceRemoveOrganizationMember = (
+export const adminServiceRemoveOrganizationMemberUser = (
   organization: string,
   email: string,
-  params?: AdminServiceRemoveOrganizationMemberParams,
+  params?: AdminServiceRemoveOrganizationMemberUserParams,
 ) => {
-  return httpClient<V1RemoveOrganizationMemberResponse>({
+  return httpClient<V1RemoveOrganizationMemberUserResponse>({
     url: `/v1/organizations/${organization}/members/${email}`,
     method: "delete",
     params,
   });
 };
 
-export type AdminServiceRemoveOrganizationMemberMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceRemoveOrganizationMember>>
->;
+export type AdminServiceRemoveOrganizationMemberUserMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>
+  >;
 
-export type AdminServiceRemoveOrganizationMemberMutationError = RpcStatus;
+export type AdminServiceRemoveOrganizationMemberUserMutationError = RpcStatus;
 
-export const createAdminServiceRemoveOrganizationMember = <
+export const createAdminServiceRemoveOrganizationMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMember>>,
+    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
     TError,
     {
       organization: string;
       email: string;
-      params?: AdminServiceRemoveOrganizationMemberParams;
+      params?: AdminServiceRemoveOrganizationMemberUserParams;
     },
     TContext
   >;
@@ -1122,63 +1132,68 @@ export const createAdminServiceRemoveOrganizationMember = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMember>>,
+    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
     {
       organization: string;
       email: string;
-      params?: AdminServiceRemoveOrganizationMemberParams;
+      params?: AdminServiceRemoveOrganizationMemberUserParams;
     }
   > = (props) => {
     const { organization, email, params } = props ?? {};
 
-    return adminServiceRemoveOrganizationMember(organization, email, params);
+    return adminServiceRemoveOrganizationMemberUser(
+      organization,
+      email,
+      params,
+    );
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMember>>,
+    Awaited<ReturnType<typeof adminServiceRemoveOrganizationMemberUser>>,
     TError,
     {
       organization: string;
       email: string;
-      params?: AdminServiceRemoveOrganizationMemberParams;
+      params?: AdminServiceRemoveOrganizationMemberUserParams;
     },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary SetOrganizationMemberRole sets the role for the member
+ * @summary SetOrganizationMemberUserRole sets the role for the member
  */
-export const adminServiceSetOrganizationMemberRole = (
+export const adminServiceSetOrganizationMemberUserRole = (
   organization: string,
   email: string,
-  adminServiceSetOrganizationMemberRoleBodyBody: AdminServiceSetOrganizationMemberRoleBodyBody,
+  adminServiceSetOrganizationMemberUserRoleBodyBody: AdminServiceSetOrganizationMemberUserRoleBodyBody,
 ) => {
-  return httpClient<V1SetOrganizationMemberRoleResponse>({
+  return httpClient<V1SetOrganizationMemberUserRoleResponse>({
     url: `/v1/organizations/${organization}/members/${email}`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceSetOrganizationMemberRoleBodyBody,
+    data: adminServiceSetOrganizationMemberUserRoleBodyBody,
   });
 };
 
-export type AdminServiceSetOrganizationMemberRoleMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSetOrganizationMemberRole>>
->;
-export type AdminServiceSetOrganizationMemberRoleMutationBody =
-  AdminServiceSetOrganizationMemberRoleBodyBody;
-export type AdminServiceSetOrganizationMemberRoleMutationError = RpcStatus;
+export type AdminServiceSetOrganizationMemberUserRoleMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUserRole>>
+  >;
+export type AdminServiceSetOrganizationMemberUserRoleMutationBody =
+  AdminServiceSetOrganizationMemberUserRoleBodyBody;
+export type AdminServiceSetOrganizationMemberUserRoleMutationError = RpcStatus;
 
-export const createAdminServiceSetOrganizationMemberRole = <
+export const createAdminServiceSetOrganizationMemberUserRole = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberRole>>,
+    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUserRole>>,
     TError,
     {
       organization: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >;
@@ -1186,25 +1201,25 @@ export const createAdminServiceSetOrganizationMemberRole = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberRole>>,
+    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUserRole>>,
     {
       organization: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     }
   > = (props) => {
     const { organization, email, data } = props ?? {};
 
-    return adminServiceSetOrganizationMemberRole(organization, email, data);
+    return adminServiceSetOrganizationMemberUserRole(organization, email, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberRole>>,
+    Awaited<ReturnType<typeof adminServiceSetOrganizationMemberUserRole>>,
     TError,
     {
       organization: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
@@ -1910,15 +1925,15 @@ export const createAdminServiceListProjectInvites = <
 };
 
 /**
- * @summary ListProjectMembers lists all the project members
+ * @summary ListProjectMemberUsers lists all the project members
  */
-export const adminServiceListProjectMembers = (
+export const adminServiceListProjectMemberUsers = (
   organization: string,
   project: string,
-  params?: AdminServiceListProjectMembersParams,
+  params?: AdminServiceListProjectMemberUsersParams,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1ListProjectMembersResponse>({
+  return httpClient<V1ListProjectMemberUsersResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/members`,
     method: "get",
     params,
@@ -1926,30 +1941,30 @@ export const adminServiceListProjectMembers = (
   });
 };
 
-export const getAdminServiceListProjectMembersQueryKey = (
+export const getAdminServiceListProjectMemberUsersQueryKey = (
   organization: string,
   project: string,
-  params?: AdminServiceListProjectMembersParams,
+  params?: AdminServiceListProjectMemberUsersParams,
 ) => [
   `/v1/organizations/${organization}/projects/${project}/members`,
   ...(params ? [params] : []),
 ];
 
-export type AdminServiceListProjectMembersQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListProjectMembers>>
+export type AdminServiceListProjectMemberUsersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListProjectMemberUsers>>
 >;
-export type AdminServiceListProjectMembersQueryError = RpcStatus;
+export type AdminServiceListProjectMemberUsersQueryError = RpcStatus;
 
-export const createAdminServiceListProjectMembers = <
-  TData = Awaited<ReturnType<typeof adminServiceListProjectMembers>>,
+export const createAdminServiceListProjectMemberUsers = <
+  TData = Awaited<ReturnType<typeof adminServiceListProjectMemberUsers>>,
   TError = RpcStatus,
 >(
   organization: string,
   project: string,
-  params?: AdminServiceListProjectMembersParams,
+  params?: AdminServiceListProjectMemberUsersParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceListProjectMembers>>,
+      Awaited<ReturnType<typeof adminServiceListProjectMemberUsers>>,
       TError,
       TData
     >;
@@ -1959,15 +1974,19 @@ export const createAdminServiceListProjectMembers = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceListProjectMembersQueryKey(organization, project, params);
+    getAdminServiceListProjectMemberUsersQueryKey(
+      organization,
+      project,
+      params,
+    );
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListProjectMembers>>
+    Awaited<ReturnType<typeof adminServiceListProjectMemberUsers>>
   > = ({ signal }) =>
-    adminServiceListProjectMembers(organization, project, params, signal);
+    adminServiceListProjectMemberUsers(organization, project, params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceListProjectMembers>>,
+    Awaited<ReturnType<typeof adminServiceListProjectMemberUsers>>,
     TError,
     TData
   >({
@@ -1983,39 +2002,39 @@ export const createAdminServiceListProjectMembers = <
 };
 
 /**
- * @summary AddProjectMember adds a member to the project
+ * @summary AddProjectMemberUser adds a member to the project
  */
-export const adminServiceAddProjectMember = (
+export const adminServiceAddProjectMemberUser = (
   organization: string,
   project: string,
-  adminServiceAddOrganizationMemberBodyBody: AdminServiceAddOrganizationMemberBodyBody,
+  adminServiceAddOrganizationMemberUserBodyBody: AdminServiceAddOrganizationMemberUserBodyBody,
 ) => {
-  return httpClient<V1AddProjectMemberResponse>({
+  return httpClient<V1AddProjectMemberUserResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/members`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceAddOrganizationMemberBodyBody,
+    data: adminServiceAddOrganizationMemberUserBodyBody,
   });
 };
 
-export type AdminServiceAddProjectMemberMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceAddProjectMember>>
+export type AdminServiceAddProjectMemberUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceAddProjectMemberUser>>
 >;
-export type AdminServiceAddProjectMemberMutationBody =
-  AdminServiceAddOrganizationMemberBodyBody;
-export type AdminServiceAddProjectMemberMutationError = RpcStatus;
+export type AdminServiceAddProjectMemberUserMutationBody =
+  AdminServiceAddOrganizationMemberUserBodyBody;
+export type AdminServiceAddProjectMemberUserMutationError = RpcStatus;
 
-export const createAdminServiceAddProjectMember = <
+export const createAdminServiceAddProjectMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAddProjectMember>>,
+    Awaited<ReturnType<typeof adminServiceAddProjectMemberUser>>,
     TError,
     {
       organization: string;
       project: string;
-      data: AdminServiceAddOrganizationMemberBodyBody;
+      data: AdminServiceAddOrganizationMemberUserBodyBody;
     },
     TContext
   >;
@@ -2023,55 +2042,55 @@ export const createAdminServiceAddProjectMember = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceAddProjectMember>>,
+    Awaited<ReturnType<typeof adminServiceAddProjectMemberUser>>,
     {
       organization: string;
       project: string;
-      data: AdminServiceAddOrganizationMemberBodyBody;
+      data: AdminServiceAddOrganizationMemberUserBodyBody;
     }
   > = (props) => {
     const { organization, project, data } = props ?? {};
 
-    return adminServiceAddProjectMember(organization, project, data);
+    return adminServiceAddProjectMemberUser(organization, project, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceAddProjectMember>>,
+    Awaited<ReturnType<typeof adminServiceAddProjectMemberUser>>,
     TError,
     {
       organization: string;
       project: string;
-      data: AdminServiceAddOrganizationMemberBodyBody;
+      data: AdminServiceAddOrganizationMemberUserBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary RemoveProjectMember removes member from the project
+ * @summary RemoveProjectMemberUser removes member from the project
  */
-export const adminServiceRemoveProjectMember = (
+export const adminServiceRemoveProjectMemberUser = (
   organization: string,
   project: string,
   email: string,
 ) => {
-  return httpClient<V1RemoveProjectMemberResponse>({
+  return httpClient<V1RemoveProjectMemberUserResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/members/${email}`,
     method: "delete",
   });
 };
 
-export type AdminServiceRemoveProjectMemberMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceRemoveProjectMember>>
+export type AdminServiceRemoveProjectMemberUserMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUser>>
 >;
 
-export type AdminServiceRemoveProjectMemberMutationError = RpcStatus;
+export type AdminServiceRemoveProjectMemberUserMutationError = RpcStatus;
 
-export const createAdminServiceRemoveProjectMember = <
+export const createAdminServiceRemoveProjectMemberUser = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveProjectMember>>,
+    Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUser>>,
     TError,
     { organization: string; project: string; email: string },
     TContext
@@ -2080,57 +2099,57 @@ export const createAdminServiceRemoveProjectMember = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceRemoveProjectMember>>,
+    Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUser>>,
     { organization: string; project: string; email: string }
   > = (props) => {
     const { organization, project, email } = props ?? {};
 
-    return adminServiceRemoveProjectMember(organization, project, email);
+    return adminServiceRemoveProjectMemberUser(organization, project, email);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceRemoveProjectMember>>,
+    Awaited<ReturnType<typeof adminServiceRemoveProjectMemberUser>>,
     TError,
     { organization: string; project: string; email: string },
     TContext
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary SetProjectMemberRole sets the role for the member
+ * @summary SetProjectMemberUserRole sets the role for the member
  */
-export const adminServiceSetProjectMemberRole = (
+export const adminServiceSetProjectMemberUserRole = (
   organization: string,
   project: string,
   email: string,
-  adminServiceSetOrganizationMemberRoleBodyBody: AdminServiceSetOrganizationMemberRoleBodyBody,
+  adminServiceSetOrganizationMemberUserRoleBodyBody: AdminServiceSetOrganizationMemberUserRoleBodyBody,
 ) => {
-  return httpClient<V1SetProjectMemberRoleResponse>({
+  return httpClient<V1SetProjectMemberUserRoleResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/members/${email}`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceSetOrganizationMemberRoleBodyBody,
+    data: adminServiceSetOrganizationMemberUserRoleBodyBody,
   });
 };
 
-export type AdminServiceSetProjectMemberRoleMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceSetProjectMemberRole>>
+export type AdminServiceSetProjectMemberUserRoleMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceSetProjectMemberUserRole>>
 >;
-export type AdminServiceSetProjectMemberRoleMutationBody =
-  AdminServiceSetOrganizationMemberRoleBodyBody;
-export type AdminServiceSetProjectMemberRoleMutationError = RpcStatus;
+export type AdminServiceSetProjectMemberUserRoleMutationBody =
+  AdminServiceSetOrganizationMemberUserRoleBodyBody;
+export type AdminServiceSetProjectMemberUserRoleMutationError = RpcStatus;
 
-export const createAdminServiceSetProjectMemberRole = <
+export const createAdminServiceSetProjectMemberUserRole = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceSetProjectMemberRole>>,
+    Awaited<ReturnType<typeof adminServiceSetProjectMemberUserRole>>,
     TError,
     {
       organization: string;
       project: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >;
@@ -2138,27 +2157,32 @@ export const createAdminServiceSetProjectMemberRole = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceSetProjectMemberRole>>,
+    Awaited<ReturnType<typeof adminServiceSetProjectMemberUserRole>>,
     {
       organization: string;
       project: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     }
   > = (props) => {
     const { organization, project, email, data } = props ?? {};
 
-    return adminServiceSetProjectMemberRole(organization, project, email, data);
+    return adminServiceSetProjectMemberUserRole(
+      organization,
+      project,
+      email,
+      data,
+    );
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceSetProjectMemberRole>>,
+    Awaited<ReturnType<typeof adminServiceSetProjectMemberUserRole>>,
     TError,
     {
       organization: string;
       project: string;
       email: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
@@ -2757,13 +2781,13 @@ export const adminServiceSetProjectUsergroupRole = (
   organization: string,
   project: string,
   usergroup: string,
-  adminServiceSetOrganizationMemberRoleBodyBody: AdminServiceSetOrganizationMemberRoleBodyBody,
+  adminServiceSetOrganizationMemberUserRoleBodyBody: AdminServiceSetOrganizationMemberUserRoleBodyBody,
 ) => {
   return httpClient<V1SetProjectUsergroupRoleResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/usergroups/${usergroup}/roles`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceSetOrganizationMemberRoleBodyBody,
+    data: adminServiceSetOrganizationMemberUserRoleBodyBody,
   });
 };
 
@@ -2771,7 +2795,7 @@ export type AdminServiceSetProjectUsergroupRoleMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceSetProjectUsergroupRole>>
 >;
 export type AdminServiceSetProjectUsergroupRoleMutationBody =
-  AdminServiceSetOrganizationMemberRoleBodyBody;
+  AdminServiceSetOrganizationMemberUserRoleBodyBody;
 export type AdminServiceSetProjectUsergroupRoleMutationError = RpcStatus;
 
 export const createAdminServiceSetProjectUsergroupRole = <
@@ -2785,7 +2809,7 @@ export const createAdminServiceSetProjectUsergroupRole = <
       organization: string;
       project: string;
       usergroup: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >;
@@ -2798,7 +2822,7 @@ export const createAdminServiceSetProjectUsergroupRole = <
       organization: string;
       project: string;
       usergroup: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     }
   > = (props) => {
     const { organization, project, usergroup, data } = props ?? {};
@@ -2818,7 +2842,7 @@ export const createAdminServiceSetProjectUsergroupRole = <
       organization: string;
       project: string;
       usergroup: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
@@ -3279,30 +3303,30 @@ export const createAdminServiceGetUsergroup = <
 };
 
 /**
- * @summary RemoveUsergroup removes the user group from the organization
+ * @summary DeleteUsergroup deletes the user group from the organization
  */
-export const adminServiceRemoveUsergroup = (
+export const adminServiceDeleteUsergroup = (
   organization: string,
   usergroup: string,
 ) => {
-  return httpClient<V1RemoveUsergroupResponse>({
+  return httpClient<V1DeleteUsergroupResponse>({
     url: `/v1/organizations/${organization}/usergroups/${usergroup}`,
     method: "delete",
   });
 };
 
-export type AdminServiceRemoveUsergroupMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceRemoveUsergroup>>
+export type AdminServiceDeleteUsergroupMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDeleteUsergroup>>
 >;
 
-export type AdminServiceRemoveUsergroupMutationError = RpcStatus;
+export type AdminServiceDeleteUsergroupMutationError = RpcStatus;
 
-export const createAdminServiceRemoveUsergroup = <
+export const createAdminServiceDeleteUsergroup = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRemoveUsergroup>>,
+    Awaited<ReturnType<typeof adminServiceDeleteUsergroup>>,
     TError,
     { organization: string; usergroup: string },
     TContext
@@ -3311,16 +3335,16 @@ export const createAdminServiceRemoveUsergroup = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceRemoveUsergroup>>,
+    Awaited<ReturnType<typeof adminServiceDeleteUsergroup>>,
     { organization: string; usergroup: string }
   > = (props) => {
     const { organization, usergroup } = props ?? {};
 
-    return adminServiceRemoveUsergroup(organization, usergroup);
+    return adminServiceDeleteUsergroup(organization, usergroup);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceRemoveUsergroup>>,
+    Awaited<ReturnType<typeof adminServiceDeleteUsergroup>>,
     TError,
     { organization: string; usergroup: string },
     TContext
@@ -3629,13 +3653,13 @@ export const createAdminServiceRevokeOrganizationUsergroupRole = <
 export const adminServiceSetOrganizationUsergroupRole = (
   organization: string,
   usergroup: string,
-  adminServiceSetOrganizationMemberRoleBodyBody: AdminServiceSetOrganizationMemberRoleBodyBody,
+  adminServiceSetOrganizationMemberUserRoleBodyBody: AdminServiceSetOrganizationMemberUserRoleBodyBody,
 ) => {
   return httpClient<V1SetOrganizationUsergroupRoleResponse>({
     url: `/v1/organizations/${organization}/usergroups/${usergroup}/role`,
     method: "put",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceSetOrganizationMemberRoleBodyBody,
+    data: adminServiceSetOrganizationMemberUserRoleBodyBody,
   });
 };
 
@@ -3644,7 +3668,7 @@ export type AdminServiceSetOrganizationUsergroupRoleMutationResult =
     Awaited<ReturnType<typeof adminServiceSetOrganizationUsergroupRole>>
   >;
 export type AdminServiceSetOrganizationUsergroupRoleMutationBody =
-  AdminServiceSetOrganizationMemberRoleBodyBody;
+  AdminServiceSetOrganizationMemberUserRoleBodyBody;
 export type AdminServiceSetOrganizationUsergroupRoleMutationError = RpcStatus;
 
 export const createAdminServiceSetOrganizationUsergroupRole = <
@@ -3657,7 +3681,7 @@ export const createAdminServiceSetOrganizationUsergroupRole = <
     {
       organization: string;
       usergroup: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >;
@@ -3669,7 +3693,7 @@ export const createAdminServiceSetOrganizationUsergroupRole = <
     {
       organization: string;
       usergroup: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     }
   > = (props) => {
     const { organization, usergroup, data } = props ?? {};
@@ -3687,7 +3711,7 @@ export const createAdminServiceSetOrganizationUsergroupRole = <
     {
       organization: string;
       usergroup: string;
-      data: AdminServiceSetOrganizationMemberRoleBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);
