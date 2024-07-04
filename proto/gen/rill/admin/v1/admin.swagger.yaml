@@ -1931,6 +1931,26 @@ paths:
             $ref: '#/definitions/v1TriggerRedeployRequest'
       tags:
         - AdminService
+  /v1/projects/{id}:
+    get:
+      summary: GetProject returns information about a specific project
+      operationId: AdminService_GetProjectByID
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectByIDResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/projects/{projectId}/alerts/meta:
     post:
       summary: GetAlertMeta returns metadata for checking an alert. It's currently only called by the alert reconciler in the runtime.
@@ -2759,6 +2779,9 @@ definitions:
     type: object
   v1DeleteProjectResponse:
     type: object
+    properties:
+      id:
+        type: string
   v1DeleteReportResponse:
     type: object
   v1DeleteServiceResponse:
@@ -2954,6 +2977,11 @@ definitions:
         $ref: '#/definitions/v1Organization'
       permissions:
         $ref: '#/definitions/v1OrganizationPermissions'
+  v1GetProjectByIDResponse:
+    type: object
+    properties:
+      project:
+        $ref: '#/definitions/v1Project'
   v1GetProjectResponse:
     type: object
     properties:

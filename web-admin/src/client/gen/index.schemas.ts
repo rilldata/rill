@@ -331,6 +331,11 @@ export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
 
+export interface V1UpdateOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1UpdateBookmarkResponse {
   [key: string]: any;
 }
@@ -434,11 +439,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1UpdateOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1SudoUpdateOrganizationBillingCustomerResponse {
@@ -825,6 +825,10 @@ export interface V1GetProjectResponse {
   projectPermissions?: V1ProjectPermissions;
 }
 
+export interface V1GetProjectByIDResponse {
+  project?: V1Project;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
@@ -974,7 +978,7 @@ export interface V1DeleteReportResponse {
 }
 
 export interface V1DeleteProjectResponse {
-  [key: string]: any;
+  id?: string;
 }
 
 export interface V1DeleteOrganizationResponse {
