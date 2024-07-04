@@ -721,12 +721,12 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 		}
 	}
 
-	if security == nil {
-		return dialect.EscapeIdentifier(spec.Table), nil
-	}
-
 	if !security.CanAccess() {
 		return "", fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name.Name)
+	}
+
+	if security.CanAccessAllFields() && security.RowFilter() == "" && security.QueryFilter() == nil {
+		return dialect.EscapeIdentifier(spec.Table), nil
 	}
 
 	for dimension := range t.dimsToExpr {
