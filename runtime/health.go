@@ -14,6 +14,7 @@ type Health struct {
 type InstanceHealth struct {
 	Controller error
 	Repo       error
+	OLAP       error
 }
 
 func (r *Runtime) Health(ctx context.Context) Health {

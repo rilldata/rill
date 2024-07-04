@@ -37,6 +37,7 @@ func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHeal
 	return &runtimev1.InstanceHealthResponse{
 		ControllerError: h.Controller.Error(),
 		RepoError:       h.Repo.Error(),
+		OlapError:       h.OLAP.Error(),
 	}, nil
 }
 

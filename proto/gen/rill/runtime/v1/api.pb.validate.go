@@ -611,6 +611,8 @@ func (m *InstanceHealthResponse) validate(all bool) error {
 
 	// no validation rules for ControllerError
 
+	// no validation rules for OlapError
+
 	// no validation rules for RepoError
 
 	if len(errors) > 0 {

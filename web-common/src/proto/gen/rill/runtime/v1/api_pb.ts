@@ -320,7 +320,12 @@ export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
   controllerError = "";
 
   /**
-   * @generated from field: string repo_error = 2;
+   * @generated from field: string olap_error = 2;
+   */
+  olapError = "";
+
+  /**
+   * @generated from field: string repo_error = 3;
    */
   repoError = "";
 
@@ -333,7 +338,8 @@ export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
   static readonly typeName = "rill.runtime.v1.InstanceHealthResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "controller_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "olap_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealthResponse {

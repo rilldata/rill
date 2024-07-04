@@ -3981,6 +3981,8 @@ definitions:
     properties:
       controllerError:
         type: string
+      olapError:
+        type: string
       repoError:
         type: string
   v1IssueDevJWTResponse:

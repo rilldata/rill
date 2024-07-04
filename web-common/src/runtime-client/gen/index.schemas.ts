@@ -1436,6 +1436,7 @@ export interface V1IssueDevJWTResponse {
 
 export interface V1InstanceHealthResponse {
   controllerError?: string;
+  olapError?: string;
   repoError?: string;
 }
 

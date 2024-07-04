@@ -238,7 +238,8 @@ message InstanceHealthRequest {
 
 message InstanceHealthResponse {
   string controller_error = 1;
-  string repo_error = 2;
+  string olap_error = 2;
+  string repo_error = 3;
 }
 
 // **********
