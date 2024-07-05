@@ -71,6 +71,7 @@ func TestMetricsViewsTimeseries_month_grain(t *testing.T) {
 		TimeEnd:         parseTime(t, "2024-01-01T00:00:00Z"),
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -115,6 +116,7 @@ func TestMetricsViewsTimeseries_month_grain_IST(t *testing.T) {
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_MONTH,
 		TimeZone:        "Asia/Kolkata",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -161,6 +163,7 @@ func TestMetricsViewsTimeseries_quarter_grain_IST(t *testing.T) {
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_QUARTER,
 		TimeZone:        "Asia/Kolkata",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -193,6 +196,7 @@ func TestMetricsViewsTimeseries_year_grain_IST(t *testing.T) {
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
 		TimeZone:        "Asia/Kolkata",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -217,6 +221,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Weekly(t *tes
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -244,6 +249,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_WeeklyOnSatur
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -271,6 +277,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Daily(t *test
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -302,6 +309,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Daily(t *testing.
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -333,6 +341,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *tes
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -350,6 +359,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Second(t *tes
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_SECOND,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -371,6 +381,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *tes
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -388,6 +399,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Minute(t *tes
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_MINUTE,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -409,6 +421,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Continuous_Hourly(t *tes
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -442,6 +455,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsBackwards_Sparse_Hourly(t *testing
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -476,6 +490,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Weekly(t *test
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_WEEK,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -503,6 +518,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Daily(t *testi
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -534,6 +550,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Daily(t *testing.T
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -565,6 +582,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Continuous_Hourly(t *test
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -598,6 +616,7 @@ func TestMetricsViewTimeSeries_DayLightSavingsForwards_Sparse_Hourly(t *testing.
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 		TimeZone:        "America/New_York",
 		Limit:           250,
+		SecurityClaims:  testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -649,7 +668,8 @@ func TestMetricsViewTimeSeries_having_clause(t *testing.T) {
 				},
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -712,7 +732,8 @@ func TestMetricsTimeseries_measure_filters_same_name(t *testing.T) {
 				},
 			},
 		},
-		Limit: lmt,
+		Limit:          lmt,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)

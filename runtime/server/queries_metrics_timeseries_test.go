@@ -752,6 +752,7 @@ func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MeasureNames:    []string{"measure_0"},
+		SecurityClaims:  testClaims(),
 	}
 
 	var buf bytes.Buffer
@@ -781,6 +782,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MeasureNames:    []string{"measure_0"},
+		SecurityClaims:  testClaims(),
 	}
 
 	var buf bytes.Buffer
@@ -793,7 +795,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 	require.Equal(t, 3, strings.Count(string(buf.Bytes()), "\n"))
 }
 
-func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity) {
+func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metricsViewName string) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity) {
 	ctx := testCtx()
 
 	ctrl, err := rt.Controller(ctx, instanceID)
@@ -806,8 +808,12 @@ func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metrics
 	mv := mvRes.State.ValidSpec
 	require.NoError(t, err)
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, auth.GetClaims(ctx).Attributes(), res, mv.Security)
+	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).SecurityClaims(), res)
 	require.NoError(t, err)
 
 	return mv, resolvedSecurity
+}
+
+func testClaims() *runtime.SecurityClaims {
+	return &runtime.SecurityClaims{SkipChecks: true}
 }

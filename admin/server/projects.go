@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -146,12 +147,14 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	var attr map[string]any
-	var security *runtimev1.MetricsViewSpec_SecurityV2
+	var rules []*runtimev1.SecurityRule
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	} else if claims.OwnerType() == auth.OwnerTypeService {
+		attr = map[string]any{"admin": true}
 	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 		if !ok {
@@ -160,21 +163,45 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 		attr = mdl.Attributes
 
-		security = &runtimev1.MetricsViewSpec_SecurityV2{
-			Access: fmt.Sprintf("'{{ .self.name }}'=%s", duckdbsql.EscapeStringValue(mdl.MetricsView)),
-		}
+		// Deny access to all resources except themes and mdl.MetricsView
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf(
+						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ .self.name }}'=%s)",
+						runtime.ResourceKindTheme,
+						runtime.ResourceKindMetricsView,
+						duckdbsql.EscapeStringValue(mdl.MetricsView),
+					),
+					Allow: false,
+				},
+			},
+		})
+
 		if mdl.MetricsViewFilterJSON != "" {
 			expr := &runtimev1.Expression{}
 			err := protojson.Unmarshal([]byte(mdl.MetricsViewFilterJSON), expr)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
 			}
-			security.QueryFilter = expr
+
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_RowFilter{
+					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Expression: expr,
+					},
+				},
+			})
 		}
+
 		if len(mdl.MetricsViewFields) > 0 {
-			security.Include = append(security.Include, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
-				Condition: "true",
-				Names:     mdl.MetricsViewFields,
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_FieldAccess{
+					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Fields: mdl.MetricsViewFields,
+						Allow:  true,
+					},
+				},
 			})
 		}
 	}
@@ -198,8 +225,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				runtimeauth.ReadAPI,
 			},
 		},
-		Attributes: attr,
-		Security:   security,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())

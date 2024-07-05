@@ -562,7 +562,8 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	}
 
 	// Create and execute query
-	q, err := queries.ProtoToQuery(qpb, queryForAttrs)
+	claims := &runtime.SecurityClaims{UserAttributes: queryForAttrs}
+	q, err := queries.ProtoToQuery(qpb, claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}

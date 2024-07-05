@@ -12,7 +12,7 @@ import (
 
 // ProtoToQuery builds a runtime query from a proto query and security attributes.
 // NOTE: Pending refactors, this implementation is replicated from handlers in runtime/server.
-func ProtoToQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, error) {
+func ProtoToQuery(q *runtimev1.Query, claims *runtime.SecurityClaims) (runtime.Query, error) {
 	switch r := q.Query.(type) {
 	case *runtimev1.Query_MetricsViewAggregationRequest:
 		req := r.MetricsViewAggregationRequest
@@ -37,7 +37,7 @@ func ProtoToQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, erro
 			Filter:              req.Filter,
 			Offset:              req.Offset,
 			PivotOn:             req.PivotOn,
-			SecurityAttributes:  attrs,
+			SecurityClaims:      claims,
 		}, nil
 	case *runtimev1.Query_MetricsViewComparisonRequest:
 		req := r.MetricsViewComparisonRequest
@@ -55,7 +55,7 @@ func ProtoToQuery(q *runtimev1.Query, attrs map[string]any) (runtime.Query, erro
 			Having:              req.Having,
 			Filter:              req.Filter,
 			Exact:               req.Exact,
-			SecurityAttributes:  attrs,
+			SecurityClaims:      claims,
 		}, nil
 	default:
 		return nil, fmt.Errorf("query type %T not supported for alerts", r)
