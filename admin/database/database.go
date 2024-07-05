@@ -116,13 +116,14 @@ type DB interface {
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
 	UpdateUsergroupName(ctx context.Context, name, groupID string) (*Usergroup, error)
+	UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*Usergroup, error)
 	DeleteUsergroup(ctx context.Context, groupID string) error
-	FindUsergroupByName(ctx context.Context, name, orgID string) (*Usergroup, error)
+	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	FindUsergroupMembersUsers(ctx context.Context, groupID string) ([]*MemberUser, error)
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
-	DeleteUsergroupsMemberUser(ctx context.Context, userID, orgID, allUsergroupID string) error
+	DeleteUsergroupsMemberUser(ctx context.Context, userID, orgID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -187,17 +188,16 @@ type DB interface {
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
-	FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*Usergroup, error)
+
+	FindOrganizationUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*MemberUsergroup, error)
 	InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error
+
+	FindProjectMemberUsergroups(ctx context.Context, projectID, afterName string, limit int) ([]*MemberUsergroup, error)
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	UpdatedProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
-	FindOrganizationMemberUsergroupRole(ctx context.Context, groupID, orgID string) (*OrgMemberUsergroupRole, error)
-	FindOrganizationAllMemberUsergroupRoles(ctx context.Context, orgID string) ([]*OrgMemberUsergroupRole, error)
-	FindProjectMemberUsergroupRoles(ctx context.Context, groupID, orgID string) ([]*ProjectMemberUsergroupRole, error)
-	FindUsergroupAllProjectOrganizationRoles(ctx context.Context, orgID string) ([]*ProjectMemberUsergroupRole, error)
 
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
@@ -488,21 +488,6 @@ type Usergroup struct {
 	UpdatedOn   time.Time `db:"updated_on"`
 }
 
-// OrgMemberUsergroupRole represents an organization role of Usergroup
-type OrgMemberUsergroupRole struct {
-	UsergroupID string `db:"usergroup_id"`
-	OrgName     string `db:"org_name"`
-	RoleName    string `db:"role_name"`
-}
-
-// ProjectMemberUsergroupRole represents a project role of Usergroup
-type ProjectMemberUsergroupRole struct {
-	UsergroupID string `db:"usergroup_id"`
-	ProjectID   string `db:"project_id"`
-	ProjectName string `db:"project_name"`
-	RoleName    string `db:"role_name"`
-}
-
 // InsertUsergroupOptions defines options for inserting a new usergroup
 type InsertUsergroupOptions struct {
 	OrgID string
@@ -711,6 +696,14 @@ type MemberUser struct {
 	RoleName    string    `db:"name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+type MemberUsergroup struct {
+	ID        string    `db:"id"`
+	Name      string    `db:"name" validate:"slug"`
+	RoleName  string    `db:"role_name"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
 }
 
 // OrganizationInvite represents an outstanding invitation to join an org.

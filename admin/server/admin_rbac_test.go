@@ -501,6 +501,90 @@ func TestAdmin_RBAC(t *testing.T) {
 		require.ErrorContains(t, err, "cannot remove the last owner")
 	})
 
+	// Create and fetch a user group
+	t.Run("test create user group", func(t *testing.T) {
+		// create
+		_, err := adminClient.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+
+		// fetch
+		resp, err := adminClient.GetUsergroup(ctx, &adminv1.GetUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group1",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.NotNil(t, resp.Usergroup)
+		require.Equal(t, "group1", resp.Usergroup.GroupName)
+		require.Nil(t, resp.Usergroup.OrgRole)
+		require.Empty(t, resp.Usergroup.ProjectRoles, 0)
+	})
+
+	// Create, fetch, and delete a user group
+	t.Run("test delete user group", func(t *testing.T) {
+		// create
+		_, err := adminClient.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Name:         "group2",
+		})
+		require.NoError(t, err)
+
+		// fetch
+		resp, err := adminClient.GetUsergroup(ctx, &adminv1.GetUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group2",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+
+		// delete
+		_, err = adminClient.DeleteUsergroup(ctx, &adminv1.DeleteUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group2",
+		})
+		require.NoError(t, err)
+
+		// fetch again
+		_, err = adminClient.GetUsergroup(ctx, &adminv1.GetUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group2",
+		})
+		require.Error(t, err)
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+	})
+
+	// Create a user group, assign an org-level role and check
+	t.Run("test assign user group roles", func(t *testing.T) {
+		// create
+		_, err := adminClient.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Name:         "group3",
+		})
+		require.NoError(t, err)
+
+		// assign org-level role
+		_, err = adminClient.AddOrganizationMemberUsergroup(ctx, &adminv1.AddOrganizationMemberUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group3",
+			Role:         "viewer",
+		})
+		require.NoError(t, err)
+
+		// check
+		resp, err := adminClient.GetUsergroup(ctx, &adminv1.GetUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group3",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.NotNil(t, resp.Usergroup)
+		require.NotNil(t, resp.Usergroup.OrgRole)
+		require.Equal(t, "viewer", resp.Usergroup.OrgRole.Role)
+	})
+
 	// test change roles
 	setRoleMemberTests := []struct {
 		name    string

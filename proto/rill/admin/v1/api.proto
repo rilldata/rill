@@ -232,9 +232,22 @@ service AdminService {
     };
   }
 
-  // ListUsergroups lists the org's user groups
-  rpc ListUsergroups(ListUsergroupsRequest) returns (ListUsergroupsResponse) {
+  // EditUsergroup renames the user group
+  rpc EditUsergroup(EditUsergroupRequest) returns (EditUsergroupResponse) {
+    option (google.api.http) = {
+      put: "/v1/organizations/{organization}/usergroups/{usergroup}",
+      body: "*"
+    };
+  }
+
+  // ListOrganizationMemberUsergroups lists the org's user groups
+  rpc ListOrganizationMemberUsergroups(ListOrganizationMemberUsergroupsRequest) returns (ListOrganizationMemberUsergroupsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/usergroups"};
+  }
+
+  // ListProjectMemberUsergroups lists the org's user groups
+  rpc ListProjectMemberUsergroups(ListProjectMemberUsergroupsRequest) returns (ListProjectMemberUsergroupsResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/project/{project}/usergroups"};
   }
 
   // DeleteUsergroup deletes the user group from the organization
@@ -302,11 +315,6 @@ service AdminService {
   // RemoveUsergroupMemberUser removes member from the user group
   rpc RemoveUsergroupMemberUser(RemoveUsergroupMemberUserRequest) returns (RemoveUsergroupMemberUserResponse) {
     option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/{usergroup}/members/{email}"};
-  }
-
-  // RemoveUsergroupsMemberUser removes member from the organization's user groups
-  rpc RemoveUsergroupsMemberUser(RemoveUsergroupsMemberUserRequest) returns (RemoveUsergroupsMemberUserResponse) {
-    option (google.api.http) = {delete: "/v1/organizations/{organization}/usergroups/members/{email}"};
   }
 
   // GetCurrentUser returns the currently authenticated user (if any)
@@ -1025,134 +1033,6 @@ message ListOrganizationMemberUsersResponse {
   string next_page_token = 2;
 }
 
-message CreateUsergroupRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string name = 2 [(validate.rules).string.min_len = 1];
-}
-
-message CreateUsergroupResponse {
-}
-
-message GetUsergroupRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 4;
-}
-
-message GetUsergroupResponse {
-  Usergroup usergroup = 1;
-  string next_page_token = 2;
-}
-
-message RenameUsergroupRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-  string name = 3 [(validate.rules).string.min_len = 1];
-}
-
-message RenameUsergroupResponse {
-}
-
-message ListUsergroupsRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
-  string page_token = 3;
-}
-
-message ListUsergroupsResponse {
-  repeated Usergroup usergroups = 1;
-  string next_page_token = 2;
-}
-
-message DeleteUsergroupRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-}
-
-message DeleteUsergroupResponse {}
-
-message AddOrganizationMemberUsergroupRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-  string role = 3 [(validate.rules).string.min_len = 1];
-}
-
-message AddOrganizationMemberUsergroupResponse {}
-
-message SetOrganizationMemberUsergroupRoleRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-  string role = 3 [(validate.rules).string.min_len = 1];
-}
-
-message SetOrganizationMemberUsergroupRoleResponse {}
-
-message RemoveOrganizationMemberUsergroupRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-}
-
-message RemoveOrganizationMemberUsergroupResponse {}
-
-message AddProjectMemberUsergroupRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string project = 2 [(validate.rules).string.min_len = 1];
-  string usergroup = 3 [(validate.rules).string.min_len = 1];
-  string role = 4 [(validate.rules).string.min_len = 1];
-}
-
-message AddProjectMemberUsergroupResponse {}
-
-message SetProjectMemberUsergroupRoleRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string project = 2 [(validate.rules).string.min_len = 1];
-  string usergroup = 3 [(validate.rules).string.min_len = 1];
-  string role = 4 [(validate.rules).string.min_len = 1];
-}
-
-message SetProjectMemberUsergroupRoleResponse {}
-
-message RemoveProjectMemberUsergroupRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string project = 2 [(validate.rules).string.min_len = 1];
-  string usergroup = 3 [(validate.rules).string.min_len = 1];
-}
-
-message RemoveProjectMemberUsergroupResponse {}
-
-message AddUsergroupMemberUserRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-  string email = 3 [(validate.rules).string.email = true];
-}
-
-message AddUsergroupMemberUserResponse {}
-
-message RemoveUsergroupMemberUserRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-  string email = 3 [(validate.rules).string.email = true];
-}
-
-message RemoveUsergroupMemberUserResponse {}
-
-message RemoveUsergroupsMemberUserRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string email = 2 [(validate.rules).string.email = true];
-}
-
-message RemoveUsergroupsMemberUserResponse {}
-
-message ListUsergroupMemberUsersRequest {
-  string organization = 1 [(validate.rules).string.min_len = 1];
-  string usergroup = 2 [(validate.rules).string.min_len = 1];
-}
-
-message ListUsergroupMemberUsersResponse {
-  repeated MemberUser members = 1;
-}
-
 message ListOrganizationInvitesRequest {
   string organization = 1;
   uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
@@ -1323,6 +1203,145 @@ message SetProjectMemberUserRoleRequest {
 }
 
 message SetProjectMemberUserRoleResponse {}
+
+message CreateUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string name = 2 [(validate.rules).string.min_len = 1];
+}
+
+message CreateUsergroupResponse {}
+
+message GetUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message GetUsergroupResponse {
+  Usergroup usergroup = 1;
+  string next_page_token = 2;
+}
+
+message RenameUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string name = 3 [(validate.rules).string.min_len = 1];
+}
+
+message RenameUsergroupResponse {}
+
+message EditUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string description = 3;
+}
+
+message EditUsergroupResponse {}
+
+message ListOrganizationMemberUsergroupsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 2 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 3;
+}
+
+message ListOrganizationMemberUsergroupsResponse {
+  repeated MemberUsergroup members = 1;
+  string next_page_token = 2;
+}
+
+message ListProjectMemberUsergroupsRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
+}
+
+message ListProjectMemberUsergroupsResponse {
+  repeated MemberUsergroup members = 1;
+  string next_page_token = 2;
+}
+
+message DeleteUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+}
+
+message DeleteUsergroupResponse {}
+
+message AddOrganizationMemberUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string role = 3 [(validate.rules).string.min_len = 1];
+}
+
+message AddOrganizationMemberUsergroupResponse {}
+
+message SetOrganizationMemberUsergroupRoleRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string role = 3 [(validate.rules).string.min_len = 1];
+}
+
+message SetOrganizationMemberUsergroupRoleResponse {}
+
+message RemoveOrganizationMemberUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveOrganizationMemberUsergroupResponse {}
+
+message AddProjectMemberUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string usergroup = 3 [(validate.rules).string.min_len = 1];
+  string role = 4 [(validate.rules).string.min_len = 1];
+}
+
+message AddProjectMemberUsergroupResponse {}
+
+message SetProjectMemberUsergroupRoleRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string usergroup = 3 [(validate.rules).string.min_len = 1];
+  string role = 4 [(validate.rules).string.min_len = 1];
+}
+
+message SetProjectMemberUsergroupRoleResponse {}
+
+message RemoveProjectMemberUsergroupRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string project = 2 [(validate.rules).string.min_len = 1];
+  string usergroup = 3 [(validate.rules).string.min_len = 1];
+}
+
+message RemoveProjectMemberUsergroupResponse {}
+
+message AddUsergroupMemberUserRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+}
+
+message AddUsergroupMemberUserResponse {}
+
+message ListUsergroupMemberUsersRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+}
+
+message ListUsergroupMemberUsersResponse {
+  repeated MemberUser members = 1;
+}
+
+message RemoveUsergroupMemberUserRequest {
+  string organization = 1 [(validate.rules).string.min_len = 1];
+  string usergroup = 2 [(validate.rules).string.min_len = 1];
+  string email = 3 [(validate.rules).string.email = true];
+}
+
+message RemoveUsergroupMemberUserResponse {}
 
 message GetCurrentUserRequest {}
 
@@ -2019,18 +2038,15 @@ message Quotas {
 message Usergroup {
   string group_id = 1;
   string group_name = 2;
-  google.protobuf.Timestamp created_on = 3;
-  google.protobuf.Timestamp updated_on = 4;
-  OrgMemberUsergroupRole org_role = 5;
-  repeated ProjectMemberUsergroupRole project_roles = 6;
+  string group_description = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
 }
 
-message OrgMemberUsergroupRole {
-  string org_name = 1;
-  string role = 2;
-}
-
-message ProjectMemberUsergroupRole {
-  string project_name = 1;
-  string role = 2;
+message MemberUsergroup {
+  string group_id = 1;
+  string group_name = 2;
+  string role_name = 3;
+  google.protobuf.Timestamp created_on = 4;
+  google.protobuf.Timestamp updated_on = 5;
 }

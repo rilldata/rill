@@ -50,40 +50,18 @@ func (s *Server) GetUsergroup(ctx context.Context, req *adminv1.GetUsergroupRequ
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
-
-	orgRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, usergroup.ID, org.ID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if orgRole != nil && !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
+	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ReadOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to get org usergroup")
 	}
 
-	projRoles, err := s.admin.DB.FindProjectMemberUsergroupRoles(ctx, usergroup.ID, org.ID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	for _, role := range projRoles {
-		if !claims.ProjectPermissions(ctx, org.ID, role.ProjectID).ReadProjectMembers {
-			return nil, status.Error(codes.PermissionDenied, "not allowed to get org usergroup")
-		}
-	}
-
 	return &adminv1.GetUsergroupResponse{
-		Usergroup: usergroupToPB(usergroup, orgRole, projRoles),
+		Usergroup: usergroupToPB(usergroup),
 	}, nil
 }
 
@@ -94,23 +72,23 @@ func (s *Server) RenameUsergroup(ctx context.Context, req *adminv1.RenameUsergro
 		attribute.String("args.name", req.Name),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to rename org usergroup")
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, usergroup.OrgID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
 		return nil, status.Error(codes.InvalidArgument, "cannot rename all-users group")
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to rename org usergroup")
 	}
 
 	_, err = s.admin.DB.UpdateUsergroupName(ctx, req.Name, usergroup.ID)
@@ -124,7 +102,41 @@ func (s *Server) RenameUsergroup(ctx context.Context, req *adminv1.RenameUsergro
 	return &adminv1.RenameUsergroupResponse{}, nil
 }
 
-func (s *Server) ListUsergroups(ctx context.Context, req *adminv1.ListUsergroupsRequest) (*adminv1.ListUsergroupsResponse, error) {
+func (s *Server) EditUsergroup(ctx context.Context, req *adminv1.EditUsergroupRequest) (*adminv1.EditUsergroupResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.usergroup", req.Usergroup),
+		attribute.String("args.description", req.Description),
+	)
+
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to rename org usergroup")
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, usergroup.OrgID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
+		return nil, status.Error(codes.InvalidArgument, "cannot edit all-users group")
+	}
+
+	_, err = s.admin.DB.UpdateUsergroupDescription(ctx, req.Description, usergroup.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.EditUsergroupResponse{}, nil
+}
+
+func (s *Server) ListOrganizationMemberUsergroups(ctx context.Context, req *adminv1.ListOrganizationMemberUsergroupsRequest) (*adminv1.ListOrganizationMemberUsergroupsResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 	)
@@ -145,45 +157,66 @@ func (s *Server) ListUsergroups(ctx context.Context, req *adminv1.ListUsergroups
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	usergroups, err := s.admin.DB.FindOrganizationMemberUsergroups(ctx, org.ID, token.Val, pageSize)
+	members, err := s.admin.DB.FindOrganizationUsergroups(ctx, org.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	orgRoles, err := s.admin.DB.FindOrganizationAllMemberUsergroupRoles(ctx, org.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	orgRolesMap := make(map[string]*database.OrgMemberUsergroupRole)
-	for _, orgRole := range orgRoles {
-		orgRolesMap[orgRole.UsergroupID] = orgRole
-	}
-
-	projRoles, err := s.admin.DB.FindUsergroupAllProjectOrganizationRoles(ctx, org.ID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	projRolesMap := make(map[string][]*database.ProjectMemberUsergroupRole)
-	for _, projRole := range projRoles {
-		projRolesMap[projRole.UsergroupID] = append(projRolesMap[projRole.UsergroupID], projRole)
 	}
 
 	nextToken := ""
-	if len(usergroups) >= pageSize {
-		nextToken = marshalPageToken(usergroups[len(usergroups)-1].Name)
+	if len(members) >= pageSize {
+		nextToken = marshalPageToken(members[len(members)-1].Name)
 	}
 
-	dtos := make([]*adminv1.Usergroup, len(usergroups))
-	for i, usergroup := range usergroups {
-		orgRole := orgRolesMap[usergroup.ID]
-		projectRoles := projRolesMap[usergroup.ID]
-		dtos[i] = usergroupToPB(usergroup, orgRole, projectRoles)
+	dtos := make([]*adminv1.MemberUsergroup, len(members))
+	for i, usergroup := range members {
+		dtos[i] = memberUsergroupToPB(usergroup)
 	}
 
-	return &adminv1.ListUsergroupsResponse{
-		Usergroups:    dtos,
+	return &adminv1.ListOrganizationMemberUsergroupsResponse{
+		Members:       dtos,
+		NextPageToken: nextToken,
+	}, nil
+}
+
+func (s *Server) ListProjectMemberUsergroups(ctx context.Context, req *adminv1.ListProjectMemberUsergroupsRequest) (*adminv1.ListProjectMemberUsergroupsResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to list project usergroups")
+	}
+
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	members, err := s.admin.DB.FindProjectMemberUsergroups(ctx, proj.ID, token.Val, pageSize)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	nextToken := ""
+	if len(members) >= pageSize {
+		nextToken = marshalPageToken(members[len(members)-1].Name)
+	}
+
+	dtos := make([]*adminv1.MemberUsergroup, len(members))
+	for i, m := range members {
+		dtos[i] = memberUsergroupToPB(m)
+	}
+
+	return &adminv1.ListProjectMemberUsergroupsResponse{
+		Members:       dtos,
 		NextPageToken: nextToken,
 	}, nil
 }
@@ -194,17 +227,17 @@ func (s *Server) DeleteUsergroup(ctx context.Context, req *adminv1.DeleteUsergro
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org usergroup")
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	org, err := s.admin.DB.FindOrganization(ctx, usergroup.OrgID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -217,6 +250,7 @@ func (s *Server) DeleteUsergroup(ctx context.Context, req *adminv1.DeleteUsergro
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	return &adminv1.DeleteUsergroupResponse{}, nil
 }
 
@@ -227,23 +261,23 @@ func (s *Server) AddOrganizationMemberUsergroup(ctx context.Context, req *adminv
 		attribute.String("args.role", req.Role),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set org usergroup role")
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	org, err := s.admin.DB.FindOrganization(ctx, usergroup.OrgID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
-		return nil, status.Error(codes.InvalidArgument, "cannot set role for all-users group")
+		return nil, status.Error(codes.InvalidArgument, "cannot add role for all-users group")
 	}
 
 	role, err := s.admin.DB.FindOrganizationRole(ctx, req.Role)
@@ -266,17 +300,17 @@ func (s *Server) SetOrganizationMemberUsergroupRole(ctx context.Context, req *ad
 		attribute.String("args.role", req.Role),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set org usergroup role")
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	org, err := s.admin.DB.FindOrganization(ctx, usergroup.OrgID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -304,23 +338,23 @@ func (s *Server) RemoveOrganizationMemberUsergroup(ctx context.Context, req *adm
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+	if !claims.OrganizationPermissions(ctx, usergroup.OrgID).ManageOrgMembers {
 		return nil, status.Error(codes.PermissionDenied, "not allowed to revoke org usergroup role")
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	org, err := s.admin.DB.FindOrganization(ctx, usergroup.OrgID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
-		return nil, status.Error(codes.InvalidArgument, "cannot revoke role from all-users group")
+		return nil, status.Error(codes.InvalidArgument, "cannot remove role from all-users group")
 	}
 
 	err = s.admin.DB.DeleteOrganizationMemberUsergroup(ctx, usergroup.ID, org.ID)
@@ -346,7 +380,7 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to set project usergroup role")
+		return nil, status.Error(codes.PermissionDenied, "not allowed to add project usergroup role")
 	}
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
@@ -354,18 +388,9 @@ func (s *Server) AddProjectMemberUsergroup(ctx context.Context, req *adminv1.Add
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, proj.OrganizationID)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
-		return nil, status.Error(codes.InvalidArgument, "cannot set role for all-users group")
 	}
 
 	err = s.admin.DB.InsertProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
@@ -399,18 +424,9 @@ func (s *Server) SetProjectMemberUsergroupRole(ctx context.Context, req *adminv1
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, proj.OrganizationID)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
-		return nil, status.Error(codes.InvalidArgument, "cannot set role for all-users group")
 	}
 
 	err = s.admin.DB.UpdatedProjectMemberUsergroup(ctx, usergroup.ID, proj.ID, role.ID)
@@ -438,18 +454,9 @@ func (s *Server) RemoveProjectMemberUsergroup(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.PermissionDenied, "not allowed to revoke project usergroup role")
 	}
 
-	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, proj.OrganizationID)
+	usergroup, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if org.AllUsergroupID != nil && usergroup.ID == *org.AllUsergroupID {
-		return nil, status.Error(codes.InvalidArgument, "cannot revoke role from all-users group")
 	}
 
 	err = s.admin.DB.DeleteProjectMemberUsergroup(ctx, usergroup.ID, proj.ID)
@@ -466,12 +473,12 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	org, err := s.admin.DB.FindOrganization(ctx, group.OrgID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -485,28 +492,17 @@ func (s *Server) AddUsergroupMemberUser(ctx context.Context, req *adminv1.AddUse
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	isOrgMember, err := s.admin.DB.CheckUserIsAnOrganizationMember(ctx, user.ID, org.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !isOrgMember {
+		return nil, status.Error(codes.InvalidArgument, "user is not a member of the organization")
+	}
+
 	claims := auth.GetClaims(ctx)
-
-	orgRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, org.ID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if orgRole != nil {
-		if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
-			return nil, status.Error(codes.PermissionDenied, "not allowed to add usergroup members")
-		}
-	}
-
-	projectRoles, err := s.admin.DB.FindProjectMemberUsergroupRoles(ctx, group.ID, org.ID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	for _, role := range projectRoles {
-		if !claims.ProjectPermissions(ctx, org.ID, role.ProjectID).ManageProjectMembers {
-			return nil, status.Error(codes.PermissionDenied, "not allowed to add usergroup members")
-		}
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to add usergroup members")
 	}
 
 	err = s.admin.DB.InsertUsergroupMemberUser(ctx, group.ID, user.ID)
@@ -526,38 +522,14 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	claims := auth.GetClaims(ctx)
-
-	orgRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, org.ID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if orgRole != nil {
-		if !claims.OrganizationPermissions(ctx, org.ID).ReadOrgMembers {
-			return nil, status.Error(codes.PermissionDenied, "not allowed to list usergroup members")
-		}
-	}
-
-	projectRoles, err := s.admin.DB.FindProjectMemberUsergroupRoles(ctx, group.ID, org.ID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	for _, role := range projectRoles {
-		if !claims.ProjectPermissions(ctx, org.ID, role.ProjectID).ReadProjectMembers {
-			return nil, status.Error(codes.PermissionDenied, "not allowed to list usergroup members")
-		}
+	if !claims.OrganizationPermissions(ctx, group.OrgID).ReadOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to list usergroup members")
 	}
 
 	members, err := s.admin.DB.FindUsergroupMembersUsers(ctx, group.ID)
@@ -565,16 +537,16 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	usergroupMembers := make([]*adminv1.MemberUser, len(members))
+	dtos := make([]*adminv1.MemberUser, len(members))
 	for i, member := range members {
-		usergroupMembers[i] = &adminv1.MemberUser{
+		dtos[i] = &adminv1.MemberUser{
 			UserId:    member.ID,
 			UserEmail: member.Email,
 			UserName:  member.DisplayName,
 		}
 	}
 
-	return &adminv1.ListUsergroupMemberUsersResponse{Members: usergroupMembers}, nil
+	return &adminv1.ListUsergroupMemberUsersResponse{Members: dtos}, nil
 }
 
 func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.RemoveUsergroupMemberUserRequest) (*adminv1.RemoveUsergroupMemberUserResponse, error) {
@@ -583,12 +555,17 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 		attribute.String("args.usergroup", req.Usergroup),
 	)
 
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
+	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Organization, req.Usergroup)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	group, err := s.admin.DB.FindUsergroupByName(ctx, req.Usergroup, org.ID)
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, group.OrgID).ManageOrgMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to remove usergroup members")
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, group.OrgID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -602,30 +579,6 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	claims := auth.GetClaims(ctx)
-
-	orgRole, err := s.admin.DB.FindOrganizationMemberUsergroupRole(ctx, group.ID, org.ID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if orgRole != nil {
-		if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
-			return nil, status.Error(codes.PermissionDenied, "not allowed to remove usergroup members")
-		}
-	}
-
-	projectRoles, err := s.admin.DB.FindProjectMemberUsergroupRoles(ctx, group.ID, org.ID)
-	if err != nil && !errors.Is(err, database.ErrNotFound) {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	for _, role := range projectRoles {
-		if !claims.ProjectPermissions(ctx, org.ID, role.ProjectID).ManageProjectMembers {
-			return nil, status.Error(codes.PermissionDenied, "not allowed to remove usergroup members")
-		}
-	}
-
 	err = s.admin.DB.DeleteUsergroupMemberUser(ctx, group.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -634,63 +587,22 @@ func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.Rem
 	return &adminv1.RemoveUsergroupMemberUserResponse{}, nil
 }
 
-func (s *Server) RemoveUsergroupsMemberUser(ctx context.Context, req *adminv1.RemoveUsergroupsMemberUserRequest) (*adminv1.RemoveUsergroupsMemberUserResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
-	)
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Organization)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	user, err := s.admin.DB.FindUserByEmail(ctx, req.Email)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	claims := auth.GetClaims(ctx)
-
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrgMembers {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to remove usergroup members")
-	}
-
-	err = s.admin.DB.DeleteUsergroupsMemberUser(ctx, user.ID, org.ID, *org.AllUsergroupID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	return &adminv1.RemoveUsergroupsMemberUserResponse{}, nil
-}
-
-func usergroupToPB(group *database.Usergroup, orgRole *database.OrgMemberUsergroupRole, projectRoles []*database.ProjectMemberUsergroupRole) *adminv1.Usergroup {
+func usergroupToPB(group *database.Usergroup) *adminv1.Usergroup {
 	return &adminv1.Usergroup{
-		GroupId:      group.ID,
-		GroupName:    group.Name,
-		CreatedOn:    timestamppb.New(group.CreatedOn),
-		UpdatedOn:    timestamppb.New(group.UpdatedOn),
-		OrgRole:      orgRoleToPB(orgRole),
-		ProjectRoles: projectRolesToPB(projectRoles),
+		GroupId:          group.ID,
+		GroupName:        group.Name,
+		GroupDescription: group.Description,
+		CreatedOn:        timestamppb.New(group.CreatedOn),
+		UpdatedOn:        timestamppb.New(group.UpdatedOn),
 	}
 }
 
-func orgRoleToPB(role *database.OrgMemberUsergroupRole) *adminv1.OrgMemberUsergroupRole {
-	if role == nil {
-		return nil
+func memberUsergroupToPB(member *database.MemberUsergroup) *adminv1.MemberUsergroup {
+	return &adminv1.MemberUsergroup{
+		GroupId:   member.ID,
+		GroupName: member.Name,
+		RoleName:  member.RoleName,
+		CreatedOn: timestamppb.New(member.CreatedOn),
+		UpdatedOn: timestamppb.New(member.UpdatedOn),
 	}
-	return &adminv1.OrgMemberUsergroupRole{
-		OrgName: role.OrgName,
-		Role:    role.RoleName,
-	}
-}
-
-func projectRolesToPB(roles []*database.ProjectMemberUsergroupRole) []*adminv1.ProjectMemberUsergroupRole {
-	pbRoles := make([]*adminv1.ProjectMemberUsergroupRole, len(roles))
-	for i, role := range roles {
-		pbRoles[i] = &adminv1.ProjectMemberUsergroupRole{
-			ProjectName: role.ProjectName,
-			Role:        role.RoleName,
-		}
-	}
-	return pbRoles
 }

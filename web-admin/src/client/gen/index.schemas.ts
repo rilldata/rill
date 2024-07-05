@@ -123,12 +123,16 @@ export type AdminServiceCreateAssetBody = {
   extension?: string;
 };
 
+export type AdminServiceEditUsergroupBody = {
+  description?: string;
+};
+
 export type AdminServiceGetUsergroupParams = {
   pageSize?: number;
   pageToken?: string;
 };
 
-export type AdminServiceListUsergroupsParams = {
+export type AdminServiceListOrganizationMemberUsergroupsParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -215,6 +219,11 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
 };
 
+export type AdminServiceListProjectMemberUsergroupsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceRemoveOrganizationMemberUserParams = {
   keepProjectRoles?: boolean;
 };
@@ -292,10 +301,9 @@ export interface V1VirtualFile {
 export interface V1Usergroup {
   groupId?: string;
   groupName?: string;
+  groupDescription?: string;
   createdOn?: string;
   updatedOn?: string;
-  orgRole?: V1OrgMemberUsergroupRole;
-  projectRoles?: V1ProjectMemberUsergroupRole[];
 }
 
 export interface V1UserQuotas {
@@ -564,10 +572,6 @@ export interface V1RemoveWhitelistedDomainResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveUsergroupsMemberUserResponse {
-  [key: string]: any;
-}
-
 export interface V1RemoveUsergroupMemberUserResponse {
   [key: string]: any;
 }
@@ -641,11 +645,6 @@ export interface V1ProjectPermissions {
   manageBookmarks?: boolean;
 }
 
-export interface V1ProjectMemberUsergroupRole {
-  projectName?: string;
-  role?: string;
-}
-
 export type V1ProjectAnnotations = { [key: string]: string };
 
 export interface V1Project {
@@ -707,11 +706,6 @@ export interface V1Organization {
   updatedOn?: string;
 }
 
-export interface V1OrgMemberUsergroupRole {
-  orgName?: string;
-  role?: string;
-}
-
 export type V1Operation = (typeof V1Operation)[keyof typeof V1Operation];
 
 // eslint-disable-next-line @typescript-eslint/no-redeclare
@@ -730,6 +724,14 @@ export const V1Operation = {
   OPERATION_LIKE: "OPERATION_LIKE",
   OPERATION_NLIKE: "OPERATION_NLIKE",
 } as const;
+
+export interface V1MemberUsergroup {
+  groupId?: string;
+  groupName?: string;
+  roleName?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
 
 export interface V1MemberUser {
   userId?: string;
@@ -758,11 +760,6 @@ export interface V1MagicAuthToken {
 
 export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
-}
-
-export interface V1ListUsergroupsResponse {
-  usergroups?: V1Usergroup[];
-  nextPageToken?: string;
 }
 
 export interface V1ListUsergroupMemberUsersResponse {
@@ -799,6 +796,11 @@ export interface V1ListProjectMemberUsersResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListProjectMemberUsergroupsResponse {
+  members?: V1MemberUsergroup[];
+  nextPageToken?: string;
+}
+
 export interface V1ListProjectInvitesResponse {
   invites?: V1UserInvite[];
   nextPageToken?: string;
@@ -811,6 +813,11 @@ export interface V1ListOrganizationsResponse {
 
 export interface V1ListOrganizationMemberUsersResponse {
   members?: V1MemberUser[];
+  nextPageToken?: string;
+}
+
+export interface V1ListOrganizationMemberUsergroupsResponse {
+  members?: V1MemberUsergroup[];
   nextPageToken?: string;
 }
 
@@ -1000,6 +1007,10 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_XLSX: "EXPORT_FORMAT_XLSX",
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
 } as const;
+
+export interface V1EditUsergroupResponse {
+  [key: string]: any;
+}
 
 export interface V1EditReportResponse {
   [key: string]: any;

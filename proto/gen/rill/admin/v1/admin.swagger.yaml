@@ -487,6 +487,39 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/project/{project}/usergroups:
+    get:
+      summary: ListProjectMemberUsergroups lists the org's user groups
+      operationId: AdminService_ListProjectMemberUsergroups
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberUsergroupsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/alerts:
     post:
       summary: CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
@@ -1467,13 +1500,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/usergroups:
     get:
-      summary: ListUsergroups lists the org's user groups
-      operationId: AdminService_ListUsergroups
+      summary: ListOrganizationMemberUsergroups lists the org's user groups
+      operationId: AdminService_ListOrganizationMemberUsergroups
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListUsergroupsResponse'
+            $ref: '#/definitions/v1ListOrganizationMemberUsergroupsResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1605,6 +1638,37 @@ paths:
             type: object
             properties:
               name:
+                type: string
+      tags:
+        - AdminService
+    put:
+      summary: EditUsergroup renames the user group
+      operationId: AdminService_EditUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              description:
                 type: string
       tags:
         - AdminService
@@ -1776,30 +1840,6 @@ paths:
             properties:
               role:
                 type: string
-      tags:
-        - AdminService
-  /v1/organizations/{organization}/usergroups/members/{email}:
-    delete:
-      summary: RemoveUsergroupsMemberUser removes member from the organization's user groups
-      operationId: AdminService_RemoveUsergroupsMemberUser
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1RemoveUsergroupsMemberUserResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      parameters:
-        - name: organization
-          in: path
-          required: true
-          type: string
-        - name: email
-          in: path
-          required: true
-          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/whitelisted:
@@ -3248,6 +3288,8 @@ definitions:
     type: object
   v1EditReportResponse:
     type: object
+  v1EditUsergroupResponse:
+    type: object
   v1ExportFormat:
     type: string
     enum:
@@ -3510,6 +3552,16 @@ definitions:
           $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
+  v1ListOrganizationMemberUsergroupsResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUsergroup'
+      nextPageToken:
+        type: string
   v1ListOrganizationMemberUsersResponse:
     type: object
     properties:
@@ -3538,6 +3590,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1UserInvite'
+      nextPageToken:
+        type: string
+  v1ListProjectMemberUsergroupsResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUsergroup'
       nextPageToken:
         type: string
   v1ListProjectMemberUsersResponse:
@@ -3608,16 +3670,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MemberUser'
-  v1ListUsergroupsResponse:
-    type: object
-    properties:
-      usergroups:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1Usergroup'
-      nextPageToken:
-        type: string
   v1ListWhitelistedDomainsResponse:
     type: object
     properties:
@@ -3673,6 +3725,21 @@ definitions:
       updatedOn:
         type: string
         format: date-time
+  v1MemberUsergroup:
+    type: object
+    properties:
+      groupId:
+        type: string
+      groupName:
+        type: string
+      roleName:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1Operation:
     type: string
     enum:
@@ -3690,13 +3757,6 @@ definitions:
       - OPERATION_LIKE
       - OPERATION_NLIKE
     default: OPERATION_UNSPECIFIED
-  v1OrgMemberUsergroupRole:
-    type: object
-    properties:
-      orgName:
-        type: string
-      role:
-        type: string
   v1Organization:
     type: object
     properties:
@@ -3817,13 +3877,6 @@ definitions:
       updatedOn:
         type: string
         format: date-time
-  v1ProjectMemberUsergroupRole:
-    type: object
-    properties:
-      projectName:
-        type: string
-      role:
-        type: string
   v1ProjectPermissions:
     type: object
     properties:
@@ -3910,8 +3963,6 @@ definitions:
   v1RemoveProjectWhitelistedDomainResponse:
     type: object
   v1RemoveUsergroupMemberUserResponse:
-    type: object
-  v1RemoveUsergroupsMemberUserResponse:
     type: object
   v1RemoveWhitelistedDomainResponse:
     type: object
@@ -4297,19 +4348,14 @@ definitions:
         type: string
       groupName:
         type: string
+      groupDescription:
+        type: string
       createdOn:
         type: string
         format: date-time
       updatedOn:
         type: string
         format: date-time
-      orgRole:
-        $ref: '#/definitions/v1OrgMemberUsergroupRole'
-      projectRoles:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1ProjectMemberUsergroupRole'
   v1VirtualFile:
     type: object
     properties:
