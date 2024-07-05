@@ -441,6 +441,15 @@ func (c *connection) DeleteProjectWhitelistedDomain(ctx context.Context, id stri
 	return checkDeleteRow("project whitelist domain", res, err)
 }
 
+func (c *connection) FindDeployments(ctx context.Context, createdAfter time.Time, limit int) ([]*database.Deployment, error) {
+	var res []*database.Deployment
+	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT d.* FROM deployments d WHERE d.created_on > $1 ORDER BY d.created_on LIMIT $2", createdAfter, limit)
+	if err != nil {
+		return nil, parseErr("deployments", err)
+	}
+	return res, nil
+}
+
 // FindExpiredDeployments returns all the deployments which are expired as per prod ttl
 func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
@@ -554,19 +563,6 @@ func (c *connection) ResolveRuntimeSlotsUsed(ctx context.Context) ([]*database.R
 	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT d.runtime_host, SUM(d.slots) AS slots_used FROM deployments d GROUP BY d.runtime_host")
 	if err != nil {
 		return nil, parseErr("slots used", err)
-	}
-	return res, nil
-}
-
-func (c *connection) FindAllocatedRuntimes(ctx context.Context, afterRuntime string, limit int) ([]*database.AllocatedRuntime, error) {
-	var res []*database.AllocatedRuntime
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT DISTINCT ON (lower(d.runtime_host)) runtime_host, d.runtime_audience FROM deployments d 
-		WHERE lower(d.runtime_host) > lower($1)
-		ORDER BY lower(d.runtime_host)
-		LIMIT $2`, afterRuntime, limit)
-	if err != nil {
-		return nil, parseErr("deployments", err)
 	}
 	return res, nil
 }

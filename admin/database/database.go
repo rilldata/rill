@@ -86,6 +86,7 @@ type DB interface {
 	InsertProjectWhitelistedDomain(ctx context.Context, opts *InsertProjectWhitelistedDomainOptions) (*ProjectWhitelistedDomain, error)
 	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
+	FindDeployments(ctx context.Context, createdAfter time.Time, limit int) ([]*Deployment, error)
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
@@ -99,9 +100,6 @@ type DB interface {
 	CountDeploymentsForOrganization(ctx context.Context, orgID string) (*DeploymentsCount, error)
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
-
-	// FindAllocatedRuntimes returns runtimes on which atleast one instance is allocated
-	FindAllocatedRuntimes(ctx context.Context, afterRuntime string, limit int) ([]*AllocatedRuntime, error)
 
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
@@ -366,6 +364,19 @@ const (
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusError       DeploymentStatus = 4
 )
+
+func (d DeploymentStatus) String() string {
+	switch d {
+	case DeploymentStatusPending:
+		return "Pending"
+	case DeploymentStatusOK:
+		return "OK"
+	case DeploymentStatusError:
+		return "Error"
+	default:
+		return "Unspecified"
+	}
+}
 
 // Deployment is a single deployment of a git branch.
 // Deployments belong to a project.

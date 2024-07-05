@@ -68,7 +68,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "delete_unused_assets", w.deleteUnusedAssets, 6*time.Hour)
 	})
 	group.Go(func() error {
-		return w.schedule(ctx, "runtime_health_check", w.runtimeHealthCheck, 10*time.Minute)
+		return w.schedule(ctx, "deployments_health_check", w.deploymentsHealthCheck, 10*time.Minute)
 	})
 
 	if w.admin.Biller.GetReportingWorkerCron() != "" {
