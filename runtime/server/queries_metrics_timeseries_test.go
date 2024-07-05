@@ -752,6 +752,7 @@ func TestServer_MetricsViewTimeseries_export_xlsx(t *testing.T) {
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MeasureNames:    []string{"measure_0"},
+		SecurityClaims:  testClaims(),
 	}
 
 	var buf bytes.Buffer
@@ -781,6 +782,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 		MetricsViewName: "ad_bids_metrics",
 		TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 		MeasureNames:    []string{"measure_0"},
+		SecurityClaims:  testClaims(),
 	}
 
 	var buf bytes.Buffer
@@ -810,4 +812,8 @@ func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metrics
 	require.NoError(t, err)
 
 	return mv, resolvedSecurity
+}
+
+func testClaims() *runtime.SecurityClaims {
+	return &runtime.SecurityClaims{SkipChecks: true}
 }

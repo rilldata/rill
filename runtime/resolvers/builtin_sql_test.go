@@ -29,9 +29,9 @@ func TestBuiltinSQL(t *testing.T) {
 		wantErr    string
 	}{
 		{
-			args:  map[string]any{"sql": "SELECT a FROM foo"},
-			attrs: map[string]any{},
-			want:  `[{"a":10}]`,
+			args:       map[string]any{"sql": "SELECT a FROM foo"},
+			skipChecks: true,
+			want:       `[{"a":10}]`,
 		},
 		{
 			args:  map[string]any{"sql": "SELECT a FROM foo"},
@@ -56,6 +56,7 @@ func TestBuiltinSQL(t *testing.T) {
 		if tc.wantErr != "" {
 			require.Equal(t, tc.wantErr, err.Error())
 		} else {
+			require.NoError(t, err)
 			require.Equal(t, []byte(tc.want), res.Data)
 		}
 	}
