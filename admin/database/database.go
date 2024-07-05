@@ -100,6 +100,9 @@ type DB interface {
 
 	ResolveRuntimeSlotsUsed(ctx context.Context) ([]*RuntimeSlotsUsed, error)
 
+	// FindAllocatedRuntimes returns runtimes on which atleast one instance is allocated
+	FindAllocatedRuntimes(ctx context.Context, afterRuntime string, limit int) ([]*AllocatedRuntime, error)
+
 	FindUsers(ctx context.Context) ([]*User, error)
 	FindUsersByEmailPattern(ctx context.Context, emailPattern, afterEmail string, limit int) ([]*User, error)
 	FindUser(ctx context.Context, id string) (*User, error)
@@ -403,6 +406,12 @@ type InsertDeploymentOptions struct {
 type RuntimeSlotsUsed struct {
 	RuntimeHost string `db:"runtime_host"`
 	SlotsUsed   int    `db:"slots_used"`
+}
+
+// AllocatedRuntime is the result of FindAllocatedRuntimes query.
+type AllocatedRuntime struct {
+	Host     string `db:"runtime_host"`
+	Audience string `db:"runtime_audience"`
 }
 
 // User is a person registered in Rill.

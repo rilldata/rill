@@ -3,6 +3,7 @@ package server
 import (
 	"context"
 	"net"
+	"net/http"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -66,6 +67,39 @@ func (s *Server) InstanceHealth(ctx context.Context, req *runtimev1.InstanceHeal
 	return &runtimev1.InstanceHealthResponse{
 		InstanceHealth: h.To(),
 	}, nil
+}
+
+func (s *Server) healthCheckHandler(w http.ResponseWriter, req *http.Request) {
+	ctx := req.Context()
+	if err := s.limiter.Ping(ctx); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// internet access
+	if err := pingCloudfareDNS(ctx); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	// runtime health
+	// we don't return 5xx on olap errors and hanging connections
+	status, err := s.runtime.Health(ctx)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	if status.Registry != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	for _, h := range status.InstancesHealth {
+		if h.Controller != nil || h.Repo != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+	}
+	w.WriteHeader(http.StatusOK)
 }
 
 func pingCloudfareDNS(ctx context.Context) error {
