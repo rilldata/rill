@@ -130,7 +130,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	qry.Limit = &zero
 
 	// Execute the query to get the schema
-	ast, err := NewAST(e.metricsView, nil, qry, e.olap.Dialect())
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}

@@ -225,9 +225,13 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, claims 
 		return cached.(*ResolvedSecurity), nil
 	}
 
+	attrs := claims.UserAttributes
+	if attrs == nil {
+		attrs = make(map[string]any)
+	}
 	templateData := rillv1.TemplateData{
 		Environment: environment,
-		User:        claims.UserAttributes,
+		User:        attrs,
 		Self:        rillv1.TemplateResource{Meta: r.Meta},
 	}
 

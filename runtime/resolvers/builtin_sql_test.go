@@ -22,10 +22,11 @@ func TestBuiltinSQL(t *testing.T) {
 	require.NoError(t, err)
 
 	tt := []struct {
-		args    map[string]any
-		attrs   map[string]any
-		want    string
-		wantErr string
+		args       map[string]any
+		attrs      map[string]any
+		skipChecks bool
+		want       string
+		wantErr    string
 	}{
 		{
 			args:  map[string]any{"sql": "SELECT a FROM foo"},
@@ -50,7 +51,7 @@ func TestBuiltinSQL(t *testing.T) {
 			Resolver:           api.Spec.Resolver,
 			ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 			Args:               tc.args,
-			Claims:             &runtime.SecurityClaims{UserAttributes: tc.attrs},
+			Claims:             &runtime.SecurityClaims{UserAttributes: tc.attrs, SkipChecks: tc.skipChecks},
 		})
 		if tc.wantErr != "" {
 			require.Equal(t, tc.wantErr, err.Error())

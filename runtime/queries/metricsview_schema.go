@@ -52,12 +52,12 @@ func (q *MetricsViewSchema) UnmarshalResult(v any) error {
 
 func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Resolve metrics view
-	mv, _, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
+	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, nil, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, sec, priority)
 	if err != nil {
 		return err
 	}

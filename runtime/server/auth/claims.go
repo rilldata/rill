@@ -111,7 +111,9 @@ type anonClaims struct{}
 
 var _ Claims = (*anonClaims)(nil)
 
-var emptySecurityClaims = &runtime.SecurityClaims{}
+var emptySecurityClaims = &runtime.SecurityClaims{
+	UserAttributes: map[string]any{},
+}
 
 func (c anonClaims) Subject() string {
 	return ""

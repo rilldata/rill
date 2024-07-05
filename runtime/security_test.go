@@ -406,10 +406,9 @@ func TestResolveMetricsView(t *testing.T) {
 					},
 				},
 			},
-			// since aud is nil in test case, open policy will be applied which same as local dev experience
-
-			wantAccess: true,
-			wantErr:    false,
+			wantAccess:    false,
+			wantRowFilter: "domain = '<no value>'",
+			wantErr:       false,
 		},
 		{
 			name: "test_empty_access",
