@@ -71,7 +71,7 @@
   $: [xMin, xMax] = extent(sparkData, (d) => d["ts"]);
 </script>
 
-<div class="flex flex-row">
+<div class="flex flex-row bg-white">
   {#if $measure.data && $measureValue.data}
     <MeasureBigNumber
       measure={$measure.data}

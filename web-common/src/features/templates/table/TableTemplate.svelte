@@ -1,9 +1,11 @@
 <script lang="ts">
+  import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import {
     PivotChipType,
     PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
+  import TableRenderer from "@rilldata/web-common/features/templates/table/TableRenderer.svelte";
   import { TableProperties } from "@rilldata/web-common/features/templates/types";
   import { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
@@ -52,13 +54,19 @@
   $: stateManagerContext = createStateManagers({
     queryClient,
     metricsViewName: tableProperties.metric_view,
-    extraKeyPrefix: "custom-table",
+    extraKeyPrefix: "_custom-table",
   });
 
-  $: console.log($pivotConfig);
+  $: pivotDataStore = createPivotDataStore(stateManagerContext, pivotConfig);
 </script>
 
 <div>
-  Table
-  {JSON.stringify(tableProperties)}
+  {#if $pivotDataStore}
+    <TableRenderer
+      metricsViewName={tableProperties.metric_view + "_custom-table"}
+      {pivotDataStore}
+      config={$pivotConfig}
+      pivotDashboardStore={pivotState}
+    />
+  {/if}
 </div>

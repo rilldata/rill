@@ -288,7 +288,7 @@ let expandedTableMap: Record<string, PivotDataRow[]> = {};
  *     v
  * Table data and column definitions
  */
-function createPivotDataStore(
+export function createPivotDataStore(
   ctx: StateManagers,
   configStore: Readable<PivotDataStoreConfig> | undefined = undefined,
 ): PivotDataStore {
