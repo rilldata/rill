@@ -153,6 +153,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	} else if claims.OwnerType() == auth.OwnerTypeService {
+		attr = map[string]any{"admin": true}
 	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 		if !ok {
