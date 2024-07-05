@@ -22,6 +22,10 @@
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
   import LeaderboardValueCell from "./LeaderboardValueCell.svelte";
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
+  import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
+  import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
+  import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
+  import LeaderboardRow from "./LeaderboardRow.svelte";
 
   const slice = 7;
 
@@ -60,7 +64,11 @@
         isPercentOfTotal,
         isHidden,
       },
-      dimensions: { getDimensionByName, getDimensionDisplayName },
+      dimensions: {
+        getDimensionByName,
+        getDimensionDisplayName,
+        getDimensionDescription,
+      },
       activeMeasure: { activeMeasureName },
       dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
@@ -128,6 +136,7 @@
 
   let hovered: boolean;
   $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
+  $: dimensionDescription = $getDimensionDescription(dimensionName);
 </script>
 
 <div
@@ -196,16 +205,50 @@
   {/if}
 </div>
 
-<table class="outline">
+<table>
   <colgroup>
-    <col style:width="200px" />
-    <col style:width="40px" />
-    <col style:width="40px" />
-    <col style:width="40px" />
+    <col style:width="20px" />
+    <col style:width="184px" />
+    <col style:width="50px" />
+    <col style:width="50px" />
+    <col style:width="50px" />
   </colgroup>
   <thead>
     <tr>
-      <th>{$getDimensionDisplayName(dimensionName)}</th>
+      <th> </th>
+      <th>
+        <Tooltip distance={16} location="top">
+          <button
+            on:click={() => setPrimaryDimension(dimensionName)}
+            class="ui-header-primary"
+            aria-label="Open dimension details"
+          >
+            {$getDimensionDisplayName(dimensionName)}
+          </button>
+          <TooltipContent slot="tooltip-content">
+            <TooltipTitle>
+              <svelte:fragment slot="name">
+                {$getDimensionDisplayName(dimensionName)}
+              </svelte:fragment>
+              <svelte:fragment slot="description" />
+            </TooltipTitle>
+            <TooltipShortcutContainer>
+              <div>
+                {#if dimensionDescription}
+                  {dimensionDescription}
+                {:else}
+                  The leaderboard metrics for {$getDimensionDisplayName(
+                    dimensionName,
+                  )}
+                {/if}
+              </div>
+              <Shortcut />
+              <div>Expand leaderboard</div>
+              <Shortcut>Click</Shortcut>
+            </TooltipShortcutContainer>
+          </TooltipContent>
+        </Tooltip>
+      </th>
       <th>
         <button
           on:click={() => toggleSort(SortType.VALUE)}
@@ -249,20 +292,12 @@
   </thead>
   <tbody>
     {#each aboveTheFold as itemData (itemData.dimensionValue)}
-      <tr>
-        <td>
-          <LeaderboardValueCell {itemData} {dimensionName} />
-        </td>
-        <td>
-          <FormattedDataType type="INTEGER" value={itemData.value} />
-        </td>
-        {#if $isTimeComparisonActive}
-          <td>{itemData.deltaRel}</td>
-          <td>{itemData.deltaAbs}</td>
-        {:else if $isPercentOfTotal}
-          <td>{itemData.pctOfTotal}</td>
-        {/if}
-      </tr>
+      <LeaderboardRow
+        {dimensionName}
+        {itemData}
+        isPercentOfTotal={$isPercentOfTotal}
+        isTimeComparisonActive={$isTimeComparisonActive}
+      />
     {/each}
     <!-- place the selected values that are not above the fold here -->
     {#if selectedBelowTheFold?.length}
@@ -279,18 +314,19 @@
   table {
     @apply p-0 m-0 border-spacing-0 border-collapse w-fit;
     @apply font-normal cursor-pointer select-none;
-    @apply table-fixed;
+    /* @apply table-fixed; */
   }
 
   td {
-    @apply text-right truncate border;
+    @apply text-right truncate;
+    height: 22px;
   }
 
   td:first-of-type {
     @apply text-left;
   }
 
-  tr:hover {
+  tbody tr:hover {
     @apply bg-gray-100;
   }
 
@@ -301,13 +337,21 @@
 
   th {
     @apply text-right;
+    height: 32px;
+  }
+
+  th:not(:nth-of-type(2)) button {
+    @apply justify-end;
   }
 
   button {
-    @apply size-full flex items-center justify-end;
+    @apply size-full flex items-center;
   }
 
   th:first-of-type {
     @apply text-left;
+  }
+  thead {
+    @apply border-b;
   }
 </style>

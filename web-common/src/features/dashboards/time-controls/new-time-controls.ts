@@ -112,7 +112,7 @@ class IntervalStore {
   updateInterval(interval: Interval) {
     this._interval.set(interval);
   }
-
+  Lea;
   updateEnd(end: DateTime) {
     this._interval.update((i) => i.set({ end }));
   }

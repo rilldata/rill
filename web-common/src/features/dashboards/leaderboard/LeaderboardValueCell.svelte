@@ -109,7 +109,7 @@
         class:ui-copy-disabled={excluded}
         class:ui-copy-strong={!excluded && selected}
       >
-        <FormattedDataType value={label} />
+        <FormattedDataType value={label} truncate />
       </div>
 
       <div
