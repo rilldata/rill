@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { goto } from "$app/navigation";
-  import { WithTogglableFloatingElement } from "@rilldata/web-common/components/floating-element";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { updateDevJWT } from "@rilldata/web-common/features/dashboards/granular-access-policies/updateDevJWT";
-  import { useQueryClient } from "@tanstack/svelte-query";
   import { IconSpaceFixer } from "../../../components/button";
   import { Chip } from "../../../components/chip";
   import Add from "../../../components/icons/Add.svelte";
@@ -10,110 +8,96 @@
   import Check from "../../../components/icons/Check.svelte";
   import EyeIcon from "../../../components/icons/EyeIcon.svelte";
   import Spacer from "../../../components/icons/Spacer.svelte";
-  import { Divider, Menu, MenuItem } from "../../../components/menu";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { selectedMockUserStore } from "./stores";
   import { useMockUsers } from "./useMockUsers";
-
-  let viewAsMenuOpen = false;
-
-  const queryClient = useQueryClient();
-
-  $: mockUsers = useMockUsers($runtime.instanceId);
+  import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
 
   const iconColor = "#15141A";
+
+  let viewAsMenuOpen = false;
+  let open = false;
+
+  $: ({ instanceId } = $runtime);
+
+  $: mockUsers = useMockUsers(instanceId);
 </script>
 
-<WithTogglableFloatingElement
-  alignment="start"
-  distance={8}
-  let:toggleFloatingElement
-  location="bottom"
-  on:close={() => (viewAsMenuOpen = false)}
-  on:open={() => (viewAsMenuOpen = true)}
->
-  {#if $selectedMockUserStore === null}
-    <button
-      class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-center"
-      on:click={toggleFloatingElement}
-    >
-      <EyeIcon size={"16px"} />
-      <div class="flex items-center gap-x-1">
-        <span>View as</span><CaretDownIcon />
-      </div>
-    </button>
-  {:else}
-    <Chip
-      removable
-      on:click={toggleFloatingElement}
-      on:remove={() => {
-        if (viewAsMenuOpen) toggleFloatingElement();
-        updateDevJWT(queryClient, null);
-      }}
-      active={viewAsMenuOpen}
-    >
-      <div slot="body" class="flex gap-x-2">
-        <div>
-          Viewing as <span class="font-bold"
-            >{$selectedMockUserStore.email}</span
-          >
+<DropdownMenu.Root bind:open>
+  <DropdownMenu.Trigger asChild let:builder>
+    {#if $selectedMockUserStore === null}
+      <button
+        use:builder.action
+        {...builder}
+        class="px-3 py-1.5 rounded flex flex-row gap-x-2 hover:bg-gray-200 hover:dark:bg-gray-600 items-center"
+      >
+        <EyeIcon size={"16px"} />
+        <div class="flex items-center gap-x-1">
+          <span>View as</span><CaretDownIcon />
         </div>
-        <div class="flex items-center">
-          <IconSpaceFixer pullRight>
-            <div
-              class="transition-transform"
-              class:-rotate-180={viewAsMenuOpen}
+      </button>
+    {:else}
+      <Chip
+        builders={[builder]}
+        removable
+        slideDuration={0}
+        active={viewAsMenuOpen}
+        on:remove={() => {
+          updateDevJWT(queryClient, null);
+        }}
+      >
+        <div slot="body" class="flex gap-x-2">
+          <div>
+            Viewing as <span class="font-bold"
+              >{$selectedMockUserStore.email}</span
             >
-              <CaretDownIcon size="14px" />
-            </div>
-          </IconSpaceFixer>
+          </div>
+          <div class="flex items-center">
+            <IconSpaceFixer pullRight>
+              <div
+                class="transition-transform"
+                class:-rotate-180={viewAsMenuOpen}
+              >
+                <CaretDownIcon size="14px" />
+              </div>
+            </IconSpaceFixer>
+          </div>
         </div>
-      </div>
-      <svelte:fragment slot="remove-tooltip">
-        <slot name="remove-tooltip-content">Clear view</slot>
-      </svelte:fragment>
-    </Chip>
-  {/if}
-  <Menu
-    minWidth=""
-    on:click-outside={toggleFloatingElement}
-    on:escape={toggleFloatingElement}
-    slot="floating-element"
-    let:toggleFloatingElement
-  >
+        <svelte:fragment slot="remove-tooltip">
+          <slot name="remove-tooltip-content">Clear view</slot>
+        </svelte:fragment>
+      </Chip>
+    {/if}
+  </DropdownMenu.Trigger>
+
+  <DropdownMenu.Content>
     {#if !$mockUsers.data || $mockUsers.data?.length === 0}
-      <MenuItem disabled>No mock users</MenuItem>
+      <DropdownMenu.Item disabled>No mock users</DropdownMenu.Item>
     {:else if $mockUsers.data?.length > 0}
       {#each $mockUsers.data as user}
-        <MenuItem
-          icon
-          selected={$selectedMockUserStore?.email === user?.email}
-          on:select={() => {
-            toggleFloatingElement();
+        <DropdownMenu.Item
+          on:click={() => {
             updateDevJWT(queryClient, user);
           }}
+          class="flex gap-x-2 items-center"
         >
-          <svelte:fragment slot="icon">
-            {#if $selectedMockUserStore?.email === user?.email}
-              <Check size="16px" color={iconColor} />
-            {:else}
-              <Spacer size="16px" />
-            {/if}
-          </svelte:fragment>
+          {#if $selectedMockUserStore?.email === user?.email}
+            <Check size="16px" color={iconColor} />
+          {:else}
+            <Spacer size="16px" />
+          {/if}
+
           {user.email}
-        </MenuItem>
+        </DropdownMenu.Item>
       {/each}
     {/if}
-    <Divider />
-    <MenuItem
-      icon
-      on:select={() => {
-        toggleFloatingElement();
-        goto(`/files/rill.yaml?addMockUser=true`);
-      }}
+    <DropdownMenu.Separator />
+    <DropdownMenu.Item
+      href={`/files/rill.yaml?addMockUser=true`}
+      class="flex gap-x-2 items-center text-black font-normal"
     >
-      <Add color={iconColor} size="16px" slot="icon" />
-      <span>Add mock user</span>
-    </MenuItem>
-  </Menu>
-</WithTogglableFloatingElement>
+      <Add color={iconColor} size="16px" />
+      Add mock user
+    </DropdownMenu.Item>
+  </DropdownMenu.Content>
+</DropdownMenu.Root>
