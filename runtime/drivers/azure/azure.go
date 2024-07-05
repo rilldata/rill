@@ -141,6 +141,11 @@ type Connection struct {
 
 var _ drivers.Handle = &Connection{}
 
+// Ping implements drivers.Handle.
+func (c *Connection) Ping(ctx context.Context) error {
+	return drivers.ErrNotImplemented
+}
+
 // Driver implements drivers.Connection.
 func (c *Connection) Driver() string {
 	return "azure"
