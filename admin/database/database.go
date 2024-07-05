@@ -123,7 +123,7 @@ type DB interface {
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	FindUsergroupMembersUsers(ctx context.Context, groupID string) ([]*MemberUser, error)
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
-	DeleteUsergroupsMemberUser(ctx context.Context, userID, orgID string) error
+	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -196,7 +196,7 @@ type DB interface {
 
 	FindProjectMemberUsergroups(ctx context.Context, projectID, afterName string, limit int) ([]*MemberUsergroup, error)
 	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
-	UpdatedProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
 
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)

@@ -776,7 +776,7 @@ func (c *connection) DeleteUsergroupMemberUser(ctx context.Context, groupID, use
 	return checkDeleteRow("usergroup member", res, err)
 }
 
-func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, userID, orgID string) error {
+func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, `
 		DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id IN (SELECT id FROM usergroups WHERE org_id = $2)
 	`, userID, orgID)
@@ -1407,7 +1407,7 @@ func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, 
 	return nil
 }
 
-func (c *connection) UpdatedProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
+func (c *connection) UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `
 		UPDATE usergroups_projects_roles SET project_role_id = $3 WHERE usergroup_id = $1 AND project_id = $2
 	`, groupID, projectID, roleID)
