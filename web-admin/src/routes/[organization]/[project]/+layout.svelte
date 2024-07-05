@@ -60,10 +60,6 @@
 
   const user = createAdminServiceGetCurrentUser();
 
-  export let data;
-
-  $: console.log({ data });
-
   $: ({ organization, project, token } = $page.params);
   $: onProjectPage = isProjectPage($page);
   $: onMagicLinkPage = !!token;
