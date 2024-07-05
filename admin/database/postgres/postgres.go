@@ -561,12 +561,12 @@ func (c *connection) ResolveRuntimeSlotsUsed(ctx context.Context) ([]*database.R
 func (c *connection) FindAllocatedRuntimes(ctx context.Context, afterRuntime string, limit int) ([]*database.AllocatedRuntime, error) {
 	var res []*database.AllocatedRuntime
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT DISTINCT lower(d.runtime_host) runtime_host, d.runtime_audience FROM deployments d 
+		SELECT DISTINCT ON (lower(d.runtime_host)) runtime_host, d.runtime_audience FROM deployments d 
 		WHERE lower(d.runtime_host) > lower($1)
-		ORDER BY lower(d.runtime_host), d.runtime_audience 
+		ORDER BY lower(d.runtime_host)
 		LIMIT $2`, afterRuntime, limit)
 	if err != nil {
-		return nil, parseErr("slots used", err)
+		return nil, parseErr("deployments", err)
 	}
 	return res, nil
 }
