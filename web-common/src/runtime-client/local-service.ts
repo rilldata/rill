@@ -3,6 +3,7 @@ import { type ConnectError, createPromiseClient } from "@connectrpc/connect";
 import { createConnectTransport } from "@connectrpc/connect-web";
 import { LocalService } from "@rilldata/web-common/proto/gen/rill/local/v1/api_connect";
 import {
+  CheckOrgNameRequest,
   DeployProjectRequest,
   DeployValidationRequest,
   GetCurrentUserRequest,
@@ -209,5 +210,38 @@ export function createLocalServiceGetCurrentUser<
     ...queryOptions,
     queryKey: queryOptions?.queryKey ?? getLocalServiceGetCurrentUserQueryKey(),
     queryFn: queryOptions?.queryFn ?? localServiceGetCurrentUser,
+  });
+}
+
+export function localServiceCheckOrgName(org: string) {
+  return getClient().checkOrgName(
+    new CheckOrgNameRequest({
+      org,
+    }),
+  );
+}
+export const getLocalServiceCheckOrgNameQueryKey = (org: string) => [
+  `/v1/local/check-org-name`,
+  org,
+];
+export function createLocalServiceCheckOrgName<
+  TData = Awaited<ReturnType<typeof localServiceCheckOrgName>>,
+  TError = ConnectError,
+>(
+  org: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof localServiceCheckOrgName>>,
+      TError,
+      TData
+    >;
+  },
+) {
+  const { query: queryOptions } = options ?? {};
+  return createQuery({
+    ...queryOptions,
+    queryKey:
+      queryOptions?.queryKey ?? getLocalServiceCheckOrgNameQueryKey(org),
+    queryFn: queryOptions?.queryFn ?? (() => localServiceCheckOrgName(org)),
   });
 }

@@ -11,7 +11,7 @@
   import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { ProjectDeployer } from "@rilldata/web-common/features/project/deploy";
+  import { ProjectDeployer } from "@rilldata/web-common/features/project/ProjectDeployer";
   import OrgSelectorDialog from "@rilldata/web-common/features/project/OrgSelectorDialog.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
   import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";

@@ -27,6 +27,7 @@ const (
 	LocalService_DeployProject_FullMethodName    = "/rill.local.v1.LocalService/DeployProject"
 	LocalService_RedeployProject_FullMethodName  = "/rill.local.v1.LocalService/RedeployProject"
 	LocalService_GetCurrentUser_FullMethodName   = "/rill.local.v1.LocalService/GetCurrentUser"
+	LocalService_CheckOrgName_FullMethodName     = "/rill.local.v1.LocalService/CheckOrgName"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -49,6 +50,7 @@ type LocalServiceClient interface {
 	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
 	// User returns the locally logged in user
 	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
+	CheckOrgName(ctx context.Context, in *CheckOrgNameRequest, opts ...grpc.CallOption) (*CheckOrgNameResponse, error)
 }
 
 type localServiceClient struct {
@@ -139,6 +141,16 @@ func (c *localServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentU
 	return out, nil
 }
 
+func (c *localServiceClient) CheckOrgName(ctx context.Context, in *CheckOrgNameRequest, opts ...grpc.CallOption) (*CheckOrgNameResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(CheckOrgNameResponse)
+	err := c.cc.Invoke(ctx, LocalService_CheckOrgName_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // LocalServiceServer is the server API for LocalService service.
 // All implementations must embed UnimplementedLocalServiceServer
 // for forward compatibility
@@ -159,6 +171,7 @@ type LocalServiceServer interface {
 	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
 	// User returns the locally logged in user
 	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
+	CheckOrgName(context.Context, *CheckOrgNameRequest) (*CheckOrgNameResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -189,6 +202,9 @@ func (UnimplementedLocalServiceServer) RedeployProject(context.Context, *Redeplo
 }
 func (UnimplementedLocalServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
+}
+func (UnimplementedLocalServiceServer) CheckOrgName(context.Context, *CheckOrgNameRequest) (*CheckOrgNameResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method CheckOrgName not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 
@@ -347,6 +363,24 @@ func _LocalService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _LocalService_CheckOrgName_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CheckOrgNameRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).CheckOrgName(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_CheckOrgName_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).CheckOrgName(ctx, req.(*CheckOrgNameRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // LocalService_ServiceDesc is the grpc.ServiceDesc for LocalService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -385,6 +419,10 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetCurrentUser",
 			Handler:    _LocalService_GetCurrentUser_Handler,
+		},
+		{
+			MethodName: "CheckOrgName",
+			Handler:    _LocalService_CheckOrgName_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

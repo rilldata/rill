@@ -1,4 +1,5 @@
 import { ConnectError } from "@connectrpc/connect";
+import { getOrgName } from "@rilldata/web-common/features/project/getOrgName";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { DeployValidationResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import {
@@ -90,6 +91,10 @@ export class ProjectDeployer {
       });
       window.open(resp.frontendUrl, "__target");
     } else {
+      org ??= validation.rillUserOrgs[0];
+      if (!org) {
+        org = await getOrgName();
+      }
       const resp = await get(this.deployMutation).mutateAsync({
         projectName: validation.localProjectName,
         org: org ?? validation.rillUserOrgs[0],

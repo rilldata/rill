@@ -1810,3 +1810,211 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = GetCurrentUserResponseValidationError{}
+
+// Validate checks the field values on CheckOrgNameRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CheckOrgNameRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CheckOrgNameRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CheckOrgNameRequestMultiError, or nil if none found.
+func (m *CheckOrgNameRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CheckOrgNameRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Org
+
+	if len(errors) > 0 {
+		return CheckOrgNameRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// CheckOrgNameRequestMultiError is an error wrapping multiple validation
+// errors returned by CheckOrgNameRequest.ValidateAll() if the designated
+// constraints aren't met.
+type CheckOrgNameRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CheckOrgNameRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CheckOrgNameRequestMultiError) AllErrors() []error { return m }
+
+// CheckOrgNameRequestValidationError is the validation error returned by
+// CheckOrgNameRequest.Validate if the designated constraints aren't met.
+type CheckOrgNameRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CheckOrgNameRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CheckOrgNameRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CheckOrgNameRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CheckOrgNameRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CheckOrgNameRequestValidationError) ErrorName() string {
+	return "CheckOrgNameRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CheckOrgNameRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCheckOrgNameRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CheckOrgNameRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CheckOrgNameRequestValidationError{}
+
+// Validate checks the field values on CheckOrgNameResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *CheckOrgNameResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on CheckOrgNameResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// CheckOrgNameResponseMultiError, or nil if none found.
+func (m *CheckOrgNameResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *CheckOrgNameResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Available
+
+	if len(errors) > 0 {
+		return CheckOrgNameResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// CheckOrgNameResponseMultiError is an error wrapping multiple validation
+// errors returned by CheckOrgNameResponse.ValidateAll() if the designated
+// constraints aren't met.
+type CheckOrgNameResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m CheckOrgNameResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m CheckOrgNameResponseMultiError) AllErrors() []error { return m }
+
+// CheckOrgNameResponseValidationError is the validation error returned by
+// CheckOrgNameResponse.Validate if the designated constraints aren't met.
+type CheckOrgNameResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e CheckOrgNameResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e CheckOrgNameResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e CheckOrgNameResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e CheckOrgNameResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e CheckOrgNameResponseValidationError) ErrorName() string {
+	return "CheckOrgNameResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e CheckOrgNameResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sCheckOrgNameResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = CheckOrgNameResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = CheckOrgNameResponseValidationError{}

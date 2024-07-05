@@ -55,6 +55,9 @@ const (
 	// LocalServiceGetCurrentUserProcedure is the fully-qualified name of the LocalService's
 	// GetCurrentUser RPC.
 	LocalServiceGetCurrentUserProcedure = "/rill.local.v1.LocalService/GetCurrentUser"
+	// LocalServiceCheckOrgNameProcedure is the fully-qualified name of the LocalService's CheckOrgName
+	// RPC.
+	LocalServiceCheckOrgNameProcedure = "/rill.local.v1.LocalService/CheckOrgName"
 )
 
 // These variables are the protoreflect.Descriptor objects for the RPCs defined in this package.
@@ -68,6 +71,7 @@ var (
 	localServiceDeployProjectMethodDescriptor    = localServiceServiceDescriptor.Methods().ByName("DeployProject")
 	localServiceRedeployProjectMethodDescriptor  = localServiceServiceDescriptor.Methods().ByName("RedeployProject")
 	localServiceGetCurrentUserMethodDescriptor   = localServiceServiceDescriptor.Methods().ByName("GetCurrentUser")
+	localServiceCheckOrgNameMethodDescriptor     = localServiceServiceDescriptor.Methods().ByName("CheckOrgName")
 )
 
 // LocalServiceClient is a client for the rill.local.v1.LocalService service.
@@ -88,6 +92,7 @@ type LocalServiceClient interface {
 	RedeployProject(context.Context, *connect.Request[v1.RedeployProjectRequest]) (*connect.Response[v1.RedeployProjectResponse], error)
 	// User returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
+	CheckOrgName(context.Context, *connect.Request[v1.CheckOrgNameRequest]) (*connect.Response[v1.CheckOrgNameResponse], error)
 }
 
 // NewLocalServiceClient constructs a client for the rill.local.v1.LocalService service. By default,
@@ -148,6 +153,12 @@ func NewLocalServiceClient(httpClient connect.HTTPClient, baseURL string, opts .
 			connect.WithSchema(localServiceGetCurrentUserMethodDescriptor),
 			connect.WithClientOptions(opts...),
 		),
+		checkOrgName: connect.NewClient[v1.CheckOrgNameRequest, v1.CheckOrgNameResponse](
+			httpClient,
+			baseURL+LocalServiceCheckOrgNameProcedure,
+			connect.WithSchema(localServiceCheckOrgNameMethodDescriptor),
+			connect.WithClientOptions(opts...),
+		),
 	}
 }
 
@@ -161,6 +172,7 @@ type localServiceClient struct {
 	deployProject    *connect.Client[v1.DeployProjectRequest, v1.DeployProjectResponse]
 	redeployProject  *connect.Client[v1.RedeployProjectRequest, v1.RedeployProjectResponse]
 	getCurrentUser   *connect.Client[v1.GetCurrentUserRequest, v1.GetCurrentUserResponse]
+	checkOrgName     *connect.Client[v1.CheckOrgNameRequest, v1.CheckOrgNameResponse]
 }
 
 // Ping calls rill.local.v1.LocalService.Ping.
@@ -203,6 +215,11 @@ func (c *localServiceClient) GetCurrentUser(ctx context.Context, req *connect.Re
 	return c.getCurrentUser.CallUnary(ctx, req)
 }
 
+// CheckOrgName calls rill.local.v1.LocalService.CheckOrgName.
+func (c *localServiceClient) CheckOrgName(ctx context.Context, req *connect.Request[v1.CheckOrgNameRequest]) (*connect.Response[v1.CheckOrgNameResponse], error) {
+	return c.checkOrgName.CallUnary(ctx, req)
+}
+
 // LocalServiceHandler is an implementation of the rill.local.v1.LocalService service.
 type LocalServiceHandler interface {
 	// Ping returns the current time.
@@ -221,6 +238,7 @@ type LocalServiceHandler interface {
 	RedeployProject(context.Context, *connect.Request[v1.RedeployProjectRequest]) (*connect.Response[v1.RedeployProjectResponse], error)
 	// User returns the locally logged in user
 	GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error)
+	CheckOrgName(context.Context, *connect.Request[v1.CheckOrgNameRequest]) (*connect.Response[v1.CheckOrgNameResponse], error)
 }
 
 // NewLocalServiceHandler builds an HTTP handler from the service implementation. It returns the
@@ -277,6 +295,12 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 		connect.WithSchema(localServiceGetCurrentUserMethodDescriptor),
 		connect.WithHandlerOptions(opts...),
 	)
+	localServiceCheckOrgNameHandler := connect.NewUnaryHandler(
+		LocalServiceCheckOrgNameProcedure,
+		svc.CheckOrgName,
+		connect.WithSchema(localServiceCheckOrgNameMethodDescriptor),
+		connect.WithHandlerOptions(opts...),
+	)
 	return "/rill.local.v1.LocalService/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
 		case LocalServicePingProcedure:
@@ -295,6 +319,8 @@ func NewLocalServiceHandler(svc LocalServiceHandler, opts ...connect.HandlerOpti
 			localServiceRedeployProjectHandler.ServeHTTP(w, r)
 		case LocalServiceGetCurrentUserProcedure:
 			localServiceGetCurrentUserHandler.ServeHTTP(w, r)
+		case LocalServiceCheckOrgNameProcedure:
+			localServiceCheckOrgNameHandler.ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}
@@ -334,4 +360,8 @@ func (UnimplementedLocalServiceHandler) RedeployProject(context.Context, *connec
 
 func (UnimplementedLocalServiceHandler) GetCurrentUser(context.Context, *connect.Request[v1.GetCurrentUserRequest]) (*connect.Response[v1.GetCurrentUserResponse], error) {
 	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.GetCurrentUser is not implemented"))
+}
+
+func (UnimplementedLocalServiceHandler) CheckOrgName(context.Context, *connect.Request[v1.CheckOrgNameRequest]) (*connect.Response[v1.CheckOrgNameResponse], error) {
+	return nil, connect.NewError(connect.CodeUnimplemented, errors.New("rill.local.v1.LocalService.CheckOrgName is not implemented"))
 }
