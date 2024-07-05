@@ -55,6 +55,13 @@ func (c *jwtClaims) CanInstance(instanceID string, p Permission) bool {
 }
 
 func (c *jwtClaims) SecurityClaims() *runtime.SecurityClaims {
+	if c.Can(ManageInstances) {
+		return &runtime.SecurityClaims{
+			UserAttributes: c.Attrs,
+			SkipChecks:     true,
+		}
+	}
+
 	attrs := c.Attrs
 	if attrs == nil {
 		attrs = make(map[string]any)
