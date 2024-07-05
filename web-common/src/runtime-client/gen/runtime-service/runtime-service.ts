@@ -19,6 +19,8 @@ import type {
   V1IssueDevJWTResponse,
   RuntimeServiceIssueDevJWTParams,
   V1ListExamplesResponse,
+  V1HealthResponse,
+  V1InstanceHealthResponse,
   V1ListInstancesResponse,
   RuntimeServiceListInstancesParams,
   V1CreateInstanceResponse,
@@ -232,6 +234,112 @@ export const createRuntimeServiceListExamples = <
     TData,
     TError
   > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+export const runtimeServiceHealth = (signal?: AbortSignal) => {
+  return httpClient<V1HealthResponse>({
+    url: `/v1/health`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceHealthQueryKey = () => [`/v1/health`];
+
+export type RuntimeServiceHealthQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceHealth>>
+>;
+export type RuntimeServiceHealthQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceHealth = <
+  TData = Awaited<ReturnType<typeof runtimeServiceHealth>>,
+  TError = ErrorType<RpcStatus>,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof runtimeServiceHealth>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getRuntimeServiceHealthQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceHealth>>
+  > = ({ signal }) => runtimeServiceHealth(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceHealth>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+export const runtimeServiceInstanceHealth = (
+  instanceId: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1InstanceHealthResponse>({
+    url: `/v1/health/instances/${instanceId}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getRuntimeServiceInstanceHealthQueryKey = (instanceId: string) => [
+  `/v1/health/instances/${instanceId}`,
+];
+
+export type RuntimeServiceInstanceHealthQueryResult = NonNullable<
+  Awaited<ReturnType<typeof runtimeServiceInstanceHealth>>
+>;
+export type RuntimeServiceInstanceHealthQueryError = ErrorType<RpcStatus>;
+
+export const createRuntimeServiceInstanceHealth = <
+  TData = Awaited<ReturnType<typeof runtimeServiceInstanceHealth>>,
+  TError = ErrorType<RpcStatus>,
+>(
+  instanceId: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof runtimeServiceInstanceHealth>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getRuntimeServiceInstanceHealthQueryKey(instanceId);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof runtimeServiceInstanceHealth>>
+  > = ({ signal }) => runtimeServiceInstanceHealth(instanceId, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof runtimeServiceInstanceHealth>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!instanceId,
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
 
   query.queryKey = queryKey;
 

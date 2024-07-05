@@ -69,7 +69,6 @@ func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 				deployedID = rc.ProjectID
 			}
 
-			fmt.Println("delete", delResp, deployedID)
 			if delResp.Id == deployedID {
 				err = dotrillcloud.Delete(path, ch.AdminURL)
 				if err != nil {

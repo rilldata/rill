@@ -25,6 +25,9 @@ service LocalService {
 
   // RedeployProject updates a deployed project.
   rpc RedeployProject(RedeployProjectRequest) returns (RedeployProjectResponse) {}
+
+  // User returns the locally logged in user
+  rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {}
 }
 
 message PingRequest {}
@@ -108,4 +111,10 @@ message RedeployProjectRequest {
 
 message RedeployProjectResponse {
   string frontend_url = 1;
+}
+
+message GetCurrentUserRequest {}
+
+message GetCurrentUserResponse {
+  admin.v1.User user = 1;
 }

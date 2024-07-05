@@ -2,6 +2,7 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import {
+  isMagicLinkPage,
   isMetricsExplorerPage,
   isProjectPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
@@ -15,14 +16,35 @@ import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
 import {
   adminServiceGetCurrentUser,
   getAdminServiceGetCurrentUserQueryKey,
+  getAdminServiceGetProjectQueryKey,
 } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
-import { getProjectRuntimeQueryKey } from "../projects/selectors";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
+
+    // Let the magic link page handle all errors
+    const onMagicLinkPage = isMagicLinkPage(get(page));
+    if (onMagicLinkPage) {
+      // When a token is expired, show a specific error page
+      if (
+        error.response?.status === 401 &&
+        (error.response.data as RpcStatus)?.message === "auth token is expired"
+      ) {
+        errorStore.set({
+          statusCode: 401,
+          header: "Oops! This link has expired",
+          body: "It looks like this link is no longer active. Please reach out to the sender to request a new link.",
+          fatal: true,
+        });
+        return;
+      }
+
+      // Let the magic link page handle all other errors
+      return;
+    }
 
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
@@ -66,7 +88,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
           (error.response.data as RpcStatus).message === "driver: not found"
         ) {
           const [, org, proj] = get(page).url.pathname.split("/");
-          void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
+          void queryClient.resetQueries(
+            getAdminServiceGetProjectQueryKey(org, proj),
+          );
           return;
         }
       }

@@ -73,7 +73,7 @@ type Instance struct {
 // InstanceConfig should only be used for config that the user is allowed to change dynamically at runtime.
 type InstanceConfig struct {
 	// DownloadLimitBytes is the limit on size of exported file. If set to 0, there is no limit.
-	DownloadLimitBytes int64 `mapstructure:"rill.download_row_limit_bytes"`
+	DownloadLimitBytes int64 `mapstructure:"rill.download_limit_bytes"`
 	// InteractiveSQLRowLimit is the row limit for interactive SQL queries. It does not apply to exports of SQL queries. If set to 0, there is no limit.
 	InteractiveSQLRowLimit int64 `mapstructure:"rill.interactive_sql_row_limit"`
 	// StageChanges indicates whether to keep previously ingested tables for sources/models, and only override them if ingestion of a new table is successful.
