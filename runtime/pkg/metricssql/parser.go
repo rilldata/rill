@@ -29,27 +29,26 @@ var supportedFuncs = map[string]any{
 }
 
 type Compiler struct {
-	p              *parser.Parser
-	controller     *runtime.Controller
-	instanceID     string
-	userAttributes map[string]any
-	securityRules  []*runtimev1.SecurityRule // Optional additional security rules to apply
-	priority       int
+	p          *parser.Parser
+	controller *runtime.Controller
+	instanceID string
+	claims     *runtime.SecurityClaims
+	priority   int
 }
 
 // New returns a compiler and created a tidb parser object.
 // The instantiated parser object and thus compiler is not goroutine safe and not lightweight.
 // It is better to keep it in a single goroutine, and reuse it if possible.
-func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]any, priority int) *Compiler {
+func New(ctrl *runtime.Controller, instanceID string, claims *runtime.SecurityClaims, priority int) *Compiler {
 	p := parser.New()
 	// Weirdly setting just ModeANSI which is a combination having ModeANSIQuotes doesn't ensure double quotes are used to identify SQL identifiers
 	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
 	return &Compiler{
-		p:              p,
-		controller:     ctrl,
-		instanceID:     instanceID,
-		userAttributes: userAttributes,
-		priority:       priority,
+		p:          p,
+		controller: ctrl,
+		instanceID: instanceID,
+		claims:     claims,
+		priority:   priority,
 	}
 }
 
@@ -74,11 +73,10 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 	}
 
 	t := &transformer{
-		controller:     c.controller,
-		instanceID:     c.instanceID,
-		userAttributes: c.userAttributes,
-		securityRules:  c.securityRules,
-		priority:       c.priority,
+		controller: c.controller,
+		instanceID: c.instanceID,
+		claims:     c.claims,
+		priority:   c.priority,
 	}
 	compiledSQL, err := t.transformSelectStmt(ctx, stmt)
 	if err != nil {
@@ -89,10 +87,9 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 }
 
 type transformer struct {
-	controller     *runtime.Controller
-	instanceID     string
-	userAttributes map[string]any
-	securityRules  []*runtimev1.SecurityRule
+	controller *runtime.Controller
+	instanceID string
+	claims     *runtime.SecurityClaims
 
 	metricsView *runtimev1.MetricsViewV2
 	refs        []*runtimev1.ResourceName
@@ -702,7 +699,7 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 	defer release()
 	dialect := olap.Dialect()
 
-	security, err := t.controller.Runtime.ResolveSecurity(t.instanceID, t.userAttributes, t.securityRules, mv)
+	security, err := t.controller.Runtime.ResolveSecurity(t.instanceID, t.claims, mv)
 	if err != nil {
 		return "", err
 	}

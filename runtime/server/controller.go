@@ -222,7 +222,7 @@ func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTrigger
 // applySecurityPolicy applies relevant security policies to the resource.
 // The input resource will not be modified in-place (so no need to set clone=true when obtaining it from the catalog).
 func (s *Server) applySecurityPolicy(ctx context.Context, instID string, r *runtimev1.Resource) (*runtimev1.Resource, bool, error) {
-	security, err := s.runtime.ResolveSecurity(instID, auth.GetClaims(ctx).Attributes(), auth.GetClaims(ctx).SecurityRules(), r)
+	security, err := s.runtime.ResolveSecurity(instID, auth.GetClaims(ctx).SecurityClaims(), r)
 	if err != nil {
 		return nil, false, err
 	}

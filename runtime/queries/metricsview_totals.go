@@ -13,14 +13,13 @@ import (
 )
 
 type MetricsViewTotals struct {
-	MetricsViewName    string                       `json:"metrics_view_name,omitempty"`
-	MeasureNames       []string                     `json:"measure_names,omitempty"`
-	TimeStart          *timestamppb.Timestamp       `json:"time_start,omitempty"`
-	TimeEnd            *timestamppb.Timestamp       `json:"time_end,omitempty"`
-	Where              *runtimev1.Expression        `json:"where,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter `json:"filter,omitempty"` // backwards compatibility
-	SecurityAttributes map[string]any               `json:"security_attributes,omitempty"`
-	SecurityRules      []*runtimev1.SecurityRule    `json:"security_policy,omitempty"`
+	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
+	MeasureNames    []string                     `json:"measure_names,omitempty"`
+	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
+	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
+	Where           *runtimev1.Expression        `json:"where,omitempty"`
+	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"` // backwards compatibility
+	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
 
 	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
 }
@@ -58,7 +57,7 @@ func (q *MetricsViewTotals) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityRules)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}

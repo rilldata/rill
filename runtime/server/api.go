@@ -57,13 +57,15 @@ func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
+	// TODO: Should it resolve security and check access here?
+
 	// Resolve the API to JSON data
 	res, err := s.runtime.Resolve(ctx, &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               args,
-		UserAttributes:     auth.GetClaims(ctx).Attributes(),
+		Claims:             auth.GetClaims(ctx).SecurityClaims(),
 	})
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)

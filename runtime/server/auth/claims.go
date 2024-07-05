@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -16,12 +17,8 @@ type Claims interface {
 	Can(p Permission) bool
 	// CanInstance resolves instance-level permissions.
 	CanInstance(instanceID string, p Permission) bool
-	// Attributes returns the token attributes used in template rendering.
-	Attributes() map[string]any
-	// SecurityRules are optional security rules to apply *in addition* to the rules defined in the requested resources themselves.
-	// This provides a way to embed/inline additional security restrictions for a specific token.
-	// This option is currently leveraged by the admin service to enforce restrictions for magic auth tokens.
-	SecurityRules() []*runtimev1.SecurityRule
+	// SecurityClaims returns a representation of the claims for use with runtime package's security policy enforcement.
+	SecurityClaims() *runtime.SecurityClaims
 }
 
 // jwtClaims implements Claims and resolve permissions based on a JWT payload.
@@ -57,27 +54,30 @@ func (c *jwtClaims) CanInstance(instanceID string, p Permission) bool {
 	return c.Can(p)
 }
 
-func (c *jwtClaims) Attributes() map[string]any {
-	c.Attrs["sub"] = c.Subject()
-	return c.Attrs
-}
-
-func (c jwtClaims) SecurityRules() []*runtimev1.SecurityRule {
-	if len(c.Security) == 0 {
-		return nil
+func (c *jwtClaims) SecurityClaims() *runtime.SecurityClaims {
+	attrs := c.Attrs
+	if attrs == nil {
+		attrs = make(map[string]any)
 	}
+	attrs["id"] = c.Subject()
 
-	rules := make([]*runtimev1.SecurityRule, len(c.Security))
-	for i, data := range c.Security {
-		rule := &runtimev1.SecurityRule{}
-		err := protojson.Unmarshal(data, rule)
-		if err != nil {
-			panic(err)
+	var rules []*runtimev1.SecurityRule
+	if len(c.Security) > 0 {
+		rules = make([]*runtimev1.SecurityRule, len(c.Security))
+		for i, data := range c.Security {
+			rule := &runtimev1.SecurityRule{}
+			err := protojson.Unmarshal(data, rule)
+			if err != nil {
+				panic(err)
+			}
+			rules[i] = rule
 		}
-		rules[i] = rule
 	}
 
-	return rules
+	return &runtime.SecurityClaims{
+		UserAttributes:  attrs,
+		AdditionalRules: rules,
+	}
 }
 
 // openClaims implements Claims and allows all actions.
@@ -98,12 +98,11 @@ func (c openClaims) CanInstance(instanceID string, p Permission) bool {
 	return true
 }
 
-func (c openClaims) Attributes() map[string]any {
-	return nil
-}
-
-func (c openClaims) SecurityRules() []*runtimev1.SecurityRule {
-	return nil
+func (c openClaims) SecurityClaims() *runtime.SecurityClaims {
+	return &runtime.SecurityClaims{
+		UserAttributes: map[string]any{"admin": true},
+		SkipChecks:     true,
+	}
 }
 
 // anonClaims implements Claims with no permissions.
@@ -111,6 +110,8 @@ func (c openClaims) SecurityRules() []*runtimev1.SecurityRule {
 type anonClaims struct{}
 
 var _ Claims = (*anonClaims)(nil)
+
+var emptySecurityClaims = &runtime.SecurityClaims{}
 
 func (c anonClaims) Subject() string {
 	return ""
@@ -130,6 +131,10 @@ func (c anonClaims) Attributes() map[string]any {
 
 func (c anonClaims) SecurityRules() []*runtimev1.SecurityRule {
 	return nil
+}
+
+func (c anonClaims) SecurityClaims() *runtime.SecurityClaims {
+	return emptySecurityClaims
 }
 
 // devJWTClaims implements Claims and allows all actions but have user attributes for access policies.
@@ -153,10 +158,8 @@ func (c devJWTClaims) CanInstance(instanceID string, p Permission) bool {
 	return true
 }
 
-func (c devJWTClaims) Attributes() map[string]any {
-	return c.Attrs
-}
-
-func (c devJWTClaims) SecurityRules() []*runtimev1.SecurityRule {
-	return nil
+func (c devJWTClaims) SecurityClaims() *runtime.SecurityClaims {
+	return &runtime.SecurityClaims{
+		UserAttributes: c.Attrs,
+	}
 }

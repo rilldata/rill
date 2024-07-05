@@ -806,7 +806,7 @@ func resolveMVAndSecurity(t *testing.T, rt *runtime.Runtime, instanceID, metrics
 	mv := mvRes.State.ValidSpec
 	require.NoError(t, err)
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).Attributes(), nil, res)
+	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).SecurityClaims(), res)
 	require.NoError(t, err)
 
 	return mv, resolvedSecurity

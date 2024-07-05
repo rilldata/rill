@@ -91,12 +91,12 @@ func (r *Runtime) Close() error {
 	return errors.Join(err1, err2)
 }
 
-func (r *Runtime) ResolveSecurity(instanceID string, attributes map[string]any, rules []*runtimev1.SecurityRule, mv *runtimev1.Resource) (*ResolvedSecurity, error) {
+func (r *Runtime) ResolveSecurity(instanceID string, claims *SecurityClaims, res *runtimev1.Resource) (*ResolvedSecurity, error) {
 	inst, err := r.Instance(context.Background(), instanceID)
 	if err != nil {
 		return nil, err
 	}
-	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, attributes, rules, mv)
+	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, claims, res)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes

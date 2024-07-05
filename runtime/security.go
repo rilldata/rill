@@ -2,8 +2,8 @@ package runtime
 
 import (
 	"crypto/md5"
-	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -20,6 +20,87 @@ import (
 
 var ErrForbidden = errors.New("action not allowed")
 
+// SecurityClaims represents contextual information for the enforcement of security rules.
+type SecurityClaims struct {
+	// UserAttributes about the current user (or service account). Usually exposed through templating as {{ .user }}.
+	UserAttributes map[string]any
+	// AdditionalRules are optional security rules to apply *in addition* to the built-in rules and the rules defined on the requested resource.
+	// These are currently leveraged by the admin service to enforce restrictions for magic auth tokens.
+	AdditionalRules []*runtimev1.SecurityRule
+	// SkipChecks enables completely skipping all security checks. Used in local development.
+	SkipChecks bool
+}
+
+// Admin is a convenience function for extracting an "admin" bool from the user attributes.
+func (c *SecurityClaims) Admin() bool {
+	if c.UserAttributes == nil {
+		return false
+	}
+	admin, _ := c.UserAttributes["admin"].(bool)
+	return admin
+}
+
+// UserID is a convenience function for extracting an "id" string from the user attributes.
+// Note that the ID may not correspond to an actual user, but could also be a service ID or similar.
+func (c *SecurityClaims) UserID() string {
+	if c.UserAttributes == nil {
+		return ""
+	}
+	id, _ := c.UserAttributes["id"].(string)
+	return id
+}
+
+// MarshalJSON serializes the SecurityClaims to JSON.
+// It serializes the AdditionalRules using protojson.
+func (c *SecurityClaims) MarshalJSON() ([]byte, error) {
+	tmp := securityClaimsJSON{
+		UserAttributes:  c.UserAttributes,
+		AdditionalRules: make([]json.RawMessage, len(c.AdditionalRules)),
+		SkipChecks:      c.SkipChecks,
+	}
+
+	for i, rule := range c.AdditionalRules {
+		data, err := protojson.Marshal(rule)
+		if err != nil {
+			return nil, err
+		}
+		tmp.AdditionalRules[i] = data
+	}
+
+	return json.Marshal(tmp)
+}
+
+// UnmarshalJSON deserializes the SecurityClaims from JSON.
+// It deserializes the AdditionalRules using protojson.
+func (c *SecurityClaims) UnmarshalJSON(data []byte) error {
+	tmp := securityClaimsJSON{}
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	c.UserAttributes = tmp.UserAttributes
+	c.AdditionalRules = make([]*runtimev1.SecurityRule, len(tmp.AdditionalRules))
+	for i, data := range tmp.AdditionalRules {
+		rule := &runtimev1.SecurityRule{}
+		if err := protojson.Unmarshal(data, rule); err != nil {
+			return err
+		}
+		c.AdditionalRules[i] = rule
+	}
+	c.SkipChecks = tmp.SkipChecks
+
+	return nil
+}
+
+// securityClaimsJSON is a JSON-serializable representation of SecurityClaims.
+// SecurityClaims can't be directly serialized to JSON because the SecurityRule proto is not directly JSON serializable.
+type securityClaimsJSON struct {
+	UserAttributes  map[string]any    `json:"attrs"`
+	AdditionalRules []json.RawMessage `json:"rules"`
+	SkipChecks      bool              `json:"skip"`
+}
+
+// ResolvedSecurity represents the resolved security rules for a given claims against a specific resource.
 type ResolvedSecurity struct {
 	access      *bool
 	fieldAccess map[string]bool
@@ -27,29 +108,22 @@ type ResolvedSecurity struct {
 	queryFilter *runtimev1.Expression
 }
 
+// CanAccess returns whether the resource can be accessed.
 func (r *ResolvedSecurity) CanAccess() bool {
-	if r == nil {
-		return true
-	}
 	if r.access == nil {
 		return false
 	}
 	return *r.access
 }
 
+// CanAccessAllFields returns whether all fields in the resource are allowed.
 func (r *ResolvedSecurity) CanAccessAllFields() bool {
-	if r == nil {
-		return true
-	}
 	// If there are no field access rules, all fields are allowed
 	return r.fieldAccess == nil
 }
 
+// CanAccessField evaluates whether a specific field in the resource is allowed.
 func (r *ResolvedSecurity) CanAccessField(field string) bool {
-	if r == nil {
-		return true
-	}
-
 	if !r.CanAccess() {
 		return false
 	}
@@ -62,25 +136,30 @@ func (r *ResolvedSecurity) CanAccessField(field string) bool {
 	return r.fieldAccess[field]
 }
 
+// RowFilter returns a raw SQL expression to apply to the WHERE clause when querying the resource.
 func (r *ResolvedSecurity) RowFilter() string {
-	if r == nil {
-		return ""
-	}
 	return r.rowFilter
 }
 
+// QueryFilter returns a query expression to apply when querying the resource.
 func (r *ResolvedSecurity) QueryFilter() *runtimev1.Expression {
-	if r == nil {
-		return nil
-	}
 	return r.queryFilter
 }
 
+// truth is the compass that guides us through the labyrinth of existence.
 var truth = true
 
-// openAccess is allows access to everything.
+// openAccess allows access to a resource.
 var openAccess = &ResolvedSecurity{
 	access:      &truth,
+	fieldAccess: nil,
+	rowFilter:   "",
+	queryFilter: nil,
+}
+
+// closedAccess denies access to a resource.
+var closedAccess = &ResolvedSecurity{
+	access:      nil,
 	fieldAccess: nil,
 	rowFilter:   "",
 	queryFilter: nil,
@@ -104,12 +183,14 @@ var denyAccessRule = &runtimev1.SecurityRule{
 	},
 }
 
+// securityEngine is an engine for resolving security rules and caching the results.
 type securityEngine struct {
 	cache  *simplelru.LRU
 	lock   sync.Mutex
 	logger *zap.Logger
 }
 
+// newSecurityEngine creates a new security engine with a given cache size.
 func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
 	cache, err := simplelru.NewLRU(cacheSize, nil)
 	if err != nil {
@@ -119,16 +200,14 @@ func newSecurityEngine(cacheSize int, logger *zap.Logger) *securityEngine {
 }
 
 // resolveSecurity resolves the security rules for a given resource and user context.
-func (p *securityEngine) resolveSecurity(instanceID, environment string, attributes map[string]any, rules []*runtimev1.SecurityRule, r *runtimev1.Resource) (*ResolvedSecurity, error) {
-	// If attributes is empty that means auth is disabled and no user context is available.
-	// Since we are controlling the attributes we can safely return the open policy.
-	// TODO: Make this more explicit!
-	if len(attributes) == 0 {
+func (p *securityEngine) resolveSecurity(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (*ResolvedSecurity, error) {
+	// If security checks are skipped, return open access
+	if claims.SkipChecks {
 		return openAccess, nil
 	}
 
 	// Combine rules with any contained in the resource itself
-	rules = p.resolveRules(attributes, rules, r)
+	rules := p.resolveRules(claims, r)
 
 	// Exit early if all rules are nil
 	var validRule bool
@@ -139,10 +218,10 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, attribu
 		}
 	}
 	if !validRule {
-		return nil, nil
+		return closedAccess, nil
 	}
 
-	cacheKey, err := computeCacheKey(instanceID, environment, attributes, rules, r)
+	cacheKey, err := computeCacheKey(instanceID, environment, claims, r)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compute cache key: %w", err)
 	}
@@ -157,7 +236,7 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, attribu
 
 	templateData := rillv1.TemplateData{
 		Environment: environment,
-		User:        attributes,
+		User:        claims.UserAttributes,
 		Self:        rillv1.TemplateResource{Meta: r.Meta},
 	}
 
@@ -205,8 +284,10 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, attribu
 }
 
 // resolveRules combines the provided rules with hardcoded rules and rules declared in the resource itself.
-func (p *securityEngine) resolveRules(attributes map[string]any, rules []*runtimev1.SecurityRule, r *runtimev1.Resource) []*runtimev1.SecurityRule {
-	rule := p.builtInKindSecurityRule(r.Meta.Name.Kind, attributes)
+func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resource) []*runtimev1.SecurityRule {
+	rules := claims.AdditionalRules
+
+	rule := p.builtInKindSecurityRule(r.Meta.Name.Kind, claims.UserAttributes)
 	if rule != nil {
 		// Optimization for the only return value as of this writing.
 		// If the rule is deny, we don't need to check any other rules.
@@ -226,14 +307,14 @@ func (p *securityEngine) resolveRules(attributes map[string]any, rules []*runtim
 		}
 	case ResourceKindAlert:
 		spec := r.GetAlert().Spec
-		rule := p.builtInAlertSecurityRule(spec, attributes)
+		rule := p.builtInAlertSecurityRule(spec, claims.UserAttributes)
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
 			rules = append([]*runtimev1.SecurityRule{rule}, rules...)
 		}
 	case ResourceKindReport:
 		spec := r.GetReport().Spec
-		rule := p.builtInReportSecurityRule(spec, attributes)
+		rule := p.builtInReportSecurityRule(spec, claims.UserAttributes)
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
 			rules = append([]*runtimev1.SecurityRule{rule}, rules...)
@@ -503,7 +584,7 @@ func (p *securityEngine) applySecurityRuleRowFilter(res *ResolvedSecurity, _ *ru
 }
 
 // computeCacheKey computes a cache key for a resolved security policy.
-func computeCacheKey(instanceID, environment string, attributes map[string]any, rules []*runtimev1.SecurityRule, r *runtimev1.Resource) (string, error) {
+func computeCacheKey(instanceID, environment string, claims *SecurityClaims, r *runtimev1.Resource) (string, error) {
 	hash := md5.New()
 	_, err := hash.Write([]byte(instanceID))
 	if err != nil {
@@ -521,39 +602,13 @@ func computeCacheKey(instanceID, environment string, attributes map[string]any, 
 	if err != nil {
 		return "", err
 	}
-	// go through attributes in a deterministic order (alphabetical by keys)
-	if attributes["admin"] != nil {
-		err = binary.Write(hash, binary.BigEndian, attributes["admin"])
-		if err != nil {
-			return "", err
-		}
+	claimsJSON, err := json.Marshal(claims)
+	if err != nil {
+		return "", err
 	}
-	if attributes["email"] != nil {
-		_, err = hash.Write([]byte(attributes["email"].(string)))
-		if err != nil {
-			return "", err
-		}
-	}
-	if attributes["groups"] != nil {
-		for _, g := range attributes["groups"].([]interface{}) {
-			_, err = hash.Write([]byte(g.(string)))
-			if err != nil {
-				return "", err
-			}
-		}
-	}
-	for _, r := range rules {
-		if r == nil {
-			continue
-		}
-		res, err := protojson.Marshal(r)
-		if err != nil {
-			return "", err
-		}
-		_, err = hash.Write(res)
-		if err != nil {
-			return "", err
-		}
+	_, err = hash.Write(claimsJSON)
+	if err != nil {
+		return "", err
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }

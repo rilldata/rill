@@ -59,7 +59,7 @@ measures:
 			Resolver:           api.Spec.Resolver,
 			ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 			Args:               tc.args,
-			UserAttributes:     tc.attrs,
+			Claims:             &runtime.SecurityClaims{UserAttributes: tc.attrs},
 		})
 		if tc.wantErr != "" {
 			require.Equal(t, tc.wantErr, err.Error())

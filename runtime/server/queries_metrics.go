@@ -55,8 +55,7 @@ func (s *Server) MetricsViewAggregation(ctx context.Context, req *runtimev1.Metr
 		Limit:               &req.Limit,
 		Offset:              req.Offset,
 		PivotOn:             req.PivotOn,
-		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
-		SecurityRules:       auth.GetClaims(ctx).SecurityRules(),
+		SecurityClaims:      auth.GetClaims(ctx).SecurityClaims(),
 		Exact:               req.Exact,
 		Aliases:             req.Aliases,
 	}
@@ -95,19 +94,18 @@ func (s *Server) MetricsViewToplist(ctx context.Context, req *runtimev1.MetricsV
 	}
 
 	q := &queries.MetricsViewToplist{
-		MetricsViewName:    req.MetricsViewName,
-		DimensionName:      req.DimensionName,
-		MeasureNames:       req.MeasureNames,
-		TimeStart:          req.TimeStart,
-		TimeEnd:            req.TimeEnd,
-		Limit:              &req.Limit,
-		Offset:             req.Offset,
-		Sort:               req.Sort,
-		Where:              req.Where,
-		Having:             req.Having,
-		Filter:             req.Filter,
-		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
-		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
+		MetricsViewName: req.MetricsViewName,
+		DimensionName:   req.DimensionName,
+		MeasureNames:    req.MeasureNames,
+		TimeStart:       req.TimeStart,
+		TimeEnd:         req.TimeEnd,
+		Limit:           &req.Limit,
+		Offset:          req.Offset,
+		Sort:            req.Sort,
+		Where:           req.Where,
+		Having:          req.Having,
+		Filter:          req.Filter,
+		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -169,8 +167,7 @@ func (s *Server) MetricsViewComparison(ctx context.Context, req *runtimev1.Metri
 		Having:              req.Having,
 		Exact:               req.Exact,
 		Filter:              req.Filter,
-		SecurityAttributes:  auth.GetClaims(ctx).Attributes(),
-		SecurityRules:       auth.GetClaims(ctx).SecurityRules(),
+		SecurityClaims:      auth.GetClaims(ctx).SecurityClaims(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -200,17 +197,16 @@ func (s *Server) MetricsViewTimeSeries(ctx context.Context, req *runtimev1.Metri
 	}
 
 	q := &queries.MetricsViewTimeSeries{
-		MetricsViewName:    req.MetricsViewName,
-		MeasureNames:       req.MeasureNames,
-		TimeStart:          req.TimeStart,
-		TimeEnd:            req.TimeEnd,
-		TimeGranularity:    req.TimeGranularity,
-		Where:              req.Where,
-		Having:             req.Having,
-		TimeZone:           req.TimeZone,
-		Filter:             req.Filter,
-		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
-		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
+		MetricsViewName: req.MetricsViewName,
+		MeasureNames:    req.MeasureNames,
+		TimeStart:       req.TimeStart,
+		TimeEnd:         req.TimeEnd,
+		TimeGranularity: req.TimeGranularity,
+		Where:           req.Where,
+		Having:          req.Having,
+		TimeZone:        req.TimeZone,
+		Filter:          req.Filter,
+		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -238,14 +234,13 @@ func (s *Server) MetricsViewTotals(ctx context.Context, req *runtimev1.MetricsVi
 	}
 
 	q := &queries.MetricsViewTotals{
-		MetricsViewName:    req.MetricsViewName,
-		MeasureNames:       req.MeasureNames,
-		TimeStart:          req.TimeStart,
-		TimeEnd:            req.TimeEnd,
-		Where:              req.Where,
-		Filter:             req.Filter,
-		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
-		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
+		MetricsViewName: req.MetricsViewName,
+		MeasureNames:    req.MeasureNames,
+		TimeStart:       req.TimeStart,
+		TimeEnd:         req.TimeEnd,
+		Where:           req.Where,
+		Filter:          req.Filter,
+		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -350,9 +345,8 @@ func (s *Server) MetricsViewSchema(ctx context.Context, req *runtimev1.MetricsVi
 	}
 
 	q := &queries.MetricsViewSchema{
-		MetricsViewName:    req.MetricsViewName,
-		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
-		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
+		MetricsViewName: req.MetricsViewName,
+		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -380,16 +374,15 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 
 	limit := int64(req.Limit)
 	q := &queries.MetricsViewSearch{
-		MetricsViewName:    req.MetricsViewName,
-		Dimensions:         req.Dimensions,
-		Search:             req.Search,
-		TimeRange:          req.TimeRange,
-		Where:              req.Where,
-		Having:             req.Having,
-		Priority:           req.Priority,
-		Limit:              &limit,
-		SecurityAttributes: auth.GetClaims(ctx).Attributes(),
-		SecurityRules:      auth.GetClaims(ctx).SecurityRules(),
+		MetricsViewName: req.MetricsViewName,
+		Dimensions:      req.Dimensions,
+		Search:          req.Search,
+		TimeRange:       req.TimeRange,
+		Where:           req.Where,
+		Having:          req.Having,
+		Priority:        req.Priority,
+		Limit:           &limit,
+		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))
 	if err != nil {
@@ -405,7 +398,7 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).Attributes(), auth.GetClaims(ctx).SecurityRules(), res)
+	resolvedSecurity, err := rt.ResolveSecurity(instanceID, auth.GetClaims(ctx).SecurityClaims(), res)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -416,13 +409,13 @@ func resolveMVAndSecurity(ctx context.Context, rt *runtime.Runtime, instanceID, 
 	return mv, resolvedSecurity, nil
 }
 
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, rules []*runtimev1.SecurityRule) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveSecurity(instanceID, attrs, rules, res)
+	resolvedSecurity, err := rt.ResolveSecurity(instanceID, claims, res)
 	if err != nil {
 		return nil, nil, err
 	}
