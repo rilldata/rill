@@ -109,7 +109,7 @@
       icon
       on:select={() => {
         toggleFloatingElement();
-        goto(`/rill.yaml?addMockUser=true`);
+        goto(`/files/rill.yaml?addMockUser=true`);
       }}
     >
       <Add color={iconColor} size="16px" slot="icon" />
