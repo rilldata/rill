@@ -19,6 +19,7 @@ func BenchmarkMetricsViewsTotals(b *testing.B) {
 		q := &queries.MetricsViewTotals{
 			MetricsViewName: "ad_bids_metrics",
 			MeasureNames:    []string{"measure_1"},
+			SecurityClaims:  testClaims(),
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
 		require.NoError(b, err)
@@ -40,6 +41,7 @@ func BenchmarkMetricsViewsToplist(b *testing.B) {
 					Name: "measure_1",
 				},
 			},
+			SecurityClaims: testClaims(),
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
 		require.NoError(b, err)
@@ -56,6 +58,7 @@ func BenchmarkMetricsViewsTimeSeries(b *testing.B) {
 			MetricsViewName: "ad_bids_metrics",
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 			MeasureNames:    []string{"measure_1"},
+			SecurityClaims:  testClaims(),
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
 		require.NoError(b, err)
@@ -73,6 +76,7 @@ func BenchmarkMetricsViewsTimeSeries_TimeZone(b *testing.B) {
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_DAY,
 			MeasureNames:    []string{"measure_1"},
 			TimeZone:        "Asia/Kathmandu",
+			SecurityClaims:  testClaims(),
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
 		require.NoError(b, err)
@@ -89,6 +93,7 @@ func BenchmarkMetricsViewsTimeSeries_TimeZone_Hour(b *testing.B) {
 			TimeGranularity: runtimev1.TimeGrain_TIME_GRAIN_HOUR,
 			MeasureNames:    []string{"measure_1"},
 			TimeZone:        "Asia/Kathmandu",
+			SecurityClaims:  testClaims(),
 		}
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
 		require.NoError(b, err)
