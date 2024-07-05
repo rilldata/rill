@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
+  import ProjectAccessControls from "@rilldata/web-admin/features/projects/ProjectAccessControls.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
   import { useShareableURLMetricsView } from "@rilldata/web-admin/features/shareable-urls/selectors";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
@@ -166,7 +167,11 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage}
-      <UserInviteButton />
+      <ProjectAccessControls {organization} {project}>
+        <svelte:fragment slot="manage-project">
+          <UserInviteButton />
+        </svelte:fragment>
+      </ProjectAccessControls>
     {/if}
     {#if onMetricsExplorerPage || onMagicLinkPage}
       <StateManagersProvider metricsViewName={dashboard}>
