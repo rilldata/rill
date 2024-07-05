@@ -5,10 +5,7 @@ ensure the same single-page app behavior in development.
 */
 export const ssr = false;
 
-import {
-  adminServiceGetProject,
-  type V1ProjectPermissions,
-} from "@rilldata/web-admin/client/index.js";
+import { adminServiceGetProject } from "@rilldata/web-admin/client/index.js";
 import { getAdminServiceGetProjectQueryKey } from "@rilldata/web-admin/client/index.js";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error } from "@sveltejs/kit";
