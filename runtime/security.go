@@ -174,15 +174,6 @@ var allowAccessRule = &runtimev1.SecurityRule{
 	},
 }
 
-// denyAccessRule is a security rule that denies access.
-var denyAccessRule = &runtimev1.SecurityRule{
-	Rule: &runtimev1.SecurityRule_Access{
-		Access: &runtimev1.SecurityRuleAccess{
-			Allow: false,
-		},
-	},
-}
-
 // securityEngine is an engine for resolving security rules and caching the results.
 type securityEngine struct {
 	cache  *simplelru.LRU
@@ -283,93 +274,78 @@ func (p *securityEngine) resolveSecurity(instanceID, environment string, claims 
 	return res, nil
 }
 
-// resolveRules combines the provided rules with hardcoded rules and rules declared in the resource itself.
+// resolveRules combines the provided rules with built-in rules and rules declared in the resource itself.
+// NOTE: The default behavior is to deny access unless there is a rule that grants it (and no other rule explicitly denies it).
 func (p *securityEngine) resolveRules(claims *SecurityClaims, r *runtimev1.Resource) []*runtimev1.SecurityRule {
 	rules := claims.AdditionalRules
-
-	rule := p.builtInKindSecurityRule(r.Meta.Name.Kind, claims.UserAttributes)
-	if rule != nil {
-		// Optimization for the only return value as of this writing.
-		// If the rule is deny, we don't need to check any other rules.
-		if rule == denyAccessRule {
-			return []*runtimev1.SecurityRule{rule}
-		}
-
-		// Prepend instead of append since the rule is likely to lead to a quick deny access
-		rules = append([]*runtimev1.SecurityRule{rule}, rules...)
-	}
-
 	switch r.Meta.Name.Kind {
-	case ResourceKindMetricsView:
-		spec := r.GetMetricsView().State.ValidSpec
-		if spec != nil {
-			rules = append(rules, spec.SecurityRules...)
-		}
+	// Admins and creators/recipients can access an alert.
 	case ResourceKindAlert:
 		spec := r.GetAlert().Spec
-		rule := p.builtInAlertSecurityRule(spec, claims.UserAttributes)
+		rule := p.builtInAlertSecurityRule(spec, claims)
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
 			rules = append([]*runtimev1.SecurityRule{rule}, rules...)
 		}
+	// Everyone can access an API.
+	case ResourceKindAPI:
+		rules = append(rules, allowAccessRule)
+	// Everyone can access a component.
+	case ResourceKindComponent:
+		rules = append(rules, allowAccessRule)
+	// Everyone can access a dashboard.
+	case ResourceKindDashboard:
+		rules = append(rules, allowAccessRule)
+	// Determine access using the metrics view's security rules. If there are none, then everyone can access it.
+	case ResourceKindMetricsView:
+		spec := r.GetMetricsView().State.ValidSpec
+		if spec == nil {
+			spec = r.GetMetricsView().Spec // Not ideal, but better than giving access to the full resource
+		}
+		if len(spec.SecurityRules) == 0 {
+			rules = append(rules, allowAccessRule)
+		} else {
+			rules = append(rules, spec.SecurityRules...)
+		}
+	// Admins and creators/recipients can access a report.
 	case ResourceKindReport:
 		spec := r.GetReport().Spec
-		rule := p.builtInReportSecurityRule(spec, claims.UserAttributes)
+		rule := p.builtInReportSecurityRule(spec, claims)
 		if rule != nil {
 			// Prepend instead of append since the rule is likely to lead to a quick deny access
 			rules = append([]*runtimev1.SecurityRule{rule}, rules...)
 		}
+	// Everyone can access a theme.
+	case ResourceKindTheme:
+		rules = append(rules, allowAccessRule)
+	// All other resources can only be accessed by admins.
+	default:
+		if claims.Admin() {
+			rules = append(rules, allowAccessRule)
+		}
 	}
-
 	return rules
-}
-
-// builtInKindSecurityRule returns a built-in security rule that checks if the user is allowed to access the resource kind.
-//
-// TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
-// We should refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead.
-func (p *securityEngine) builtInKindSecurityRule(kind string, attributes map[string]any) *runtimev1.SecurityRule {
-	// Determine if the user is an admin
-	admin := true // If no attributes are set, we need to assume it's an admin (TODO: make explicit)
-	if len(attributes) != 0 {
-		admin, _ = attributes["admin"].(bool)
-	}
-
-	// Don't add a rule if the user is an admin
-	if admin {
-		return nil
-	}
-
-	// Add a deny rule for certain resource kinds that only admins should access
-	switch kind {
-	case ResourceKindSource, ResourceKindModel, ResourceKindMigration, ResourceKindConnector:
-		return denyAccessRule
-	}
-
-	return nil
 }
 
 // builtInAlertSecurityRule returns a built-in security rule to apply to an alert.
 //
 // TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
-// We should refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead.
-func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, attributes map[string]any) *runtimev1.SecurityRule {
+// Should we refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead?
+func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, claims *SecurityClaims) *runtimev1.SecurityRule {
+	// Allow if the user is an admin
+	if claims.Admin() {
+		return allowAccessRule
+	}
+
 	// Extract attributes
 	var email, userID string
-	admin := true // If no attributes are set, we need to assume it's an admin (TODO: make explicit)
-	if len(attributes) != 0 {
-		userID, _ = attributes["sub"].(string)
-		email, _ = attributes["email"].(string)
-		admin, _ = attributes["admin"].(bool)
+	if len(claims.UserAttributes) != 0 {
+		userID, _ = claims.UserAttributes["id"].(string)
+		email, _ = claims.UserAttributes["email"].(string)
 	}
 
 	// Allow if the owner is accessing the alert
 	if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
-		return allowAccessRule
-	}
-
-	// Allow if the user is an admin
-	if admin {
 		return allowAccessRule
 	}
 
@@ -404,24 +380,22 @@ func (p *securityEngine) builtInAlertSecurityRule(spec *runtimev1.AlertSpec, att
 // builtInReportSecurityRule returns a built-in security rule to apply to a report.
 //
 // TODO: This implementation is hard-coded specifically to properties currently set by the admin server.
-// We should refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead.
-func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, attributes map[string]any) *runtimev1.SecurityRule {
+// Should we refactor to a generic implementation where the admin server provides a conditional rule in the JWT instead?
+func (p *securityEngine) builtInReportSecurityRule(spec *runtimev1.ReportSpec, claims *SecurityClaims) *runtimev1.SecurityRule {
+	// Allow if the user is an admin
+	if claims.Admin() {
+		return allowAccessRule
+	}
+
 	// Extract attributes
 	var email, userID string
-	admin := true // If no attributes are set, we need to assume it's an admin (TODO: make explicit)
-	if len(attributes) != 0 {
-		userID, _ = attributes["sub"].(string)
-		email, _ = attributes["email"].(string)
-		admin, _ = attributes["admin"].(bool)
+	if len(claims.UserAttributes) != 0 {
+		userID, _ = claims.UserAttributes["id"].(string)
+		email, _ = claims.UserAttributes["email"].(string)
 	}
 
 	// Allow if the owner is accessing the report
 	if spec.Annotations != nil && userID == spec.Annotations["admin_owner_user_id"] {
-		return allowAccessRule
-	}
-
-	// Allow if the user is an admin
-	if admin {
 		return allowAccessRule
 	}
 

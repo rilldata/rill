@@ -161,11 +161,17 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 		attr = mdl.Attributes
 
+		// Deny access to all resources except themes and mdl.MetricsView
 		rules = append(rules, &runtimev1.SecurityRule{
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
-					Condition: fmt.Sprintf("'{{ .self.kind }}'=%s AND '{{ .self.name }}'=%s", runtime.ResourceKindMetricsView, duckdbsql.EscapeStringValue(mdl.MetricsView)),
-					Allow:     true,
+					Condition: fmt.Sprintf(
+						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ .self.name }}'=%s)",
+						runtime.ResourceKindTheme,
+						runtime.ResourceKindMetricsView,
+						duckdbsql.EscapeStringValue(mdl.MetricsView),
+					),
+					Allow: false,
 				},
 			},
 		})
