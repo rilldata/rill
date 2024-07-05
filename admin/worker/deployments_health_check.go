@@ -71,7 +71,7 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 			w.logger.Error("deploymentsHealthCheck: health check call failed", zap.String("host", d.RuntimeHost), zap.Error(err))
 			return nil
 		}
-		// a Unavailable error could also be because the deployment got deleted
+		// an unavailable error could also be because the deployment got deleted
 		d, dbErr := w.admin.DB.FindDeployment(ctx, d.ID)
 		if dbErr != nil {
 			if errors.Is(dbErr, database.ErrNotFound) {

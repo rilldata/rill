@@ -419,12 +419,6 @@ type RuntimeSlotsUsed struct {
 	SlotsUsed   int    `db:"slots_used"`
 }
 
-// AllocatedRuntime is the result of FindAllocatedRuntimes query.
-type AllocatedRuntime struct {
-	Host     string `db:"runtime_host"`
-	Audience string `db:"runtime_audience"`
-}
-
 // User is a person registered in Rill.
 // Users may belong to multiple organizations and projects.
 type User struct {
