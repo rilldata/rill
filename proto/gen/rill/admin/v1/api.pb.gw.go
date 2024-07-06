@@ -3245,6 +3245,10 @@ func local_request_AdminService_AddUsergroupMemberUser_0(ctx context.Context, ma
 
 }
 
+var (
+	filter_AdminService_ListUsergroupMemberUsers_0 = &utilities.DoubleArray{Encoding: map[string]int{"organization": 0, "usergroup": 1}, Base: []int{1, 1, 2, 0, 0}, Check: []int{0, 1, 1, 2, 3}}
+)
+
 func request_AdminService_ListUsergroupMemberUsers_0(ctx context.Context, marshaler runtime.Marshaler, client AdminServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq ListUsergroupMemberUsersRequest
 	var metadata runtime.ServerMetadata
@@ -3274,6 +3278,13 @@ func request_AdminService_ListUsergroupMemberUsers_0(ctx context.Context, marsha
 	protoReq.Usergroup, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "usergroup", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListUsergroupMemberUsers_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := client.ListUsergroupMemberUsers(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
@@ -3310,6 +3321,13 @@ func local_request_AdminService_ListUsergroupMemberUsers_0(ctx context.Context, 
 	protoReq.Usergroup, err = runtime.String(val)
 	if err != nil {
 		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "usergroup", err)
+	}
+
+	if err := req.ParseForm(); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+	if err := runtime.PopulateQueryParameters(&protoReq, req.Form, filter_AdminService_ListUsergroupMemberUsers_0); err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
 	}
 
 	msg, err := server.ListUsergroupMemberUsers(ctx, &protoReq)

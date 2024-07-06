@@ -123,6 +123,11 @@ export type AdminServiceCreateAssetBody = {
   extension?: string;
 };
 
+export type AdminServiceListUsergroupMemberUsersParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceEditUsergroupBody = {
   description?: string;
 };
@@ -764,6 +769,7 @@ export interface V1ListWhitelistedDomainsResponse {
 
 export interface V1ListUsergroupMemberUsersResponse {
   members?: V1MemberUser[];
+  nextPageToken?: string;
 }
 
 export interface V1ListSuperusersResponse {

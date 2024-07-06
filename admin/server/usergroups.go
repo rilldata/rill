@@ -157,7 +157,7 @@ func (s *Server) ListOrganizationMemberUsergroups(ctx context.Context, req *admi
 	}
 	pageSize := validPageSize(req.PageSize)
 
-	members, err := s.admin.DB.FindOrganizationUsergroups(ctx, org.ID, token.Val, pageSize)
+	members, err := s.admin.DB.FindOrganizationMemberUsergroups(ctx, org.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -532,9 +532,20 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 		return nil, status.Error(codes.PermissionDenied, "not allowed to list user group members")
 	}
 
-	members, err := s.admin.DB.FindUsergroupMembersUsers(ctx, group.ID)
+	token, err := unmarshalPageToken(req.PageToken)
+	if err != nil {
+		return nil, err
+	}
+	pageSize := validPageSize(req.PageSize)
+
+	members, err := s.admin.DB.FindUsergroupMemberUsers(ctx, group.ID, token.Val, pageSize)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	nextToken := ""
+	if len(members) >= pageSize {
+		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
 	dtos := make([]*adminv1.MemberUser, len(members))
@@ -546,7 +557,10 @@ func (s *Server) ListUsergroupMemberUsers(ctx context.Context, req *adminv1.List
 		}
 	}
 
-	return &adminv1.ListUsergroupMemberUsersResponse{Members: dtos}, nil
+	return &adminv1.ListUsergroupMemberUsersResponse{
+		Members:       dtos,
+		NextPageToken: nextToken,
+	}, nil
 }
 
 func (s *Server) RemoveUsergroupMemberUser(ctx context.Context, req *adminv1.RemoveUsergroupMemberUserRequest) (*adminv1.RemoveUsergroupMemberUserResponse, error) {

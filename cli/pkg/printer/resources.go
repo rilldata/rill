@@ -413,9 +413,9 @@ func toMemberUsergroupRows(ug *adminv1.MemberUsergroup) *memberUsergroup {
 	}
 	return &memberUsergroup{
 		Name:      ug.GroupName,
+		Role:      role,
 		CreatedOn: ug.CreatedOn.AsTime().Local().Format(time.DateTime),
 		UpdatedOn: ug.UpdatedOn.AsTime().Local().Format(time.DateTime),
-		Role:      role,
 	}
 }
 

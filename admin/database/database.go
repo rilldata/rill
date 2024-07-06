@@ -121,7 +121,7 @@ type DB interface {
 	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
 	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
-	FindUsergroupMembersUsers(ctx context.Context, groupID string) ([]*MemberUser, error)
+	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
 	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
 	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
@@ -189,7 +189,7 @@ type DB interface {
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
 
-	FindOrganizationUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*MemberUsergroup, error)
+	FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*MemberUsergroup, error)
 	InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
 	DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error

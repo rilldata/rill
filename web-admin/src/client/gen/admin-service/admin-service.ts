@@ -98,6 +98,7 @@ import type {
   V1EditUsergroupResponse,
   AdminServiceEditUsergroupBody,
   V1ListUsergroupMemberUsersResponse,
+  AdminServiceListUsergroupMemberUsersParams,
   V1RemoveUsergroupMemberUserResponse,
   V1AddUsergroupMemberUserResponse,
   V1RemoveOrganizationMemberUsergroupResponse,
@@ -3653,11 +3654,13 @@ export const createAdminServiceEditUsergroup = <
 export const adminServiceListUsergroupMemberUsers = (
   organization: string,
   usergroup: string,
+  params?: AdminServiceListUsergroupMemberUsersParams,
   signal?: AbortSignal,
 ) => {
   return httpClient<V1ListUsergroupMemberUsersResponse>({
     url: `/v1/organizations/${organization}/usergroups/${usergroup}/members`,
     method: "get",
+    params,
     signal,
   });
 };
@@ -3665,7 +3668,11 @@ export const adminServiceListUsergroupMemberUsers = (
 export const getAdminServiceListUsergroupMemberUsersQueryKey = (
   organization: string,
   usergroup: string,
-) => [`/v1/organizations/${organization}/usergroups/${usergroup}/members`];
+  params?: AdminServiceListUsergroupMemberUsersParams,
+) => [
+  `/v1/organizations/${organization}/usergroups/${usergroup}/members`,
+  ...(params ? [params] : []),
+];
 
 export type AdminServiceListUsergroupMemberUsersQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceListUsergroupMemberUsers>>
@@ -3678,6 +3685,7 @@ export const createAdminServiceListUsergroupMemberUsers = <
 >(
   organization: string,
   usergroup: string,
+  params?: AdminServiceListUsergroupMemberUsersParams,
   options?: {
     query?: CreateQueryOptions<
       Awaited<ReturnType<typeof adminServiceListUsergroupMemberUsers>>,
@@ -3690,12 +3698,21 @@ export const createAdminServiceListUsergroupMemberUsers = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceListUsergroupMemberUsersQueryKey(organization, usergroup);
+    getAdminServiceListUsergroupMemberUsersQueryKey(
+      organization,
+      usergroup,
+      params,
+    );
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof adminServiceListUsergroupMemberUsers>>
   > = ({ signal }) =>
-    adminServiceListUsergroupMemberUsers(organization, usergroup, signal);
+    adminServiceListUsergroupMemberUsers(
+      organization,
+      usergroup,
+      params,
+      signal,
+    );
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceListUsergroupMemberUsers>>,

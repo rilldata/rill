@@ -758,15 +758,16 @@ func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, use
 	return nil
 }
 
-func (c *connection) FindUsergroupMembersUsers(ctx context.Context, groupID string) ([]*database.MemberUser, error) {
+func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT uug.user_id as "id", u.email, u.display_name FROM usergroups_users uug
 		JOIN users u ON uug.user_id = u.id
-		WHERE uug.usergroup_id = $1
-	`, groupID)
+		WHERE uug.usergroup_id = $1 AND lower(u.email) > lower($2)
+		ORDER BY lower(u.email) LIMIT $3
+	`, groupID, afterEmail, limit)
 	if err != nil {
-		return nil, parseErr("usergroup members", err)
+		return nil, parseErr("usergroup member", err)
 	}
 	return res, nil
 }
@@ -1343,9 +1344,9 @@ func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, use
 	return nil
 }
 
-// FindOrganizationUsergroups returns org user groups as a collection of MemberUsergroup.
+// FindOrganizationMemberUsergroups returns org user groups as a collection of MemberUsergroup.
 // If a user group has no org role then RoleName is empty.
-func (c *connection) FindOrganizationUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
 	var res []*database.MemberUsergroup
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT ug.id, ug.name, ug.created_on, ug.updated_on, COALESCE(r.name, '') as "role_name" FROM usergroups ug

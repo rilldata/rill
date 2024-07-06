@@ -15840,6 +15840,23 @@ func (m *ListUsergroupMemberUsersRequest) validate(all bool) error {
 		errors = append(errors, err)
 	}
 
+	if m.GetPageSize() != 0 {
+
+		if m.GetPageSize() > 1000 {
+			err := ListUsergroupMemberUsersRequestValidationError{
+				field:  "PageSize",
+				reason: "value must be less than or equal to 1000",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
+	// no validation rules for PageToken
+
 	if len(errors) > 0 {
 		return ListUsergroupMemberUsersRequestMultiError(errors)
 	}
@@ -15977,6 +15994,8 @@ func (m *ListUsergroupMemberUsersResponse) validate(all bool) error {
 		}
 
 	}
+
+	// no validation rules for NextPageToken
 
 	if len(errors) > 0 {
 		return ListUsergroupMemberUsersResponseMultiError(errors)

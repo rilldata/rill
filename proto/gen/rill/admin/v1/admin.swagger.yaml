@@ -1694,6 +1694,15 @@ paths:
           in: path
           required: true
           type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/usergroups/{usergroup}/members/{email}:
@@ -3670,6 +3679,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1MemberUser'
+      nextPageToken:
+        type: string
   v1ListWhitelistedDomainsResponse:
     type: object
     properties:

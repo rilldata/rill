@@ -1329,10 +1329,13 @@ message AddUsergroupMemberUserResponse {}
 message ListUsergroupMemberUsersRequest {
   string organization = 1 [(validate.rules).string.min_len = 1];
   string usergroup = 2 [(validate.rules).string.min_len = 1];
+  uint32 page_size = 3 [(validate.rules).uint32 = {ignore_empty: true, lte: 1000}];
+  string page_token = 4;
 }
 
 message ListUsergroupMemberUsersResponse {
   repeated MemberUser members = 1;
+  string next_page_token = 2;
 }
 
 message RemoveUsergroupMemberUserRequest {

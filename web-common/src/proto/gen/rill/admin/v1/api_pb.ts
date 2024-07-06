@@ -5492,6 +5492,16 @@ export class ListUsergroupMemberUsersRequest extends Message<ListUsergroupMember
    */
   usergroup = "";
 
+  /**
+   * @generated from field: uint32 page_size = 3;
+   */
+  pageSize = 0;
+
+  /**
+   * @generated from field: string page_token = 4;
+   */
+  pageToken = "";
+
   constructor(data?: PartialMessage<ListUsergroupMemberUsersRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5502,6 +5512,8 @@ export class ListUsergroupMemberUsersRequest extends Message<ListUsergroupMember
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "usergroup", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 4, name: "page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupMemberUsersRequest {
@@ -5530,6 +5542,11 @@ export class ListUsergroupMemberUsersResponse extends Message<ListUsergroupMembe
    */
   members: MemberUser[] = [];
 
+  /**
+   * @generated from field: string next_page_token = 2;
+   */
+  nextPageToken = "";
+
   constructor(data?: PartialMessage<ListUsergroupMemberUsersResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -5539,6 +5556,7 @@ export class ListUsergroupMemberUsersResponse extends Message<ListUsergroupMembe
   static readonly typeName = "rill.admin.v1.ListUsergroupMemberUsersResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "members", kind: "message", T: MemberUser, repeated: true },
+    { no: 2, name: "next_page_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListUsergroupMemberUsersResponse {
