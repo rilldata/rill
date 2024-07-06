@@ -19,7 +19,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 		Short: "List",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if groupName != "" {
-				err := listUsergroupMembers(cmd, ch, ch.Org, groupName)
+				err := listUsergroupMembers(cmd, ch, ch.Org, groupName, pageToken, pageSize)
 				if err != nil {
 					return err
 				}
@@ -84,7 +84,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 	return listCmd
 }
 
-func listUsergroupMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, group string) error {
+func listUsergroupMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, group, pageToken string, pageSize uint32) error {
 	client, err := ch.Client()
 	if err != nil {
 		return err
@@ -93,12 +93,19 @@ func listUsergroupMembers(cmd *cobra.Command, ch *cmdutil.Helper, org, group str
 	members, err := client.ListUsergroupMemberUsers(cmd.Context(), &adminv1.ListUsergroupMemberUsersRequest{
 		Organization: org,
 		Usergroup:    group,
+		PageSize:     pageSize,
+		PageToken:    pageToken,
 	})
 	if err != nil {
 		return err
 	}
 
 	ch.PrintUsergroupMembers(members.Members)
+
+	if members.NextPageToken != "" {
+		cmd.Println()
+		cmd.Printf("Next page token: %s\n", members.NextPageToken)
+	}
 
 	return nil
 }
