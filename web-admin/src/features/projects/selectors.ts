@@ -1,6 +1,6 @@
 import {
   createAdminServiceGetProject,
-  createAdminServiceListProjectMembers,
+  createAdminServiceListProjectMemberUsers,
 } from "@rilldata/web-admin/client";
 
 export function getProjectPermissions(orgName: string, projName: string) {
@@ -12,7 +12,7 @@ export function getProjectPermissions(orgName: string, projName: string) {
 }
 
 export function useProjectMembersEmails(organization: string, project: string) {
-  return createAdminServiceListProjectMembers(
+  return createAdminServiceListProjectMemberUsers(
     organization,
     project,
     undefined,

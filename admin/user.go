@@ -82,7 +82,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -307,7 +307,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, err
 	}
 	// Add user to all user group
-	err = s.DB.InsertUsergroupMember(ctx, userGroup.ID, userID)
+	err = s.DB.InsertUsergroupMemberUser(ctx, userGroup.ID, userID)
 	if err != nil {
 		return nil, err
 	}

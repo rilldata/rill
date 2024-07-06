@@ -631,7 +631,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	return &adminv1.UpdateProjectVariablesResponse{Variables: proj.ProdVariables}, nil
 }
 
-func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
+func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListProjectMemberUsersRequest) (*adminv1.ListProjectMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -663,12 +663,12 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.Member, len(members))
+	dtos := make([]*adminv1.MemberUser, len(members))
 	for i, member := range members {
-		dtos[i] = memberToPB(member)
+		dtos[i] = memberUserToPB(member)
 	}
 
-	return &adminv1.ListProjectMembersResponse{
+	return &adminv1.ListProjectMemberUsersResponse{
 		Members:       dtos,
 		NextPageToken: nextToken,
 	}, nil
@@ -718,7 +718,7 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 	}, nil
 }
 
-func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
+func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProjectMemberUserRequest) (*adminv1.AddProjectMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -795,7 +795,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		return &adminv1.AddProjectMemberResponse{
+		return &adminv1.AddProjectMemberUserResponse{
 			PendingSignup: true,
 		}, nil
 	}
@@ -818,12 +818,12 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddProjectMemberResponse{
+	return &adminv1.AddProjectMemberUserResponse{
 		PendingSignup: false,
 	}, nil
 }
 
-func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
+func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.RemoveProjectMemberUserRequest) (*adminv1.RemoveProjectMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -860,7 +860,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return &adminv1.RemoveProjectMemberResponse{}, nil
+		return &adminv1.RemoveProjectMemberUserResponse{}, nil
 	}
 
 	// The caller must either have ManageProjectMembers permission or be the user being removed.
@@ -876,10 +876,10 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RemoveProjectMemberResponse{}, nil
+	return &adminv1.RemoveProjectMemberUserResponse{}, nil
 }
 
-func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
+func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetProjectMemberUserRoleRequest) (*adminv1.SetProjectMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -918,7 +918,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return &adminv1.SetProjectMemberRoleResponse{}, nil
+		return &adminv1.SetProjectMemberUserRoleResponse{}, nil
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
@@ -926,7 +926,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.SetProjectMemberRoleResponse{}, nil
+	return &adminv1.SetProjectMemberUserRoleResponse{}, nil
 }
 
 func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {
