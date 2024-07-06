@@ -421,9 +421,9 @@ func toMemberUsergroupRows(ug *adminv1.MemberUsergroup) *memberUsergroup {
 
 type memberUsergroup struct {
 	Name      string `header:"name" json:"name"`
+	Role      string `header:"role" json:"role"`
 	CreatedOn string `header:"created_on,timestamp(ms|utc|human)" json:"created_at"`
 	UpdatedOn string `header:"updated_on,timestamp(ms|utc|human)" json:"updated_at"`
-	Role      string `header:"role" json:"role"`
 }
 
 func (p *Printer) PrintUsergroupMembers(members []*adminv1.MemberUser) {
