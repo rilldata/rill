@@ -27,8 +27,11 @@
   import NullPercentageSpark from "./sparks/NullPercentageSpark.svelte";
   import NumericSpark from "./sparks/NumericSpark.svelte";
 
-  export let columnName: string;
+  export let connector: string;
+  export let database: string;
+  export let databaseSchema: string;
   export let objectName: string;
+  export let columnName: string;
   export let type: string;
   export let mode = "summaries";
   export let example: any;
@@ -43,6 +46,9 @@
 
   $: nulls = getNullPercentage(
     $runtime?.instanceId,
+    connector,
+    database,
+    databaseSchema,
     objectName,
     columnName,
     enableProfiling,
@@ -50,6 +56,9 @@
 
   $: diagnosticHistogram = getNumericHistogram(
     $runtime?.instanceId,
+    connector,
+    database,
+    databaseSchema,
     objectName,
     columnName,
     QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_DIAGNOSTIC,
@@ -60,6 +69,9 @@
   $: if (isFloat(type)) {
     fdHistogram = getNumericHistogram(
       $runtime?.instanceId,
+      connector,
+      database,
+      databaseSchema,
       objectName,
       columnName,
       QueryServiceColumnNumericHistogramHistogramMethod.HISTOGRAM_METHOD_FD,
@@ -84,7 +96,13 @@
   $: rug = createQueryServiceColumnRugHistogram(
     $runtime?.instanceId,
     objectName,
-    { columnName, priority: getPriorityForColumn("rug-histogram", active) },
+    {
+      connector,
+      database,
+      databaseSchema,
+      columnName,
+      priority: getPriorityForColumn("rug-histogram", active),
+    },
     {
       query: {
         select($query) {
@@ -96,6 +114,9 @@
   );
   $: topK = getTopK(
     $runtime?.instanceId,
+    connector,
+    database,
+    databaseSchema,
     objectName,
     columnName,
     enableProfiling,
@@ -106,6 +127,9 @@
       $runtime?.instanceId,
       objectName,
       {
+        connector,
+        database,
+        databaseSchema,
         columnName: columnName,
         priority: getPriorityForColumn("descriptive-statistics", active),
       },

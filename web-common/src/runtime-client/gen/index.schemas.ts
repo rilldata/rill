@@ -180,7 +180,6 @@ export type QueryServiceColumnNullCountParams = {
 
 export type QueryServiceMetricsViewTotalsBody = {
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
@@ -191,7 +190,6 @@ export type QueryServiceMetricsViewTotalsBody = {
 export type QueryServiceMetricsViewToplistBody = {
   dimensionName?: string;
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   limit?: string;
@@ -205,7 +203,6 @@ export type QueryServiceMetricsViewToplistBody = {
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -544,12 +541,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -577,6 +568,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -675,15 +672,12 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export type V1SourceSpecProperties = { [key: string]: any };
-
-export interface V1Schedule {
-  refUpdate?: boolean;
-  disable?: boolean;
-  cron?: string;
-  tickerSeconds?: number;
-  timeZone?: string;
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
+
+export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
   sourceConnector?: string;
@@ -696,9 +690,36 @@ export interface V1SourceSpec {
   trigger?: boolean;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
+export interface V1SecurityRuleRowFilter {
+  condition?: string;
+  sql?: string;
+  expression?: V1Expression;
+}
+
+export interface V1SecurityRuleFieldAccess {
+  condition?: string;
+  allow?: boolean;
+  fields?: string[];
+  allFields?: boolean;
+}
+
+export interface V1SecurityRuleAccess {
+  condition?: string;
+  allow?: boolean;
+}
+
+export interface V1SecurityRule {
+  access?: V1SecurityRuleAccess;
+  fieldAccess?: V1SecurityRuleFieldAccess;
+  rowFilter?: V1SecurityRuleRowFilter;
+}
+
+export interface V1Schedule {
+  refUpdate?: boolean;
+  disable?: boolean;
+  cron?: string;
+  tickerSeconds?: number;
+  timeZone?: string;
 }
 
 export interface V1S3Object {
@@ -761,11 +782,23 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  dashboard?: V1Dashboard;
+  api?: V1API;
+  connector?: V1ConnectorV2;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -796,6 +829,13 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -816,25 +856,6 @@ export interface V1RefreshTriggerSpec {
 export interface V1RefreshTrigger {
   spec?: V1RefreshTriggerSpec;
   state?: V1RefreshTriggerState;
-}
-
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  dashboard?: V1Dashboard;
-  api?: V1API;
-  connector?: V1ConnectorV2;
 }
 
 export type V1ReconcileStatus =
@@ -1092,7 +1113,6 @@ export interface V1MetricsViewTotalsRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
@@ -1112,7 +1132,6 @@ export interface V1MetricsViewToplistRequest {
   metricsViewName?: string;
   dimensionName?: string;
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   limit?: string;
@@ -1133,7 +1152,6 @@ export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -1166,7 +1184,7 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
-  security?: MetricsViewSpecSecurityV2;
+  securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
@@ -1250,6 +1268,13 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1275,13 +1300,6 @@ export const V1MetricsViewComparisonMeasureType = {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
-
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
 
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
@@ -1440,6 +1458,16 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+export interface V1InstanceHealth {
+  controllerError?: string;
+  olapError?: string;
+  repoError?: string;
+}
+
+export interface V1InstanceHealthResponse {
+  instanceHealth?: V1InstanceHealth;
+}
+
 export type V1InstanceAnnotations = { [key: string]: string };
 
 export type V1InstanceFeatureFlags = { [key: string]: boolean };
@@ -1448,9 +1476,31 @@ export type V1InstanceProjectVariables = { [key: string]: string };
 
 export type V1InstanceVariables = { [key: string]: string };
 
-export interface V1InlineMeasure {
-  name?: string;
-  expression?: string;
+/**
+ * Instance represents a single data project, meaning one set of code artifacts,
+one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+metadata (such as reconciliation state). Instances are the unit of isolation within
+the runtime. They enable one runtime deployment to serve not only multiple data
+projects, but also multiple tenants. On local, the runtime will usually have
+just a single instance.
+ */
+export interface V1Instance {
+  instanceId?: string;
+  environment?: string;
+  olapConnector?: string;
+  repoConnector?: string;
+  adminConnector?: string;
+  aiConnector?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  connectors?: V1Connector[];
+  projectConnectors?: V1Connector[];
+  variables?: V1InstanceVariables;
+  projectVariables?: V1InstanceProjectVariables;
+  featureFlags?: V1InstanceFeatureFlags;
+  annotations?: V1InstanceAnnotations;
+  embedCatalog?: boolean;
+  watchRepo?: boolean;
 }
 
 export type V1HistogramMethod =
@@ -1462,6 +1512,18 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
+
+export type V1HealthResponseInstancesHealth = {
+  [key: string]: V1InstanceHealth;
+};
+
+export interface V1HealthResponse {
+  limiterError?: string;
+  connCacheError?: string;
+  metastoreError?: string;
+  networkError?: string;
+  instancesHealth?: V1HealthResponseInstancesHealth;
+}
 
 export interface V1GetResourceResponse {
   resource?: V1Resource;
@@ -1647,6 +1709,11 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
+export interface V1ConnectorV2 {
+  spec?: V1ConnectorSpec;
+  state?: V1ConnectorState;
+}
+
 /**
  * properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties.
@@ -1661,11 +1728,6 @@ export interface V1ConnectorSpec {
   /** properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
-}
-
-export interface V1ConnectorV2 {
-  spec?: V1ConnectorSpec;
-  state?: V1ConnectorState;
 }
 
 /**
@@ -1691,6 +1753,8 @@ export interface V1ConnectorDriver {
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };
 
+export type V1ConnectorConfig = { [key: string]: string };
+
 export interface V1Connector {
   /** Type of the connector. One of the infra driver supported. */
   type?: string;
@@ -1698,35 +1762,6 @@ export interface V1Connector {
   config?: V1ConnectorConfig;
   configFromVariables?: V1ConnectorConfigFromVariables;
 }
-
-/**
- * Instance represents a single data project, meaning one set of code artifacts,
-one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-metadata (such as reconciliation state). Instances are the unit of isolation within
-the runtime. They enable one runtime deployment to serve not only multiple data
-projects, but also multiple tenants. On local, the runtime will usually have
-just a single instance.
- */
-export interface V1Instance {
-  instanceId?: string;
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  createdOn?: string;
-  updatedOn?: string;
-  connectors?: V1Connector[];
-  projectConnectors?: V1Connector[];
-  variables?: V1InstanceVariables;
-  projectVariables?: V1InstanceProjectVariables;
-  featureFlags?: V1InstanceFeatureFlags;
-  annotations?: V1InstanceAnnotations;
-  embedCatalog?: boolean;
-  watchRepo?: boolean;
-}
-
-export type V1ConnectorConfig = { [key: string]: string };
 
 export interface V1Condition {
   op?: V1Operation;
@@ -1936,6 +1971,10 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1946,10 +1985,6 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
-}
-
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2017,10 +2052,6 @@ export interface V1AlertState {
   executionCount?: number;
 }
 
-export type V1AlertSpecDataProperties = { [key: string]: any };
-
-export type V1AlertSpecResolverProperties = { [key: string]: any };
-
 export type V1AlertSpecAnnotations = { [key: string]: string };
 
 export type V1AlertSpecQueryForAttributes = { [key: string]: any };
@@ -2035,6 +2066,8 @@ export interface V1AlertSpec {
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
@@ -2045,9 +2078,6 @@ export interface V1AlertSpec {
   renotifyAfterSeconds?: number;
   notifiers?: V1Notifier[];
   annotations?: V1AlertSpecAnnotations;
-  resolver?: string;
-  resolverProperties?: V1AlertSpecResolverProperties;
-  dataProperties?: V1AlertSpecDataProperties;
 }
 
 export interface V1AlertExecution {
@@ -2081,6 +2111,14 @@ export interface V1APISpec {
 export interface V1API {
   spec?: V1APISpec;
   state?: V1APIState;
+}
+
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
 }
 
 /**
@@ -2143,14 +2181,6 @@ export const TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
-export interface Runtimev1Type {
-  code?: TypeCode;
-  nullable?: boolean;
-  arrayElementType?: Runtimev1Type;
-  structType?: V1StructType;
-  mapType?: V1MapType;
-}
-
 export interface TopKEntry {
   value?: unknown;
   count?: number;
@@ -2167,11 +2197,6 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
-export interface SecurityV2FieldConditionV2 {
-  condition?: string;
-  names?: string[];
-}
-
 export interface NumericOutliersOutlier {
   bucket?: number;
   low?: number;
@@ -2186,14 +2211,6 @@ export interface NumericHistogramBinsBin {
   midpoint?: number;
   high?: number;
   count?: number;
-}
-
-export interface MetricsViewSpecSecurityV2 {
-  access?: string;
-  rowFilter?: string;
-  queryFilter?: V1Expression;
-  include?: SecurityV2FieldConditionV2[];
-  exclude?: SecurityV2FieldConditionV2[];
 }
 
 export type MetricsViewSpecMeasureType =

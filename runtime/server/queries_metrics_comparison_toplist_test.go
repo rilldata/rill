@@ -892,12 +892,14 @@ func TestServer_MetricsViewComparison_unnested_dimension_expression_in_filter(t 
 		Exact: true,
 	})
 	require.NoError(t, err)
-	require.Len(t, tr.Rows, 4)
+	require.Len(t, tr.Rows, 6)
 	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
 	require.Equal(t, "instagram", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, "com", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, "facebook", tr.Rows[2].DimensionValue.GetStringValue())
-	require.Equal(t, "msn", tr.Rows[3].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "sports", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "com", tr.Rows[3].DimensionValue.GetStringValue())
+	require.Equal(t, "news", tr.Rows[4].DimensionValue.GetStringValue())
+	require.Equal(t, "msn", tr.Rows[5].DimensionValue.GetStringValue())
 }
 
 func TestServer_MetricsViewComparison_unnested_dimension_expression_like_filter(t *testing.T) {
@@ -940,14 +942,15 @@ func TestServer_MetricsViewComparison_unnested_dimension_expression_like_filter(
 	for _, row := range tr.Rows {
 		fmt.Println(row.DimensionValue.GetStringValue())
 	}
-	require.Len(t, tr.Rows, 6)
+	require.Len(t, tr.Rows, 7)
 	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
 	require.Equal(t, "instagram", tr.Rows[0].DimensionValue.GetStringValue())
 	require.Equal(t, "facebook", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, "com", tr.Rows[2].DimensionValue.GetStringValue())
-	require.Equal(t, "google", tr.Rows[3].DimensionValue.GetStringValue())
-	require.Equal(t, "news", tr.Rows[4].DimensionValue.GetStringValue())
-	require.Equal(t, "msn", tr.Rows[5].DimensionValue.GetStringValue())
+	require.Equal(t, "sports", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "com", tr.Rows[3].DimensionValue.GetStringValue())
+	require.Equal(t, "google", tr.Rows[4].DimensionValue.GetStringValue())
+	require.Equal(t, "news", tr.Rows[5].DimensionValue.GetStringValue())
+	require.Equal(t, "msn", tr.Rows[6].DimensionValue.GetStringValue())
 }
 
 /*
@@ -1420,10 +1423,12 @@ func TestServer_MetricsViewComparison_no_comparison_unnested_dimension_expressio
 		Exact: true,
 	})
 	require.NoError(t, err)
-	require.Len(t, tr.Rows, 4)
+	require.Len(t, tr.Rows, 6)
 	require.Equal(t, 1, len(tr.Rows[0].MeasureValues))
-	require.Equal(t, "instagram", tr.Rows[0].DimensionValue.GetStringValue())
-	require.Equal(t, "msn", tr.Rows[1].DimensionValue.GetStringValue())
-	require.Equal(t, "facebook", tr.Rows[2].DimensionValue.GetStringValue())
-	require.Equal(t, "com", tr.Rows[3].DimensionValue.GetStringValue())
+	require.Equal(t, "sports", tr.Rows[0].DimensionValue.GetStringValue())
+	require.Equal(t, "instagram", tr.Rows[1].DimensionValue.GetStringValue())
+	require.Equal(t, "msn", tr.Rows[2].DimensionValue.GetStringValue())
+	require.Equal(t, "facebook", tr.Rows[3].DimensionValue.GetStringValue())
+	require.Equal(t, "news", tr.Rows[4].DimensionValue.GetStringValue())
+	require.Equal(t, "com", tr.Rows[5].DimensionValue.GetStringValue())
 }

@@ -12,9 +12,8 @@ import (
 )
 
 type MetricsViewSchema struct {
-	MetricsViewName    string                                `json:"metrics_view_name,omitempty"`
-	SecurityAttributes map[string]any                        `json:"security_attributes,omitempty"`
-	SecurityPolicy     *runtimev1.MetricsViewSpec_SecurityV2 `json:"security_policy,omitempty"`
+	MetricsViewName string                  `json:"metrics_view_name,omitempty"`
+	SecurityClaims  *runtime.SecurityClaims `json:"security_claims,omitempty"`
 
 	Result *runtimev1.MetricsViewSchemaResponse `json:"-"`
 }
@@ -53,12 +52,12 @@ func (q *MetricsViewSchema) UnmarshalResult(v any) error {
 
 func (q *MetricsViewSchema) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	// Resolve metrics view
-	mv, _, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, nil, nil)
+	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
 
-	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, nil, priority)
+	e, err := metricsview.NewExecutor(ctx, rt, instanceID, mv, sec, priority)
 	if err != nil {
 		return err
 	}

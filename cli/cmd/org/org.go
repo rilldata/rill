@@ -26,7 +26,7 @@ func OrgCmd(ch *cmdutil.Helper) *cobra.Command {
 	return orgCmd
 }
 
-func orgNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
+func OrgNames(ctx context.Context, ch *cmdutil.Helper) ([]string, error) {
 	c, err := ch.Client()
 	if err != nil {
 		return nil, err

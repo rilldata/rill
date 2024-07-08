@@ -149,6 +149,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		c.logger.Debug("query took", zap.Duration("duration", time.Since(now)), observability.ZapCtx(ctx))
 	}
 
+	tempDir, err := os.MkdirTemp(c.config.TempDir, "bigquery")
+	if err != nil {
+		return nil, err
+	}
+
 	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
 	return &fileIterator{
 		client:       client,
@@ -158,6 +163,7 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		progress:     p,
 		totalRecords: int64(it.TotalRows),
 		ctx:          ctx,
+		tempDir:      tempDir,
 	}, nil
 }
 
@@ -178,9 +184,9 @@ type fileIterator struct {
 	logger       *zap.Logger
 	limitInBytes int64
 	progress     drivers.Progress
+	tempDir      string
 
 	totalRecords int64
-	tempFilePath string
 	downloaded   bool
 
 	ctx context.Context // TODO :: refatcor NextBatch to take context on NextBatch
@@ -188,7 +194,7 @@ type fileIterator struct {
 
 // Close implements drivers.FileIterator.
 func (f *fileIterator) Close() error {
-	return os.Remove(f.tempFilePath)
+	return os.RemoveAll(f.tempDir)
 }
 
 // Next implements drivers.FileIterator.
@@ -200,10 +206,11 @@ func (f *fileIterator) Next() ([]string, error) {
 	// storage API not available so can't read as arrow records. Read results row by row and dump in a json file.
 	if !f.bqIter.IsAccelerated() {
 		f.logger.Debug("downloading results in json file", observability.ZapCtx(f.ctx))
-		if err := f.downloadAsJSONFile(); err != nil {
+		file, err := f.downloadAsJSONFile()
+		if err != nil {
 			return nil, err
 		}
-		return []string{f.tempFilePath}, nil
+		return []string{file}, nil
 	}
 	f.logger.Debug("downloading results in parquet file", observability.ZapCtx(f.ctx))
 
@@ -213,7 +220,6 @@ func (f *fileIterator) Next() ([]string, error) {
 		return nil, err
 	}
 	defer fw.Close()
-	f.tempFilePath = fw.Name()
 	f.downloaded = true
 
 	rdr, err := f.AsArrowRecordReader()
@@ -296,19 +302,18 @@ func (f *fileIterator) Format() string {
 	return ""
 }
 
-func (f *fileIterator) downloadAsJSONFile() error {
+func (f *fileIterator) downloadAsJSONFile() (string, error) {
 	tf := time.Now()
 	defer func() {
 		f.logger.Debug("time taken to write row in json file", zap.Duration("duration", time.Since(tf)), observability.ZapCtx(f.ctx))
 	}()
 
 	// create a temp file
-	fw, err := os.CreateTemp("", "temp*.ndjson")
+	fw, err := os.CreateTemp(f.tempDir, "temp*.ndjson")
 	if err != nil {
-		return err
+		return "", err
 	}
 	defer fw.Close()
-	f.tempFilePath = fw.Name()
 	f.downloaded = true
 
 	init := false
@@ -320,13 +325,14 @@ func (f *fileIterator) downloadAsJSONFile() error {
 		row := make(map[string]bigquery.Value)
 		err := f.bqIter.Next(&row)
 		if err != nil {
-			if errors.Is(err, iterator.Done) {
-				if !init {
-					return drivers.ErrNoRows
-				}
-				return nil
+			if !errors.Is(err, iterator.Done) {
+				return "", err
 			}
-			return err
+			if !init {
+				return "", drivers.ErrNoRows
+			}
+			// all rows written successfully
+			return fw.Name(), nil
 		}
 
 		// schema and total rows is available after first call to next only
@@ -356,7 +362,7 @@ func (f *fileIterator) downloadAsJSONFile() error {
 
 		err = enc.Encode(row)
 		if err != nil {
-			return fmt.Errorf("conversion of row to json failed with error: %w", err)
+			return "", fmt.Errorf("conversion of row to json failed with error: %w", err)
 		}
 
 		// If we don't have storage API access, BigQuery may return massive JSON results. (But even with storage API access, it may return JSON for small results.)
@@ -365,10 +371,10 @@ func (f *fileIterator) downloadAsJSONFile() error {
 		if rows != 0 && rows%10000 == 0 { // Check file size every 10k rows
 			fileInfo, err := os.Stat(fw.Name())
 			if err != nil {
-				return fmt.Errorf("bigquery: failed to poll json file size: %w", err)
+				return "", fmt.Errorf("bigquery: failed to poll json file size: %w", err)
 			}
 			if fileInfo.Size() >= _jsonDownloadLimitBytes {
-				return fmt.Errorf("bigquery: json download exceeded limit of %d bytes (enable and provide access to the BigQuery Storage Read API to read larger results)", _jsonDownloadLimitBytes)
+				return "", fmt.Errorf("bigquery: json download exceeded limit of %d bytes (enable and provide access to the BigQuery Storage Read API to read larger results)", _jsonDownloadLimitBytes)
 			}
 		}
 	}

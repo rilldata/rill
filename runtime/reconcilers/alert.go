@@ -472,15 +472,19 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	}
 
 	// Evaluate intervals
-	ts, err := calculateExecutionTimes(a, watermark, previousWatermark)
+	ts, err := calculateAlertExecutionTimes(a, watermark, previousWatermark)
 	if err != nil {
-		// This should not usually error
+		skipErr := &skipError{}
+		if errors.As(err, skipErr) {
+			r.C.Logger.Info("Skipped alert check", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
+			return nil
+		}
 		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err))
 		return err
 	}
-
 	if len(ts) == 0 {
-		r.C.Logger.Debug("Skipped alert check because watermark is unchanged or has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
+		// This should never happen
+		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err))
 		return nil
 	}
 
@@ -539,7 +543,7 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 // checkAlert runs the alert query and returns the result.
 func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, error) {
 	// Log
-	r.C.Logger.Debug("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	if a.Spec.Resolver == "" {
 		return nil, fmt.Errorf("alert has no resolver")
@@ -810,17 +814,18 @@ func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []
 	return t, !t.IsZero(), nil
 }
 
-// calculateExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
+// calculateAlertExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
 // If the alert is not configured to run on intervals, it will return a slice containing only the current watermark.
-func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
+// If the alert should not be executed, it returns a skipError explaining why.
+func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
 	// If the watermark is unchanged, skip the check.
 	// NOTE: It might make sense to make this configurable in the future, but the use cases seem limited.
 	// The watermark can only be unchanged if watermark="inherit" and since that indicates watermarks can be trusted, why check for the same watermark?
 	if watermark.Equal(previousWatermark) {
-		return nil, nil
+		return nil, skipError{reason: "watermark is unchanged"}
 	}
 
-	// If the alert is not configured to run on intervals, check it just for the current watermark.
+	// If the alert is not configured to run on intervals, always check it for the current watermark.
 	if a.Spec.IntervalsIsoDuration == "" {
 		return []time.Time{watermark}, nil
 	}
@@ -868,7 +873,7 @@ func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark ti
 
 	// Skip if end isn't past the previous watermark (unless we're supposed to check unclosed intervals)
 	if !a.Spec.IntervalsCheckUnclosed && !end.After(previousWatermark) {
-		return nil, nil
+		return nil, skipError{reason: "watermark has not advanced by a full interval"}
 	}
 
 	// Set a limit on the number of intervals to check
@@ -892,6 +897,181 @@ func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark ti
 	slices.Reverse(ts)
 
 	return ts, nil
+}
+
+// skipError is a special error type that indicates that an action should be skipped with a reason why.
+type skipError struct {
+	reason string
+}
+
+// Error implements the error interface.
+func (s skipError) Error() string {
+	return fmt.Sprintf("skipped: %s", s.reason)
+}
+
+// extractQueryResultFirstRow extracts the first row from a query result.
+// TODO: This should function more like an export, i.e. use dimension/measure labels instead of names.
+func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (map[string]any, bool, error) {
+	switch q := q.(type) {
+	case *queries.MetricsViewAggregation:
+		if q.Result != nil && len(q.Result.Data) > 0 {
+			return formatMetricsViewAggregationResult(q, measures, logger), true, nil
+		}
+		return nil, false, nil
+	case *queries.MetricsViewComparison:
+		if q.Result != nil && len(q.Result.Rows) > 0 {
+			return formatMetricsViewComparisonResult(q, measures, logger), true, nil
+		}
+		return nil, false, nil
+	default:
+		return nil, false, fmt.Errorf("query type %T not supported for alerts", q)
+	}
+}
+
+func formatMetricsViewAggregationResult(q *queries.MetricsViewAggregation, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) map[string]any {
+	row := q.Result.Data[0]
+	res := make(map[string]any)
+	for k, v := range row.AsMap() {
+		measureLabel, f := getComparisonMeasureLabelAndFormatter(k, q.Measures, measures, logger)
+		res[measureLabel] = formatValue(f, v, logger)
+	}
+	return res
+}
+
+func formatMetricsViewComparisonResult(q *queries.MetricsViewComparison, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) map[string]any {
+	row := q.Result.Rows[0]
+	res := make(map[string]any)
+	res[q.DimensionName] = row.DimensionValue
+	for _, v := range row.MeasureValues {
+		measureLabel, f := getMeasureLabelAndFormatter(v.MeasureName, measures, logger)
+		res[measureLabel] = formatValue(f, v.BaseValue.AsInterface(), logger)
+		if v.ComparisonValue != nil {
+			res[measureLabel+" (prev)"] = formatValue(f, v.ComparisonValue.AsInterface(), logger)
+		}
+		if v.DeltaAbs != nil {
+			res[measureLabel+" (Δ)"] = formatValue(f, v.DeltaAbs.AsInterface(), logger)
+		}
+		if v.DeltaRel != nil {
+			fp, err := formatter.NewPresetFormatter("percentage", false)
+			if err != nil {
+				logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
+				fp = nil
+			}
+			res[measureLabel+" (Δ%)"] = formatValue(fp, v.DeltaRel.AsInterface(), logger)
+		}
+	}
+	return res
+}
+
+// getComparisonMeasureLabelAndFormatter gets the measure label and formatter by a measure name and adds a suffix if it was compared measure.
+// for relative change comparison it uses percent formatter, uses defined preset for everything else
+// if a measure is not found in the request list, it returns the measure name as the label and no formatter.
+// if the measure is not found in the metrics view measures, it returns the measure name as the label and no formatter.
+// if the formatter fails to load, it logs the error and returns the measure name as the label and no formatter.
+func getComparisonMeasureLabelAndFormatter(measureName string, reqMeasures []*runtimev1.MetricsViewAggregationMeasure, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (string, formatter.Formatter) {
+	var reqMeasure *runtimev1.MetricsViewAggregationMeasure
+	effectiveMeasure := measureName
+	for _, m := range reqMeasures {
+		if measureName == m.Name {
+			reqMeasure = m
+			// get the actual measure comparison is based on
+			switch v := m.Compute.(type) {
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+				effectiveMeasure = v.ComparisonValue.Measure
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+				effectiveMeasure = v.ComparisonDelta.Measure
+			case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+				effectiveMeasure = v.ComparisonRatio.Measure
+			}
+			break
+		}
+	}
+	if reqMeasure == nil {
+		return measureName, nil
+	}
+
+	var measure *runtimev1.MetricsViewSpec_MeasureV2
+	for _, m := range measures {
+		if effectiveMeasure == m.Name {
+			measure = m
+			break
+		}
+	}
+
+	if measure == nil {
+		return effectiveMeasure, nil
+	}
+
+	measureLabel := measure.Label
+	if measureLabel == "" {
+		measureLabel = measureName
+	}
+	formatPreset := measure.FormatPreset
+	if effectiveMeasure != measureName {
+		// comparison measure, add a suffix based on type
+		switch reqMeasure.Compute.(type) {
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
+			measureLabel += " (prev)"
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
+			measureLabel += " (Δ)"
+		case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
+			measureLabel += " (Δ%)"
+			formatPreset = "percentage"
+		}
+	}
+
+	// D3 formatting isn't implemented yet so using the format preset only for now
+	f, err := formatter.NewPresetFormatter(formatPreset, false)
+	if err != nil {
+		logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
+		return measureLabel, nil
+	}
+
+	return measureLabel, f
+}
+
+// getMeasureLabelAndFormatter gets the measure label and formatter by a measure name.
+// if the measure is not found, it returns the measure name as the label and no formatter.
+// if the formatter fails to load, it logs the error and returns the measure name as the label and no formatter.
+func getMeasureLabelAndFormatter(measureName string, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (string, formatter.Formatter) {
+	var measure *runtimev1.MetricsViewSpec_MeasureV2
+	for _, m := range measures {
+		if measureName == m.Name {
+			measure = m
+			break
+		}
+	}
+
+	if measure == nil {
+		return measureName, nil
+	}
+
+	measureLabel := measure.Label
+	if measureLabel == "" {
+		measureLabel = measureName
+	}
+
+	// D3 formatting isn't implemented yet so using the format preset only for now
+	f, err := formatter.NewPresetFormatter(measure.FormatPreset, false)
+	if err != nil {
+		logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
+		return measureLabel, nil
+	}
+
+	return measureLabel, f
+}
+
+// formatValue formats a measure value using the provided formatter.
+// If the formatter is nil, or value is nil, or an error occurred, it will log a warning and return the value as is.
+func formatValue(f formatter.Formatter, v any, logger *zap.Logger) any {
+	if f == nil || v == nil {
+		return v
+	}
+	if s, err := f.StringFormat(v); err == nil {
+		return s
+	}
+	logger.Warn("Failed to format measure value", zap.Any("value", v))
+	return fmt.Sprintf("%v", v)
 }
 
 func addExecutionTime(openURL string, executionTime time.Time) (string, error) {

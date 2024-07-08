@@ -30,38 +30,19 @@ import (
 var ErrForbidden = errors.New("action not allowed")
 
 // resolveMVAndSecurityFromAttributes resolves the metrics view and security policy from the attributes
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, policy *runtimev1.MetricsViewSpec_SecurityV2, dims []*runtimev1.MetricsViewAggregationDimension, measures []*runtimev1.MetricsViewAggregationMeasure) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, attrs, res, mv.Security, policy)
+	resolvedSecurity, err := rt.ResolveSecurity(instanceID, claims, res)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if resolvedSecurity != nil && !resolvedSecurity.Access {
+	if !resolvedSecurity.CanAccess() {
 		return nil, nil, ErrForbidden
-	}
-
-	for _, dim := range dims {
-		if dim.Name == mv.TimeDimension {
-			// checkFieldAccess doesn't currently check the time dimension
-			continue
-		}
-		if !checkFieldAccess(dim.Name, resolvedSecurity) {
-			return nil, nil, ErrForbidden
-		}
-	}
-
-	for _, m := range measures {
-		if m.BuiltinMeasure != runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED {
-			continue
-		}
-		if !checkFieldAccess(m.Name, resolvedSecurity) {
-			return nil, nil, ErrForbidden
-		}
 	}
 
 	return mv, resolvedSecurity, nil
@@ -86,69 +67,6 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, spec, nil
-}
-
-func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity) bool {
-	if policy != nil {
-		if !policy.Access {
-			return false
-		}
-
-		if len(policy.Include) > 0 {
-			for _, include := range policy.Include {
-				if include == field {
-					return true
-				}
-			}
-		} else if len(policy.Exclude) > 0 {
-			for _, exclude := range policy.Exclude {
-				if exclude == field {
-					return false
-				}
-			}
-		} else {
-			// if no include/exclude is specified, then all fields are allowed
-			return true
-		}
-	}
-	return true
-}
-
-// resolveMeasures returns the selected measures
-func resolveMeasures(mv *runtimev1.MetricsViewSpec, inlines []*runtimev1.InlineMeasure, selectedNames []string) ([]*runtimev1.MetricsViewSpec_MeasureV2, error) {
-	// Build combined measures
-	ms := make([]*runtimev1.MetricsViewSpec_MeasureV2, len(selectedNames))
-	for i, n := range selectedNames {
-		found := false
-		// Search in the inlines (take precedence)
-		for _, m := range inlines {
-			if m.Name == n {
-				ms[i] = &runtimev1.MetricsViewSpec_MeasureV2{
-					Name:       m.Name,
-					Expression: m.Expression,
-					Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
-				}
-				found = true
-				break
-			}
-		}
-		if found {
-			continue
-		}
-		// Search in the metrics view
-		for _, m := range mv.Measures {
-			if m.Name == n {
-				ms[i] = m
-				found = true
-				break
-			}
-		}
-		if !found {
-			return nil, fmt.Errorf("measure does not exist: '%s'", n)
-		}
-	}
-
-	return ms, nil
 }
 
 func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
@@ -601,24 +519,6 @@ func convertToXLSXValue(pbvalue *structpb.Value) (interface{}, error) {
 	default:
 		return pbvalue.AsInterface(), nil
 	}
-}
-
-func metricsViewDimension(mv *runtimev1.MetricsViewSpec, dimName string) (*runtimev1.MetricsViewSpec_DimensionV2, error) {
-	for _, dimension := range mv.Dimensions {
-		if strings.EqualFold(dimension.Name, dimName) {
-			return dimension, nil
-		}
-	}
-	return nil, fmt.Errorf("dimension %s not found", dimName)
-}
-
-func metricsViewMeasureExpression(mv *runtimev1.MetricsViewSpec, measureName string) (string, error) {
-	for _, measure := range mv.Measures {
-		if strings.EqualFold(measure.Name, measureName) {
-			return measure.Expression, nil
-		}
-	}
-	return "", fmt.Errorf("measure %s not found", measureName)
 }
 
 func WriteCSV(meta []*runtimev1.MetricsViewColumn, data []*structpb.Struct, writer io.Writer) error {

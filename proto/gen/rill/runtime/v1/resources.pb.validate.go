@@ -3011,33 +3011,38 @@ func (m *MetricsViewSpec) validate(all bool) error {
 
 	// no validation rules for DefaultTimeRange
 
-	if all {
-		switch v := interface{}(m.GetSecurity()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewSpecValidationError{
-					field:  "Security",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
+	for idx, item := range m.GetSecurityRules() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewSpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewSpecValidationError{
+						field:  fmt.Sprintf("SecurityRules[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
 			}
-		case interface{ Validate() error }:
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
 			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewSpecValidationError{
-					field:  "Security",
+				return MetricsViewSpecValidationError{
+					field:  fmt.Sprintf("SecurityRules[%v]", idx),
 					reason: "embedded message failed validation",
 					cause:  err,
-				})
+				}
 			}
 		}
-	} else if v, ok := interface{}(m.GetSecurity()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewSpecValidationError{
-				field:  "Security",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
+
 	}
 
 	// no validation rules for FirstDayOfWeek
@@ -3161,6 +3166,582 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSpecValidationError{}
+
+// Validate checks the field values on SecurityRule with the rules defined in
+// the proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *SecurityRule) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SecurityRule with the rules defined
+// in the proto definition for this message. If any rules are violated, the
+// result is a list of violation errors wrapped in SecurityRuleMultiError, or
+// nil if none found.
+func (m *SecurityRule) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SecurityRule) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	switch v := m.Rule.(type) {
+	case *SecurityRule_Access:
+		if v == nil {
+			err := SecurityRuleValidationError{
+				field:  "Rule",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetAccess()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "Access",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "Access",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetAccess()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleValidationError{
+					field:  "Access",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SecurityRule_FieldAccess:
+		if v == nil {
+			err := SecurityRuleValidationError{
+				field:  "Rule",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetFieldAccess()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "FieldAccess",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "FieldAccess",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetFieldAccess()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleValidationError{
+					field:  "FieldAccess",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	case *SecurityRule_RowFilter:
+		if v == nil {
+			err := SecurityRuleValidationError{
+				field:  "Rule",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetRowFilter()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "RowFilter",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, SecurityRuleValidationError{
+						field:  "RowFilter",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetRowFilter()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return SecurityRuleValidationError{
+					field:  "RowFilter",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	default:
+		_ = v // ensures v is used
+	}
+
+	if len(errors) > 0 {
+		return SecurityRuleMultiError(errors)
+	}
+
+	return nil
+}
+
+// SecurityRuleMultiError is an error wrapping multiple validation errors
+// returned by SecurityRule.ValidateAll() if the designated constraints aren't met.
+type SecurityRuleMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SecurityRuleMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SecurityRuleMultiError) AllErrors() []error { return m }
+
+// SecurityRuleValidationError is the validation error returned by
+// SecurityRule.Validate if the designated constraints aren't met.
+type SecurityRuleValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SecurityRuleValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SecurityRuleValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SecurityRuleValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SecurityRuleValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SecurityRuleValidationError) ErrorName() string { return "SecurityRuleValidationError" }
+
+// Error satisfies the builtin error interface
+func (e SecurityRuleValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSecurityRule.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SecurityRuleValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SecurityRuleValidationError{}
+
+// Validate checks the field values on SecurityRuleAccess with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SecurityRuleAccess) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SecurityRuleAccess with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SecurityRuleAccessMultiError, or nil if none found.
+func (m *SecurityRuleAccess) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SecurityRuleAccess) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Condition
+
+	// no validation rules for Allow
+
+	if len(errors) > 0 {
+		return SecurityRuleAccessMultiError(errors)
+	}
+
+	return nil
+}
+
+// SecurityRuleAccessMultiError is an error wrapping multiple validation errors
+// returned by SecurityRuleAccess.ValidateAll() if the designated constraints
+// aren't met.
+type SecurityRuleAccessMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SecurityRuleAccessMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SecurityRuleAccessMultiError) AllErrors() []error { return m }
+
+// SecurityRuleAccessValidationError is the validation error returned by
+// SecurityRuleAccess.Validate if the designated constraints aren't met.
+type SecurityRuleAccessValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SecurityRuleAccessValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SecurityRuleAccessValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SecurityRuleAccessValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SecurityRuleAccessValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SecurityRuleAccessValidationError) ErrorName() string {
+	return "SecurityRuleAccessValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SecurityRuleAccessValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSecurityRuleAccess.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SecurityRuleAccessValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SecurityRuleAccessValidationError{}
+
+// Validate checks the field values on SecurityRuleFieldAccess with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SecurityRuleFieldAccess) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SecurityRuleFieldAccess with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SecurityRuleFieldAccessMultiError, or nil if none found.
+func (m *SecurityRuleFieldAccess) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SecurityRuleFieldAccess) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Condition
+
+	// no validation rules for Allow
+
+	// no validation rules for AllFields
+
+	if len(errors) > 0 {
+		return SecurityRuleFieldAccessMultiError(errors)
+	}
+
+	return nil
+}
+
+// SecurityRuleFieldAccessMultiError is an error wrapping multiple validation
+// errors returned by SecurityRuleFieldAccess.ValidateAll() if the designated
+// constraints aren't met.
+type SecurityRuleFieldAccessMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SecurityRuleFieldAccessMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SecurityRuleFieldAccessMultiError) AllErrors() []error { return m }
+
+// SecurityRuleFieldAccessValidationError is the validation error returned by
+// SecurityRuleFieldAccess.Validate if the designated constraints aren't met.
+type SecurityRuleFieldAccessValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SecurityRuleFieldAccessValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SecurityRuleFieldAccessValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SecurityRuleFieldAccessValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SecurityRuleFieldAccessValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SecurityRuleFieldAccessValidationError) ErrorName() string {
+	return "SecurityRuleFieldAccessValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SecurityRuleFieldAccessValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSecurityRuleFieldAccess.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SecurityRuleFieldAccessValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SecurityRuleFieldAccessValidationError{}
+
+// Validate checks the field values on SecurityRuleRowFilter with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *SecurityRuleRowFilter) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SecurityRuleRowFilter with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// SecurityRuleRowFilterMultiError, or nil if none found.
+func (m *SecurityRuleRowFilter) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SecurityRuleRowFilter) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Condition
+
+	// no validation rules for Sql
+
+	if all {
+		switch v := interface{}(m.GetExpression()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, SecurityRuleRowFilterValidationError{
+					field:  "Expression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, SecurityRuleRowFilterValidationError{
+					field:  "Expression",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetExpression()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return SecurityRuleRowFilterValidationError{
+				field:  "Expression",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
+	if len(errors) > 0 {
+		return SecurityRuleRowFilterMultiError(errors)
+	}
+
+	return nil
+}
+
+// SecurityRuleRowFilterMultiError is an error wrapping multiple validation
+// errors returned by SecurityRuleRowFilter.ValidateAll() if the designated
+// constraints aren't met.
+type SecurityRuleRowFilterMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SecurityRuleRowFilterMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SecurityRuleRowFilterMultiError) AllErrors() []error { return m }
+
+// SecurityRuleRowFilterValidationError is the validation error returned by
+// SecurityRuleRowFilter.Validate if the designated constraints aren't met.
+type SecurityRuleRowFilterValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SecurityRuleRowFilterValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SecurityRuleRowFilterValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SecurityRuleRowFilterValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SecurityRuleRowFilterValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SecurityRuleRowFilterValidationError) ErrorName() string {
+	return "SecurityRuleRowFilterValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SecurityRuleRowFilterValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSecurityRuleRowFilter.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SecurityRuleRowFilterValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SecurityRuleRowFilterValidationError{}
 
 // Validate checks the field values on MetricsViewState with the rules defined
 // in the proto definition for this message. If any rules are violated, the
@@ -10139,209 +10720,6 @@ var _ interface {
 	ErrorName() string
 } = MetricsViewSpec_MeasureV2ValidationError{}
 
-// Validate checks the field values on MetricsViewSpec_SecurityV2 with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the first error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewSpec_SecurityV2) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on MetricsViewSpec_SecurityV2 with the
-// rules defined in the proto definition for this message. If any rules are
-// violated, the result is a list of violation errors wrapped in
-// MetricsViewSpec_SecurityV2MultiError, or nil if none found.
-func (m *MetricsViewSpec_SecurityV2) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *MetricsViewSpec_SecurityV2) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Access
-
-	// no validation rules for RowFilter
-
-	if all {
-		switch v := interface{}(m.GetQueryFilter()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, MetricsViewSpec_SecurityV2ValidationError{
-					field:  "QueryFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, MetricsViewSpec_SecurityV2ValidationError{
-					field:  "QueryFilter",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetQueryFilter()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return MetricsViewSpec_SecurityV2ValidationError{
-				field:  "QueryFilter",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
-
-	for idx, item := range m.GetInclude() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewSpec_SecurityV2ValidationError{
-						field:  fmt.Sprintf("Include[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewSpec_SecurityV2ValidationError{
-						field:  fmt.Sprintf("Include[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MetricsViewSpec_SecurityV2ValidationError{
-					field:  fmt.Sprintf("Include[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	for idx, item := range m.GetExclude() {
-		_, _ = idx, item
-
-		if all {
-			switch v := interface{}(item).(type) {
-			case interface{ ValidateAll() error }:
-				if err := v.ValidateAll(); err != nil {
-					errors = append(errors, MetricsViewSpec_SecurityV2ValidationError{
-						field:  fmt.Sprintf("Exclude[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			case interface{ Validate() error }:
-				if err := v.Validate(); err != nil {
-					errors = append(errors, MetricsViewSpec_SecurityV2ValidationError{
-						field:  fmt.Sprintf("Exclude[%v]", idx),
-						reason: "embedded message failed validation",
-						cause:  err,
-					})
-				}
-			}
-		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
-			if err := v.Validate(); err != nil {
-				return MetricsViewSpec_SecurityV2ValidationError{
-					field:  fmt.Sprintf("Exclude[%v]", idx),
-					reason: "embedded message failed validation",
-					cause:  err,
-				}
-			}
-		}
-
-	}
-
-	if len(errors) > 0 {
-		return MetricsViewSpec_SecurityV2MultiError(errors)
-	}
-
-	return nil
-}
-
-// MetricsViewSpec_SecurityV2MultiError is an error wrapping multiple
-// validation errors returned by MetricsViewSpec_SecurityV2.ValidateAll() if
-// the designated constraints aren't met.
-type MetricsViewSpec_SecurityV2MultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewSpec_SecurityV2MultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m MetricsViewSpec_SecurityV2MultiError) AllErrors() []error { return m }
-
-// MetricsViewSpec_SecurityV2ValidationError is the validation error returned
-// by MetricsViewSpec_SecurityV2.Validate if the designated constraints aren't met.
-type MetricsViewSpec_SecurityV2ValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e MetricsViewSpec_SecurityV2ValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e MetricsViewSpec_SecurityV2ValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e MetricsViewSpec_SecurityV2ValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e MetricsViewSpec_SecurityV2ValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e MetricsViewSpec_SecurityV2ValidationError) ErrorName() string {
-	return "MetricsViewSpec_SecurityV2ValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e MetricsViewSpec_SecurityV2ValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sMetricsViewSpec_SecurityV2.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = MetricsViewSpec_SecurityV2ValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = MetricsViewSpec_SecurityV2ValidationError{}
-
 // Validate checks the field values on
 // MetricsViewSpec_AvailableComparisonOffset with the rules defined in the
 // proto definition for this message. If any rules are violated, the first
@@ -10592,111 +10970,3 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewSpec_AvailableTimeRangeValidationError{}
-
-// Validate checks the field values on
-// MetricsViewSpec_SecurityV2_FieldConditionV2 with the rules defined in the
-// proto definition for this message. If any rules are violated, the first
-// error encountered is returned, or nil if there are no violations.
-func (m *MetricsViewSpec_SecurityV2_FieldConditionV2) Validate() error {
-	return m.validate(false)
-}
-
-// ValidateAll checks the field values on
-// MetricsViewSpec_SecurityV2_FieldConditionV2 with the rules defined in the
-// proto definition for this message. If any rules are violated, the result is
-// a list of violation errors wrapped in
-// MetricsViewSpec_SecurityV2_FieldConditionV2MultiError, or nil if none found.
-func (m *MetricsViewSpec_SecurityV2_FieldConditionV2) ValidateAll() error {
-	return m.validate(true)
-}
-
-func (m *MetricsViewSpec_SecurityV2_FieldConditionV2) validate(all bool) error {
-	if m == nil {
-		return nil
-	}
-
-	var errors []error
-
-	// no validation rules for Condition
-
-	if len(errors) > 0 {
-		return MetricsViewSpec_SecurityV2_FieldConditionV2MultiError(errors)
-	}
-
-	return nil
-}
-
-// MetricsViewSpec_SecurityV2_FieldConditionV2MultiError is an error wrapping
-// multiple validation errors returned by
-// MetricsViewSpec_SecurityV2_FieldConditionV2.ValidateAll() if the designated
-// constraints aren't met.
-type MetricsViewSpec_SecurityV2_FieldConditionV2MultiError []error
-
-// Error returns a concatenation of all the error messages it wraps.
-func (m MetricsViewSpec_SecurityV2_FieldConditionV2MultiError) Error() string {
-	var msgs []string
-	for _, err := range m {
-		msgs = append(msgs, err.Error())
-	}
-	return strings.Join(msgs, "; ")
-}
-
-// AllErrors returns a list of validation violation errors.
-func (m MetricsViewSpec_SecurityV2_FieldConditionV2MultiError) AllErrors() []error { return m }
-
-// MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError is the validation
-// error returned by MetricsViewSpec_SecurityV2_FieldConditionV2.Validate if
-// the designated constraints aren't met.
-type MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError struct {
-	field  string
-	reason string
-	cause  error
-	key    bool
-}
-
-// Field function returns field value.
-func (e MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError) Field() string { return e.field }
-
-// Reason function returns reason value.
-func (e MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError) Reason() string { return e.reason }
-
-// Cause function returns cause value.
-func (e MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError) Cause() error { return e.cause }
-
-// Key function returns key value.
-func (e MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError) Key() bool { return e.key }
-
-// ErrorName returns error name.
-func (e MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError) ErrorName() string {
-	return "MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError"
-}
-
-// Error satisfies the builtin error interface
-func (e MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError) Error() string {
-	cause := ""
-	if e.cause != nil {
-		cause = fmt.Sprintf(" | caused by: %v", e.cause)
-	}
-
-	key := ""
-	if e.key {
-		key = "key for "
-	}
-
-	return fmt.Sprintf(
-		"invalid %sMetricsViewSpec_SecurityV2_FieldConditionV2.%s: %s%s",
-		key,
-		e.field,
-		e.reason,
-		cause)
-}
-
-var _ error = MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError{}
-
-var _ interface {
-	Field() string
-	Reason() string
-	Key() bool
-	Cause() error
-	ErrorName() string
-} = MetricsViewSpec_SecurityV2_FieldConditionV2ValidationError{}

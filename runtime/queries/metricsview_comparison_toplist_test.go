@@ -92,7 +92,8 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 				Desc:     false,
 			},
 		},
-		Limit: 10,
+		Limit:          10,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -133,7 +134,8 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 				Desc:     false,
 			},
 		},
-		Limit: 10,
+		Limit:          10,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -184,7 +186,8 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -229,7 +232,8 @@ func TestMetricsViewsComparison_dim_order_no_sort_order(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -271,7 +275,8 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -332,6 +337,7 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -379,6 +385,13 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 			},
 		},
 		Limit: 250,
+		Aliases: []*runtimev1.MetricsViewComparisonMeasureAlias{
+			{
+				Name:  "measure_1",
+				Type:  runtimev1.MetricsViewComparisonMeasureType_METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA,
+				Alias: "measure_1_something_else",
+			},
+		},
 		Having: &runtimev1.Expression{
 			Expression: &runtimev1.Expression_Cond{
 				Cond: &runtimev1.Condition{
@@ -398,10 +411,11 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
-	require.ErrorContains(t, err, "unknown column filter: measure_1__delta_rel")
+	require.ErrorContains(t, err, `name "measure_1__delta_rel" in expression is not a dimension or measure available in the current context`)
 }
 
 func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *testing.T) {
@@ -458,7 +472,8 @@ func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *tes
 				},
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -531,7 +546,8 @@ func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.
 				Alias: "measure_1_delta",
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -575,13 +591,15 @@ func TestMetricsViewsComparison_export_xlsx(t *testing.T) {
 				Desc:     false,
 			},
 		},
-		Limit: 10,
+		Limit:          10,
+		SecurityClaims: testClaims(),
 	}
 
 	var buf bytes.Buffer
 
 	err = q.Export(context.Background(), rt, instanceId, &buf, &runtime.ExportOptions{
-		Format: runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+		Format:       runtimev1.ExportFormat_EXPORT_FORMAT_XLSX,
+		PreWriteHook: func(filename string) error { return nil },
 	})
 	require.NoError(t, err)
 
@@ -627,13 +645,15 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 				Desc:     false,
 			},
 		},
-		Limit: 10,
+		Limit:          10,
+		SecurityClaims: testClaims(),
 	}
 
 	var buf bytes.Buffer
 
 	err = q.Export(context.Background(), rt, instanceId, &buf, &runtime.ExportOptions{
-		Format: runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+		Format:       runtimev1.ExportFormat_EXPORT_FORMAT_CSV,
+		PreWriteHook: func(filename string) error { return nil },
 	})
 	require.NoError(t, err)
 
@@ -678,7 +698,8 @@ func TestMetricsViewsComparison_Druid_comparsion_no_dim_values(t *testing.T) {
 			expressionpb.IdentIn("pub", expressionpb.String("Yahoo")),
 			expressionpb.IdentIn("id", expressionpb.Number(0)),
 		),
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -716,7 +737,8 @@ func TestMetricsViewsComparison_comparsion_no_dim_values(t *testing.T) {
 		Where: expressionpb.AndAll(
 			expressionpb.IdentIn("pub", expressionpb.String("Yahoo1")),
 		),
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -779,6 +801,7 @@ func TestMetricsViewsComparison_comparsion_having_same_name(t *testing.T) {
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -841,6 +864,7 @@ func TestMetricsViewsComparison_general_toplist_having_same_name(t *testing.T) {
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)

@@ -10,6 +10,7 @@ import (
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
+	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
@@ -27,13 +28,12 @@ type MetricsViewAggregation struct {
 	Limit               *int64                                         `json:"limit,omitempty"`
 	Offset              int64                                          `json:"offset,omitempty"`
 	PivotOn             []string                                       `json:"pivot_on,omitempty"`
-	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
-	SecurityPolicy      *runtimev1.MetricsViewSpec_SecurityV2          `json:"security_policy,omitempty"`
+	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact,omitempty"`
 
-	Exporting bool                                      `json:"-"`
 	Result    *runtimev1.MetricsViewAggregationResponse `json:"-"`
+	Exporting bool                                      `json:"-"` // Deprecated: Remove when tests call Export directly
 }
 
 var _ runtime.Query = &MetricsViewAggregation{}
@@ -69,12 +69,12 @@ func (q *MetricsViewAggregation) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, q.Dimensions, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
 
-	qry, err := q.rewriteToMetricsViewQuery()
+	qry, err := q.rewriteToMetricsViewQuery(q.Exporting)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
@@ -104,21 +104,19 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 }
 
 func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
-	q.Exporting = true
-
 	filename := strings.ReplaceAll(q.MetricsViewName, `"`, `_`)
 	if !isTimeRangeNil(q.TimeRange) || q.Where != nil || q.Having != nil {
 		filename += "_filtered"
 	}
 
 	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, q.Dimensions, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
 
 	// Route to metricsview executor
-	qry, err := q.rewriteToMetricsViewQuery()
+	qry, err := q.rewriteToMetricsViewQuery(true)
 	if err != nil {
 		return fmt.Errorf("error rewriting to metrics query: %w", err)
 	}
@@ -129,14 +127,14 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	var format string
+	var format drivers.FileFormat
 	switch opts.Format {
 	case runtimev1.ExportFormat_EXPORT_FORMAT_CSV:
-		format = "csv"
+		format = drivers.FileFormatCSV
 	case runtimev1.ExportFormat_EXPORT_FORMAT_XLSX:
-		format = "xlsx"
+		format = drivers.FileFormatXLSX
 	case runtimev1.ExportFormat_EXPORT_FORMAT_PARQUET:
-		format = "parquet"
+		format = drivers.FileFormatParquet
 	default:
 		return fmt.Errorf("unsupported format: %s", opts.Format.String())
 	}
@@ -166,7 +164,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	return nil
 }
 
-func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query, error) {
+func (q *MetricsViewAggregation) rewriteToMetricsViewQuery(export bool) (*metricsview.Query, error) {
 	qry := &metricsview.Query{MetricsView: q.MetricsViewName}
 
 	for _, d := range q.Dimensions {
@@ -188,7 +186,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query
 		qry.Dimensions = append(qry.Dimensions, res)
 	}
 
-	var measuresFilter *runtimev1.Expression
+	var measureFilter *runtimev1.Expression
 
 	for _, m := range q.Measures {
 		res := metricsview.Measure{Name: m.Name}
@@ -205,7 +203,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query
 			if len(q.Measures) > 1 {
 				return nil, fmt.Errorf("measure-level filter is not supported when multiple measures are present")
 			}
-			measuresFilter = m.Filter
+			measureFilter = m.Filter
 		}
 
 		if m.Compute != nil {
@@ -265,7 +263,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query
 		qry.ComparisonTimeRange = res
 	}
 
-	if q.Filter != nil { // backwards backwards compatibility
+	if q.Filter != nil { // Backwards compatibility
 		if q.Where != nil {
 			return nil, fmt.Errorf("both filter and where is provided")
 		}
@@ -277,20 +275,18 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query
 	}
 
 	// If a measure-level filter is present, we set qry.Where as the spine, and use (qry.Where AND measuresFilter) as the new where clause
-	if measuresFilter != nil {
-		measuresFilter := metricsview.NewExpressionFromProto(measuresFilter)
-
+	if measureFilter != nil {
 		qry.Spine = &metricsview.Spine{Where: &metricsview.WhereSpine{Expression: qry.Where}}
 
 		if qry.Where == nil {
-			qry.Where = measuresFilter
+			qry.Where = metricsview.NewExpressionFromProto(measureFilter)
 		} else {
 			qry.Where = &metricsview.Expression{
 				Condition: &metricsview.Condition{
 					Operator: metricsview.OperatorAnd,
 					Expressions: []*metricsview.Expression{
 						qry.Where,
-						measuresFilter,
+						metricsview.NewExpressionFromProto(measureFilter),
 					},
 				},
 			}
@@ -317,7 +313,7 @@ func (q *MetricsViewAggregation) rewriteToMetricsViewQuery() (*metricsview.Query
 		qry.PivotOn = q.PivotOn
 	}
 
-	qry.Label = q.Exporting
+	qry.Label = export
 
 	return qry, nil
 }

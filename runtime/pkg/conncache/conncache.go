@@ -3,6 +3,7 @@ package conncache
 import (
 	"context"
 	"errors"
+	"fmt"
 	"sync"
 	"time"
 
@@ -29,10 +30,14 @@ type Cache interface {
 	// Close closes all open connections and prevents new connections from being acquired.
 	// It returns when all cached connections have been closed or when the provided ctx is cancelled.
 	Close(ctx context.Context) error
+
+	// HangingErr returns an error containing the name of a connection that is hanging
+	HangingErr() error
 }
 
 // Connection is a connection that may be cached.
 type Connection interface {
+	Driver() string
 	Close() error
 }
 
@@ -80,14 +85,15 @@ var _ Cache = (*cacheImpl)(nil)
 // - If the ctx for an open call is cancelled, the entry will continue opening in the background (and will be put in the LRU).
 // - If attempting to open a closing entry, or close an opening entry, we wait for the singleflight to complete and then retry once. To avoid infinite loops, we don't retry more than once.
 type cacheImpl struct {
-	opts         Options
-	closed       bool
-	mu           sync.Mutex
-	entries      map[string]*entry
-	lru          *simplelru.LRU
-	singleflight map[string]chan struct{}
-	ctx          context.Context
-	cancel       context.CancelFunc
+	opts           Options
+	closed         bool
+	mu             sync.Mutex
+	entries        map[string]*entry
+	hangingConnErr error
+	lru            *simplelru.LRU
+	singleflight   map[string]chan struct{}
+	ctx            context.Context
+	cancel         context.CancelFunc
 }
 
 type entry struct {
@@ -321,6 +327,12 @@ func (c *cacheImpl) Close(ctx context.Context) error {
 	}
 }
 
+func (c *cacheImpl) HangingErr() error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	return c.hangingConnErr
+}
+
 // beginClose must be called while c.mu is held.
 func (c *cacheImpl) beginClose(k string, e *entry) {
 	if e.status == entryStatusClosing || e.status == entryStatusClosed {
@@ -433,15 +445,19 @@ func (c *cacheImpl) periodicallyCheckHangingConnections() {
 		select {
 		case <-ticker.C:
 			c.mu.Lock()
+			var hangingConnErr error
 			for k := range c.singleflight {
 				e := c.entries[k]
 				if c.opts.OpenTimeout != 0 && e.status == entryStatusOpening && time.Since(e.since) > c.opts.OpenTimeout {
+					hangingConnErr = fmt.Errorf("a connection has been in opening state for too long")
 					c.opts.HangingFunc(e.cfg, true)
 				}
 				if c.opts.CloseTimeout != 0 && e.status == entryStatusClosing && time.Since(e.since) > c.opts.CloseTimeout {
+					hangingConnErr = fmt.Errorf("a %q connection has been in closing state for too long", e.handle.Driver())
 					c.opts.HangingFunc(e.cfg, false)
 				}
 			}
+			c.hangingConnErr = hangingConnErr
 			c.mu.Unlock()
 		case <-c.ctx.Done():
 			return

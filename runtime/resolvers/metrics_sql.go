@@ -42,7 +42,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 	}
 
 	var finalRefs []*runtimev1.ResourceName
-	props.SQL, finalRefs, err = resolveTemplate(props.SQL, opts.Args, instance, opts.UserAttributes, opts.ForExport)
+	props.SQL, finalRefs, err = resolveTemplate(props.SQL, opts.Args, instance, opts.Claims.UserAttributes, opts.ForExport)
 	if err != nil {
 		return nil, err
 	}
@@ -57,7 +57,7 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		return nil, err
 	}
 
-	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.UserAttributes, sqlArgs.Priority)
+	compiler := metricssqlparser.New(ctrl, opts.InstanceID, opts.Claims, sqlArgs.Priority)
 	sql, connector, refs, err := compiler.Compile(ctx, props.SQL)
 	if err != nil {
 		return nil, err
@@ -75,9 +75,9 @@ func newMetricsSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 			"connector": connector,
 			"sql":       sql,
 		},
-		Args:           opts.Args,
-		UserAttributes: opts.UserAttributes,
-		ForExport:      opts.ForExport,
+		Args:      opts.Args,
+		Claims:    opts.Claims,
+		ForExport: opts.ForExport,
 	}
 	return newSQLSimple(ctx, sqlResolverOpts, finalRefs)
 }

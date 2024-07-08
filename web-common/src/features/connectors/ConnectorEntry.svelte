@@ -19,10 +19,11 @@
   });
   $: olapConnector = $instance.data?.instance?.olapConnector;
   $: isOlapConnector = olapConnector === connector.name;
+  $: implementsOlap = connector.driver?.implementsOlap;
 </script>
 
-<!-- Only show the OLAP connector, for now -->
-{#if isOlapConnector}
+<!-- For now, only show OLAP connectors -->
+{#if implementsOlap}
   {#if connector.name}
     <li aria-label={connector.name} class="connector-entry">
       <button
