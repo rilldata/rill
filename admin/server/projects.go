@@ -986,7 +986,7 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	}
 
 	claims := auth.GetClaims(ctx)
-	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProject {
+	if claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProject {
 		return nil, status.Error(codes.InvalidArgument, "already have access to project")
 	}
 
@@ -1078,11 +1078,6 @@ func (s *Server) AcceptProjectAccess(ctx context.Context, req *adminv1.AcceptPro
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	role, err := s.admin.DB.FindProjectRole(ctx, accessReq.ProjectRoleID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
 	user, err := s.admin.DB.FindUserByEmail(ctx, accessReq.Email)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -1095,7 +1090,7 @@ func (s *Server) AcceptProjectAccess(ctx context.Context, req *adminv1.AcceptPro
 	// TODO: quotas
 
 	// add the user
-	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, accessReq.ProjectRoleID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

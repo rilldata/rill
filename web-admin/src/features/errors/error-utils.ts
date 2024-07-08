@@ -5,6 +5,7 @@ import {
   isMagicLinkPage,
   isMetricsExplorerPage,
   isProjectPage,
+  isProjectRequestAccessPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
 import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
@@ -46,6 +47,8 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       return;
     }
 
+    const onProjectPage = isProjectPage(get(page));
+
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
       // Check for a logged-in user
@@ -61,6 +64,13 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
           `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
         );
         return;
+      } else if (onProjectPage) {
+        if (!isProjectRequestAccessPage(get(page))) {
+          await goto(
+            `/-/request-project-access/?organization=${get(page).params.organization}&project=${get(page).params.project}`,
+          );
+        }
+        return;
       }
     }
 
@@ -73,7 +83,6 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     }
 
     // Special handling for some errors on the Project page
-    const onProjectPage = isProjectPage(get(page));
     if (onProjectPage) {
       if (error.response?.status === 400) {
         // If "repository not found", ignore the error and show the page
