@@ -469,7 +469,7 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	}
 
 	// Evaluate intervals
-	ts, err := calculateExecutionTimes(a, watermark, previousWatermark)
+	ts, err := calculateAlertExecutionTimes(a, watermark, previousWatermark)
 	if err != nil {
 		skipErr := &skipError{}
 		if errors.As(err, skipErr) {
@@ -815,10 +815,10 @@ func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []
 	return t, !t.IsZero(), nil
 }
 
-// calculateExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
+// calculateAlertExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
 // If the alert is not configured to run on intervals, it will return a slice containing only the current watermark.
 // If the alert should not be executed, it returns a skipError explaining why.
-func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
+func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
 	// If the watermark is unchanged, skip the check.
 	// NOTE: It might make sense to make this configurable in the future, but the use cases seem limited.
 	// The watermark can only be unchanged if watermark="inherit" and since that indicates watermarks can be trusted, why check for the same watermark?
