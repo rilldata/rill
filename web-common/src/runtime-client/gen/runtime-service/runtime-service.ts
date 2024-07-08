@@ -108,7 +108,9 @@ export const createRuntimeServiceListConnectorDrivers = <
     TError,
     TData
   >;
-}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+}): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -125,7 +127,9 @@ export const createRuntimeServiceListConnectorDrivers = <
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
     TData,
     TError
-  > & { queryKey: QueryKey };
+  > & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -137,12 +141,14 @@ export const createRuntimeServiceListConnectorDrivers = <
  */
 export const runtimeServiceIssueDevJWT = (
   v1IssueDevJWTRequest: V1IssueDevJWTRequest,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1IssueDevJWTResponse>({
     url: `/v1/dev-jwt`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: v1IssueDevJWTRequest,
+    signal,
   });
 };
 
@@ -167,7 +173,9 @@ export const createRuntimeServiceIssueDevJWT = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -185,7 +193,9 @@ export const createRuntimeServiceIssueDevJWT = <
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
     TData,
     TError
-  > & { queryKey: QueryKey };
+  > & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -219,7 +229,9 @@ export const createRuntimeServiceListExamples = <
     TError,
     TData
   >;
-}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+}): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -236,7 +248,9 @@ export const createRuntimeServiceListExamples = <
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
     TData,
     TError
-  > & { queryKey: QueryKey };
+  > & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -270,7 +284,9 @@ export const createRuntimeServiceHealth = <
     TError,
     TData
   >;
-}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+}): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getRuntimeServiceHealthQueryKey();
@@ -286,7 +302,9 @@ export const createRuntimeServiceHealth = <
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
     TData,
     TError
-  > & { queryKey: QueryKey };
+  > & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -328,7 +346,9 @@ export const createRuntimeServiceInstanceHealth = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -348,7 +368,9 @@ export const createRuntimeServiceInstanceHealth = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -391,7 +413,9 @@ export const createRuntimeServiceListInstances = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -408,7 +432,9 @@ export const createRuntimeServiceListInstances = <
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
     TData,
     TError
-  > & { queryKey: QueryKey };
+  > & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -442,7 +468,9 @@ export const createRuntimeServiceCreateInstance = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceCreateInstance>>,
     TError,
-    { data: V1CreateInstanceRequest },
+    {
+      data: V1CreateInstanceRequest;
+    },
     TContext
   >;
 }) => {
@@ -450,7 +478,9 @@ export const createRuntimeServiceCreateInstance = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceCreateInstance>>,
-    { data: V1CreateInstanceRequest }
+    {
+      data: V1CreateInstanceRequest;
+    }
   > = (props) => {
     const { data } = props ?? {};
 
@@ -460,7 +490,9 @@ export const createRuntimeServiceCreateInstance = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceCreateInstance>>,
     TError,
-    { data: V1CreateInstanceRequest },
+    {
+      data: V1CreateInstanceRequest;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -503,7 +535,9 @@ export const createRuntimeServiceGetInstance = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -523,7 +557,9 @@ export const createRuntimeServiceGetInstance = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -559,7 +595,10 @@ export const createRuntimeServiceDeleteInstance = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
     TError,
-    { instanceId: string; data: RuntimeServiceDeleteInstanceBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceDeleteInstanceBody;
+    },
     TContext
   >;
 }) => {
@@ -567,7 +606,10 @@ export const createRuntimeServiceDeleteInstance = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
-    { instanceId: string; data: RuntimeServiceDeleteInstanceBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceDeleteInstanceBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -577,7 +619,10 @@ export const createRuntimeServiceDeleteInstance = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceDeleteInstance>>,
     TError,
-    { instanceId: string; data: RuntimeServiceDeleteInstanceBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceDeleteInstanceBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -610,7 +655,10 @@ export const createRuntimeServiceEditInstance = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
     TError,
-    { instanceId: string; data: RuntimeServiceEditInstanceBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceEditInstanceBody;
+    },
     TContext
   >;
 }) => {
@@ -618,7 +666,10 @@ export const createRuntimeServiceEditInstance = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
-    { instanceId: string; data: RuntimeServiceEditInstanceBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceEditInstanceBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -628,7 +679,10 @@ export const createRuntimeServiceEditInstance = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceEditInstance>>,
     TError,
-    { instanceId: string; data: RuntimeServiceEditInstanceBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceEditInstanceBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -667,7 +721,9 @@ export const createRuntimeServiceAnalyzeConnectors = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -687,7 +743,9 @@ export const createRuntimeServiceAnalyzeConnectors = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -731,7 +789,9 @@ export const createRuntimeServiceListNotifierConnectors = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -751,7 +811,9 @@ export const createRuntimeServiceListNotifierConnectors = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -798,7 +860,9 @@ export const createRuntimeServiceListFiles = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -818,7 +882,9 @@ export const createRuntimeServiceListFiles = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -854,7 +920,10 @@ export const createRuntimeServiceCreateDirectory = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
     TError,
-    { instanceId: string; data: RuntimeServiceCreateDirectoryBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceCreateDirectoryBody;
+    },
     TContext
   >;
 }) => {
@@ -862,7 +931,10 @@ export const createRuntimeServiceCreateDirectory = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
-    { instanceId: string; data: RuntimeServiceCreateDirectoryBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceCreateDirectoryBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -872,7 +944,10 @@ export const createRuntimeServiceCreateDirectory = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceCreateDirectory>>,
     TError,
-    { instanceId: string; data: RuntimeServiceCreateDirectoryBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceCreateDirectoryBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -915,7 +990,9 @@ export const createRuntimeServiceGetFile = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -935,7 +1012,9 @@ export const createRuntimeServiceGetFile = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -969,7 +1048,10 @@ export const createRuntimeServiceDeleteFile = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
     TError,
-    { instanceId: string; params?: RuntimeServiceDeleteFileParams },
+    {
+      instanceId: string;
+      params?: RuntimeServiceDeleteFileParams;
+    },
     TContext
   >;
 }) => {
@@ -977,7 +1059,10 @@ export const createRuntimeServiceDeleteFile = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
-    { instanceId: string; params?: RuntimeServiceDeleteFileParams }
+    {
+      instanceId: string;
+      params?: RuntimeServiceDeleteFileParams;
+    }
   > = (props) => {
     const { instanceId, params } = props ?? {};
 
@@ -987,7 +1072,10 @@ export const createRuntimeServiceDeleteFile = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceDeleteFile>>,
     TError,
-    { instanceId: string; params?: RuntimeServiceDeleteFileParams },
+    {
+      instanceId: string;
+      params?: RuntimeServiceDeleteFileParams;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1019,7 +1107,10 @@ export const createRuntimeServicePutFile = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServicePutFile>>,
     TError,
-    { instanceId: string; data: RuntimeServicePutFileBody },
+    {
+      instanceId: string;
+      data: RuntimeServicePutFileBody;
+    },
     TContext
   >;
 }) => {
@@ -1027,7 +1118,10 @@ export const createRuntimeServicePutFile = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServicePutFile>>,
-    { instanceId: string; data: RuntimeServicePutFileBody }
+    {
+      instanceId: string;
+      data: RuntimeServicePutFileBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1037,7 +1131,10 @@ export const createRuntimeServicePutFile = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServicePutFile>>,
     TError,
-    { instanceId: string; data: RuntimeServicePutFileBody },
+    {
+      instanceId: string;
+      data: RuntimeServicePutFileBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1071,7 +1168,10 @@ export const createRuntimeServiceGenerateMetricsViewFile = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateMetricsViewFileBody;
+    },
     TContext
   >;
 }) => {
@@ -1079,7 +1179,10 @@ export const createRuntimeServiceGenerateMetricsViewFile = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
-    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateMetricsViewFileBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1089,7 +1192,10 @@ export const createRuntimeServiceGenerateMetricsViewFile = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceGenerateMetricsViewFile>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateMetricsViewFileBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateMetricsViewFileBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1121,7 +1227,10 @@ export const createRuntimeServiceRenameFile = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
     TError,
-    { instanceId: string; data: RuntimeServiceRenameFileBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceRenameFileBody;
+    },
     TContext
   >;
 }) => {
@@ -1129,7 +1238,10 @@ export const createRuntimeServiceRenameFile = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
-    { instanceId: string; data: RuntimeServiceRenameFileBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceRenameFileBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1139,7 +1251,10 @@ export const createRuntimeServiceRenameFile = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceRenameFile>>,
     TError,
-    { instanceId: string; data: RuntimeServiceRenameFileBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceRenameFileBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1172,7 +1287,10 @@ export const createRuntimeServiceUnpackEmpty = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
     TError,
-    { instanceId: string; data: RuntimeServiceUnpackEmptyBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceUnpackEmptyBody;
+    },
     TContext
   >;
 }) => {
@@ -1180,7 +1298,10 @@ export const createRuntimeServiceUnpackEmpty = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
-    { instanceId: string; data: RuntimeServiceUnpackEmptyBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceUnpackEmptyBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1190,7 +1311,10 @@ export const createRuntimeServiceUnpackEmpty = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceUnpackEmpty>>,
     TError,
-    { instanceId: string; data: RuntimeServiceUnpackEmptyBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceUnpackEmptyBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1223,7 +1347,10 @@ export const createRuntimeServiceUnpackExample = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
     TError,
-    { instanceId: string; data: RuntimeServiceUnpackExampleBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceUnpackExampleBody;
+    },
     TContext
   >;
 }) => {
@@ -1231,7 +1358,10 @@ export const createRuntimeServiceUnpackExample = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
-    { instanceId: string; data: RuntimeServiceUnpackExampleBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceUnpackExampleBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1241,7 +1371,10 @@ export const createRuntimeServiceUnpackExample = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceUnpackExample>>,
     TError,
-    { instanceId: string; data: RuntimeServiceUnpackExampleBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceUnpackExampleBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1284,7 +1417,9 @@ export const createRuntimeServiceWatchFiles = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1304,7 +1439,9 @@ export const createRuntimeServiceWatchFiles = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1340,7 +1477,10 @@ export const createRuntimeServiceGenerateRenderer = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateRendererBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateRendererBody;
+    },
     TContext
   >;
 }) => {
@@ -1348,7 +1488,10 @@ export const createRuntimeServiceGenerateRenderer = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
-    { instanceId: string; data: RuntimeServiceGenerateRendererBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateRendererBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1358,7 +1501,10 @@ export const createRuntimeServiceGenerateRenderer = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceGenerateRenderer>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateRendererBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateRendererBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1391,7 +1537,10 @@ export const createRuntimeServiceGenerateResolver = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateResolverBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateResolverBody;
+    },
     TContext
   >;
 }) => {
@@ -1399,7 +1548,10 @@ export const createRuntimeServiceGenerateResolver = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
-    { instanceId: string; data: RuntimeServiceGenerateResolverBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateResolverBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1409,7 +1561,10 @@ export const createRuntimeServiceGenerateResolver = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceGenerateResolver>>,
     TError,
-    { instanceId: string; data: RuntimeServiceGenerateResolverBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceGenerateResolverBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1452,7 +1607,9 @@ export const createRuntimeServiceGetLogs = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1472,7 +1629,9 @@ export const createRuntimeServiceGetLogs = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1518,7 +1677,9 @@ export const createRuntimeServiceWatchLogs = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1538,7 +1699,9 @@ export const createRuntimeServiceWatchLogs = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1584,7 +1747,9 @@ export const createRuntimeServiceGetResource = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1604,7 +1769,9 @@ export const createRuntimeServiceGetResource = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1650,7 +1817,9 @@ export const createRuntimeServiceListResources = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1670,7 +1839,9 @@ export const createRuntimeServiceListResources = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1719,7 +1890,9 @@ export const createRuntimeServiceWatchResources = <
       TData
     >;
   },
-): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
@@ -1739,7 +1912,9 @@ export const createRuntimeServiceWatchResources = <
     queryFn,
     enabled: !!instanceId,
     ...queryOptions,
-  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
@@ -1776,7 +1951,10 @@ export const createRuntimeServiceCreateTrigger = <
   mutation?: CreateMutationOptions<
     Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
     TError,
-    { instanceId: string; data: RuntimeServiceCreateTriggerBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceCreateTriggerBody;
+    },
     TContext
   >;
 }) => {
@@ -1784,7 +1962,10 @@ export const createRuntimeServiceCreateTrigger = <
 
   const mutationFn: MutationFunction<
     Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
-    { instanceId: string; data: RuntimeServiceCreateTriggerBody }
+    {
+      instanceId: string;
+      data: RuntimeServiceCreateTriggerBody;
+    }
   > = (props) => {
     const { instanceId, data } = props ?? {};
 
@@ -1794,7 +1975,10 @@ export const createRuntimeServiceCreateTrigger = <
   return createMutation<
     Awaited<ReturnType<typeof runtimeServiceCreateTrigger>>,
     TError,
-    { instanceId: string; data: RuntimeServiceCreateTriggerBody },
+    {
+      instanceId: string;
+      data: RuntimeServiceCreateTriggerBody;
+    },
     TContext
   >(mutationFn, mutationOptions);
 };
@@ -1821,7 +2005,9 @@ export const createRuntimeServicePing = <
     TError,
     TData
   >;
-}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+}): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
   const { query: queryOptions } = options ?? {};
 
   const queryKey = queryOptions?.queryKey ?? getRuntimeServicePingQueryKey();
@@ -1837,9 +2023,12 @@ export const createRuntimeServicePing = <
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
     TData,
     TError
-  > & { queryKey: QueryKey };
+  > & {
+    queryKey: QueryKey;
+  };
 
   query.queryKey = queryKey;
 
   return query;
 };
+
