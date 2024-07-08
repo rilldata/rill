@@ -15,10 +15,12 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/ping"};
   }
 
+  // Health runs a health check on the runtime.
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {get: "/v1/health"};
   }
 
+  // InstanceHealth runs a health check on a specific instance.
   rpc InstanceHealth(InstanceHealthRequest) returns (InstanceHealthResponse) {
     option (google.api.http) = {get: "/v1/health/instances/{instance_id}"};
   }
@@ -206,8 +208,14 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
   }
 
+  // Access management
+
+  // IssueDevJWT issues a JWT for mimicking a user in local development.
   rpc IssueDevJWT(IssueDevJWTRequest) returns (IssueDevJWTResponse) {
-    option (google.api.http) = {get: "/v1/dev-jwt"};
+    option (google.api.http) = {
+      post: "/v1/dev-jwt",
+      body: "*"
+    };
   }
 }
 
