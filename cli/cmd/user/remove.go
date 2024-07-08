@@ -8,6 +8,7 @@ import (
 
 func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 	var projectName string
+	var groupName string
 	var email string
 	var keepProjectRoles bool
 
@@ -25,8 +26,20 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			if projectName != "" {
-				_, err = client.RemoveProjectMember(cmd.Context(), &adminv1.RemoveProjectMemberRequest{
+			if groupName != "" {
+				_, err = client.RemoveUsergroupMemberUser(cmd.Context(), &adminv1.RemoveUsergroupMemberUserRequest{
+					Organization: ch.Org,
+					Usergroup:    groupName,
+					Email:        email,
+				})
+				if err != nil {
+					return err
+				}
+
+				ch.PrintfSuccess("Removed user %q from user group \"%s/%s\"\n", email, ch.Org, groupName)
+				return nil
+			} else if projectName != "" {
+				_, err = client.RemoveProjectMemberUser(cmd.Context(), &adminv1.RemoveProjectMemberUserRequest{
 					Organization: ch.Org,
 					Project:      projectName,
 					Email:        email,
@@ -37,7 +50,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 
 				ch.PrintfSuccess("Removed user %q from project \"%s/%s\"\n", email, ch.Org, projectName)
 			} else {
-				_, err = client.RemoveOrganizationMember(cmd.Context(), &adminv1.RemoveOrganizationMemberRequest{
+				_, err = client.RemoveOrganizationMemberUser(cmd.Context(), &adminv1.RemoveOrganizationMemberUserRequest{
 					Organization:     ch.Org,
 					Email:            email,
 					KeepProjectRoles: keepProjectRoles,
@@ -54,6 +67,7 @@ func RemoveCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	removeCmd.Flags().StringVar(&ch.Org, "org", ch.Org, "Organization")
 	removeCmd.Flags().StringVar(&projectName, "project", "", "Project")
+	removeCmd.Flags().StringVar(&groupName, "group", "", "User group")
 	removeCmd.Flags().StringVar(&email, "email", "", "Email of the user")
 	removeCmd.Flags().BoolVar(&keepProjectRoles, "keep-project-roles", false, "Keep roles granted directly on projects in the org")
 

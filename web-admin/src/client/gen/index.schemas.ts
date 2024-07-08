@@ -123,6 +123,25 @@ export type AdminServiceCreateAssetBody = {
   extension?: string;
 };
 
+export type AdminServiceListUsergroupMemberUsersParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceEditUsergroupBody = {
+  description?: string;
+};
+
+export type AdminServiceGetUsergroupParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceListOrganizationMemberUsergroupsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
 export type AdminServiceSearchProjectUsersParams = {
   emailQuery?: string;
   pageSize?: number;
@@ -145,7 +164,7 @@ export type AdminServiceListMagicAuthTokensParams = {
   pageToken?: string;
 };
 
-export type AdminServiceListProjectMembersParams = {
+export type AdminServiceListProjectMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -205,11 +224,16 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
 };
 
-export type AdminServiceRemoveOrganizationMemberParams = {
+export type AdminServiceListProjectMemberUsergroupsParams = {
+  pageSize?: number;
+  pageToken?: string;
+};
+
+export type AdminServiceRemoveOrganizationMemberUserParams = {
   keepProjectRoles?: boolean;
 };
 
-export type AdminServiceListOrganizationMembersParams = {
+export type AdminServiceListOrganizationMemberUsersParams = {
   pageSize?: number;
   pageToken?: string;
 };
@@ -239,6 +263,10 @@ export type AdminServiceTriggerRefreshSourcesBody = {
   sources?: string[];
 };
 
+export type AdminServiceCreateUsergroupBodyBody = {
+  name?: string;
+};
+
 export type AdminServiceCreateReportBodyBody = {
   options?: V1ReportOptions;
 };
@@ -247,7 +275,7 @@ export type AdminServiceCreateAlertBodyBody = {
   options?: V1AlertOptions;
 };
 
-export type AdminServiceAddOrganizationMemberBodyBody = {
+export type AdminServiceAddOrganizationMemberUserBodyBody = {
   email?: string;
   role?: string;
 };
@@ -257,7 +285,7 @@ export type AdminServiceCreateProjectWhitelistedDomainBodyBody = {
   role?: string;
 };
 
-export type AdminServiceSetOrganizationMemberRoleBodyBody = {
+export type AdminServiceSetOrganizationMemberUserRoleBodyBody = {
   role?: string;
 };
 
@@ -272,6 +300,14 @@ export interface V1VirtualFile {
   path?: string;
   data?: string;
   deleted?: boolean;
+  updatedOn?: string;
+}
+
+export interface V1Usergroup {
+  groupId?: string;
+  groupName?: string;
+  groupDescription?: string;
+  createdOn?: string;
   updatedOn?: string;
 }
 
@@ -325,6 +361,11 @@ export interface V1UpdateProjectResponse {
 
 export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
+}
+
+export interface V1UpdateOrganizationBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1UpdateBookmarkResponse {
@@ -393,6 +434,11 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -432,16 +478,6 @@ export interface V1Subscription {
   trialEndDate?: string;
 }
 
-export interface V1UpdateOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
 export interface V1Subquery {
   dimension?: string;
   measures?: string[];
@@ -458,11 +494,19 @@ export interface V1SetSuperuserRequest {
   superuser?: boolean;
 }
 
-export interface V1SetProjectMemberRoleResponse {
+export interface V1SetProjectMemberUsergroupRoleResponse {
   [key: string]: any;
 }
 
-export interface V1SetOrganizationMemberRoleResponse {
+export interface V1SetProjectMemberUserRoleResponse {
+  [key: string]: any;
+}
+
+export interface V1SetOrganizationMemberUsergroupRoleResponse {
+  [key: string]: any;
+}
+
+export interface V1SetOrganizationMemberUserRoleResponse {
   [key: string]: any;
 }
 
@@ -525,7 +569,15 @@ export interface V1ReportOptions {
   webOpenState?: string;
 }
 
+export interface V1RenameUsergroupResponse {
+  [key: string]: any;
+}
+
 export interface V1RemoveWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveUsergroupMemberUserResponse {
   [key: string]: any;
 }
 
@@ -533,11 +585,19 @@ export interface V1RemoveProjectWhitelistedDomainResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveProjectMemberResponse {
+export interface V1RemoveProjectMemberUsergroupResponse {
   [key: string]: any;
 }
 
-export interface V1RemoveOrganizationMemberResponse {
+export interface V1RemoveProjectMemberUserResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveOrganizationMemberUsergroupResponse {
+  [key: string]: any;
+}
+
+export interface V1RemoveOrganizationMemberUserResponse {
   [key: string]: any;
 }
 
@@ -670,7 +730,15 @@ export const V1Operation = {
   OPERATION_NLIKE: "OPERATION_NLIKE",
 } as const;
 
-export interface V1Member {
+export interface V1MemberUsergroup {
+  groupId?: string;
+  groupName?: string;
+  roleName?: string;
+  createdOn?: string;
+  updatedOn?: string;
+}
+
+export interface V1MemberUser {
   userId?: string;
   userEmail?: string;
   userName?: string;
@@ -699,6 +767,11 @@ export interface V1ListWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
+export interface V1ListUsergroupMemberUsersResponse {
+  members?: V1MemberUser[];
+  nextPageToken?: string;
+}
+
 export interface V1ListSuperusersResponse {
   users?: V1User[];
 }
@@ -724,8 +797,13 @@ export interface V1ListProjectWhitelistedDomainsResponse {
   domains?: V1WhitelistedDomain[];
 }
 
-export interface V1ListProjectMembersResponse {
-  members?: V1Member[];
+export interface V1ListProjectMemberUsersResponse {
+  members?: V1MemberUser[];
+  nextPageToken?: string;
+}
+
+export interface V1ListProjectMemberUsergroupsResponse {
+  members?: V1MemberUsergroup[];
   nextPageToken?: string;
 }
 
@@ -739,8 +817,13 @@ export interface V1ListOrganizationsResponse {
   nextPageToken?: string;
 }
 
-export interface V1ListOrganizationMembersResponse {
-  members?: V1Member[];
+export interface V1ListOrganizationMemberUsersResponse {
+  members?: V1MemberUser[];
+  nextPageToken?: string;
+}
+
+export interface V1ListOrganizationMemberUsergroupsResponse {
+  members?: V1MemberUsergroup[];
   nextPageToken?: string;
 }
 
@@ -789,6 +872,11 @@ export const V1GithubPermission = {
   GITHUB_PERMISSION_READ: "GITHUB_PERMISSION_READ",
   GITHUB_PERMISSION_WRITE: "GITHUB_PERMISSION_WRITE",
 } as const;
+
+export interface V1GetUsergroupResponse {
+  usergroup?: V1Usergroup;
+  nextPageToken?: string;
+}
 
 export interface V1GetUserResponse {
   user?: V1User;
@@ -926,6 +1014,10 @@ export const V1ExportFormat = {
   EXPORT_FORMAT_PARQUET: "EXPORT_FORMAT_PARQUET",
 } as const;
 
+export interface V1EditUsergroupResponse {
+  [key: string]: any;
+}
+
 export interface V1EditReportResponse {
   [key: string]: any;
 }
@@ -958,6 +1050,10 @@ export interface V1Deployment {
   updatedOn?: string;
 }
 
+export interface V1DeleteUsergroupResponse {
+  [key: string]: any;
+}
+
 export interface V1DeleteServiceResponse {
   service?: V1Service;
 }
@@ -979,6 +1075,10 @@ export interface V1DeleteAlertResponse {
 }
 
 export interface V1CreateWhitelistedDomainResponse {
+  [key: string]: any;
+}
+
+export interface V1CreateUsergroupResponse {
   [key: string]: any;
 }
 
@@ -1005,6 +1105,10 @@ export interface V1CreateOrganizationResponse {
 export interface V1CreateOrganizationRequest {
   name?: string;
   description?: string;
+}
+
+export interface V1CreateBookmarkResponse {
+  bookmark?: V1Bookmark;
 }
 
 export interface V1CreateBookmarkRequest {
@@ -1063,10 +1167,6 @@ export interface V1Bookmark {
   updatedOn?: string;
 }
 
-export interface V1CreateBookmarkResponse {
-  bookmark?: V1Bookmark;
-}
-
 export interface V1BillingPlan {
   id?: string;
   name?: string;
@@ -1092,11 +1192,23 @@ export interface V1AlertOptions {
   webOpenState?: string;
 }
 
-export interface V1AddProjectMemberResponse {
+export interface V1AddUsergroupMemberUserResponse {
+  [key: string]: any;
+}
+
+export interface V1AddProjectMemberUsergroupResponse {
+  [key: string]: any;
+}
+
+export interface V1AddProjectMemberUserResponse {
   pendingSignup?: boolean;
 }
 
-export interface V1AddOrganizationMemberResponse {
+export interface V1AddOrganizationMemberUsergroupResponse {
+  [key: string]: any;
+}
+
+export interface V1AddOrganizationMemberUserResponse {
   pendingSignup?: boolean;
 }
 
@@ -1110,7 +1222,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

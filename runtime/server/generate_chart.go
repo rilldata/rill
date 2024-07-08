@@ -39,7 +39,7 @@ func (s *Server) GenerateRenderer(ctx context.Context, req *runtimev1.GenerateRe
 		Resolver:           req.Resolver,
 		ResolverProperties: req.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     auth.GetClaims(ctx).Attributes(),
+		Claims:             auth.GetClaims(ctx).SecurityClaims(),
 	})
 	if err != nil {
 		return nil, err

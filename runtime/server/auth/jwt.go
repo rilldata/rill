@@ -114,18 +114,21 @@ type TokenOptions struct {
 	SystemPermissions   []Permission
 	InstancePermissions map[string][]Permission
 	Attributes          map[string]any
-	Security            *runtimev1.MetricsViewSpec_SecurityV2
+	SecurityRules       []*runtimev1.SecurityRule
 }
 
 // NewToken issues a new JWT based on the provided options.
 func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 	// Since the security policy is a proto message, we need to serialize it using protojson instead of json.Marshal.
-	var sec json.RawMessage
-	if opts.Security != nil {
-		var err error
-		sec, err = protojson.Marshal(opts.Security)
-		if err != nil {
-			return "", err
+	var sec []json.RawMessage
+	if len(opts.SecurityRules) > 0 {
+		sec = make([]json.RawMessage, len(opts.SecurityRules))
+		for i, rule := range opts.SecurityRules {
+			data, err := protojson.Marshal(rule)
+			if err != nil {
+				return "", err
+			}
+			sec[i] = data
 		}
 	}
 
