@@ -17,7 +17,7 @@ import type {
   V1ListConnectorDriversResponse,
   RpcStatus,
   V1IssueDevJWTResponse,
-  RuntimeServiceIssueDevJWTParams,
+  V1IssueDevJWTRequest,
   V1ListExamplesResponse,
   V1HealthResponse,
   V1InstanceHealthResponse,
@@ -132,21 +132,23 @@ export const createRuntimeServiceListConnectorDrivers = <
   return query;
 };
 
+/**
+ * @summary IssueDevJWT issues a JWT for mimicking a user in local development.
+ */
 export const runtimeServiceIssueDevJWT = (
-  params?: RuntimeServiceIssueDevJWTParams,
-  signal?: AbortSignal,
+  v1IssueDevJWTRequest: V1IssueDevJWTRequest,
 ) => {
   return httpClient<V1IssueDevJWTResponse>({
     url: `/v1/dev-jwt`,
-    method: "get",
-    params,
-    signal,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1IssueDevJWTRequest,
   });
 };
 
 export const getRuntimeServiceIssueDevJWTQueryKey = (
-  params?: RuntimeServiceIssueDevJWTParams,
-) => [`/v1/dev-jwt`, ...(params ? [params] : [])];
+  v1IssueDevJWTRequest: V1IssueDevJWTRequest,
+) => [`/v1/dev-jwt`, v1IssueDevJWTRequest];
 
 export type RuntimeServiceIssueDevJWTQueryResult = NonNullable<
   Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>
@@ -157,7 +159,7 @@ export const createRuntimeServiceIssueDevJWT = <
   TData = Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>,
   TError = ErrorType<RpcStatus>,
 >(
-  params?: RuntimeServiceIssueDevJWTParams,
+  v1IssueDevJWTRequest: V1IssueDevJWTRequest,
   options?: {
     query?: CreateQueryOptions<
       Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>,
@@ -169,11 +171,12 @@ export const createRuntimeServiceIssueDevJWT = <
   const { query: queryOptions } = options ?? {};
 
   const queryKey =
-    queryOptions?.queryKey ?? getRuntimeServiceIssueDevJWTQueryKey(params);
+    queryOptions?.queryKey ??
+    getRuntimeServiceIssueDevJWTQueryKey(v1IssueDevJWTRequest);
 
   const queryFn: QueryFunction<
     Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>
-  > = ({ signal }) => runtimeServiceIssueDevJWT(params, signal);
+  > = ({ signal }) => runtimeServiceIssueDevJWT(v1IssueDevJWTRequest, signal);
 
   const query = createQuery<
     Awaited<ReturnType<typeof runtimeServiceIssueDevJWT>>,
@@ -240,6 +243,9 @@ export const createRuntimeServiceListExamples = <
   return query;
 };
 
+/**
+ * @summary Health runs a health check on the runtime.
+ */
 export const runtimeServiceHealth = (signal?: AbortSignal) => {
   return httpClient<V1HealthResponse>({
     url: `/v1/health`,
@@ -287,6 +293,9 @@ export const createRuntimeServiceHealth = <
   return query;
 };
 
+/**
+ * @summary InstanceHealth runs a health check on a specific instance.
+ */
 export const runtimeServiceInstanceHealth = (
   instanceId: string,
   signal?: AbortSignal,
