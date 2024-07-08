@@ -10,6 +10,7 @@ export interface ErrorStoreState {
   header: string;
   body: string;
   detail?: string;
+  fatal?: boolean;
 }
 
 export interface ErrorStore extends Writable<ErrorStoreState> {
@@ -21,10 +22,11 @@ const createErrorStore = (): ErrorStore => {
     statusCode: null,
     header: "",
     body: "",
+    fatal: false,
   });
 
   const reset = (): void => {
-    set({ statusCode: null, header: "", body: "" });
+    set({ statusCode: null, header: "", body: "", fatal: false });
   };
 
   return { subscribe, set, update, reset };

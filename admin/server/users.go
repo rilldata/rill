@@ -379,8 +379,8 @@ func userToPB(u *database.User) *adminv1.User {
 	}
 }
 
-func memberToPB(m *database.Member) *adminv1.Member {
-	return &adminv1.Member{
+func memberUserToPB(m *database.MemberUser) *adminv1.MemberUser {
+	return &adminv1.MemberUser{
 		UserId:    m.ID,
 		UserEmail: m.Email,
 		UserName:  m.DisplayName,
