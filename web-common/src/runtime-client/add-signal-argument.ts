@@ -232,5 +232,4 @@ function addBackBlankLines(code: string) {
   return code.replace(/^\s*\/\/__Dummy__$/gm, () => "");
 }
 
-// Adjust the script execution to handle multiple file arguments
 transformFiles(process.argv.slice(2)).catch(console.error);
