@@ -182,11 +182,13 @@
           </div>
         {/if}
       {:else if status === EntityStatus.Error}
-        {#if errorMessage}
-          <div class="text-xs">Error: {errorMessage}</div>
-        {:else}
-          <div class="text-xs">Error fetching totals data</div>
-        {/if}
+        <div class="text-xs pt-1">
+          {#if errorMessage}
+            Error: {errorMessage}
+          {:else}
+            Error fetching totals data
+          {/if}
+        </div>
       {:else if status === EntityStatus.Running}
         <div
           class="absolute p-2"

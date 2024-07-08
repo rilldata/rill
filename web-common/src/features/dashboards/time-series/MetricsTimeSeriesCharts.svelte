@@ -320,22 +320,15 @@
           />
 
           {#if hasTimeseriesError}
-            <div class="flex flex-col p-5 items-center">
-              <div class="flex gap-x-2 py-2 font-semibold ui-copy-muted">
-                Unable to retrieve data
-              </div>
+            <div
+              class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
+            >
               {#if $timeSeriesDataStore.error?.timeseries}
-                <div>
-                  <span class="text-xs text-red-500">
-                    Error: {$timeSeriesDataStore.error.timeseries}
-                  </span>
-                </div>
+                <span>
+                  Error: {$timeSeriesDataStore.error.timeseries}
+                </span>
               {:else}
-                <div class="p-5">
-                  <span class="text-xs text-red-500"
-                    >Unable to fetch data from the API</span
-                  >
-                </div>
+                <span>Unable to fetch data from the API</span>
               {/if}
             </div>
           {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
