@@ -287,6 +287,74 @@ func (c *Client) SendProjectAddition(opts *ProjectAddition) error {
 	})
 }
 
+type ProjectAccessRequest struct {
+	Title       string
+	Body        string
+	ToEmail     string
+	ToName      string
+	Email       string
+	OrgName     string
+	ProjectName string
+	AcceptLink  string
+	RejectLink  string
+}
+
+func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
+	if opts.Title == "" {
+		opts.Title = fmt.Sprintf("User, %s is requesting access to %s/%s project", opts.Email, opts.OrgName, opts.ProjectName)
+	}
+	if opts.Body == "" {
+		opts.Title = fmt.Sprintf("User, %s is requesting access to %s/%s project. Either accept or reject the request.", opts.Email, opts.OrgName, opts.ProjectName)
+	}
+
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("project_access_request.html").Execute(buf, opts)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Title, html)
+}
+
+type ProjectAccessGranted struct {
+	ToEmail     string
+	ToName      string
+	FrontendURL string
+	OrgName     string
+	ProjectName string
+}
+
+func (c *Client) SendProjectAccessGranted(opts *ProjectAccessGranted) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your reuqest to %s/%s has been rejected", opts.OrgName, opts.ProjectName),
+		Title:      fmt.Sprintf("Your reuqest to %s/%s has been rejected", opts.OrgName, opts.ProjectName),
+		Body:       template.HTML(fmt.Sprintf("Your reuqest to %s/%s has been accepted. Click the button below to open the project.", opts.OrgName, opts.ProjectName)),
+		ButtonText: "View account",
+		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName),
+	})
+}
+
+type ProjectAccessRejected struct {
+	ToEmail     string
+	ToName      string
+	OrgName     string
+	ProjectName string
+}
+
+func (c *Client) SendProjectAccessRejected(opts *ProjectAccessRejected) error {
+	return c.SendCallToAction(&CallToAction{
+		ToEmail:    opts.ToEmail,
+		ToName:     opts.ToName,
+		Subject:    fmt.Sprintf("Your reuqest to %s/%s has been rejected", opts.OrgName, opts.ProjectName),
+		Title:      fmt.Sprintf("Your reuqest to %s/%s has been rejected", opts.OrgName, opts.ProjectName),
+		Body:       template.HTML(fmt.Sprintf("Your reuqest to %s/%s has been rejected", opts.OrgName, opts.ProjectName)),
+		ButtonText: "",
+		ButtonLink: "",
+	})
+}
+
 func mustJoinURLPath(base string, elem ...string) string {
 	res, err := url.JoinPath(base, elem...)
 	if err != nil {

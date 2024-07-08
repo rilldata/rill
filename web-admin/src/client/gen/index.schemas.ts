@@ -552,6 +552,10 @@ export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
 
+export interface V1RequestProjectAccessResponse {
+  [key: string]: any;
+}
+
 export interface V1ReportOptions {
   title?: string;
   refreshCron?: string;
@@ -602,6 +606,10 @@ export interface V1RemoveOrganizationMemberUserResponse {
 }
 
 export interface V1RemoveBookmarkResponse {
+  [key: string]: any;
+}
+
+export interface V1RejectProjectAccessResponse {
   [key: string]: any;
 }
 
@@ -1212,6 +1220,10 @@ export interface V1AddOrganizationMemberUserResponse {
   pendingSignup?: boolean;
 }
 
+export interface V1AcceptProjectAccessResponse {
+  [key: string]: any;
+}
+
 export interface RpcStatus {
   code?: number;
   message?: string;
@@ -1222,7 +1234,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

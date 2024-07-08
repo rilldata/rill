@@ -690,6 +690,27 @@ service AdminService {
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
   }
+
+  rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/access-request",
+      body: "*"
+    };
+  }
+
+  rpc AcceptProjectAccess(AcceptProjectAccessRequest) returns (AcceptProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/accept",
+      body: "*"
+    };
+  }
+
+  rpc RejectProjectAccess(RejectProjectAccessRequest) returns (RejectProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/reject",
+      body: "*"
+    };
+  }
 }
 
 message PingRequest {}
@@ -1791,6 +1812,29 @@ message TelemetryRequest {
 }
 
 message TelemetryResponse {}
+
+message RequestProjectAccessRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message RequestProjectAccessResponse {}
+
+message AcceptProjectAccessRequest {
+  string organization = 1;
+  string project = 2;
+  string id = 3;
+}
+
+message AcceptProjectAccessResponse {}
+
+message RejectProjectAccessRequest {
+  string organization = 1;
+  string project = 2;
+  string id = 3;
+}
+
+message RejectProjectAccessResponse {}
 
 message User {
   string id = 1;

@@ -48,6 +48,9 @@ import type {
   V1LeaveOrganizationResponse,
   V1ListProjectMemberUsergroupsResponse,
   AdminServiceListProjectMemberUsergroupsParams,
+  V1RequestProjectAccessResponse,
+  V1AcceptProjectAccessResponse,
+  V1RejectProjectAccessResponse,
   V1CreateAlertResponse,
   AdminServiceCreateAlertBodyBody,
   V1GenerateAlertYAMLResponse,
@@ -1357,6 +1360,197 @@ export const createAdminServiceListProjectMemberUsergroups = <
   return query;
 };
 
+export const adminServiceRequestProjectAccess = (
+  organization: string,
+  project: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1RequestProjectAccessResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/access-request`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceRequestProjectAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>
+>;
+export type AdminServiceRequestProjectAccessMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceRequestProjectAccessMutationError = RpcStatus;
+
+export const createAdminServiceRequestProjectAccess = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceRequestProjectAccess(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const adminServiceAcceptProjectAccess = (
+  organization: string,
+  project: string,
+  id: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1AcceptProjectAccessResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/access-request/${id}/accept`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceAcceptProjectAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceAcceptProjectAccess>>
+>;
+export type AdminServiceAcceptProjectAccessMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceAcceptProjectAccessMutationError = RpcStatus;
+
+export const createAdminServiceAcceptProjectAccess = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceAcceptProjectAccess>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      id: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceAcceptProjectAccess>>,
+    {
+      organization: string;
+      project: string;
+      id: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, id, data } = props ?? {};
+
+    return adminServiceAcceptProjectAccess(organization, project, id, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceAcceptProjectAccess>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      id: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const adminServiceRejectProjectAccess = (
+  organization: string,
+  project: string,
+  id: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1RejectProjectAccessResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/access-request/${id}/reject`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceRejectProjectAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRejectProjectAccess>>
+>;
+export type AdminServiceRejectProjectAccessMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceRejectProjectAccessMutationError = RpcStatus;
+
+export const createAdminServiceRejectProjectAccess = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRejectProjectAccess>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      id: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRejectProjectAccess>>,
+    {
+      organization: string;
+      project: string;
+      id: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, id, data } = props ?? {};
+
+    return adminServiceRejectProjectAccess(organization, project, id, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRejectProjectAccess>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      id: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
  */

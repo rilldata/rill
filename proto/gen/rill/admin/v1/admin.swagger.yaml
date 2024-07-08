@@ -520,6 +520,98 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/access-request:
+    post:
+      operationId: AdminService_RequestProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RequestProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/access-request/{id}/accept:
+    post:
+      operationId: AdminService_AcceptProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AcceptProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/access-request/{id}/reject:
+    post:
+      operationId: AdminService_RejectProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RejectProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/alerts:
     post:
       summary: CreateAlert adds a virtual file for an alert, triggers a reconcile, and waits for the alert to be added to the runtime catalog
@@ -3019,7 +3111,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3035,6 +3127,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
+  v1AcceptProjectAccessResponse:
+    type: object
   v1AddOrganizationMemberUserResponse:
     type: object
     properties:
@@ -3961,6 +4055,8 @@ definitions:
           type: object
   v1RecordEventsResponse:
     type: object
+  v1RejectProjectAccessResponse:
+    type: object
   v1RemoveBookmarkResponse:
     type: object
   v1RemoveOrganizationMemberUserResponse:
@@ -4020,6 +4116,8 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the metrics_view when it was created
+  v1RequestProjectAccessResponse:
+    type: object
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

@@ -214,6 +214,13 @@ type DB interface {
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 
+	FindProjectAccessRequests(ctx context.Context, projectID, afterEmail string, limit int) ([]*ProjectAccessRequest, error)
+	FindProjectAccessRequestsByEmail(ctx context.Context, userEmail string) ([]*ProjectAccessRequest, error)
+	FindProjectAccessRequest(ctx context.Context, projectID, userEmail string) (*ProjectAccessRequest, error)
+	FindProjectAccessRequestByID(ctx context.Context, id string) (*ProjectAccessRequest, error)
+	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
+	DeleteProjectAccessRequest(ctx context.Context, id string) error
+
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
@@ -799,6 +806,20 @@ type InsertOrganizationInviteOptions struct {
 type InsertProjectInviteOptions struct {
 	Email     string `validate:"email"`
 	InviterID string
+	ProjectID string `validate:"required"`
+	RoleID    string `validate:"required"`
+}
+
+type ProjectAccessRequest struct {
+	ID            string
+	Email         string
+	ProjectID     string    `db:"project_id"`
+	ProjectRoleID string    `db:"project_role_id"`
+	CreatedOn     time.Time `db:"created_on"`
+}
+
+type InsertProjectAccessRequestOptions struct {
+	Email     string `validate:"email"`
 	ProjectID string `validate:"required"`
 	RoleID    string `validate:"required"`
 }

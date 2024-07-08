@@ -974,6 +974,200 @@ func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneC
 	}, nil
 }
 
+func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestProjectAccessRequest) (*adminv1.RequestProjectAccessResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProject {
+		return nil, status.Error(codes.InvalidArgument, "already have access to project")
+	}
+
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.InvalidArgument, "only users can request access")
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	role, err := s.admin.DB.FindProjectRole(ctx, "viewer") // hardcoded for now
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	// TODO: quotas
+
+	accessReq, err := s.admin.DB.InsertProjectAccessRequest(ctx, &database.InsertProjectAccessRequestOptions{
+		Email:     user.Email,
+		ProjectID: proj.ID,
+		RoleID:    role.ID,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	adminRole, err := s.admin.DB.FindProjectRole(ctx, "admin") // hardcoded for now
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	admins, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, proj.OrganizationID, adminRole.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	acceptLink, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name, "-", "request-access", accessReq.ID, "accept")
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	rejectLink, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name, "-", "request-access", accessReq.ID, "reject")
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	for _, u := range admins {
+		err = s.admin.Email.SendProjectAccessRequest(&email.ProjectAccessRequest{
+			ToEmail:     u.Email,
+			ToName:      u.DisplayName,
+			Email:       user.Email,
+			OrgName:     org.Name,
+			ProjectName: proj.Name,
+			AcceptLink:  acceptLink,
+			RejectLink:  rejectLink,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	return &adminv1.RequestProjectAccessResponse{}, nil
+}
+
+func (s *Server) AcceptProjectAccess(ctx context.Context, req *adminv1.AcceptProjectAccessRequest) (*adminv1.AcceptProjectAccessResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
+	}
+
+	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	role, err := s.admin.DB.FindProjectRole(ctx, accessReq.ProjectRoleID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	user, err := s.admin.DB.FindUserByEmail(ctx, accessReq.Email)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	// TODO: quotas
+
+	// add the user
+	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// remove the invitation
+	err = s.admin.DB.DeleteProjectAccessRequest(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.Email.SendProjectAccessGranted(&email.ProjectAccessGranted{
+		ToEmail:     accessReq.Email,
+		ToName:      user.DisplayName,
+		FrontendURL: s.opts.FrontendURL,
+		OrgName:     org.Name,
+		ProjectName: proj.Name,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.AcceptProjectAccessResponse{}, nil
+}
+
+func (s *Server) RejectProjectAccess(ctx context.Context, req *adminv1.RejectProjectAccessRequest) (*adminv1.RejectProjectAccessResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
+	}
+
+	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	user, err := s.admin.DB.FindUserByEmail(ctx, accessReq.Email)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// remove the invitation
+	err = s.admin.DB.DeleteProjectAccessRequest(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.Email.SendProjectAccessRejected(&email.ProjectAccessRejected{
+		ToEmail:     accessReq.Email,
+		ToName:      user.DisplayName,
+		OrgName:     org.Name,
+		ProjectName: proj.Name,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.RejectProjectAccessResponse{}, nil
+}
+
 // getAndCheckGithubInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
 func (s *Server) getAndCheckGithubInstallationID(ctx context.Context, githubURL, userID string) (int64, error) {
 	// Get Github installation ID for the repo
