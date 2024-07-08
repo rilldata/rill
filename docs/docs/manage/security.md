@@ -40,8 +40,7 @@ When developing access policies, you can leverage a fixed set of user attributes
 - `.user.domain` – the domain of the current user's email address, for example `example.com` (string)
 - `.user.name` - the current user's name, for example `John Doe` (string)
 - `.user.admin` – a boolean value indicating whether the current user is an org or project admin, for example `true` (bool)
-<!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
-<!-- - `.user.groups` - a list of usergroups the user belongs to in the project's org. Custom usergroups are not currently supported, so this will always be `["all"]`. -->
+- `.user.groups` - a list of usergroups the user belongs to in the project's org (list of strings)
 
 Note: Rill requires users to confirm their email address before letting them interact with the platform so a user cannot fake an email address or email domain.
 
@@ -68,6 +67,8 @@ mock_users:
   name: John Doe
   admin: true
 - email: jane@partnercompany.com
+  groups:
+    - partners
 - email: anon@unknown.com
 ```
 
@@ -117,17 +118,44 @@ security:
 
 Alternatively, you can explicitly define the dimensions and measures to include using the `include` key. It uses the same syntax as `exclude` and automatically excludes all names not explicitly defined in the list. See the [Dashboard YAML](/reference/project-files/dashboards) reference for details.
 
-<!-- PENDING SUPPORT FOR USER-DEFINED USERGROUPS -->
-<!--
+### Use wildcards to select all dimensions and measures
+
+When building field include policies, you can easily select all fields using `names: '*'`. For example:
+```yaml
+security:
+  access: true
+  include:
+    - if: true
+      names:
+        - ssn
+        - id
+    - if: "{{ .user.admin }}"
+      names: '*'
+```
+
+Note that the `'*'` must be quoted (using single or double quotes), and must be provided as a scalar value, not as an entry in a list.
+
 ### Filter queries based on the user's groups
 
-Let's say additionally we want to filter queries based on user's groups and there exist a `group` dimension in the model:
+You can inject the groups that a user belongs to into row filter:
 ```yaml 
 security:
   access: true
   row_filter: "groups IN ('{{ .user.groups | join \"', '\" }}')"
 ```
--->
+
+### Hide dimensions or measures for members of a certain group
+
+You can check group membership using the templating function `has`. For example:
+```yaml
+security:
+  access: true
+  exclude:
+    - if: '{{ has "partners" .user.groups }}'
+      names:
+        - cost
+        - profit
+```
 
 ### Advanced Example: Custom attributes
 
