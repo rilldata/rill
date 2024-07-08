@@ -14,6 +14,8 @@
     TabsTrigger,
   } from "@rilldata/web-common/components/tabs";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+
+  export let createMagicAuthTokens: boolean;
 </script>
 
 <Popover>
@@ -24,7 +26,9 @@
     <Tabs>
       <TabsList>
         <TabsTrigger value="tab1">Copy link</TabsTrigger>
-        <TabsTrigger value="tab2">Create public link</TabsTrigger>
+        {#if createMagicAuthTokens}
+          <TabsTrigger value="tab2">Create public link</TabsTrigger>
+        {/if}
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
         <div class="flex flex-col gap-y-2">

@@ -31,6 +31,8 @@
     isProjectPage,
   } from "./nav-utils";
 
+  export let createMagicAuthTokens: boolean;
+
   const user = createAdminServiceGetCurrentUser();
 
   $: instanceId = $runtime?.instanceId;
@@ -175,7 +177,7 @@
         {#if $user.isSuccess && $user.data.user && !onMagicLinkPage}
           <CreateAlert />
           <Bookmarks />
-          <ShareDashboardButton />
+          <ShareDashboardButton {createMagicAuthTokens} />
         {/if}
       </StateManagersProvider>
     {/if}
