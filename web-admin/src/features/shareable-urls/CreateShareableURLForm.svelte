@@ -8,6 +8,7 @@
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
@@ -70,7 +71,8 @@
           });
           token = _token;
         } catch (error) {
-          apiError = (error as Error).message;
+          const typedError = error as HTTPError;
+          apiError = typedError.response?.data?.message ?? typedError.message;
         }
       },
     },
