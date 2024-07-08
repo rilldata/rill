@@ -2,7 +2,6 @@ package rillv1
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"maps"
 	"reflect"
@@ -1806,10 +1805,6 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 				require.Equal(t, want.MigrationSpec, got.MigrationSpec, "for resource %q", want.Name)
 				require.Equal(t, want.ThemeSpec, got.ThemeSpec, "for resource %q", want.Name)
 				require.True(t, reflect.DeepEqual(want.ReportSpec, got.ReportSpec), "for resource %q", want.Name)
-				if want.AlertSpec != nil {
-					fmt.Println(string(must(json.Marshal(want.AlertSpec))))
-					fmt.Println(string(must(json.Marshal(got.AlertSpec))))
-				}
 				require.True(t, reflect.DeepEqual(want.AlertSpec, got.AlertSpec), "for resource %q", want.Name)
 
 				delete(gotResources, got.Name)
