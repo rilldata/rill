@@ -34,8 +34,9 @@ export interface KPITemplateT {
 export interface TableProperties extends DataProperties {
   time_range: string;
   measures: string[];
-  row_dimensions: string[];
-  col_dimensions: string[];
+  comparison_range?: string;
+  row_dimensions?: string[];
+  col_dimensions?: string[];
 }
 export interface TableTemplateT {
   table: TableProperties;

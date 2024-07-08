@@ -98,6 +98,9 @@
           },
           "type": "array"
         },
+        "comparison_range": {
+          "type": "string"
+        },
         "measures": {
           "items": {
             "type": "string"
@@ -118,10 +121,8 @@
         }
       },
       "required": [
-        "col_dimensions",
         "measures",
         "metric_view",
-        "row_dimensions",
         "time_range"
       ],
       "type": "object"

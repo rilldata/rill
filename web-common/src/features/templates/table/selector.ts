@@ -25,8 +25,8 @@ export function getTableConfig(
     ([metricsView, timeRange]) => {
       const config: PivotDataStoreConfig = {
         measureNames: tableProperties.measures,
-        rowDimensionNames: tableProperties.row_dimensions,
-        colDimensionNames: tableProperties.col_dimensions,
+        rowDimensionNames: tableProperties.row_dimensions || [],
+        colDimensionNames: tableProperties.col_dimensions || [],
         allMeasures: metricsView.data?.measures || [],
         allDimensions: metricsView.data?.dimensions || [],
         whereFilter: createAndExpression([]),

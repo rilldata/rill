@@ -15,10 +15,21 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  $: instanceId = $runtime.instanceId;
   const queryClient = useQueryClient();
+  const TABLE_PREFIX = "_custom-table";
+
+  $: instanceId = $runtime.instanceId;
 
   $: tableProperties = rendererProperties as TableProperties;
+
+  $: colDimensions = tableProperties.col_dimensions || [];
+  $: rowDimensions = tableProperties.row_dimensions || [];
+
+  $: stateManagerContext = createStateManagers({
+    queryClient,
+    metricsViewName: tableProperties.metric_view,
+    extraKeyPrefix: TABLE_PREFIX,
+  });
 
   $: pivotState = writable<PivotState>({
     active: true,
@@ -28,14 +39,14 @@
         title: measure,
         type: PivotChipType.Measure,
       })),
-      dimension: tableProperties.col_dimensions.map((dimension) => ({
+      dimension: colDimensions.map((dimension) => ({
         id: dimension,
         title: dimension,
         type: PivotChipType.Dimension,
       })),
     },
     rows: {
-      dimension: tableProperties.row_dimensions.map((dimension) => ({
+      dimension: rowDimensions.map((dimension) => ({
         id: dimension,
         title: dimension,
         type: PivotChipType.Dimension,
@@ -50,20 +61,13 @@
   });
 
   $: pivotConfig = getTableConfig(instanceId, tableProperties, $pivotState);
-
-  $: stateManagerContext = createStateManagers({
-    queryClient,
-    metricsViewName: tableProperties.metric_view,
-    extraKeyPrefix: "_custom-table",
-  });
-
   $: pivotDataStore = createPivotDataStore(stateManagerContext, pivotConfig);
 </script>
 
 <div>
   {#if $pivotDataStore}
     <TableRenderer
-      metricsViewName={tableProperties.metric_view + "_custom-table"}
+      metricsViewName={tableProperties.metric_view + TABLE_PREFIX}
       {pivotDataStore}
       config={$pivotConfig}
       pivotDashboardStore={pivotState}
