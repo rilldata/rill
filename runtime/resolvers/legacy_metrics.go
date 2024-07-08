@@ -65,7 +65,7 @@ func newLegacyMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runti
 		return nil, fmt.Errorf("failed extract metrics view name from query: %w", err)
 	}
 
-	q, err := queries.ProtoToQuery(qpb, opts.UserAttributes)
+	q, err := queries.ProtoToQuery(qpb, opts.Claims)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build query: %w", err)
 	}

@@ -3088,6 +3088,8 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the dashboard when it was created
+      dataProps:
+        type: object
   v1BillingPlan:
     type: object
     properties:

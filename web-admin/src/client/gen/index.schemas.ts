@@ -1177,6 +1177,8 @@ export interface V1BillingPlan {
   quotas?: V1Quotas;
 }
 
+export type V1AlertOptionsDataProps = { [key: string]: any };
+
 export interface V1AlertOptions {
   title?: string;
   intervalDuration?: string;
@@ -1190,6 +1192,7 @@ export interface V1AlertOptions {
   slackChannels?: string[];
   slackWebhooks?: string[];
   webOpenState?: string;
+  dataProps?: V1AlertOptionsDataProps;
 }
 
 export interface V1AddUsergroupMemberUserResponse {
