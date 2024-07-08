@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/XSAM/otelsql"
@@ -439,6 +440,25 @@ func (c *connection) InsertProjectWhitelistedDomain(ctx context.Context, opts *d
 func (c *connection) DeleteProjectWhitelistedDomain(ctx context.Context, id string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM projects_autoinvite_domains WHERE id=$1", id)
 	return checkDeleteRow("project whitelist domain", res, err)
+}
+
+func (c *connection) FindDeployments(ctx context.Context, afterID string, limit int) ([]*database.Deployment, error) {
+	var qry strings.Builder
+	var args []any
+	qry.WriteString("SELECT d.* FROM deployments d ")
+	if afterID != "" {
+		qry.WriteString("WHERE d.id > $1 ORDER BY d.id LIMIT $2")
+		args = []any{afterID, limit}
+	} else {
+		qry.WriteString("ORDER BY d.id LIMIT $1")
+		args = []any{limit}
+	}
+	var res []*database.Deployment
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	if err != nil {
+		return nil, parseErr("deployments", err)
+	}
+	return res, nil
 }
 
 // FindExpiredDeployments returns all the deployments which are expired as per prod ttl
