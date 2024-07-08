@@ -32,8 +32,6 @@
     end: Date,
   ) => void;
 
-  $: console.log({ selectedComparison });
-
   let open = false;
   let showSelector = false;
 
@@ -109,7 +107,11 @@
           {/if}
         {/if}
       </div>
-      <span class="flex-none transition-transform" class:-rotate-180={open}>
+      <span
+        class="flex-none transition-transform"
+        class:-rotate-180={open}
+        class:opacity-50={!showComparison}
+      >
         <CaretDownIcon />
       </span>
     </button>

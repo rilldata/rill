@@ -32,9 +32,6 @@
 
 <style lang="postcss">
   .leaderboard-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, 315px);
-    gap: 1.5rem;
-    @apply h-fit overflow-hidden;
+    @apply flex flex-row flex-wrap gap-4;
   }
 </style>

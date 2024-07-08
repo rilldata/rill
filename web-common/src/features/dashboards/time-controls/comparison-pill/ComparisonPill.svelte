@@ -51,6 +51,12 @@
     start: Date,
     end: Date,
   ) {
+    if (!showTimeComparison) {
+      metricsExplorerStore.displayTimeComparison(
+        metricViewName,
+        !showTimeComparison,
+      );
+    }
     metricsExplorerStore.setSelectedComparisonRange(
       metricViewName,
       {
@@ -63,7 +69,7 @@
   }
 </script>
 
-<div class="wrapper" class:opacity-75={!showTimeComparison}>
+<div class="wrapper">
   <button
     class="flex gap-x-1.5 cursor-pointer"
     on:click={() => {
@@ -73,21 +79,13 @@
       );
     }}
   >
-    <Switch
-      checked={showTimeComparison}
-      id="comparing"
-      small
-      on:click={() => {
-        metricsExplorerStore.displayTimeComparison(
-          metricViewName,
-          !showTimeComparison,
-        );
-      }}
-    />
+    <div class="pointer-events-none flex items-center gap-x-1.5">
+      <Switch checked={showTimeComparison} id="comparing" small />
 
-    <Label class="font-normal text-xs cursor-pointer" for="comparing">
-      <span class:opacity-50={!showTimeComparison}>Comparing</span>
-    </Label>
+      <Label class="font-normal text-xs cursor-pointer" for="comparing">
+        <span class:opacity-50={!showTimeComparison}>Comparing</span>
+      </Label>
+    </div>
   </button>
   {#if activeTimeGrain && interval.isValid}
     <Elements.Comparison

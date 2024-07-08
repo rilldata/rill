@@ -1,17 +1,9 @@
 <script lang="ts">
-  /**
-   * Leaderboard.svelte
-   * -------------------------
-   * This is the "implemented" feature of the leaderboard, meant to be used
-   * in the application itself.
-   */
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
   import { SortType } from "../proto-state/derived-types";
-  import LeaderboardHeader from "./LeaderboardHeader.svelte";
-  import LeaderboardListItem from "./LeaderboardListItem.svelte";
   import {
     LeaderboardItemData,
     prepareLeaderboardItemData,
@@ -20,12 +12,13 @@
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
   import PieChart from "@rilldata/web-common/components/icons/PieChart.svelte";
-  import LeaderboardValueCell from "./LeaderboardValueCell.svelte";
-  import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import TooltipTitle from "@rilldata/web-common/components/tooltip/TooltipTitle.svelte";
   import TooltipShortcutContainer from "@rilldata/web-common/components/tooltip/TooltipShortcutContainer.svelte";
   import Shortcut from "@rilldata/web-common/components/tooltip/Shortcut.svelte";
   import LeaderboardRow from "./LeaderboardRow.svelte";
+  import Spinner from "../../entity-management/Spinner.svelte";
+  import { EntityStatus } from "../../entity-management/types";
+  import DimensionCompareMenu from "./DimensionCompareMenu.svelte";
 
   const slice = 7;
 
@@ -57,20 +50,18 @@
 
   const {
     selectors: {
-      contextColumn: {
-        contextColumn,
-        isDeltaAbsolute,
-        isDeltaPercent,
-        isPercentOfTotal,
-        isHidden,
-      },
+      contextColumn: { isPercentOfTotal },
       dimensions: {
         getDimensionByName,
         getDimensionDisplayName,
         getDimensionDescription,
       },
-      activeMeasure: { activeMeasureName },
-      dimensionFilters: { selectedDimensionValues },
+      activeMeasure: { activeMeasureName, isValidPercentOfTotal },
+      dimensionFilters: {
+        selectedDimensionValues,
+        atLeastOneSelection,
+        isFilterExcludeMode,
+      },
       dashboardQueries: {
         leaderboardSortedQueryBody,
         leaderboardSortedQueryOptions,
@@ -79,6 +70,7 @@
       },
       sorting: { sortedAscending, sortType },
       timeRangeSelectors: { isTimeComparisonActive },
+      comparison: { isBeingCompared: isBeingComparedReadable },
     },
     actions: {
       sorting: { toggleSort, toggleSortByActiveContextColumn },
@@ -87,6 +79,8 @@
     metricsViewName,
     runtime,
   } = getStateManagers();
+
+  $: flip = $sortedAscending;
 
   $: dimension = $getDimensionByName(dimensionName);
 
@@ -134,196 +128,203 @@
     showExpandTable = leaderboardData.showExpandTable;
   }
 
+  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
+  $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
+  $: atLeastOneActive = $atLeastOneSelection(dimensionName);
+
+  // Super important special case: if there is not at least one "active" (selected) value,
+  // we need to set *all* items to be included, because by default if a user has not
+  // selected any values, we assume they want all values included in all calculations.
+  // $: excluded = atLeastOneActive
+  //   ? (filterExcludeMode && selected) || (!filterExcludeMode && !selected)
+  //   : false;
+
   let hovered: boolean;
   $: arrowTransform = $sortedAscending ? "scale(1 -1)" : "scale(1 1)";
   $: dimensionDescription = $getDimensionDescription(dimensionName);
+
+  $: tableWidth = 1 * 60 + 190;
 </script>
 
 <div
+  class="flex-col flex"
   bind:this={container}
-  role="grid"
   aria-label="{dimensionName} leaderboard"
-  tabindex="0"
+  role="table"
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
 >
-  <LeaderboardHeader {isFetching} {dimensionName} {hovered} />
-  {#if isError}
-    <div class="ml-[22px] flex p-2 gap-x-1 items-center">
-      <div class="text-gray-500">Unable to load leaderboard.</div>
-      <button
-        class="text-primary-500 hover:text-primary-600 font-medium"
-        disabled={isLoading}
-        on:click={() => refetch()}>Try again</button
-      >
-    </div>
-  {:else if isLoading}
-    <div class="pl-6 pr-0.5 w-full flex flex-col items-center">
-      {#each { length: 7 } as _, i (i)}
-        <div class="size-full flex h-[22px] py-1.5 gap-x-1">
-          <div
-            class="h-full w-10/12 flex-none bg-gray-100 animate-pulse rounded-full"
-          />
-          <div class="size-full bg-gray-100 animate-pulse rounded-full" />
-        </div>
-      {/each}
-    </div>
-  {:else if aboveTheFold || selectedBelowTheFold}
-    <div class="rounded-b border-gray-200 surface text-gray-800">
-      <!-- place the leaderboard entries that are above the fold here -->
+  <table>
+    <colgroup>
+      <col style:width="24px" />
+      <col style:width="190px" />
+      <col class="col-width" />
+      {#if $isTimeComparisonActive}
+        <col class="col-width" />
+        <col class="col-width" />
+      {:else}
+        <col class="col-width" />
+      {/if}
+    </colgroup>
+    <thead>
+      <tr>
+        <th>
+          {#if isFetching}
+            <Spinner size="16px" status={EntityStatus.Running} />
+          {:else if hovered || isBeingCompared}
+            <DimensionCompareMenu {dimensionName} />
+          {/if}
+        </th>
+        <th>
+          <Tooltip distance={16} location="top">
+            <button
+              on:click={() => setPrimaryDimension(dimensionName)}
+              class="ui-header-primary header-cell"
+              aria-label="Open dimension details"
+            >
+              {$getDimensionDisplayName(dimensionName)}
+            </button>
+            <TooltipContent slot="tooltip-content">
+              <TooltipTitle>
+                <svelte:fragment slot="name">
+                  {$getDimensionDisplayName(dimensionName)}
+                </svelte:fragment>
+                <svelte:fragment slot="description" />
+              </TooltipTitle>
+              <TooltipShortcutContainer>
+                <div>
+                  {#if dimensionDescription}
+                    {dimensionDescription}
+                  {:else}
+                    The leaderboard metrics for {$getDimensionDisplayName(
+                      dimensionName,
+                    )}
+                  {/if}
+                </div>
+                <Shortcut />
+                <div>Expand leaderboard</div>
+                <Shortcut>Click</Shortcut>
+              </TooltipShortcutContainer>
+            </TooltipContent>
+          </Tooltip>
+        </th>
+        <th>
+          <button
+            class="header-cell"
+            on:click={() => toggleSort(SortType.VALUE)}
+            aria-label="Toggle sort leaderboards by value"
+          >
+            #{#if $sortType === SortType.VALUE}
+              <ArrowDown {flip} />
+            {/if}
+          </button>
+        </th>
+        {#if $isTimeComparisonActive}
+          <th>
+            <button
+              class="header-cell"
+              on:click={() => toggleSort(SortType.DELTA_ABSOLUTE)}
+              aria-label="Toggle sort leaderboards by absolute change"
+            >
+              <Delta />
+              {#if $sortType === SortType.DELTA_ABSOLUTE}
+                <ArrowDown {flip} />
+              {/if}
+            </button>
+          </th>
+
+          <th>
+            <button
+              class="header-cell"
+              on:click={() => toggleSort(SortType.DELTA_PERCENT)}
+              aria-label="Toggle sort leaderboards by percent change"
+            >
+              <Delta /> %
+              {#if $sortType === SortType.DELTA_PERCENT}
+                <ArrowDown {flip} />
+              {/if}
+            </button>
+          </th>
+        {:else if $isValidPercentOfTotal}
+          <th>
+            <button
+              on:click={() => toggleSort(SortType.PERCENT)}
+              class="header-cell"
+              aria-label="Toggle sort leaderboards by percent of total"
+            >
+              <PieChart /> %
+              {#if $sortType === SortType.PERCENT}
+                <ArrowDown {flip} />
+              {/if}
+            </button>
+          </th>
+        {/if}
+      </tr>
+    </thead>
+
+    <tbody>
       {#each aboveTheFold as itemData (itemData.dimensionValue)}
-        <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
+        <LeaderboardRow
+          {tableWidth}
+          {dimensionName}
+          {itemData}
+          isValidPercentOfTotal={$isValidPercentOfTotal}
+          isTimeComparisonActive={$isTimeComparisonActive}
+        />
+      {:else}
+        {#each { length: 7 } as _, i (i)}
+          <tr>
+            <td></td>
+            <td>
+              <div class="loading-bar" />
+            </td>
+            <td>
+              <div class="loading-bar" />
+            </td>
+          </tr>
+        {/each}
       {/each}
       <!-- place the selected values that are not above the fold here -->
-      {#if selectedBelowTheFold?.length}
-        <hr />
-        {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
-          <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
-        {/each}
-        <hr />
-      {/if}
-      {#if noAvailableValues}
-        <div style:padding-left="30px" class="p-1 ui-copy-disabled">
-          No available values
-        </div>
-      {/if}
-      {#if showExpandTable}
-        <Tooltip location="right">
-          <button
-            on:click={() => setPrimaryDimension(dimensionName)}
-            class="block flex-row w-full text-left transition-color ui-copy-muted"
-            style:padding-left="30px"
-          >
-            (Expand Table)
-          </button>
-          <TooltipContent slot="tooltip-content"
-            >Expand dimension to see more values</TooltipContent
-          >
-        </Tooltip>
-      {/if}
-    </div>
+
+      {#each selectedBelowTheFold as itemData, i (itemData.dimensionValue)}
+        <LeaderboardRow
+          borderTop={i === 0}
+          borderBottom={i === selectedBelowTheFold.length - 1}
+          {tableWidth}
+          {dimensionName}
+          {itemData}
+          isValidPercentOfTotal={$isValidPercentOfTotal}
+          isTimeComparisonActive={$isTimeComparisonActive}
+        />
+      {/each}
+    </tbody>
+  </table>
+  {#if showExpandTable}
+    <Tooltip location="right">
+      <button
+        on:click={() => setPrimaryDimension(dimensionName)}
+        class="block flex-row w-full text-left transition-color ui-copy-muted"
+        style:padding-left="30px"
+      >
+        (Expand Table)
+      </button>
+      <TooltipContent slot="tooltip-content">
+        Expand dimension to see more values
+      </TooltipContent>
+    </Tooltip>
   {/if}
 </div>
-
-<table>
-  <colgroup>
-    <col style:width="20px" />
-    <col style:width="184px" />
-    <col style:width="50px" />
-    <col style:width="50px" />
-    <col style:width="50px" />
-  </colgroup>
-  <thead>
-    <tr>
-      <th> </th>
-      <th>
-        <Tooltip distance={16} location="top">
-          <button
-            on:click={() => setPrimaryDimension(dimensionName)}
-            class="ui-header-primary"
-            aria-label="Open dimension details"
-          >
-            {$getDimensionDisplayName(dimensionName)}
-          </button>
-          <TooltipContent slot="tooltip-content">
-            <TooltipTitle>
-              <svelte:fragment slot="name">
-                {$getDimensionDisplayName(dimensionName)}
-              </svelte:fragment>
-              <svelte:fragment slot="description" />
-            </TooltipTitle>
-            <TooltipShortcutContainer>
-              <div>
-                {#if dimensionDescription}
-                  {dimensionDescription}
-                {:else}
-                  The leaderboard metrics for {$getDimensionDisplayName(
-                    dimensionName,
-                  )}
-                {/if}
-              </div>
-              <Shortcut />
-              <div>Expand leaderboard</div>
-              <Shortcut>Click</Shortcut>
-            </TooltipShortcutContainer>
-          </TooltipContent>
-        </Tooltip>
-      </th>
-      <th>
-        <button
-          on:click={() => toggleSort(SortType.VALUE)}
-          aria-label="Toggle sort leaderboards by value"
-        >
-          #{#if $sortType === SortType.VALUE}
-            <ArrowDown transform={arrowTransform} />
-          {/if}
-        </button>
-      </th>
-      {#if $isTimeComparisonActive}
-        <th>
-          <button
-            on:click={toggleSortByActiveContextColumn}
-            aria-label="Toggle sort leaderboards by context column"
-          >
-            <Delta /> %
-          </button>
-        </th>
-        <th>
-          <button
-            on:click={toggleSortByActiveContextColumn}
-            class="size-full"
-            aria-label="Toggle sort leaderboards by context column"
-          >
-            <Delta />
-          </button>
-        </th>
-      {:else if $isPercentOfTotal}
-        <th>
-          <button
-            on:click={toggleSortByActiveContextColumn}
-            class="flex flex-row items-center justify-end"
-            aria-label="Toggle sort leaderboards by context column"
-          >
-            <PieChart /> %
-          </button>
-        </th>
-      {/if}
-    </tr>
-  </thead>
-  <tbody>
-    {#each aboveTheFold as itemData (itemData.dimensionValue)}
-      <LeaderboardRow
-        {dimensionName}
-        {itemData}
-        isPercentOfTotal={$isPercentOfTotal}
-        isTimeComparisonActive={$isTimeComparisonActive}
-      />
-    {/each}
-    <!-- place the selected values that are not above the fold here -->
-    {#if selectedBelowTheFold?.length}
-      <hr />
-      {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
-        <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
-      {/each}
-      <hr />
-    {/if}
-  </tbody>
-</table>
 
 <style lang="postcss">
   table {
     @apply p-0 m-0 border-spacing-0 border-collapse w-fit;
     @apply font-normal cursor-pointer select-none;
-    /* @apply table-fixed; */
+    @apply table-fixed;
   }
 
   td {
     @apply text-right truncate;
     height: 22px;
-  }
-
-  td:first-of-type {
-    @apply text-left;
   }
 
   tbody tr:hover {
@@ -351,7 +352,27 @@
   th:first-of-type {
     @apply text-left;
   }
-  thead {
+  th:not(:first-of-type) {
     @apply border-b;
+  }
+
+  .loading-bar {
+    @apply w-11/12 h-2.5 bg-gray-100 animate-pulse rounded-full;
+  }
+
+  td:first-of-type {
+    @apply text-left;
+  }
+
+  .header-cell {
+    @apply px-2 flex items-center justify-end;
+  }
+
+  th:nth-of-type(2) .header-cell {
+    @apply justify-start;
+  }
+
+  .col-width {
+    width: 64px;
   }
 </style>

@@ -1,53 +1,44 @@
 <script lang="ts">
-  import BarAndLabel from "@rilldata/web-common/components/BarAndLabel.svelte";
-
+  import { cubicOut as easing } from "svelte/easing";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
-
   import { LIST_SLIDE_DURATION } from "@rilldata/web-common/layout/config";
   import { LeaderboardItemData } from "./leaderboard-utils";
   import { FormattedDataType } from "@rilldata/web-common/components/data-types";
-  import { fly, slide } from "svelte/transition";
-
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
-  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
-  import ContextColumnValue from "./ContextColumnValue.svelte";
-  import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
-  import LongBarZigZag from "./LongBarZigZag.svelte";
+  import { tweened } from "svelte/motion";
 
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-
-  export let dimensionName: string;
-  export let itemData: LeaderboardItemData;
-
-  $: label = itemData.dimensionValue;
-  $: measureValue = itemData.value;
-  $: selected = itemData.selectedIndex >= 0;
-  $: comparisonValue = itemData.prevValue;
-  $: pctOfTotal = itemData.pctOfTotal;
+  const valueTween = tweened(0, {
+    duration: 200,
+    easing,
+  });
 
   const {
     selectors: {
       numberFormat: { activeMeasureFormatter },
       activeMeasure: { isSummableMeasure },
       dimensionFilters: { atLeastOneSelection, isFilterExcludeMode },
-      comparison: { isBeingCompared: isBeingComparedReadable },
-    },
-    actions: {
-      dimensionsFilter: { toggleDimensionValueSelection },
     },
   } = getStateManagers();
 
-  $: isBeingCompared = $isBeingComparedReadable(dimensionName);
+  export let dimensionName: string;
+  export let itemData: LeaderboardItemData;
+  export let tableWidth: number;
+
+  let hovered = false;
+
+  $: ({
+    dimensionValue: label,
+    selectedIndex,
+    pctOfTotal,
+    prevValue: comparisonValue,
+  } = itemData);
+
+  $: selected = selectedIndex >= 0;
+
   $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
   $: atLeastOneActive = $atLeastOneSelection(dimensionName);
   /** for summable measures, this is the value we use to calculate the bar % to fill */
-
-  $: formattedValue = measureValue
-    ? $activeMeasureFormatter(measureValue)
-    : null;
 
   $: previousValueString =
     comparisonValue !== undefined && comparisonValue !== null
@@ -69,67 +60,36 @@
       ? "ui-measure-bar-included-selected"
       : "ui-measure-bar-included";
 
-  function shiftClickHandler(label: string) {
-    let truncatedLabel = label?.toString();
-    if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
-      truncatedLabel = `${truncatedLabel.slice(0, TOOLTIP_STRING_LIMIT)}...`;
-    }
-    copyToClipboard(
-      label,
-      `copied dimension value "${truncatedLabel}" to clipboard`,
-    );
-  }
-
-  let hovered = false;
-  const onHover = () => {
-    hovered = true;
-  };
-  const onLeave = () => {
-    hovered = false;
-  };
+  $: valueTween.set(renderedBarValue);
 </script>
 
-<div class="size-full">
-  <BarAndLabel
-    {color}
-    justify={false}
-    showBackground={false}
-    showHover
-    tweenParameters={{ duration: 200 }}
-    value={renderedBarValue}
-  >
-    <div
-      class="grid leaderboard-entry items-center gap-x-3"
-      style:height="22px"
-    >
-      <!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
-      <div
-        class="leaderboard-label justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
-        class:ui-copy={!atLeastOneActive}
-        class:ui-copy-disabled={excluded}
-        class:ui-copy-strong={!excluded && selected}
-      >
-        <FormattedDataType value={label} truncate />
-      </div>
+<!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
+<div
+  class="relative size-full pl-2 flex flex-none items-center leaderboard-label"
+  class:ui-copy={!atLeastOneActive}
+  class:ui-copy-disabled={excluded}
+  class:ui-copy-strong={!excluded && selected}
+>
+  <FormattedDataType value={label} truncate />
 
-      <div
-        class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
-      >
-        <div
-          class="flex items-baseline gap-x-1"
-          in:fly={{ duration: 200, y: 4 }}
+  <div
+    class="{color} h-full absolute left-0 -z-10"
+    style:width="{tableWidth * $valueTween}px"
+  />
+
+  <div
+    class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
+  >
+    <div class="flex items-baseline gap-x-1" in:fly={{ duration: 200, y: 4 }}>
+      {#if showPreviousTimeValue}
+        <span
+          class="inline-block opacity-50"
+          transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
         >
-          {#if showPreviousTimeValue}
-            <span
-              class="inline-block opacity-50"
-              transition:slideRight={{ duration: LIST_SLIDE_DURATION }}
-            >
-              {previousValueString}
-              →
-            </span>
-          {/if}
-        </div>
-      </div>
+          {previousValueString}
+          →
+        </span>
+      {/if}
     </div>
-  </BarAndLabel>
+  </div>
 </div>

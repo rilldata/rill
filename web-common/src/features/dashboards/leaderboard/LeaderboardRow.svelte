@@ -6,22 +6,29 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
-  export let isPercentOfTotal: boolean;
+  export let isValidPercentOfTotal: boolean;
   export let isTimeComparisonActive: boolean;
+  export let tableWidth: number;
+  export let borderTop = false;
+  export let borderBottom = false;
 
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
   $: selected = itemData.selectedIndex >= 0;
-  $: comparisonValue = itemData.prevValue;
-  $: pctOfTotal = itemData.pctOfTotal;
+
+  $: ({ prevValue: comparisonValue } = itemData);
 
   const {
     selectors: {
       numberFormat: { activeMeasureFormatter },
-      activeMeasure: { isSummableMeasure },
       dimensionFilters: { atLeastOneSelection, isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
     },
@@ -34,15 +41,6 @@
   $: filterExcludeMode = $isFilterExcludeMode(dimensionName);
   $: atLeastOneActive = $atLeastOneSelection(dimensionName);
 
-  $: formattedValue = measureValue
-    ? $activeMeasureFormatter(measureValue)
-    : null;
-
-  $: previousValueString =
-    comparisonValue !== undefined && comparisonValue !== null
-      ? $activeMeasureFormatter(comparisonValue)
-      : undefined;
-  $: showPreviousTimeValue = hovered && previousValueString !== undefined;
   // Super important special case: if there is not at least one "active" (selected) value,
   // we need to set *all* items to be included, because by default if a user has not
   // selected any values, we assume they want all values included in all calculations.
@@ -50,13 +48,14 @@
     ? (filterExcludeMode && selected) || (!filterExcludeMode && !selected)
     : false;
 
-  $: renderedBarValue = $isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
+  $: previousValueString =
+    comparisonValue !== undefined && comparisonValue !== null
+      ? $activeMeasureFormatter(comparisonValue)
+      : undefined;
 
-  $: color = excluded
-    ? "ui-measure-bar-excluded"
-    : selected
-      ? "ui-measure-bar-included-selected"
-      : "ui-measure-bar-included";
+  $: formattedValue = measureValue
+    ? $activeMeasureFormatter(measureValue)
+    : null;
 
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
@@ -68,17 +67,26 @@
       `copied dimension value "${truncatedLabel}" to clipboard`,
     );
   }
-
+  $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
   let hovered = false;
-  const onHover = () => {
-    hovered = true;
-  };
-  const onLeave = () => {
-    hovered = false;
-  };
 </script>
 
-<tr>
+<tr
+  class:border-b={borderBottom}
+  class:border-t={borderTop}
+  on:mouseenter={() => (hovered = true)}
+  on:mouseleave={() => (hovered = false)}
+  on:click={modified({
+    shift: () => shiftClickHandler(label),
+    click: (e) =>
+      toggleDimensionValueSelection(
+        dimensionName,
+        label,
+        false,
+        e.ctrlKey || e.metaKey,
+      ),
+  })}
+>
   <td>
     <LeaderboardItemFilterIcon
       {excluded}
@@ -87,39 +95,79 @@
     />
   </td>
   <td>
-    <LeaderboardValueCell {itemData} {dimensionName} />
+    <Tooltip location="left" distance={20}>
+      <LeaderboardValueCell {itemData} {dimensionName} {tableWidth} />
+      <LeaderboardTooltipContent
+        {atLeastOneActive}
+        {excluded}
+        {filterExcludeMode}
+        {label}
+        {selected}
+        slot="tooltip-content"
+      />
+    </Tooltip>
   </td>
   <td>
-    <FormattedDataType type="INTEGER" value={itemData.value} />
+    <div
+      class="value-cell flex flex-row items-center gap-x-1 relative whitespace-nowrap"
+    >
+      {#if previousValueString && hovered}
+        <span class="flex flex-row items-center opacity-50 h-[22px]">
+          {previousValueString} →
+        </span>
+      {/if}
+      <FormattedDataType
+        type="INTEGER"
+        value={formattedValue || measureValue}
+      />
+    </div>
   </td>
   {#if isTimeComparisonActive}
     <td>
       <div class="value-cell">
-        <FormattedDataType type="INTEGER" value={itemData.deltaRel} />
-      </div></td
-    >
-    <td
-      ><div class="value-cell">
-        <FormattedDataType type="INTEGER" value={itemData.deltaAbs} />
+        <FormattedDataType
+          type="INTEGER"
+          value={itemData.deltaAbs
+            ? $activeMeasureFormatter(itemData.deltaAbs)
+            : null}
+          customStyle={negativeChange ? "text-red-500" : ""}
+        />
       </div>
     </td>
-  {:else if isPercentOfTotal}
-    <td><div class="value-cell">{itemData.pctOfTotal}</div></td>
+    <td>
+      <div class="value-cell">
+        <PercentageChange
+          value={itemData.deltaRel
+            ? formatMeasurePercentageDifference(itemData.deltaRel)
+            : null}
+        />
+      </div>
+    </td>
+  {:else if isValidPercentOfTotal && itemData.pctOfTotal && !isNaN(itemData.pctOfTotal)}
+    <td>
+      <div class="value-cell">
+        <PercentageChange value={itemData.pctOfTotal} />
+      </div>
+    </td>
   {/if}
 </tr>
 
 <style lang="postcss">
   td {
-    @apply text-right truncate;
+    @apply text-right;
     height: 22px;
   }
 
+  tr {
+    @apply cursor-pointer;
+  }
+
   td:first-of-type {
-    @apply text-left;
+    @apply text-left brightness-100;
   }
 
   tr:hover {
-    @apply bg-gray-100;
+    @apply brightness-95 bg-background;
   }
 
   td {
@@ -127,6 +175,6 @@
   }
 
   .value-cell {
-    @apply px-1;
+    @apply pr-2 flex justify-end items-center;
   }
 </style>

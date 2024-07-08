@@ -13,7 +13,7 @@
   import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
 
-  export let metricViewName;
+  export let metricViewName: string;
 
   const {
     selectors: {
