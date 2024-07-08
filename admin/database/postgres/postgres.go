@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/XSAM/otelsql"
@@ -441,9 +442,19 @@ func (c *connection) DeleteProjectWhitelistedDomain(ctx context.Context, id stri
 	return checkDeleteRow("project whitelist domain", res, err)
 }
 
-func (c *connection) FindDeployments(ctx context.Context, createdAfter time.Time, limit int) ([]*database.Deployment, error) {
+func (c *connection) FindDeployments(ctx context.Context, afterID string, limit int) ([]*database.Deployment, error) {
+	var qry strings.Builder
+	var args []any
+	qry.WriteString("SELECT d.* FROM deployments d ")
+	if afterID != "" {
+		qry.WriteString("WHERE d.id > $1 ORDER BY d.id LIMIT $2")
+		args = []any{afterID, limit}
+	} else {
+		qry.WriteString("ORDER BY d.id LIMIT $1")
+		args = []any{limit}
+	}
 	var res []*database.Deployment
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT d.* FROM deployments d WHERE d.created_on > $1 ORDER BY d.created_on LIMIT $2", createdAfter, limit)
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
 	if err != nil {
 		return nil, parseErr("deployments", err)
 	}

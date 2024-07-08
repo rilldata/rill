@@ -16,11 +16,11 @@ import (
 )
 
 func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
-	var createdAfter time.Time
+	afterID := ""
 	limit := 100
 	seenHosts := map[string]bool{}
 	for {
-		deployments, err := w.admin.DB.FindDeployments(ctx, createdAfter, limit)
+		deployments, err := w.admin.DB.FindDeployments(ctx, afterID, limit)
 		if err != nil {
 			return fmt.Errorf("deploymentsHealthCheck: failed to get deployments: %w", err)
 		}
@@ -52,7 +52,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 		if len(deployments) < limit {
 			return nil
 		}
-		createdAfter = deployments[len(deployments)-1].CreatedOn
+		afterID = deployments[len(deployments)-1].ID
 		// fetch again
 	}
 }

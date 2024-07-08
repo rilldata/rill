@@ -86,7 +86,7 @@ type DB interface {
 	InsertProjectWhitelistedDomain(ctx context.Context, opts *InsertProjectWhitelistedDomainOptions) (*ProjectWhitelistedDomain, error)
 	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
-	FindDeployments(ctx context.Context, createdAfter time.Time, limit int) ([]*Deployment, error)
+	FindDeployments(ctx context.Context, afterID string, limit int) ([]*Deployment, error)
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
