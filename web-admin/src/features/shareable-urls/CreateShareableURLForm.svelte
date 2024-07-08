@@ -55,10 +55,14 @@
               metricsViewFilter: hasDashboardWhereFilter()
                 ? $dashboardStore.whereFilter
                 : undefined,
-              metricsViewFields: [
-                ...$visibleMeasures.map((measure) => measure.name),
-                ...$visibleDimensions.map((dimension) => dimension.name),
-              ],
+              metricsViewFields:
+                !$dashboardStore.allDimensionsVisible ||
+                !$dashboardStore.allMeasuresVisible
+                  ? [
+                      ...$visibleDimensions.map((dimension) => dimension.name),
+                      ...$visibleMeasures.map((measure) => measure.name),
+                    ]
+                  : undefined,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : "0",
