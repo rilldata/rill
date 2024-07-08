@@ -40,7 +40,7 @@ When developing access policies, you can leverage a fixed set of user attributes
 - `.user.domain` – the domain of the current user's email address, for example `example.com` (string)
 - `.user.name` - the current user's name, for example `John Doe` (string)
 - `.user.admin` – a boolean value indicating whether the current user is an org or project admin, for example `true` (bool)
-- `.user.groups` - a list of usergroups the user belongs to in the project's org (list of strings)
+- `.user.groups` - a list of user groups the user belongs to in the project's org (list of strings), e.g. `["marketing","sales","finance"]`
 
 Note: Rill requires users to confirm their email address before letting them interact with the platform so a user cannot fake an email address or email domain.
 
@@ -88,6 +88,15 @@ security:
 If the `security` section is defined and `access` is not, then `access` will default to `false`, meaning that it won't be accessible to anyone and users will need to invited individually.
 :::
 
+### Restrict dashboard access to specific user groups
+
+Group membership can be utilized to specify which users have access to a specific dashboard (using the templating function `has`). For example:
+```yaml
+security:
+  access: '{{ has "partners" .user.groups }}'
+```
+
+
 ### Show only data from the user's own domain
 
 You can limit the data available to the dashboard by applying a filter on the underlying data. Assuming the dashboard's underlying model has a `domain` column, adding the following clause to the dashboard's YAML will only show dimension and measure values for the current user's email domain:
@@ -120,7 +129,7 @@ Alternatively, you can explicitly define the dimensions and measures to include 
 
 ### Use wildcards to select all dimensions and measures
 
-When building field include policies, you can easily select all fields using `names: '*'`. For example:
+When defining inclusion policies, you can easily and automatically select all columns by using `names: '*'` as a wildcard. For example:
 ```yaml
 security:
   access: true
@@ -133,11 +142,11 @@ security:
       names: '*'
 ```
 
-Note that the `'*'` must be quoted (using single or double quotes), and must be provided as a scalar value, not as an entry in a list.
+Note that the `'*'` must be quoted (using single or double quotes), and **must** be provided as a scalar value, not as an entry in a list.
 
 ### Filter queries based on the user's groups
 
-You can inject the groups that a user belongs to into row filter:
+You can directly inject the groups that a user belongs to into the row filter itself, such as:
 ```yaml 
 security:
   access: true
