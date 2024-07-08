@@ -5,7 +5,6 @@ import {
   assertLeaderboards,
   createDashboardFromModel,
   createDashboardFromSource,
-  interactWithComparisonMenu,
   interactWithTimeRangeMenu,
   metricsViewRequestFilterMatcher,
   waitForAggregationTopLists,
@@ -124,9 +123,7 @@ test.describe("dashboard", () => {
       page.getByRole("menuitem", { name: "UTC GMT +00:00 UTC" }),
     ).not.toBeVisible();
 
-    await interactWithComparisonMenu(page, (l) =>
-      l.getByRole("menuitem", { name: "Time" }).click(),
-    );
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     // Check that the total records are 272 and have comparisons
     await expect(page.getByText("272 -23 -8%")).toBeVisible();
@@ -177,20 +174,13 @@ test.describe("dashboard", () => {
     expect(parquetRegex.test(downloadParquet.suggestedFilename())).toBe(true);
 
     // Turn off comparison
-    await interactWithComparisonMenu(
-      page,
-      (l) =>
-        l.getByRole("menuitem", { name: "No dimension breakdown" }).click(),
-      "Broken down by Time",
-    );
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     // Check number
     await expect(page.getByText("272", { exact: true })).toBeVisible();
 
     // Add comparison back
-    await interactWithComparisonMenu(page, (l) =>
-      l.getByRole("menuitem", { name: "Time" }).click(),
-    );
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     /*
       There is a bug where if you programmatically click the Time Range Selector button right after clicking the "Previous Period" menu item,
@@ -244,7 +234,7 @@ test.describe("dashboard", () => {
     await page.getByLabel("View filter").getByLabel("Remove").click();
 
     // Apply a different filter
-    await page.getByRole("button", { name: "google.com 15.1k" }).click();
+    await page.getByRole("row", { name: "google.com 15.1k" }).click();
 
     // Check number
     await expect(

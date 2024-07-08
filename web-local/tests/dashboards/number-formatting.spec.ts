@@ -1,9 +1,6 @@
 import { useDashboardFlowTestSetup } from "web-local/tests/dashboards/dashboard-flow-test-setup";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
-import {
-  interactWithComparisonMenu,
-  interactWithTimeRangeMenu,
-} from "../utils/dashboardHelpers";
+import { interactWithTimeRangeMenu } from "../utils/dashboardHelpers";
 import { expect } from "@playwright/test";
 import { test } from "../utils/test";
 
@@ -138,9 +135,7 @@ dimensions:
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
-    await interactWithComparisonMenu(page, (l) =>
-      l.getByRole("menuitem", { name: "Time" }).click(),
-    );
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     await expect(
       page.getByRole("button", { name: "null 27 s 33%" }),

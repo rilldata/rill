@@ -1,10 +1,7 @@
 import { expect } from "@playwright/test";
 import { ResourceWatcher } from "web-local/tests/utils/ResourceWatcher";
 import { clickMenuButton } from "../utils/commonHelpers";
-import {
-  interactWithComparisonMenu,
-  interactWithTimeRangeMenu,
-} from "../utils/dashboardHelpers";
+import { interactWithTimeRangeMenu } from "../utils/dashboardHelpers";
 import { test } from "../utils/test";
 import { useDashboardFlowTestSetup } from "./dashboard-flow-test-setup";
 
@@ -52,15 +49,9 @@ test.describe("leaderboard context column", () => {
       }
     }
 
-    const contextColumnMenuTrigger = page.getByLabel("Select a context column");
     const measuresButton = page.getByRole("button", {
       name: "Select a measure to filter by",
     });
-
-    async function openContextMenu() {
-      await contextColumnMenuTrigger.click();
-      await page.getByRole("menu").waitFor({ state: "visible" });
-    }
 
     async function escape() {
       await page.keyboard.press("Escape");
@@ -75,23 +66,22 @@ test.describe("leaderboard context column", () => {
       await page.getByRole("menuitem", { name: "All Time" }).click();
     });
 
-    /**
-     * SUBFLOW:
-     * check menu items are disabled/enabled as expected
-     * when there is no time comparison
-     */
+    const deltaPercentColumn = page.getByLabel(
+      "Toggle sort leaderboards by percent change",
+    );
+    const percentOfTotalColumn = page.getByLabel(
+      "Toggle sort leaderboards by percent of total",
+    );
+    const deltaAbsoluteColumn = page.getByLabel(
+      "Toggle sort leaderboards by absolute change",
+    );
 
-    await openContextMenu();
-    // Check "percent change" menuitem disabled since there is no time comparison
-    await expect(
-      page.getByRole("menuitem", { name: "Percent change" }),
-    ).toBeDisabled();
-    // Check "percent of total" item is disabled since `valid_percent_of_total` is not set for the measure "total rows"
-    await expect(
-      page.getByRole("menuitem", { name: "Percent of total" }),
-    ).toBeDisabled();
+    // Delta columns not visible since there is no time comparison
+    await expect(deltaPercentColumn).not.toBeVisible();
+    await expect(deltaAbsoluteColumn).not.toBeVisible();
 
-    await escape();
+    // Percent of total column is not visible since `valid_percent_of_total` is not set for the measure "total rows"
+    await expect(percentOfTotalColumn).not.toBeVisible();
 
     /**
      * SUBFLOW: check correct behavior when a time comparison
@@ -103,52 +93,22 @@ test.describe("leaderboard context column", () => {
       await page.getByRole("menuitem", { name: "Last 6 Hours" }).click();
     });
     // enable comparisons which should automatically enable a time comparison (including context column)
-    await interactWithComparisonMenu(page, (l) =>
-      l.getByRole("menuitem", { name: "Time" }).click(),
-    );
-
-    // check that the "select a context column" button now reads "with Percent change"
-    await expect(
-      page.getByLabel("Select a context column"),
-      // getByRole("button", { name: "with Percent change" })
-    ).toContainText("Percent change");
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     // This regex matches a line that:
     // - starts with "Facebook"
     // - has two white space separated sets of characters (the number and the percent change)
     // - ends with a percent sign literal
-    // e.g. "Facebook 68.9k -12%".
+    // e.g. "Facebook 68.9k -24k -12%".
     // This will detect both percent change and percent of total
-    const comparisonColumnRegex = /Facebook\s*\S*\s*\S*%/;
+    const comparisonColumnRegex = /Facebook\s*\S*\s*\S*\s*\S*%/;
 
     // Check that time comparison context column is visible with correct value now that there is a time comparison
     await expect(page.getByText(comparisonColumnRegex)).toBeVisible();
 
-    await openContextMenu();
-    // Check that the "percent change" menuitem is enabled
-    await expect(
-      page.getByRole("menuitem", { name: "Percent change" }),
-    ).toBeEnabled();
-    // check that the "percent of total" menuitem is still disabled
-    await expect(
-      page.getByRole("menuitem", { name: "Percent of total" }),
-    ).toBeDisabled();
-
-    await escape();
-
-    /**
-     * SUBFLOW: check correct behavior when
-     * - a time comparison is activated,
-     * - there is no valid_percent_of_total,
-     * - and then the context column is turned off
-     */
-
-    await openContextMenu();
-    await clickMenuItem("No context column");
-
-    // Check that time comparison context column is hidden
-    await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
-    await expect(page.getByText("Facebook 68")).toBeVisible();
+    // Delta columns visible
+    await expect(deltaPercentColumn).toBeVisible();
+    await expect(deltaAbsoluteColumn).toBeVisible();
 
     /**
      * SUBFLOW: check correct behavior when
@@ -157,7 +117,6 @@ test.describe("leaderboard context column", () => {
      * - and then time comparison is turned off
      */
 
-    await openContextMenu();
     await clickMenuItem("Percent change");
     await expect(page.getByText(comparisonColumnRegex)).toBeVisible();
 
@@ -171,11 +130,7 @@ test.describe("leaderboard context column", () => {
     await expect(page.getByText("Facebook 19.3k")).toBeVisible();
 
     // Check that the "percent change" menuitem is disabled
-    await openContextMenu();
-    await expect(
-      page.getByRole("menuitem", { name: "Percent change" }),
-    ).toBeDisabled();
-    await escape();
+    await expect(deltaPercentColumn).not.toBeVisible();
 
     /**
      * SUBFLOW: check correct behavior when
@@ -189,15 +144,10 @@ test.describe("leaderboard context column", () => {
     await escape();
     await expect(measuresButton).toHaveText("Showing Total Bid Price");
 
-    await openContextMenu();
     // Check that the "percent of total" menuitem is enabled
-    await expect(
-      page.getByRole("menuitem", { name: "Percent of total" }),
-    ).toBeEnabled();
+    await expect(percentOfTotalColumn).not.toBeVisible();
     // Check that the "percent change" menuitem is disabled
-    await expect(
-      page.getByRole("menuitem", { name: "Percent change" }),
-    ).toBeDisabled();
+    await expect(deltaPercentColumn).not.toBeVisible();
 
     await escape();
 
@@ -210,9 +160,6 @@ test.describe("leaderboard context column", () => {
      * - no time comparison enabled
      * - percent of total context column is turned on
      */
-
-    await openContextMenu();
-    await clickMenuItem("Percent of total");
 
     // check that the percent of total is visible
     await expect(page.getByText("Facebook $57.8k 19%")).toBeVisible();
@@ -244,17 +191,13 @@ test.describe("leaderboard context column", () => {
      */
 
     // Need to manually enable comparison since we disabled it
-    await interactWithComparisonMenu(page, (l) =>
-      l.getByRole("menuitem", { name: "Time" }).click(),
-    );
+    await page.getByRole("button", { name: "Comparing" }).click();
 
-    await openContextMenu();
     await clickMenuItem("Percent change");
 
     // check that the percent change is visible+correct
     await expect(page.getByText("Facebook $229.26 4%")).toBeVisible();
 
-    await openContextMenu();
     await clickMenuItem("Percent of total");
 
     // check that the percent of total is visible+correct
@@ -275,7 +218,7 @@ test.describe("leaderboard context column", () => {
     await expect(page.getByText(comparisonColumnRegex)).not.toBeVisible();
 
     // open the context column menu
-    await openContextMenu();
+
     // check that the "percent of total" menuitem is disabled
     await expect(
       page.getByRole("menuitem", { name: "Percent of total" }),
