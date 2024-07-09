@@ -143,7 +143,9 @@ func (h *Handle) Ping(ctx context.Context) error {
 	// check connectivity with admin service
 	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
 
-	_ = h.repoMu.RLock(ctx)
+	if lockErr := h.repoMu.RLock(ctx); lockErr != nil {
+		return lockErr
+	}
 	defer h.repoMu.RUnlock()
 	return errors.Join(err, h.syncErr)
 }

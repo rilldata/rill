@@ -13,7 +13,7 @@ export function useAlerts(instanceId: string, enabled = true) {
     },
     {
       query: {
-        enabled,
+        enabled: enabled && !!instanceId,
       },
     },
   );

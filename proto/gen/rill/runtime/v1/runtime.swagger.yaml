@@ -135,7 +135,8 @@ paths:
       tags:
         - ConnectorService
   /v1/dev-jwt:
-    get:
+    post:
+      summary: IssueDevJWT issues a JWT for mimicking a user in local development.
       operationId: RuntimeService_IssueDevJWT
       responses:
         "200":
@@ -147,25 +148,11 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: name
-          in: query
-          required: false
-          type: string
-        - name: email
-          in: query
-          required: false
-          type: string
-        - name: groups
-          in: query
-          required: false
-          type: array
-          items:
-            type: string
-          collectionFormat: multi
-        - name: admin
-          in: query
-          required: false
-          type: boolean
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTRequest'
       tags:
         - RuntimeService
   /v1/examples:
@@ -295,6 +282,7 @@ paths:
         - ConnectorService
   /v1/health:
     get:
+      summary: Health runs a health check on the runtime.
       operationId: RuntimeService_Health
       responses:
         "200":
@@ -309,6 +297,7 @@ paths:
         - RuntimeService
   /v1/health/instances/{instanceId}:
     get:
+      summary: InstanceHealth runs a health check on a specific instance.
       operationId: RuntimeService_InstanceHealth
       responses:
         "200":
@@ -2801,32 +2790,6 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
-  MetricsViewSpecSecurityV2:
-    type: object
-    properties:
-      access:
-        type: string
-        title: Dashboard level access condition
-      rowFilter:
-        type: string
-        title: SQL expression to apply in a WHERE clause against the underlying table
-      queryFilter:
-        $ref: '#/definitions/v1Expression'
-        description: |-
-          Dimension filter to apply to queries against the metrics view.
-          Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
-      include:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-        title: either one of include or exclude will be specified
-      exclude:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-    title: Security for the dashboard
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -2862,16 +2825,6 @@ definitions:
       count:
         type: integer
         format: int32
-  SecurityV2FieldConditionV2:
-    type: object
-    properties:
-      condition:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
-    title: Dimension/measure level access condition
   StructTypeField:
     type: object
     properties:
@@ -3994,6 +3947,20 @@ definitions:
     properties:
       instanceHealth:
         $ref: '#/definitions/v1InstanceHealth'
+  v1IssueDevJWTRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      groups:
+        type: array
+        items:
+          type: string
+      admin:
+        type: boolean
+    title: Request message for RuntimeService.IssueDevJWT
   v1IssueDevJWTResponse:
     type: object
     properties:
@@ -4551,8 +4518,11 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
-      security:
-        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
         title: Security for the dashboard
       firstDayOfWeek:
         type: integer
@@ -5358,6 +5328,46 @@ definitions:
         format: int64
       timeZone:
         type: string
+  v1SecurityRule:
+    type: object
+    properties:
+      access:
+        $ref: '#/definitions/v1SecurityRuleAccess'
+      fieldAccess:
+        $ref: '#/definitions/v1SecurityRuleFieldAccess'
+      rowFilter:
+        $ref: '#/definitions/v1SecurityRuleRowFilter'
+  v1SecurityRuleAccess:
+    type: object
+    properties:
+      condition:
+        type: string
+      allow:
+        type: boolean
+  v1SecurityRuleFieldAccess:
+    type: object
+    properties:
+      condition:
+        type: string
+      allow:
+        type: boolean
+      fields:
+        type: array
+        items:
+          type: string
+      allFields:
+        type: boolean
+  v1SecurityRuleRowFilter:
+    type: object
+    properties:
+      condition:
+        type: string
+      sql:
+        type: string
+        title: Raw SQL expression to apply to the underlying table
+      expression:
+        $ref: '#/definitions/v1Expression'
+        title: Regular query expression referencing dimension names
   v1SourceSpec:
     type: object
     properties:

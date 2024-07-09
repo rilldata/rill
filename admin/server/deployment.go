@@ -179,14 +179,6 @@ func (s *Server) GetDeploymentCredentials(ctx context.Context, req *adminv1.GetD
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
 		}
 	}
-	// if no attributes found, we add standard non-admin user attrs to ensure security policies are applied correctly
-	if len(attr) == 0 {
-		attr = map[string]any{
-			"email":  "",
-			"domain": "",
-			"admin":  false,
-		}
-	}
 
 	ttlDuration := runtimeAccessTokenEmbedTTL
 	if req.TtlSeconds > 0 {
@@ -282,14 +274,6 @@ func (s *Server) GetIFrame(ctx context.Context, req *adminv1.GetIFrameRequest) (
 			attr = forVal.Attributes.AsMap()
 		default:
 			return nil, status.Error(codes.InvalidArgument, "invalid 'for' type")
-		}
-	}
-	// if no attributes found, we add standard non-admin user attrs to ensure security policies are applied correctly
-	if len(attr) == 0 {
-		attr = map[string]any{
-			"email":  "",
-			"domain": "",
-			"admin":  false,
 		}
 	}
 

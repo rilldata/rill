@@ -45,7 +45,7 @@
           />
         </CtaMessage>
       {/if}
-      <div class="mt-4 w-full">
+      <div class="mt-4 w-full flex justify-center">
         <CtaButton variant="primary" href={redirectURL}>
           Connect to Github
         </CtaButton>

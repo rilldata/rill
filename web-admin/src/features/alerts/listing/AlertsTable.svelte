@@ -37,7 +37,8 @@
           id: info.row.original.meta.name.name,
           title: info.row.original.alert.spec.title,
           lastTrigger:
-            info.row.original.alert.state.executionHistory[0]?.executionTime,
+            info.row.original.alert.state.executionHistory[0]?.finishedOn ??
+            info.row.original.alert.state.executionHistory[0]?.startedOn,
           ownerId:
             info.row.original.alert.spec.annotations["admin_owner_user_id"],
           lastTriggerErrorMessage:
