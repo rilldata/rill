@@ -92,7 +92,19 @@
     if (!uri) {
       return undefined;
     }
-    return uri === "true" ? label : uri.replace(`{{${dimensionName}}}`, label);
+
+    const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
+    if (uri === "true") {
+      if (!hasProtocol) {
+        uri = "https://" + label;
+      }
+      return uri;
+    }
+
+    if (!hasProtocol) {
+      uri = "https://" + uri;
+    }
+    return uri.replace(/\s/g, "").replace(`{{${dimensionName}}}`, label);
   }
 </script>
 
