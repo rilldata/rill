@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { createAdminServiceAddProjectMember } from "@rilldata/web-admin/client";
+  import { createAdminServiceAddProjectMemberUser } from "@rilldata/web-admin/client";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-invite/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
@@ -11,7 +11,7 @@
   export let project: string;
   export let onInvite: () => void = () => {};
 
-  const userInvite = createAdminServiceAddProjectMember();
+  const userInvite = createAdminServiceAddProjectMemberUser();
 
   const initialValues: {
     emails: string[];
@@ -66,10 +66,11 @@
     contentClassName="relative"
     bind:values={$form.emails}
     errors={$errors.emails}
+    useTab
   >
     <div
       slot="within-input"
-      class="absolute right-0 top-0 h-full items-center flex"
+      class="absolute right-1 top-0 h-full items-center flex"
     >
       <UserRoleSelect bind:value={$form.role} />
     </div>

@@ -13,8 +13,8 @@
   let open = false;
 
   const Options = [
-    { value: "viewer", label: "Viewers" },
-    { value: "admin", label: "Admins" },
+    { value: "viewer", label: "Viewer" },
+    { value: "admin", label: "Admin" },
   ];
   function onSelect(val: string) {
     value = val;
@@ -23,17 +23,21 @@
 </script>
 
 <DropdownMenu bind:open typeahead={false}>
-  <DropdownMenuTrigger class="w-16 flex flex-row items-center">
-    <div>{selected?.label ?? ""}</div>
+  <DropdownMenuTrigger
+    class="w-18 flex flex-row gap-1 items-center {open
+      ? 'bg-slate-200'
+      : 'hover:bg-slate-100'} px-2 py-1"
+  >
+    <div class="text-xs">{selected?.label ?? ""}</div>
     {#if open}
-      <CaretUpIcon size="16px" />
+      <CaretUpIcon size="12px" />
     {:else}
-      <CaretDownIcon size="16px" />
+      <CaretDownIcon size="12px" />
     {/if}
   </DropdownMenuTrigger>
-  <DropdownMenuContent>
+  <DropdownMenuContent side="bottom" align="end">
     {#each Options as { value, label } (value)}
-      <DropdownMenuItem on:click={() => onSelect(value)}>
+      <DropdownMenuItem on:click={() => onSelect(value)} class="text-xs">
         {label}
       </DropdownMenuItem>
     {/each}

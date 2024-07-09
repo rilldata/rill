@@ -17,6 +17,7 @@
   export let placeholder = "";
   export let hint = "";
   export let contentClassName = "";
+  export let useTab = false;
 
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
@@ -24,9 +25,15 @@
   let editingInput = "";
   let focused = false;
   function handleKeyDown(event: KeyboardEvent) {
-    if (event.key !== "Enter" || editingInput === "") return;
+    if (
+      (event.key !== "Enter" && (!useTab || event.key !== "Tab")) ||
+      editingInput === ""
+    ) {
+      return;
+    }
 
     event.preventDefault();
+    event.stopPropagation();
     values = values.concat(...editingInput.split(","));
     editingInput = "";
   }
