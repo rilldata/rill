@@ -1,16 +1,19 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import { createAdminServiceRequestProjectAccess } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceRequestProjectAccess,
+    type RpcStatus,
+  } from "@rilldata/web-admin/client";
+  import AccessRequestContainer from "@rilldata/web-admin/features/access-request/AccessRequestContainer.svelte";
   import { Button } from "@rilldata/web-common/components/button";
-  import CtaContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
-  import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
-  import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import Lock from "@rilldata/web-common/components/icons/Lock.svelte";
+  import Check from "@rilldata/web-common/components/icons/Check.svelte";
+  import type { AxiosError } from "axios";
 
   $: organization = $page.url.searchParams.get("organization");
   $: project = $page.url.searchParams.get("project");
 
+  let requested = false;
   $: requestAccess = createAdminServiceRequestProjectAccess();
   function onRequestAccess() {
     requested = true;
@@ -21,32 +24,45 @@
     });
   }
 
-  let requested = false;
+  let errorMessage = "";
+  $: if ($requestAccess.error) {
+    const rpcError = ($requestAccess.error as unknown as AxiosError<RpcStatus>)
+      .response.data;
+    if (rpcError) {
+      // do not show error if already requested invite
+      if (rpcError.code !== 6) errorMessage = rpcError.message;
+    } else {
+      errorMessage = $requestAccess.error.toString();
+    }
+  }
 </script>
 
-<CtaLayoutContainer>
-  <CtaContentContainer>
-    {#if !requested}
-      <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">
-          You do not have access to this project.
-        </h2>
-        <Button type="primary" on:click={onRequestAccess}>Request Access</Button
-        >
-      </div>
-    {:else if $requestAccess.isLoading}
-      <div class="h-36 mt-10">
-        <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
-      </div>
-    {:else if $requestAccess.error}
-      <div class="flex flex-col gap-y-2">
-        <h2 class="text-lg font-semibold">Unable to request access</h2>
-        <CtaMessage>
-          {$requestAccess.error}
-        </CtaMessage>
-      </div>
+<AccessRequestContainer>
+  <Lock
+    size="40px"
+    className={requested ? "text-gray-600" : "text-primary-600"}
+  />
+  <h2 class="text-lg font-normal">Request access to this project</h2>
+  <div class="text-slate-500 text-base">
+    You can view <b>{project}</b> once your request is approved.
+  </div>
+  <Button
+    type="primary"
+    wide
+    on:click={onRequestAccess}
+    loading={$requestAccess.isLoading}
+    disabled={requested}
+  >
+    {#if requested}<Check />Access requested{:else}Request access{/if}
+  </Button>
+  {#if requested && !$requestAccess.isLoading}
+    {#if errorMessage}
+      <div>{errorMessage}</div>
     {:else}
-      <div>Requested access</div>
+      <div class="text-slate-500">
+        Your request has been sent to the project admin. You’ll get an email
+        when it’s approved.
+      </div>
     {/if}
-  </CtaContentContainer>
-</CtaLayoutContainer>
+  {/if}
+</AccessRequestContainer>

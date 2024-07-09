@@ -609,10 +609,6 @@ export interface V1RemoveBookmarkResponse {
   [key: string]: any;
 }
 
-export interface V1RejectProjectAccessResponse {
-  [key: string]: any;
-}
-
 export interface V1RecordEventsResponse {
   [key: string]: any;
 }
@@ -1058,6 +1054,10 @@ export interface V1Deployment {
   updatedOn?: string;
 }
 
+export interface V1DenyProjectAccessResponse {
+  [key: string]: any;
+}
+
 export interface V1DeleteUsergroupResponse {
   [key: string]: any;
 }
@@ -1185,6 +1185,10 @@ export interface V1BillingPlan {
   quotas?: V1Quotas;
 }
 
+export interface V1ApproveProjectAccessResponse {
+  [key: string]: any;
+}
+
 export interface V1AlertOptions {
   title?: string;
   intervalDuration?: string;
@@ -1218,10 +1222,6 @@ export interface V1AddOrganizationMemberUsergroupResponse {
 
 export interface V1AddOrganizationMemberUserResponse {
   pendingSignup?: boolean;
-}
-
-export interface V1AcceptProjectAccessResponse {
-  [key: string]: any;
 }
 
 export interface RpcStatus {

@@ -49,8 +49,8 @@ import type {
   V1ListProjectMemberUsergroupsResponse,
   AdminServiceListProjectMemberUsergroupsParams,
   V1RequestProjectAccessResponse,
-  V1AcceptProjectAccessResponse,
-  V1RejectProjectAccessResponse,
+  V1ApproveProjectAccessResponse,
+  V1DenyProjectAccessResponse,
   V1CreateAlertResponse,
   AdminServiceCreateAlertBodyBody,
   V1GenerateAlertYAMLResponse,
@@ -1421,33 +1421,33 @@ export const createAdminServiceRequestProjectAccess = <
     TContext
   >(mutationFn, mutationOptions);
 };
-export const adminServiceAcceptProjectAccess = (
+export const adminServiceApproveProjectAccess = (
   organization: string,
   project: string,
   id: string,
   adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
 ) => {
-  return httpClient<V1AcceptProjectAccessResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/access-request/${id}/accept`,
+  return httpClient<V1ApproveProjectAccessResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/access-request/${id}/approve`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
   });
 };
 
-export type AdminServiceAcceptProjectAccessMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceAcceptProjectAccess>>
+export type AdminServiceApproveProjectAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>
 >;
-export type AdminServiceAcceptProjectAccessMutationBody =
+export type AdminServiceApproveProjectAccessMutationBody =
   AdminServiceTriggerReconcileBodyBody;
-export type AdminServiceAcceptProjectAccessMutationError = RpcStatus;
+export type AdminServiceApproveProjectAccessMutationError = RpcStatus;
 
-export const createAdminServiceAcceptProjectAccess = <
+export const createAdminServiceApproveProjectAccess = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceAcceptProjectAccess>>,
+    Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
     TError,
     {
       organization: string;
@@ -1461,7 +1461,7 @@ export const createAdminServiceAcceptProjectAccess = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceAcceptProjectAccess>>,
+    Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
     {
       organization: string;
       project: string;
@@ -1471,11 +1471,11 @@ export const createAdminServiceAcceptProjectAccess = <
   > = (props) => {
     const { organization, project, id, data } = props ?? {};
 
-    return adminServiceAcceptProjectAccess(organization, project, id, data);
+    return adminServiceApproveProjectAccess(organization, project, id, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceAcceptProjectAccess>>,
+    Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
     TError,
     {
       organization: string;
@@ -1486,33 +1486,33 @@ export const createAdminServiceAcceptProjectAccess = <
     TContext
   >(mutationFn, mutationOptions);
 };
-export const adminServiceRejectProjectAccess = (
+export const adminServiceDenyProjectAccess = (
   organization: string,
   project: string,
   id: string,
   adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
 ) => {
-  return httpClient<V1RejectProjectAccessResponse>({
-    url: `/v1/organizations/${organization}/projects/${project}/access-request/${id}/reject`,
+  return httpClient<V1DenyProjectAccessResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/access-request/${id}/deny`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: adminServiceTriggerReconcileBodyBody,
   });
 };
 
-export type AdminServiceRejectProjectAccessMutationResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceRejectProjectAccess>>
+export type AdminServiceDenyProjectAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>
 >;
-export type AdminServiceRejectProjectAccessMutationBody =
+export type AdminServiceDenyProjectAccessMutationBody =
   AdminServiceTriggerReconcileBodyBody;
-export type AdminServiceRejectProjectAccessMutationError = RpcStatus;
+export type AdminServiceDenyProjectAccessMutationError = RpcStatus;
 
-export const createAdminServiceRejectProjectAccess = <
+export const createAdminServiceDenyProjectAccess = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof adminServiceRejectProjectAccess>>,
+    Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
     TError,
     {
       organization: string;
@@ -1526,7 +1526,7 @@ export const createAdminServiceRejectProjectAccess = <
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof adminServiceRejectProjectAccess>>,
+    Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
     {
       organization: string;
       project: string;
@@ -1536,11 +1536,11 @@ export const createAdminServiceRejectProjectAccess = <
   > = (props) => {
     const { organization, project, id, data } = props ?? {};
 
-    return adminServiceRejectProjectAccess(organization, project, id, data);
+    return adminServiceDenyProjectAccess(organization, project, id, data);
   };
 
   return createMutation<
-    Awaited<ReturnType<typeof adminServiceRejectProjectAccess>>,
+    Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
     TError,
     {
       organization: string;

@@ -698,16 +698,16 @@ service AdminService {
     };
   }
 
-  rpc AcceptProjectAccess(AcceptProjectAccessRequest) returns (AcceptProjectAccessResponse) {
+  rpc ApproveProjectAccess(ApproveProjectAccessRequest) returns (ApproveProjectAccessResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/accept",
+      post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/approve",
       body: "*"
     };
   }
 
-  rpc RejectProjectAccess(RejectProjectAccessRequest) returns (RejectProjectAccessResponse) {
+  rpc DenyProjectAccess(DenyProjectAccessRequest) returns (DenyProjectAccessResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/reject",
+      post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/deny",
       body: "*"
     };
   }
@@ -1820,21 +1820,21 @@ message RequestProjectAccessRequest {
 
 message RequestProjectAccessResponse {}
 
-message AcceptProjectAccessRequest {
+message ApproveProjectAccessRequest {
   string organization = 1;
   string project = 2;
   string id = 3;
 }
 
-message AcceptProjectAccessResponse {}
+message ApproveProjectAccessResponse {}
 
-message RejectProjectAccessRequest {
+message DenyProjectAccessRequest {
   string organization = 1;
   string project = 2;
   string id = 3;
 }
 
-message RejectProjectAccessResponse {}
+message DenyProjectAccessResponse {}
 
 message User {
   string id = 1;

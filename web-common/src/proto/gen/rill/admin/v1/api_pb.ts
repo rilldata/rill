@@ -9556,9 +9556,9 @@ export class RequestProjectAccessResponse extends Message<RequestProjectAccessRe
 }
 
 /**
- * @generated from message rill.admin.v1.AcceptProjectAccessRequest
+ * @generated from message rill.admin.v1.ApproveProjectAccessRequest
  */
-export class AcceptProjectAccessRequest extends Message<AcceptProjectAccessRequest> {
+export class ApproveProjectAccessRequest extends Message<ApproveProjectAccessRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -9574,71 +9574,71 @@ export class AcceptProjectAccessRequest extends Message<AcceptProjectAccessReque
    */
   id = "";
 
-  constructor(data?: PartialMessage<AcceptProjectAccessRequest>) {
+  constructor(data?: PartialMessage<ApproveProjectAccessRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.AcceptProjectAccessRequest";
+  static readonly typeName = "rill.admin.v1.ApproveProjectAccessRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AcceptProjectAccessRequest {
-    return new AcceptProjectAccessRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ApproveProjectAccessRequest {
+    return new ApproveProjectAccessRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AcceptProjectAccessRequest {
-    return new AcceptProjectAccessRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ApproveProjectAccessRequest {
+    return new ApproveProjectAccessRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AcceptProjectAccessRequest {
-    return new AcceptProjectAccessRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ApproveProjectAccessRequest {
+    return new ApproveProjectAccessRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: AcceptProjectAccessRequest | PlainMessage<AcceptProjectAccessRequest> | undefined, b: AcceptProjectAccessRequest | PlainMessage<AcceptProjectAccessRequest> | undefined): boolean {
-    return proto3.util.equals(AcceptProjectAccessRequest, a, b);
+  static equals(a: ApproveProjectAccessRequest | PlainMessage<ApproveProjectAccessRequest> | undefined, b: ApproveProjectAccessRequest | PlainMessage<ApproveProjectAccessRequest> | undefined): boolean {
+    return proto3.util.equals(ApproveProjectAccessRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.AcceptProjectAccessResponse
+ * @generated from message rill.admin.v1.ApproveProjectAccessResponse
  */
-export class AcceptProjectAccessResponse extends Message<AcceptProjectAccessResponse> {
-  constructor(data?: PartialMessage<AcceptProjectAccessResponse>) {
+export class ApproveProjectAccessResponse extends Message<ApproveProjectAccessResponse> {
+  constructor(data?: PartialMessage<ApproveProjectAccessResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.AcceptProjectAccessResponse";
+  static readonly typeName = "rill.admin.v1.ApproveProjectAccessResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AcceptProjectAccessResponse {
-    return new AcceptProjectAccessResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ApproveProjectAccessResponse {
+    return new ApproveProjectAccessResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): AcceptProjectAccessResponse {
-    return new AcceptProjectAccessResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ApproveProjectAccessResponse {
+    return new ApproveProjectAccessResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): AcceptProjectAccessResponse {
-    return new AcceptProjectAccessResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ApproveProjectAccessResponse {
+    return new ApproveProjectAccessResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: AcceptProjectAccessResponse | PlainMessage<AcceptProjectAccessResponse> | undefined, b: AcceptProjectAccessResponse | PlainMessage<AcceptProjectAccessResponse> | undefined): boolean {
-    return proto3.util.equals(AcceptProjectAccessResponse, a, b);
+  static equals(a: ApproveProjectAccessResponse | PlainMessage<ApproveProjectAccessResponse> | undefined, b: ApproveProjectAccessResponse | PlainMessage<ApproveProjectAccessResponse> | undefined): boolean {
+    return proto3.util.equals(ApproveProjectAccessResponse, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.RejectProjectAccessRequest
+ * @generated from message rill.admin.v1.DenyProjectAccessRequest
  */
-export class RejectProjectAccessRequest extends Message<RejectProjectAccessRequest> {
+export class DenyProjectAccessRequest extends Message<DenyProjectAccessRequest> {
   /**
    * @generated from field: string organization = 1;
    */
@@ -9654,64 +9654,64 @@ export class RejectProjectAccessRequest extends Message<RejectProjectAccessReque
    */
   id = "";
 
-  constructor(data?: PartialMessage<RejectProjectAccessRequest>) {
+  constructor(data?: PartialMessage<DenyProjectAccessRequest>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.RejectProjectAccessRequest";
+  static readonly typeName = "rill.admin.v1.DenyProjectAccessRequest";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RejectProjectAccessRequest {
-    return new RejectProjectAccessRequest().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DenyProjectAccessRequest {
+    return new DenyProjectAccessRequest().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RejectProjectAccessRequest {
-    return new RejectProjectAccessRequest().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DenyProjectAccessRequest {
+    return new DenyProjectAccessRequest().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RejectProjectAccessRequest {
-    return new RejectProjectAccessRequest().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DenyProjectAccessRequest {
+    return new DenyProjectAccessRequest().fromJsonString(jsonString, options);
   }
 
-  static equals(a: RejectProjectAccessRequest | PlainMessage<RejectProjectAccessRequest> | undefined, b: RejectProjectAccessRequest | PlainMessage<RejectProjectAccessRequest> | undefined): boolean {
-    return proto3.util.equals(RejectProjectAccessRequest, a, b);
+  static equals(a: DenyProjectAccessRequest | PlainMessage<DenyProjectAccessRequest> | undefined, b: DenyProjectAccessRequest | PlainMessage<DenyProjectAccessRequest> | undefined): boolean {
+    return proto3.util.equals(DenyProjectAccessRequest, a, b);
   }
 }
 
 /**
- * @generated from message rill.admin.v1.RejectProjectAccessResponse
+ * @generated from message rill.admin.v1.DenyProjectAccessResponse
  */
-export class RejectProjectAccessResponse extends Message<RejectProjectAccessResponse> {
-  constructor(data?: PartialMessage<RejectProjectAccessResponse>) {
+export class DenyProjectAccessResponse extends Message<DenyProjectAccessResponse> {
+  constructor(data?: PartialMessage<DenyProjectAccessResponse>) {
     super();
     proto3.util.initPartial(data, this);
   }
 
   static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.RejectProjectAccessResponse";
+  static readonly typeName = "rill.admin.v1.DenyProjectAccessResponse";
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
   ]);
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): RejectProjectAccessResponse {
-    return new RejectProjectAccessResponse().fromBinary(bytes, options);
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DenyProjectAccessResponse {
+    return new DenyProjectAccessResponse().fromBinary(bytes, options);
   }
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): RejectProjectAccessResponse {
-    return new RejectProjectAccessResponse().fromJson(jsonValue, options);
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): DenyProjectAccessResponse {
+    return new DenyProjectAccessResponse().fromJson(jsonValue, options);
   }
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): RejectProjectAccessResponse {
-    return new RejectProjectAccessResponse().fromJsonString(jsonString, options);
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): DenyProjectAccessResponse {
+    return new DenyProjectAccessResponse().fromJsonString(jsonString, options);
   }
 
-  static equals(a: RejectProjectAccessResponse | PlainMessage<RejectProjectAccessResponse> | undefined, b: RejectProjectAccessResponse | PlainMessage<RejectProjectAccessResponse> | undefined): boolean {
-    return proto3.util.equals(RejectProjectAccessResponse, a, b);
+  static equals(a: DenyProjectAccessResponse | PlainMessage<DenyProjectAccessResponse> | undefined, b: DenyProjectAccessResponse | PlainMessage<DenyProjectAccessResponse> | undefined): boolean {
+    return proto3.util.equals(DenyProjectAccessResponse, a, b);
   }
 }
 

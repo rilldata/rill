@@ -1010,6 +1010,14 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	}
 	// TODO: quotas
 
+	existing, err := s.admin.DB.FindProjectAccessRequest(ctx, proj.ID, user.Email)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, status.Error(codes.AlreadyExists, "have already requested access to project")
+	}
+
 	accessReq, err := s.admin.DB.InsertProjectAccessRequest(ctx, &database.InsertProjectAccessRequestOptions{
 		Email:     user.Email,
 		ProjectID: proj.ID,
@@ -1029,12 +1037,12 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	acceptLink, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name, "-", "request-access", accessReq.ID, "accept")
+	approveLink, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name, "-", "request-access", accessReq.ID, "approve")
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	rejectLink, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name, "-", "request-access", accessReq.ID, "reject")
+	denyLink, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name, "-", "request-access", accessReq.ID, "deny")
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -1046,8 +1054,8 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 			Email:       user.Email,
 			OrgName:     org.Name,
 			ProjectName: proj.Name,
-			AcceptLink:  acceptLink,
-			RejectLink:  rejectLink,
+			ApproveLink: approveLink,
+			DenyLink:    denyLink,
 		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -1057,7 +1065,7 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	return &adminv1.RequestProjectAccessResponse{}, nil
 }
 
-func (s *Server) AcceptProjectAccess(ctx context.Context, req *adminv1.AcceptProjectAccessRequest) (*adminv1.AcceptProjectAccessResponse, error) {
+func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveProjectAccessRequest) (*adminv1.ApproveProjectAccessResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -1075,7 +1083,7 @@ func (s *Server) AcceptProjectAccess(ctx context.Context, req *adminv1.AcceptPro
 
 	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
 	user, err := s.admin.DB.FindUserByEmail(ctx, accessReq.Email)
@@ -1112,10 +1120,10 @@ func (s *Server) AcceptProjectAccess(ctx context.Context, req *adminv1.AcceptPro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AcceptProjectAccessResponse{}, nil
+	return &adminv1.ApproveProjectAccessResponse{}, nil
 }
 
-func (s *Server) RejectProjectAccess(ctx context.Context, req *adminv1.RejectProjectAccessRequest) (*adminv1.RejectProjectAccessResponse, error) {
+func (s *Server) DenyProjectAccess(ctx context.Context, req *adminv1.DenyProjectAccessRequest) (*adminv1.DenyProjectAccessResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -1160,7 +1168,7 @@ func (s *Server) RejectProjectAccess(ctx context.Context, req *adminv1.RejectPro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RejectProjectAccessResponse{}, nil
+	return &adminv1.DenyProjectAccessResponse{}, nil
 }
 
 // getAndCheckGithubInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo

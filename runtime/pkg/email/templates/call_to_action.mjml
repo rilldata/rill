@@ -26,9 +26,11 @@
 
         <mj-spacer height="20px" />
 
+        {{ if .IsInfo }}
         <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .ButtonLink }}">
           {{ .ButtonText }}
         </mj-button>
+        {{ end }}
 
         <mj-spacer height="20px" />
 

@@ -548,14 +548,14 @@ paths:
             type: object
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/access-request/{id}/accept:
+  /v1/organizations/{organization}/projects/{project}/access-request/{id}/approve:
     post:
-      operationId: AdminService_AcceptProjectAccess
+      operationId: AdminService_ApproveProjectAccess
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1AcceptProjectAccessResponse'
+            $ref: '#/definitions/v1ApproveProjectAccessResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -580,14 +580,14 @@ paths:
             type: object
       tags:
         - AdminService
-  /v1/organizations/{organization}/projects/{project}/access-request/{id}/reject:
+  /v1/organizations/{organization}/projects/{project}/access-request/{id}/deny:
     post:
-      operationId: AdminService_RejectProjectAccess
+      operationId: AdminService_DenyProjectAccess
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RejectProjectAccessResponse'
+            $ref: '#/definitions/v1DenyProjectAccessResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -3127,8 +3127,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
-  v1AcceptProjectAccessResponse:
-    type: object
   v1AddOrganizationMemberUserResponse:
     type: object
     properties:
@@ -3182,6 +3180,8 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the dashboard when it was created
+  v1ApproveProjectAccessResponse:
+    type: object
   v1BillingPlan:
     type: object
     properties:
@@ -3352,6 +3352,8 @@ definitions:
       service:
         $ref: '#/definitions/v1Service'
   v1DeleteUsergroupResponse:
+    type: object
+  v1DenyProjectAccessResponse:
     type: object
   v1Deployment:
     type: object
@@ -4054,8 +4056,6 @@ definitions:
         items:
           type: object
   v1RecordEventsResponse:
-    type: object
-  v1RejectProjectAccessResponse:
     type: object
   v1RemoveBookmarkResponse:
     type: object

@@ -26,14 +26,14 @@
 
                 <mj-spacer height="20px" />
 
-                <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .AcceptLink }}">
-                    Accept
+                <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .ApproveLink }}">
+                    Approve Request
                 </mj-button>
 
                 <mj-spacer height="20px" />
 
-                <mj-button background-color="#ECF0FF" color="#3524C7" font-weight="bold" href="{{ .RejectLink }}">
-                    Reject
+                <mj-button color="#3524C7" font-weight="bold" href="{{ .DenyLink }}">
+                    Deny Request
                 </mj-button>
 
                 <mj-spacer height="20px" />

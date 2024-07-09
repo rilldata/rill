@@ -27252,22 +27252,22 @@ var _ interface {
 	ErrorName() string
 } = RequestProjectAccessResponseValidationError{}
 
-// Validate checks the field values on AcceptProjectAccessRequest with the
+// Validate checks the field values on ApproveProjectAccessRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *AcceptProjectAccessRequest) Validate() error {
+func (m *ApproveProjectAccessRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AcceptProjectAccessRequest with the
+// ValidateAll checks the field values on ApproveProjectAccessRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// AcceptProjectAccessRequestMultiError, or nil if none found.
-func (m *AcceptProjectAccessRequest) ValidateAll() error {
+// ApproveProjectAccessRequestMultiError, or nil if none found.
+func (m *ApproveProjectAccessRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AcceptProjectAccessRequest) validate(all bool) error {
+func (m *ApproveProjectAccessRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -27281,19 +27281,19 @@ func (m *AcceptProjectAccessRequest) validate(all bool) error {
 	// no validation rules for Id
 
 	if len(errors) > 0 {
-		return AcceptProjectAccessRequestMultiError(errors)
+		return ApproveProjectAccessRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// AcceptProjectAccessRequestMultiError is an error wrapping multiple
-// validation errors returned by AcceptProjectAccessRequest.ValidateAll() if
+// ApproveProjectAccessRequestMultiError is an error wrapping multiple
+// validation errors returned by ApproveProjectAccessRequest.ValidateAll() if
 // the designated constraints aren't met.
-type AcceptProjectAccessRequestMultiError []error
+type ApproveProjectAccessRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AcceptProjectAccessRequestMultiError) Error() string {
+func (m ApproveProjectAccessRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -27302,11 +27302,12 @@ func (m AcceptProjectAccessRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AcceptProjectAccessRequestMultiError) AllErrors() []error { return m }
+func (m ApproveProjectAccessRequestMultiError) AllErrors() []error { return m }
 
-// AcceptProjectAccessRequestValidationError is the validation error returned
-// by AcceptProjectAccessRequest.Validate if the designated constraints aren't met.
-type AcceptProjectAccessRequestValidationError struct {
+// ApproveProjectAccessRequestValidationError is the validation error returned
+// by ApproveProjectAccessRequest.Validate if the designated constraints
+// aren't met.
+type ApproveProjectAccessRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -27314,24 +27315,24 @@ type AcceptProjectAccessRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e AcceptProjectAccessRequestValidationError) Field() string { return e.field }
+func (e ApproveProjectAccessRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AcceptProjectAccessRequestValidationError) Reason() string { return e.reason }
+func (e ApproveProjectAccessRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AcceptProjectAccessRequestValidationError) Cause() error { return e.cause }
+func (e ApproveProjectAccessRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AcceptProjectAccessRequestValidationError) Key() bool { return e.key }
+func (e ApproveProjectAccessRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AcceptProjectAccessRequestValidationError) ErrorName() string {
-	return "AcceptProjectAccessRequestValidationError"
+func (e ApproveProjectAccessRequestValidationError) ErrorName() string {
+	return "ApproveProjectAccessRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e AcceptProjectAccessRequestValidationError) Error() string {
+func (e ApproveProjectAccessRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -27343,14 +27344,14 @@ func (e AcceptProjectAccessRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAcceptProjectAccessRequest.%s: %s%s",
+		"invalid %sApproveProjectAccessRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AcceptProjectAccessRequestValidationError{}
+var _ error = ApproveProjectAccessRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -27358,24 +27359,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AcceptProjectAccessRequestValidationError{}
+} = ApproveProjectAccessRequestValidationError{}
 
-// Validate checks the field values on AcceptProjectAccessResponse with the
+// Validate checks the field values on ApproveProjectAccessResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *AcceptProjectAccessResponse) Validate() error {
+func (m *ApproveProjectAccessResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on AcceptProjectAccessResponse with the
+// ValidateAll checks the field values on ApproveProjectAccessResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// AcceptProjectAccessResponseMultiError, or nil if none found.
-func (m *AcceptProjectAccessResponse) ValidateAll() error {
+// ApproveProjectAccessResponseMultiError, or nil if none found.
+func (m *ApproveProjectAccessResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *AcceptProjectAccessResponse) validate(all bool) error {
+func (m *ApproveProjectAccessResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -27383,19 +27384,19 @@ func (m *AcceptProjectAccessResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return AcceptProjectAccessResponseMultiError(errors)
+		return ApproveProjectAccessResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// AcceptProjectAccessResponseMultiError is an error wrapping multiple
-// validation errors returned by AcceptProjectAccessResponse.ValidateAll() if
+// ApproveProjectAccessResponseMultiError is an error wrapping multiple
+// validation errors returned by ApproveProjectAccessResponse.ValidateAll() if
 // the designated constraints aren't met.
-type AcceptProjectAccessResponseMultiError []error
+type ApproveProjectAccessResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m AcceptProjectAccessResponseMultiError) Error() string {
+func (m ApproveProjectAccessResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -27404,12 +27405,12 @@ func (m AcceptProjectAccessResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m AcceptProjectAccessResponseMultiError) AllErrors() []error { return m }
+func (m ApproveProjectAccessResponseMultiError) AllErrors() []error { return m }
 
-// AcceptProjectAccessResponseValidationError is the validation error returned
-// by AcceptProjectAccessResponse.Validate if the designated constraints
+// ApproveProjectAccessResponseValidationError is the validation error returned
+// by ApproveProjectAccessResponse.Validate if the designated constraints
 // aren't met.
-type AcceptProjectAccessResponseValidationError struct {
+type ApproveProjectAccessResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -27417,24 +27418,24 @@ type AcceptProjectAccessResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e AcceptProjectAccessResponseValidationError) Field() string { return e.field }
+func (e ApproveProjectAccessResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e AcceptProjectAccessResponseValidationError) Reason() string { return e.reason }
+func (e ApproveProjectAccessResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e AcceptProjectAccessResponseValidationError) Cause() error { return e.cause }
+func (e ApproveProjectAccessResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e AcceptProjectAccessResponseValidationError) Key() bool { return e.key }
+func (e ApproveProjectAccessResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e AcceptProjectAccessResponseValidationError) ErrorName() string {
-	return "AcceptProjectAccessResponseValidationError"
+func (e ApproveProjectAccessResponseValidationError) ErrorName() string {
+	return "ApproveProjectAccessResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e AcceptProjectAccessResponseValidationError) Error() string {
+func (e ApproveProjectAccessResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -27446,14 +27447,14 @@ func (e AcceptProjectAccessResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sAcceptProjectAccessResponse.%s: %s%s",
+		"invalid %sApproveProjectAccessResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = AcceptProjectAccessResponseValidationError{}
+var _ error = ApproveProjectAccessResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -27461,24 +27462,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = AcceptProjectAccessResponseValidationError{}
+} = ApproveProjectAccessResponseValidationError{}
 
-// Validate checks the field values on RejectProjectAccessRequest with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on DenyProjectAccessRequest with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RejectProjectAccessRequest) Validate() error {
+func (m *DenyProjectAccessRequest) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on RejectProjectAccessRequest with the
+// ValidateAll checks the field values on DenyProjectAccessRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// RejectProjectAccessRequestMultiError, or nil if none found.
-func (m *RejectProjectAccessRequest) ValidateAll() error {
+// DenyProjectAccessRequestMultiError, or nil if none found.
+func (m *DenyProjectAccessRequest) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *RejectProjectAccessRequest) validate(all bool) error {
+func (m *DenyProjectAccessRequest) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -27492,19 +27493,19 @@ func (m *RejectProjectAccessRequest) validate(all bool) error {
 	// no validation rules for Id
 
 	if len(errors) > 0 {
-		return RejectProjectAccessRequestMultiError(errors)
+		return DenyProjectAccessRequestMultiError(errors)
 	}
 
 	return nil
 }
 
-// RejectProjectAccessRequestMultiError is an error wrapping multiple
-// validation errors returned by RejectProjectAccessRequest.ValidateAll() if
-// the designated constraints aren't met.
-type RejectProjectAccessRequestMultiError []error
+// DenyProjectAccessRequestMultiError is an error wrapping multiple validation
+// errors returned by DenyProjectAccessRequest.ValidateAll() if the designated
+// constraints aren't met.
+type DenyProjectAccessRequestMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m RejectProjectAccessRequestMultiError) Error() string {
+func (m DenyProjectAccessRequestMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -27513,11 +27514,11 @@ func (m RejectProjectAccessRequestMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m RejectProjectAccessRequestMultiError) AllErrors() []error { return m }
+func (m DenyProjectAccessRequestMultiError) AllErrors() []error { return m }
 
-// RejectProjectAccessRequestValidationError is the validation error returned
-// by RejectProjectAccessRequest.Validate if the designated constraints aren't met.
-type RejectProjectAccessRequestValidationError struct {
+// DenyProjectAccessRequestValidationError is the validation error returned by
+// DenyProjectAccessRequest.Validate if the designated constraints aren't met.
+type DenyProjectAccessRequestValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -27525,24 +27526,24 @@ type RejectProjectAccessRequestValidationError struct {
 }
 
 // Field function returns field value.
-func (e RejectProjectAccessRequestValidationError) Field() string { return e.field }
+func (e DenyProjectAccessRequestValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e RejectProjectAccessRequestValidationError) Reason() string { return e.reason }
+func (e DenyProjectAccessRequestValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e RejectProjectAccessRequestValidationError) Cause() error { return e.cause }
+func (e DenyProjectAccessRequestValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e RejectProjectAccessRequestValidationError) Key() bool { return e.key }
+func (e DenyProjectAccessRequestValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e RejectProjectAccessRequestValidationError) ErrorName() string {
-	return "RejectProjectAccessRequestValidationError"
+func (e DenyProjectAccessRequestValidationError) ErrorName() string {
+	return "DenyProjectAccessRequestValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e RejectProjectAccessRequestValidationError) Error() string {
+func (e DenyProjectAccessRequestValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -27554,14 +27555,14 @@ func (e RejectProjectAccessRequestValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sRejectProjectAccessRequest.%s: %s%s",
+		"invalid %sDenyProjectAccessRequest.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = RejectProjectAccessRequestValidationError{}
+var _ error = DenyProjectAccessRequestValidationError{}
 
 var _ interface {
 	Field() string
@@ -27569,24 +27570,24 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = RejectProjectAccessRequestValidationError{}
+} = DenyProjectAccessRequestValidationError{}
 
-// Validate checks the field values on RejectProjectAccessResponse with the
-// rules defined in the proto definition for this message. If any rules are
+// Validate checks the field values on DenyProjectAccessResponse with the rules
+// defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
-func (m *RejectProjectAccessResponse) Validate() error {
+func (m *DenyProjectAccessResponse) Validate() error {
 	return m.validate(false)
 }
 
-// ValidateAll checks the field values on RejectProjectAccessResponse with the
+// ValidateAll checks the field values on DenyProjectAccessResponse with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the result is a list of violation errors wrapped in
-// RejectProjectAccessResponseMultiError, or nil if none found.
-func (m *RejectProjectAccessResponse) ValidateAll() error {
+// DenyProjectAccessResponseMultiError, or nil if none found.
+func (m *DenyProjectAccessResponse) ValidateAll() error {
 	return m.validate(true)
 }
 
-func (m *RejectProjectAccessResponse) validate(all bool) error {
+func (m *DenyProjectAccessResponse) validate(all bool) error {
 	if m == nil {
 		return nil
 	}
@@ -27594,19 +27595,19 @@ func (m *RejectProjectAccessResponse) validate(all bool) error {
 	var errors []error
 
 	if len(errors) > 0 {
-		return RejectProjectAccessResponseMultiError(errors)
+		return DenyProjectAccessResponseMultiError(errors)
 	}
 
 	return nil
 }
 
-// RejectProjectAccessResponseMultiError is an error wrapping multiple
-// validation errors returned by RejectProjectAccessResponse.ValidateAll() if
-// the designated constraints aren't met.
-type RejectProjectAccessResponseMultiError []error
+// DenyProjectAccessResponseMultiError is an error wrapping multiple validation
+// errors returned by DenyProjectAccessResponse.ValidateAll() if the
+// designated constraints aren't met.
+type DenyProjectAccessResponseMultiError []error
 
 // Error returns a concatenation of all the error messages it wraps.
-func (m RejectProjectAccessResponseMultiError) Error() string {
+func (m DenyProjectAccessResponseMultiError) Error() string {
 	var msgs []string
 	for _, err := range m {
 		msgs = append(msgs, err.Error())
@@ -27615,12 +27616,11 @@ func (m RejectProjectAccessResponseMultiError) Error() string {
 }
 
 // AllErrors returns a list of validation violation errors.
-func (m RejectProjectAccessResponseMultiError) AllErrors() []error { return m }
+func (m DenyProjectAccessResponseMultiError) AllErrors() []error { return m }
 
-// RejectProjectAccessResponseValidationError is the validation error returned
-// by RejectProjectAccessResponse.Validate if the designated constraints
-// aren't met.
-type RejectProjectAccessResponseValidationError struct {
+// DenyProjectAccessResponseValidationError is the validation error returned by
+// DenyProjectAccessResponse.Validate if the designated constraints aren't met.
+type DenyProjectAccessResponseValidationError struct {
 	field  string
 	reason string
 	cause  error
@@ -27628,24 +27628,24 @@ type RejectProjectAccessResponseValidationError struct {
 }
 
 // Field function returns field value.
-func (e RejectProjectAccessResponseValidationError) Field() string { return e.field }
+func (e DenyProjectAccessResponseValidationError) Field() string { return e.field }
 
 // Reason function returns reason value.
-func (e RejectProjectAccessResponseValidationError) Reason() string { return e.reason }
+func (e DenyProjectAccessResponseValidationError) Reason() string { return e.reason }
 
 // Cause function returns cause value.
-func (e RejectProjectAccessResponseValidationError) Cause() error { return e.cause }
+func (e DenyProjectAccessResponseValidationError) Cause() error { return e.cause }
 
 // Key function returns key value.
-func (e RejectProjectAccessResponseValidationError) Key() bool { return e.key }
+func (e DenyProjectAccessResponseValidationError) Key() bool { return e.key }
 
 // ErrorName returns error name.
-func (e RejectProjectAccessResponseValidationError) ErrorName() string {
-	return "RejectProjectAccessResponseValidationError"
+func (e DenyProjectAccessResponseValidationError) ErrorName() string {
+	return "DenyProjectAccessResponseValidationError"
 }
 
 // Error satisfies the builtin error interface
-func (e RejectProjectAccessResponseValidationError) Error() string {
+func (e DenyProjectAccessResponseValidationError) Error() string {
 	cause := ""
 	if e.cause != nil {
 		cause = fmt.Sprintf(" | caused by: %v", e.cause)
@@ -27657,14 +27657,14 @@ func (e RejectProjectAccessResponseValidationError) Error() string {
 	}
 
 	return fmt.Sprintf(
-		"invalid %sRejectProjectAccessResponse.%s: %s%s",
+		"invalid %sDenyProjectAccessResponse.%s: %s%s",
 		key,
 		e.field,
 		e.reason,
 		cause)
 }
 
-var _ error = RejectProjectAccessResponseValidationError{}
+var _ error = DenyProjectAccessResponseValidationError{}
 
 var _ interface {
 	Field() string
@@ -27672,7 +27672,7 @@ var _ interface {
 	Key() bool
 	Cause() error
 	ErrorName() string
-} = RejectProjectAccessResponseValidationError{}
+} = DenyProjectAccessResponseValidationError{}
 
 // Validate checks the field values on User with the rules defined in the proto
 // definition for this message. If any rules are violated, the first error
