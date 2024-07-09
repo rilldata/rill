@@ -29,17 +29,13 @@
 
   export let allTimeRange: TimeRange;
   export let selectedTimeRange: DashboardTimeControls | undefined;
-  export let selectedComparisonTimeRange: DashboardTimeControls | undefined;
 
   const ctx = getStateManagers();
   const metricsView = useMetricsView(ctx);
   const {
     metricsViewName,
     selectors: {
-      timeRangeSelectors: {
-        timeRangeSelectorState,
-        timeComparisonOptionsState,
-      },
+      timeRangeSelectors: { timeRangeSelectorState },
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
   } = ctx;
@@ -64,7 +60,6 @@
   $: activeTimeZone = $dashboardStore?.selectedTimezone;
 
   $: availableTimeZones = $metricsView?.data?.availableTimeZones ?? [];
-  $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
 
   $: metricsViewSpec = $metricsView.data ?? {};
 

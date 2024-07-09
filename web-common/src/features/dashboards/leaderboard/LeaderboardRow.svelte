@@ -109,10 +109,10 @@
   </td>
   <td>
     <div
-      class="value-cell flex flex-row items-center gap-x-1 relative whitespace-nowrap"
+      class="value-cell flex flex-row items-center gap-x-1 relative whitespace-nowrap z-50"
     >
       {#if previousValueString && hovered}
-        <span class="flex flex-row items-center opacity-50 h-[22px]">
+        <span class="opacity-50">
           {previousValueString} →
         </span>
       {/if}
@@ -154,7 +154,7 @@
 
 <style lang="postcss">
   td {
-    @apply text-right;
+    @apply text-right p-0;
     height: 22px;
   }
 
@@ -168,10 +168,6 @@
 
   tr:hover {
     @apply brightness-95 bg-background;
-  }
-
-  td {
-    @apply p-0;
   }
 
   .value-cell {

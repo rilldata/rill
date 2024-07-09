@@ -14,13 +14,7 @@
   const { adminServer, exports } = featureFlags;
 
   const stateManagers = getStateManagers();
-  const {
-    metricsViewName,
-    dashboardStore,
-    selectors: {
-      timeRangeSelectors: { timeControlsState },
-    },
-  } = stateManagers;
+  const { metricsViewName, dashboardStore } = stateManagers;
 
   $: expanded = $dashboardStore?.pivot?.expanded ?? {};
 

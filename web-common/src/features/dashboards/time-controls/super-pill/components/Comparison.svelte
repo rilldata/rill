@@ -22,7 +22,6 @@
   export let timeComparisonOptionsState: Option[];
   export let showComparison: boolean | undefined;
   export let selectedComparison: DashboardTimeControls | undefined;
-  export let metricViewName: string;
   export let zone: string;
   export let grain: string;
   export let onSelectComparisonRange: (
