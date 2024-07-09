@@ -75,6 +75,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	}
 
 	if resp.StatusCode != http.StatusOK {
+		resp.Body.Close()
 		return nil, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
 	}
 
