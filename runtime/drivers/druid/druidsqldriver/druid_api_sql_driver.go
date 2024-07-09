@@ -74,6 +74,10 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		return nil, err
 	}
 
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
+	}
+
 	dec := json.NewDecoder(resp.Body)
 
 	var obj any
