@@ -1,7 +1,6 @@
 <script lang="ts">
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
-  import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { SortType } from "../proto-state/derived-types";
   import ArrowDown from "@rilldata/web-common/components/icons/ArrowDown.svelte";
   import Delta from "@rilldata/web-common/components/icons/Delta.svelte";
@@ -22,9 +21,9 @@
   export let sortedAscending: boolean;
   export let displayName: string;
   export let hovered: boolean;
+  export let sortType: SortType;
   export let toggleSort: (sortType: SortType) => void;
   export let setPrimaryDimension: (dimensionName: string) => void;
-  export let sortType: SortType;
 </script>
 
 <thead>
