@@ -93,6 +93,7 @@ export function getPivotConfig(
         timeRangeSummary,
         dashboardStore,
       ]);
+
       const time: PivotTimeConfig = {
         timeStart: timeControl.timeStart,
         timeEnd: timeControl.timeEnd,
@@ -104,7 +105,7 @@ export function getPivotConfig(
         canEnablePivotComparison(
           dashboardStore.pivot,
           timeControl.comparisonTimeStart,
-        ) && dashboardStore.pivot.enableComparison;
+        ) && timeControl.showTimeComparison;
 
       let comparisonTime: TimeRangeString | undefined = undefined;
       if (enableComparison) {

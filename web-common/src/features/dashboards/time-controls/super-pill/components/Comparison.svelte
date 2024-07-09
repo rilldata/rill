@@ -8,7 +8,6 @@
   } from "@rilldata/web-common/lib/time/types";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import { DateTime, Interval } from "luxon";
-  import { metricsExplorerStore } from "../../../stores/dashboard-stores";
   import CalendarPlusDateInput from "./CalendarPlusDateInput.svelte";
   import RangeDisplay from "./RangeDisplay.svelte";
 
@@ -46,9 +45,9 @@
   $: firstOption = timeComparisonOptionsState[0];
   $: label =
     TIME_COMPARISON[comparisonOption ?? firstOption?.name]?.label ??
-    "Custom period";
+    "Custom range";
 
-  $: selectedLabel = comparisonOption ?? firstOption?.name ?? "Custom period";
+  $: selectedLabel = comparisonOption ?? firstOption?.name ?? "Custom range";
 
   function applyRange(range: Interval<true>) {
     onSelectComparisonRange(
@@ -120,21 +119,6 @@
   <DropdownMenu.Content align="start" class="p-0 overflow-hidden">
     <div class="flex">
       <div class="flex flex-col border-r w-48 p-1">
-        {#if !timeComparisonOptionsState.length}
-          <DropdownMenu.Item
-            class="flex gap-x-2"
-            on:click={() => {
-              metricsExplorerStore.disableAllComparisons(metricViewName);
-            }}
-          >
-            <span class:font-bold={!showComparison}>
-              No comparison period
-            </span>
-          </DropdownMenu.Item>
-
-          <DropdownMenu.Separator />
-        {/if}
-
         {#each timeComparisonOptionsState as option (option.name)}
           {@const preset = TIME_COMPARISON[option.name]}
           {@const selected = selectedLabel === option.name}
