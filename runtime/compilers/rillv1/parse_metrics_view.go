@@ -40,7 +40,7 @@ type MetricsViewYAML struct {
 		Description string
 		Ignore      bool `yaml:"ignore"`
 		Unnest      bool
-		URI 	    string
+		URI         string
 	}
 	DefaultDimensions []string `yaml:"default_dimensions"`
 	Measures          []*struct {
