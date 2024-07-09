@@ -4,8 +4,6 @@ app in production. Here, we are setting server-side rendering (SSR) to false to
 ensure the same single-page app behavior in development.
 */
 export const ssr = false;
-<<<<<<< Updated upstream
-=======
 
 import { goto } from "$app/navigation";
 import type { V1ProjectPermissions } from "@rilldata/web-admin/client";
@@ -77,4 +75,3 @@ export const load = async ({ params }) => {
     );
   }
 };
->>>>>>> Stashed changes
