@@ -29,6 +29,7 @@
 <img
   src={imageProperties.url}
   alt={"Dashboard Image"}
+  draggable="false"
   style={`
     object-fit: ${imageProperties.size}; 
     opacity: ${imageProperties.adjust?.opacity}; 
