@@ -439,6 +439,7 @@ func TestServer_Timeseries_TimeRange_End_2day_after(t *testing.T) {
 	i += 1
 	require.Equal(t, parseTime(t, "2019-01-04T00:00:00Z"), results[i].Ts.AsTime())
 	require.Equal(t, structpb.NullValue_NULL_VALUE, results[i].Records.Fields["max_clicks"].GetNullValue())
+
 }
 
 func TestServer_Timeseries_TimeRange_middle_nulls(t *testing.T) {

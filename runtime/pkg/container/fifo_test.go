@@ -8,6 +8,7 @@ import (
 )
 
 func TestFIFOOverCapacity(t *testing.T) {
+
 	c, err := NewFIFO[int](32, nil)
 	require.NoError(t, err)
 

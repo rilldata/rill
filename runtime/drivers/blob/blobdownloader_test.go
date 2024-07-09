@@ -115,6 +115,7 @@ func TestFetchFileNames(t *testing.T) {
 }
 
 func TestFetchFileNamesWithParitionLimits(t *testing.T) {
+
 	type args struct {
 		ctx    context.Context
 		bucket *blob.Bucket
@@ -128,8 +129,7 @@ func TestFetchFileNamesWithParitionLimits(t *testing.T) {
 	}{
 		{
 			name: "listing head limits",
-			args: args{
-				context.Background(),
+			args: args{context.Background(),
 				prepareBucket(t),
 				Options{ExtractPolicy: &ExtractPolicy{FilesStrategy: ExtractPolicyStrategyHead, FilesLimit: 2}, GlobPattern: "2020/**", StorageLimitInBytes: TenGB, KeepFilesUntilClose: true},
 			},

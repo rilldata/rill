@@ -33,6 +33,7 @@ func TestServer_MetricsViewRows(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 2, len(tr.Data))
 	require.Equal(t, 11, len(tr.Meta))
+
 }
 
 func TestServer_MetricsViewRows_Granularity(t *testing.T) {

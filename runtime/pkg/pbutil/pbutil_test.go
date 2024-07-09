@@ -20,7 +20,7 @@ func TestToStructCoerceKeys(t *testing.T) {
 		{Input: map[any]any{big.NewInt(10): 1}, Expected: map[string]any{"10": 1}},
 		{Input: map[any]any{3.141: 1}, Expected: map[string]any{"3.141": 1}},
 		{Input: map[any]any{3.141: map[any]any{1: 2}}, Expected: map[string]any{"3.141": map[string]any{"1": 2}}},
-		{Input: map[any]any{time.Date(2020, 0o1, 0o1, 0, 0, 0, 0, time.UTC): 20}, Expected: map[string]any{"2020-01-01T00:00:00Z": 20}},
+		{Input: map[any]any{time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC): 20}, Expected: map[string]any{"2020-01-01T00:00:00Z": 20}},
 	}
 	for _, tt := range cases {
 		expected, err := structpb.NewStruct(tt.Expected)
@@ -43,7 +43,7 @@ func TestToStructCoerceKeysUnknown(t *testing.T) {
 		{Input: map[*big.Int]int{big.NewInt(10): 1}, Expected: map[string]any{"10": 1}},
 		{Input: map[float64]int{3.141: 1}, Expected: map[string]any{"3.141": 1}},
 		{Input: map[float64]map[int]int{3.141: {1: 2}}, Expected: map[string]any{"3.141": map[string]any{"1": 2}}, MapType: &runtimev1.MapType{ValueType: &runtimev1.Type{MapType: &runtimev1.MapType{}}}},
-		{Input: map[time.Time]int{time.Date(2020, 0o1, 0o1, 0, 0, 0, 0, time.UTC): 20}, Expected: map[string]any{"2020-01-01T00:00:00Z": 20}},
+		{Input: map[time.Time]int{time.Date(2020, 01, 01, 0, 0, 0, 0, time.UTC): 20}, Expected: map[string]any{"2020-01-01T00:00:00Z": 20}},
 	}
 	for i, tt := range cases {
 		expected, err := structpb.NewStruct(tt.Expected)

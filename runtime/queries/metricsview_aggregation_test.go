@@ -1286,6 +1286,7 @@ func Ignore_TestMetricsViewsAggregation_Druid_measure_filter(t *testing.T) {
 	rows = resp.Data
 	i = 0
 	require.Equal(t, "Google,8644", fieldsToString(rows[i], "publisher", "bp"))
+
 }
 
 func TestMetricsViewAggregation_measure_filters(t *testing.T) {
@@ -2163,9 +2164,7 @@ dimensions:
 measures:
 - name: count
   expression: count(*)
-`,
-		},
-	})
+`}})
 
 	testruntime.RequireReconcileState(t, rt, instanceID, 3, 0, 0)
 

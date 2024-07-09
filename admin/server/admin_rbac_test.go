@@ -54,8 +54,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			ProvisionerSetJSON: provisionerSetJSON,
 			DefaultProvisioner: "static",
 			ExternalURL:        "http://localhost:9090",
-			VersionNumber:      "",
-		},
+			VersionNumber:      ""},
 		logger,
 		issuer,
 		emailClient,
@@ -328,6 +327,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			}
 			require.NoError(t, err)
 			require.NotNil(t, resp)
+
 		})
 	}
 
@@ -716,6 +716,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		require.NoError(t, err)
 		require.Equal(t, 3, len(resp.Organizations))
 	})
+
 }
 
 type bearerTokenCredential struct {

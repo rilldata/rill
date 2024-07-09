@@ -37,7 +37,7 @@ func TestWatch(t *testing.T) {
 	createFile(t, fullname1)
 
 	subDirName := filepath.Join(dir, "subdir")
-	err := os.Mkdir(subDirName, 0o777)
+	err := os.Mkdir(subDirName, 0777)
 	require.NoError(t, err)
 
 	fullname2 := filepath.Join(subDirName, "file2")

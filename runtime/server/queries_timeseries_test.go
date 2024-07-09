@@ -459,6 +459,7 @@ func TestServer_Timeseries_timezone_dst_forward(t *testing.T) {
 	require.Equal(t, 1.0, results[2].Records.Fields["count"].GetNumberValue())
 	require.Equal(t, "2023-03-26 03:00:00", results[3].Ts.AsTime().Format(time.DateTime))
 	require.Equal(t, 1.0, results[3].Records.Fields["count"].GetNumberValue())
+
 }
 
 /*
@@ -507,6 +508,7 @@ func TestServer_Timeseries_timezone_dst_backward(t *testing.T) {
 	require.Equal(t, 1.0, results[2].Records.Fields["count"].GetNumberValue())
 	require.Equal(t, "2023-10-29 03:00:00", results[3].Ts.AsTime().Format(time.DateTime))
 	require.Equal(t, 1.0, results[3].Records.Fields["count"].GetNumberValue())
+
 }
 
 func TestServer_Timeseries_timezone_Kathmandu_with_hour(t *testing.T) {

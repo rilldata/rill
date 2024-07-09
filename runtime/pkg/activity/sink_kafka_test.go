@@ -9,7 +9,7 @@ import (
 func Test_retry(t *testing.T) {
 	alwaysFail := errors.New("always fail")
 	conditionalFail := errors.New("conditional fail")
-	fail := true
+	var fail = true
 
 	tests := []struct {
 		name         string

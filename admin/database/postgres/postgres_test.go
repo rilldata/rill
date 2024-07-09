@@ -125,7 +125,7 @@ func testOrgsWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, len(orgs), 1)
 	require.Equal(t, "beta", orgs[0].Name)
 
-	// cleanup
+	//cleanup
 	require.NoError(t, db.DeleteOrganization(ctx, "alpha"))
 	require.NoError(t, db.DeleteOrganization(ctx, "beta"))
 	require.NoError(t, db.DeleteOrganization(ctx, "gamma"))
@@ -306,7 +306,7 @@ func testProjectsWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
 
-	// cleanup
+	//cleanup
 	require.NoError(t, db.DeleteProject(ctx, proj.ID))
 	require.NoError(t, db.DeleteProject(ctx, proj1.ID))
 	require.NoError(t, db.DeleteProject(ctx, proj2.ID))
@@ -366,7 +366,7 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, len(projs), 1)
 	require.Equal(t, "gamma", projs[0].Name)
 
-	// cleanup
+	//cleanup
 	require.NoError(t, db.DeleteProject(ctx, proj.ID))
 	require.NoError(t, db.DeleteProject(ctx, proj1.ID))
 	require.NoError(t, db.DeleteProject(ctx, proj2.ID))
@@ -416,6 +416,6 @@ func testOrgsMembersPagination(t *testing.T, db database.DB) {
 	require.NoError(t, err)
 	require.Equal(t, len(invites), 0)
 
-	// cleanup
+	//cleanup
 	require.NoError(t, db.DeleteOrganization(ctx, "alpha"))
 }

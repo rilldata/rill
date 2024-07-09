@@ -23,4 +23,5 @@ func TestServer_MetricsViewTimeRange(t *testing.T) {
 	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Months)
 	require.Equal(t, int32(0), res.TimeRangeSummary.Interval.Days)
 	require.Equal(t, int64(76102016000), res.TimeRangeSummary.Interval.Micros)
+
 }

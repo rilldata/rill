@@ -20,7 +20,7 @@ import (
 // This should be the only "real" test in the package. Other tests should be added
 // as subtests of TestAll.
 func TestAll(t *testing.T) {
-	matrix := []func(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error{
+	var matrix = []func(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error{
 		withDuckDB,
 		withFile,
 		withPostgres,

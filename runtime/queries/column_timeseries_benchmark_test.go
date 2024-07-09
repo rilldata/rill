@@ -34,7 +34,6 @@ func BenchmarkTimeSeries_hourly(b *testing.B) {
 		require.NotEmpty(b, q.Result)
 	}
 }
-
 func BenchmarkTimeSeries_daily(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 	q := &queries.ColumnTimeseries{
@@ -82,7 +81,6 @@ func BenchmarkTimeSeries_weekly(b *testing.B) {
 		require.NotEmpty(b, q.Result)
 	}
 }
-
 func BenchmarkTimeSeries_weekly_first_day_of_week_Monday(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "ad_bids")
 
