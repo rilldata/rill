@@ -74,7 +74,7 @@
 
   <div
     class="{color} h-full absolute left-0 -z-10"
-    style:width="{tableWidth * $valueTween}px"
+    style:width="{Math.min(tableWidth, tableWidth * $valueTween)}px"
   />
 
   <div

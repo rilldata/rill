@@ -20,11 +20,17 @@
   export let borderTop = false;
   export let borderBottom = false;
 
-  $: label = itemData.dimensionValue;
-  $: measureValue = itemData.value;
+  let hovered = false;
+
   $: selected = itemData.selectedIndex >= 0;
 
-  $: ({ prevValue: comparisonValue } = itemData);
+  $: ({
+    dimensionValue: label,
+    selectedIndex,
+    pctOfTotal,
+    value: measureValue,
+    prevValue: comparisonValue,
+  } = itemData);
 
   const {
     selectors: {
@@ -57,6 +63,8 @@
     ? $activeMeasureFormatter(measureValue)
     : null;
 
+  $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
+
   function shiftClickHandler(label: string) {
     let truncatedLabel = label?.toString();
     if (truncatedLabel?.length > TOOLTIP_STRING_LIMIT) {
@@ -67,8 +75,6 @@
       `copied dimension value "${truncatedLabel}" to clipboard`,
     );
   }
-  $: negativeChange = itemData.deltaAbs !== null && itemData.deltaAbs < 0;
-  let hovered = false;
 </script>
 
 <tr
