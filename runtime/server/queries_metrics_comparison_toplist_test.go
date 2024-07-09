@@ -179,7 +179,7 @@ func TestServer_MetricsViewComparison_nulls(t *testing.T) {
 		},
 	})
 	require.NoError(t, err)
-	time.Sleep(500 * time.Millisecond)
+	time.Sleep(2 * time.Second)
 
 	tr, err := server.MetricsViewComparison(testCtx(), &runtimev1.MetricsViewComparisonRequest{
 		InstanceId:      instanceId,
