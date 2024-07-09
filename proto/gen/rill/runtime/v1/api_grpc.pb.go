@@ -61,7 +61,9 @@ const (
 type RuntimeServiceClient interface {
 	// Ping returns information about the runtime
 	Ping(ctx context.Context, in *PingRequest, opts ...grpc.CallOption) (*PingResponse, error)
+	// Health runs a health check on the runtime.
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
+	// InstanceHealth runs a health check on a specific instance.
 	InstanceHealth(ctx context.Context, in *InstanceHealthRequest, opts ...grpc.CallOption) (*InstanceHealthResponse, error)
 	// ListInstances lists all the instances currently managed by the runtime
 	ListInstances(ctx context.Context, in *ListInstancesRequest, opts ...grpc.CallOption) (*ListInstancesResponse, error)
@@ -121,6 +123,7 @@ type RuntimeServiceClient interface {
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
+	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
 }
 
@@ -520,7 +523,9 @@ func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTR
 type RuntimeServiceServer interface {
 	// Ping returns information about the runtime
 	Ping(context.Context, *PingRequest) (*PingResponse, error)
+	// Health runs a health check on the runtime.
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
+	// InstanceHealth runs a health check on a specific instance.
 	InstanceHealth(context.Context, *InstanceHealthRequest) (*InstanceHealthResponse, error)
 	// ListInstances lists all the instances currently managed by the runtime
 	ListInstances(context.Context, *ListInstancesRequest) (*ListInstancesResponse, error)
@@ -580,6 +585,7 @@ type RuntimeServiceServer interface {
 	// ListNotifierConnectors returns the names of all configured connectors that can be used as notifiers.
 	// This API is much faster than AnalyzeConnectors and can be called without admin-level permissions.
 	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
+	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
