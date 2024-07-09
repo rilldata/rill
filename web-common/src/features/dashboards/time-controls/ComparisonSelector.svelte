@@ -12,12 +12,7 @@ This component needs to do the following:
   import { Chip } from "@rilldata/web-common/components/chip";
   import WithTogglableFloatingElement from "@rilldata/web-common/components/floating-element/WithTogglableFloatingElement.svelte";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import ClockCircle from "@rilldata/web-common/components/icons/ClockCircle.svelte";
-  import {
-    Divider,
-    Menu,
-    MenuItem,
-  } from "@rilldata/web-common/components/menu";
+  import { Menu, MenuItem } from "@rilldata/web-common/components/menu";
   import { Search } from "@rilldata/web-common/components/search";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -33,8 +28,6 @@ This component needs to do the following:
 
   export let metricViewName: string;
   export let chipStyle = false;
-
-  const TIME = "Time";
 
   let dimensions: MetricsViewSpecDimensionV2[] | undefined = [];
 
@@ -63,15 +56,11 @@ This component needs to do the following:
 
   $: label = selectedDimension
     ? getLabelForDimension(selectedDimension)
-    : showTimeComparison
-      ? TIME
-      : NO_COMPARISON_LABEL;
+    : NO_COMPARISON_LABEL;
 
   $: intermediateSelection = selectedDimension
     ? selectedDimension
-    : showTimeComparison
-      ? TIME
-      : NO_COMPARISON_LABEL;
+    : NO_COMPARISON_LABEL;
 
   function enableComparison(type: string, name = "") {
     if (type === "time") {
@@ -160,21 +149,6 @@ This component needs to do the following:
         {NO_COMPARISON_LABEL}
       </span>
     </MenuItem>
-    <Divider marginTop={0.5} marginBottom={0.5} />
-    <MenuItem
-      selected={showTimeComparison}
-      on:before-select={() => {
-        intermediateSelection = TIME;
-      }}
-      on:select={() => {
-        enableComparison("time");
-        handleClose();
-      }}
-    >
-      <span class:font-bold={intermediateSelection === TIME}> {TIME} </span>
-      <span slot="right"><ClockCircle size="16px" /></span>
-    </MenuItem>
-    <Divider marginTop={0.5} marginBottom={0.5} />
 
     <div style:max-height="200px" class="overflow-y-auto">
       {#each menuOptions as option (option.name)}

@@ -46,9 +46,9 @@
   $: firstOption = timeComparisonOptionsState[0];
   $: label =
     TIME_COMPARISON[comparisonOption ?? firstOption?.name]?.label ??
-    "custom period";
+    "Custom period";
 
-  $: selectedLabel = comparisonOption ?? firstOption?.name ?? "custom period";
+  $: selectedLabel = comparisonOption ?? firstOption?.name ?? "Custom period";
 
   function applyRange(range: Interval<true>) {
     onSelectComparisonRange(
