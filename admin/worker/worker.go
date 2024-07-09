@@ -59,7 +59,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "hibernate_expired_deployments", w.hibernateExpiredDeployments, 15*time.Minute)
 	})
 	group.Go(func() error {
-		return w.schedule(ctx, "upgrade_latest_version_projects", w.upgradeLatestVersionProjects, 6*time.Hour)
+		return w.schedule(ctx, "reconcile_deployments", w.reconcileDeployments, 6*time.Hour)
 	})
 	group.Go(func() error {
 		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
