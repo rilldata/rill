@@ -85,7 +85,7 @@
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
-  <div class="flex flex-row flex-wrap gap-x-2 items-center">
+  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
     <Calendar size="16px" />
     {#if allTimeRange?.start && allTimeRange?.end}
       <SuperPill {allTimeRange} {selectedTimeRange} />

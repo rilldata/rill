@@ -86,6 +86,7 @@
   let aboveTheFold: LeaderboardItemData[] = [];
   let selectedBelowTheFold: LeaderboardItemData[] = [];
   let showExpandTable = false;
+  let noAvailableValues = true;
 
   $: if (sortedData && !isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
@@ -99,7 +100,7 @@
 
     aboveTheFold = leaderboardData.aboveTheFold;
     selectedBelowTheFold = leaderboardData.selectedBelowTheFold;
-
+    noAvailableValues = leaderboardData.noAvailableValues;
     showExpandTable = leaderboardData.showExpandTable;
   }
 
@@ -152,27 +153,29 @@
     />
 
     <tbody>
-      {#each aboveTheFold as itemData (itemData.dimensionValue)}
-        <LeaderboardRow
-          {tableWidth}
-          {dimensionName}
-          {itemData}
-          isValidPercentOfTotal={$isValidPercentOfTotal}
-          isTimeComparisonActive={$isTimeComparisonActive}
-        />
-      {:else}
+      {#if isFetching}
         <LoadingRows columns={columnCount + 1} />
-      {/each}
+      {:else}
+        {#each aboveTheFold as itemData (itemData.dimensionValue)}
+          <LeaderboardRow
+            {tableWidth}
+            {dimensionName}
+            {itemData}
+            isValidPercentOfTotal={$isValidPercentOfTotal}
+            isTimeComparisonActive={$isTimeComparisonActive}
+          />
+        {/each}
+      {/if}
 
       {#each selectedBelowTheFold as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
-          borderTop={i === 0}
-          borderBottom={i === selectedBelowTheFold.length - 1}
+          {itemData}
           {tableWidth}
           {dimensionName}
-          {itemData}
           isValidPercentOfTotal={$isValidPercentOfTotal}
           isTimeComparisonActive={$isTimeComparisonActive}
+          borderTop={i === 0}
+          borderBottom={i === selectedBelowTheFold.length - 1}
         />
       {/each}
     </tbody>
@@ -181,7 +184,7 @@
   {#if showExpandTable}
     <Tooltip location="right">
       <button
-        class="transition-color ui-copy-muted"
+        class="transition-color ui-copy-muted table-message"
         on:click={() => setPrimaryDimension(dimensionName)}
       >
         (Expand Table)
@@ -190,6 +193,8 @@
         Expand dimension to see more values
       </TooltipContent>
     </Tooltip>
+  {:else if noAvailableValues}
+    <div class="table-message ui-copy-muted">(No available values)</div>
   {/if}
 </div>
 
@@ -200,7 +205,7 @@
     @apply table-fixed;
   }
 
-  button {
-    @apply block flex-row w-full text-left pl-7;
+  .table-message {
+    @apply h-[22px] p-1 flex-row w-full text-left pl-7;
   }
 </style>

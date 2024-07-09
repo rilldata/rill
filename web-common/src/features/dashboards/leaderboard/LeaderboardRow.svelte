@@ -153,7 +153,7 @@
         />
       </div>
     </td>
-  {:else if isValidPercentOfTotal && itemData.pctOfTotal && !isNaN(itemData.pctOfTotal)}
+  {:else if isValidPercentOfTotal}
     <td>
       <div class="value-cell">
         <PercentageChange value={itemData.pctOfTotal} />
