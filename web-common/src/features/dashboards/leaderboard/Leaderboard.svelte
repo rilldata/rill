@@ -13,6 +13,7 @@
   import LoadingRows from "./LoadingRows.svelte";
 
   const slice = 7;
+  const columnWidth = 64;
 
   export let parentElement: HTMLElement;
   export let dimensionName: string;
@@ -71,11 +72,7 @@
     $leaderboardSortedQueryOptions(dimensionName, visible),
   );
 
-  $: ({
-    data: sortedData,
-
-    isFetching,
-  } = $sortedQuery);
+  $: ({ data: sortedData, isFetching } = $sortedQuery);
 
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -115,11 +112,11 @@
 
   $: columnCount = $isTimeComparisonActive ? 3 : $isValidPercentOfTotal ? 2 : 1;
 
-  $: tableWidth = columnCount * 64 + firstColumnWidth;
+  $: tableWidth = columnCount * columnWidth + firstColumnWidth;
 </script>
 
 <div
-  class="flex-col flex"
+  class="flex flex-col"
   aria-label="{dimensionName} leaderboard"
   role="table"
   on:mouseenter={() => (hovered = true)}
@@ -130,12 +127,12 @@
     <colgroup>
       <col style:width="24px" />
       <col style:width="{firstColumnWidth}px" />
-      <col class="col-width" />
+      <col style:width="{columnWidth}px" />
       {#if $isTimeComparisonActive}
-        <col class="col-width" />
-        <col class="col-width" />
+        <col style:width="{columnWidth}px" />
+        <col style:width="{columnWidth}px" />
       {:else}
-        <col class="col-width" />
+        <col style:width="{columnWidth}px" />
       {/if}
     </colgroup>
 
@@ -164,10 +161,9 @@
           isTimeComparisonActive={$isTimeComparisonActive}
         />
       {:else}
-        <LoadingRows />
+        <LoadingRows columns={columnCount + 1} />
       {/each}
 
-      <!-- place the selected values that are not above the fold here -->
       {#each selectedBelowTheFold as itemData, i (itemData.dimensionValue)}
         <LeaderboardRow
           borderTop={i === 0}
@@ -185,8 +181,8 @@
   {#if showExpandTable}
     <Tooltip location="right">
       <button
+        class="transition-color ui-copy-muted"
         on:click={() => setPrimaryDimension(dimensionName)}
-        class="block flex-row w-full text-left transition-color ui-copy-muted pl-7"
       >
         (Expand Table)
       </button>
@@ -204,7 +200,7 @@
     @apply table-fixed;
   }
 
-  .col-width {
-    width: 64px;
+  button {
+    @apply block flex-row w-full text-left pl-7;
   }
 </style>

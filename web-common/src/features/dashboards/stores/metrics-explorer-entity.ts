@@ -92,7 +92,7 @@ export interface MetricsExplorerEntity {
   /**
    * user selected time range
    */
-  selectedTimeRange: DashboardTimeControls;
+  selectedTimeRange: DashboardTimeControls | null;
 
   /**
    * user selected scrub range

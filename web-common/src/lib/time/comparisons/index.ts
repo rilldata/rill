@@ -199,15 +199,17 @@ export function getAvailableComparisonsForTimeRange(
 /** A convenience function that gets comparison range and states whether it is within bounds. */
 export function getTimeComparisonParametersForComponent(
   comparisonOption: TimeComparisonOption | undefined,
-  boundStart,
-  boundEnd,
-  currentStart,
-  currentEnd,
+  boundStart: Date | null | undefined,
+  boundEnd: Date | null | undefined,
+  currentStart: Date | null | undefined,
+  currentEnd: Date | null | undefined,
 ) {
   if (
-    comparisonOption === undefined ||
-    boundStart === undefined ||
-    currentStart === undefined
+    !comparisonOption ||
+    !boundStart ||
+    !currentStart ||
+    !currentEnd ||
+    !boundEnd
   ) {
     return {
       start: undefined,

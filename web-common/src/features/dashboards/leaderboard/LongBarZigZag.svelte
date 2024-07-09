@@ -9,5 +9,5 @@
 </script>
 
 <svg class="absolute right-0" width="15" height="22">
-  <path d={zigZag} fill="white" />
+  <path d={zigZag} class="fill-background" />
 </svg>

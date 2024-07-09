@@ -110,7 +110,7 @@ export function getChildTimeRanges(
 // TODO: investigate whether we need this after we've removed the need
 // for the config's default_time_Range to be an ISO duration.
 export function ISODurationToTimePreset(
-  isoDuration: string,
+  isoDuration: string | undefined,
   defaultToAllTime = true,
 ): TimeRangePreset | undefined {
   switch (isoDuration) {

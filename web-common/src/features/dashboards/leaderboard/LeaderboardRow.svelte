@@ -22,8 +22,6 @@
 
   let hovered = false;
 
-  $: selected = itemData.selectedIndex >= 0;
-
   $: ({
     dimensionValue: label,
     selectedIndex,
@@ -31,6 +29,8 @@
     value: measureValue,
     prevValue: comparisonValue,
   } = itemData);
+
+  $: selected = selectedIndex >= 0;
 
   const {
     selectors: {
@@ -103,12 +103,15 @@
   <td>
     <Tooltip location="left" distance={20}>
       <LeaderboardValueCell
+        {selected}
+        {pctOfTotal}
         {label}
-        {comparisonValue}
-        {itemData}
         {dimensionName}
         {tableWidth}
+        {previousValueString}
+        {hovered}
       />
+
       <LeaderboardTooltipContent
         {atLeastOneActive}
         {excluded}
@@ -120,18 +123,13 @@
     </Tooltip>
   </td>
   <td>
-    <div
-      class="value-cell flex flex-row items-center gap-x-1 relative whitespace-nowrap z-50"
-    >
-      {#if previousValueString && hovered}
-        <span class="opacity-50">
-          {previousValueString} →
-        </span>
-      {/if}
-      <FormattedDataType
-        type="INTEGER"
-        value={formattedValue || measureValue}
-      />
+    <div class="value-cell">
+      <span>
+        <FormattedDataType
+          type="INTEGER"
+          value={formattedValue || measureValue}
+        />
+      </span>
     </div>
   </td>
   {#if isTimeComparisonActive}
@@ -174,15 +172,15 @@
     @apply cursor-pointer;
   }
 
-  td:first-of-type {
-    @apply text-left brightness-100;
+  tr:hover {
+    @apply bg-background;
   }
 
-  tr:hover {
-    @apply brightness-95 bg-background;
+  tr:hover td:not(:first-of-type) {
+    @apply brightness-95;
   }
 
   .value-cell {
-    @apply pr-2 flex justify-end items-center;
+    @apply pr-2 flex justify-end items-center whitespace-nowrap;
   }
 </style>
