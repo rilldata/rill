@@ -114,17 +114,15 @@ dimensions:
       .getByRole("menu", { name: "Showing USD" })
       .waitFor({ state: "hidden" });
     await expect(measuresButton).toHaveText("Showing USD");
-    // turn on a context column to check the formatting there
-    await page.getByRole("button", { name: "Select a context column" }).click();
-    await page.getByRole("menuitem", { name: "Percent of total" }).click();
+
     await expect(
-      page.getByRole("button", { name: "null $98.8k 33%" }),
+      page.getByRole("row", { name: "null $98.8k 33%" }),
     ).toBeVisible();
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "percentage" }).click();
     await expect(measuresButton).toHaveText("Showing percentage");
     await expect(
-      page.getByRole("button", { name: "null 9.9M% 33%" }),
+      page.getByRole("row", { name: "null 9.9M% 33%" }),
     ).toBeVisible();
 
     // try interval_ms...
@@ -138,19 +136,16 @@ dimensions:
     await page.getByRole("button", { name: "Comparing" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null 27 s 33%" }),
+      page.getByRole("row", { name: "null 27 s 33%" }),
     ).toBeVisible();
 
     // try No Format...
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "No Format" }).click();
     await expect(measuresButton).toHaveText("Showing No Format");
-    // ...with percent change context column
-    await page.getByRole("button", { name: "Select a context column" }).click();
-    await page.getByRole("menuitem", { name: "Percent change" }).click();
 
     await expect(
-      page.getByRole("button", { name: "null 26642.549999999974 -14%" }),
+      page.getByRole("row", { name: "null 26642.549999999974 -14%" }),
     ).toBeVisible();
 
     /******************

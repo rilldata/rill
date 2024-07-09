@@ -71,7 +71,7 @@ default_comparison:
     await expect(page.getByText("Last 2 Weeks")).toBeVisible();
     // Data has changed as well
     await expect(page.getByText("Total rows 11.2k -4.4k -28%")).toBeVisible();
-    await expect(page.getByText("Facebook 2.9k -29%")).toBeVisible();
+    await expect(page.getByText("Facebook 2.9k -1.2k -29%")).toBeVisible();
   });
 
   test("default_comparison", async ({ page }) => {
@@ -182,7 +182,7 @@ available_time_ranges:
     ).not.toBeVisible();
     // Assert data has changed
     await expect(page.getByText("Total rows 272 -18 -6%")).toBeVisible();
-    await expect(page.getByText("Facebook 68 -26%")).toBeVisible();
+    await expect(page.getByText("Facebook 68 -24 -26%")).toBeVisible();
 
     // Select Last 5 days
     await interactWithTimeRangeMenu(page, async () => {
@@ -191,7 +191,7 @@ available_time_ranges:
     // Assert data has changed
     await expect(page.getByText("Total rows 5.6k +16 ~0%")).toBeVisible();
     await page.pause();
-    await expect(page.getByText("Facebook 1.5k -2%")).toBeVisible();
+    await expect(page.getByText("Facebook 1.5k -25 -2%")).toBeVisible();
 
     // Open the time comparison
     await page.getByLabel("Select time comparison option").click();
@@ -209,7 +209,7 @@ available_time_ranges:
     ).not.toBeVisible();
     // Assert data has changed
     await expect(page.getByText("Total rows 5.6k -23 ~0%")).toBeVisible();
-    await expect(page.getByText("Facebook 1.5k ~0%")).toBeVisible();
+    await expect(page.getByText("Facebook 1.5k -6 ~0%")).toBeVisible();
   });
 });
 

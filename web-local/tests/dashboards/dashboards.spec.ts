@@ -211,12 +211,10 @@ test.describe("dashboard", () => {
     });
 
     // Check number
-    await expect(
-      page.getByText("Total records 100.0k", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Total records 100.0k")).toBeVisible();
 
     // Filter to Facebook via leaderboard
-    await page.getByRole("button", { name: "Facebook 19.3k" }).click();
+    await page.getByRole("row", { name: "Facebook 19.3k" }).click();
 
     await page.waitForSelector("text=Publisher Facebook");
 
@@ -226,9 +224,7 @@ test.describe("dashboard", () => {
     await page.getByText("Exclude Publisher Facebook").click();
 
     // Check number
-    await expect(
-      page.getByText("Total records 80.7k", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Total records 80.7k")).toBeVisible();
 
     // Clear the filter from filter bar
     await page.getByLabel("View filter").getByLabel("Remove").click();
@@ -237,17 +233,13 @@ test.describe("dashboard", () => {
     await page.getByRole("row", { name: "google.com 15.1k" }).click();
 
     // Check number
-    await expect(
-      page.getByText("Total records 15.1k", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Total records 15.1k")).toBeVisible();
 
     // Clear all filters button
     await page.getByRole("button", { name: "Clear filters" }).click();
 
     // Check number
-    await expect(
-      page.getByText("Total records 100.0k", { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Total records 100.0k")).toBeVisible();
 
     // TODO
     //    Change time range to last 6 hours
