@@ -67,7 +67,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
-	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, inst, opts.UserAttributes, opts.ForExport)
+	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, inst, opts.Claims.UserAttributes, opts.ForExport)
 	if err != nil {
 		return nil, err
 	}

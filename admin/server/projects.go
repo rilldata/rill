@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -146,12 +147,14 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	var attr map[string]any
-	var security *runtimev1.MetricsViewSpec_SecurityV2
+	var rules []*runtimev1.SecurityRule
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	} else if claims.OwnerType() == auth.OwnerTypeService {
+		attr = map[string]any{"admin": true}
 	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 		if !ok {
@@ -160,21 +163,45 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 		attr = mdl.Attributes
 
-		security = &runtimev1.MetricsViewSpec_SecurityV2{
-			Access: fmt.Sprintf("'{{ .self.name }}'=%s", duckdbsql.EscapeStringValue(mdl.MetricsView)),
-		}
+		// Deny access to all resources except themes and mdl.MetricsView
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf(
+						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ .self.name }}'=%s)",
+						runtime.ResourceKindTheme,
+						runtime.ResourceKindMetricsView,
+						duckdbsql.EscapeStringValue(mdl.MetricsView),
+					),
+					Allow: false,
+				},
+			},
+		})
+
 		if mdl.MetricsViewFilterJSON != "" {
 			expr := &runtimev1.Expression{}
 			err := protojson.Unmarshal([]byte(mdl.MetricsViewFilterJSON), expr)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
 			}
-			security.QueryFilter = expr
+
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_RowFilter{
+					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Expression: expr,
+					},
+				},
+			})
 		}
+
 		if len(mdl.MetricsViewFields) > 0 {
-			security.Include = append(security.Include, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
-				Condition: "true",
-				Names:     mdl.MetricsViewFields,
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_FieldAccess{
+					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Fields: mdl.MetricsViewFields,
+						Allow:  true,
+					},
+				},
 			})
 		}
 	}
@@ -198,8 +225,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				runtimeauth.ReadAPI,
 			},
 		},
-		Attributes: attr,
-		Security:   security,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
@@ -604,7 +631,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	return &adminv1.UpdateProjectVariablesResponse{Variables: proj.ProdVariables}, nil
 }
 
-func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
+func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListProjectMemberUsersRequest) (*adminv1.ListProjectMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -636,12 +663,12 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.Member, len(members))
+	dtos := make([]*adminv1.MemberUser, len(members))
 	for i, member := range members {
-		dtos[i] = memberToPB(member)
+		dtos[i] = memberUserToPB(member)
 	}
 
-	return &adminv1.ListProjectMembersResponse{
+	return &adminv1.ListProjectMemberUsersResponse{
 		Members:       dtos,
 		NextPageToken: nextToken,
 	}, nil
@@ -691,7 +718,7 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 	}, nil
 }
 
-func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
+func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProjectMemberUserRequest) (*adminv1.AddProjectMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -768,7 +795,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		return &adminv1.AddProjectMemberResponse{
+		return &adminv1.AddProjectMemberUserResponse{
 			PendingSignup: true,
 		}, nil
 	}
@@ -791,12 +818,12 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddProjectMemberResponse{
+	return &adminv1.AddProjectMemberUserResponse{
 		PendingSignup: false,
 	}, nil
 }
 
-func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
+func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.RemoveProjectMemberUserRequest) (*adminv1.RemoveProjectMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -833,7 +860,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return &adminv1.RemoveProjectMemberResponse{}, nil
+		return &adminv1.RemoveProjectMemberUserResponse{}, nil
 	}
 
 	// The caller must either have ManageProjectMembers permission or be the user being removed.
@@ -849,10 +876,10 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RemoveProjectMemberResponse{}, nil
+	return &adminv1.RemoveProjectMemberUserResponse{}, nil
 }
 
-func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
+func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetProjectMemberUserRoleRequest) (*adminv1.SetProjectMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -891,7 +918,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return &adminv1.SetProjectMemberRoleResponse{}, nil
+		return &adminv1.SetProjectMemberUserRoleResponse{}, nil
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
@@ -899,7 +926,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.SetProjectMemberRoleResponse{}, nil
+	return &adminv1.SetProjectMemberUserRoleResponse{}, nil
 }
 
 func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {

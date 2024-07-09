@@ -352,13 +352,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/members:
     get:
-      summary: ListOrganizationMembers lists all the org members
-      operationId: AdminService_ListOrganizationMembers
+      summary: ListOrganizationMemberUsers lists all the org members
+      operationId: AdminService_ListOrganizationMemberUsers
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListOrganizationMembersResponse'
+            $ref: '#/definitions/v1ListOrganizationMemberUsersResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -380,13 +380,13 @@ paths:
       tags:
         - AdminService
     post:
-      summary: AddOrganizationMember lists all the org members
-      operationId: AdminService_AddOrganizationMember
+      summary: AddOrganizationMemberUser adds a user to the organization
+      operationId: AdminService_AddOrganizationMemberUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1AddOrganizationMemberResponse'
+            $ref: '#/definitions/v1AddOrganizationMemberUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -410,13 +410,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/members/{email}:
     delete:
-      summary: RemoveOrganizationMember removes member from the organization
-      operationId: AdminService_RemoveOrganizationMember
+      summary: RemoveOrganizationMemberUser removes member from the organization
+      operationId: AdminService_RemoveOrganizationMemberUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RemoveOrganizationMemberResponse'
+            $ref: '#/definitions/v1RemoveOrganizationMemberUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -437,13 +437,13 @@ paths:
       tags:
         - AdminService
     put:
-      summary: SetOrganizationMemberRole sets the role for the member
-      operationId: AdminService_SetOrganizationMemberRole
+      summary: SetOrganizationMemberUserRole sets the role for the member
+      operationId: AdminService_SetOrganizationMemberUserRole
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SetOrganizationMemberRoleResponse'
+            $ref: '#/definitions/v1SetOrganizationMemberUserRoleResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -484,6 +484,39 @@ paths:
         - name: organization
           in: path
           required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/project/{project}/usergroups:
+    get:
+      summary: ListProjectMemberUsergroups lists the org's user groups
+      operationId: AdminService_ListProjectMemberUsergroups
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListProjectMemberUsergroupsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
           type: string
       tags:
         - AdminService
@@ -844,13 +877,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/members:
     get:
-      summary: ListProjectMembers lists all the project members
-      operationId: AdminService_ListProjectMembers
+      summary: ListProjectMemberUsers lists all the project members
+      operationId: AdminService_ListProjectMemberUsers
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1ListProjectMembersResponse'
+            $ref: '#/definitions/v1ListProjectMemberUsersResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -876,13 +909,13 @@ paths:
       tags:
         - AdminService
     post:
-      summary: AddProjectMember adds a member to the project
-      operationId: AdminService_AddProjectMember
+      summary: AddProjectMemberUser adds a member to the project
+      operationId: AdminService_AddProjectMemberUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1AddProjectMemberResponse'
+            $ref: '#/definitions/v1AddProjectMemberUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -910,13 +943,13 @@ paths:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/members/{email}:
     delete:
-      summary: RemoveProjectMember removes member from the project
-      operationId: AdminService_RemoveProjectMember
+      summary: RemoveProjectMemberUser removes member from the project
+      operationId: AdminService_RemoveProjectMemberUser
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1RemoveProjectMemberResponse'
+            $ref: '#/definitions/v1RemoveProjectMemberUserResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -937,13 +970,13 @@ paths:
       tags:
         - AdminService
     put:
-      summary: SetProjectMemberRole sets the role for the member
-      operationId: AdminService_SetProjectMemberRole
+      summary: SetProjectMemberUserRole sets the role for the member
+      operationId: AdminService_SetProjectMemberUserRole
       responses:
         "200":
           description: A successful response.
           schema:
-            $ref: '#/definitions/v1SetProjectMemberRoleResponse'
+            $ref: '#/definitions/v1SetProjectMemberUserRoleResponse'
         default:
           description: An unexpected error response.
           schema:
@@ -1245,6 +1278,104 @@ paths:
                   If empty, all dimensions and measures are accessible.
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
+    delete:
+      summary: RemoveProjectMemberUsergroup revokes the project-level role for the user group
+      operationId: AdminService_RemoveProjectMemberUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveProjectMemberUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: AddProjectMemberUsergroupRole adds the role for the user group
+      operationId: AdminService_AddProjectMemberUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddProjectMemberUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
+    put:
+      summary: SetProjectMemberUsergroupRole sets the role for the user group
+      operationId: AdminService_SetProjectMemberUsergroupRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetProjectMemberUsergroupRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/users/search:
     get:
       summary: SearchProjectUsers returns users who has access to to a project (including org members that have access through a usergroup)
@@ -1365,6 +1496,359 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/usergroups:
+    get:
+      summary: ListOrganizationMemberUsergroups lists the org's user groups
+      operationId: AdminService_ListOrganizationMemberUsergroups
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListOrganizationMemberUsergroupsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: CreateUsergroup creates a user group in the organization
+      operationId: AdminService_CreateUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1CreateUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/usergroups/{usergroup}:
+    get:
+      summary: GetUsergroups returns the user group details
+      operationId: AdminService_GetUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+    delete:
+      summary: DeleteUsergroup deletes the user group from the organization
+      operationId: AdminService_DeleteUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DeleteUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: RenameUsergroup renames the user group
+      operationId: AdminService_RenameUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RenameUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              name:
+                type: string
+      tags:
+        - AdminService
+    put:
+      summary: EditUsergroup renames the user group
+      operationId: AdminService_EditUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1EditUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              description:
+                type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/usergroups/{usergroup}/members:
+    get:
+      summary: ListUsergroupMemberUsers lists all the user group members
+      operationId: AdminService_ListUsergroupMemberUsers
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListUsergroupMemberUsersResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/usergroups/{usergroup}/members/{email}:
+    delete:
+      summary: RemoveUsergroupMemberUser removes member from the user group
+      operationId: AdminService_RemoveUsergroupMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveUsergroupMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    put:
+      summary: AddUsergroupMemberUser adds a member to the user group
+      operationId: AdminService_AddUsergroupMemberUser
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddUsergroupMemberUserResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: email
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/usergroups/{usergroup}/role:
+    delete:
+      summary: RemoveOrganizationMemberUsergroup revokes the organization-level role for the user group
+      operationId: AdminService_RemoveOrganizationMemberUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RemoveOrganizationMemberUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+    post:
+      summary: AddOrganizationMemberUsergroupRole adds the role for the user group
+      operationId: AdminService_AddOrganizationMemberUsergroup
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1AddOrganizationMemberUsergroupResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
+    put:
+      summary: SetOrganizationMemberUsergroupRole sets the role for the user group
+      operationId: AdminService_SetOrganizationMemberUsergroupRole
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SetOrganizationMemberUsergroupRoleResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: usergroup
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/whitelisted:
@@ -2551,16 +3035,22 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/protobufAny'
-  v1AddOrganizationMemberResponse:
+  v1AddOrganizationMemberUserResponse:
     type: object
     properties:
       pendingSignup:
         type: boolean
-  v1AddProjectMemberResponse:
+  v1AddOrganizationMemberUsergroupResponse:
+    type: object
+  v1AddProjectMemberUserResponse:
     type: object
     properties:
       pendingSignup:
         type: boolean
+  v1AddProjectMemberUsergroupResponse:
+    type: object
+  v1AddUsergroupMemberUserResponse:
+    type: object
   v1AlertOptions:
     type: object
     properties:
@@ -2747,6 +3237,8 @@ definitions:
     properties:
       service:
         $ref: '#/definitions/v1Service'
+  v1CreateUsergroupResponse:
+    type: object
   v1CreateWhitelistedDomainResponse:
     type: object
   v1DeleteAlertResponse:
@@ -2765,6 +3257,8 @@ definitions:
     properties:
       service:
         $ref: '#/definitions/v1Service'
+  v1DeleteUsergroupResponse:
+    type: object
   v1Deployment:
     type: object
     properties:
@@ -2802,6 +3296,8 @@ definitions:
   v1EditAlertResponse:
     type: object
   v1EditReportResponse:
+    type: object
+  v1EditUsergroupResponse:
     type: object
   v1ExportFormat:
     type: string
@@ -2996,6 +3492,13 @@ definitions:
     properties:
       user:
         $ref: '#/definitions/v1User'
+  v1GetUsergroupResponse:
+    type: object
+    properties:
+      usergroup:
+        $ref: '#/definitions/v1Usergroup'
+      nextPageToken:
+        type: string
   v1GithubPermission:
     type: string
     enum:
@@ -3058,14 +3561,24 @@ definitions:
           $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
-  v1ListOrganizationMembersResponse:
+  v1ListOrganizationMemberUsergroupsResponse:
     type: object
     properties:
       members:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Member'
+          $ref: '#/definitions/v1MemberUsergroup'
+      nextPageToken:
+        type: string
+  v1ListOrganizationMemberUsersResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUser'
       nextPageToken:
         type: string
   v1ListOrganizationsResponse:
@@ -3088,14 +3601,24 @@ definitions:
           $ref: '#/definitions/v1UserInvite'
       nextPageToken:
         type: string
-  v1ListProjectMembersResponse:
+  v1ListProjectMemberUsergroupsResponse:
     type: object
     properties:
       members:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1Member'
+          $ref: '#/definitions/v1MemberUsergroup'
+      nextPageToken:
+        type: string
+  v1ListProjectMemberUsersResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUser'
       nextPageToken:
         type: string
   v1ListProjectWhitelistedDomainsResponse:
@@ -3148,6 +3671,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1User'
+  v1ListUsergroupMemberUsersResponse:
+    type: object
+    properties:
+      members:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1MemberUser'
+      nextPageToken:
+        type: string
   v1ListWhitelistedDomainsResponse:
     type: object
     properties:
@@ -3186,7 +3719,7 @@ definitions:
         type: array
         items:
           type: string
-  v1Member:
+  v1MemberUser:
     type: object
     properties:
       userId:
@@ -3194,6 +3727,21 @@ definitions:
       userEmail:
         type: string
       userName:
+        type: string
+      roleName:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
+  v1MemberUsergroup:
+    type: object
+    properties:
+      groupId:
+        type: string
+      groupName:
         type: string
       roleName:
         type: string
@@ -3415,13 +3963,21 @@ definitions:
     type: object
   v1RemoveBookmarkResponse:
     type: object
-  v1RemoveOrganizationMemberResponse:
+  v1RemoveOrganizationMemberUserResponse:
     type: object
-  v1RemoveProjectMemberResponse:
+  v1RemoveOrganizationMemberUsergroupResponse:
+    type: object
+  v1RemoveProjectMemberUserResponse:
+    type: object
+  v1RemoveProjectMemberUsergroupResponse:
     type: object
   v1RemoveProjectWhitelistedDomainResponse:
     type: object
+  v1RemoveUsergroupMemberUserResponse:
+    type: object
   v1RemoveWhitelistedDomainResponse:
+    type: object
+  v1RenameUsergroupResponse:
     type: object
   v1ReportOptions:
     type: object
@@ -3530,9 +4086,13 @@ definitions:
       expiresOn:
         type: string
         format: date-time
-  v1SetOrganizationMemberRoleResponse:
+  v1SetOrganizationMemberUserRoleResponse:
     type: object
-  v1SetProjectMemberRoleResponse:
+  v1SetOrganizationMemberUsergroupRoleResponse:
+    type: object
+  v1SetProjectMemberUserRoleResponse:
+    type: object
+  v1SetProjectMemberUsergroupRoleResponse:
     type: object
   v1SetSuperuserRequest:
     type: object
@@ -3792,6 +4352,21 @@ definitions:
       singleuserOrgs:
         type: integer
         format: int64
+  v1Usergroup:
+    type: object
+    properties:
+      groupId:
+        type: string
+      groupName:
+        type: string
+      groupDescription:
+        type: string
+      createdOn:
+        type: string
+        format: date-time
+      updatedOn:
+        type: string
+        format: date-time
   v1VirtualFile:
     type: object
     properties:

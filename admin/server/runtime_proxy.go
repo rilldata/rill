@@ -64,6 +64,8 @@ func (s *Server) runtimeProxyForOrgAndProject(w http.ResponseWriter, r *http.Req
 			if err != nil {
 				return httputil.Error(http.StatusInternalServerError, err)
 			}
+		} else if claims.OwnerType() == auth.OwnerTypeService {
+			attr = map[string]any{"admin": true}
 		}
 
 		jwt, err = s.issuer.NewToken(runtimeauth.TokenOptions{

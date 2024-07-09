@@ -1,7 +1,7 @@
+import { writeFile } from "node:fs/promises";
+import * as prettier from "prettier";
 import ts from "typescript";
 import orvalConfig from "../../orval.config";
-import * as prettier from "prettier";
-import { writeFile } from "node:fs/promises";
 
 /*
  * Orval is not generating code for POST requests as expected.
@@ -46,6 +46,13 @@ import { writeFile } from "node:fs/promises";
  * };
  */
 
+enum Service {
+  QUERY = "query",
+  RUNTIME = "runtime",
+}
+
+let service: Service;
+
 const Operations: Record<
   string,
   {
@@ -57,6 +64,17 @@ const Operations: Record<
 > = (orvalConfig as any).api.output.override.operations;
 
 async function transformFile(fileName: string) {
+  switch (fileName.split("/").pop()) {
+    case "query-service.ts":
+      service = Service.QUERY;
+      break;
+    case "runtime-service.ts":
+      service = Service.RUNTIME;
+      break;
+    default:
+      throw new Error(`Unsupported service for file: ${fileName}`);
+  }
+
   const program = ts.createProgram([fileName], {
     moduleResolution: ts.ModuleResolutionKind.Node10,
   });
@@ -84,6 +102,12 @@ async function transformFile(fileName: string) {
   await writeFile(fileName, addBackBlankLines(newCode));
 }
 
+async function transformFiles(fileNames: string[]) {
+  for (const fileName of fileNames) {
+    await transformFile(fileName);
+  }
+}
+
 function addSignalTransformer(context: ts.TransformationContext) {
   return (rootNode: ts.Node) => {
     function visit(node: ts.Node): ts.Node {
@@ -95,7 +119,7 @@ function addSignalTransformer(context: ts.TransformationContext) {
         // ignore non identifier names
         !ts.isIdentifier(node.name) ||
         // ignore methods that are not the query function
-        !node.name.escapedText.toString().startsWith("queryService")
+        !node.name.escapedText.toString().startsWith(`${service}Service`)
       ) {
         return node;
       }
@@ -181,8 +205,12 @@ function addSignalTransformer(context: ts.TransformationContext) {
 
 function isOverriddenPostQuery(name: string) {
   const operationName =
-    "QueryService_" +
-    name.replace(/queryService(.)/, (_, c: string) => c.toUpperCase());
+    service.charAt(0).toUpperCase() +
+    service.slice(1) +
+    "Service_" +
+    name.replace(new RegExp(service + "Service(.)"), (_, c: string) =>
+      c.toUpperCase(),
+    );
   return Operations[operationName]?.query?.signal;
 }
 
@@ -204,4 +232,4 @@ function addBackBlankLines(code: string) {
   return code.replace(/^\s*\/\/__Dummy__$/gm, () => "");
 }
 
-transformFile(process.argv[2]).catch(console.error);
+transformFiles(process.argv.slice(2)).catch(console.error);

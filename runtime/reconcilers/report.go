@@ -306,13 +306,17 @@ func (r *ReportReconciler) executeAllWrapped(ctx context.Context, self *runtimev
 	// Evaluate intervals
 	ts, err := calculateReportExecutionTimes(rep, watermark, previousWatermark)
 	if err != nil {
-		// This should not usually error
+		skipErr := &skipError{}
+		if errors.As(err, skipErr) {
+			r.C.Logger.Info("Skipped report", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration))
+			return false, nil
+		}
 		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err))
 		return false, err
 	}
-
 	if len(ts) == 0 {
-		r.C.Logger.Debug("Skipped report because watermark is unchanged or has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", rep.Spec.IntervalsIsoDuration))
+		// This should never happen
+		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err))
 		return false, nil
 	}
 
@@ -523,12 +527,13 @@ func (r *ReportReconciler) computeInheritedWatermark(ctx context.Context, refs [
 
 // calculateReportExecutionTimes calculates the execution times for a report, taking into consideration the report's intervals configuration and previous executions.
 // If the report is not configured to run on intervals, it will return a slice containing only the current watermark.
+// If the alert should not be executed, it returns a skipError explaining why.
 func calculateReportExecutionTimes(r *runtimev1.Report, watermark, previousWatermark time.Time) ([]time.Time, error) {
 	// If the watermark is unchanged, skip the check.
 	// NOTE: It might make sense to make this configurable in the future, but the use cases seem limited.
 	// The watermark can only be unchanged if watermark="inherit" and since that indicates watermarks can be trusted, why check for the same watermark?
 	if watermark.Equal(previousWatermark) {
-		return nil, nil
+		return nil, skipError{reason: "watermark is unchanged"}
 	}
 
 	// If the report is not configured to run on intervals, check it just for the current watermark.
@@ -579,7 +584,7 @@ func calculateReportExecutionTimes(r *runtimev1.Report, watermark, previousWater
 
 	// Skip if end isn't past the previous watermark (unless we're supposed to check unclosed intervals)
 	if !r.Spec.IntervalsCheckUnclosed && !end.After(previousWatermark) {
-		return nil, nil
+		return nil, skipError{reason: "watermark has not advanced by a full interval"}
 	}
 
 	// Set a limit on the number of intervals to check
