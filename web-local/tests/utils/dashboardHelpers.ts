@@ -1,4 +1,4 @@
-import { expect, type Locator } from "@playwright/test";
+import { expect } from "@playwright/test";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
 import {
