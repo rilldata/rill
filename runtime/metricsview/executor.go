@@ -3,7 +3,6 @@ package metricsview
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"time"
 
@@ -200,8 +199,6 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		if err != nil {
 			return nil, false, err
 		}
-
-		log.Printf("Query: %s\n", sql)
 
 		res, err = e.olap.Execute(ctx, &drivers.Statement{
 			Query:            sql,
