@@ -99,9 +99,6 @@ func (a *Authenticator) ExchangeCodeForToken(code string) (string, error) {
 	if resp.StatusCode != http.StatusOK {
 		// read body to get the error message
 		body, _ := io.ReadAll(resp.Body)
-		if body == nil {
-			return "", fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
-		}
 		return "", fmt.Errorf("unexpected status code: %d, status: %s, body: %s", resp.StatusCode, resp.Status, string(body))
 	}
 
