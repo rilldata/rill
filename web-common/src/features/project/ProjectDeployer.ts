@@ -69,7 +69,10 @@ export class ProjectDeployer {
       return false;
     }
 
-    if (validation.isGithubRepo && !validation.isGithubConnected) {
+    if (
+      validation.isGithubRepo &&
+      (!validation.isGithubConnected || !validation.isGithubRepoAccessGranted)
+    ) {
       // if the project is a github repo and not connected to github then redirect to grant access
       window.open(`${validation.githubGrantAccessUrl}`, "__target");
       this.deploying.set(true);

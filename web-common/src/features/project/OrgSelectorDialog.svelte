@@ -9,7 +9,6 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
-  import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
 
   export let open = false;
   export let orgs: string[];

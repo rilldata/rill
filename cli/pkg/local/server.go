@@ -161,6 +161,21 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	}
 	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
 
+	isGithubRepo := true
+	githubRemoteFound := true
+	repoAccess := false
+	// check if project is a git repo
+	remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+	if err != nil {
+		if errors.Is(err, git.ErrRepositoryNotExists) {
+			isGithubRepo = false
+		} else if errors.Is(err, gitutil.ErrGitRemoteNotFound) {
+			githubRemoteFound = false
+		} else {
+			return nil, err
+		}
+	}
+
 	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 	if err != nil {
 		return nil, err
@@ -176,8 +191,8 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			GithubUserName:                "",
 			GithubUserPermission:          adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED,
 			GithubOrganizationPermissions: nil,
-			IsGithubRepo:                  false,
-			IsGithubRemoteFound:           false,
+			IsGithubRepo:                  isGithubRepo,
+			IsGithubRemoteFound:           githubRemoteFound,
 			IsGithubRepoAccessGranted:     false,
 			GithubUrl:                     "",
 			HasUncommittedChanges:         nil,
@@ -200,21 +215,6 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			}
 		} else {
 			rillOrgExistsAsGitUserName = true
-		}
-	}
-
-	isGithubRepo := true
-	githubRemoteFound := true
-	repoAccess := false
-	// check if project is a git repo
-	remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-	if err != nil {
-		if errors.Is(err, git.ErrRepositoryNotExists) {
-			isGithubRepo = false
-		} else if errors.Is(err, gitutil.ErrGitRemoteNotFound) {
-			githubRemoteFound = false
-		} else {
-			return nil, err
 		}
 	}
 
