@@ -1,25 +1,26 @@
 package metricsview
 
-// rewriteComparisonJoins rewrites the AST to use a LEFT or RIGHT join instead of a FULL join when safe given the query's sorting.
-func (e *Executor) rewriteComparisonJoins(ast *AST) {
+// rewriteApproxComparisons rewrites the AST to use a LEFT or RIGHT join instead of a FULL joins for comparisons,
+// which enables more efficient query execution at the cost of some accuracy.
+func (e *Executor) rewriteApproxComparisons(ast *AST) {
 	if !e.instanceCfg.MetricsApproximateComparisons {
 		return
 	}
 
-	_ = e.rewriteComparisonJoinsWalk(ast, ast.Root)
+	_ = e.rewriteApproxComparisonsWalk(ast, ast.Root)
 }
 
-func (e *Executor) rewriteComparisonJoinsWalk(a *AST, n *SelectNode) bool {
+func (e *Executor) rewriteApproxComparisonsWalk(a *AST, n *SelectNode) bool {
 	// If n is a comparison node, rewrite it
 	var rewrote bool
 	if n.JoinComparisonSelect != nil {
-		rewrote = e.rewriteComparisonNode(a, n)
+		rewrote = e.rewriteApproxComparisonNode(a, n)
 	}
 
 	// Recursively walk the base select.
 	// NOTE: Probably doesn't matter, but should we walk the left join and comparison sub-selects?
 	if n.FromSelect != nil {
-		rewroteNested := e.rewriteComparisonJoinsWalk(a, n.FromSelect)
+		rewroteNested := e.rewriteApproxComparisonsWalk(a, n.FromSelect)
 		rewrote = rewrote || rewroteNested
 	}
 
@@ -31,15 +32,12 @@ func (e *Executor) rewriteComparisonJoinsWalk(a *AST, n *SelectNode) bool {
 	return rewrote
 }
 
-func (e *Executor) rewriteComparisonNode(a *AST, n *SelectNode) bool {
+func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 	// Can only rewrite when sorting by exactly one field.
 	if len(a.Root.OrderBy) != 1 {
 		return false
 	}
 	sortField := a.Root.OrderBy[0]
-
-	// We also support doing approximate comparisons to support further optimizations when the accuracy of comparisons sorting is not critical.
-	approx := e.instanceCfg.MetricsApproximateComparisons
 
 	// Find out what we're sorting by
 	var sortDim, sortBase, sortComparison, sortDelta bool
@@ -85,22 +83,26 @@ func (e *Executor) rewriteComparisonNode(a *AST, n *SelectNode) bool {
 	}
 	order := []OrderFieldNode{sortField}
 
+	// Note: All these cases are approximations in different ways.
 	if sortBase {
-		// We're sorting by a measure in FromSelect. We can do a LEFT JOIN and push down the order/limit to it.
+		// We're sorting by a measure in FromSelect. We do a LEFT JOIN and push down the order/limit to it.
+		// This should remain correct when the limit is lower than the number of rows in the base query.
+		// The approximate part here is when the base query returns fewer rows than the limit, then dimension values that are only in the comparison query will be missing.
 		n.JoinComparisonType = JoinTypeLeft
 		n.FromSelect.OrderBy = order
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 	} else if sortComparison {
 		// We're sorting by a measure in JoinComparisonSelect. We can do a RIGHT JOIN and push down the order/limit to it.
+		// This should remain correct when the limit is lower than the number of rows in the comparison query.
+		// The approximate part here is when the comparison query returns fewer rows than the limit, then dimension values that are only in the base query will be missing.
 		n.JoinComparisonType = JoinTypeRight
 		n.JoinComparisonSelect.OrderBy = order
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
-	} else if approx && sortDim {
-		// We're sorting by a dimension.
-		// For correct results, we need to do a FULL JOIN since a dimension value may only be present in one of the base or comparison sub-queries.
-		// But for approximate results, we can do a LEFT JOIN that only returns values present in the base query.
+	} else if sortDim {
+		// We're sorting by a dimension. We do a LEFT JOIN that only returns values present in the base query.
+		// The approximate part here is that dimension values only present in the comparison query will be missing.
 		n.JoinComparisonType = JoinTypeLeft
 		n.FromSelect.OrderBy = order
 		n.FromSelect.Limit = a.Root.Limit
