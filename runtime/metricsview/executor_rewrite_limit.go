@@ -4,8 +4,8 @@ import "fmt"
 
 // rewriteQueryLimit rewrites the query limit to enforce system limits.
 // For unlimited queries, it adds a limit just above the system limit. The result reader should then error if the cap is exceeded.
-func (e *Executor) rewriteQueryLimit(qry *Query, export bool) error {
-	limitCap := e.queryLimitCap(export)
+func (e *Executor) rewriteQueryLimit(qry *Query) error {
+	limitCap := e.instanceCfg.InteractiveSQLRowLimit
 
 	// No magic if there is no cap
 	if limitCap == 0 {
@@ -25,12 +25,4 @@ func (e *Executor) rewriteQueryLimit(qry *Query, export bool) error {
 	}
 
 	return nil
-}
-
-// queryLimitCap returns the system limit for the given query type.
-func (e *Executor) queryLimitCap(export bool) int64 {
-	if export {
-		return e.instanceCfg.DownloadRowLimit
-	}
-	return e.instanceCfg.InteractiveSQLRowLimit
 }

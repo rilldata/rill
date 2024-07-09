@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/c2h5oh/datasize"
 	"github.com/mitchellh/mapstructure"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 )
@@ -71,11 +72,8 @@ type Instance struct {
 // For example, a variable "rill.stage_changes=true" would set the StageChanges field to true.
 // InstanceConfig should only be used for config that the user is allowed to change dynamically at runtime.
 type InstanceConfig struct {
-	// DownloadRowLimit is the row limit for interactive data exports. If set to 0, there is no limit.
-	DownloadRowLimit int64 `mapstructure:"rill.download_row_limit"`
-	// PivotCellLimit is the maximum number of cells allowed in a single pivot query.
-	// Note that it does not limit the UI's pivot table because it paginates the requests.
-	PivotCellLimit int64 `mapstructure:"rill.pivot_cell_limit"`
+	// DownloadLimitBytes is the limit on size of exported file. If set to 0, there is no limit.
+	DownloadLimitBytes int64 `mapstructure:"rill.download_limit_bytes"`
 	// InteractiveSQLRowLimit is the row limit for interactive SQL queries. It does not apply to exports of SQL queries. If set to 0, there is no limit.
 	InteractiveSQLRowLimit int64 `mapstructure:"rill.interactive_sql_row_limit"`
 	// StageChanges indicates whether to keep previously ingested tables for sources/models, and only override them if ingestion of a new table is successful.
@@ -125,8 +123,7 @@ func (i *Instance) ResolveVariables() map[string]string {
 func (i *Instance) Config() (InstanceConfig, error) {
 	// Default config
 	res := InstanceConfig{
-		DownloadRowLimit:                  200_000,
-		PivotCellLimit:                    2_000_000,
+		DownloadLimitBytes:                int64(datasize.MB * 128),
 		InteractiveSQLRowLimit:            10_000,
 		StageChanges:                      true,
 		ModelDefaultMaterialize:           false,

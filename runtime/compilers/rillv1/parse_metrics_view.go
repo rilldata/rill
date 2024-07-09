@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -58,19 +57,8 @@ type MetricsViewYAML struct {
 		Ignore              bool   `yaml:"ignore"`
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
-	DefaultMeasures []string `yaml:"default_measures"`
-	Security        *struct {
-		Access    string `yaml:"access"`
-		RowFilter string `yaml:"row_filter"`
-		Include   []*struct {
-			Names     []string
-			Condition string `yaml:"if"`
-		}
-		Exclude []*struct {
-			Names     []string
-			Condition string `yaml:"if"`
-		}
-	}
+	DefaultMeasures   []string `yaml:"default_measures"`
+	Security          *MetricsViewSecurityPolicyYAML
 	DefaultComparison struct {
 		Mode      string `yaml:"mode"`
 		Dimension string `yaml:"dimension"`
@@ -283,6 +271,260 @@ func (f *MetricsViewMeasureWindow) UnmarshalYAML(v *yaml.Node) error {
 	}
 
 	return nil
+}
+
+type MetricsViewSecurityPolicyYAML struct {
+	Access    string `yaml:"access"`
+	RowFilter string `yaml:"row_filter"`
+	Include   []*struct {
+		Condition string    `yaml:"if"`
+		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
+	}
+	Exclude []*struct {
+		Condition string    `yaml:"if"`
+		Names     yaml.Node // []string or "*" (will be parsed with parseNamesYAML)
+	}
+	Rules []*MetricsViewSecurityRuleYAML `yaml:"rules"`
+}
+
+func (p *MetricsViewSecurityPolicyYAML) Proto() ([]*runtimev1.SecurityRule, error) {
+	var rules []*runtimev1.SecurityRule
+	if p == nil {
+		return rules, nil
+	}
+
+	if p.Access != "" {
+		tmp, err := ResolveTemplate(p.Access, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
+		}
+		_, err = EvaluateBoolExpression(tmp)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
+		}
+
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: p.Access,
+					Allow:     true,
+				},
+			},
+		})
+	} else {
+		// If "security:" is present, but "access:" is not, default to deny all
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Allow: false,
+				},
+			},
+		})
+	}
+
+	if p.RowFilter != "" {
+		_, err := ResolveTemplate(p.RowFilter, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
+		}
+
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					Sql: p.RowFilter,
+				},
+			},
+		})
+	}
+
+	for _, inc := range p.Include {
+		if inc == nil {
+			continue
+		}
+
+		tmp, err := ResolveTemplate(inc.Condition, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
+		}
+		_, err = EvaluateBoolExpression(tmp)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'if' condition expression error: %w`, err)
+		}
+
+		names, all, err := parseNamesYAML(inc.Names)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'include' names: %w`, err)
+		}
+
+		if all && len(names) > 0 {
+			return nil, fmt.Errorf(`invalid 'security': 'include' cannot have both 'all: true' and specific 'names' fields`)
+		} else if !all && len(names) == 0 {
+			return nil, fmt.Errorf(`invalid 'security': 'include' must have 'all: true' or a valid 'names' list`)
+		}
+
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Condition: inc.Condition,
+					Allow:     true,
+					Fields:    names,
+					AllFields: all,
+				},
+			},
+		})
+	}
+
+	if len(p.Include) == 0 && len(p.Exclude) > 0 {
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Allow:     true,
+					AllFields: true,
+				},
+			},
+		})
+	}
+
+	for _, exc := range p.Exclude {
+		if exc == nil {
+			continue
+		}
+
+		tmp, err := ResolveTemplate(exc.Condition, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'if' condition templating is not valid: %w`, err)
+		}
+		_, err = EvaluateBoolExpression(tmp)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'if' condition expression error: %w`, err)
+		}
+
+		names, all, err := parseNamesYAML(exc.Names)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'security': 'exclude' names: %w`, err)
+		}
+
+		if all && len(names) > 0 {
+			return nil, fmt.Errorf(`invalid 'security': 'exclude' cannot have both 'all: true' and specific 'names' fields`)
+		} else if !all && len(names) == 0 {
+			return nil, fmt.Errorf(`invalid 'security': 'exclude' must have 'all: true' or a valid 'names' list`)
+		}
+
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Condition: exc.Condition,
+					Allow:     false,
+					Fields:    names,
+					AllFields: all,
+				},
+			},
+		})
+	}
+
+	for _, r := range p.Rules {
+		if r == nil {
+			continue
+		}
+
+		rule, err := r.Proto()
+		if err != nil {
+			return nil, err
+		}
+		rules = append(rules, rule)
+	}
+
+	return rules, nil
+}
+
+type MetricsViewSecurityRuleYAML struct {
+	Type   string
+	Action string
+	If     string
+	Names  []string
+	All    bool
+	SQL    string
+}
+
+func (r *MetricsViewSecurityRuleYAML) Proto() (*runtimev1.SecurityRule, error) {
+	condition := r.If
+	if condition != "" {
+		tmp, err := ResolveTemplate(condition, validationTemplateData)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'if': templating is not valid: %w`, err)
+		}
+		_, err = EvaluateBoolExpression(tmp)
+		if err != nil {
+			return nil, fmt.Errorf(`invalid 'if': expression error: %w`, err)
+		}
+	}
+
+	var allow *bool
+	switch r.Action {
+	case "allow":
+		tmp := true
+		allow = &tmp
+	case "deny":
+		tmp := false
+		allow = &tmp
+	default:
+		if r.Action != "" {
+			return nil, fmt.Errorf("invalid security rule action %q", r.Action)
+		}
+	}
+
+	switch r.Type {
+	case "access":
+		if allow == nil {
+			return nil, fmt.Errorf("invalid security rule of type %q: must specify an action", r.Type)
+		}
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: condition,
+					Allow:     *allow,
+				},
+			},
+		}, nil
+	case "field_access":
+		if allow == nil {
+			return nil, fmt.Errorf("invalid security rule of type %q: must specify an action", r.Type)
+		}
+
+		if r.All && len(r.Names) > 0 {
+			return nil, fmt.Errorf(`invalid security rule of type %q: cannot have both 'all: true' and specific 'names' fields`, r.Type)
+		} else if !r.All && len(r.Names) == 0 {
+			return nil, fmt.Errorf(`invalid security rule of type %q: must have 'all: true' or a valid 'names' list`, r.Type)
+		}
+
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_FieldAccess{
+				FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+					Condition: condition,
+					Allow:     *allow,
+					Fields:    r.Names,
+					AllFields: r.All,
+				},
+			},
+		}, nil
+	case "row_filter":
+		if allow != nil {
+			return nil, fmt.Errorf("invalid security rule of type %q: cannot specify an action", r.Type)
+		}
+		if r.SQL == "" {
+			return nil, fmt.Errorf("invalid security rule of type %q: must provide a 'sql' property", r.Type)
+		}
+		return &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_RowFilter{
+				RowFilter: &runtimev1.SecurityRuleRowFilter{
+					Condition: condition,
+					Sql:       r.SQL,
+				},
+			},
+		}, nil
+	default:
+		return nil, fmt.Errorf("invalid security rule type %q", r.Type)
+	}
 }
 
 var comparisonModesMap = map[string]runtimev1.MetricsViewSpec_ComparisonMode{
@@ -568,91 +810,9 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
-	if tmp.Security != nil {
-		templateData := TemplateData{
-			Environment: p.Environment,
-			User: map[string]interface{}{
-				"name":   "dummy",
-				"email":  "mock@example.org",
-				"domain": "example.org",
-				"groups": []interface{}{"all"},
-				"admin":  false,
-			},
-		}
-
-		if tmp.Security.Access != "" {
-			access, err := ResolveTemplate(tmp.Security.Access, templateData)
-			if err != nil {
-				return fmt.Errorf(`invalid 'security': 'access' templating is not valid: %w`, err)
-			}
-			_, err = EvaluateBoolExpression(access)
-			if err != nil {
-				return fmt.Errorf(`invalid 'security': 'access' expression error: %w`, err)
-			}
-		}
-
-		if tmp.Security.RowFilter != "" {
-			_, err := ResolveTemplate(tmp.Security.RowFilter, templateData)
-			if err != nil {
-				return fmt.Errorf(`invalid 'security': 'row_filter' templating is not valid: %w`, err)
-			}
-		}
-
-		if len(tmp.Security.Include) > 0 && len(tmp.Security.Exclude) > 0 {
-			return errors.New("invalid 'security': only one of 'include' and 'exclude' can be specified")
-		}
-		if tmp.Security.Include != nil {
-			for _, include := range tmp.Security.Include {
-				if include == nil || len(include.Names) == 0 || include.Condition == "" {
-					return fmt.Errorf("invalid 'security': 'include' fields must have a valid 'if' condition and 'names' list")
-				}
-				seen := make(map[string]bool)
-				for _, name := range include.Names {
-					lower := strings.ToLower(name)
-					if seen[lower] {
-						return fmt.Errorf("invalid 'security': 'include' property %q is duplicated", name)
-					}
-					seen[lower] = true
-					if _, ok := names[lower]; !ok {
-						return fmt.Errorf("invalid 'security': 'include' property %q does not exists in dimensions or measures list", name)
-					}
-				}
-				cond, err := ResolveTemplate(include.Condition, templateData)
-				if err != nil {
-					return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, include.Names, err)
-				}
-				_, err = EvaluateBoolExpression(cond)
-				if err != nil {
-					return fmt.Errorf(`invalid 'security': 'if' condition for field %q not evaluating to a boolean: %w`, include.Names, err)
-				}
-			}
-		}
-		if tmp.Security.Exclude != nil {
-			for _, exclude := range tmp.Security.Exclude {
-				if exclude == nil || len(exclude.Names) == 0 || exclude.Condition == "" {
-					return fmt.Errorf("invalid 'security': 'exclude' fields must have a valid 'if' condition and 'names' list")
-				}
-				seen := make(map[string]bool)
-				for _, name := range exclude.Names {
-					lower := strings.ToLower(name)
-					if seen[lower] {
-						return fmt.Errorf("invalid 'security': 'exclude' property %q is duplicated", name)
-					}
-					seen[lower] = true
-					if _, ok := names[lower]; !ok {
-						return fmt.Errorf("invalid 'security': 'exclude' property %q does not exists in dimensions or measures list", name)
-					}
-				}
-				cond, err := ResolveTemplate(exclude.Condition, templateData)
-				if err != nil {
-					return fmt.Errorf(`invalid 'security': 'if' condition templating for field %q is not valid: %w`, exclude.Names, err)
-				}
-				_, err = EvaluateBoolExpression(cond)
-				if err != nil {
-					return fmt.Errorf(`invalid 'security': 'if' condition for field %q not evaluating to a boolean: %w`, exclude.Names, err)
-				}
-			}
-		}
+	securityRules, err := tmp.Security.Proto()
+	if err != nil {
+		return err
 	}
 
 	node.Refs = append(node.Refs, ResourceName{Name: table})
@@ -725,30 +885,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 		}
 	}
 
-	if tmp.Security != nil {
-		if spec.Security == nil {
-			spec.Security = &runtimev1.MetricsViewSpec_SecurityV2{}
-		}
-		spec.Security.Access = tmp.Security.Access
-		spec.Security.RowFilter = tmp.Security.RowFilter
-		// validation has been done above, only one of these will be set
-		if tmp.Security.Include != nil {
-			for _, include := range tmp.Security.Include {
-				spec.Security.Include = append(spec.Security.Include, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
-					Condition: include.Condition,
-					Names:     include.Names,
-				})
-			}
-		}
-		if tmp.Security.Exclude != nil {
-			for _, exclude := range tmp.Security.Exclude {
-				spec.Security.Exclude = append(spec.Security.Exclude, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
-					Condition: exclude.Condition,
-					Names:     exclude.Names,
-				})
-			}
-		}
-	}
+	spec.SecurityRules = securityRules
 
 	return nil
 }
@@ -832,4 +969,39 @@ func validateISO8601(isoDuration string, onlyStandard, onlyOneComponent bool) er
 	}
 
 	return nil
+}
+
+var validationTemplateData = TemplateData{
+	Environment: "dev",
+	User: map[string]interface{}{
+		"name":   "dummy",
+		"email":  "mock@example.org",
+		"domain": "example.org",
+		"groups": []interface{}{"all"},
+		"admin":  false,
+	},
+}
+
+// parseNamesYAML parses a []string or a '*' denoting "all names" from a YAML node.
+func parseNamesYAML(n yaml.Node) (names []string, all bool, err error) {
+	switch n.Kind {
+	case yaml.ScalarNode:
+		if n.Value == "*" {
+			all = true
+			return
+		}
+		err = fmt.Errorf("unexpected scalar %q", n.Value)
+	case yaml.SequenceNode:
+		names = make([]string, len(n.Content))
+		for i, c := range n.Content {
+			if c.Kind != yaml.ScalarNode {
+				err = fmt.Errorf("unexpected non-string list entry on line %d", c.Line)
+				return
+			}
+			names[i] = c.Value
+		}
+	default:
+		err = fmt.Errorf("invalid field names %v", n)
+	}
+	return
 }

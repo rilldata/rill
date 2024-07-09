@@ -117,13 +117,12 @@ type ResolverExportOptions struct {
 
 // ResolverOptions are the options passed to a resolver initializer.
 type ResolverOptions struct {
-	Runtime        *Runtime
-	InstanceID     string
-	Properties     map[string]any
-	Args           map[string]any
-	UserAttributes map[string]any
-	Security       *runtimev1.MetricsViewSpec_SecurityV2
-	ForExport      bool
+	Runtime    *Runtime
+	InstanceID string
+	Properties map[string]any
+	Args       map[string]any
+	Claims     *SecurityClaims
+	ForExport  bool
 }
 
 // ResolverInitializer is a function that initializes a resolver.
@@ -146,7 +145,7 @@ type ResolveOptions struct {
 	Resolver           string
 	ResolverProperties map[string]any
 	Args               map[string]any
-	UserAttributes     map[string]any
+	Claims             *SecurityClaims
 }
 
 // ResolveResult is subset of ResolverResult that is cached
@@ -163,12 +162,12 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 		return ResolveResult{}, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:        r,
-		InstanceID:     opts.InstanceID,
-		Properties:     opts.ResolverProperties,
-		Args:           opts.Args,
-		UserAttributes: opts.UserAttributes,
-		ForExport:      false,
+		Runtime:    r,
+		InstanceID: opts.InstanceID,
+		Properties: opts.ResolverProperties,
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  false,
 	})
 	if err != nil {
 		return ResolveResult{}, err

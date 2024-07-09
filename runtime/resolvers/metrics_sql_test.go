@@ -21,7 +21,7 @@ func TestSimpleMetricsSQLApi(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     nil,
+		Claims:             &runtime.SecurityClaims{},
 	})
 
 	require.NoError(t, err)
@@ -47,7 +47,7 @@ func TestTemplateMetricsSQLAPI(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"domain": "yahoo.com"},
-		UserAttributes:     nil,
+		Claims:             &runtime.SecurityClaims{},
 	})
 
 	require.NoError(t, err)
@@ -73,7 +73,7 @@ func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"domain": "yahoo.com", "pageSize": ""},
-		UserAttributes:     map[string]any{"domain": "yahoo.com"},
+		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "yahoo.com"}},
 	})
 
 	require.NoError(t, err)
@@ -97,7 +97,7 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"},
+		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"}},
 	})
 
 	require.NoError(t, err)
@@ -118,7 +118,7 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     map[string]any{"domain": "msn.com", "email": "user@msn.com"},
+		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "msn.com", "email": "user@msn.com"}},
 	})
 
 	require.NoError(t, err)

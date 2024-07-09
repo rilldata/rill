@@ -43,7 +43,8 @@ func BenchmarkMetricsViewsAggregation(b *testing.B) {
 			},
 		},
 
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -87,7 +88,8 @@ func BenchmarkMetricsViewsAggregation_pivot_2_measures(t *testing.B) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	for i := 0; i < t.N; i++ {
 		err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -125,7 +127,8 @@ func BenchmarkMetricsViewsAggregation_pivot(b *testing.B) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -166,7 +169,8 @@ func BenchmarkMetricsViewsAggregation_spending(b *testing.B) {
 			},
 		},
 
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -208,7 +212,8 @@ func BenchmarkMetricsViewsAggregation_spending_100(b *testing.B) {
 			},
 		},
 
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -249,7 +254,8 @@ func BenchmarkMetricsViewsAggregation_spending_pivot(b *testing.B) {
 		PivotOn: []string{
 			"action_date",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -290,7 +296,8 @@ func BenchmarkMetricsViewsAggregation_spending_pivot_100(b *testing.B) {
 		PivotOn: []string{
 			"action_date",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
