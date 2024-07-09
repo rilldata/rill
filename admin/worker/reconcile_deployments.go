@@ -120,7 +120,6 @@ func (w *Worker) reconcileAllDeploymentsForProject(ctx context.Context, proj *da
 			if err != nil {
 				w.logger.Error("reconcile deployments: teardown deployment error", zap.String("organization_id", org.ID), zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.String("provisioner", depl.Provisioner), zap.String("provision_id", depl.ProvisionID), zap.String("instance_id", depl.RuntimeInstanceID), observability.ZapCtx(ctx), zap.Error(err))
 				continue
-
 			}
 		}
 	}
