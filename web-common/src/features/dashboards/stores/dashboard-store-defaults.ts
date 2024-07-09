@@ -33,7 +33,12 @@ export function setDefaultTimeRange(
   fullTimeRange: V1MetricsViewTimeRangeResponse | undefined,
 ) {
   // This function implementation mirrors some code in the metricsExplorer.init() function
-  if (!fullTimeRange) return;
+  if (
+    !fullTimeRange ||
+    !fullTimeRange.timeRangeSummary?.min ||
+    !fullTimeRange.timeRangeSummary?.max
+  )
+    return;
   const timeZone = get(getLocalUserPreferences()).timeZone;
   const fullTimeStart = new Date(fullTimeRange.timeRangeSummary.min);
   const fullTimeEnd = new Date(fullTimeRange.timeRangeSummary.max);

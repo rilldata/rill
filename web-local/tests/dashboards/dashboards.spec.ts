@@ -454,7 +454,7 @@ dimensions:
       page.getByText("No comparison dimension selected"),
     ).toBeVisible();
 
-    await page.getByRole("button", { name: "No dimension breakdown" }).click();
+    await page.getByRole("button", { name: "No comparison dimension" }).click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
     await page.getByText("google.com", { exact: true }).click({ force: true });
@@ -476,7 +476,7 @@ dimensions:
 
     await page.getByRole("button", { name: "Domain name" }).click();
     await page
-      .getByRole("menuitem", { name: "No dimension breakdown" })
+      .getByRole("menuitem", { name: "No comparison dimension" })
       .click();
     await page.getByRole("button", { name: "Comparing" }).click();
 
