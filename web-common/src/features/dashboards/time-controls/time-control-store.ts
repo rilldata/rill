@@ -50,7 +50,7 @@ export type TimeRangeState = {
   adjustedEnd?: string;
 };
 export type ComparisonTimeRangeState = {
-  showTimeComparison: boolean;
+  showTimeComparison?: boolean;
   selectedComparisonTimeRange?: DashboardTimeControls;
   comparisonTimeStart?: string;
   comparisonAdjustedStart?: string;

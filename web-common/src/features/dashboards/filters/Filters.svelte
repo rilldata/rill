@@ -92,7 +92,7 @@
       <ComparisonPill
         {allTimeRange}
         {selectedTimeRange}
-        {showTimeComparison}
+        showTimeComparison={!!showTimeComparison}
         {selectedComparisonTimeRange}
       />
     {/if}
