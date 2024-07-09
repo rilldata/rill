@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io"
 	"math/big"
 	"net/http"
 	"net/url"
@@ -96,7 +97,9 @@ func (a *Authenticator) ExchangeCodeForToken(code string) (string, error) {
 
 	// Check if the response is an error
 	if resp.StatusCode != http.StatusOK {
-		return "", fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		// read body to get the error message
+		body, _ := io.ReadAll(resp.Body)
+		return "", fmt.Errorf("unexpected status code: %d, status: %s, body: %s", resp.StatusCode, resp.Status, string(body))
 	}
 
 	tokenResponse := &oauth.TokenResponse{}
