@@ -40,44 +40,24 @@ test.describe("dashboard", () => {
       ),
       createDashboardFromModel(page, "/models/AdBids_model.sql"),
     ]);
-    await Promise.all([
-      waitForTimeSeries(page, "AdBids_model_dashboard"),
-      waitForAggregationTopLists(page, "AdBids_model_dashboard", ["domain"]),
-      page.getByRole("button", { name: "Preview" }).click(),
-    ]);
+
+    await page.getByRole("button", { name: "Preview" }).click();
     await assertAdBidsDashboard(page);
 
-    // metrics view filter matcher to select just publisher=Facebook since we click on it
-    const domainFilterMatcher: RequestMatcher = (response) =>
-      metricsViewRequestFilterMatcher(
-        response,
-        [{ label: "publisher", values: ["Facebook"] }],
-        [],
+    // click on publisher=Facebook leaderboard value
+    await page.getByRole("row", { name: "Facebook 19.3K" }).click(),
+      await wrapRetryAssertion(() =>
+        assertLeaderboards(page, [
+          {
+            label: "Publisher",
+            values: ["null", "Facebook", "Google", "Yahoo", "Microsoft"],
+          },
+          {
+            label: "Domain",
+            values: ["facebook.com", "instagram.com"],
+          },
+        ]),
       );
-    await Promise.all([
-      waitForTimeSeries(page, "AdBids_model_dashboard", domainFilterMatcher),
-      waitForAggregationTopLists(
-        page,
-        "AdBids_model_dashboard",
-        ["domain"],
-        domainFilterMatcher,
-      ),
-      // click on publisher=Facebook leaderboard value
-      page.getByRole("button", { name: "Facebook 19.3K" }).click(),
-    ]);
-
-    await wrapRetryAssertion(() =>
-      assertLeaderboards(page, [
-        {
-          label: "Publisher",
-          values: ["null", "Facebook", "Google", "Yahoo", "Microsoft"],
-        },
-        {
-          label: "Domain",
-          values: ["facebook.com", "instagram.com"],
-        },
-      ]),
-    );
   });
 
   test("Dashboard runthrough", async ({ page }) => {
@@ -499,7 +479,10 @@ dimensions:
     });
 
     await page.getByRole("button", { name: "Domain name" }).click();
-    await page.getByRole("menuitem", { name: "Time" }).click();
+    await page
+      .getByRole("menuitem", { name: "No dimension breakdown" })
+      .click();
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     await expect(page.getByText("~0%")).toBeVisible();
 
