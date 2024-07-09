@@ -50,10 +50,26 @@ export interface MarkdownTemplateT {
   markdown: MarkdownProperties;
 }
 
+export interface ImageAdjust {
+  opacity?: number;
+  blur?: number;
+  saturation?: number;
+}
+export interface ImageProperties {
+  url: string;
+  size?: string;
+  adjust?: ImageAdjust;
+}
+
+export interface ImageTemplateT {
+  image: ImageProperties;
+}
+
 type ChartTemplates = LineChart | BarChart | StackedBarChart;
 
 export type TemplateSpec =
   | ChartTemplates
   | KPITemplateT
   | TableTemplateT
-  | MarkdownTemplateT;
+  | MarkdownTemplateT
+  | ImageTemplateT;

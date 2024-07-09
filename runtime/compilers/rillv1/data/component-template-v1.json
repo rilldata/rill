@@ -27,6 +27,51 @@
       ],
       "type": "object"
     },
+    "ImageAdjust": {
+      "additionalProperties": false,
+      "properties": {
+        "blur": {
+          "type": "number"
+        },
+        "opacity": {
+          "type": "number"
+        },
+        "saturation": {
+          "type": "number"
+        }
+      },
+      "type": "object"
+    },
+    "ImageProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "adjust": {
+          "$ref": "#/definitions/ImageAdjust"
+        },
+        "size": {
+          "type": "string"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "ImageTemplateT": {
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "$ref": "#/definitions/ImageProperties"
+        }
+      },
+      "required": [
+        "image"
+      ],
+      "type": "object"
+    },
     "KPIProperties": {
       "additionalProperties": false,
       "properties": {
@@ -184,6 +229,9 @@
         },
         {
           "$ref": "#/definitions/MarkdownTemplateT"
+        },
+        {
+          "$ref": "#/definitions/ImageTemplateT"
         }
       ]
     }
