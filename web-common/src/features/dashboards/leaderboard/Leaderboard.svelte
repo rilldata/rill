@@ -110,7 +110,12 @@
 
   $: dimensionDescription = $getDimensionDescription(dimensionName);
 
-  $: tableWidth = 1 * 64 + 190;
+  $: firstColumnWidth =
+    !$isTimeComparisonActive && !$isValidPercentOfTotal ? 240 : 190;
+
+  $: columnCount = $isTimeComparisonActive ? 3 : $isValidPercentOfTotal ? 2 : 1;
+
+  $: tableWidth = columnCount * 64 + firstColumnWidth;
 </script>
 
 <div
@@ -124,7 +129,7 @@
   <table>
     <colgroup>
       <col style:width="24px" />
-      <col style:width="190px" />
+      <col style:width="{firstColumnWidth}px" />
       <col class="col-width" />
       {#if $isTimeComparisonActive}
         <col class="col-width" />

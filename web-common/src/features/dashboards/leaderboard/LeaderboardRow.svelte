@@ -102,7 +102,13 @@
   </td>
   <td>
     <Tooltip location="left" distance={20}>
-      <LeaderboardValueCell {itemData} {dimensionName} {tableWidth} />
+      <LeaderboardValueCell
+        {label}
+        {comparisonValue}
+        {itemData}
+        {dimensionName}
+        {tableWidth}
+      />
       <LeaderboardTooltipContent
         {atLeastOneActive}
         {excluded}

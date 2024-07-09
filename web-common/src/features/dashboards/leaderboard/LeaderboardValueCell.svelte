@@ -7,6 +7,7 @@
   import { fly } from "svelte/transition";
   import { getStateManagers } from "../state-managers/state-managers";
   import { tweened } from "svelte/motion";
+  import LongBarZigZag from "./LongBarZigZag.svelte";
 
   const valueTween = tweened(0, {
     duration: 200,
@@ -24,15 +25,12 @@
   export let dimensionName: string;
   export let itemData: LeaderboardItemData;
   export let tableWidth: number;
+  export let label: string;
+  export let comparisonValue: number | null;
 
   let hovered = false;
 
-  $: ({
-    dimensionValue: label,
-    selectedIndex,
-    pctOfTotal,
-    prevValue: comparisonValue,
-  } = itemData);
+  $: ({ dimensionValue: label, selectedIndex, pctOfTotal } = itemData);
 
   $: selected = selectedIndex >= 0;
 
@@ -74,8 +72,12 @@
 
   <div
     class="{color} h-full absolute left-0 -z-10"
-    style:width="{Math.min(tableWidth, tableWidth * $valueTween)}px"
-  />
+    style:width="{tableWidth * Math.min(1, $valueTween)}px"
+  >
+    {#if renderedBarValue > 1.001}
+      <LongBarZigZag />
+    {/if}
+  </div>
 
   <div
     class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
