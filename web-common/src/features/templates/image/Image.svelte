@@ -1,8 +1,5 @@
 <script lang="ts">
-  import {
-    ImageProperties,
-    ImageAdjust,
-  } from "@rilldata/web-common/features/templates/types";
+  import { ImageProperties } from "@rilldata/web-common/features/templates/types";
   import { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
@@ -31,6 +28,7 @@
 
 <img
   src={imageProperties.url}
+  alt="Dashboard Image"
   style={`
     object-fit: ${imageProperties.size}; 
     opacity: ${imageProperties.adjust?.opacity}; 
