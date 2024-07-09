@@ -102,7 +102,12 @@ default_comparison:
     // Preview
     await page.getByRole("button", { name: "Preview" }).click();
     // Comparison is selected
-    await expect(page.getByText("Broken down by Publisher")).toBeVisible();
+    await expect(
+      page
+        .getByLabel("publisher leaderboard")
+        .getByLabel("Comparison column")
+        .getByLabel("Toggle breakdown for publisher dimension"),
+    ).toBeVisible();
     // Go back to metrics editor
     await page.getByRole("button", { name: "Edit Metrics" }).click();
 

@@ -129,14 +129,14 @@ dimensions:
     await measuresButton.click();
     await page.getByRole("menuitem", { name: "interval_ms" }).click();
     await expect(measuresButton).toHaveText("Showing interval_ms");
-    // ...and add a time comparison to check absolute change
+    // ...and add a time comparison to check deltas
     await interactWithTimeRangeMenu(page, async () => {
       await page.getByRole("menuitem", { name: "Last 4 Weeks" }).click();
     });
     await page.getByRole("button", { name: "Comparing" }).click();
 
     await expect(
-      page.getByRole("row", { name: "null 27 s 33%" }),
+      page.getByRole("row", { name: "null 27 s -4.3 s -14%" }),
     ).toBeVisible();
 
     // try No Format...
@@ -145,7 +145,9 @@ dimensions:
     await expect(measuresButton).toHaveText("Showing No Format");
 
     await expect(
-      page.getByRole("row", { name: "null 26642.549999999974 -14%" }),
+      page.getByRole("row", {
+        name: "null 26642.549999999974 -4348.7299999999705 -14%",
+      }),
     ).toBeVisible();
 
     /******************

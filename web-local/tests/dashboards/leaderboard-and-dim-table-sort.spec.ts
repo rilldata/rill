@@ -75,6 +75,11 @@ test.describe("leaderboard and dimension table sorting", () => {
     // in the context column dropdown
     await page.waitForTimeout(1000);
 
+    await page
+      .getByLabel("publisher leaderboard")
+      .getByLabel("Toggle sort leaderboards by percent change")
+      .click();
+
     // need a slight delay for the rankings to update
     await page.waitForTimeout(1000);
 
@@ -86,13 +91,21 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     await assertAAboveB(
-      page.getByRole("row", { name: "news.yahoo.com 89 16%" }),
-      page.getByRole("row", { name: "sports.yahoo.com 67 -27%" }),
+      page.getByRole("row", { name: "news.yahoo.com 89 12 16%" }),
+      page.getByRole("row", { name: "sports.yahoo.com 67 -25 -27%" }),
     );
 
+    // Sort by absolute change
+    await page
+      .getByLabel("publisher leaderboard")
+      .getByRole("button", {
+        name: "Toggle sort leaderboards by absolute change",
+      })
+      .click();
+
     await assertAAboveB(
-      page.getByRole("row", { name: "Google 116 5" }),
-      page.getByRole("row", { name: "Facebook 283 -14" }),
+      page.getByRole("row", { name: "Google 116 5 5%" }),
+      page.getByRole("row", { name: "Facebook 283 -14 -5%" }),
     );
 
     // toggle sort by absolute change
@@ -104,8 +117,8 @@ test.describe("leaderboard and dimension table sorting", () => {
       .click();
 
     await assertAAboveB(
-      page.getByRole("row", { name: "Facebook 283 -14" }),
-      page.getByRole("row", { name: "Google 116 5" }),
+      page.getByRole("row", { name: "Facebook 283 -14 -5%" }),
+      page.getByRole("row", { name: "Google 116 5 5%" }),
     );
 
     /**
@@ -115,7 +128,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     await page.locator("#svelte").getByText("Publisher").click();
 
     // click publisher column header to sort by publisher
-    await page.getByRole("button", { name: "Publisher" }).click();
+    await page.getByRole("button", { name: "Publisher", exact: true }).click();
     await assertAAboveB(
       page
         .locator("div")

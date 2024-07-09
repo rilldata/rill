@@ -168,7 +168,7 @@
     </colgroup>
     <thead>
       <tr>
-        <th>
+        <th aria-label="Comparison column">
           {#if isFetching}
             <Spinner size="16px" status={EntityStatus.Running} />
           {:else if hovered || isBeingCompared}
