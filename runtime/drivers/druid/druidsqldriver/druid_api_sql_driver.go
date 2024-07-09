@@ -74,7 +74,9 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		return nil, err
 	}
 
-	if resp.StatusCode != http.StatusOK {
+	// druid send well-formed response for 200, 400 and 500 status codes, for others use this
+	// ref - https://druid.apache.org/docs/latest/api-reference/sql-api/#responses
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusBadRequest && resp.StatusCode != http.StatusInternalServerError {
 		resp.Body.Close()
 		return nil, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
 	}
