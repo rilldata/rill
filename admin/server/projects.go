@@ -999,11 +999,6 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	role, err := s.admin.DB.FindProjectRole(ctx, "viewer") // hardcoded for now
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -1021,7 +1016,6 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	accessReq, err := s.admin.DB.InsertProjectAccessRequest(ctx, &database.InsertProjectAccessRequestOptions{
 		Email:     user.Email,
 		ProjectID: proj.ID,
-		RoleID:    role.ID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -1065,6 +1059,32 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	return &adminv1.RequestProjectAccessResponse{}, nil
 }
 
+func (s *Server) GetProjectAccess(ctx context.Context, req *adminv1.GetProjectAccessRequest) (*adminv1.GetProjectAccessResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.id", req.Id),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	// for now only admins can view these.
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to view project access request")
+	}
+
+	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	return &adminv1.GetProjectAccessResponse{Email: accessReq.Email}, nil
+}
+
 func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveProjectAccessRequest) (*adminv1.ApproveProjectAccessResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
@@ -1097,8 +1117,13 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	}
 	// TODO: quotas
 
+	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
 	// add the user
-	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, accessReq.ProjectRoleID)
+	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

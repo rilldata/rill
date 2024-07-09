@@ -49,6 +49,7 @@ import type {
   V1ListProjectMemberUsergroupsResponse,
   AdminServiceListProjectMemberUsergroupsParams,
   V1RequestProjectAccessResponse,
+  V1GetProjectAccessResponse,
   V1ApproveProjectAccessResponse,
   V1DenyProjectAccessResponse,
   V1CreateAlertResponse,
@@ -1421,17 +1422,85 @@ export const createAdminServiceRequestProjectAccess = <
     TContext
   >(mutationFn, mutationOptions);
 };
+export const adminServiceGetProjectAccess = (
+  organization: string,
+  project: string,
+  id: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetProjectAccessResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/access-request/${id}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetProjectAccessQueryKey = (
+  organization: string,
+  project: string,
+  id: string,
+) => [
+  `/v1/organizations/${organization}/projects/${project}/access-request/${id}`,
+];
+
+export type AdminServiceGetProjectAccessQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetProjectAccess>>
+>;
+export type AdminServiceGetProjectAccessQueryError = RpcStatus;
+
+export const createAdminServiceGetProjectAccess = <
+  TData = Awaited<ReturnType<typeof adminServiceGetProjectAccess>>,
+  TError = RpcStatus,
+>(
+  organization: string,
+  project: string,
+  id: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetProjectAccess>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetProjectAccessQueryKey(organization, project, id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetProjectAccess>>
+  > = ({ signal }) =>
+    adminServiceGetProjectAccess(organization, project, id, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetProjectAccess>>,
+    TError,
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(organization && project && id),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 export const adminServiceApproveProjectAccess = (
   organization: string,
   project: string,
   id: string,
-  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+  adminServiceSetOrganizationMemberUserRoleBodyBody: AdminServiceSetOrganizationMemberUserRoleBodyBody,
 ) => {
   return httpClient<V1ApproveProjectAccessResponse>({
     url: `/v1/organizations/${organization}/projects/${project}/access-request/${id}/approve`,
     method: "post",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceTriggerReconcileBodyBody,
+    data: adminServiceSetOrganizationMemberUserRoleBodyBody,
   });
 };
 
@@ -1439,7 +1508,7 @@ export type AdminServiceApproveProjectAccessMutationResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>
 >;
 export type AdminServiceApproveProjectAccessMutationBody =
-  AdminServiceTriggerReconcileBodyBody;
+  AdminServiceSetOrganizationMemberUserRoleBodyBody;
 export type AdminServiceApproveProjectAccessMutationError = RpcStatus;
 
 export const createAdminServiceApproveProjectAccess = <
@@ -1453,7 +1522,7 @@ export const createAdminServiceApproveProjectAccess = <
       organization: string;
       project: string;
       id: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >;
@@ -1466,7 +1535,7 @@ export const createAdminServiceApproveProjectAccess = <
       organization: string;
       project: string;
       id: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     }
   > = (props) => {
     const { organization, project, id, data } = props ?? {};
@@ -1481,7 +1550,7 @@ export const createAdminServiceApproveProjectAccess = <
       organization: string;
       project: string;
       id: string;
-      data: AdminServiceTriggerReconcileBodyBody;
+      data: AdminServiceSetOrganizationMemberUserRoleBodyBody;
     },
     TContext
   >(mutationFn, mutationOptions);

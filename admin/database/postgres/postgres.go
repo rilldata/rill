@@ -1585,8 +1585,8 @@ func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID str
 func (c *connection) FindProjectAccessRequests(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.ProjectAccessRequest, error) {
 	var res []*database.ProjectAccessRequest
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-			SELECT par.email, ur.name as role
-			FROM project_access_request par JOIN project_roles ur ON par.project_role_id = ur.id
+			SELECT par.email
+			FROM project_access_request par
 			WHERE par.project_id = $1 AND lower(par.email) > lower($2)
 			ORDER BY lower(par.email) LIMIT $3
 	`, projectID, afterEmail, limit)
@@ -1629,7 +1629,7 @@ func (c *connection) InsertProjectAccessRequest(ctx context.Context, opts *datab
 	}
 
 	res := &database.ProjectAccessRequest{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO project_access_request (email, project_id, project_role_id) VALUES ($1, $2, $3) RETURNING *", opts.Email, opts.ProjectID, opts.RoleID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO project_access_request (email, project_id) VALUES ($1, $2) RETURNING *", opts.Email, opts.ProjectID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project access request", err)
 	}

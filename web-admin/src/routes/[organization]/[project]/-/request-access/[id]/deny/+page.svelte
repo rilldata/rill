@@ -2,6 +2,7 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceDenyProjectAccess,
+    createAdminServiceGetProjectAccess,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { parseAccessRequestError } from "@rilldata/web-admin/features/access-request/utils";
@@ -29,6 +30,12 @@
   $: error = parseAccessRequestError(
     $denyAccess.error as unknown as AxiosError<RpcStatus>,
   );
+
+  $: requestAccess = createAdminServiceGetProjectAccess(
+    organization,
+    project,
+    id,
+  );
 </script>
 
 <AccessRequestContainer>
@@ -43,5 +50,10 @@
   {:else}
     <CrossIcon size="30px" className="text-red-500" />
     <h2 class="text-lg font-normal">Access denied</h2>
+    {#if $requestAccess.data}
+      <div class="text-slate-500 text-base">
+        <b>{$requestAccess.data.email}</b> denied access to <b>{project}</b>.
+      </div>
+    {/if}
   {/if}
 </AccessRequestContainer>

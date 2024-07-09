@@ -698,6 +698,10 @@ service AdminService {
     };
   }
 
+  rpc GetProjectAccess(GetProjectAccessRequest) returns (GetProjectAccessResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/access-request/{id}"};
+  }
+
   rpc ApproveProjectAccess(ApproveProjectAccessRequest) returns (ApproveProjectAccessResponse) {
     option (google.api.http) = {
       post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/approve",
@@ -1820,10 +1824,21 @@ message RequestProjectAccessRequest {
 
 message RequestProjectAccessResponse {}
 
+message GetProjectAccessRequest {
+  string organization = 1;
+  string project = 2;
+  string id = 3;
+}
+
+message GetProjectAccessResponse {
+  string email = 1;
+}
+
 message ApproveProjectAccessRequest {
   string organization = 1;
   string project = 2;
   string id = 3;
+  string role = 4;
 }
 
 message ApproveProjectAccessResponse {}

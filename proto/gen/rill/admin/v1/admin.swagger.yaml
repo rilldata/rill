@@ -548,6 +548,33 @@ paths:
             type: object
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/access-request/{id}:
+    get:
+      operationId: AdminService_GetProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: id
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/access-request/{id}/approve:
     post:
       operationId: AdminService_ApproveProjectAccess
@@ -578,6 +605,9 @@ paths:
           required: true
           schema:
             type: object
+            properties:
+              role:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/access-request/{id}/deny:
@@ -3536,6 +3566,11 @@ definitions:
         $ref: '#/definitions/v1Organization'
       permissions:
         $ref: '#/definitions/v1OrganizationPermissions'
+  v1GetProjectAccessResponse:
+    type: object
+    properties:
+      email:
+        type: string
   v1GetProjectByIDResponse:
     type: object
     properties:

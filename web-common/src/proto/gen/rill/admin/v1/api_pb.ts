@@ -9556,6 +9556,92 @@ export class RequestProjectAccessResponse extends Message<RequestProjectAccessRe
 }
 
 /**
+ * @generated from message rill.admin.v1.GetProjectAccessRequest
+ */
+export class GetProjectAccessRequest extends Message<GetProjectAccessRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string id = 3;
+   */
+  id = "";
+
+  constructor(data?: PartialMessage<GetProjectAccessRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetProjectAccessRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectAccessRequest {
+    return new GetProjectAccessRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectAccessRequest {
+    return new GetProjectAccessRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectAccessRequest {
+    return new GetProjectAccessRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectAccessRequest | PlainMessage<GetProjectAccessRequest> | undefined, b: GetProjectAccessRequest | PlainMessage<GetProjectAccessRequest> | undefined): boolean {
+    return proto3.util.equals(GetProjectAccessRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetProjectAccessResponse
+ */
+export class GetProjectAccessResponse extends Message<GetProjectAccessResponse> {
+  /**
+   * @generated from field: string email = 1;
+   */
+  email = "";
+
+  constructor(data?: PartialMessage<GetProjectAccessResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetProjectAccessResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetProjectAccessResponse {
+    return new GetProjectAccessResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetProjectAccessResponse {
+    return new GetProjectAccessResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetProjectAccessResponse {
+    return new GetProjectAccessResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetProjectAccessResponse | PlainMessage<GetProjectAccessResponse> | undefined, b: GetProjectAccessResponse | PlainMessage<GetProjectAccessResponse> | undefined): boolean {
+    return proto3.util.equals(GetProjectAccessResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ApproveProjectAccessRequest
  */
 export class ApproveProjectAccessRequest extends Message<ApproveProjectAccessRequest> {
@@ -9574,6 +9660,11 @@ export class ApproveProjectAccessRequest extends Message<ApproveProjectAccessReq
    */
   id = "";
 
+  /**
+   * @generated from field: string role = 4;
+   */
+  role = "";
+
   constructor(data?: PartialMessage<ApproveProjectAccessRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9585,6 +9676,7 @@ export class ApproveProjectAccessRequest extends Message<ApproveProjectAccessReq
     { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "role", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ApproveProjectAccessRequest {

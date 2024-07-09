@@ -825,17 +825,15 @@ type InsertProjectInviteOptions struct {
 }
 
 type ProjectAccessRequest struct {
-	ID            string
-	Email         string
-	ProjectID     string    `db:"project_id"`
-	ProjectRoleID string    `db:"project_role_id"`
-	CreatedOn     time.Time `db:"created_on"`
+	ID        string
+	Email     string
+	ProjectID string    `db:"project_id"`
+	CreatedOn time.Time `db:"created_on"`
 }
 
 type InsertProjectAccessRequestOptions struct {
 	Email     string `validate:"email"`
 	ProjectID string `validate:"required"`
-	RoleID    string `validate:"required"`
 }
 
 type Bookmark struct {
