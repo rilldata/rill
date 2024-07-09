@@ -534,6 +534,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -561,12 +567,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -794,6 +794,13 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -820,13 +827,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -861,6 +861,28 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
+
+export interface V1QueryResult {
+  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
+  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
+  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
+  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
+  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
+  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
+  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
+  columnTopKResponse?: V1ColumnTopKResponse;
+  columnNullCountResponse?: V1ColumnNullCountResponse;
+  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
+  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
+  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
+  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
+  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
+  columnCardinalityResponse?: V1ColumnCardinalityResponse;
+  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
+  tableCardinalityResponse?: V1TableCardinalityResponse;
+  tableColumnsResponse?: V1TableColumnsResponse;
+  tableRowsResponse?: V1TableRowsResponse;
+}
 
 export type V1QueryResponseDataItem = { [key: string]: any };
 
@@ -1278,6 +1300,25 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
+export interface V1MetricsViewComparisonRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
+  measures?: V1MetricsViewAggregationMeasure[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  where?: V1Expression;
+  having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  exact?: boolean;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1294,27 +1335,6 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
-}
-
-export interface V1MetricsViewAggregationRequest {
-  instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
-  measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  where?: V1Expression;
-  having?: V1Expression;
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
@@ -1356,23 +1376,25 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
+export interface V1MetricsViewAggregationRequest {
   instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
   measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
+  sort?: V1MetricsViewAggregationSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
   priority?: number;
-  exact?: boolean;
   filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MapType {
@@ -1909,28 +1931,6 @@ export interface V1ColumnCardinalityResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
-export interface V1QueryResult {
-  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
-  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
-  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
-  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
-  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
-  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
-  columnTopKResponse?: V1ColumnTopKResponse;
-  columnNullCountResponse?: V1ColumnNullCountResponse;
-  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
-  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
-  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
-  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
-  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
-  columnCardinalityResponse?: V1ColumnCardinalityResponse;
-  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
-  tableCardinalityResponse?: V1TableCardinalityResponse;
-  tableColumnsResponse?: V1TableColumnsResponse;
-  tableRowsResponse?: V1TableRowsResponse;
-}
-
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2098,11 +2098,18 @@ export interface V1APIState {
   [key: string]: any;
 }
 
+export type V1APISpecOpenapiResponseSchema = { [key: string]: any };
+
+export type V1APISpecOpenapiParametersItem = { [key: string]: any };
+
 export type V1APISpecResolverProperties = { [key: string]: any };
 
 export interface V1APISpec {
   resolver?: string;
   resolverProperties?: V1APISpecResolverProperties;
+  openapiSummary?: string;
+  openapiParameters?: V1APISpecOpenapiParametersItem[];
+  openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
 }
 
 /**
@@ -2125,7 +2132,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
