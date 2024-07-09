@@ -88,11 +88,7 @@
   <div class="flex flex-row flex-wrap gap-x-2 items-center">
     <Calendar size="16px" />
     {#if allTimeRange?.start && allTimeRange?.end}
-      <SuperPill
-        {allTimeRange}
-        {selectedTimeRange}
-        {selectedComparisonTimeRange}
-      />
+      <SuperPill {allTimeRange} {selectedTimeRange} />
       <ComparisonPill
         {allTimeRange}
         {selectedTimeRange}

@@ -12,8 +12,10 @@ import (
 	"gocloud.dev/blob"
 )
 
-var testData = [][]string{{"year", "sale"}, {"2020", "1"}, {"2021", "100"}, {"2022", "10000"}}
-var resultTail = [][]string{{"year", "sale"}, {"2021", "100"}, {"2022", "10000"}}
+var (
+	testData   = [][]string{{"year", "sale"}, {"2020", "1"}, {"2021", "100"}, {"2022", "10000"}}
+	resultTail = [][]string{{"year", "sale"}, {"2021", "100"}, {"2022", "10000"}}
+)
 
 func TestDownloadCSV(t *testing.T) {
 	bucket, object, err := prepareBucketCSV()

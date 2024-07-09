@@ -192,7 +192,6 @@ func TestAnalyticsMigration(t *testing.T) {
 		require.True(t, enabled)
 		require.True(t, oldExists())
 	})
-
 }
 
 func overrideHomeDir(t *testing.T) {

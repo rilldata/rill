@@ -177,7 +177,6 @@ func TestOrganizationWorkflow(t *testing.T) {
 	org, err := dotrill.GetDefaultOrg()
 	require.NoError(t, err)
 	require.Equal(t, org, "new-test")
-
 }
 
 type Org struct {

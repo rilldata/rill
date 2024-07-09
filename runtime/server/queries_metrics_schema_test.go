@@ -71,5 +71,4 @@ func TestMetricsViewSchema(t *testing.T) {
 	i++
 	require.Equal(t, types[i].Name, "bid_price")
 	require.Equal(t, types[i].Type.Code, runtimev1.Type_CODE_FLOAT64)
-
 }

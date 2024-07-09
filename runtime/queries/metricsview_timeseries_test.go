@@ -3,9 +3,8 @@ package queries_test
 import (
 	"context"
 	"fmt"
-	"time"
-
 	"testing"
+	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
@@ -748,7 +747,6 @@ func TestMetricsTimeseries_measure_filters_same_name(t *testing.T) {
 	require.Equal(t, "3", fieldsToString(q.Result.Data[i].Records, "bid_price"))
 	i++
 	require.Equal(t, "3", fieldsToString(q.Result.Data[i].Records, "bid_price"))
-
 }
 
 func toStructpbValue(t *testing.T, v any) *structpb.Value {

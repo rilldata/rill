@@ -491,7 +491,7 @@ func TestRuntime_DeleteInstance_DropCorrupted(t *testing.T) {
 	rt.evictInstanceConnections(inst.ID)
 
 	// Corrupt database file
-	err = os.WriteFile(dbpath, []byte("corrupted"), 0644)
+	err = os.WriteFile(dbpath, []byte("corrupted"), 0o644)
 	require.NoError(t, err)
 
 	// Check we can't open it anymore

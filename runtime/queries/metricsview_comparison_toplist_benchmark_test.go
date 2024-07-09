@@ -672,6 +672,7 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 		require.NotEmpty(b, q.Result)
 	}
 }
+
 func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_approximate_limit_1250(b *testing.B) {
 	rt, instanceID := testruntime.NewInstanceForProject(b, "spending")
 

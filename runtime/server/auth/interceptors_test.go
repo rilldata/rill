@@ -64,5 +64,4 @@ func TestMiddleware(t *testing.T) {
 
 		handler.ServeHTTP(httptest.NewRecorder(), req)
 	})
-
 }

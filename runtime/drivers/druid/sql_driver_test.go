@@ -138,7 +138,6 @@ func Ignore_TestDriver_multiple_rows(t *testing.T) {
 	require.Equal(t, 1.0, data[0].Fields["bigint1"].GetNumberValue())
 	require.True(t, data[1].Fields["bool1"].GetBoolValue())
 	require.Equal(t, 1.0, data[1].Fields["bigint1"].GetNumberValue())
-
 }
 
 func Ignore_TestDriver_error(t *testing.T) {

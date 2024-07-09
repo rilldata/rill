@@ -3,15 +3,14 @@ package duckdb
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"testing"
+	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
-
-	"fmt"
-	"time"
 
 	_ "github.com/rilldata/rill/runtime/drivers/mysql"
 	"github.com/testcontainers/testcontainers-go"

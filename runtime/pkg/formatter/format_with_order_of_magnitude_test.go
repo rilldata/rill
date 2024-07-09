@@ -236,5 +236,4 @@ func TestFormatNumWithOrderOfMag(t *testing.T) {
 			}
 		})
 	}
-
 }

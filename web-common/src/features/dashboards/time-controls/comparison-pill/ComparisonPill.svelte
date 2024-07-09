@@ -89,7 +89,6 @@
   </button>
   {#if activeTimeGrain && interval.isValid}
     <Elements.Comparison
-      {metricViewName}
       timeComparisonOptionsState={$timeComparisonOptionsState}
       selectedComparison={selectedComparisonTimeRange}
       showComparison={showTimeComparison}
