@@ -3547,9 +3547,19 @@ export class APISpec extends Message<APISpec> {
   resolverProperties?: Struct;
 
   /**
-   * @generated from field: rill.runtime.v1.OpenAPISpec open_api_spec = 3;
+   * @generated from field: string openapi_summary = 3;
    */
-  openApiSpec?: OpenAPISpec;
+  openapiSummary = "";
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   */
+  openapiParameters: Struct[] = [];
+
+  /**
+   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   */
+  openapiResponseSchema?: Struct;
 
   constructor(data?: PartialMessage<APISpec>) {
     super();
@@ -3561,7 +3571,9 @@ export class APISpec extends Message<APISpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
-    { no: 3, name: "open_api_spec", kind: "message", T: OpenAPISpec },
+    { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
+    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {
@@ -3609,61 +3621,6 @@ export class APIState extends Message<APIState> {
 
   static equals(a: APIState | PlainMessage<APIState> | undefined, b: APIState | PlainMessage<APIState> | undefined): boolean {
     return proto3.util.equals(APIState, a, b);
-  }
-}
-
-/**
- * @generated from message rill.runtime.v1.OpenAPISpec
- */
-export class OpenAPISpec extends Message<OpenAPISpec> {
-  /**
-   * @generated from field: string req_summary = 1;
-   */
-  reqSummary = "";
-
-  /**
-   * @generated from field: repeated google.protobuf.Struct req_params = 2;
-   */
-  reqParams: Struct[] = [];
-
-  /**
-   * @generated from field: string res_description = 3;
-   */
-  resDescription = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct res_schema = 4;
-   */
-  resSchema?: Struct;
-
-  constructor(data?: PartialMessage<OpenAPISpec>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.OpenAPISpec";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "req_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "req_params", kind: "message", T: Struct, repeated: true },
-    { no: 3, name: "res_description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "res_schema", kind: "message", T: Struct },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): OpenAPISpec {
-    return new OpenAPISpec().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): OpenAPISpec {
-    return new OpenAPISpec().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): OpenAPISpec {
-    return new OpenAPISpec().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: OpenAPISpec | PlainMessage<OpenAPISpec> | undefined, b: OpenAPISpec | PlainMessage<OpenAPISpec> | undefined): boolean {
-    return proto3.util.equals(OpenAPISpec, a, b);
   }
 }
 

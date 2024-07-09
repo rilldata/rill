@@ -1,11 +1,9 @@
 package rillv1
 
 import (
-	"encoding/json"
 	"fmt"
 
-	"github.com/go-openapi/spec"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/pkg/openapiutil"
 	"google.golang.org/protobuf/types/known/structpb"
 )
 
@@ -16,49 +14,13 @@ type APIYAML struct {
 }
 
 type OpenAPIYAML struct {
-	Info     map[string]any `yaml:"info"`
-	Request  *ReqSpecYAML   `yaml:"request"`
-	Response *RespSpecYAML  `yaml:"response"`
-}
-
-type ReqSpecYAML struct {
-	Summary    string           `yaml:"summary"`
-	Parameters []map[string]any `yaml:"parameters"`
-}
-
-type RespSpecYAML struct {
-	Description string         `yaml:"description"`
-	Schema      map[string]any `yaml:"schema"`
-}
-
-func ConvertParameters(params []map[string]any) ([]spec.Parameter, error) {
-	var parameters []spec.Parameter
-	for _, param := range params {
-		var specParam spec.Parameter
-		jsonData, err := json.Marshal(param)
-		if err != nil {
-			return nil, err
-		}
-		err = specParam.UnmarshalJSON(jsonData)
-		if err != nil {
-			return nil, err
-		}
-		parameters = append(parameters, specParam)
-	}
-	return parameters, nil
-}
-
-func ConvertSchema(schema map[string]any) (*spec.Schema, error) {
-	specSchema := spec.Schema{}
-	jsonData, err := json.Marshal(schema)
-	if err != nil {
-		return nil, err
-	}
-	err = specSchema.UnmarshalJSON(jsonData)
-	if err != nil {
-		return nil, err
-	}
-	return &specSchema, nil
+	Summary string `yaml:"summary"`
+	Request struct {
+		Parameters []map[string]any `yaml:"parameters"`
+	} `yaml:"request"`
+	Response struct {
+		Schema map[string]any `yaml:"schema"`
+	} `yaml:"response"`
 }
 
 // parseAPI parses an API definition and adds the resulting resource to p.Resources.
@@ -71,11 +33,10 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Validate
-	var reqSummary string
+	reqSummary := tmp.OpenAPI.Summary
 	var reqParams []*structpb.Struct
-	if tmp.OpenAPI != nil && tmp.OpenAPI.Request != nil {
-		reqSummary = tmp.OpenAPI.Request.Summary
-		_, err := ConvertParameters(tmp.OpenAPI.Request.Parameters)
+	if tmp.OpenAPI != nil {
+		_, err := openapiutil.MapToParameters(tmp.OpenAPI.Request.Parameters)
 		if err != nil {
 			return fmt.Errorf("encountered invalid parameter type: %w", err)
 		}
@@ -87,11 +48,9 @@ func (p *Parser) parseAPI(node *Node) error {
 			reqParams = append(reqParams, paramPB)
 		}
 	}
-	var resDescription string
 	var resSchema *structpb.Struct
-	if tmp.OpenAPI != nil && tmp.OpenAPI.Response != nil {
-		resDescription = tmp.OpenAPI.Response.Description
-		_, err := ConvertSchema(tmp.OpenAPI.Response.Schema)
+	if tmp.OpenAPI != nil {
+		_, err := openapiutil.MapToSchema(tmp.OpenAPI.Response.Schema)
 		if err != nil {
 			return fmt.Errorf("encountered invalid schema type: %w", err)
 		}
@@ -124,12 +83,9 @@ func (p *Parser) parseAPI(node *Node) error {
 
 	r.APISpec.Resolver = resolver
 	r.APISpec.ResolverProperties = resolverProps
-	r.APISpec.OpenApiSpec = &runtimev1.OpenAPISpec{
-		ReqSummary:     reqSummary,
-		ReqParams:      reqParams,
-		ResDescription: resDescription,
-		ResSchema:      resSchema,
-	}
+	r.APISpec.OpenapiSummary = reqSummary
+	r.APISpec.OpenapiParameters = reqParams
+	r.APISpec.OpenapiResponseSchema = resSchema
 
 	return nil
 }

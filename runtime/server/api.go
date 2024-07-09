@@ -1,6 +1,7 @@
 package server
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,16 +9,16 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/go-openapi/spec"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/observability"
+	"github.com/rilldata/rill/runtime/pkg/openapiutil"
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"gopkg.in/yaml.v3"
+	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {
@@ -127,7 +128,7 @@ func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) e
 	}
 
 	// Generate the OpenAPI spec
-	combinedAPISpec, err := s.generateOpenAPISpec(instanceID, apis)
+	combinedAPISpec, err := s.generateOpenAPISpec(ctx, instanceID, apis)
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
@@ -166,18 +167,33 @@ func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) e
 	return nil
 }
 
-func (s *Server) generateOpenAPISpec(instanceID string, apis map[string]*runtimev1.API) (*spec.Swagger, error) {
+func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, apis map[string]*runtimev1.API) (*spec.Swagger, error) {
+	attributes := s.runtime.GetInstanceAttributes(ctx, instanceID)
+	var organization, project string
+	for _, attr := range attributes {
+		if attr.Key == "organization" {
+			organization = attr.Value.AsString()
+		} else if attr.Key == "project" {
+			project = attr.Value.AsString()
+		}
+	}
+	var title string
+	if organization != "" && project != "" {
+		title = fmt.Sprintf("Rill project API of %s/%s", organization, project)
+	} else {
+		title = "Rill project API"
+	}
 	baseSpec := &spec.Swagger{
 		SwaggerProps: spec.SwaggerProps{
 			Swagger:  "2.0",
 			Produces: []string{"application/json"},
 			Info: &spec.Info{
 				InfoProps: spec.InfoProps{
-					Title:   "Rill custom API of instance " + instanceID,
+					Title:   title,
 					Version: "1.0.0",
 				},
 			},
-			BasePath: "/",
+			BasePath: fmt.Sprintf("/v1/instances/%s/api", instanceID),
 			Paths: &spec.Paths{
 				Paths: make(map[string]spec.PathItem),
 			},
@@ -203,7 +219,7 @@ func (s *Server) generateOpenAPISpec(instanceID string, apis map[string]*runtime
 			return nil, err
 		}
 
-		baseSpec.Paths.Paths[fmt.Sprintf("/v1/instances/%s/api/%s", instanceID, name)] = *pathItem
+		baseSpec.Paths.Paths[fmt.Sprintf("/%s", name)] = *pathItem
 	}
 
 	return baseSpec, nil
@@ -212,36 +228,28 @@ func (s *Server) generateOpenAPISpec(instanceID string, apis map[string]*runtime
 func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*spec.PathItem, error) {
 	var err error
 	reqSummary := ""
-	if api.Spec.OpenApiSpec != nil {
-		reqSummary = api.Spec.OpenApiSpec.ReqSummary
+	if api.Spec.OpenapiSummary != "" {
+		reqSummary = api.Spec.OpenapiSummary
 	}
 	if reqSummary == "" {
 		reqSummary = fmt.Sprintf("Query %s API", name)
 	}
 
 	var params []spec.Parameter
-	if api.Spec.OpenApiSpec != nil && api.Spec.OpenApiSpec.ReqParams != nil {
-		maps := make([]map[string]any, len(api.Spec.OpenApiSpec.ReqParams))
-		for i, param := range api.Spec.OpenApiSpec.ReqParams {
+	if api.Spec.OpenapiParameters != nil {
+		maps := make([]map[string]any, len(api.Spec.OpenapiParameters))
+		for i, param := range api.Spec.OpenapiParameters {
 			maps[i] = param.AsMap()
 		}
-		params, err = rillv1.ConvertParameters(maps)
+		params, err = openapiutil.MapToParameters(maps)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	resDescription := ""
-	if api.Spec.OpenApiSpec != nil {
-		resDescription = api.Spec.OpenApiSpec.ResDescription
-	}
-	if resDescription == "" {
-		resDescription = fmt.Sprintf("Successful response of the %s API", name)
-	}
-
 	var schema *spec.Schema
-	if api.Spec.OpenApiSpec != nil && api.Spec.OpenApiSpec.ResSchema != nil {
-		schema, err = rillv1.ConvertSchema(api.Spec.OpenApiSpec.ResSchema.AsMap())
+	if api.Spec.OpenapiResponseSchema != nil {
+		schema, err = openapiutil.MapToSchema(api.Spec.OpenapiResponseSchema.AsMap())
 		if err != nil {
 			return nil, err
 		}
@@ -264,7 +272,7 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*spec.Pa
 							StatusCodeResponses: map[int]spec.Response{
 								200: {
 									ResponseProps: spec.ResponseProps{
-										Description: resDescription,
+										Description: fmt.Sprintf("Successful response of the %s API", name),
 										Schema: &spec.Schema{
 											SchemaProps: spec.SchemaProps{
 												Type: []string{"array"},

@@ -2981,8 +2981,14 @@ definitions:
         type: string
       resolverProperties:
         type: object
-      openApiSpec:
-        $ref: '#/definitions/v1OpenAPISpec'
+      openapiSummary:
+        type: string
+      openapiParameters:
+        type: array
+        items:
+          type: object
+      openapiResponseSchema:
+        type: object
   v1APIState:
     type: object
   v1Alert:
@@ -4889,19 +4895,6 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1TableInfo'
-  v1OpenAPISpec:
-    type: object
-    properties:
-      reqSummary:
-        type: string
-      reqParams:
-        type: array
-        items:
-          type: object
-      resDescription:
-        type: string
-      resSchema:
-        type: object
   v1Operation:
     type: string
     enum:
