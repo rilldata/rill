@@ -31,7 +31,11 @@
 
 <section style:min-height="{MIN_HEIGHT}px" style:height="{sectionHeight}px">
   <Resizer
-    bind:dimension={sectionHeight}
+    dimension={sectionHeight}
+    onUpdate={(height) => {
+      sectionHeight = height;
+    }}
+    z={40}
     direction="NS"
     side="top"
     min={10}

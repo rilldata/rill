@@ -17,6 +17,7 @@
   export let onMouseDown: ((e: MouseEvent) => void) | null = null;
   export let onUpdate: ((dimension: number) => void) | null = null;
   export let disabled = false;
+  export let z = 50;
 
   let start = 0;
   let startingDimension = dimension;
@@ -72,6 +73,7 @@
 </script>
 
 <button
+  style:z-index={z}
   {disabled}
   class:absolute
   class="{direction} {side}"
@@ -83,8 +85,8 @@
 
 <style lang="postcss">
   button {
-    @apply z-50 flex-none;
-    /* @apply bg-red-400; */
+    @apply flex-none;
+    @apply bg-red-400;
   }
 
   button:disabled {
