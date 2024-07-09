@@ -45,6 +45,11 @@ const ResourceKindMap: Record<
     extension: ".yaml",
     baseContent: "", // This is constructed in the `features/sources/modal` directory
   },
+  [ResourceKind.Connector]: {
+    name: "connector",
+    extension: ".yaml",
+    baseContent: "", // This is constructed in the `features/connectors` directory
+  },
   [ResourceKind.Model]: {
     name: "model",
     extension: ".sql",
@@ -147,8 +152,10 @@ gap: 2
 
 items:
   - component:
-      type: markdown
-      markdown: First component
+      markdown:
+        content: "First Component"
+        css:
+          font-size: "40px"
     width: 4
     height: 3
     x: 2

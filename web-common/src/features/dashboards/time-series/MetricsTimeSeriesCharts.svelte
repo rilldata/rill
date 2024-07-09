@@ -3,7 +3,6 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
@@ -27,6 +26,7 @@
   import { adjustOffsetForZone } from "@rilldata/web-common/lib/convertTimestampPreview";
   import { getAdjustedChartTime } from "@rilldata/web-common/lib/time/ranges";
   import { TimeRangePreset } from "@rilldata/web-common/lib/time/types";
+  import { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { TIME_GRAIN } from "../../../lib/time/config";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
@@ -42,7 +42,10 @@
 
   const {
     selectors: {
-      measures: { isMeasureValidPercentOfTotal },
+      measures: {
+        isMeasureValidPercentOfTotal,
+        getFilteredMeasuresAndDimensions,
+      },
       dimensionFilters: { includedDimensionValues },
     },
   } = getStateManagers();
@@ -93,11 +96,22 @@
   $: isAlternateChart = tddChartType != TDDChart.DEFAULT;
 
   // List of measures which will be shown on the dashboard
-  $: renderedMeasures = $metricsView.data?.measures?.filter(
-    expandedMeasureName
-      ? (measure) => measure.name === expandedMeasureName
-      : (_, i) => $showHideMeasures.selectedItems[i],
-  );
+  let renderedMeasures: MetricsViewSpecMeasureV2[];
+  $: {
+    renderedMeasures =
+      $metricsView.data?.measures?.filter(
+        expandedMeasureName
+          ? (measure) => measure.name === expandedMeasureName
+          : (_, i) => $showHideMeasures.selectedItems[i],
+      ) ?? [];
+    const { measures } = $getFilteredMeasuresAndDimensions(
+      $metricsView.data ?? {},
+      renderedMeasures.map((m) => m.name ?? ""),
+    );
+    renderedMeasures = renderedMeasures.filter((rm) =>
+      measures.includes(rm.name ?? ""),
+    );
+  }
 
   $: totals = $timeSeriesDataStore.total;
   $: totalsComparisons = $timeSeriesDataStore.comparisonTotal;
@@ -202,6 +216,12 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
+
+  $: hasTotalsError = Object.hasOwn($timeSeriesDataStore?.error, "totals");
+  $: hasTimeseriesError = Object.hasOwn(
+    $timeSeriesDataStore?.error,
+    "timeseries",
+  );
 </script>
 
 <TimeSeriesChartContainer
@@ -284,12 +304,13 @@
             value={bigNum}
             isMeasureExpanded={isInTimeDimensionView}
             {showComparison}
-            comparisonOption={$timeControlsStore?.selectedComparisonTimeRange
-              ?.name}
             {comparisonValue}
-            status={$timeSeriesDataStore?.isFetching
-              ? EntityStatus.Running
-              : EntityStatus.Idle}
+            errorMessage={$timeSeriesDataStore?.error?.totals}
+            status={hasTotalsError
+              ? EntityStatus.Error
+              : $timeSeriesDataStore?.isFetching
+                ? EntityStatus.Running
+                : EntityStatus.Idle}
             on:expand-measure={() => {
               metricsExplorerStore.setExpandedMeasureName(
                 metricViewName,
@@ -298,8 +319,18 @@
             }}
           />
 
-          {#if $timeSeriesDataStore?.isError}
-            <div class="p-5"><CrossIcon /></div>
+          {#if hasTimeseriesError}
+            <div
+              class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
+            >
+              {#if $timeSeriesDataStore.error?.timeseries}
+                <span>
+                  Error: {$timeSeriesDataStore.error.timeseries}
+                </span>
+              {:else}
+                <span>Unable to fetch data from the API</span>
+              {/if}
+            </div>
           {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
             <TDDAlternateChart
               timeGrain={interval}

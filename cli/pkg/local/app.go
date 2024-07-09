@@ -7,12 +7,10 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"path"
 	"path/filepath"
 	"strconv"
 	"time"
 
-	"github.com/bmatcuk/doublestar/v4"
 	"github.com/c2h5oh/datasize"
 	"github.com/rilldata/rill/cli/pkg/browser"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -73,6 +71,7 @@ type App struct {
 	adminURL              string
 	pkceAuthenticators    map[string]*pkce.Authenticator // map of state to pkce authenticators
 	ch                    *cmdutil.Helper
+	localURL              string
 }
 
 type AppOptions struct {
@@ -90,6 +89,7 @@ type AppOptions struct {
 	AdminURL    string
 	AdminToken  string
 	CMDHelper   *cmdutil.Helper
+	LocalURL    string
 }
 
 func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
@@ -180,8 +180,8 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 
 	// Merge opts.Variables with some local overrides of the defaults in runtime/drivers.InstanceConfig.
 	vars := map[string]string{
-		"rill.download_row_limit": "0", // 0 means unlimited
-		"rill.stage_changes":      "false",
+		"rill.download_limit_bytes": "0", // 0 means unlimited
+		"rill.stage_changes":        "false",
 	}
 	for k, v := range opts.Variables {
 		vars[k] = v
@@ -201,26 +201,22 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 
 	// If the OLAP is the default OLAP (DuckDB in stage.db), we make it relative to the project directory (not the working directory)
 	defaultOLAP := false
-	olapDSN := opts.OlapDSN
 	olapCfg := make(map[string]string)
-	if opts.OlapDriver == DefaultOLAPDriver && olapDSN == DefaultOLAPDSN {
+	if opts.OlapDriver == DefaultOLAPDriver && opts.OlapDSN == DefaultOLAPDSN {
 		defaultOLAP = true
-		olapDSN = path.Join(dbDirPath, olapDSN)
-		// Set path which overrides the duckdb's default behaviour to store duckdb data in data_dir/<instance_id>/<connector> directory which is not backward compatible
-		olapCfg["path"] = olapDSN
-		val, err := isExternalStorageEnabled(dbDirPath, vars)
+		val, err := isExternalStorageEnabled(vars)
 		if err != nil {
 			return nil, err
 		}
-
 		olapCfg["external_table_storage"] = strconv.FormatBool(val)
 	}
 
-	// Set default DuckDB pool size to 4
-	olapCfg["dsn"] = olapDSN
 	if opts.OlapDriver == "duckdb" {
+		// Set default DuckDB pool size to 4
 		olapCfg["pool_size"] = "4"
 		if !defaultOLAP {
+			// dsn is automatically computed by duckdb driver so we set only when non default dsn is passed
+			olapCfg["dsn"] = opts.OlapDSN
 			olapCfg["error_on_incompatible_version"] = "true"
 		}
 	}
@@ -303,6 +299,7 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		adminURL:              opts.AdminURL,
 		pkceAuthenticators:    make(map[string]*pkce.Authenticator),
 		ch:                    opts.CMDHelper,
+		localURL:              opts.LocalURL,
 	}
 
 	// Collect and emit information about connectors at start time
@@ -618,27 +615,12 @@ func (s skipFieldZapEncoder) AddString(key, val string) {
 }
 
 // isExternalStorageEnabled determines if external storage can be enabled.
-// we can't always enable `external_table_storage` if the project dir already has a db file
-// it could have been created with older logic where every source was a table in the main db
-func isExternalStorageEnabled(dbPath string, variables map[string]string) (bool, error) {
-	_, err := os.Stat(filepath.Join(dbPath, DefaultOLAPDSN))
-	if err != nil {
-		// fresh project
-		// check if flag explicitly passed
-		val, ok := variables["connector.duckdb.external_table_storage"]
-		if !ok {
-			// mark enabled by default
-			return true, nil
-		}
-		return strconv.ParseBool(val)
+func isExternalStorageEnabled(variables map[string]string) (bool, error) {
+	// check if flag explicitly passed
+	val, ok := variables["connector.duckdb.external_table_storage"]
+	if !ok {
+		// mark enabled by default
+		return true, nil
 	}
-
-	fsRoot := os.DirFS(dbPath)
-	glob := path.Clean(path.Join("./", filepath.Join("*", "version.txt")))
-
-	matches, err := doublestar.Glob(fsRoot, glob)
-	if err != nil {
-		return false, err
-	}
-	return len(matches) > 0, nil
+	return strconv.ParseBool(val)
 }

@@ -1,4 +1,6 @@
+import { invalidate } from "$app/navigation";
 import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   getRuntimeServiceGetFileQueryKey,
   getRuntimeServiceIssueDevJWTQueryKey,
@@ -9,7 +11,7 @@ import {
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import { WatchRequestClient } from "@rilldata/web-common/runtime-client/watch-request-client";
 import { get } from "svelte/store";
-import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { firstLoad } from "../welcome/is-project-initialized";
 
 export class WatchFilesClient {
   public readonly client: WatchRequestClient<V1WatchFilesResponse>;
@@ -30,7 +32,7 @@ export class WatchFilesClient {
     });
   }
 
-  private handleWatchFileResponse(res: V1WatchFilesResponse) {
+  private async handleWatchFileResponse(res: V1WatchFilesResponse) {
     if (!res?.path || res.path.includes(".db")) return;
 
     const instanceId = get(runtime).instanceId;
@@ -41,15 +43,16 @@ export class WatchFilesClient {
     if (!res.isDir) {
       switch (res.event) {
         case V1FileEvent.FILE_EVENT_WRITE:
-          void queryClient.refetchQueries(
-            getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
-          );
-          void fileArtifacts.fileUpdated(res.path);
+          await fileArtifacts.getFileArtifact(res.path).fetchContent(true);
+
           if (res.path === "/rill.yaml") {
             // If it's a rill.yaml file, invalidate the dev JWT queries
             void queryClient.invalidateQueries(
-              getRuntimeServiceIssueDevJWTQueryKey(),
+              getRuntimeServiceIssueDevJWTQueryKey({}),
             );
+
+            firstLoad.set(true);
+            await invalidate("init");
           }
           this.seenFiles.add(res.path);
           break;
@@ -58,8 +61,14 @@ export class WatchFilesClient {
           void queryClient.resetQueries(
             getRuntimeServiceGetFileQueryKey(instanceId, { path: res.path }),
           );
-          fileArtifacts.fileDeleted(res.path);
+          fileArtifacts.removeFile(res.path);
           this.seenFiles.delete(res.path);
+
+          if (res.path === "/rill.yaml") {
+            firstLoad.set(true);
+            await invalidate("init");
+          }
+
           break;
       }
     }

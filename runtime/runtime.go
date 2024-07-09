@@ -91,12 +91,12 @@ func (r *Runtime) Close() error {
 	return errors.Join(err1, err2)
 }
 
-func (r *Runtime) ResolveMetricsViewSecurity(attributes map[string]any, instanceID string, mv *runtimev1.MetricsViewSpec, lastUpdatedOn time.Time) (*ResolvedMetricsViewSecurity, error) {
+func (r *Runtime) ResolveSecurity(instanceID string, claims *SecurityClaims, res *runtimev1.Resource) (*ResolvedSecurity, error) {
 	inst, err := r.Instance(context.Background(), instanceID)
 	if err != nil {
 		return nil, err
 	}
-	return r.securityEngine.resolveMetricsViewSecurity(instanceID, inst.Environment, mv, lastUpdatedOn, attributes)
+	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, claims, res)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
@@ -141,9 +141,10 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	for _, r := range parser.Resources {
 		if r.ConnectorSpec != nil {
 			connMap[r.Name.Name] = &runtimev1.Connector{
-				Name:   r.Name.Name,
-				Type:   r.ConnectorSpec.Driver,
-				Config: r.ConnectorSpec.Properties,
+				Name:                r.Name.Name,
+				Type:                r.ConnectorSpec.Driver,
+				Config:              r.ConnectorSpec.Properties,
+				ConfigFromVariables: r.ConnectorSpec.PropertiesFromVariables,
 			}
 		}
 	}
@@ -163,7 +164,40 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	}
 	inst.ProjectVariables = vars
 	inst.FeatureFlags = rillYAML.FeatureFlags
+	inst.PublicPaths = rillYAML.PublicPaths
 	return r.EditInstance(ctx, inst, restartController)
+}
+
+// UpdateInstanceConnector upserts or removes a connector from an instance
+// If connector is nil, the connector is removed; otherwise, it is upserted
+func (r *Runtime) UpdateInstanceConnector(ctx context.Context, instanceID, name string, connector *runtimev1.ConnectorSpec) error {
+	inst, err := r.Instance(ctx, instanceID)
+	if err != nil {
+		return err
+	}
+
+	// remove the connector if it exists
+	for i, c := range inst.ProjectConnectors {
+		if c.Name == name {
+			inst.ProjectConnectors = append(inst.ProjectConnectors[:i], inst.ProjectConnectors[i+1:]...)
+			break
+		}
+	}
+
+	if connector == nil {
+		// connector should be removed
+		return r.EditInstance(ctx, inst, false)
+	}
+
+	// append the new/updated connector
+	inst.ProjectConnectors = append(inst.ProjectConnectors, &runtimev1.Connector{
+		Name:                name,
+		Type:                connector.Driver,
+		Config:              connector.Properties,
+		ConfigFromVariables: connector.PropertiesFromVariables,
+	})
+
+	return r.EditInstance(ctx, inst, false)
 }
 
 func instanceAnnotationsToAttribs(instance *drivers.Instance) []attribute.KeyValue {

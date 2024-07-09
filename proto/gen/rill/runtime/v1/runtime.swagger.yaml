@@ -135,7 +135,8 @@ paths:
       tags:
         - ConnectorService
   /v1/dev-jwt:
-    get:
+    post:
+      summary: IssueDevJWT issues a JWT for mimicking a user in local development.
       operationId: RuntimeService_IssueDevJWT
       responses:
         "200":
@@ -147,25 +148,11 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: name
-          in: query
-          required: false
-          type: string
-        - name: email
-          in: query
-          required: false
-          type: string
-        - name: groups
-          in: query
-          required: false
-          type: array
-          items:
-            type: string
-          collectionFormat: multi
-        - name: admin
-          in: query
-          required: false
-          type: boolean
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTRequest'
       tags:
         - RuntimeService
   /v1/examples:
@@ -293,6 +280,41 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/health:
+    get:
+      summary: Health runs a health check on the runtime.
+      operationId: RuntimeService_Health
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1HealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/health/instances/{instanceId}:
+    get:
+      summary: InstanceHealth runs a health check on a specific instance.
+      operationId: RuntimeService_InstanceHealth
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1InstanceHealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -1434,6 +1456,58 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/search:
+    post:
+      summary: MetricsViewSearch Get the data types of measures and dimensions
+      operationId: QueryService_MetricsViewSearch
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1MetricsViewSearchResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: metricsViewName
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              dimensions:
+                type: array
+                items:
+                  type: string
+              search:
+                type: string
+              timeRange:
+                $ref: '#/definitions/v1TimeRange'
+                title: Optional
+              where:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              having:
+                $ref: '#/definitions/v1Expression'
+                title: Optional
+              limit:
+                type: integer
+                format: int32
+                title: Optional
+              priority:
+                type: integer
+                format: int32
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/metrics-views/{metricsViewName}/time-range-summary:
     post:
       summary: MetricsViewTimeRange Get the time range summaries (min, max) for time column in a metrics view
@@ -1501,12 +1575,6 @@ paths:
                 type: array
                 items:
                   type: string
-                title: Required either measure_names or inline_measures
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1572,11 +1640,6 @@ paths:
                 type: array
                 items:
                   type: string
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -1641,12 +1704,6 @@ paths:
                 type: array
                 items:
                   type: string
-                title: Required either measure_names or inline_measures
-              inlineMeasures:
-                type: array
-                items:
-                  type: object
-                  $ref: '#/definitions/v1InlineMeasure'
               timeStart:
                 type: string
                 format: date-time
@@ -2611,6 +2668,12 @@ definitions:
         type: array
         items:
           type: string
+  MetricsViewSearchResponseSearchResult:
+    type: object
+    properties:
+      dimension:
+        type: string
+      value: {}
   MetricsViewSpecAvailableComparisonOffset:
     type: object
     properties:
@@ -2638,6 +2701,18 @@ definitions:
       - COMPARISON_MODE_TIME
       - COMPARISON_MODE_DIMENSION
     default: COMPARISON_MODE_UNSPECIFIED
+  MetricsViewSpecDimensionSelector:
+    type: object
+    properties:
+      name:
+        type: string
+      timeGrain:
+        $ref: '#/definitions/v1TimeGrain'
+        title: Only for time dimensions (optional)
+      desc:
+        type: boolean
+        title: Only for when ordering (optional)
+    title: Selector for a dimension
   MetricsViewSpecDimensionV2:
     type: object
     properties:
@@ -2654,6 +2729,15 @@ definitions:
       unnest:
         type: boolean
     title: Dimensions are columns to filter and group by
+  MetricsViewSpecMeasureType:
+    type: string
+    enum:
+      - MEASURE_TYPE_UNSPECIFIED
+      - MEASURE_TYPE_SIMPLE
+      - MEASURE_TYPE_DERIVED
+      - MEASURE_TYPE_TIME_COMPARISON
+    default: MEASURE_TYPE_UNSPECIFIED
+    title: Type of measure query to generate
   MetricsViewSpecMeasureV2:
     type: object
     properties:
@@ -2661,6 +2745,24 @@ definitions:
         type: string
       expression:
         type: string
+      type:
+        $ref: '#/definitions/MetricsViewSpecMeasureType'
+      window:
+        $ref: '#/definitions/MetricsViewSpecMeasureWindow'
+      perDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+      requiredDimensions:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+      referencedMeasures:
+        type: array
+        items:
+          type: string
       label:
         type: string
       description:
@@ -2672,27 +2774,22 @@ definitions:
       validPercentOfTotal:
         type: boolean
     title: Measures are aggregated computed values
-  MetricsViewSpecSecurityV2:
+  MetricsViewSpecMeasureWindow:
     type: object
     properties:
-      access:
-        type: string
-        title: Dashboard level access condition
-      rowFilter:
-        type: string
-        title: row level access condition
-      include:
+      partition:
+        type: boolean
+        title: If true, partitions the window by all present dimensions except those in order_by
+      orderBy:
         type: array
         items:
           type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-        title: either one of include or exclude will be specified
-      exclude:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-    title: Security for the dashboard
+          $ref: '#/definitions/MetricsViewSpecDimensionSelector'
+        description: Dimensions to order the window by. Must be present in required_dimensions.
+      frameExpression:
+        type: string
+        title: Raw SQL expression to use as the frame (starting with "ROWS ...")
+    title: Window to apply to the measure calculation
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -2728,16 +2825,6 @@ definitions:
       count:
         type: integer
         format: int32
-  SecurityV2FieldConditionV2:
-    type: object
-    properties:
-      condition:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
-    title: Dimension/measure level access condition
   StructTypeField:
     type: object
     properties:
@@ -2813,7 +2900,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3450,6 +3537,11 @@ definitions:
         additionalProperties:
           type: string
         title: Config for the connector
+      configFromVariables:
+        type: object
+        additionalProperties:
+          type: string
+        title: config_from_variables stores configs whose value is a variable. This is only set for configs obtained from `connector.yaml`
   v1ConnectorDriver:
     type: object
     properties:
@@ -3505,8 +3597,18 @@ definitions:
         type: object
         additionalProperties:
           type: string
+      propertiesFromVariables:
+        type: object
+        additionalProperties:
+          type: string
+        description: |-
+          properties_from_variables stores properties whose value is a variable.
+          NOTE : properties_from_variables and properties both should be used to get all properties.
   v1ConnectorState:
     type: object
+    properties:
+      specHash:
+        type: string
   v1ConnectorV2:
     type: object
     properties:
@@ -3586,9 +3688,6 @@ definitions:
       height:
         type: integer
         format: int64
-      fontSize:
-        type: integer
-        format: int64
   v1DashboardSpec:
     type: object
     properties:
@@ -3657,6 +3756,8 @@ definitions:
       val: {}
       cond:
         $ref: '#/definitions/v1Condition'
+      subquery:
+        $ref: '#/definitions/v1Subquery'
   v1FileEvent:
     type: string
     enum:
@@ -3752,6 +3853,21 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
+  v1HealthResponse:
+    type: object
+    properties:
+      limiterError:
+        type: string
+      connCacheError:
+        type: string
+      metastoreError:
+        type: string
+      networkError:
+        type: string
+      instancesHealth:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1InstanceHealth'
   v1HistogramMethod:
     type: string
     enum:
@@ -3759,15 +3875,6 @@ definitions:
       - HISTOGRAM_METHOD_FD
       - HISTOGRAM_METHOD_DIAGNOSTIC
     default: HISTOGRAM_METHOD_UNSPECIFIED
-  v1InlineMeasure:
-    type: object
-    properties:
-      name:
-        type: string
-        title: Required
-      expression:
-        type: string
-        title: Required, ie 'count(*)'
   v1Instance:
     type: object
     properties:
@@ -3826,6 +3933,34 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
+  v1InstanceHealth:
+    type: object
+    properties:
+      controllerError:
+        type: string
+      olapError:
+        type: string
+      repoError:
+        type: string
+  v1InstanceHealthResponse:
+    type: object
+    properties:
+      instanceHealth:
+        $ref: '#/definitions/v1InstanceHealth'
+  v1IssueDevJWTRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      groups:
+        type: array
+        items:
+          type: string
+      admin:
+        type: boolean
+    title: Request message for RuntimeService.IssueDevJWT
   v1IssueDevJWTResponse:
     type: object
     properties:
@@ -4306,6 +4441,14 @@ definitions:
     properties:
       schema:
         $ref: '#/definitions/v1StructType'
+  v1MetricsViewSearchResponse:
+    type: object
+    properties:
+      results:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/MetricsViewSearchResponseSearchResult'
   v1MetricsViewSort:
     type: object
     properties:
@@ -4375,8 +4518,11 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
-      security:
-        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
         title: Security for the dashboard
       firstDayOfWeek:
         type: integer
@@ -4429,12 +4575,6 @@ definitions:
         type: array
         items:
           type: string
-        title: Required either measure_names or inline_measures
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time
@@ -4489,11 +4629,6 @@ definitions:
         type: array
         items:
           type: string
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time
@@ -4547,12 +4682,6 @@ definitions:
         type: array
         items:
           type: string
-        title: Required either measure_names or inline_measures
-      inlineMeasures:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/v1InlineMeasure'
       timeStart:
         type: string
         format: date-time
@@ -5199,6 +5328,46 @@ definitions:
         format: int64
       timeZone:
         type: string
+  v1SecurityRule:
+    type: object
+    properties:
+      access:
+        $ref: '#/definitions/v1SecurityRuleAccess'
+      fieldAccess:
+        $ref: '#/definitions/v1SecurityRuleFieldAccess'
+      rowFilter:
+        $ref: '#/definitions/v1SecurityRuleRowFilter'
+  v1SecurityRuleAccess:
+    type: object
+    properties:
+      condition:
+        type: string
+      allow:
+        type: boolean
+  v1SecurityRuleFieldAccess:
+    type: object
+    properties:
+      condition:
+        type: string
+      allow:
+        type: boolean
+      fields:
+        type: array
+        items:
+          type: string
+      allFields:
+        type: boolean
+  v1SecurityRuleRowFilter:
+    type: object
+    properties:
+      condition:
+        type: string
+      sql:
+        type: string
+        title: Raw SQL expression to apply to the underlying table
+      expression:
+        $ref: '#/definitions/v1Expression'
+        title: Regular query expression referencing dimension names
   v1SourceSpec:
     type: object
     properties:
@@ -5248,6 +5417,19 @@ definitions:
           type: object
           $ref: '#/definitions/StructTypeField'
     title: StructType is a type composed of ordered, named and typed sub-fields
+  v1Subquery:
+    type: object
+    properties:
+      dimension:
+        type: string
+      measures:
+        type: array
+        items:
+          type: string
+      where:
+        $ref: '#/definitions/v1Expression'
+      having:
+        $ref: '#/definitions/v1Expression'
   v1TableCardinalityRequest:
     type: object
     properties:

@@ -19,8 +19,10 @@ import (
 	"github.com/c2h5oh/datasize"
 	"github.com/jmoiron/sqlx"
 	"github.com/marcboeker/go-duckdb"
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/drivers/duckdb/extensions"
+	"github.com/rilldata/rill/runtime/drivers/file"
 	activity "github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -49,14 +51,6 @@ var spec = drivers.Spec{
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "sql",
-			Type:        drivers.StringPropertyType,
-			Required:    true,
-			DisplayName: "SQL",
-			Description: "DuckDB SQL query.",
-			Placeholder: "select * from read_csv('data/file.csv', header=true);",
-		},
 		{
 			Key:         "db",
 			Type:        drivers.StringPropertyType,
@@ -304,9 +298,10 @@ type connection struct {
 	dbReopen    bool
 	dbErr       error
 	// State for maintaining connection acquire times, which enables periodically checking for hanging DuckDB queries (we have previously seen deadlocks in DuckDB).
-	connTimesMu sync.Mutex
-	nextConnID  int
-	connTimes   map[int]time.Time
+	connTimesMu    sync.Mutex
+	nextConnID     int
+	connTimes      map[int]time.Time
+	hangingConnErr error
 	// Cancellable context to control internal processes like emitting the stats
 	ctx    context.Context
 	cancel context.CancelFunc
@@ -315,6 +310,14 @@ type connection struct {
 }
 
 var _ drivers.OLAPStore = &connection{}
+
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	err := c.db.PingContext(ctx)
+	c.connTimesMu.Lock()
+	defer c.connTimesMu.Unlock()
+	return errors.Join(err, c.hangingConnErr)
+}
 
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
@@ -382,6 +385,17 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.OutputHandle == c {
 		if sqlstore, ok := opts.InputHandle.AsSQLStore(); ok {
 			return &sqlStoreToSelfExecutor{c, sqlstore, opts}, true
+		}
+	}
+	if opts.InputHandle == c {
+		if opts.OutputHandle.Driver() == "file" {
+			outputProps := &file.ModelOutputProperties{}
+			if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+				return nil, false
+			}
+			if supportsExportFormat(outputProps.Format) {
+				return &selfToFileExecutor{c, opts}, true
+			}
 		}
 	}
 	return nil, false
@@ -843,11 +857,14 @@ func (c *connection) periodicallyCheckConnDurations(d time.Duration) {
 			return
 		case <-connDurationTicker.C:
 			c.connTimesMu.Lock()
+			var connErr error
 			for connID, connTime := range c.connTimes {
 				if time.Since(connTime) > maxAcquiredConnDuration {
+					connErr = fmt.Errorf("duckdb: a connection has been held for longer than the maximum allowed duration")
 					c.logger.Error("duckdb: a connection has been held for longer than the maximum allowed duration", zap.Int("conn_id", connID), zap.Duration("duration", time.Since(connTime)))
 				}
 			}
+			c.hangingConnErr = connErr
 			c.connTimesMu.Unlock()
 		}
 	}

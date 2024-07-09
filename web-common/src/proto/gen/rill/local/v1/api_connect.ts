@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse } from "./api_pb.js";
+import { DeployProjectRequest, DeployProjectResponse, DeployValidationRequest, DeployValidationResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -43,6 +43,61 @@ export const LocalService = {
       name: "GetVersion",
       I: GetVersionRequest,
       O: GetVersionResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DeployValidation validates a deploy request.
+     *
+     * @generated from rpc rill.local.v1.LocalService.DeployValidation
+     */
+    deployValidation: {
+      name: "DeployValidation",
+      I: DeployValidationRequest,
+      O: DeployValidationResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * PushToGithub create a Git repo from local project and pushed to users git account.
+     *
+     * @generated from rpc rill.local.v1.LocalService.PushToGithub
+     */
+    pushToGithub: {
+      name: "PushToGithub",
+      I: PushToGithubRequest,
+      O: PushToGithubResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * DeployProject deploys the local project to the Rill cloud.
+     *
+     * @generated from rpc rill.local.v1.LocalService.DeployProject
+     */
+    deployProject: {
+      name: "DeployProject",
+      I: DeployProjectRequest,
+      O: DeployProjectResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * RedeployProject updates a deployed project.
+     *
+     * @generated from rpc rill.local.v1.LocalService.RedeployProject
+     */
+    redeployProject: {
+      name: "RedeployProject",
+      I: RedeployProjectRequest,
+      O: RedeployProjectResponse,
+      kind: MethodKind.Unary,
+    },
+    /**
+     * User returns the locally logged in user
+     *
+     * @generated from rpc rill.local.v1.LocalService.GetCurrentUser
+     */
+    getCurrentUser: {
+      name: "GetCurrentUser",
+      I: GetCurrentUserRequest,
+      O: GetCurrentUserResponse,
       kind: MethodKind.Unary,
     },
   }

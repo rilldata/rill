@@ -25,4 +25,5 @@ export type QueryMapperArgs<R extends QueryRequests> = {
   metricsView: V1MetricsViewSpec;
   timeRangeSummary: V1TimeRangeSummary;
   executionTime: string;
+  annotations: Record<string, string>;
 };

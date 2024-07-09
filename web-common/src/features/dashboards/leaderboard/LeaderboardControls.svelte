@@ -18,6 +18,9 @@
   export let metricViewName;
 
   const {
+    selectors: {
+      measures: { filteredSimpleMeasures },
+    },
     actions: {
       contextCol: { setContextColumn },
       setLeaderboardMeasureName,
@@ -26,7 +29,7 @@
 
   $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
-  $: measures = $metricsView.data?.measures;
+  $: measures = $filteredSimpleMeasures();
 
   let metricsExplorer: MetricsExplorerEntity;
   $: metricsExplorer = $metricsExplorerStore.entities[metricViewName];

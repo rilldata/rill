@@ -9,6 +9,7 @@
   import { useProjectParser } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   const queryClient = useQueryClient();
 
@@ -18,8 +19,10 @@
 
   $: metricsViewName = data.metricsView.meta?.name?.name as string;
 
+  $: ({ instanceId } = $runtime);
+
   $: filePaths = data.metricsView.meta?.filePaths as string[];
-  $: projectParserQuery = useProjectParser(queryClient, data.instanceId);
+  $: projectParserQuery = useProjectParser(queryClient, instanceId);
   $: dashboardFileHasParseError =
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),

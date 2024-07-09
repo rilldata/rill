@@ -66,15 +66,15 @@ Files that are *nested at any level* under your native `sources` directory will 
 
 **`glob.max_total_size`**
  — Applicable if the URI is a glob pattern. The max allowed total size (in bytes) of all objects matching the glob pattern _(optional)_.
-  - Default value is _`10737418240 (10GB)`_
+  - Default value is _`107374182400 (100GB)`_
 
 **`glob.max_objects_matched`**
  — Applicable if the URI is a glob pattern. The max allowed number of objects matching the glob pattern _(optional)_.
-  - Default value is _`1,000`_
+  - Default value is _`unlimited`_
 
 **`glob.max_objects_listed`**
  — Applicable if the URI is a glob pattern. The max number of objects to list and match against glob pattern, not inclusive of files already excluded by the glob prefix _(optional)_.
-  - Default value is _`1,000,000`_
+  - Default value is _`unlimited`_
 
 **`timeout`**
  — The maximum time to wait for souce ingestion _(optional)_.

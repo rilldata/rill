@@ -8,17 +8,16 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
-  import { useIsProjectInitialized } from "../../welcome/is-project-initialized";
   import { compileCreateSourceYAML } from "../sourceUtils";
   import { createSource } from "./createSource";
   import { uploadTableFiles } from "./file-upload";
+  import { isProjectInitialized } from "../../welcome/is-project-initialized";
 
   export let showDropOverlay: boolean;
 
   const queryClient = useQueryClient();
 
-  $: runtimeInstanceId = $runtime.instanceId;
-  $: isProjectInitialized = useIsProjectInitialized(runtimeInstanceId);
+  $: ({ instanceId } = $runtime);
 
   const unpackEmptyProject = createRuntimeServiceUnpackEmpty();
 
@@ -30,16 +29,15 @@
     // no-op if no files are dropped
     if (files === undefined) return;
 
-    const uploadedFiles = uploadTableFiles(
-      Array.from(files),
-      $runtime.instanceId,
-    );
+    const uploadedFiles = uploadTableFiles(Array.from(files), instanceId);
+
+    const initialized = await isProjectInitialized(instanceId);
     for await (const { tableName, filePath } of uploadedFiles) {
       try {
         // If project is uninitialized, initialize an empty project
-        if (!$isProjectInitialized.data) {
+        if (!initialized) {
           $unpackEmptyProject.mutate({
-            instanceId: $runtime.instanceId,
+            instanceId,
             data: {
               title: EMPTY_PROJECT_TITLE,
             },
@@ -53,7 +51,7 @@
           },
           "local_file",
         );
-        await createSource(runtimeInstanceId, tableName, yaml);
+        await createSource(instanceId, tableName, yaml);
         const newFilePath = getFilePathFromNameAndType(
           tableName,
           EntityType.Table,

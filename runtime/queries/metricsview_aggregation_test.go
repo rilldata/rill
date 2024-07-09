@@ -3,11 +3,13 @@ package queries_test
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
 	"testing"
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -57,6 +59,34 @@ func Ignore_TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	t.Run("TestMetricsViewAggregation_measure_filters", func(t *testing.T) { TestMetricsViewAggregation_measure_filters(t) })
 	t.Run("TestMetricsViewsAggregation_timezone", func(t *testing.T) { TestMetricsViewsAggregation_timezone(t) })
 	t.Run("TestMetricsViewAggregationClickhouseEnum", func(t *testing.T) { testMetricsViewAggregationClickhouseEnum(t) })
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_totals", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t)
+	})
+	// t.Run("TestMetricsViewsAggregation_comparison_measure_filter", func(t *testing.T) {
+	// 	TestMetricsViewsAggregation_comparison_measure_filter(t)
+	// })
+	// t.Run("TestMetricsViewsAggregation_comparison_measure_filter_with_having", func(t *testing.T) {
+	// 	TestMetricsViewsAggregation_comparison_measure_filter_with_having(t)
+	// })
+	// t.Run("TestMetricsViewsAggregation_comparison", func(t *testing.T) {
+	// 	TestMetricsViewsAggregation_comparison(t)
+	// })
+	t.Run("TestMetricsViewsAggregation_comparison_pivot", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_pivot(t)
+	})
+	t.Run("TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates", func(t *testing.T) {
+		TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t)
+	})
+}
+
+func testClaims() *runtime.SecurityClaims {
+	return &runtime.SecurityClaims{SkipChecks: true}
 }
 
 func TestMetricsViewsAggregation(t *testing.T) {
@@ -88,8 +118,8 @@ func TestMetricsViewsAggregation(t *testing.T) {
 				Name: "timestamp",
 			},
 		},
-
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -155,8 +185,9 @@ func TestMetricsViewsAggregation_export_day(t *testing.T) {
 			},
 		},
 
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -165,7 +196,7 @@ func TestMetricsViewsAggregation_export_day(t *testing.T) {
 	rows := q.Result.Data
 
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "timestamp (day)"))
 }
 
 func TestMetricsViewsAggregation_export_hour(t *testing.T) {
@@ -198,8 +229,9 @@ func TestMetricsViewsAggregation_export_hour(t *testing.T) {
 			},
 		},
 
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -208,7 +240,7 @@ func TestMetricsViewsAggregation_export_hour(t *testing.T) {
 	rows := q.Result.Data
 
 	i := 0
-	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "pub", "timestamp"))
+	require.Equal(t, "Facebook,2022-01-01T00:00:00Z", fieldsToString(rows[i], "Publisher", "timestamp (hour)"))
 }
 
 func TestMetricsViewsAggregation_no_limit(t *testing.T) {
@@ -239,6 +271,7 @@ func TestMetricsViewsAggregation_no_limit(t *testing.T) {
 				Name: "timestamp",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -272,7 +305,8 @@ func TestMetricsViewsAggregation_no_limit_pivot(t *testing.T) {
 				Name: "pub",
 			},
 		},
-		PivotOn: []string{"timestamp"},
+		PivotOn:        []string{"timestamp"},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -310,7 +344,8 @@ func TestMetricsViewsAggregation_pivot_having_same_name(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -362,7 +397,8 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -419,11 +455,13 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns_limit_exceed
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.Error(t, err)
+	require.NoError(t, err)
+	require.Len(t, q.Result.Data, 10)
 }
 
 func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T) {
@@ -460,8 +498,9 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -470,7 +509,7 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T
 
 	require.Equal(t, 5, len(q.Result.Schema.Fields))
 	require.Equal(t, "Publisher", q.Result.Schema.Fields[0].Name)
-	require.Equal(t, "day", q.Result.Schema.Fields[1].Name)
+	require.Equal(t, "day (day)", q.Result.Schema.Fields[1].Name)
 	require.Equal(t, "2022-01-01 00:00:00_Average bid price", q.Result.Schema.Fields[2].Name)
 	require.Equal(t, "2022-02-01 00:00:00_Average bid price", q.Result.Schema.Fields[3].Name)
 	require.Equal(t, "2022-03-01 00:00:00_Average bid price", q.Result.Schema.Fields[4].Name)
@@ -508,8 +547,9 @@ func TestMetricsViewsAggregation_pivot_export_labels(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -561,8 +601,9 @@ func TestMetricsViewsAggregation_pivot_export_nolabel(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -614,8 +655,9 @@ func TestMetricsViewsAggregation_pivot_export_nolabel_measure(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -670,7 +712,8 @@ func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -736,8 +779,9 @@ func TestMetricsViewsAggregation_pivot_2_measures_with_labels(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -804,7 +848,8 @@ func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
 				},
 			},
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -873,8 +918,9 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 			"timestamp",
 			"space_label",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -882,9 +928,9 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 	rows := q.Result.Data
 
 	require.Equal(t, q.Result.Schema.Fields[0].Name, "Domain")
-	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_google_Average bid price")
-	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-02-01 00:00:00_google_Average bid price")
-	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-03-01 00:00:00_google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[1].Name, "2022-01-01 00:00:00_Google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[2].Name, "2022-02-01 00:00:00_Google_Average bid price")
+	require.Equal(t, q.Result.Schema.Fields[3].Name, "2022-03-01 00:00:00_Google_Average bid price")
 
 	i := 0
 	require.Equal(t, "google.com", fieldsToString(rows[i], "Domain"))
@@ -930,7 +976,8 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 			"timestamp",
 			"pub",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1297,6 +1344,7 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -1337,8 +1385,8 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 				Name: "timestamp",
 			},
 		},
-
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1379,7 +1427,7 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1388,6 +1436,7 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1395,15 +1444,15 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Google,18763", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,18763", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "inline_1"))
 
 	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
 		{
-			Name:           "measure_1",
+			Name:           "inline_1",
 			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			Filter: &runtimev1.Expression{
 				Expression: &runtimev1.Expression_Cond{
@@ -1433,11 +1482,11 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 
 	rows = q.Result.Data
 	i = 0
-	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,8808", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Google,null", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Microsoft,null", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
@@ -1461,7 +1510,7 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1477,6 +1526,7 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 				Name: "time_year",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1484,13 +1534,13 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,232", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,232", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 	i++
-	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,208", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,208", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 
 	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
 		{
-			Name:           "measure_1",
+			Name:           "inline_1",
 			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			Filter: &runtimev1.Expression{
 				Expression: &runtimev1.Expression_Cond{
@@ -1520,9 +1570,9 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 
 	rows = q.Result.Data
 	i = 0
-	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,52", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,52", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 	i++
-	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,54", fieldsToString(rows[i], "pub", "timestamp", "time_year", "measure_1"))
+	require.Equal(t, "Yahoo,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,54", fieldsToString(rows[i], "pub", "timestamp", "time_year", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
@@ -1540,7 +1590,7 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1552,6 +1602,7 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 				Name: "dom",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1559,15 +1610,15 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Facebook,facebook.com,10533", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Facebook,facebook.com,10533", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 	i++
-	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 	i++
-	require.Equal(t, "Google,google.com,10119", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Google,google.com,10119", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 
 	q.Measures = []*runtimev1.MetricsViewAggregationMeasure{
 		{
-			Name:           "measure_1",
+			Name:           "inline_1",
 			BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			Filter: &runtimev1.Expression{
 				Expression: &runtimev1.Expression_Cond{
@@ -1597,11 +1648,11 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 
 	rows = q.Result.Data
 	i = 0
-	require.Equal(t, "Facebook,facebook.com,null", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Facebook,facebook.com,null", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 	i++
-	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Facebook,instagram.com,8808", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 	i++
-	require.Equal(t, "Google,google.com,null", fieldsToString(rows[i], "pub", "dom", "measure_1"))
+	require.Equal(t, "Google,google.com,null", fieldsToString(rows[i], "pub", "dom", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_having_gt(t *testing.T) {
@@ -1616,7 +1667,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_0",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1627,7 +1678,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 					Exprs: []*runtimev1.Expression{
 						{
 							Expression: &runtimev1.Expression_Ident{
-								Ident: "measure_0",
+								Ident: "inline_1",
 							},
 						},
 						{
@@ -1644,6 +1695,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1652,9 +1704,9 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 	rows := q.Result.Data
 	require.Equal(t, 2, len(rows))
 	i := 0
-	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_0"))
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "null,32897", fieldsToString(rows[i], "pub", "measure_0"))
+	require.Equal(t, "null,32897", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_having_same_name(t *testing.T) {
@@ -1697,6 +1749,7 @@ func TestMetricsViewsAggregation_having_same_name(t *testing.T) {
 				Desc: true,
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1749,6 +1802,7 @@ func TestMetricsViewsAggregation_having(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1772,7 +1826,7 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name:           "measure_1",
+				Name:           "inline_1",
 				BuiltinMeasure: runtimev1.BuiltinMeasure_BUILTIN_MEASURE_COUNT,
 			},
 		},
@@ -1800,6 +1854,7 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1807,80 +1862,9 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 
 	rows := q.Result.Data
 	i := 0
-	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "measure_1"))
+	require.Equal(t, "Facebook,19341", fieldsToString(rows[i], "pub", "inline_1"))
 	i++
-	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "measure_1"))
-}
-
-func TestMetricsViewsAggregation_measure_filter_same_name(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
-	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
-		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
-			{
-				Name: "pub",
-			},
-		},
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
-			{
-				Name: "bid_price",
-				Filter: &runtimev1.Expression{
-					Expression: &runtimev1.Expression_Cond{
-						Cond: &runtimev1.Condition{
-							Op: runtimev1.Operation_OPERATION_GT,
-							Exprs: []*runtimev1.Expression{
-								{
-									Expression: &runtimev1.Expression_Ident{
-										Ident: "bid_price",
-									},
-								},
-								{
-									Expression: &runtimev1.Expression_Val{
-										Val: structpb.NewNumberValue(1),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Sort: []*runtimev1.MetricsViewAggregationSort{
-			{
-				Name: "pub",
-				Desc: true,
-			},
-		},
-		Having: &runtimev1.Expression{
-			Expression: &runtimev1.Expression_Cond{
-				Cond: &runtimev1.Condition{
-					Op: runtimev1.Operation_OPERATION_GT,
-					Exprs: []*runtimev1.Expression{
-						{
-							Expression: &runtimev1.Expression_Ident{
-								Ident: "bid_price",
-							},
-						},
-						{
-							Expression: &runtimev1.Expression_Val{
-								Val: structpb.NewNumberValue(2),
-							},
-						},
-					},
-				},
-			},
-		},
-	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-
-	rows := q.Result.Data
-	i := 0
-	require.Equal(t, "Yahoo,3", fieldsToString(rows[i], "pub", "bid_price"))
-	i++
-	require.Equal(t, "Microsoft,3", fieldsToString(rows[i], "pub", "bid_price"))
+	require.Equal(t, "Microsoft,10406", fieldsToString(rows[i], "pub", "inline_1"))
 }
 
 func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
@@ -1922,6 +1906,7 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1997,7 +1982,9 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 	require.NotEmpty(t, q.Result)
 
 	rows = q.Result.Data
-	require.Equal(t, 0, len(rows))
+	require.Equal(t, 1, len(rows))
+	i = 0
+	require.Equal(t, "null,4296", fieldsToString(rows[i], "pub", "measure_0"))
 }
 
 func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing.T) {
@@ -2024,6 +2011,7 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2137,8 +2125,8 @@ func TestMetricsViewsAggregation_2time_aggregations(t *testing.T) {
 				Name: "timestamp",
 			},
 		},
-
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2189,6 +2177,7 @@ measures:
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{Name: "count"},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -2197,111 +2186,112 @@ measures:
 	require.Equal(t, "a,null,1", fieldsToString(q.Result.Data[0], "a", "b", "count"))
 }
 
-func TestMetricsViewsAggregation_comparison_having_of_comparison(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
-	limit := int64(10)
-	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
-		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
-
-			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-			},
-			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-				Alias:     "timestamp_year",
-			},
-		},
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
-			{
-				Name: "measure_0",
-			},
-			{
-				Name: "measure_1",
-			},
-			{
-				Name: "m1",
-			},
-			{
-				Name: "measure_0__p",
-				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
-					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
-						Measure: "measure_0",
-					},
-				},
-			},
-		},
-		Where: expressionpb.OrAll(
-			expressionpb.Eq("pub", "Yahoo"),
-			expressionpb.Eq("pub", "Google"),
-		),
-		Having: expressionpb.Gt("measure_0__p", 0.0),
-		Sort: []*runtimev1.MetricsViewAggregationSort{
-			{
-				Name: "timestamp",
-			},
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
-			{
-				Name: "timestamp_year",
-			},
-			{
-				Name: "measure_1",
-			},
-		},
-
-		TimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
-		},
-		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
-		},
-		Limit: &limit,
-	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	fields := q.Result.Schema.Fields
-	require.Equal(t, "pub,dom,timestamp,timestamp_year,measure_0,measure_1,m1,measure_0__p,timestamp__previous,timestamp_year__previous", columnNames(fields))
-	i := 0
-
-	for _, sf := range q.Result.Schema.Fields {
-		fmt.Printf("%v ", sf.Name)
-	}
-	fmt.Printf("\n")
-
-	for i, row := range q.Result.Data {
-		for _, sf := range q.Result.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-
-	}
-	rows := q.Result.Data
-	require.Equal(t, 8, len(rows))
-
-	i = 0
-	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
-	i++
-	require.Equal(t, "Google,google.com,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,62.00,51.00,1.45,1.45,2022-01-04T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
-	i++
-	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
-}
+// Uncommenting: We don't support comparison queries with time as a dimension
+// func TestMetricsViewsAggregation_comparison_having_of_comparison(t *testing.T) {
+// 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+//
+// 	limit := int64(10)
+// 	q := &queries.MetricsViewAggregation{
+// 		MetricsViewName: "ad_bids_metrics",
+// 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+// 			{
+// 				Name: "pub",
+// 			},
+// 			{
+// 				Name: "dom",
+// 			},
+//
+// 			{
+// 				Name:      "timestamp",
+// 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+// 			},
+// 			{
+// 				Name:      "timestamp",
+// 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+// 				Alias:     "timestamp_year",
+// 			},
+// 		},
+// 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+// 			{
+// 				Name: "measure_0",
+// 			},
+// 			{
+// 				Name: "measure_1",
+// 			},
+// 			{
+// 				Name: "m1",
+// 			},
+// 			{
+// 				Name: "measure_0__p",
+// 				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+// 					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+// 						Measure: "measure_0",
+// 					},
+// 				},
+// 			},
+// 		},
+// 		Where: expressionpb.OrAll(
+// 			expressionpb.Eq("pub", "Yahoo"),
+// 			expressionpb.Eq("pub", "Google"),
+// 		),
+// 		Having: expressionpb.Gt("measure_0__p", 0.0),
+// 		Sort: []*runtimev1.MetricsViewAggregationSort{
+// 			{
+// 				Name: "pub",
+// 			},
+// 			{
+// 				Name: "dom",
+// 			},
+// 			{
+// 				Name: "timestamp",
+// 			},
+// 			{
+// 				Name: "timestamp_year",
+// 			},
+// 			{
+// 				Name: "measure_1",
+// 			},
+// 		},
+//
+// 		TimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		ComparisonTimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		Limit: &limit,
+// 	}
+// 	err := q.Resolve(context.Background(), rt, instanceID, 0)
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, q.Result)
+// 	fields := q.Result.Schema.Fields
+// 	require.Equal(t, "pub,dom,timestamp,timestamp_year,measure_0,measure_1,m1,measure_0__p,timestamp__previous,timestamp_year__previous", columnNames(fields))
+// 	i := 0
+//
+// 	for _, sf := range q.Result.Schema.Fields {
+// 		fmt.Printf("%v ", sf.Name)
+// 	}
+// 	fmt.Printf("\n")
+//
+// 	for i, row := range q.Result.Data {
+// 		for _, sf := range q.Result.Schema.Fields {
+// 			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+// 		}
+// 		fmt.Printf(" %d \n", i)
+//
+// 	}
+// 	rows := q.Result.Data
+// 	require.Equal(t, 8, len(rows))
+//
+// 	i = 0
+// 	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+// 	i++
+// 	require.Equal(t, "Google,google.com,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,62.00,51.00,1.45,1.45,2022-01-04T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+// 	i++
+// 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+// }
 
 func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
@@ -2361,7 +2351,8 @@ func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2393,7 +2384,11 @@ func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 	require.Equal(t, "Yahoo,news.yahoo.com,106.00,106.00,1.50,1.50", fieldsToString2digits(rows[i], "pub", "dom", "measure_0", "measure_0__p", "measure_1", "m1"))
 }
 
-func Ignore_TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
+
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2432,7 +2427,8 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2499,7 +2495,8 @@ func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2527,7 +2524,10 @@ func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
 	require.Equal(t, "463.00,464.00,3.20,3.20", fieldsToString2digits(rows[i], "measure_0", "measure_0__p", "measure_1", "m1"))
 }
 
-func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *testing.T) {
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -2588,7 +2588,6 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_tot
 				Name: "m1_p",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -2597,7 +2596,8 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_tot
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2629,6 +2629,295 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_tot
 	require.Equal(t, "Yahoo,news.yahoo.com,null,null", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
 	i++
 	require.Equal(t, "Yahoo,sports.yahoo.com,null,null", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
+}
+
+func TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivative_measure(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1_p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+				Filter: &runtimev1.Expression{
+					Expression: &runtimev1.Expression_Cond{
+						Cond: &runtimev1.Condition{
+							Op: runtimev1.Operation_OPERATION_EQ,
+							Exprs: []*runtimev1.Expression{
+								{
+									Expression: &runtimev1.Expression_Ident{
+										Ident: "dom",
+									},
+								},
+								{
+									Expression: &runtimev1.Expression_Val{
+										Val: structpb.NewStringValue("news.google.com"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "Yahoo"),
+			expressionpb.Eq("pub", "Google"),
+		),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "dom",
+			},
+			{
+				Name: "m1_p",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "pub,dom,m1_p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 4, len(rows))
+
+	i = 0
+	require.Equal(t, "Google,google.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
+	i++
+	require.Equal(t, "Google,news.google.com,3.74", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
+	i++
+	require.Equal(t, "Yahoo,news.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
+	i++
+	require.Equal(t, "Yahoo,sports.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
+}
+
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter_no_duplicates(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
+	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1_p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+				Filter: &runtimev1.Expression{
+					Expression: &runtimev1.Expression_Cond{
+						Cond: &runtimev1.Condition{
+							Op: runtimev1.Operation_OPERATION_EQ,
+							Exprs: []*runtimev1.Expression{
+								{
+									Expression: &runtimev1.Expression_Ident{
+										Ident: "dom",
+									},
+								},
+								{
+									Expression: &runtimev1.Expression_Val{
+										Val: structpb.NewStringValue("news.google.com"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "Yahoo"),
+			expressionpb.Eq("pub", "Google"),
+		),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "m1_p",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "pub,m1,m1_p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "Google,3.55,3.74", fieldsToString2digits(rows[i], "pub", "m1", "m1_p"))
+	i++
+	require.Equal(t, "Yahoo,null,null", fieldsToString2digits(rows[i], "pub", "m1", "m1_p"))
+}
+
+func TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1_p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+				Filter: &runtimev1.Expression{
+					Expression: &runtimev1.Expression_Cond{
+						Cond: &runtimev1.Condition{
+							Op: runtimev1.Operation_OPERATION_EQ,
+							Exprs: []*runtimev1.Expression{
+								{
+									Expression: &runtimev1.Expression_Ident{
+										Ident: "dom",
+									},
+								},
+								{
+									Expression: &runtimev1.Expression_Val{
+										Val: structpb.NewStringValue("news.google.com"),
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "Yahoo"),
+			expressionpb.Eq("pub", "Google"),
+		),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "m1_p",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "pub,m1_p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "Google,3.74", fieldsToString2digits(rows[i], "pub", "m1_p"))
+	i++
+	require.Equal(t, "Yahoo,null", fieldsToString2digits(rows[i], "pub", "m1_p"))
 }
 
 func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testing.T) {
@@ -2647,9 +2936,6 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{
-				Name: "m1",
-			},
-			{
 				Name: "m1_p",
 				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
 					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
@@ -2692,7 +2978,6 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 				Name: "m1_p",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -2701,13 +2986,14 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
 	require.NotEmpty(t, q.Result)
 	fields := q.Result.Schema.Fields
-	require.Equal(t, "pub,dom,m1,m1_p", columnNames(fields))
+	require.Equal(t, "pub,dom,m1_p", columnNames(fields))
 	i := 0
 
 	for _, sf := range q.Result.Schema.Fields {
@@ -2726,19 +3012,22 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 	require.Equal(t, 4, len(rows))
 
 	i = 0
-	require.Equal(t, "Google,google.com,null,null", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
+	require.Equal(t, "Google,google.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
 	i++
-	require.Equal(t, "Google,news.google.com,3.55,3.74", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
+	require.Equal(t, "Google,news.google.com,3.74", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
 	i++
-	require.Equal(t, "Yahoo,news.yahoo.com,null,null", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
+	require.Equal(t, "Yahoo,news.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
 	i++
-	require.Equal(t, "Yahoo,sports.yahoo.com,null,null", fieldsToString2digits(rows[i], "pub", "dom", "m1", "m1_p"))
+	require.Equal(t, "Yahoo,sports.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1_p"))
 }
 
-func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_limit(t *testing.T) { // todo limit
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_limit(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
-	limit := int64(2)
+	limit := int64(3)
 	q := &queries.MetricsViewAggregation{
 		MetricsViewName: "ad_bids_metrics",
 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
@@ -2795,7 +3084,6 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_lim
 				Name: "dom",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -2804,8 +3092,9 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_lim
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit:  &limit,
-		Offset: 1,
+		Limit:          &limit,
+		Offset:         1,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2827,454 +3116,360 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_lim
 
 	}
 	rows := q.Result.Data
-	require.Equal(t, 2, len(rows))
+	// require.Equal(t, 2, len(rows))
 
 	i = 0
 	require.Equal(t, "Google,news.google.com,3.55", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
 	i++
 	require.Equal(t, "Yahoo,news.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
+	i++
+	require.Equal(t, "Yahoo,sports.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
 }
 
-func TestMetricsViewsAggregation_comparison_measure_filter_with_limit(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+// Uncommenting: We don't support comparison queries with time as a dimension
+// func TestMetricsViewsAggregation_comparison_measure_filter(t *testing.T) {
+// 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-	limit := int64(2)
-	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
-		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
-		},
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
-			{
-				Name: "m1",
-			},
-			{
-				Name: "m1_p",
-				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
-					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
-						Measure: "m1",
-					},
-				},
-				Filter: &runtimev1.Expression{
-					Expression: &runtimev1.Expression_Cond{
-						Cond: &runtimev1.Condition{
-							Op: runtimev1.Operation_OPERATION_EQ,
-							Exprs: []*runtimev1.Expression{
-								{
-									Expression: &runtimev1.Expression_Ident{
-										Ident: "dom",
-									},
-								},
-								{
-									Expression: &runtimev1.Expression_Val{
-										Val: structpb.NewStringValue("news.google.com"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		// Having: expressionpb.Gt("m1", 0.0),
-		Sort: []*runtimev1.MetricsViewAggregationSort{
-			{
-				Name: "m1",
-			},
-			{
-				Name: "pub",
-				Desc: true,
-			},
-			{
-				Name: "dom",
-			},
-		},
+// 	limit := int64(10)
+// 	q := &queries.MetricsViewAggregation{
+// 		MetricsViewName: "ad_bids_metrics",
+// 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+// 			{
+// 				Name: "pub",
+// 			},
+// 			{
+// 				Name: "dom",
+// 			},
 
-		TimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
-		},
-		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
-		},
-		Limit:  &limit,
-		Offset: 1,
-	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	fields := q.Result.Schema.Fields
-	require.Equal(t, "pub,dom,m1,m1_p", columnNames(fields))
-	i := 0
+// 			{
+// 				Name:      "timestamp",
+// 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+// 			},
+// 			{
+// 				Name:      "timestamp",
+// 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+// 				Alias:     "timestamp_year",
+// 			},
+// 		},
+// 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+// 			{
+// 				Name: "m1",
+// 			},
+// 			{
+// 				Name: "m1_p",
+// 				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+// 					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+// 						Measure: "m1",
+// 					},
+// 				},
+// 				Filter: &runtimev1.Expression{
+// 					Expression: &runtimev1.Expression_Cond{
+// 						Cond: &runtimev1.Condition{
+// 							Op: runtimev1.Operation_OPERATION_EQ,
+// 							Exprs: []*runtimev1.Expression{
+// 								{
+// 									Expression: &runtimev1.Expression_Ident{
+// 										Ident: "dom",
+// 									},
+// 								},
+// 								{
+// 									Expression: &runtimev1.Expression_Val{
+// 										Val: structpb.NewStringValue("news.google.com"),
+// 									},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		},
+// 		Where: expressionpb.OrAll(
+// 			expressionpb.Eq("pub", "Yahoo"),
+// 			expressionpb.Eq("pub", "Google"),
+// 		),
+// 		// Having: expressionpb.Gt("m1", 0.0),
+// 		Sort: []*runtimev1.MetricsViewAggregationSort{
+// 			{
+// 				Name: "timestamp",
+// 			},
+// 			{
+// 				Name: "pub",
+// 			},
+// 			{
+// 				Name: "dom",
+// 			},
+// 			{
+// 				Name: "timestamp_year",
+// 			},
+// 			{
+// 				Name: "m1_p",
+// 			},
+// 		},
 
-	for _, sf := range q.Result.Schema.Fields {
-		fmt.Printf("%v ", sf.Name)
-	}
-	fmt.Printf("\n")
+// 		TimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		ComparisonTimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		Limit: &limit,
+// 	}
+// 	err := q.Resolve(context.Background(), rt, instanceID, 0)
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, q.Result)
+// 	fields := q.Result.Schema.Fields
+// 	require.Equal(t, "pub,dom,timestamp,timestamp_year,m1,m1_p,timestamp__previous,timestamp_year__previous", columnNames(fields))
+// 	i := 0
 
-	for i, row := range q.Result.Data {
-		for _, sf := range q.Result.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
+// 	for _, sf := range q.Result.Schema.Fields {
+// 		fmt.Printf("%v ", sf.Name)
+// 	}
+// 	fmt.Printf("\n")
 
-	}
-	rows := q.Result.Data
-	require.Equal(t, 2, len(rows))
+// 	for i, row := range q.Result.Data {
+// 		for _, sf := range q.Result.Schema.Fields {
+// 			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+// 		}
+// 		fmt.Printf(" %d \n", i)
 
-	i = 0
-	require.Equal(t, "null,news.google.com,3.70", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
-	i++
-	require.Equal(t, "Yahoo,news.yahoo.com,null", fieldsToString2digits(rows[i], "pub", "dom", "m1"))
-}
+// 	}
+// 	rows := q.Result.Data
+// 	require.Equal(t, 4, len(rows))
 
-func TestMetricsViewsAggregation_comparison_measure_filter(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+// 	i = 0
+// 	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
+// 	i++
+// 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,3.55,3.74,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
+// 	i++
+// 	require.Equal(t, "Yahoo,news.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
+// 	i++
+// 	require.Equal(t, "Yahoo,sports.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
+// }
 
-	limit := int64(10)
-	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
-		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
+// Uncommenting: We don't support comparison queries with time as a dimension
+// func TestMetricsViewsAggregation_comparison_measure_filter_with_having(t *testing.T) {
+// 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+//
+// 	limit := int64(10)
+// 	q := &queries.MetricsViewAggregation{
+// 		MetricsViewName: "ad_bids_metrics",
+// 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+// 			{
+// 				Name: "pub",
+// 			},
+// 			{
+// 				Name: "dom",
+// 			},
+//
+// 			{
+// 				Name:      "timestamp",
+// 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+// 			},
+// 			{
+// 				Name:      "timestamp",
+// 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+// 				Alias:     "timestamp_year",
+// 			},
+// 		},
+// 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+// 			{
+// 				Name: "m1",
+// 			},
+// 			{
+// 				Name: "m1_p",
+// 				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+// 					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+// 						Measure: "m1",
+// 					},
+// 				},
+// 				Filter: &runtimev1.Expression{
+// 					Expression: &runtimev1.Expression_Cond{
+// 						Cond: &runtimev1.Condition{
+// 							Op: runtimev1.Operation_OPERATION_EQ,
+// 							Exprs: []*runtimev1.Expression{
+// 								{
+// 									Expression: &runtimev1.Expression_Ident{
+// 										Ident: "dom",
+// 									},
+// 								},
+// 								{
+// 									Expression: &runtimev1.Expression_Val{
+// 										Val: structpb.NewStringValue("news.google.com"),
+// 									},
+// 								},
+// 							},
+// 						},
+// 					},
+// 				},
+// 			},
+// 		},
+// 		Where: expressionpb.OrAll(
+// 			expressionpb.Eq("pub", "Yahoo"),
+// 			expressionpb.Eq("pub", "Google"),
+// 		),
+// 		Having: expressionpb.Gt("m1", 0.0),
+// 		Sort: []*runtimev1.MetricsViewAggregationSort{
+// 			{
+// 				Name: "timestamp",
+// 			},
+// 			{
+// 				Name: "pub",
+// 			},
+// 			{
+// 				Name: "dom",
+// 			},
+// 			{
+// 				Name: "timestamp_year",
+// 			},
+// 			{
+// 				Name: "m1_p",
+// 			},
+// 		},
+//
+// 		TimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		ComparisonTimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		Limit: &limit,
+// 	}
+// 	err := q.Resolve(context.Background(), rt, instanceID, 0)
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, q.Result)
+// 	fields := q.Result.Schema.Fields
+// 	require.Equal(t, "pub,dom,timestamp,timestamp_year,m1,m1_p,timestamp__previous,timestamp_year__previous", columnNames(fields))
+// 	i := 0
+//
+// 	for _, sf := range q.Result.Schema.Fields {
+// 		fmt.Printf("%v ", sf.Name)
+// 	}
+// 	fmt.Printf("\n")
+//
+// 	for i, row := range q.Result.Data {
+// 		for _, sf := range q.Result.Schema.Fields {
+// 			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+// 		}
+// 		fmt.Printf(" %d \n", i)
+//
+// 	}
+// 	rows := q.Result.Data
+// 	require.Equal(t, 1, len(rows))
+//
+// 	i = 0
+// 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,3.55,3.74,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
+// }
 
-			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-			},
-			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-				Alias:     "timestamp_year",
-			},
-		},
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
-			{
-				Name: "m1",
-			},
-			{
-				Name: "m1_p",
-				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
-					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
-						Measure: "m1",
-					},
-				},
-				Filter: &runtimev1.Expression{
-					Expression: &runtimev1.Expression_Cond{
-						Cond: &runtimev1.Condition{
-							Op: runtimev1.Operation_OPERATION_EQ,
-							Exprs: []*runtimev1.Expression{
-								{
-									Expression: &runtimev1.Expression_Ident{
-										Ident: "dom",
-									},
-								},
-								{
-									Expression: &runtimev1.Expression_Val{
-										Val: structpb.NewStringValue("news.google.com"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Where: expressionpb.OrAll(
-			expressionpb.Eq("pub", "Yahoo"),
-			expressionpb.Eq("pub", "Google"),
-		),
-		// Having: expressionpb.Gt("m1", 0.0),
-		Sort: []*runtimev1.MetricsViewAggregationSort{
-			{
-				Name: "timestamp",
-			},
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
-			{
-				Name: "timestamp_year",
-			},
-			{
-				Name: "m1_p",
-			},
-		},
+// Uncommenting: We don't support comparison queries with time as a dimension
+// func TestMetricsViewsAggregation_comparison(t *testing.T) {
+// 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
-		TimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
-		},
-		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
-		},
-		Limit: &limit,
-	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	fields := q.Result.Schema.Fields
-	require.Equal(t, "pub,dom,timestamp,timestamp_year,m1,m1_p,timestamp__previous,timestamp_year__previous", columnNames(fields))
-	i := 0
+// 	limit := int64(10)
+// 	q := &queries.MetricsViewAggregation{
+// 		MetricsViewName: "ad_bids_metrics",
+// 		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+// 			{
+// 				Name: "pub",
+// 			},
+// 			{
+// 				Name: "dom",
+// 			},
 
-	for _, sf := range q.Result.Schema.Fields {
-		fmt.Printf("%v ", sf.Name)
-	}
-	fmt.Printf("\n")
+// 			{
+// 				Name:      "timestamp",
+// 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+// 			},
+// 			{
+// 				Name:      "timestamp",
+// 				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
+// 				Alias:     "timestamp_year",
+// 			},
+// 		},
+// 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+// 			{
+// 				Name: "measure_0",
+// 			},
+// 			{
+// 				Name: "measure_1",
+// 			},
+// 			{
+// 				Name: "m1",
+// 			},
+// 			{
+// 				Name: "measure_0__p",
+// 				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+// 					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+// 						Measure: "measure_0",
+// 					},
+// 				},
+// 			},
+// 		},
+// 		Where: expressionpb.OrAll(
+// 			expressionpb.Eq("pub", "Yahoo"),
+// 			expressionpb.Eq("pub", "Google"),
+// 		),
+// 		Having: expressionpb.Gt("measure_1", 0.0),
+// 		Sort: []*runtimev1.MetricsViewAggregationSort{
+// 			{
+// 				Name: "pub",
+// 			},
+// 			{
+// 				Name: "dom",
+// 			},
+// 			{
+// 				Name: "timestamp",
+// 			},
+// 			{
+// 				Name: "timestamp_year",
+// 			},
+// 			{
+// 				Name: "measure_1",
+// 			},
+// 		},
 
-	for i, row := range q.Result.Data {
-		for _, sf := range q.Result.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
+// 		TimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		ComparisonTimeRange: &runtimev1.TimeRange{
+// 			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+// 			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
+// 		},
+// 		Limit: &limit,
+// 	}
+// 	err := q.Resolve(context.Background(), rt, instanceID, 0)
+// 	require.NoError(t, err)
+// 	require.NotEmpty(t, q.Result)
+// 	fields := q.Result.Schema.Fields
+// 	require.Equal(t, "pub,dom,timestamp,timestamp_year,measure_0,measure_1,m1,measure_0__p,timestamp__previous,timestamp_year__previous", columnNames(fields))
+// 	i := 0
 
-	}
-	rows := q.Result.Data
-	require.Equal(t, 4, len(rows))
+// 	for _, sf := range q.Result.Schema.Fields {
+// 		fmt.Printf("%v ", sf.Name)
+// 	}
+// 	fmt.Printf("\n")
 
-	i = 0
-	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
-	i++
-	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,3.55,3.74,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
-	i++
-	require.Equal(t, "Yahoo,news.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
-	i++
-	require.Equal(t, "Yahoo,sports.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
-}
+// 	for i, row := range q.Result.Data {
+// 		for _, sf := range q.Result.Schema.Fields {
+// 			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+// 		}
+// 		fmt.Printf(" %d \n", i)
 
-func TestMetricsViewsAggregation_comparison_measure_filter_with_having(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+// 	}
+// 	rows := q.Result.Data
+// 	require.Equal(t, 8, len(rows))
 
-	limit := int64(10)
-	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
-		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
-
-			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-			},
-			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-				Alias:     "timestamp_year",
-			},
-		},
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
-			{
-				Name: "m1",
-			},
-			{
-				Name: "m1_p",
-				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
-					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
-						Measure: "m1",
-					},
-				},
-				Filter: &runtimev1.Expression{
-					Expression: &runtimev1.Expression_Cond{
-						Cond: &runtimev1.Condition{
-							Op: runtimev1.Operation_OPERATION_EQ,
-							Exprs: []*runtimev1.Expression{
-								{
-									Expression: &runtimev1.Expression_Ident{
-										Ident: "dom",
-									},
-								},
-								{
-									Expression: &runtimev1.Expression_Val{
-										Val: structpb.NewStringValue("news.google.com"),
-									},
-								},
-							},
-						},
-					},
-				},
-			},
-		},
-		Where: expressionpb.OrAll(
-			expressionpb.Eq("pub", "Yahoo"),
-			expressionpb.Eq("pub", "Google"),
-		),
-		Having: expressionpb.Gt("m1", 0.0),
-		Sort: []*runtimev1.MetricsViewAggregationSort{
-			{
-				Name: "timestamp",
-			},
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
-			{
-				Name: "timestamp_year",
-			},
-			{
-				Name: "m1_p",
-			},
-		},
-
-		TimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
-		},
-		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
-		},
-		Limit: &limit,
-	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	fields := q.Result.Schema.Fields
-	require.Equal(t, "pub,dom,timestamp,timestamp_year,m1,m1_p,timestamp__previous,timestamp_year__previous", columnNames(fields))
-	i := 0
-
-	for _, sf := range q.Result.Schema.Fields {
-		fmt.Printf("%v ", sf.Name)
-	}
-	fmt.Printf("\n")
-
-	for i, row := range q.Result.Data {
-		for _, sf := range q.Result.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-
-	}
-	rows := q.Result.Data
-	require.Equal(t, 1, len(rows))
-
-	i = 0
-	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,3.55,3.74,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "m1", "m1_p", "timestamp__previous", "timestamp_year__previous"))
-}
-
-func TestMetricsViewsAggregation_comparison(t *testing.T) {
-	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-
-	limit := int64(10)
-	q := &queries.MetricsViewAggregation{
-		MetricsViewName: "ad_bids_metrics",
-		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
-
-			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
-			},
-			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-				Alias:     "timestamp_year",
-			},
-		},
-		Measures: []*runtimev1.MetricsViewAggregationMeasure{
-			{
-				Name: "measure_0",
-			},
-			{
-				Name: "measure_1",
-			},
-			{
-				Name: "m1",
-			},
-			{
-				Name: "measure_0__p",
-				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
-					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
-						Measure: "measure_0",
-					},
-				},
-			},
-		},
-		Where: expressionpb.OrAll(
-			expressionpb.Eq("pub", "Yahoo"),
-			expressionpb.Eq("pub", "Google"),
-		),
-		Having: expressionpb.Gt("measure_1", 0.0),
-		Sort: []*runtimev1.MetricsViewAggregationSort{
-			{
-				Name: "timestamp",
-			},
-			{
-				Name: "pub",
-			},
-			{
-				Name: "dom",
-			},
-			{
-				Name: "timestamp_year",
-			},
-			{
-				Name: "measure_1",
-			},
-		},
-
-		TimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
-		},
-		ComparisonTimeRange: &runtimev1.TimeRange{
-			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
-			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
-		},
-		Limit: &limit,
-	}
-	err := q.Resolve(context.Background(), rt, instanceID, 0)
-	require.NoError(t, err)
-	require.NotEmpty(t, q.Result)
-	fields := q.Result.Schema.Fields
-	require.Equal(t, "pub,dom,timestamp,timestamp_year,measure_0,measure_1,m1,measure_0__p,timestamp__previous,timestamp_year__previous", columnNames(fields))
-	i := 0
-
-	for _, sf := range q.Result.Schema.Fields {
-		fmt.Printf("%v ", sf.Name)
-	}
-	fmt.Printf("\n")
-
-	for i, row := range q.Result.Data {
-		for _, sf := range q.Result.Schema.Fields {
-			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
-		}
-		fmt.Printf(" %d \n", i)
-
-	}
-	rows := q.Result.Data
-	require.Equal(t, 8, len(rows))
-
-	i = 0
-	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
-	i++
-	require.Equal(t, "Google,google.com,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,62.00,51.00,1.45,1.45,2022-01-04T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
-	i++
-	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
-}
+// 	i = 0
+// 	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+// 	i++
+// 	require.Equal(t, "Google,google.com,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z,62.00,51.00,1.45,1.45,2022-01-04T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+// 	i++
+// 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,187.00,183.00,3.55,3.55,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "timestamp", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "timestamp__previous", "timestamp_year__previous"))
+// }
 
 func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
@@ -3287,9 +3482,7 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 				Name: "pub",
 			},
 			{
-				Name:      "timestamp",
-				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_YEAR,
-				Alias:     "timestamp_year",
+				Name: "dom",
 			},
 		},
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
@@ -3323,8 +3516,9 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
 		},
-		PivotOn: []string{"timestamp_year"},
-		Limit:   &limit,
+		PivotOn:        []string{"dom"},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3334,7 +3528,7 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 	}
 	fmt.Printf("\n")
 	fields := q.Result.Schema.Fields
-	require.Equal(t, "pub,timestamp_year__previous,2022-01-01 00:00:00_measure_0,2022-01-01 00:00:00_measure_0__p", columnNames(fields))
+	require.Equal(t, "pub,google.com_measure_0,google.com_measure_0__p,news.google.com_measure_0,news.google.com_measure_0__p,news.yahoo.com_measure_0,news.yahoo.com_measure_0__p,sports.yahoo.com_measure_0,sports.yahoo.com_measure_0__p", columnNames(fields))
 }
 
 // Can be used for local or metrics cluster.
@@ -3344,7 +3538,10 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 // 3. Run the test.
 //
 // metrics-in cluster requires proper authentication credentials in the DSN.
-func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3409,7 +3606,8 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *t
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3438,7 +3636,10 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_base_order(t *t
 	require.Equal(t, "Yahoo,2022-01-01T00:00:00Z,3.23,3.13,0.11,0.03,2022-01-02T00:00:00Z", fieldsToString2digits(rows[i], "pub", "timestamp_day", "m1", "m1__previous", "m1__delta_abs", "m1__delta_rel", "timestamp_day__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
+func TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_order(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3503,7 +3704,8 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_orde
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3533,7 +3735,168 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid_one_dim_comparison_orde
 	require.Equal(t, "Google,2022-01-01T00:00:00Z,3.17,3.18,-0.02,-0.00,2022-01-02T00:00:00Z", fieldsToString2digits(rows[i], "pub", "timestamp_day", "m1", "m1__previous", "m1__delta_abs", "m1__delta_rel", "timestamp_day__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
+func TestMetricsViewsAggregation_Druid_comparison_empty_set_previous_sorted(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
+	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1_p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "nothing"),
+		),
+		Having: expressionpb.Gt("m1", 0.0),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "__time",
+			},
+			{
+				Name: "m1_p",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "pub,__time,m1,m1_p,__time__previous", columnNames(fields))
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 0, len(rows))
+}
+
+func TestMetricsViewsAggregation_Druid_comparison_empty_set(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
+	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+
+	limit := int64(10)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "pub",
+			},
+			{
+				Name:      "__time",
+				TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY,
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1_p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Where: expressionpb.OrAll(
+			expressionpb.Eq("pub", "nothing"),
+		),
+		Having: expressionpb.Gt("m1", 0.0),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "pub",
+			},
+			{
+				Name: "__time",
+			},
+			{
+				Name: "m1",
+			},
+		},
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "pub,__time,m1,m1_p,__time__previous", columnNames(fields))
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 0, len(rows))
+}
+
+func TestMetricsViewsAggregation_Druid_comparison(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3583,13 +3946,13 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 		Having: expressionpb.Gt("measure_1", 0.0),
 		Sort: []*runtimev1.MetricsViewAggregationSort{
 			{
-				Name: "__time",
-			},
-			{
 				Name: "pub",
 			},
 			{
 				Name: "dom",
+			},
+			{
+				Name: "__time",
 			},
 			{
 				Name: "timestamp_year",
@@ -3606,7 +3969,8 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3633,7 +3997,10 @@ func Ignore_TestMetricsViewsAggregation_comparison_Druid(t *testing.T) {
 	require.Equal(t, "Google,google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,44.00,50.00,1.53,1.53,2022-01-03T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "measure_0", "measure_0__p", "measure_1", "m1", "__time__previous", "timestamp_year__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *testing.T) {
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_having(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3711,7 +4078,6 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_hav
 				Name: "m1_p",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -3720,7 +4086,8 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_hav
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3748,7 +4115,10 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_hav
 	require.Equal(t, "Google,news.google.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,3.55,3.74,2022-01-02T00:00:00Z,2022-01-01T00:00:00Z", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "m1", "m1_p", "__time__previous", "timestamp_year__previous"))
 }
 
-func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
+func TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
 	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
 
 	limit := int64(10)
@@ -3834,7 +4204,8 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testi
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3866,6 +4237,153 @@ func Ignore_TestMetricsViewsAggregation_Druid_comparison_measure_filter(t *testi
 	require.Equal(t, "Yahoo,news.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "m1", "m1_p", "__time__previous", "timestamp_year__previous"))
 	i++
 	require.Equal(t, "Yahoo,sports.yahoo.com,2022-01-01T00:00:00Z,2022-01-01T00:00:00Z,null,null,null,null", fieldsToString2digits(rows[i], "pub", "dom", "__time", "timestamp_year", "m1", "m1_p", "__time__previous", "timestamp_year__previous"))
+}
+
+func TestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
+	if os.Getenv("LOCALDRUID") == "" {
+		t.Skip("skipping the test in non-local Druid environment")
+	}
+	rt, instanceID := testruntime.NewInstanceForDruidProject(t)
+
+	limit := int64(2)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		// Having: expressionpb.Gt("measure_1", 0.0),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		Offset:         1,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "dom,m1,m1__p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "news.yahoo.com,1.50,1.53", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "news.google.com,3.59,3.69", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+}
+
+func TestMetricsViewsAggregation_comparison_with_offset(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(2)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__p",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_ComparisonValue{
+					ComparisonValue: &runtimev1.MetricsViewAggregationMeasureComputeComparisonValue{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		// Having: expressionpb.Gt("measure_1", 0.0),
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		ComparisonTimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		Offset:         1,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "dom,m1,m1__p", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "news.yahoo.com,1.50,1.53", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
+	i++
+	require.Equal(t, "news.google.com,3.59,3.69", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
 }
 
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {

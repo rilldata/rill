@@ -2,12 +2,14 @@
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { WatchFilesClient } from "@rilldata/web-common/features/entity-management/WatchFilesClient";
   import { WatchResourcesClient } from "@rilldata/web-common/features/entity-management/WatchResourcesClient";
-  import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { onMount } from "svelte";
+  import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
 
   const fileWatcher = new WatchFilesClient().client;
   const resourceWatcher = new WatchResourcesClient().client;
+  const fileAttempts = fileWatcher.retryAttempts;
+  const resourceAttempts = resourceWatcher.retryAttempts;
 
   export let host: string;
   export let instanceId: string;
@@ -18,15 +20,14 @@
     `${host}/v1/instances/${instanceId}/resources/-/watch`,
   );
 
+  $: failed = $fileAttempts >= 2 || $resourceAttempts >= 2;
+
   onMount(() => {
-    const stopJavascriptErrorListeners =
-      errorEventHandler?.addJavascriptErrorListeners();
     void fileArtifacts.init(queryClient, instanceId);
 
     return () => {
       fileWatcher.close();
       resourceWatcher.close();
-      stopJavascriptErrorListeners?.();
     };
   });
 
@@ -43,4 +44,13 @@
 
 <svelte:window on:visibilitychange={handleVisibilityChange} />
 
-<slot />
+{#if failed}
+  <ErrorPage
+    fatal
+    statusCode={500}
+    header="Error connecting to runtime"
+    body="Try restarting the server"
+  />
+{:else}
+  <slot />
+{/if}

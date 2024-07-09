@@ -35,7 +35,30 @@ type ModelExecutorOptions struct {
 	OutputHandle     Handle
 	OutputConnector  string
 	OutputProperties map[string]any
+	Priority         int
 	Incremental      bool
 	IncrementalRun   bool
 	PreviousResult   *ModelResult
+}
+
+type FileFormat string
+
+const (
+	FileFormatUnspecified FileFormat = ""
+	FileFormatParquet     FileFormat = "parquet"
+	FileFormatCSV         FileFormat = "csv"
+	FileFormatJSON        FileFormat = "json"
+	FileFormatXLSX        FileFormat = "xlsx"
+)
+
+func (f FileFormat) Filename(stem string) string {
+	return stem + "." + string(f)
+}
+
+func (f FileFormat) Valid() bool {
+	switch f {
+	case FileFormatParquet, FileFormatCSV, FileFormatJSON, FileFormatXLSX:
+		return true
+	}
+	return false
 }

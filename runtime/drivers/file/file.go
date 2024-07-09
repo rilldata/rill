@@ -145,10 +145,15 @@ type connection struct {
 	ignorePaths []string
 }
 
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return drivers.ErrNotImplemented
+}
+
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.driverConfig, m)
+	_ = mapstructure.Decode(c.driverConfig, &m)
 	return m
 }
 
@@ -204,6 +209,11 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.OutputHandle == c {
+		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
+			return &olapToSelfExecutor{c, olap, opts}, true
+		}
+	}
 	return nil, false
 }
 

@@ -37,7 +37,6 @@
     columns,
     rows,
   );
-  console.log(columns, rows, largestColumnLength, config.columnHeaderHeight);
   if (largestColumnLength > CHARACTER_LIMIT_FOR_WRAPPING) {
     config.columnHeaderHeight = 46;
   }
@@ -61,7 +60,6 @@
       containerWidth,
       config,
     );
-    console.log(estimateColumnSize);
   }
 
   $: columnVirtualizer = createVirtualizer({

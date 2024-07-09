@@ -33,11 +33,6 @@ type createDeploymentOptions struct {
 }
 
 func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOptions) (*database.Deployment, error) {
-	// We require a branch to be specified to create a deployment
-	if opts.ProdBranch == "" {
-		return nil, fmt.Errorf("cannot create project without a branch")
-	}
-
 	// Use default if no provisioner is specified
 	if opts.Provisioner == "" {
 		opts.Provisioner = s.opts.DefaultProvisioner
@@ -142,7 +137,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	}
 
 	// Open a runtime client
-	rt, err := s.openRuntimeClient(alloc.Host, alloc.Audience)
+	rt, err := s.OpenRuntimeClient(alloc.Host, alloc.Audience)
 	if err != nil {
 		err2 := p.Deprovision(ctx, provisionID)
 		err3 := s.DB.DeleteDeployment(ctx, depl.ID)
@@ -210,10 +205,6 @@ type UpdateDeploymentOptions struct {
 }
 
 func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deployment, opts *UpdateDeploymentOptions) error {
-	if opts.Branch == "" {
-		return fmt.Errorf("cannot update deployment without specifying a valid branch")
-	}
-
 	// Update the provisioned runtime if the version has changed
 	if opts.Version != "" && opts.Version != depl.RuntimeVersion {
 		// Get provisioner from the set
@@ -336,6 +327,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			Description:          proj.Description,
 			Public:               proj.Public,
 			Provisioner:          proj.Provisioner,
+			ArchiveAssetID:       proj.ArchiveAssetID,
 			GithubURL:            proj.GithubURL,
 			GithubInstallationID: proj.GithubInstallationID,
 			ProdVersion:          proj.ProdVersion,
@@ -354,6 +346,24 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	s.Logger.Info("hibernate: completed", zap.Int("deployments", len(depls)))
 
 	return nil
+}
+
+func (s *Service) OpenRuntimeClient(host, audience string) (*client.Client, error) {
+	jwt, err := s.issuer.NewToken(auth.TokenOptions{
+		AudienceURL:       audience,
+		TTL:               time.Hour,
+		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	rt, err := client.New(host, jwt)
+	if err != nil {
+		return nil, err
+	}
+
+	return rt, nil
 }
 
 func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deployment) error {
@@ -392,25 +402,7 @@ func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deploym
 }
 
 func (s *Service) openRuntimeClientForDeployment(d *database.Deployment) (*client.Client, error) {
-	return s.openRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
-}
-
-func (s *Service) openRuntimeClient(host, audience string) (*client.Client, error) {
-	jwt, err := s.issuer.NewToken(auth.TokenOptions{
-		AudienceURL:       audience,
-		TTL:               time.Hour,
-		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	rt, err := client.New(host, jwt)
-	if err != nil {
-		return nil, err
-	}
-
-	return rt, nil
+	return s.OpenRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
 }
 
 type DeploymentAnnotations struct {

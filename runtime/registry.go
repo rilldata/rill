@@ -127,6 +127,22 @@ func (r *Runtime) DeleteInstance(ctx context.Context, instanceID string) error {
 	return nil
 }
 
+// DataDir returns the path to a persistent data directory for the given instance.
+// Storage usage in the returned directory will be reported in the instance's heartbeat events.
+func (r *Runtime) DataDir(instanceID string, elem ...string) string {
+	elem = append([]string{r.opts.DataDir, instanceID}, elem...)
+	return filepath.Join(elem...)
+}
+
+// TempDir returns the path to a temporary directory for the given instance.
+// The TempDir is a fixed location. The caller is responsible for using a unique subdirectory name and cleaning up after use.
+// The TempDir may be cleared after restarts.
+// Storage usage in the returned directory will be reported in the instance's heartbeat events.
+func (r *Runtime) TempDir(instanceID string, elem ...string) string {
+	elem = append([]string{r.opts.DataDir, instanceID, "tmp"}, elem...)
+	return filepath.Join(elem...)
+}
+
 // registryCache caches all the runtime's instances and manages the life-cycle of their controllers.
 // It ensures that a controller is started for every instance, and that a controller is completely stopped before getting restarted when edited.
 type registryCache struct {
@@ -224,6 +240,39 @@ func (r *registryCache) list() ([]*drivers.Instance, error) {
 		res = append(res, iwc.instance)
 	}
 
+	return res, nil
+}
+
+func (r *registryCache) instanceHealth(ctx context.Context, instanceID string) (*InstanceHealth, error) {
+	r.mu.RLock()
+	inst, ok := r.instances[instanceID]
+	if !ok {
+		r.mu.RUnlock()
+		return nil, drivers.ErrNotFound
+	}
+	r.mu.RUnlock()
+
+	res := &InstanceHealth{
+		Controller: inst.controllerErr,
+	}
+
+	// check olap error
+	olap, or, err := r.rt.OLAP(ctx, instanceID, inst.instance.ResolveOLAPConnector())
+	if err != nil {
+		res.OLAP = err
+	} else {
+		res.OLAP = olap.(drivers.Handle).Ping(ctx)
+		or()
+	}
+
+	// check repo error
+	repo, rr, err := r.rt.Repo(ctx, instanceID)
+	if err != nil {
+		res.Repo = err
+	} else {
+		res.Repo = repo.(drivers.Handle).Ping(ctx)
+		rr()
+	}
 	return res, nil
 }
 
@@ -537,11 +586,13 @@ func (r *registryCache) emitHeartbeats() {
 func (r *registryCache) emitHeartbeatForInstance(inst *drivers.Instance) {
 	dataDir := filepath.Join(r.rt.opts.DataDir, inst.ID)
 
-	r.activity.Record(context.Background(), activity.EventTypeLog, "instance_heartbeat",
-		attribute.String("instance_id", inst.ID),
-		attribute.String("updated_on", inst.UpdatedOn.Format(time.RFC3339)),
-		attribute.Int64("data_dir_size_bytes", sizeOfDir(dataDir)),
-	)
+	// Add instance annotations as attributes to pass organization id, project id, etc.
+	attrs := instanceAnnotationsToAttribs(inst)
+	for k, v := range inst.Annotations {
+		attrs = append(attrs, attribute.String(k, v))
+	}
+
+	r.activity.RecordMetric(context.Background(), "data_dir_size_bytes", float64(sizeOfDir(dataDir)), attrs...)
 }
 
 // updateProjectConfig updates the project config for the given instance.

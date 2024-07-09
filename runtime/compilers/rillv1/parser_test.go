@@ -264,7 +264,7 @@ schema: default
 					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)"},
+					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek:   7,
 				FirstMonthOfYear: 3,
@@ -1032,12 +1032,15 @@ security:
 					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)"},
+					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek:     7,
 				AvailableTimeZones: []string{"America/New_York"},
-				Security: &runtimev1.MetricsViewSpec_SecurityV2{
-					Access: "true",
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
 				},
 			},
 		},
@@ -1052,13 +1055,18 @@ security:
 					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)"},
+					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 				FirstDayOfWeek:     1,
 				AvailableTimeZones: []string{},
-				Security: &runtimev1.MetricsViewSpec_SecurityV2{
-					Access:    "true",
-					RowFilter: "true",
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "true",
+						Allow:     true,
+					}}},
+					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Sql: "true",
+					}}},
 				},
 			},
 		},
@@ -1083,9 +1091,11 @@ env:
 		`sources/s1.yaml`: `
 connector: s3
 path: hello
+sql: SELECT 10
 env:
   test:
     path: world
+    sql: SELECT 20 # Override a property from commonYAML
     refresh:
       cron: "0 0 * * *"
 `,
@@ -1097,7 +1107,7 @@ env:
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
 			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello"})),
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "hello", "sql": "SELECT 10"})),
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true},
 		},
 	}
@@ -1108,7 +1118,7 @@ env:
 		SourceSpec: &runtimev1.SourceSpec{
 			SourceConnector: "s3",
 			SinkConnector:   "duckdb",
-			Properties:      must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000})),
+			Properties:      must(structpb.NewStruct(map[string]any{"path": "world", "limit": 10000, "sql": "SELECT 20"})),
 			RefreshSchedule: &runtimev1.Schedule{RefUpdate: true, Cron: "0 0 * * *"},
 		},
 	}
@@ -1122,6 +1132,85 @@ env:
 	p, err = Parse(ctx, repo, "", "test", "duckdb")
 	require.NoError(t, err)
 	requireResourcesAndErrors(t, p, []*Resource{s1Test}, nil)
+}
+
+func TestMetricsViewSecurity(t *testing.T) {
+	ctx := context.Background()
+	repo := makeRepo(t, map[string]string{
+		`rill.yaml`: ``,
+		`dashboards/d1.yaml`: `
+table: t1
+dimensions:
+  - name: a
+    column: a
+measures:
+  - name: b
+    expression: count(*)
+security:
+  row_filter: true
+  include:
+    - if: "'{{ .user.domain }}' = 'example.com'"
+      names: '*'
+    - if: true
+      names: [a]
+  exclude:
+    - # Whoopsie empty
+    - if: "'{{ .user.domain }}' = 'bad.com'"
+      names: '*'
+    - if: true
+      names: [b]
+`,
+	})
+
+	resources := []*Resource{
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector: "duckdb",
+				Table:     "t1",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "a", Column: "a"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
+				},
+				SecurityRules: []*runtimev1.SecurityRule{
+					{Rule: &runtimev1.SecurityRule_Access{Access: &runtimev1.SecurityRuleAccess{
+						Condition: "",
+						Allow:     false,
+					}}},
+					{Rule: &runtimev1.SecurityRule_RowFilter{RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Sql: "true",
+					}}},
+					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: "'{{ .user.domain }}' = 'example.com'",
+						Allow:     true,
+						AllFields: true,
+					}}},
+					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: "true",
+						Allow:     true,
+						Fields:    []string{"a"},
+					}}},
+					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: "'{{ .user.domain }}' = 'bad.com'",
+						Allow:     false,
+						AllFields: true,
+					}}},
+					{Rule: &runtimev1.SecurityRule_FieldAccess{FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Condition: "true",
+						Allow:     false,
+						Fields:    []string{"b"},
+					}}},
+				},
+			},
+		},
+	}
+
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
 }
 
 func TestReport(t *testing.T) {
@@ -1367,7 +1456,7 @@ measures:
 					{Name: "a", Column: "a"},
 				},
 				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
-					{Name: "b", Expression: "count(*)"},
+					{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE},
 				},
 			},
 		},
@@ -1450,6 +1539,14 @@ data:
     metrics_view: bar
 vega_lite: |%s
 `, vegaLiteSpec),
+		`components/c3.yaml`: `
+type: component
+data:
+  metrics_sql: SELECT 1
+line_chart:
+  x: time
+  y: total_sales
+`,
 		`dashboards/d1.yaml`: `
 type: dashboard
 columns: 4
@@ -1460,7 +1557,8 @@ items:
   width: 1
   height: 2
 - component:
-    markdown: Hello world!
+    markdown:
+      content: "Hello world!"
 `,
 	})
 
@@ -1488,11 +1586,21 @@ items:
 			},
 		},
 		{
+			Name:  ResourceName{Kind: ResourceKindComponent, Name: "c3"},
+			Paths: []string{"/components/c3.yaml"},
+			ComponentSpec: &runtimev1.ComponentSpec{
+				Resolver:           "metrics_sql",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{"sql": "SELECT 1"})),
+				Renderer:           "line_chart",
+				RendererProperties: must(structpb.NewStruct(map[string]any{"x": "time", "y": "total_sales"})),
+			},
+		},
+		{
 			Name:  ResourceName{Kind: ResourceKindComponent, Name: "d1--component-2"},
 			Paths: []string{"/dashboards/d1.yaml"},
 			ComponentSpec: &runtimev1.ComponentSpec{
 				Renderer:           "markdown",
-				RendererProperties: must(structpb.NewStruct(map[string]any{"contents": "Hello world!"})),
+				RendererProperties: must(structpb.NewStruct(map[string]any{"content": "Hello world!"})),
 				DefinedInDashboard: true,
 			},
 		},
@@ -1652,7 +1760,116 @@ select 3
 	requireResourcesAndErrors(t, p, resources, nil)
 }
 
+func TestAdvancedMeasures(t *testing.T) {
+	files := map[string]string{
+		// rill.yaml
+		`rill.yaml`: ``,
+		// dashboard d1
+		`dashboards/d1.yaml`: `
+table: t1
+timeseries: t
+dimensions:
+  - column: foo
+measures:
+  - name: a
+    type: simple
+    expression: count(*)
+  - name: b
+    type: derived
+    expression: a+1
+    requires: [a]
+  - name: c
+    expression: sum(a)
+    per: [foo]
+    requires: [a]
+  - name: d
+    type: derived
+    expression: a/lag(a)
+    window:
+      order:
+      - name: t
+        time_grain: day
+      frame: unbounded preceding to current row
+    requires:
+      - a
+`,
+	}
+
+	resources := []*Resource{
+		// dashboard d1
+		{
+			Name:  ResourceName{Kind: ResourceKindMetricsView, Name: "d1"},
+			Paths: []string{"/dashboards/d1.yaml"},
+			MetricsViewSpec: &runtimev1.MetricsViewSpec{
+				Connector:     "duckdb",
+				Table:         "t1",
+				TimeDimension: "t",
+				Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{
+					{Name: "foo", Column: "foo"},
+				},
+				Measures: []*runtimev1.MetricsViewSpec_MeasureV2{
+					{
+						Name:       "a",
+						Expression: "count(*)",
+						Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
+					},
+					{
+						Name:               "b",
+						Expression:         "a+1",
+						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						ReferencedMeasures: []string{"a"},
+					},
+					{
+						Name:               "c",
+						Expression:         "sum(a)",
+						Type:               runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						PerDimensions:      []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "foo"}},
+						ReferencedMeasures: []string{"a"},
+					},
+					{
+						Name:       "d",
+						Expression: "a/lag(a)",
+						Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_DERIVED,
+						Window: &runtimev1.MetricsViewSpec_MeasureWindow{
+							Partition:       true,
+							OrderBy:         []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "t", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY}},
+							FrameExpression: "unbounded preceding to current row",
+						},
+						RequiredDimensions: []*runtimev1.MetricsViewSpec_DimensionSelector{{Name: "t", TimeGrain: runtimev1.TimeGrain_TIME_GRAIN_DAY}},
+						ReferencedMeasures: []string{"a"},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+	repo := makeRepo(t, files)
+	p, err := Parse(ctx, repo, "", "", "duckdb")
+	require.NoError(t, err)
+	requireResourcesAndErrors(t, p, resources, nil)
+}
+
 func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resource, wantErrors []*runtimev1.ParseError) {
+	// Check errors
+	// NOTE: Assumes there's at most one parse error per file path
+	// NOTE: Matches error messages using Contains (exact match not required)
+	gotErrors := slices.Clone(p.Errors)
+	for _, want := range wantErrors {
+		found := false
+		for i, got := range gotErrors {
+			if want.FilePath == got.FilePath {
+				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
+				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
+				gotErrors = slices.Delete(gotErrors, i, i+1)
+				found = true
+				break
+			}
+		}
+		require.True(t, found, "missing error for path %q", want.FilePath)
+	}
+	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
+
 	// Check resources
 	gotResources := maps.Clone(p.Resources)
 	for _, want := range wantResources {
@@ -1678,25 +1895,6 @@ func requireResourcesAndErrors(t testing.TB, p *Parser, wantResources []*Resourc
 		require.True(t, found, "missing resource %q", want.Name)
 	}
 	require.True(t, len(gotResources) == 0, "unexpected resources: %v", gotResources)
-
-	// Check errors
-	// NOTE: Assumes there's at most one parse error per file path
-	// NOTE: Matches error messages using Contains (exact match not required)
-	gotErrors := slices.Clone(p.Errors)
-	for _, want := range wantErrors {
-		found := false
-		for i, got := range gotErrors {
-			if want.FilePath == got.FilePath {
-				require.Contains(t, got.Message, want.Message, "for path %q", got.FilePath)
-				require.Equal(t, want.StartLocation, got.StartLocation, "for path %q", got.FilePath)
-				gotErrors = slices.Delete(gotErrors, i, i+1)
-				found = true
-				break
-			}
-		}
-		require.True(t, found, "missing error for path %q", want.FilePath)
-	}
-	require.True(t, len(gotErrors) == 0, "unexpected errors: %v", gotErrors)
 }
 
 func makeRepo(t testing.TB, files map[string]string) drivers.RepoStore {

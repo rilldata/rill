@@ -41,7 +41,7 @@ export async function waitForProfiling(
       columns.map((column) =>
         page.waitForResponse(
           new RegExp(
-            `/queries/null-count/tables/${name}\\?columnName=${column}`,
+            `/queries/null-count/tables/${name}\\?connector=duckdb&database=&databaseSchema=&columnName=${column}`,
           ),
         ),
       ),
@@ -136,6 +136,7 @@ export async function updateCodeEditor(page: Page, code: string) {
     await page.keyboard.press("Control+A");
   }
   await page.keyboard.insertText(code);
+  await page.waitForTimeout(500);
 }
 
 export async function waitForValidResource(

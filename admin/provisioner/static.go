@@ -72,7 +72,7 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		Host:         target.Host,
 		Audience:     target.Audience,
 		CPU:          1 * opts.Slots,
-		MemoryGB:     2 * opts.Slots,
+		MemoryGB:     4 * opts.Slots,
 		StorageBytes: int64(opts.Slots) * 40 * int64(datasize.GB),
 	}, nil
 }

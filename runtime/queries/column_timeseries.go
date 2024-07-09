@@ -49,9 +49,9 @@ type ColumnTimeseries struct {
 	FirstMonthOfYear    uint32
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
-	MetricsView       *runtimev1.MetricsViewSpec           `json:"-"`
-	MetricsViewFilter *runtimev1.MetricsViewFilter         `json:"filters"`
-	MetricsViewPolicy *runtime.ResolvedMetricsViewSecurity `json:"security"`
+	MetricsView       *runtimev1.MetricsViewSpec   `json:"-"`
+	MetricsViewFilter *runtimev1.MetricsViewFilter `json:"filters"`
+	MetricsViewPolicy *runtime.ResolvedSecurity    `json:"security"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}
@@ -375,8 +375,11 @@ func (q *ColumnTimeseries) ResolveNormaliseTimeRange(ctx context.Context, rt *ru
 	var result runtimev1.TimeSeriesTimeRange
 	if rtr.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		q := &RollupInterval{
-			TableName:  q.TableName,
-			ColumnName: q.TimestampColumnName,
+			Connector:      q.Connector,
+			Database:       q.Database,
+			DatabaseSchema: q.DatabaseSchema,
+			TableName:      q.TableName,
+			ColumnName:     q.TimestampColumnName,
 		}
 		err := rt.Query(ctx, instanceID, q, priority)
 		if err != nil {
@@ -395,8 +398,11 @@ func (q *ColumnTimeseries) ResolveNormaliseTimeRange(ctx context.Context, rt *ru
 		}
 	} else if rtr.Start == nil || rtr.End == nil {
 		q := &ColumnTimeRange{
-			TableName:  q.TableName,
-			ColumnName: q.TimestampColumnName,
+			Connector:      q.Connector,
+			Database:       q.Database,
+			DatabaseSchema: q.DatabaseSchema,
+			TableName:      q.TableName,
+			ColumnName:     q.TimestampColumnName,
 		}
 		err := rt.Query(ctx, instanceID, q, priority)
 		if err != nil {

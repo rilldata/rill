@@ -1,18 +1,14 @@
 <script lang="ts">
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
-  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { createMeasureValueFormatter } from "@rilldata/web-common/lib/number-formatting/format-measure-value";
   import { FormatPreset } from "@rilldata/web-common/lib/number-formatting/humanizer-types";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import { numberPartsToString } from "@rilldata/web-common/lib/number-formatting/utils/number-parts-utils";
-  import type {
-    TimeComparisonOption,
-    TimeRangePreset,
-  } from "@rilldata/web-common/lib/time/types";
   import type { MetricsViewSpecMeasureV2 } from "@rilldata/web-common/runtime-client";
   import { createEventDispatcher } from "svelte";
   import {
@@ -23,17 +19,14 @@
   } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
-  export let comparisonOption:
-    | TimeComparisonOption
-    | TimeRangePreset
-    | undefined = undefined;
+
   export let comparisonValue: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
+  export let errorMessage: string | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
 
@@ -98,6 +91,7 @@
   <BigNumberTooltipContent
     slot="tooltip-content"
     {measure}
+    {isMeasureExpanded}
     value={hoveredValue}
   />
 
@@ -134,7 +128,7 @@
         <WithTween {value} tweenProps={{ duration: 500 }} let:output>
           {measureValueFormatter(output)}
         </WithTween>
-        {#if showComparison && comparisonOption && comparisonValue}
+        {#if showComparison && comparisonValue}
           <div class="flex items-baseline gap-x-3 text-sm">
             {#if comparisonValue != null}
               <div
@@ -188,7 +182,13 @@
           </div>
         {/if}
       {:else if status === EntityStatus.Error}
-        <CrossIcon />
+        <div class="text-xs pt-1">
+          {#if errorMessage}
+            Error: {errorMessage}
+          {:else}
+            Error fetching totals data
+          {/if}
+        </div>
       {:else if status === EntityStatus.Running}
         <div
           class="absolute p-2"

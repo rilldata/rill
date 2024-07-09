@@ -125,7 +125,7 @@ func AnalyzeTemplate(tmpl string) (*TemplateMetadata, error) {
 		return map[string]any{}, nil
 	}
 
-	// Parse template (error on missing keys)
+	// Parse template
 	t, err := template.New("").Funcs(funcMap).Option("missingkey=default").Parse(tmpl)
 	if err != nil {
 		return nil, err
@@ -220,22 +220,27 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 
 	// Parse template (error on missing keys)
 	// TODO: missingkey=error may be problematic for claims.
-	t, err := template.New("").Funcs(funcMap).Option("missingkey=error").Parse(tmpl)
+	t, err := template.New("").Funcs(funcMap).Option("missingkey=default").Parse(tmpl)
 	if err != nil {
 		return "", err
 	}
 
 	// Build template data
+	var self map[string]any
+	if data.Self.Meta != nil {
+		self = map[string]any{
+			"kind":  data.Self.Meta.Name.Kind,
+			"name":  data.Self.Meta.Name.Name,
+			"spec":  data.Self.Spec,
+			"state": data.Self.State,
+		}
+	}
 	dataMap := map[string]interface{}{
 		"env":   data.Environment,
 		"user":  data.User,
 		"vars":  data.Variables,
 		"state": data.State,
-		"self": map[string]any{
-			"meta":  data.Self.Meta,
-			"spec":  data.Self.Spec,
-			"state": data.Self.State,
-		},
+		"self":  self,
 	}
 
 	// Add extra props

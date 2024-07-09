@@ -13,7 +13,7 @@
     selectors: {
       dimensions: { allDimensions },
       dimensionFilters: { dimensionHasFilter },
-      measures: { allMeasures },
+      measures: { filteredSimpleMeasures },
       measureFilters: { measureHasFilter },
     },
     actions: {
@@ -25,7 +25,7 @@
     <SearchableFilterSelectableGroup>{
       name: "MEASURES",
       items:
-        $allMeasures
+        $filteredSimpleMeasures()
           ?.map((m) => ({
             name: m.name as string,
             label: getMeasureDisplayName(m),

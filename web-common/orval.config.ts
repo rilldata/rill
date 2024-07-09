@@ -90,6 +90,18 @@ export default defineConfig({
               signal: true,
             },
           },
+          QueryService_MetricsViewSearch: {
+            query: {
+              useQuery: true,
+              signal: true,
+            },
+          },
+          RuntimeService_IssueDevJWT: {
+            query: {
+              useQuery: true,
+              signal: true,
+            },
+          },
         },
       },
     },

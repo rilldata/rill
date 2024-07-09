@@ -66,8 +66,49 @@ var spec = drivers.Spec{
 			Default:     "true",
 		},
 	},
-	SourceProperties: nil,
-	ImplementsOLAP:   true,
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "host",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Host",
+			Description: "Hostname or IP address of the Pinot server",
+			Placeholder: "localhost",
+		},
+		{
+			Key:         "port",
+			Type:        drivers.NumberPropertyType,
+			Required:    true,
+			DisplayName: "Port",
+			Description: "Port number of the Pinot server",
+			Placeholder: "9000",
+		},
+		{
+			Key:         "username",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Username",
+			Description: "Username to connect to the Pinot server",
+			Placeholder: "default",
+		},
+		{
+			Key:         "password",
+			Type:        drivers.StringPropertyType,
+			Required:    false,
+			DisplayName: "Password",
+			Description: "Password to connect to the Pinot server",
+			Placeholder: "password",
+			Secret:      true,
+		},
+		{
+			Key:         "ssl",
+			Type:        drivers.BooleanPropertyType,
+			Required:    true,
+			DisplayName: "SSL",
+			Description: "Use SSL to connect to the Pinot server",
+		},
+	},
+	ImplementsOLAP: true,
 }
 
 type driver struct{}
@@ -171,6 +212,11 @@ type connection struct {
 	config  map[string]any
 	baseURL string
 	headers map[string]string
+}
+
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return c.db.PingContext(ctx)
 }
 
 // Driver implements drivers.Connection.

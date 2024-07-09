@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Zoom from "@rilldata/web-common/components/icons/Zoom.svelte";
+  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import { getOrderedStartEnd } from "@rilldata/web-common/features/dashboards/time-series/utils";
@@ -10,6 +11,7 @@
     TimeRangePreset,
   } from "@rilldata/web-common/lib/time/types";
   import type { V1TimeGrain } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let metricViewName: string;
   export let showComparison = false;
@@ -22,6 +24,8 @@
       charts: { canPanLeft, canPanRight, getNewPanRange },
     },
   } = StateManagers;
+
+  $: metricsView = useMetricsView($runtime.instanceId, metricViewName);
 
   function onKeyDown(e: KeyboardEvent) {
     const targetTagName = (e.target as HTMLElement).tagName;
@@ -69,6 +73,7 @@
       timeRange,
       timeGrain,
       comparisonTimeRange,
+      $metricsView.data ?? {},
     );
   }
 
@@ -92,7 +97,7 @@
 
 {#if $dashboardStore?.selectedScrubRange?.end && !$dashboardStore?.selectedScrubRange?.isScrubbing}
   <div class="absolute flex justify-center left-1/2 -top-8 -translate-x-1/2">
-    <Button compact type="highlighted" on:click={() => zoomScrub()}>
+    <Button compact type="plain" on:click={() => zoomScrub()}>
       <div class="flex items-center gap-x-2">
         <Zoom size="16px" />
         Zoom

@@ -102,7 +102,7 @@ measures:
 		Connector:  "duckdb",
 		Table:      "bar",
 		Dimensions: []*runtimev1.MetricsViewSpec_DimensionV2{{Name: "a", Column: "a"}},
-		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)"}},
+		Measures:   []*runtimev1.MetricsViewSpec_MeasureV2{{Name: "b", Expression: "count(*)", Type: runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE}},
 	}
 	testruntime.RequireResource(t, rt, id, &runtimev1.Resource{
 		Meta: &runtimev1.ResourceMeta{
@@ -1325,10 +1325,12 @@ func newMetricsView(name, table string, measures, dimensions []string) (*runtime
 		metrics.Spec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 		metrics.State.ValidSpec.Measures[i] = &runtimev1.MetricsViewSpec_MeasureV2{
 			Name:       fmt.Sprintf("measure_%d", i),
 			Expression: measure,
+			Type:       runtimev1.MetricsViewSpec_MEASURE_TYPE_SIMPLE,
 		}
 	}
 	for i, dimension := range dimensions {
@@ -1388,7 +1390,8 @@ name: my-gcs
 		},
 		Resource: &runtimev1.Resource_Connector{
 			Connector: &runtimev1.ConnectorV2{
-				Spec: &runtimev1.ConnectorSpec{Driver: "s3", Properties: map[string]string{"region": "us-west-2"}},
+				Spec:  &runtimev1.ConnectorSpec{Driver: "s3", Properties: map[string]string{"region": "us-west-2"}},
+				State: &runtimev1.ConnectorState{},
 			},
 		},
 	})
@@ -1400,7 +1403,8 @@ name: my-gcs
 		},
 		Resource: &runtimev1.Resource_Connector{
 			Connector: &runtimev1.ConnectorV2{
-				Spec: &runtimev1.ConnectorSpec{Driver: "gcs"},
+				Spec:  &runtimev1.ConnectorSpec{Driver: "gcs"},
+				State: &runtimev1.ConnectorState{},
 			},
 		},
 	})

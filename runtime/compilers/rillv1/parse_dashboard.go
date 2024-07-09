@@ -20,7 +20,6 @@ type DashboardYAML struct {
 		Y         *uint32   `yaml:"y"`
 		Width     *uint32   `yaml:"width"`
 		Height    *uint32   `yaml:"height"`
-		FontSize  uint32    `yaml:"font_size"`
 	} `yaml:"items"`
 }
 
@@ -38,11 +37,6 @@ func (p *Parser) parseDashboard(node *Node) error {
 	}
 	if !node.ConnectorInferred && node.Connector != "" {
 		return fmt.Errorf("dashboards cannot have a connector")
-	}
-
-	// Ensure there's at least one item
-	if len(tmp.Items) == 0 {
-		return errors.New(`at least one item must be configured`)
 	}
 
 	// Parse items.
@@ -71,7 +65,6 @@ func (p *Parser) parseDashboard(node *Node) error {
 			Y:                  item.Y,
 			Width:              item.Width,
 			Height:             item.Height,
-			FontSize:           item.FontSize,
 		}
 
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})

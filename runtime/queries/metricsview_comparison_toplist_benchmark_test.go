@@ -48,7 +48,8 @@ func BenchmarkMetricsViewsComparison_compare(b *testing.B) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -89,8 +90,9 @@ func BenchmarkMetricsViewsComparison_nocompare_all(b *testing.B) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -128,8 +130,9 @@ func BenchmarkMetricsViewsComparison_compare_spending(b *testing.B) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -170,8 +173,9 @@ func BenchmarkMetricsViewsComparison_nocompare_all_spending(b *testing.B) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -218,8 +222,9 @@ func BenchmarkMetricsViewsComparison_delta_compare(b *testing.B) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -285,8 +290,9 @@ func BenchmarkMetricsViewsComparison_delta_compare_with_having(b *testing.B) {
 				},
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -327,8 +333,9 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all(b *testing.B) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -366,8 +373,9 @@ func BenchmarkMetricsViewsComparison_delta_compare_spending(b *testing.B) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -408,8 +416,9 @@ func BenchmarkMetricsViewsComparison_delta_nocompare_all_spending(b *testing.B) 
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -447,8 +456,9 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending(b *
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -486,8 +496,9 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: false,
+		Limit:          250,
+		Exact:          false,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -528,8 +539,9 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_nocompare_all_spendi
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -567,8 +579,9 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending(b *testin
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -606,8 +619,9 @@ func BenchmarkMetricsViewsComparison_high_cardinality_compare_spending_approxima
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: false,
+		Limit:          250,
+		Exact:          false,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -645,8 +659,9 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 				Desc:     true,
 			},
 		},
-		Limit: 250 * 2,
-		Exact: false,
+		Limit:          250 * 2,
+		Exact:          false,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -683,8 +698,9 @@ func BenchmarkMetricsViewsComparison_delta_high_cardinality_compare_spending_app
 				Desc:     true,
 			},
 		},
-		Limit: 250 * 5,
-		Exact: false,
+		Limit:          250 * 5,
+		Exact:          false,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()
@@ -725,8 +741,9 @@ func BenchmarkMetricsViewsComparison_high_cardinality_nocompare_all_spending(b *
 				Desc:     true,
 			},
 		},
-		Limit: 250,
-		Exact: true,
+		Limit:          250,
+		Exact:          true,
+		SecurityClaims: testClaims(),
 	}
 
 	b.ResetTimer()

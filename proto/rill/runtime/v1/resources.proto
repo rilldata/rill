@@ -5,6 +5,7 @@ import "google/protobuf/struct.proto";
 import "google/protobuf/timestamp.proto";
 import "rill/runtime/v1/colors.proto";
 import "rill/runtime/v1/export_format.proto";
+import "rill/runtime/v1/expression.proto";
 import "rill/runtime/v1/schema.proto";
 import "rill/runtime/v1/time_grain.proto";
 
@@ -144,30 +145,42 @@ message MetricsViewSpec {
     string description = 4;
     bool unnest = 5;
   }
+  // Selector for a dimension
+  message DimensionSelector {
+    string name = 1;
+    TimeGrain time_grain = 2; // Only for time dimensions (optional)
+    bool desc = 3; // Only for when ordering (optional)
+  }
+  // Type of measure query to generate
+  enum MeasureType {
+    MEASURE_TYPE_UNSPECIFIED = 0;
+    MEASURE_TYPE_SIMPLE = 1;
+    MEASURE_TYPE_DERIVED = 2;
+    MEASURE_TYPE_TIME_COMPARISON = 3;
+  }
+  // Window to apply to the measure calculation
+  message MeasureWindow {
+    // If true, partitions the window by all present dimensions except those in order_by
+    bool partition = 1;
+    // Dimensions to order the window by. Must be present in required_dimensions.
+    repeated DimensionSelector order_by = 3;
+    // Raw SQL expression to use as the frame (starting with "ROWS ...")
+    string frame_expression = 2;
+  }
   // Measures are aggregated computed values
   message MeasureV2 {
     string name = 1;
     string expression = 2;
+    MeasureType type = 8;
+    MeasureWindow window = 9;
+    repeated DimensionSelector per_dimensions = 10;
+    repeated DimensionSelector required_dimensions = 11;
+    repeated string referenced_measures = 12;
     string label = 3;
     string description = 4;
     string format_preset = 5;
     string format_d3 = 7;
     bool valid_percent_of_total = 6;
-  }
-  // Security for the dashboard
-  message SecurityV2 {
-    // Dashboard level access condition
-    string access = 1;
-    // row level access condition
-    string row_filter = 2;
-    // Dimension/measure level access condition
-    message FieldConditionV2 {
-      string condition = 1;
-      repeated string names = 2;
-    }
-    // either one of include or exclude will be specified
-    repeated FieldConditionV2 include = 3;
-    repeated FieldConditionV2 exclude = 4;
   }
   enum ComparisonMode {
     COMPARISON_MODE_UNSPECIFIED = 0;
@@ -216,7 +229,7 @@ message MetricsViewSpec {
   // Available time zones list preferred time zones using IANA location identifiers
   repeated string available_time_zones = 10;
   // Security for the dashboard
-  SecurityV2 security = 11;
+  repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
@@ -229,6 +242,32 @@ message MetricsViewSpec {
   repeated AvailableTimeRange available_time_ranges = 16;
   // Default theme to apply
   string default_theme = 17;
+}
+
+message SecurityRule {
+  oneof rule {
+    SecurityRuleAccess access = 1;
+    SecurityRuleFieldAccess field_access = 2;
+    SecurityRuleRowFilter row_filter = 3;
+  }
+}
+  
+message SecurityRuleAccess {
+  string condition = 1;
+  bool allow = 2;
+}
+
+message SecurityRuleFieldAccess {
+  string condition = 1;
+  bool allow = 2;
+  repeated string fields = 3;
+  bool all_fields = 4;
+}
+
+message SecurityRuleRowFilter {
+  string condition = 1;
+  string sql = 2; // Raw SQL expression to apply to the underlying table
+  Expression expression = 3; // Regular query expression referencing dimension names
 }
 
 message MetricsViewState {
@@ -452,7 +491,6 @@ message DashboardItem {
   optional uint32 y = 3;
   optional uint32 width = 4;
   optional uint32 height = 5;
-  uint32 font_size = 7;
 }
 
 // API defines a custom operation for querying data stored in Rill.
@@ -504,9 +542,13 @@ message CharLocation {
 message ConnectorSpec {
   string driver = 1;
   map<string, string> properties = 2;
+  // properties_from_variables stores properties whose value is a variable.
+  // NOTE : properties_from_variables and properties both should be used to get all properties.
+  map<string, string> properties_from_variables = 3;
 }
 
 message ConnectorState {
+  string spec_hash = 1;
 }
 
 message ConnectorV2 {
