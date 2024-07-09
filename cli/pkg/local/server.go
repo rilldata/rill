@@ -461,41 +461,9 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			ArchiveAssetId:   assetID,
 		}
 	} else {
-		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+		ghURL, branch, err := s.validateGithubRepoStatus(ctx, c)
 		if err != nil {
 			return nil, err
-		}
-		if !userStatus.HasAccess {
-			// generally this should not happen as IsGithubConnected should be true before deploying
-			return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
-		}
-
-		// check if project is a git repo
-		remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-		if err != nil {
-			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
-				return nil, errors.New("project is not a valid git repository or not connected to a remote")
-			}
-			return nil, err
-		}
-
-		// check if there are uncommitted changes
-		// ignore errors since check is best effort and can fail in multiple cases
-		syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
-		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
-			return nil, errors.New("project has uncommitted changes")
-		}
-
-		// Get github repo status
-		repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-			GithubUrl: ghURL,
-		})
-		if err != nil {
-			return nil, err
-		}
-		if !repoStatus.HasAccess {
-			// generally this should not happen as IsRepoAccessGranted should be true before deploying
-			return nil, fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
 		}
 		projRequest = &adminv1.CreateProjectRequest{
 			OrganizationName: r.Msg.Org,
@@ -509,7 +477,7 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 			Public:           false,
 			GithubUrl:        ghURL,
 			Subpath:          "",
-			ProdBranch:       repoStatus.DefaultBranch,
+			ProdBranch:       branch,
 		}
 	}
 
@@ -594,6 +562,17 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 			return nil, err
 		}
 		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{ArchiveAssetId: &assetID})
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		ghURL, branch, err := s.validateGithubRepoStatus(ctx, c)
+		if err != nil {
+			return nil, err
+		}
+		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+			GithubUrl:  &ghURL,
+			ProdBranch: &branch})
 		if err != nil {
 			return nil, err
 		}
@@ -849,6 +828,46 @@ func (s *Server) versionHandler() http.Handler {
 			return
 		}
 	})
+}
+
+func (s *Server) validateGithubRepoStatus(ctx context.Context, c *client.Client) (string, string, error) {
+	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+	if err != nil {
+		return "", "", err
+	}
+	if !userStatus.HasAccess {
+		// generally this should not happen as IsGithubConnected should be true before deploying
+		return "", "", fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
+	}
+
+	// check if project is a git repo
+	remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+	if err != nil {
+		if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
+			return "", "", errors.New("project is not a valid git repository or not connected to a remote")
+		}
+		return "", "", err
+	}
+
+	// check if there are uncommitted changes
+	// ignore errors since check is best effort and can fail in multiple cases
+	syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
+	if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
+		return "", "", errors.New("project has uncommitted changes")
+	}
+
+	// Get github repo status
+	repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+		GithubUrl: ghURL,
+	})
+	if err != nil {
+		return "", "", err
+	}
+	if !repoStatus.HasAccess {
+		// generally this should not happen as IsRepoAccessGranted should be true before deploying
+		return "", "", fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
+	}
+	return ghURL, repoStatus.DefaultBranch, nil
 }
 
 // nameConflictRetryErrClassifier classifies name already exists errors as retryable, works for both github repo and project name

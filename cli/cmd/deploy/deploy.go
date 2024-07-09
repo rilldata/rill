@@ -233,6 +233,40 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		opts.ProdBranch = ghRes.DefaultBranch
 	}
 
+	// check if a project with one time upload exists and the user just intends to update it with a git one
+	if p := oneTimeUploadProject(ctx, ch, localProjectPath); p != nil {
+		ch.Println("A project with one time uploads already deploys from current directory")
+		ok, err := cmdutil.ConfirmPrompt("Do you want to switch to git based project", "", true)
+		if err != nil {
+			return err
+		}
+		if !ok {
+			ch.PrintfWarn("Aborted\n")
+			return nil
+		}
+		res, err := adminClient.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+			OrganizationName: p.OrgName,
+			Name:             p.Name,
+			ProdBranch:       &opts.ProdBranch,
+			GithubUrl:        &githubURL,
+		})
+		if err != nil {
+			return err
+		}
+		if localProjectPath != "" {
+			err = dotrillcloud.SetAll(localProjectPath, ch.AdminURL, &dotrillcloud.Config{
+				ProjectID: res.Project.Id,
+			})
+			if err != nil {
+				return err
+			}
+		}
+
+		// Success!
+		ch.PrintfSuccess("Updated project \"%s/%s\".\n\n", ch.Org, res.Project.Name)
+		ch.PrintfSuccess("Rill projects deploy continuously when you push changes to Github.\n")
+	}
+
 	// If no project name was provided, default to Git repo name
 	if opts.Name == "" {
 		opts.Name = ghRepo
@@ -1096,6 +1130,28 @@ func projectExists(ctx context.Context, ch *cmdutil.Helper, orgName, projectName
 		return false, err
 	}
 	return true, nil
+}
+
+func oneTimeUploadProject(ctx context.Context, ch *cmdutil.Helper, localProjectPath string) *adminv1.Project {
+	if localProjectPath == "" {
+		return nil
+	}
+	config, err := dotrillcloud.GetAll(localProjectPath, ch.AdminURL)
+	if err != nil {
+		return nil
+	}
+	if config == nil {
+		return nil
+	}
+	c, err := ch.Client()
+	if err != nil {
+		return nil
+	}
+	resp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{Id: config.ProjectID})
+	if err != nil {
+		return nil
+	}
+	return resp.Project
 }
 
 func errMsgContains(err error, msg string) bool {
