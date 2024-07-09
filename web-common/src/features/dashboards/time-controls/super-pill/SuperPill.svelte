@@ -173,15 +173,9 @@
         allTimeRange,
       );
 
-    makeTimeSeriesTimeRangeAndUpdateAppState(
-      range,
-      defaultTimeGrain,
-      $dashboardStore?.showTimeComparison
-        ? ({
-            name: validComparison,
-          } as DashboardTimeControls)
-        : undefined,
-    );
+    makeTimeSeriesTimeRangeAndUpdateAppState(range, defaultTimeGrain, {
+      name: validComparison,
+    } as DashboardTimeControls);
   }
 
   function makeTimeSeriesTimeRangeAndUpdateAppState(
