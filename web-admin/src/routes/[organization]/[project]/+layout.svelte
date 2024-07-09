@@ -76,8 +76,6 @@
       query: baseGetProjectQueryOptions,
     },
   );
-  $: ({ data: cookieProjectData, error: cookieProjectError } =
-    $cookieProjectQuery);
 
   /**
    * `GetProject` with token-based auth.
@@ -93,8 +91,8 @@
       query: baseGetProjectQueryOptions,
     },
   );
-  $: ({ data: tokenProjectData, error: tokenProjectError } =
-    $tokenProjectQuery);
+
+  $: projectQuery = onMagicLinkPage ? tokenProjectQuery : cookieProjectQuery;
 
   /**
    * `GetDeploymentCredentials`
@@ -123,11 +121,10 @@
   $: ({ data: mockedUserDeploymentCredentials } =
     $mockedUserDeploymentCredentialsQuery);
 
-  // Depending on the current page, we use the results from the cookie query or the token query
-  $: error = (
-    onMagicLinkPage ? tokenProjectError : cookieProjectError
-  ) as HTTPError;
-  $: projectData = onMagicLinkPage ? tokenProjectData : cookieProjectData;
+  $: ({ data: projectData, error: projectError } = $projectQuery);
+
+  $: error = projectError as HTTPError;
+
   $: authContext = (
     mockedUserId && mockedUserDeploymentCredentials
       ? "mock"
