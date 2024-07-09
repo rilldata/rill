@@ -7,7 +7,6 @@ func (e *Executor) rewriteComparisonJoins(ast *AST) {
 	}
 
 	_ = e.rewriteComparisonJoinsWalk(ast, ast.Root)
-	return
 }
 
 func (e *Executor) rewriteComparisonJoinsWalk(a *AST, n *SelectNode) bool {
@@ -44,6 +43,7 @@ func (e *Executor) rewriteComparisonNode(a *AST, n *SelectNode) bool {
 
 	// Find out what we're sorting by
 	var sortDim, sortBase, sortComparison, sortDelta bool
+	var sortUnderlyingMeasure string
 	if len(a.Root.OrderBy) > 0 {
 		// Check if it's a measure
 		for _, qm := range a.query.Measures {
@@ -53,12 +53,16 @@ func (e *Executor) rewriteComparisonNode(a *AST, n *SelectNode) bool {
 
 			if qm.Compute != nil && qm.Compute.ComparisonValue != nil {
 				sortComparison = true
+				sortUnderlyingMeasure = qm.Compute.ComparisonValue.Measure
 			} else if qm.Compute != nil && qm.Compute.ComparisonDelta != nil {
 				sortDelta = true
+				sortUnderlyingMeasure = qm.Compute.ComparisonDelta.Measure
 			} else if qm.Compute != nil && qm.Compute.ComparisonRatio != nil {
 				sortDelta = true
+				sortUnderlyingMeasure = qm.Compute.ComparisonRatio.Measure
 			} else {
 				sortBase = true
+				sortUnderlyingMeasure = qm.Name
 			}
 
 			break
@@ -75,16 +79,22 @@ func (e *Executor) rewriteComparisonNode(a *AST, n *SelectNode) bool {
 		}
 	}
 
+	// If sorting by a computed measure, we need to use the underlying measure name when pushing the order into the sub-select.
+	if sortUnderlyingMeasure != "" {
+		sortField.Name = sortUnderlyingMeasure
+	}
+	order := []OrderFieldNode{sortField}
+
 	if sortBase {
 		// We're sorting by a measure in FromSelect. We can do a LEFT JOIN and push down the order/limit to it.
 		n.JoinComparisonType = JoinTypeLeft
-		n.FromSelect.OrderBy = a.Root.OrderBy
+		n.FromSelect.OrderBy = order
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 	} else if sortComparison {
 		// We're sorting by a measure in JoinComparisonSelect. We can do a RIGHT JOIN and push down the order/limit to it.
 		n.JoinComparisonType = JoinTypeRight
-		n.JoinComparisonSelect.OrderBy = a.Root.OrderBy
+		n.JoinComparisonSelect.OrderBy = order
 		n.JoinComparisonSelect.Limit = a.Root.Limit
 		n.JoinComparisonSelect.Offset = a.Root.Offset
 	} else if approx && sortDim {
@@ -92,7 +102,7 @@ func (e *Executor) rewriteComparisonNode(a *AST, n *SelectNode) bool {
 		// For correct results, we need to do a FULL JOIN since a dimension value may only be present in one of the base or comparison sub-queries.
 		// But for approximate results, we can do a LEFT JOIN that only returns values present in the base query.
 		n.JoinComparisonType = JoinTypeLeft
-		n.FromSelect.OrderBy = a.Root.OrderBy
+		n.FromSelect.OrderBy = order
 		n.FromSelect.Limit = a.Root.Limit
 		n.FromSelect.Offset = a.Root.Offset
 	}
