@@ -82,7 +82,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -113,7 +113,7 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 		if err != nil {
 			return nil, err
 		}
-		err = s.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+		err = s.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, err
 		}
@@ -180,26 +180,34 @@ func (s *Service) CreateOrUpdateUser(ctx context.Context, email, name, photoURL 
 }
 
 func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName, description string) (*database.Organization, error) {
-	ctx, tx, err := s.DB.NewTx(ctx)
+	txCtx, tx, err := s.DB.NewTx(ctx)
 	if err != nil {
 		return nil, err
 	}
 	defer func() { _ = tx.Rollback() }()
 
-	org, err := s.DB.InsertOrganization(ctx, &database.InsertOrganizationOptions{
-		Name:                    orgName,
-		Description:             description,
-		QuotaProjects:           database.DefaultQuotaProjects,
-		QuotaDeployments:        database.DefaultQuotaDeployments,
-		QuotaSlotsTotal:         database.DefaultQuotaSlotsTotal,
-		QuotaSlotsPerDeployment: database.DefaultQuotaSlotsPerDeployment,
-		QuotaOutstandingInvites: database.DefaultQuotaOutstandingInvites,
+	quotaProjects := database.DefaultQuotaProjects
+	quotaDeployments := database.DefaultQuotaDeployments
+	quotaSlotsTotal := database.DefaultQuotaSlotsTotal
+	quotaSlotsPerDeployment := database.DefaultQuotaSlotsPerDeployment
+	quotaOutstandingInvites := database.DefaultQuotaOutstandingInvites
+	quotaStorageLimitBytesPerDeployment := database.DefaultQuotaStorageLimitBytesPerDeployment
+
+	org, err := s.DB.InsertOrganization(txCtx, &database.InsertOrganizationOptions{
+		Name:                                orgName,
+		Description:                         description,
+		QuotaProjects:                       quotaProjects,
+		QuotaDeployments:                    quotaDeployments,
+		QuotaSlotsTotal:                     quotaSlotsTotal,
+		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             quotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
 	})
 	if err != nil {
 		return nil, err
 	}
 
-	org, err = s.prepareOrganization(ctx, org.ID, userID)
+	org, err = s.prepareOrganization(txCtx, org.ID, userID)
 	if err != nil {
 		return nil, err
 	}
@@ -211,7 +219,66 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
-	return org, nil
+	// create customer and subscription in the billing system, if it fails just log the error but don't fail the request
+	// TODO run this in a background job
+	customerID, err := s.Biller.CreateCustomer(ctx, org)
+	if err != nil {
+		s.Logger.Error("failed to create customer in billing system for org", zap.String("org", orgName), zap.Error(err))
+		return org, nil
+	}
+
+	s.Logger.Info("created customer in billing system for org", zap.String("org", orgName), zap.String("customer_id", customerID))
+	// fetch default plan
+	plan, err := s.Biller.GetDefaultPlan(ctx)
+	if err != nil {
+		s.Logger.Error("failed to get default plan from billing system, no subscription will be created", zap.String("org", orgName), zap.Error(err))
+	}
+
+	if plan != nil {
+		if plan.Quotas.NumProjects != nil {
+			quotaProjects = *plan.Quotas.NumProjects
+		}
+		if plan.Quotas.NumDeployments != nil {
+			quotaDeployments = *plan.Quotas.NumDeployments
+		}
+		if plan.Quotas.NumSlotsTotal != nil {
+			quotaSlotsTotal = *plan.Quotas.NumSlotsTotal
+		}
+		if plan.Quotas.NumSlotsPerDeployment != nil {
+			quotaSlotsPerDeployment = *plan.Quotas.NumSlotsPerDeployment
+		}
+		if plan.Quotas.NumOutstandingInvites != nil {
+			quotaOutstandingInvites = *plan.Quotas.NumOutstandingInvites
+		}
+		if plan.Quotas.StorageLimitBytesPerDeployment != nil {
+			quotaStorageLimitBytesPerDeployment = *plan.Quotas.StorageLimitBytesPerDeployment
+		}
+
+		sub, err := s.Biller.CreateSubscription(ctx, customerID, plan)
+		if err != nil {
+			s.Logger.Error("failed to create subscription in billing system for org", zap.String("org", orgName), zap.Error(err))
+		} else {
+			s.Logger.Info("created subscription in billing system for org", zap.String("org", orgName), zap.String("subscription_id", sub.ID))
+		}
+	}
+
+	updatedOrg, err := s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		Description:                         org.Description,
+		QuotaProjects:                       quotaProjects,
+		QuotaDeployments:                    quotaDeployments,
+		QuotaSlotsTotal:                     quotaSlotsTotal,
+		QuotaSlotsPerDeployment:             quotaSlotsPerDeployment,
+		QuotaOutstandingInvites:             quotaOutstandingInvites,
+		QuotaStorageLimitBytesPerDeployment: quotaStorageLimitBytesPerDeployment,
+		BillingCustomerID:                   customerID,
+	})
+	if err != nil {
+		s.Logger.Error("failed to update organization with billing info", zap.String("org", orgName), zap.Error(err))
+		return org, nil
+	}
+
+	return updatedOrg, nil
 }
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
@@ -240,7 +307,7 @@ func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string)
 		return nil, err
 	}
 	// Add user to all user group
-	err = s.DB.InsertUsergroupMember(ctx, userGroup.ID, userID)
+	err = s.DB.InsertUsergroupMemberUser(ctx, userGroup.ID, userID)
 	if err != nil {
 		return nil, err
 	}

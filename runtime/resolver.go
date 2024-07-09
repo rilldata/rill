@@ -5,10 +5,13 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/jsonval"
 )
 
 // Resolver represents logic, such as a SQL query, that produces output data.
@@ -31,19 +34,77 @@ type Resolver interface {
 	// Validate the properties and args without running any expensive operations.
 	Validate(ctx context.Context) error
 	// ResolveInteractive resolves data for interactive use (e.g. API requests or alerts).
-	ResolveInteractive(ctx context.Context) (*ResolverResult, error)
+	ResolveInteractive(ctx context.Context) (ResolverResult, error)
 	// ResolveExport resolve data for export (e.g. downloads or reports).
 	ResolveExport(ctx context.Context, w io.Writer, opts *ResolverExportOptions) error
 }
 
 // ResolverResult is the result of a resolver's execution.
-type ResolverResult struct {
-	// Data is a JSON encoded array of objects.
-	Data []byte
+type ResolverResult interface {
 	// Schema is the schema for the Data
-	Schema *runtimev1.StructType
-	// Cache indicates whether the result can be cached.
-	Cache bool
+	Schema() *runtimev1.StructType
+	// Cache indicates whether the result can be cached
+	Cache() bool
+	// MarshalJSON is a convenience method to serialize the result to JSON.
+	MarshalJSON() ([]byte, error)
+	// Close should be called to release resources
+	Close() error
+}
+
+func NewResolverResult(result *drivers.Result, cache bool) ResolverResult {
+	return &resolverResult{
+		rows:  result,
+		cache: cache,
+	}
+}
+
+type resolverResult struct {
+	rows  *drivers.Result
+	cache bool
+}
+
+var _ ResolverResult = &resolverResult{}
+
+// Cache implements ResolverResult.
+func (r *resolverResult) Cache() bool {
+	return r.cache
+}
+
+// Close implements ResolverResult.
+func (r *resolverResult) Close() error {
+	return r.rows.Close()
+}
+
+// MarshalJSON implements ResolverResult.
+func (r *resolverResult) MarshalJSON() ([]byte, error) {
+	var out []map[string]any
+	for r.rows.Next() {
+		row := make(map[string]any)
+		err := r.rows.MapScan(row)
+		if err != nil {
+			return nil, err
+		}
+
+		ret, err := jsonval.ToValue(row, &runtimev1.Type{StructType: r.rows.Schema})
+		if err != nil {
+			return nil, err
+		}
+		row, ok := ret.(map[string]any)
+		if !ok {
+			// this should never happen
+			return nil, fmt.Errorf("Resolver.MarshalJSON unexpected type %T", ret)
+		}
+		out = append(out, row)
+	}
+	if r.rows.Err() != nil {
+		return nil, r.rows.Err()
+	}
+	return json.Marshal(out)
+}
+
+// Schema implements ResolverResult.
+func (r *resolverResult) Schema() *runtimev1.StructType {
+	return r.rows.Schema
 }
 
 // ResolverExportOptions are the options passed to a resolver's ResolveExport method.
@@ -56,13 +117,12 @@ type ResolverExportOptions struct {
 
 // ResolverOptions are the options passed to a resolver initializer.
 type ResolverOptions struct {
-	Runtime        *Runtime
-	InstanceID     string
-	Properties     map[string]any
-	Args           map[string]any
-	UserAttributes map[string]any
-	Security       *runtimev1.MetricsViewSpec_SecurityV2
-	ForExport      bool
+	Runtime    *Runtime
+	InstanceID string
+	Properties map[string]any
+	Args       map[string]any
+	Claims     *SecurityClaims
+	ForExport  bool
 }
 
 // ResolverInitializer is a function that initializes a resolver.
@@ -85,7 +145,7 @@ type ResolveOptions struct {
 	Resolver           string
 	ResolverProperties map[string]any
 	Args               map[string]any
-	UserAttributes     map[string]any
+	Claims             *SecurityClaims
 }
 
 // ResolveResult is subset of ResolverResult that is cached
@@ -102,12 +162,12 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 		return ResolveResult{}, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:        r,
-		InstanceID:     opts.InstanceID,
-		Properties:     opts.ResolverProperties,
-		Args:           opts.Args,
-		UserAttributes: opts.UserAttributes,
-		ForExport:      false,
+		Runtime:    r,
+		InstanceID: opts.InstanceID,
+		Properties: opts.ResolverProperties,
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  false,
 	})
 	if err != nil {
 		return ResolveResult{}, err
@@ -162,13 +222,19 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 		if err != nil {
 			return ResolveResult{}, err
 		}
+		defer res.Close()
+
+		data, err := res.MarshalJSON()
+		if err != nil {
+			return ResolveResult{}, err
+		}
 
 		cRes := ResolveResult{
-			Data:   res.Data,
-			Schema: res.Schema,
+			Data:   data,
+			Schema: res.Schema(),
 		}
-		if res.Cache {
-			r.queryCache.cache.Set(key, cRes, int64(len(res.Data)))
+		if res.Cache() {
+			r.queryCache.cache.Set(key, cRes, int64(len(data)))
 		}
 		return cRes, nil
 	})

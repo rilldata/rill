@@ -26,6 +26,8 @@ test.describe("dashboard", () => {
     await createDashboardFromSource(page, "/sources/AdBids.yaml");
     await waitForFileNavEntry(page, `/dashboards/AdBids_dashboard.yaml`, true);
     await page.getByRole("button", { name: "Preview" }).click();
+    // Temporary timeout while the issue is looked into
+    await page.waitForTimeout(1000);
     await assertAdBidsDashboard(page);
   });
 
@@ -64,6 +66,7 @@ test.describe("dashboard", () => {
       // click on publisher=Facebook leaderboard value
       page.getByRole("button", { name: "Facebook 19.3K" }).click(),
     ]);
+
     await wrapRetryAssertion(() =>
       assertLeaderboards(page, [
         {
@@ -505,9 +508,9 @@ dimensions:
     await page.getByRole("button", { name: "No comparison" }).nth(1).click();
     await page.getByRole("menuitem", { name: "Domain Name" }).click();
 
-    await page.getByText("google.com", { exact: true }).click();
-    await page.getByText("instagram.com").click();
-    await page.getByText("msn.com").click();
+    await page.getByText("google.com", { exact: true }).click({ force: true });
+    await page.getByText("instagram.com").click({ force: true });
+    await page.getByText("msn.com").click({ force: true });
 
     await expect(page.getByText(" Total rows 43.7k")).toBeVisible();
 

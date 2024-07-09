@@ -214,6 +214,11 @@ type connection struct {
 	headers map[string]string
 }
 
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return c.db.PingContext(ctx)
+}
+
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
 	return "pinot"

@@ -3,7 +3,6 @@
   import SimpleDataGraphic from "@rilldata/web-common/components/data-graphic/elements/SimpleDataGraphic.svelte";
   import { Axis } from "@rilldata/web-common/components/data-graphic/guides";
   import { bisectData } from "@rilldata/web-common/components/data-graphic/utils";
-  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import SearchableFilterButton from "@rilldata/web-common/components/searchable-filter-menu/SearchableFilterButton.svelte";
   import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
   import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
@@ -217,6 +216,12 @@
   const setAllMeasuresVisible = () => {
     showHideMeasures.setAllToVisible();
   };
+
+  $: hasTotalsError = Object.hasOwn($timeSeriesDataStore?.error, "totals");
+  $: hasTimeseriesError = Object.hasOwn(
+    $timeSeriesDataStore?.error,
+    "timeseries",
+  );
 </script>
 
 <TimeSeriesChartContainer
@@ -299,12 +304,13 @@
             value={bigNum}
             isMeasureExpanded={isInTimeDimensionView}
             {showComparison}
-            comparisonOption={$timeControlsStore?.selectedComparisonTimeRange
-              ?.name}
             {comparisonValue}
-            status={$timeSeriesDataStore?.isFetching
-              ? EntityStatus.Running
-              : EntityStatus.Idle}
+            errorMessage={$timeSeriesDataStore?.error?.totals}
+            status={hasTotalsError
+              ? EntityStatus.Error
+              : $timeSeriesDataStore?.isFetching
+                ? EntityStatus.Running
+                : EntityStatus.Idle}
             on:expand-measure={() => {
               metricsExplorerStore.setExpandedMeasureName(
                 metricViewName,
@@ -313,8 +319,18 @@
             }}
           />
 
-          {#if $timeSeriesDataStore?.isError}
-            <div class="p-5"><CrossIcon /></div>
+          {#if hasTimeseriesError}
+            <div
+              class="flex flex-col p-5 items-center justify-center text-xs ui-copy-muted"
+            >
+              {#if $timeSeriesDataStore.error?.timeseries}
+                <span>
+                  Error: {$timeSeriesDataStore.error.timeseries}
+                </span>
+              {:else}
+                <span>Unable to fetch data from the API</span>
+              {/if}
+            </div>
           {:else if expandedMeasureName && tddChartType != TDDChart.DEFAULT}
             <TDDAlternateChart
               timeGrain={interval}

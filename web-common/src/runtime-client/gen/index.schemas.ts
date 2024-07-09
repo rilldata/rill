@@ -180,7 +180,6 @@ export type QueryServiceColumnNullCountParams = {
 
 export type QueryServiceMetricsViewTotalsBody = {
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
@@ -191,7 +190,6 @@ export type QueryServiceMetricsViewTotalsBody = {
 export type QueryServiceMetricsViewToplistBody = {
   dimensionName?: string;
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   limit?: string;
@@ -205,7 +203,6 @@ export type QueryServiceMetricsViewToplistBody = {
 
 export type QueryServiceMetricsViewTimeSeriesBody = {
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -478,13 +475,6 @@ export type ConnectorServiceGCSListObjectsParams = {
   delimiter?: string;
 };
 
-export type RuntimeServiceIssueDevJWTParams = {
-  name?: string;
-  email?: string;
-  groups?: string[];
-  admin?: boolean;
-};
-
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
@@ -544,12 +534,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -577,6 +561,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -675,15 +665,12 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export type V1SourceSpecProperties = { [key: string]: any };
-
-export interface V1Schedule {
-  refUpdate?: boolean;
-  disable?: boolean;
-  cron?: string;
-  tickerSeconds?: number;
-  timeZone?: string;
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
+
+export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
   sourceConnector?: string;
@@ -696,9 +683,36 @@ export interface V1SourceSpec {
   trigger?: boolean;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
+export interface V1SecurityRuleRowFilter {
+  condition?: string;
+  sql?: string;
+  expression?: V1Expression;
+}
+
+export interface V1SecurityRuleFieldAccess {
+  condition?: string;
+  allow?: boolean;
+  fields?: string[];
+  allFields?: boolean;
+}
+
+export interface V1SecurityRuleAccess {
+  condition?: string;
+  allow?: boolean;
+}
+
+export interface V1SecurityRule {
+  access?: V1SecurityRuleAccess;
+  fieldAccess?: V1SecurityRuleFieldAccess;
+  rowFilter?: V1SecurityRuleRowFilter;
+}
+
+export interface V1Schedule {
+  refUpdate?: boolean;
+  disable?: boolean;
+  cron?: string;
+  tickerSeconds?: number;
+  timeZone?: string;
 }
 
 export interface V1S3Object {
@@ -761,11 +775,23 @@ export const V1ResourceEvent = {
   RESOURCE_EVENT_DELETE: "RESOURCE_EVENT_DELETE",
 } as const;
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
+export interface V1Resource {
+  meta?: V1ResourceMeta;
+  projectParser?: V1ProjectParser;
+  source?: V1SourceV2;
+  model?: V1ModelV2;
+  metricsView?: V1MetricsViewV2;
+  migration?: V1Migration;
+  report?: V1Report;
+  alert?: V1Alert;
+  pullTrigger?: V1PullTrigger;
+  refreshTrigger?: V1RefreshTrigger;
+  bucketPlanner?: V1BucketPlanner;
+  theme?: V1Theme;
+  component?: V1Component;
+  dashboard?: V1Dashboard;
+  api?: V1API;
+  connector?: V1ConnectorV2;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -796,6 +822,13 @@ export interface V1ReportExecution {
   finishedOn?: string;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export interface V1Report {
   spec?: V1ReportSpec;
   state?: V1ReportState;
@@ -818,25 +851,6 @@ export interface V1RefreshTrigger {
   state?: V1RefreshTriggerState;
 }
 
-export interface V1Resource {
-  meta?: V1ResourceMeta;
-  projectParser?: V1ProjectParser;
-  source?: V1SourceV2;
-  model?: V1ModelV2;
-  metricsView?: V1MetricsViewV2;
-  migration?: V1Migration;
-  report?: V1Report;
-  alert?: V1Alert;
-  pullTrigger?: V1PullTrigger;
-  refreshTrigger?: V1RefreshTrigger;
-  bucketPlanner?: V1BucketPlanner;
-  theme?: V1Theme;
-  component?: V1Component;
-  dashboard?: V1Dashboard;
-  api?: V1API;
-  connector?: V1ConnectorV2;
-}
-
 export type V1ReconcileStatus =
   (typeof V1ReconcileStatus)[keyof typeof V1ReconcileStatus];
 
@@ -847,28 +861,6 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_PENDING: "RECONCILE_STATUS_PENDING",
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
-
-export interface V1QueryResult {
-  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
-  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
-  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
-  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
-  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
-  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
-  columnTopKResponse?: V1ColumnTopKResponse;
-  columnNullCountResponse?: V1ColumnNullCountResponse;
-  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
-  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
-  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
-  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
-  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
-  columnCardinalityResponse?: V1ColumnCardinalityResponse;
-  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
-  tableCardinalityResponse?: V1TableCardinalityResponse;
-  tableColumnsResponse?: V1TableColumnsResponse;
-  tableRowsResponse?: V1TableRowsResponse;
-}
 
 export type V1QueryResponseDataItem = { [key: string]: any };
 
@@ -1092,7 +1084,6 @@ export interface V1MetricsViewTotalsRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   where?: V1Expression;
@@ -1112,7 +1103,6 @@ export interface V1MetricsViewToplistRequest {
   metricsViewName?: string;
   dimensionName?: string;
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   limit?: string;
@@ -1133,7 +1123,6 @@ export interface V1MetricsViewTimeSeriesRequest {
   instanceId?: string;
   metricsViewName?: string;
   measureNames?: string[];
-  inlineMeasures?: V1InlineMeasure[];
   timeStart?: string;
   timeEnd?: string;
   timeGranularity?: V1TimeGrain;
@@ -1166,7 +1155,7 @@ export interface V1MetricsViewSpec {
   /** Default time range for the dashboard. It should be a valid ISO 8601 duration string. */
   defaultTimeRange?: string;
   availableTimeZones?: string[];
-  security?: MetricsViewSpecSecurityV2;
+  securityRules?: V1SecurityRule[];
   /** ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday). */
   firstDayOfWeek?: number;
   /** Month number to use as the base for time aggregations by year. Defaults to 1 (January). */
@@ -1250,6 +1239,13 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
+
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1276,36 +1272,10 @@ export const V1MetricsViewComparisonMeasureType = {
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
   type?: V1MetricsViewComparisonMeasureType;
   alias?: string;
-}
-
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MetricsViewColumn {
@@ -1324,6 +1294,27 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  where?: V1Expression;
+  having?: V1Expression;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
@@ -1365,25 +1356,23 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
-export interface V1MetricsViewAggregationRequest {
+export interface V1MetricsViewComparisonRequest {
   instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
   measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
   priority?: number;
-  filter?: V1MetricsViewFilter;
   exact?: boolean;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MapType {
@@ -1440,6 +1429,23 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+export interface V1IssueDevJWTRequest {
+  name?: string;
+  email?: string;
+  groups?: string[];
+  admin?: boolean;
+}
+
+export interface V1InstanceHealth {
+  controllerError?: string;
+  olapError?: string;
+  repoError?: string;
+}
+
+export interface V1InstanceHealthResponse {
+  instanceHealth?: V1InstanceHealth;
+}
+
 export type V1InstanceAnnotations = { [key: string]: string };
 
 export type V1InstanceFeatureFlags = { [key: string]: boolean };
@@ -1448,9 +1454,31 @@ export type V1InstanceProjectVariables = { [key: string]: string };
 
 export type V1InstanceVariables = { [key: string]: string };
 
-export interface V1InlineMeasure {
-  name?: string;
-  expression?: string;
+/**
+ * Instance represents a single data project, meaning one set of code artifacts,
+one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
+metadata (such as reconciliation state). Instances are the unit of isolation within
+the runtime. They enable one runtime deployment to serve not only multiple data
+projects, but also multiple tenants. On local, the runtime will usually have
+just a single instance.
+ */
+export interface V1Instance {
+  instanceId?: string;
+  environment?: string;
+  olapConnector?: string;
+  repoConnector?: string;
+  adminConnector?: string;
+  aiConnector?: string;
+  createdOn?: string;
+  updatedOn?: string;
+  connectors?: V1Connector[];
+  projectConnectors?: V1Connector[];
+  variables?: V1InstanceVariables;
+  projectVariables?: V1InstanceProjectVariables;
+  featureFlags?: V1InstanceFeatureFlags;
+  annotations?: V1InstanceAnnotations;
+  embedCatalog?: boolean;
+  watchRepo?: boolean;
 }
 
 export type V1HistogramMethod =
@@ -1462,6 +1490,18 @@ export const V1HistogramMethod = {
   HISTOGRAM_METHOD_FD: "HISTOGRAM_METHOD_FD",
   HISTOGRAM_METHOD_DIAGNOSTIC: "HISTOGRAM_METHOD_DIAGNOSTIC",
 } as const;
+
+export type V1HealthResponseInstancesHealth = {
+  [key: string]: V1InstanceHealth;
+};
+
+export interface V1HealthResponse {
+  limiterError?: string;
+  connCacheError?: string;
+  metastoreError?: string;
+  networkError?: string;
+  instancesHealth?: V1HealthResponseInstancesHealth;
+}
 
 export interface V1GetResourceResponse {
   resource?: V1Resource;
@@ -1595,7 +1635,6 @@ export interface V1DashboardItem {
   y?: number;
   width?: number;
   height?: number;
-  fontSize?: number;
 }
 
 export interface V1DashboardSpec {
@@ -1648,6 +1687,11 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
+export interface V1ConnectorV2 {
+  spec?: V1ConnectorSpec;
+  state?: V1ConnectorState;
+}
+
 /**
  * properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties.
@@ -1662,11 +1706,6 @@ export interface V1ConnectorSpec {
   /** properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
-}
-
-export interface V1ConnectorV2 {
-  spec?: V1ConnectorSpec;
-  state?: V1ConnectorState;
 }
 
 /**
@@ -1692,6 +1731,8 @@ export interface V1ConnectorDriver {
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };
 
+export type V1ConnectorConfig = { [key: string]: string };
+
 export interface V1Connector {
   /** Type of the connector. One of the infra driver supported. */
   type?: string;
@@ -1699,35 +1740,6 @@ export interface V1Connector {
   config?: V1ConnectorConfig;
   configFromVariables?: V1ConnectorConfigFromVariables;
 }
-
-/**
- * Instance represents a single data project, meaning one set of code artifacts,
-one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
-metadata (such as reconciliation state). Instances are the unit of isolation within
-the runtime. They enable one runtime deployment to serve not only multiple data
-projects, but also multiple tenants. On local, the runtime will usually have
-just a single instance.
- */
-export interface V1Instance {
-  instanceId?: string;
-  environment?: string;
-  olapConnector?: string;
-  repoConnector?: string;
-  adminConnector?: string;
-  aiConnector?: string;
-  createdOn?: string;
-  updatedOn?: string;
-  connectors?: V1Connector[];
-  projectConnectors?: V1Connector[];
-  variables?: V1InstanceVariables;
-  projectVariables?: V1InstanceProjectVariables;
-  featureFlags?: V1InstanceFeatureFlags;
-  annotations?: V1InstanceAnnotations;
-  embedCatalog?: boolean;
-  watchRepo?: boolean;
-}
-
-export type V1ConnectorConfig = { [key: string]: string };
 
 export interface V1Condition {
   op?: V1Operation;
@@ -1897,6 +1909,28 @@ export interface V1ColumnCardinalityResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
+export interface V1QueryResult {
+  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
+  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
+  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
+  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
+  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
+  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
+  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
+  columnTopKResponse?: V1ColumnTopKResponse;
+  columnNullCountResponse?: V1ColumnNullCountResponse;
+  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
+  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
+  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
+  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
+  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
+  columnCardinalityResponse?: V1ColumnCardinalityResponse;
+  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
+  tableCardinalityResponse?: V1TableCardinalityResponse;
+  tableColumnsResponse?: V1TableColumnsResponse;
+  tableRowsResponse?: V1TableRowsResponse;
+}
+
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -1937,6 +1971,10 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
+}
+
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1947,10 +1985,6 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
-}
-
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2064,18 +2098,11 @@ export interface V1APIState {
   [key: string]: any;
 }
 
-export type V1APISpecOpenapiResponseSchema = { [key: string]: any };
-
-export type V1APISpecOpenapiParametersItem = { [key: string]: any };
-
 export type V1APISpecResolverProperties = { [key: string]: any };
 
 export interface V1APISpec {
   resolver?: string;
   resolverProperties?: V1APISpecResolverProperties;
-  openapiSummary?: string;
-  openapiParameters?: V1APISpecOpenapiParametersItem[];
-  openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
 }
 
 /**
@@ -2086,11 +2113,19 @@ export interface V1API {
   state?: V1APIState;
 }
 
+export interface Runtimev1Type {
+  code?: TypeCode;
+  nullable?: boolean;
+  arrayElementType?: Runtimev1Type;
+  structType?: V1StructType;
+  mapType?: V1MapType;
+}
+
 /**
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
@@ -2146,14 +2181,6 @@ export const TypeCode = {
   CODE_UUID: "CODE_UUID",
 } as const;
 
-export interface Runtimev1Type {
-  code?: TypeCode;
-  nullable?: boolean;
-  arrayElementType?: Runtimev1Type;
-  structType?: V1StructType;
-  mapType?: V1MapType;
-}
-
 export interface TopKEntry {
   value?: unknown;
   count?: number;
@@ -2170,11 +2197,6 @@ export interface StructTypeField {
   type?: Runtimev1Type;
 }
 
-export interface SecurityV2FieldConditionV2 {
-  condition?: string;
-  names?: string[];
-}
-
 export interface NumericOutliersOutlier {
   bucket?: number;
   low?: number;
@@ -2189,14 +2211,6 @@ export interface NumericHistogramBinsBin {
   midpoint?: number;
   high?: number;
   count?: number;
-}
-
-export interface MetricsViewSpecSecurityV2 {
-  access?: string;
-  rowFilter?: string;
-  queryFilter?: V1Expression;
-  include?: SecurityV2FieldConditionV2[];
-  exclude?: SecurityV2FieldConditionV2[];
 }
 
 export type MetricsViewSpecMeasureType =

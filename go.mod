@@ -67,6 +67,7 @@ require (
 	github.com/mazznoer/csscolorparser v0.1.3
 	github.com/mitchellh/hashstructure/v2 v2.0.2
 	github.com/mitchellh/mapstructure v1.5.0
+	github.com/orbcorp/orb-go v0.34.0
 	github.com/pingcap/tidb/pkg/parser v0.0.0-20231124053542-069631e2ecfe
 	github.com/prometheus/client_golang v1.19.1
 	github.com/redis/go-redis/v9 v9.0.2
@@ -297,6 +298,10 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/skeema/knownhosts v1.2.2 // indirect
 	github.com/spf13/cast v1.5.1 // indirect
+	github.com/tidwall/gjson v1.14.4 // indirect
+	github.com/tidwall/match v1.1.1 // indirect
+	github.com/tidwall/pretty v1.2.1 // indirect
+	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -347,7 +352,9 @@ replace github.com/testcontainers/testcontainers-go v0.26.0 => github.com/testco
 // see the following PR: https://github.com/snowflakedb/gosnowflake/pull/1062
 replace github.com/snowflakedb/gosnowflake v1.8.0 => github.com/snowflakedb/gosnowflake v1.8.1-0.20240311092318-48c5e93a4d51
 
-// Remove this once following changes are merged : https://github.com/k-anshul/google-cloud-go/pull/5/files
-replace cloud.google.com/go/bigquery v1.61.0 => github.com/k-anshul/google-cloud-go/bigquery v0.0.0-20240620080947-9bb0e0dc9742
-
 exclude modernc.org/sqlite v1.18.1
+
+// Adds changes from the two PRs :
+// https://github.com/apache/arrow/pull/41638
+// https://github.com/apache/arrow/pull/42003
+replace github.com/apache/arrow/go/v14 v14.0.2 => github.com/rilldata/arrow/go/v14 v14.0.0-20240624035703-e234e04219ff

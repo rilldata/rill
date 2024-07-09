@@ -59,7 +59,7 @@
   // Debounce the update of value. This avoid constant refetches
   let value: string = $form["criteria"][index].value1;
   const valueUpdater = debounce(() => {
-    $form["criteria"][index].value1 = value;
+    if ($form["criteria"][index]) $form["criteria"][index].value1 = value;
     void validateField("criteria");
   }, 500);
 

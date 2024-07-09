@@ -13,10 +13,11 @@
 
   export let disabled: boolean;
   export let status: string[] = [];
-  export let dashboardName: string;
+  export let dashboardName: string | undefined;
   export let type: "dashboard" | "custom" = "dashboard";
 
   const viewDashboard = () => {
+    if (!dashboardName) return;
     behaviourEvent
       .fireNavigationEvent(
         dashboardName,
@@ -27,6 +28,8 @@
       )
       .catch(console.error);
   };
+
+  $: loading = $navigating?.to?.route?.id === `/(viz)/${type}/[name]`;
 </script>
 
 <Tooltip
@@ -36,19 +39,19 @@
   suppress={!status.length}
 >
   <Button
-    {disabled}
+    disabled={disabled || !dashboardName}
     label="Preview"
     href={`/${type}/${dashboardName}`}
     on:click={viewDashboard}
     type="primary"
-    loading={!!$navigating}
+    {loading}
   >
     <Play size="10px" />
     Preview
   </Button>
 
   <TooltipContent slot="tooltip-content">
-    {#each status as message}
+    {#each status as message (message)}
       <div>{message}</div>
     {/each}
   </TooltipContent>

@@ -19,16 +19,15 @@ import (
 )
 
 type MetricsViewSearch struct {
-	MetricsViewName    string                                `json:"metrics_view_name,omitempty"`
-	Dimensions         []string                              `json:"dimensions,omitempty"`
-	Search             string                                `json:"search,omitempty"`
-	TimeRange          *runtimev1.TimeRange                  `json:"time_range,omitempty"`
-	Where              *runtimev1.Expression                 `json:"where,omitempty"`
-	Having             *runtimev1.Expression                 `json:"having,omitempty"`
-	Priority           int32                                 `json:"priority,omitempty"`
-	Limit              *int64                                `json:"limit,omitempty"`
-	SecurityAttributes map[string]any                        `json:"security_attributes,omitempty"`
-	SecurityPolicy     *runtimev1.MetricsViewSpec_SecurityV2 `json:"security_policy,omitempty"`
+	MetricsViewName string                  `json:"metrics_view_name,omitempty"`
+	Dimensions      []string                `json:"dimensions,omitempty"`
+	Search          string                  `json:"search,omitempty"`
+	TimeRange       *runtimev1.TimeRange    `json:"time_range,omitempty"`
+	Where           *runtimev1.Expression   `json:"where,omitempty"`
+	Having          *runtimev1.Expression   `json:"having,omitempty"`
+	Priority        int32                   `json:"priority,omitempty"`
+	Limit           *int64                  `json:"limit,omitempty"`
+	SecurityClaims  *runtime.SecurityClaims `json:"security_claims,omitempty"`
 
 	Result *runtimev1.MetricsViewSearchResponse
 }
@@ -64,12 +63,13 @@ func (q *MetricsViewSearch) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, nil, nil)
+	mv, sec, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
+
 	for _, d := range q.Dimensions {
-		if !checkFieldAccess(d, sec) {
+		if !sec.CanAccessField(d) {
 			return ErrForbidden
 		}
 	}
@@ -155,11 +155,11 @@ func (q *MetricsViewSearch) Export(ctx context.Context, rt *runtime.Runtime, ins
 
 var druidSQLDSN = regexp.MustCompile(`/v2/sql/?`)
 
-func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, olap drivers.OLAPStore, instanceID, table string, policy *runtime.ResolvedMetricsViewSecurity) (bool, error) {
+func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtime.Runtime, olap drivers.OLAPStore, instanceID, table string, policy *runtime.ResolvedSecurity) (bool, error) {
 	var query map[string]interface{}
-	if policy != nil && policy.RowFilter != "" {
+	if rf := policy.RowFilter(); rf != "" {
 		rows, err := olap.Execute(ctx, &drivers.Statement{
-			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", table, policy.RowFilter),
+			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", table, rf),
 			Args:             nil,
 			DryRun:           false,
 			Priority:         0,
@@ -220,7 +220,7 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 	}
 
 	nq := druid.NewNativeQuery(druidSQLDSN.ReplaceAllString(dsn, "/v2/"))
-	req := druid.NewNativeSearchQueryRequest(table, q.Search, q.Dimensions, q.TimeRange.Start.AsTime(), q.TimeRange.End.AsTime(), query)
+	req := druid.NewNativeSearchQueryRequest(table, q.Search, q.Dimensions, q.TimeRange.Start.AsTime(), q.TimeRange.End.AsTime(), query) // TODO: timestamps may be nil!
 	var res druid.NativeSearchQueryResponse
 	err = nq.Do(ctx, req, &res, req.Context.QueryID)
 	if err != nil {
@@ -244,10 +244,10 @@ func (q *MetricsViewSearch) executeSearchInDruid(ctx context.Context, rt *runtim
 	return true, nil
 }
 
-func (q *MetricsViewSearch) buildSearchQuerySQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedMetricsViewSecurity) (string, []any, error) {
+func (q *MetricsViewSearch) buildSearchQuerySQL(mv *runtimev1.MetricsViewSpec, dialect drivers.Dialect, policy *runtime.ResolvedSecurity) (string, []any, error) {
 	var baseWhereClause string
-	if policy != nil && policy.RowFilter != "" {
-		baseWhereClause += fmt.Sprintf(" AND (%s)", policy.RowFilter)
+	if rf := policy.RowFilter(); rf != "" {
+		baseWhereClause += fmt.Sprintf(" AND (%s)", rf)
 	}
 
 	var args []any

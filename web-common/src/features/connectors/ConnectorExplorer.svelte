@@ -14,7 +14,18 @@
   let showConnectors = true;
   let sectionHeight = startingHeight;
 
-  $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId);
+  $: connectors = createRuntimeServiceAnalyzeConnectors($runtime.instanceId, {
+    query: {
+      // sort alphabetically
+      select: (data) => {
+        if (!data?.connectors) return;
+        const connectors = data.connectors.sort((a, b) =>
+          (a?.name as string).localeCompare(b?.name as string),
+        );
+        return { connectors };
+      },
+    },
+  });
   $: ({ data, error } = $connectors);
 </script>
 

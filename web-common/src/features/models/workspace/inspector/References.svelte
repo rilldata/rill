@@ -8,13 +8,12 @@
     V1Resource,
     createQueryServiceTableCardinality,
   } from "@rilldata/web-common/runtime-client";
-  import { getContext } from "svelte";
-  import { Writable, derived, writable } from "svelte/store";
+  import { derived, writable } from "svelte/store";
   import { slide } from "svelte/transition";
   import { runtime } from "../../../../runtime-client/runtime-store";
   import WithModelResultTooltip from "./WithModelResultTooltip.svelte";
-  import type { QueryHighlightState } from "../../query-highlight-store";
   import type { Reference } from "../../utils/get-table-references";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   export let referencedThings: [V1Resource, Reference][];
   export let modelHasError: boolean;
@@ -24,10 +23,6 @@
   /** classes for elements that trigger the highlight in a model query */
   export const query_reference_trigger =
     "hover:bg-yellow-200 hover:cursor-pointer";
-
-  const queryHighlight: Writable<QueryHighlightState | undefined> = getContext(
-    "rill:app:query-highlight",
-  );
 
   $: referencedWithMetadata = derived(
     referencedThings.map(([resource, ref]) => {
@@ -50,19 +45,14 @@
     (referencedThings) => referencedThings,
   );
 
-  function focus(reference) {
-    return () => {
-      if (reference) {
-        queryHighlight.set([reference]);
-      }
-    };
-  }
+  $: references = $referencedWithMetadata;
+
   function blur() {
-    queryHighlight.set(undefined);
+    eventBus.emit("highlightSelection", []);
   }
 </script>
 
-{#if $referencedWithMetadata?.length}
+{#if references.length}
   <div>
     <div class=" pl-4 pr-4">
       <CollapsibleSectionTitle
@@ -75,17 +65,19 @@
 
     {#if showSourceTables}
       <div transition:slide={{ duration: LIST_SLIDE_DURATION }} class="mt-2">
-        {#each $referencedWithMetadata as reference}
+        {#each references as reference (reference.reference.reference)}
           <div>
             <WithModelResultTooltip {modelHasError}>
               <a
-                href="/{reference?.resource?.source
-                  ? 'source'
-                  : 'model'}/{reference?.resource?.meta?.name?.name}"
+                href="/files{reference?.resource?.meta?.filePaths?.[0]}"
                 class="ui-copy-muted grid justify-between gap-x-2 {query_reference_trigger} pl-4 pr-4"
                 style:grid-template-columns="auto max-content"
-                on:focus={focus(reference.reference)}
-                on:mouseover={focus(reference.reference)}
+                on:focus={() => {
+                  eventBus.emit("highlightSelection", [reference.reference]);
+                }}
+                on:mouseover={() => {
+                  eventBus.emit("highlightSelection", [reference.reference]);
+                }}
                 on:mouseleave={blur}
                 on:blur={blur}
                 class:text-gray-500={modelHasError}

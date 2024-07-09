@@ -7,8 +7,8 @@ import (
 	"math/big"
 	"net"
 	"reflect"
+	"strings"
 	"time"
-	"unicode/utf8"
 
 	"github.com/google/uuid"
 	"github.com/marcboeker/go-duckdb"
@@ -57,10 +57,7 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 		}
 		return v, nil
 	case string:
-		if !utf8.ValidString(v) {
-			return nil, fmt.Errorf("invalid UTF-8 in string: %q", v)
-		}
-		return v, nil
+		return strings.ToValidUTF8(v, "�"), nil
 	case []byte:
 		if t != nil && t.Code == runtimev1.Type_CODE_UUID {
 			uid, err := uuid.FromBytes(v)
@@ -201,11 +198,8 @@ func ToValue(v any, t *runtimev1.Type) (any, error) {
 func toMap(v map[string]any, t *runtimev1.StructType) (map[string]any, error) {
 	if t == nil {
 		for k, v2 := range v {
-			if !utf8.ValidString(k) {
-				return nil, fmt.Errorf("invalid UTF-8 in string: %q", k)
-			}
 			var err error
-			v[k], err = ToValue(v2, nil)
+			v[strings.ToValidUTF8(k, "�")], err = ToValue(v2, nil)
 			if err != nil {
 				return nil, err
 			}
