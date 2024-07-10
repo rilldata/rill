@@ -999,10 +999,7 @@ func pathIsDotEnv(path string) bool {
 // Note: Generally these defaults should be applied at the repo level (in the defaults for ignore_paths in rill.yaml).
 // This is only for files we DO want to list and show in the UI, but don't want to parse.
 func pathIsIgnored(p string) bool {
-	if strings.HasPrefix(p, "/.rillcloud/") {
-		return true
-	}
-	return false
+	return strings.HasPrefix(p, "/.rillcloud/")
 }
 
 // normalizePath normalizes a user-provided path to the format returned from ListRecursive.
