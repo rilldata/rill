@@ -2,6 +2,7 @@
   import { goto } from "$app/navigation";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
@@ -215,6 +216,8 @@
         disabled={Boolean(errors.length)}
         type="custom"
       />
+
+      <LocalAvatarButton />
     </div>
   </WorkspaceHeader>
 
