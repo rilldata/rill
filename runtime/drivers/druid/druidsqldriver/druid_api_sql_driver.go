@@ -150,30 +150,37 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 			// nolint:errorlint // there's no wrapping
 			if v, ok := err.(*url.Error); ok {
 				if tooManyRedirects.MatchString(v.Error()) {
+					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 
 				if invalidProtocol.MatchString(v.Error()) {
+					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 
 				if TLSCert.MatchString(v.Error()) {
+					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 
 				// nolint:errorlint // there's no wrapping
 				if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
+					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 			}
 
+			resp.Body.Close()
 			return nil, retrier.Retry, err
 		}
 
 		switch resp.StatusCode {
 		case http.StatusTooManyRequests:
+			resp.Body.Close()
 			return nil, retrier.Retry, fmt.Errorf("Too many requests")
 		case http.StatusUnauthorized, http.StatusForbidden:
+			resp.Body.Close()
 			return nil, retrier.Fail, fmt.Errorf("Unauthorized request")
 		}
 
