@@ -14,9 +14,11 @@
   import LongBarZigZag from "./LongBarZigZag.svelte";
   import type { LeaderboardItemData } from "./leaderboard-utils";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
 
   export let dimensionName: string;
   export let itemData: LeaderboardItemData;
+  export let uri: string | undefined;
 
   $: label = itemData.dimensionValue;
   $: measureValue = itemData.value;
@@ -83,89 +85,123 @@
   const onLeave = () => {
     hovered = false;
   };
+
+  $: href = makeHref(uri);
+
+  function makeHref(uri: string | undefined) {
+    if (!uri) {
+      return undefined;
+    }
+
+    const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
+    if (uri === "true") {
+      if (!hasProtocol) {
+        uri = "https://" + label;
+      }
+      return uri;
+    }
+
+    if (!hasProtocol) {
+      uri = "https://" + uri;
+    }
+    return uri.replace(/\s/g, "").replace(`{{${dimensionName}}}`, label);
+  }
 </script>
 
 <Tooltip location="right">
-  <button
-    class="flex flex-row items-center w-full text-left transition-color"
-    on:blur={onLeave}
-    on:focus={onHover}
-    on:keydown
-    on:mouseleave={onLeave}
+  <div
+    class="relative"
     on:mouseover={onHover}
-    on:click={modified({
-      shift: () => shiftClickHandler(label),
-      click: (e) =>
-        toggleDimensionValueSelection(
-          dimensionName,
-          label,
-          false,
-          e.ctrlKey || e.metaKey,
-        ),
-    })}
-    transition:slide={{ duration: 200 }}
+    on:focus={onHover}
+    on:mouseleave={onLeave}
+    role="presentation"
   >
-    <LeaderboardItemFilterIcon
-      {excluded}
-      {isBeingCompared}
-      selectionIndex={itemData?.selectedIndex}
-    />
-    <BarAndLabel
-      {color}
-      justify={false}
-      showBackground={false}
-      showHover
-      tweenParameters={{ duration: 200 }}
-      value={renderedBarValue}
+    {#if hovered && href}
+      <a target="_blank" rel="noopener noreferrer" {href}>
+        <ExternalLink className="fill-primary-600" />
+      </a>
+    {/if}
+    <button
+      class="flex flex-row items-center w-full text-left transition-color"
+      on:blur={onLeave}
+      on:focus={onHover}
+      on:keydown
+      on:click={modified({
+        shift: () => shiftClickHandler(label),
+        click: (e) =>
+          toggleDimensionValueSelection(
+            dimensionName,
+            label,
+            false,
+            e.ctrlKey || e.metaKey,
+          ),
+      })}
+      transition:slide={{ duration: 200 }}
     >
-      <div
-        class="grid leaderboard-entry items-center gap-x-3"
-        style:height="22px"
+      <LeaderboardItemFilterIcon
+        {excluded}
+        {isBeingCompared}
+        selectionIndex={itemData?.selectedIndex}
+      />
+      <BarAndLabel
+        {color}
+        justify={false}
+        showBackground={false}
+        showHover
+        tweenParameters={{ duration: 200 }}
+        value={renderedBarValue}
       >
-        <!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
         <div
-          class="leaderboard-label justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
-          class:ui-copy={!atLeastOneActive}
-          class:ui-copy-disabled={excluded}
-          class:ui-copy-strong={!excluded && selected}
+          class="grid leaderboard-entry items-center gap-x-3"
+          style:height="22px"
         >
-          <FormattedDataType value={label} />
-        </div>
+          <!-- NOTE: empty class leaderboard-label is used to locate this elt in e2e tests -->
+          <div
+            class="leaderboard-label justify-self-start text-left w-full text-ellipsis overflow-hidden whitespace-nowrap"
+            class:ui-copy={!atLeastOneActive}
+            class:ui-copy-disabled={excluded}
+            class:ui-copy-strong={!excluded && selected}
+          >
+            <FormattedDataType value={label} />
+          </div>
 
-        <div
-          class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
-        >
-          <!--
+          <div
+            class="justify-self-end overflow-hidden ui-copy-number flex gap-x-4 items-baseline"
+          >
+            <!--
             FIXME: "local" default in svelte 4.0, remove after upgrading
             https://github.com/sveltejs/svelte/issues/6812#issuecomment-1593551644
           -->
-          <div
-            class="flex items-baseline gap-x-1"
-            in:fly|local={{ duration: 200, y: 4 }}
-          >
-            {#if showPreviousTimeValue}
-              <!--
+            <div
+              class="flex items-baseline gap-x-1"
+              in:fly|local={{ duration: 200, y: 4 }}
+            >
+              {#if showPreviousTimeValue}
+                <!--
               FIXME: "local" default in svelte 4.0, remove after upgrading
               https://github.com/sveltejs/svelte/issues/6812#issuecomment-1593551644
             -->
-              <span
-                class="inline-block opacity-50"
-                transition:slideRight|local={{ duration: LIST_SLIDE_DURATION }}
-              >
-                {previousValueString}
-                →
-              </span>
-            {/if}
-            <FormattedDataType
-              type="INTEGER"
-              value={formattedValue || measureValue}
-            />
+                <span
+                  class="inline-block opacity-50"
+                  transition:slideRight|local={{
+                    duration: LIST_SLIDE_DURATION,
+                  }}
+                >
+                  {previousValueString}
+                  →
+                </span>
+              {/if}
+              <FormattedDataType
+                type="INTEGER"
+                value={formattedValue || measureValue}
+              />
+            </div>
+            <ContextColumnValue {itemData} />
           </div>
-          <ContextColumnValue {itemData} />
         </div>
-      </div>
-    </BarAndLabel>
-  </button>
+      </BarAndLabel>
+    </button>
+  </div>
   <!-- if the value is greater than 100%, we should add this little serration -->
   {#if renderedBarValue > 1.001}
     <LongBarZigZag />
@@ -181,8 +217,17 @@
   />
 </Tooltip>
 
-<style>
+<style lang="postcss">
   .leaderboard-entry {
     grid-template-columns: auto max-content;
+  }
+
+  a {
+    @apply absolute right-0 z-50  h-[22px] w-[32px];
+    @apply bg-white flex items-center justify-center shadow-md rounded-sm;
+  }
+
+  a:hover {
+    @apply bg-primary-100;
   }
 </style>
