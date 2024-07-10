@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
+	"github.com/go-openapi/spec"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -18,7 +19,6 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.opentelemetry.io/otel/attribute"
 	"gopkg.in/yaml.v3"
-	"k8s.io/kube-openapi/pkg/validation/spec"
 )
 
 func (s *Server) apiHandler(w http.ResponseWriter, req *http.Request) error {

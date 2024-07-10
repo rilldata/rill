@@ -3,7 +3,7 @@ package openapiutil
 import (
 	"encoding/json"
 
-	"k8s.io/kube-openapi/pkg/validation/spec"
+	"github.com/go-openapi/spec"
 )
 
 func MapToParameters(params []map[string]any) ([]spec.Parameter, error) {
