@@ -475,13 +475,6 @@ export type ConnectorServiceGCSListObjectsParams = {
   delimiter?: string;
 };
 
-export type RuntimeServiceIssueDevJWTParams = {
-  name?: string;
-  email?: string;
-  groups?: string[];
-  admin?: boolean;
-};
-
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
@@ -1436,6 +1429,13 @@ export interface V1IssueDevJWTResponse {
   jwt?: string;
 }
 
+export interface V1IssueDevJWTRequest {
+  name?: string;
+  email?: string;
+  groups?: string[];
+  admin?: boolean;
+}
+
 export interface V1InstanceHealth {
   controllerError?: string;
   olapError?: string;
@@ -2248,6 +2248,7 @@ export interface MetricsViewSpecDimensionV2 {
   label?: string;
   description?: string;
   unnest?: boolean;
+  uri?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {

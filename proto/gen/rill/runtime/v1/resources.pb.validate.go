@@ -10143,6 +10143,8 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 
 	// no validation rules for Unnest
 
+	// no validation rules for Uri
+
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionV2MultiError(errors)
 	}
