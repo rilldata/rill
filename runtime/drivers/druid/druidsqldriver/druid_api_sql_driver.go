@@ -81,6 +81,7 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 	if err != nil {
 		return false, err
 	}
+	defer resp.Body.Close()
 
 	switch resp.StatusCode {
 	case http.StatusTooManyRequests:
@@ -93,7 +94,6 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 
 	var obj any
 	err = dec.Decode(&obj)
-	resp.Body.Close()
 	if err != nil {
 		return false, err
 	}
