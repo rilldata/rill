@@ -42,7 +42,7 @@
     values = values.filter((_, i) => i !== index);
   }
 
-  $: hasSomeValue = values.length > 0;
+  $: hasSomeValue = editingInput.length > 0 || values.length > 0;
   $: errorIndex = values.findIndex((_, i) => !!errors?.[i]?.length);
   $: hasSomeErrors = errorIndex >= 0;
 </script>
@@ -68,38 +68,40 @@
   {/if}
   <div class="flex flex-row gap-1.5 items-center">
     <div
-      class="flex flex-wrap gap-2 bg-white rounded-sm border border-gray-300 px-3 py-[5px] w-full {contentClassName}"
+      class="flex flex-row items-center bg-white rounded-sm border border-gray-300 px-3 py-[5px] w-full {contentClassName}"
       class:outline={focused || hasSomeErrors}
       class:outline-red-500={hasSomeErrors}
       class:outline-primary-500={focused && !hasSomeErrors}
     >
-      {#each values as _, i}
-        {@const hasError = errors?.[i]?.length}
-        <div
-          class="flex items-center text-gray-600 text-sm rounded-2xl border border-gray-300 bg-gray-100 pl-2 pr-1 max-w-full"
-          class:border-gray-300={hasError}
-        >
+      <div class="flex flex-wrap gap-2 w-full">
+        {#each values as _, i}
+          {@const hasError = errors?.[i]?.length}
           <div
-            class="w-fit h-5 overflow-hidden text-ellipsis"
-            class:text-red-500={hasError}
+            class="flex items-center text-gray-600 text-sm rounded-2xl border border-gray-300 bg-gray-100 pl-2 pr-1 max-w-full"
+            class:border-gray-300={hasError}
           >
-            {values[i]}
+            <div
+              class="w-fit h-5 overflow-hidden text-ellipsis"
+              class:text-red-500={hasError}
+            >
+              {values[i]}
+            </div>
+            <IconButton disableHover on:click={() => handleRemove(i)}>
+              <XIcon size="16px" className="text-gray-500 cursor-pointer" />
+            </IconButton>
           </div>
-          <IconButton disableHover on:click={() => handleRemove(i)}>
-            <XIcon size="16px" className="text-gray-500 cursor-pointer" />
-          </IconButton>
-        </div>
-      {/each}
-      <input
-        bind:value={editingInput}
-        on:keydown={handleKeyDown}
-        autocomplete="off"
-        id="{id}.{values.length}"
-        class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
-        on:focusin={() => (focused = true)}
-        on:focusout={() => (focused = false)}
-        placeholder={!hasSomeValue ? placeholder : ""}
-      />
+        {/each}
+        <input
+          bind:value={editingInput}
+          on:keydown={handleKeyDown}
+          autocomplete="off"
+          id="{id}.{values.length}"
+          class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
+          on:focusin={() => (focused = true)}
+          on:focusout={() => (focused = false)}
+          placeholder={!hasSomeValue ? placeholder : ""}
+        />
+      </div>
       {#if hasSomeValue}
         <slot name="within-input" />
       {/if}

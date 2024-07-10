@@ -68,10 +68,7 @@
     errors={$errors.emails}
     useTab
   >
-    <div
-      slot="within-input"
-      class="absolute right-1 top-0 h-full items-center flex"
-    >
+    <div slot="within-input" class=" h-full items-center flex">
       <UserRoleSelect bind:value={$form.role} />
     </div>
     <Button
