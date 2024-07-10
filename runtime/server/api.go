@@ -181,7 +181,7 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 	}
 	var title string
 	if organization != "" && project != "" {
-		title = fmt.Sprintf("Rill project API of %s/%s", organization, project)
+		title = fmt.Sprintf("Rill %s/%s project API", organization, project)
 	} else {
 		title = "Rill project API"
 	}
@@ -229,12 +229,12 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 
 func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*spec.PathItem, error) {
 	var err error
-	reqSummary := ""
+	summary := ""
 	if api.Spec.OpenapiSummary != "" {
-		reqSummary = api.Spec.OpenapiSummary
+		summary = api.Spec.OpenapiSummary
 	}
-	if reqSummary == "" {
-		reqSummary = fmt.Sprintf("Query %s API", name)
+	if summary == "" {
+		summary = fmt.Sprintf("Query %s resolver", name)
 	}
 
 	var params []spec.Parameter
@@ -267,14 +267,14 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*spec.Pa
 		PathItemProps: spec.PathItemProps{
 			Get: &spec.Operation{
 				OperationProps: spec.OperationProps{
-					Summary:    reqSummary,
+					Summary:    summary,
 					Parameters: params,
 					Responses: &spec.Responses{
 						ResponsesProps: spec.ResponsesProps{
 							StatusCodeResponses: map[int]spec.Response{
 								200: {
 									ResponseProps: spec.ResponseProps{
-										Description: fmt.Sprintf("Successful response of the %s API", name),
+										Description: fmt.Sprintf("Successful response of %s resolver", name),
 										Schema: &spec.Schema{
 											SchemaProps: spec.SchemaProps{
 												Type: []string{"array"},

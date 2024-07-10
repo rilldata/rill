@@ -33,10 +33,12 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Validate
-	var reqSummary string
-	var reqParams []*structpb.Struct
+	var openapiSummary string
+	var openapiParams []*structpb.Struct
+	var openapiSchema *structpb.Struct
 	if tmp.OpenAPI != nil {
-		reqSummary = tmp.OpenAPI.Summary
+		openapiSummary = tmp.OpenAPI.Summary
+
 		_, err := openapiutil.MapToParameters(tmp.OpenAPI.Request.Parameters)
 		if err != nil {
 			return fmt.Errorf("encountered invalid parameter type: %w", err)
@@ -46,16 +48,14 @@ func (p *Parser) parseAPI(node *Node) error {
 			if err != nil {
 				return fmt.Errorf("encountered invalid parameter type: %w", err)
 			}
-			reqParams = append(reqParams, paramPB)
+			openapiParams = append(openapiParams, paramPB)
 		}
-	}
-	var resSchema *structpb.Struct
-	if tmp.OpenAPI != nil {
-		_, err := openapiutil.MapToSchema(tmp.OpenAPI.Response.Schema)
+
+		_, err = openapiutil.MapToSchema(tmp.OpenAPI.Response.Schema)
 		if err != nil {
 			return fmt.Errorf("encountered invalid schema type: %w", err)
 		}
-		resSchema, err = structpb.NewStruct(tmp.OpenAPI.Response.Schema)
+		openapiSchema, err = structpb.NewStruct(tmp.OpenAPI.Response.Schema)
 		if err != nil {
 			return fmt.Errorf("encountered invalid schema type: %w", err)
 		}
@@ -84,9 +84,9 @@ func (p *Parser) parseAPI(node *Node) error {
 
 	r.APISpec.Resolver = resolver
 	r.APISpec.ResolverProperties = resolverProps
-	r.APISpec.OpenapiSummary = reqSummary
-	r.APISpec.OpenapiParameters = reqParams
-	r.APISpec.OpenapiResponseSchema = resSchema
+	r.APISpec.OpenapiSummary = openapiSummary
+	r.APISpec.OpenapiParameters = openapiParams
+	r.APISpec.OpenapiResponseSchema = openapiSchema
 
 	return nil
 }
