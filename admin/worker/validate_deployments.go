@@ -70,8 +70,13 @@ func (w *Worker) reconcileAllDeploymentsForProject(ctx context.Context, proj *da
 		return err
 	}
 
+	var prodDeplID string
+	if proj.ProdDeploymentID != nil {
+		prodDeplID = *proj.ProdDeploymentID
+	}
+
 	for _, depl := range depls {
-		if depl.ID == *proj.ProdDeploymentID {
+		if depl.ID == prodDeplID {
 			// Get deployment provisioner
 			p, ok := w.admin.ProvisionerSet[depl.Provisioner]
 			if !ok {
