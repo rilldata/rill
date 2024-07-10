@@ -33,9 +33,10 @@ func (p *Parser) parseAPI(node *Node) error {
 	}
 
 	// Validate
-	reqSummary := tmp.OpenAPI.Summary
+	var reqSummary string
 	var reqParams []*structpb.Struct
 	if tmp.OpenAPI != nil {
+		reqSummary = tmp.OpenAPI.Summary
 		_, err := openapiutil.MapToParameters(tmp.OpenAPI.Request.Parameters)
 		if err != nil {
 			return fmt.Errorf("encountered invalid parameter type: %w", err)

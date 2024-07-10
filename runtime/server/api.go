@@ -285,6 +285,23 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*spec.Pa
 										},
 									},
 								},
+								400: {
+									ResponseProps: spec.ResponseProps{
+										Description: "Bad request",
+										Schema: &spec.Schema{
+											SchemaProps: spec.SchemaProps{
+												Type: []string{"object"},
+												Properties: map[string]spec.Schema{
+													"error": {
+														SchemaProps: spec.SchemaProps{
+															Type: []string{"string"},
+														},
+													},
+												},
+											},
+										},
+									},
+								},
 							},
 						},
 					},
