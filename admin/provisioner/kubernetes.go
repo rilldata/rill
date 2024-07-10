@@ -346,7 +346,7 @@ func (p *KubernetesProvisioner) ValidateConfig(ctx context.Context, provisionID 
 	return true, nil
 }
 
-func (p *KubernetesProvisioner) GetType() string {
+func (p *KubernetesProvisioner) Type() string {
 	return "kubernetes"
 }
 

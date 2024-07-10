@@ -135,6 +135,6 @@ func (p *StaticProvisioner) ValidateConfig(ctx context.Context, provisionID stri
 	return true, nil
 }
 
-func (p *StaticProvisioner) GetType() string {
+func (p *StaticProvisioner) Type() string {
 	return "static"
 }

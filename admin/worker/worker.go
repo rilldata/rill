@@ -59,7 +59,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "hibernate_expired_deployments", w.hibernateExpiredDeployments, 15*time.Minute)
 	})
 	group.Go(func() error {
-		return w.schedule(ctx, "reconcile_deployments", w.reconcileDeployments, 6*time.Hour)
+		return w.schedule(ctx, "validate_deployments", w.validateDeployments, 6*time.Hour)
 	})
 	group.Go(func() error {
 		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
@@ -90,8 +90,8 @@ func (w *Worker) RunJob(ctx context.Context, name string) error {
 		return w.runJob(ctx, name, w.checkProvisionerCapacity)
 	case "reset_all_deployments":
 		return w.runJob(ctx, name, w.resetAllDeployments)
-	case "reconcile_deployments":
-		return w.runJob(ctx, name, w.reconcileDeployments)
+	case "validate_deployments":
+		return w.runJob(ctx, name, w.validateDeployments)
 	// NOTE: Add new ad-hoc jobs here
 	default:
 		return fmt.Errorf("unknown job: %s", name)

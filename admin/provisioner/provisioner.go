@@ -16,7 +16,7 @@ type Provisioner interface {
 	Update(ctx context.Context, provisionID string, newVersion string) error
 	CheckCapacity(ctx context.Context) error
 	ValidateConfig(ctx context.Context, provisionID string) (bool, error)
-	GetType() string
+	Type() string
 }
 
 type ProvisionOptions struct {
