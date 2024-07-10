@@ -723,11 +723,11 @@ func createGithubRepository(ctx context.Context, ch *cmdutil.Helper, pollRes *ad
 		repoOwner = ""
 	}
 	repoName := filepath.Base(localGitPath)
+	private := true
 
 	var githubRepo *github.Repository
 	var err error
 	for i := 1; i <= 10; i++ {
-		private := true
 		githubRepo, _, err = githubClient.Repositories.Create(ctx, repoOwner, &github.Repository{Name: &repoName, DefaultBranch: &defaultBranch, Private: &private})
 		if err == nil {
 			break
