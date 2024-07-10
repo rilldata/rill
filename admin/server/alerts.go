@@ -16,11 +16,8 @@ import (
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/observability"
-	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.opentelemetry.io/otel/attribute"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -276,22 +273,32 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	opts, err := recreateAlertOptionsFromSpec(spec)
+	file, err := s.admin.DB.FindVirtualFile(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 	if err != nil {
-		return nil, status.Errorf(codes.Internal, "failed to recreate alert options: %s", err.Error())
+		return nil, err
+	}
+
+	// Unmarshal file data to alertYAML
+	var alert alertYAML
+	err = yaml.Unmarshal(file.Data, &alert)
+	if err != nil {
+		return nil, status.Errorf(codes.Internal, "failed to unmarshal alert YAML: %s", err.Error())
 	}
 
 	found := false
-	for idx, email := range opts.EmailRecipients {
-		if strings.EqualFold(user.Email, email) {
-			opts.EmailRecipients = slices.Delete(opts.EmailRecipients, idx, idx+1)
+	// Exclude email recipient
+	for idx, recipient := range alert.Notify.Email.Recipients {
+		if strings.EqualFold(user.Email, recipient) {
+			alert.Notify.Email.Recipients = slices.Delete(alert.Notify.Email.Recipients, idx, idx+1)
 			found = true
 			break
 		}
 	}
-	for idx, email := range opts.SlackUsers {
+
+	// Exclude slack user
+	for idx, email := range alert.Notify.Slack.Users {
 		if strings.EqualFold(user.Email, email) {
-			opts.SlackUsers = slices.Delete(opts.SlackUsers, idx, idx+1)
+			alert.Notify.Slack.Users = slices.Delete(alert.Notify.Slack.Users, idx, idx+1)
 			found = true
 			break
 		}
@@ -301,13 +308,13 @@ func (s *Server) UnsubscribeAlert(ctx context.Context, req *adminv1.UnsubscribeA
 		return nil, status.Error(codes.InvalidArgument, "user is not subscribed to alert")
 	}
 
-	if len(opts.EmailRecipients) == 0 && len(opts.SlackUsers) == 0 && len(opts.SlackChannels) == 0 && len(opts.SlackWebhooks) == 0 {
+	if len(alert.Notify.Email.Recipients) == 0 && len(alert.Notify.Slack.Users) == 0 && len(alert.Notify.Slack.Channels) == 0 && len(alert.Notify.Slack.Webhooks) == 0 {
 		err = s.admin.DB.UpdateVirtualFileDeleted(ctx, proj.ID, proj.ProdBranch, virtualFilePathForManagedAlert(req.Name))
 		if err != nil {
 			return nil, status.Errorf(codes.Internal, "failed to update virtual file: %s", err.Error())
 		}
 	} else {
-		data, err := s.yamlForManagedAlert(opts, annotations.AdminOwnerUserID)
+		data, err := yaml.Marshal(alert)
 		if err != nil {
 			return nil, status.Errorf(codes.InvalidArgument, "failed to generate alert YAML: %s", err.Error())
 		}
@@ -548,32 +555,6 @@ func randomAlertName(title string) string {
 		name = name + "-" + uuid.New().String()[0:8]
 	}
 	return name
-}
-
-func recreateAlertOptionsFromSpec(spec *runtimev1.AlertSpec) (*adminv1.AlertOptions, error) {
-	opts := &adminv1.AlertOptions{}
-	opts.Title = spec.Title
-	opts.IntervalDuration = spec.IntervalsIsoDuration
-	opts.DataProps = spec.DataProperties
-	opts.Renotify = spec.Renotify
-	opts.RenotifyAfterSeconds = spec.RenotifyAfterSeconds
-	for _, notifier := range spec.Notifiers {
-		switch notifier.Connector {
-		case "email":
-			opts.EmailRecipients = pbutil.ToSliceString(notifier.Properties.AsMap()["recipients"])
-		case "slack":
-			props, err := slack.DecodeProps(notifier.Properties.AsMap())
-			if err != nil {
-				return nil, err
-			}
-			opts.SlackUsers = props.Users
-			opts.SlackChannels = props.Channels
-			opts.SlackWebhooks = props.Webhooks
-		default:
-			return nil, fmt.Errorf("unknown notifier connector: %s", notifier.Connector)
-		}
-	}
-	return opts, nil
 }
 
 // alertYAML is derived from rillv1.AlertYAML, but adapted for generating (as opposed to parsing) the alert YAML.

@@ -12,7 +12,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers/slack"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"google.golang.org/protobuf/types/known/structpb"
-	"gopkg.in/yaml.v3"
 )
 
 // AlertYAML is the raw structure of an Alert resource defined in YAML (does not include common fields)
@@ -26,8 +25,8 @@ type AlertYAML struct {
 		Limit         uint   `yaml:"limit"`
 		CheckUnclosed bool   `yaml:"check_unclosed"`
 	} `yaml:"intervals"`
-	Timeout string         `yaml:"timeout"`
-	Data    map[string]any `yaml:"data"` // will be parsed as DataYAML, is defined as raw map to save the original content
+	Timeout string    `yaml:"timeout"`
+	Data    *DataYAML `yaml:"data"`
 	For     struct {
 		UserID     string         `yaml:"user_id"`
 		UserEmail  string         `yaml:"user_email"`
@@ -126,29 +125,13 @@ func (p *Parser) parseAlert(node *Node) error {
 	// Data and query
 	var resolver string
 	var resolverProps *structpb.Struct
-	var dataProps *structpb.Struct
 	var queryForUserID, queryForUserEmail string
 	var queryForAttributes *structpb.Struct
 	isLegacyQuery := tmp.Data == nil
 
 	if !isLegacyQuery {
-		// DataYAML
-		rawData, err := yaml.Marshal(tmp.Data)
-		if err != nil {
-			return err
-		}
-		dataYAML := DataYAML{}
-		err = yaml.Unmarshal(rawData, &dataYAML)
-		if err != nil {
-			return err
-		}
-		dataProps, err = structpb.NewStruct(tmp.Data)
-		if err != nil {
-			return err
-		}
-
 		var refs []ResourceName
-		resolver, resolverProps, refs, err = p.parseDataYAML(&dataYAML)
+		resolver, resolverProps, refs, err = p.parseDataYAML(tmp.Data)
 		if err != nil {
 			return fmt.Errorf(`failed to parse "data": %w`, err)
 		}
@@ -236,10 +219,6 @@ func (p *Parser) parseAlert(node *Node) error {
 		if err != nil {
 			return fmt.Errorf("encountered invalid property type: %w", err)
 		}
-		dataProps, err = structpb.NewStruct(props)
-		if err != nil {
-			return fmt.Errorf("encountered invalid property type: %w", err)
-		}
 	}
 
 	if len(tmp.Email.Recipients) > 0 && len(tmp.Notify.Email.Recipients) > 0 {
@@ -304,7 +283,6 @@ func (p *Parser) parseAlert(node *Node) error {
 
 	r.AlertSpec.Resolver = resolver
 	r.AlertSpec.ResolverProperties = resolverProps
-	r.AlertSpec.DataProperties = dataProps
 
 	// Note: have already validated that at most one of the cases match
 	if queryForUserID != "" {

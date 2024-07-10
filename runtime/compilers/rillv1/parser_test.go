@@ -1415,10 +1415,6 @@ annotations:
 					"query_name":      "MetricsViewToplist",
 					"query_args_json": `{"metrics_view":"mv1"}`,
 				})),
-				DataProperties: must(structpb.NewStruct(map[string]any{
-					"query_name":      "MetricsViewToplist",
-					"query_args_json": `{"metrics_view":"mv1"}`,
-				})),
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				NotifyOnRecover:      true,
 				NotifyOnFail:         true,

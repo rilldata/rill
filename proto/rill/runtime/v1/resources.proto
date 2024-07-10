@@ -358,7 +358,6 @@ message AlertSpec {
   map<string, string> annotations = 20;
   string resolver = 22;
   google.protobuf.Struct resolver_properties = 23;
-  google.protobuf.Struct data_properties = 24;
 }
 
 message Notifier {
