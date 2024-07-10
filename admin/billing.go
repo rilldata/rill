@@ -2,77 +2,170 @@ package admin
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
 	"go.uber.org/zap"
 )
 
-func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Organization, plan *billing.Plan) (*database.Organization, []*billing.Subscription, error) {
-	update := false
-	newPayment := false
-	if org.PaymentCustomerID == "" {
-		// payment customer not created yet
-		cust, err := s.Payment.CreateCustomer(ctx, org)
+func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
+	// create payment customer
+	pc, err := s.Payment.CreateCustomer(ctx, org)
+	if err != nil {
+		return nil, nil, err
+	}
+	s.Logger.Info("created payment customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("payment_customer_id", pc.ID))
+	org.PaymentCustomerID = pc.ID
+
+	// create billing customer
+	bc, err := s.Biller.CreateCustomer(ctx, org)
+	if err != nil {
+		return nil, nil, err
+	}
+	s.Logger.Info("created billing customer", zap.String("org", org.Name), zap.String("billing_customer_id", bc.ID))
+	org.BillingCustomerID = bc.ID
+
+	// create subscription with the default plan
+	plan, err := s.Biller.GetDefaultPlan(ctx)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to get default plan: %w", err)
+	}
+
+	sub, err := s.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+	if err != nil {
+		return nil, nil, err
+	}
+	s.Logger.Info("created subscription", zap.String("org", org.Name), zap.String("subscription_id", sub.ID))
+
+	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		Description:                         org.Description,
+		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+	})
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return org, sub, nil
+}
+
+func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organization) (*database.Organization, []*billing.Subscription, error) {
+	if org.BillingCustomerID != "" && org.PaymentCustomerID != "" {
+		// get subscriptions for the customer
+		subs, err := s.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 		}
-		s.Logger.Info("created payment customer", zap.String("org", org.Name), zap.String("customer_id", cust.ID))
-		newPayment = true
-		update = true
+		// should not happen
+		if len(subs) == 0 {
+			// create a new subscription
+			plan, err := s.Biller.GetDefaultPlan(ctx)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to get default plan: %w", err)
+			}
+			sub, err := s.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+			if err != nil {
+				return nil, nil, fmt.Errorf("failed to create subscription: %w", err)
+			}
+			s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
+			subs = append(subs, sub)
+		}
+		return org, subs, nil
+	}
+
+	// check if customer exits in the billing system
+	billingCustomer, err := s.Biller.FindCustomer(ctx, org.ID)
+	if err != nil && !errors.Is(err, billing.ErrNotFound) {
+		return nil, nil, fmt.Errorf("error finding billing customer: %w", err)
+	}
+
+	if billingCustomer != nil {
+		org.BillingCustomerID = billingCustomer.ID
+		if billingCustomer.PaymentID != "" {
+			org.PaymentCustomerID = billingCustomer.PaymentID
+		}
+	}
+
+	if org.PaymentCustomerID == "" {
+		cust, err := s.Payment.FindCustomerForOrg(ctx, org)
+		if err != nil {
+			if errors.Is(err, billing.ErrNotFound) {
+				// Create a new customer
+				cust, err = s.Payment.CreateCustomer(ctx, org)
+				if err != nil {
+					return nil, nil, fmt.Errorf("failed to create payment customer: %w", err)
+				}
+				s.Logger.Info("created payment customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("payment_customer_id", cust.ID))
+			} else {
+				return nil, nil, fmt.Errorf("error finding payment customer: %w", err)
+			}
+		}
 		org.PaymentCustomerID = cust.ID
 	}
 
-	if org.BillingCustomerID == "" {
-		// billing customer not created yet
+	if billingCustomer == nil {
+		// create a new customer
 		cust, err := s.Biller.CreateCustomer(ctx, org)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to create billing customer: %w", err)
 		}
-		s.Logger.Info("created billing customer", zap.String("org", org.Name), zap.String("customer_id", cust.ID))
-		update = true
+		s.Logger.Info("created billing customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", cust.ID))
 		org.BillingCustomerID = cust.ID
-	} else if newPayment {
+	} else if billingCustomer.PaymentID == "" {
 		// update payment customer id in billing system
-		err := s.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, org.PaymentCustomerID)
+		err = s.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, org.PaymentCustomerID)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to update payment customer id: %w", err)
 		}
 	}
 
 	subs, err := s.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("failed to get subscriptions for customer: %w", err)
 	}
 
+	var plan *billing.Plan
 	if len(subs) == 0 {
+		// get default plan
+		plan, err = s.Biller.GetDefaultPlan(ctx)
+		if err != nil {
+			return nil, nil, fmt.Errorf("failed to get default plan: %w", err)
+		}
 		sub, err := s.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
-			return nil, nil, err
+			return nil, nil, fmt.Errorf("failed to create subscription: %w", err)
 		}
-		s.Logger.Info("created subscription", zap.String("org", org.Name), zap.String("subscription_id", sub.ID))
+		s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 		subs = append(subs, sub)
-		update = true
+	} else {
+		// get the latest subscription
+		plan = subs[0].Plan
 	}
 
-	if update {
-		org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-			Name:                                org.Name,
-			Description:                         org.Description,
-			QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
-			QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
-			QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-			QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-			QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-			QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-			BillingCustomerID:                   org.BillingCustomerID,
-			PaymentCustomerID:                   org.PaymentCustomerID,
-		})
-		if err != nil {
-			return nil, nil, err
-		}
+	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		Description:                         org.Description,
+		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+	})
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to update organization: %w", err)
 	}
-
 	return org, subs, nil
 }
 

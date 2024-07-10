@@ -249,7 +249,7 @@ func (s *Server) UpdateOrganizationBillingSubscription(ctx context.Context, req 
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	org, subs, err := s.admin.InitOrganizationBilling(ctx, org, plan)
+	org, subs, err := s.admin.RepairOrgBilling(ctx, org)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -389,12 +389,7 @@ func (s *Server) GetOrganizationBillingSessionURL(ctx context.Context, req *admi
 	}
 
 	if org.PaymentCustomerID == "" {
-		plan, err := s.admin.Biller.GetDefaultPlan(ctx)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		_, _, err = s.admin.InitOrganizationBilling(ctx, org, plan)
+		_, _, err = s.admin.RepairOrgBilling(ctx, org)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}

@@ -220,18 +220,13 @@ func (s *Service) CreateOrganizationForUser(ctx context.Context, userID, orgName
 	s.Logger.Info("created org", zap.String("name", orgName), zap.String("user_id", userID))
 
 	// create customer and subscription in the billing system, if it fails just log the error but don't fail the request
-	// fetch default plan
-	plan, err := s.Biller.GetDefaultPlan(ctx)
+	updatedOrg, _, err := s.InitOrganizationBilling(ctx, org)
 	if err != nil {
-		s.Logger.Error("failed to get default plan from billing system, no subscription will be created", zap.String("org", orgName), zap.Error(err))
+		s.Logger.Error("failed to init org billing", zap.String("org_id", org.ID), zap.String("org_name", orgName), zap.Error(err))
+		return org, nil
 	}
 
-	org, _, err = s.InitOrganizationBilling(ctx, org, plan)
-	if err != nil {
-		s.Logger.Error("failed to setup org billing", zap.String("org", orgName), zap.Error(err))
-	}
-
-	return org, nil
+	return updatedOrg, nil
 }
 
 func (s *Service) prepareOrganization(ctx context.Context, orgID, userID string) (*database.Organization, error) {
