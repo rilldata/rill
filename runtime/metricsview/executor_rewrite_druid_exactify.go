@@ -63,9 +63,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
-	if err := e.rewriteApproximateComparisons(ast); err != nil {
-		return fmt.Errorf("druid exactify: %w", err)
-	}
+	e.rewriteApproxComparisons(ast)
 
 	// Generate the SQL for and execute the inner query.
 	sql, args, err := ast.SQL()
@@ -135,6 +133,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 
 	// Remove the limit from the outer query (the IN filter automatically limits the result size).
 	qry.Limit = nil
+	qry.Offset = nil
 
 	return nil
 }

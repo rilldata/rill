@@ -469,15 +469,19 @@ func (r *AlertReconciler) executeAllWrapped(ctx context.Context, self *runtimev1
 	}
 
 	// Evaluate intervals
-	ts, err := calculateExecutionTimes(a, watermark, previousWatermark)
+	ts, err := calculateAlertExecutionTimes(a, watermark, previousWatermark)
 	if err != nil {
-		// This should not usually error
+		skipErr := &skipError{}
+		if errors.As(err, skipErr) {
+			r.C.Logger.Info("Skipped alert check", zap.String("name", self.Meta.Name.Name), zap.String("reason", skipErr.reason), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
+			return nil
+		}
 		r.C.Logger.Error("Internal: failed to calculate execution times", zap.String("name", self.Meta.Name.Name), zap.Error(err))
 		return err
 	}
-
 	if len(ts) == 0 {
-		r.C.Logger.Debug("Skipped alert check because watermark is unchanged or has not advanced by a full interval", zap.String("name", self.Meta.Name.Name), zap.Time("current_watermark", watermark), zap.Time("previous_watermark", previousWatermark), zap.String("interval", a.Spec.IntervalsIsoDuration))
+		// This should never happen
+		r.C.Logger.Error("Internal: no execution times found", zap.String("name", self.Meta.Name.Name), zap.Error(err))
 		return nil
 	}
 
@@ -536,7 +540,7 @@ func (r *AlertReconciler) executeSingle(ctx context.Context, self *runtimev1.Res
 // checkAlert runs the alert query and returns the result.
 func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtimev1.Resource, a *runtimev1.Alert, adminMeta *drivers.AlertMetadata, executionTime time.Time) (*runtimev1.AssertionResult, error) {
 	// Log
-	r.C.Logger.Debug("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Build query proto
 	qpb, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)
@@ -811,17 +815,18 @@ func (r *AlertReconciler) computeInheritedWatermark(ctx context.Context, refs []
 	return t, !t.IsZero(), nil
 }
 
-// calculateExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
+// calculateAlertExecutionTimes calculates the execution times for an alert, taking into consideration the alert's intervals configuration and previous executions.
 // If the alert is not configured to run on intervals, it will return a slice containing only the current watermark.
-func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
+// If the alert should not be executed, it returns a skipError explaining why.
+func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark time.Time) ([]time.Time, error) {
 	// If the watermark is unchanged, skip the check.
 	// NOTE: It might make sense to make this configurable in the future, but the use cases seem limited.
 	// The watermark can only be unchanged if watermark="inherit" and since that indicates watermarks can be trusted, why check for the same watermark?
 	if watermark.Equal(previousWatermark) {
-		return nil, nil
+		return nil, skipError{reason: "watermark is unchanged"}
 	}
 
-	// If the alert is not configured to run on intervals, check it just for the current watermark.
+	// If the alert is not configured to run on intervals, always check it for the current watermark.
 	if a.Spec.IntervalsIsoDuration == "" {
 		return []time.Time{watermark}, nil
 	}
@@ -869,7 +874,7 @@ func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark ti
 
 	// Skip if end isn't past the previous watermark (unless we're supposed to check unclosed intervals)
 	if !a.Spec.IntervalsCheckUnclosed && !end.After(previousWatermark) {
-		return nil, nil
+		return nil, skipError{reason: "watermark has not advanced by a full interval"}
 	}
 
 	// Set a limit on the number of intervals to check
@@ -893,6 +898,16 @@ func calculateExecutionTimes(a *runtimev1.Alert, watermark, previousWatermark ti
 	slices.Reverse(ts)
 
 	return ts, nil
+}
+
+// skipError is a special error type that indicates that an action should be skipped with a reason why.
+type skipError struct {
+	reason string
+}
+
+// Error implements the error interface.
+func (s skipError) Error() string {
+	return fmt.Sprintf("skipped: %s", s.reason)
 }
 
 // extractQueryResultFirstRow extracts the first row from a query result.
