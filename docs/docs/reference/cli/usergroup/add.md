@@ -1,23 +1,22 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user list
+title: rill usergroup add
 ---
-## rill user list
+## rill usergroup add
 
-List
+Add role to a user group in an organization or project
 
 ```
-rill user list [flags]
+rill usergroup add [flags]
 ```
 
 ### Flags
 
 ```
-      --group string        User group
-      --org string          Organization
-      --page-size uint32    Number of users to return per page (default 50)
-      --page-token string   Pagination token
-      --project string      Project
+      --group string     User group
+      --org string       Organization
+      --project string   Project
+      --role string      Role of the user group (options: admin, viewer)
 ```
 
 ### Global flags
@@ -31,5 +30,5 @@ rill user list [flags]
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill usergroup](usergroup.md)	 - Manage user groups
 

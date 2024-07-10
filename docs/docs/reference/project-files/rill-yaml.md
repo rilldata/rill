@@ -16,6 +16,7 @@ The `rill.yaml` file contains metadata about your project.
   - **`email`** — the mock user's email _(required)_
   - **`name`** — the mock user's name
   - **`admin`** — whether or not the mock user is an admin
+**`public_paths`** - a list of folders to serve static assets from.
 
 ## Configuring the default OLAP Engine
 

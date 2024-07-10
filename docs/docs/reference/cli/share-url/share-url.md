@@ -1,23 +1,15 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user list
+title: rill share-url
 ---
-## rill user list
+## rill share-url
 
-List
-
-```
-rill user list [flags]
-```
+Manage shareable URLs
 
 ### Flags
 
 ```
-      --group string        User group
-      --org string          Organization
-      --page-size uint32    Number of users to return per page (default 50)
-      --page-token string   Pagination token
-      --project string      Project
+      --org string   Organization Name
 ```
 
 ### Global flags
@@ -31,5 +23,8 @@ rill user list [flags]
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill](../cli.md)	 - Rill CLI
+* [rill share-url create](create.md)	 - Create a shareable URL
+* [rill share-url delete](delete.md)	 - Delete a shareable URL
+* [rill share-url list](list.md)	 - List all shareable URLs
 

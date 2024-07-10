@@ -1,23 +1,22 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user list
+title: rill share-url list
 ---
-## rill user list
+## rill share-url list
 
-List
+List all shareable URLs
 
 ```
-rill user list [flags]
+rill share-url list [<project-name>] [flags]
 ```
 
 ### Flags
 
 ```
-      --group string        User group
-      --org string          Organization
-      --page-size uint32    Number of users to return per page (default 50)
+      --project string      Project name
+      --path string         Project directory (default ".")
+      --page-size uint32    Number of projects to return per page (default 50)
       --page-token string   Pagination token
-      --project string      Project
 ```
 
 ### Global flags
@@ -27,9 +26,10 @@ rill user list [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill share-url](share-url.md)	 - Manage shareable URLs
 
