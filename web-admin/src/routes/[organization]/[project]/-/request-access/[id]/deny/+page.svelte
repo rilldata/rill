@@ -41,7 +41,7 @@
 <AccessRequestContainer>
   {#if $denyAccess.isLoading}
     <div class="h-36 mt-10">
-      <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+      <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
     </div>
   {:else if error}
     <div class="text-slate-500 text-base">

@@ -159,7 +159,6 @@ type CallToAction struct {
 	Subject    string
 	Title      string
 	Body       template.HTML
-	IsInfo     bool
 	ButtonText string
 	ButtonLink string
 }
@@ -167,6 +166,24 @@ type CallToAction struct {
 func (c *Client) SendCallToAction(opts *CallToAction) error {
 	buf := new(bytes.Buffer)
 	err := c.templates.Lookup("call_to_action.html").Execute(buf, opts)
+	if err != nil {
+		return fmt.Errorf("email template error: %w", err)
+	}
+	html := buf.String()
+	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Subject, html)
+}
+
+type Informational struct {
+	ToEmail string
+	ToName  string
+	Subject string
+	Title   string
+	Body    template.HTML
+}
+
+func (c *Client) SendInformational(opts *Informational) error {
+	buf := new(bytes.Buffer)
+	err := c.templates.Lookup("informational.html").Execute(buf, opts)
 	if err != nil {
 		return fmt.Errorf("email template error: %w", err)
 	}
@@ -301,9 +318,7 @@ type ProjectAccessRequest struct {
 }
 
 func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
-	if opts.Title == "" {
-		opts.Title = fmt.Sprintf("%s would like to view %s/%s", opts.Email, opts.OrgName, opts.ProjectName)
-	}
+	subject := fmt.Sprintf("%s would like to view %s/%s", opts.Email, opts.OrgName, opts.ProjectName)
 	if opts.Body == "" {
 		opts.Body = template.HTML(fmt.Sprintf("<b>%s</b> would like to view <b>%s/%s</b>", opts.Email, opts.OrgName, opts.ProjectName))
 	}
@@ -314,7 +329,7 @@ func (c *Client) SendProjectAccessRequest(opts *ProjectAccessRequest) error {
 		return fmt.Errorf("email template error: %w", err)
 	}
 	html := buf.String()
-	return c.Sender.Send(opts.ToEmail, opts.ToName, opts.Title, html)
+	return c.Sender.Send(opts.ToEmail, opts.ToName, subject, html)
 }
 
 type ProjectAccessGranted struct {
@@ -330,7 +345,7 @@ func (c *Client) SendProjectAccessGranted(opts *ProjectAccessGranted) error {
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
 		Subject:    fmt.Sprintf("Your reuqest to %s/%s has been approved", opts.OrgName, opts.ProjectName),
-		Title:      fmt.Sprintf("Your reuqest to %s/%s has been approved", opts.OrgName, opts.ProjectName),
+		Title:      "",
 		Body:       template.HTML(fmt.Sprintf("Your reuqest to <b>%s/%s</b> has been approved", opts.OrgName, opts.ProjectName)),
 		ButtonText: "View project in Rill",
 		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName),
@@ -345,13 +360,12 @@ type ProjectAccessRejected struct {
 }
 
 func (c *Client) SendProjectAccessRejected(opts *ProjectAccessRejected) error {
-	return c.SendCallToAction(&CallToAction{
+	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Your reuqest to %s/%s has been rejected", opts.OrgName, opts.ProjectName),
-		Title:   fmt.Sprintf("Your reuqest to %s/%s has been rejected", opts.OrgName, opts.ProjectName),
-		Body:    template.HTML(fmt.Sprintf("Your reuqest to <b>%s/%s</b> has been rejected", opts.OrgName, opts.ProjectName)),
-		IsInfo:  true,
+		Subject: fmt.Sprintf("Your reuqest to %s/%s has been denied", opts.OrgName, opts.ProjectName),
+		Title:   "",
+		Body:    template.HTML(fmt.Sprintf("Your reuqest to <b>%s/%s</b> has been denied. Contact your project admin for help.", opts.OrgName, opts.ProjectName)),
 	})
 }
 

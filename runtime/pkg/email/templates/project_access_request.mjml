@@ -30,9 +30,7 @@
                     Approve Request
                 </mj-button>
 
-                <mj-spacer height="20px" />
-
-                <mj-button color="#3524C7" font-weight="bold" href="{{ .DenyLink }}">
+                <mj-button background-color="white" border="1px solid #9CABFF" color="#3524C7" font-weight="bold" href="{{ .DenyLink }}">
                     Deny Request
                 </mj-button>
 

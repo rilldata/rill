@@ -1021,7 +1021,7 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	adminRole, err := s.admin.DB.FindProjectRole(ctx, "admin") // hardcoded for now
+	adminRole, err := s.admin.DB.FindOrganizationRole(ctx, "admin")
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
