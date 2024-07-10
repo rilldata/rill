@@ -182,9 +182,10 @@ func (d *driver) TertiarySourceConnectors(ctx context.Context, src map[string]an
 }
 
 type connection struct {
-	db     *sqlx.DB
-	config *configProperties
-	logger *zap.Logger
+	db         *sqlx.DB
+	config     *configProperties
+	logger     *zap.Logger
+	instanceID string
 }
 
 // Ping implements drivers.Handle.

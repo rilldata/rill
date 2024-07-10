@@ -5,32 +5,18 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"strconv"
 	"text/template"
 	"time"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
 // Constants for default values and property keys
 const (
-	InputPropertiesKey          = "inputProperties"
-	DefaultTimeFormat           = "2006-01-02T15:04:05"
-	DefaultIntervalFormat       = "2006-01-02T15:04:05"
+	DefaultTimeFormat            = time.RFC3339
+	DefaultIntervalFormat        = time.RFC3339
 	DefaultInitialLookBackPeriod = 60 * time.Minute
-	CoordinatorURLKey           = "coordinatorURL"
-	DataSourceNameKey           = "dataSourceName"
-
-	PreviousExecutionTimeKey   = "previousExecutionTime"
-	PreviousIntervalEndTimeKey = "previousIntervalEndTime"
-	PathKey                    = "path"
-	PatternKey                 = "pattern"
-	GranularityKey             = "gran"
-	PeriodBeforeKey            = "periodBefore"
-	MaxWorkKey                 = "maxWork"
-	QuietPeriodKey             = "quietPeriod"
-	CatchupKey                 = "catchup"
-	IndexJsonKey               = "indexJson"
 )
 
 // druidIndexExecutor is responsible for executing Druid index tasks.
@@ -44,124 +30,144 @@ type druidIndexExecutor struct {
 var _ drivers.ModelExecutor = &druidIndexExecutor{}
 
 // Execute implements drivers.ModelExecutor.
-func (d *druidIndexExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
-	dataSource := getStringWithDefault(d.executorOptions.OutputProperties, DataSourceNameKey, d.executorOptions.ModelName)
+func (e *druidIndexExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
 
-	previousResult, err := d.getPreviousResult()
+	inputProperties := &ModelInputProperties{}
+	err := mapstructure.WeakDecode(e.executorOptions.InputProperties, inputProperties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse input properties: %w", err)
+	}
+
+	outputProperties := &ModelOutputProperties{}
+	err = mapstructure.WeakDecode(e.executorOptions.OutputProperties, outputProperties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse output properties: %w", err)
+	}
+
+	var initialLookBackPeriod time.Duration
+	if outputProperties.InitialLookBackPeriod == "" {
+		initialLookBackPeriod = DefaultInitialLookBackPeriod
+	} else {
+		initialLookBackPeriod, err = time.ParseDuration(outputProperties.InitialLookBackPeriod)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse initial look back period: %w", err)
+		}
+	}
+
+	previousResult, err := e.getPreviousResult(initialLookBackPeriod, DefaultTimeFormat)
 	if err != nil {
 		return nil, fmt.Errorf("error getting previous result: %w", err)
 	}
 
-	previousExecutionTime, err := getTimeFromProperty(previousResult.Properties, PreviousExecutionTimeKey, DefaultTimeFormat)
+	prevModelResultProperties := &ModelResultProperties{}
+	err = mapstructure.WeakDecode(previousResult.Properties, prevModelResultProperties)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse previous result properties: %w", err)
+	}
+
+	// Assuming the correct format is "2006-01-02T15:04:05Z07:00" which is RFC3339
+	previousExecutionTime, err := time.Parse(time.RFC3339, prevModelResultProperties.PreviousExecutionTime)
 	if err != nil {
 		return nil, fmt.Errorf("error getting previous execution time: %w", err)
 	}
 
-	previousIntervalEndTime, err := getTimeFromProperty(previousResult.Properties, PreviousIntervalEndTimeKey, DefaultIntervalFormat)
+	previousIntervalEndTime, err := time.Parse(time.RFC3339, prevModelResultProperties.PreviousIntervalEndTime)
 	if err != nil {
 		return nil, fmt.Errorf("error getting previous interval end time: %w", err)
 	}
 
-	inputProperties, err := getMapFromProperty(d.executorOptions.InputProperties, InputPropertiesKey)
+	periodBefore, err := time.ParseDuration(outputProperties.PeriodBefore)
 	if err != nil {
-		return nil, fmt.Errorf("error getting input properties: %w", err)
+		return nil, fmt.Errorf("failed to parse period before: %w", err)
 	}
 
-	path, err := getStringFromProperty(inputProperties, PathKey)
+	maxWork, err := time.ParseDuration(outputProperties.MaxWork)
 	if err != nil {
-		return nil, fmt.Errorf("error getting path: %w", err)
+		return nil, fmt.Errorf("failed to parse max work: %w", err)
 	}
 
-	pattern, err := getStringFromProperty(inputProperties, PatternKey)
+	quietPeriod, err := time.ParseDuration(outputProperties.QuietPeriod)
 	if err != nil {
-		return nil, fmt.Errorf("error getting pattern: %w", err)
+		return nil, fmt.Errorf("failed to parse quiet period: %w", err)
 	}
 
-	granularity, err := getDurationFromProperty(inputProperties, GranularityKey, 0)
-	if err != nil {
-		return nil, fmt.Errorf("error getting granularity: %w", err)
-	}
-
-	periodBefore, err := getDurationFromProperty(d.executorOptions.OutputProperties, PeriodBeforeKey, 0)
-	if err != nil {
-		return nil, fmt.Errorf("error getting period before: %w", err)
-	}
-
-	maxWork, err := getDurationFromProperty(d.executorOptions.OutputProperties, MaxWorkKey, 0)
-	if err != nil {
-		return nil, fmt.Errorf("error getting max work: %w", err)
-	}
-
-	quietPeriod, err := getDurationFromProperty(d.executorOptions.OutputProperties, QuietPeriodKey, 0)
-	if err != nil {
-		return nil, fmt.Errorf("error getting quiet period: %w", err)
-	}
-
-	catchup, err := getBoolFromProperty(d.executorOptions.OutputProperties, CatchupKey)
-	if err != nil {
-		return nil, fmt.Errorf("error getting catchup flag: %w", err)
-	}
-
-	specJson, err := getStringFromProperty(d.executorOptions.OutputProperties, IndexJsonKey)
-	if err != nil {
-		return nil, fmt.Errorf("error getting index JSON: %w", err)
-	}
-
-	startTime := calculateStartTime(previousExecutionTime, previousIntervalEndTime, periodBefore, catchup, quietPeriod)
+	startTime := calculateStartTime(previousExecutionTime, previousIntervalEndTime, periodBefore, outputProperties.Catchup, quietPeriod)
 	endTime := calculateEndTime(startTime, maxWork, quietPeriod)
 
 	if endTime.Before(startTime) {
 		return nil, fmt.Errorf("end time is before start time")
 	}
 
-	intervals := []string{fmt.Sprintf("%s/%s", startTime.Format(DefaultIntervalFormat), endTime.Format(DefaultIntervalFormat))}
-	prefixes := generatePrefixes(path, pattern, granularity, startTime, endTime)
+	fmt.Println("==>inputProperties", inputProperties)
+	fmt.Println("==>outputProperties", outputProperties)
+	gran, err := time.ParseDuration(inputProperties.Granularity)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse granularity: %w", err)
+	}
 
-	specJson, err = renderIndexJson(specJson, intervals, prefixes)
+	intervals := []string{fmt.Sprintf("%s/%s", startTime.Format(DefaultIntervalFormat), endTime.Format(DefaultIntervalFormat))}
+	prefixes := generatePrefixes(inputProperties.Path, inputProperties.Pattern, gran, startTime, endTime)
+
+	specJson, err := renderIndexJson(outputProperties.SpecJson, intervals, prefixes)
 	if err != nil {
 		return nil, fmt.Errorf("failed to render index JSON: %w", err)
 	}
 
-	coordinatorURL, ok := d.executorOptions.OutputProperties[CoordinatorURLKey].(string)
-	if !ok {
-		return nil, fmt.Errorf("coordinator URL is not a string or is missing")
+	var timeout time.Duration
+	if outputProperties.TimeoutPeriod == "" {
+		timeout = 10 * time.Minute
+	} else {
+		timeout, err = time.ParseDuration(outputProperties.TimeoutPeriod)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse timeout period: %w", err)
+		}
 	}
 
-	dataSourceName, ok := d.executorOptions.OutputProperties[DataSourceNameKey].(string)
-	if !ok {
-		return nil, fmt.Errorf("data source name is not a string or is missing")
-	}
-
-	err = Ingest(coordinatorURL, specJson, dataSourceName, 5*time.Minute)
+	err = Ingest(outputProperties.CoordinatorURL, specJson, outputProperties.DataSourceName, timeout)
 	if err != nil {
 		return nil, fmt.Errorf("failed to ingest data: %w", err)
 	}
 
+	var datasourceName string
+	if outputProperties.DataSourceName == "" {
+		datasourceName = e.executorOptions.ModelName
+	} else {
+		datasourceName = outputProperties.DataSourceName
+	}
+
+	modelResultProperties := &ModelResultProperties{
+		DataSource:              datasourceName,
+		PreviousExecutionTime:   time.Now().Format(DefaultTimeFormat),
+		PreviousIntervalEndTime: endTime.Format(DefaultTimeFormat),
+	}
+	modelResultPropertiesMap := map[string]interface{}{}
+	err = mapstructure.WeakDecode(modelResultProperties, &modelResultPropertiesMap)
+	if err != nil {
+		return nil, fmt.Errorf("failed to encode result properties: %w", err)
+	}
+
 	return &drivers.ModelResult{
-		Connector: d.executorOptions.OutputConnector,
-		Properties: map[string]interface{}{
-			"dataSource":    fmt.Sprintf("%s-%s", d.executorOptions.ModelName, dataSource),
-			PreviousExecutionTimeKey: time.Now().Format(DefaultTimeFormat),
-			PreviousIntervalEndTimeKey: endTime.Format(DefaultTimeFormat),
-		},
+		Connector:  e.executorOptions.OutputConnector,
+		Properties: modelResultPropertiesMap,
+		Table:      datasourceName,
 	}, nil
 }
 
 // getPreviousResult retrieves the previous result or initializes it if not available.
-func (d *druidIndexExecutor) getPreviousResult() (*drivers.ModelResult, error) {
-	if d.executorOptions.PreviousResult == nil {
-		initialLookBackPeriod, err := getDurationFromProperty(d.executorOptions.OutputProperties, "initialLookBackPeriod", DefaultInitialLookBackPeriod)
-		if err != nil {
-			return nil, fmt.Errorf("error getting initial lookback period: %w", err)
+func (e *druidIndexExecutor) getPreviousResult(initialLookBackPeriod time.Duration, DefaultTimeFormat string) (*drivers.ModelResult, error) {
+	if e.executorOptions.PreviousResult == nil {
+		modelProperties := &ModelResultProperties{
+			PreviousExecutionTime:   time.Now().Add(-initialLookBackPeriod).Format(DefaultTimeFormat),
+			PreviousIntervalEndTime: time.Now().Add(-initialLookBackPeriod).Format(DefaultTimeFormat),
 		}
-		return &drivers.ModelResult{
-			Properties: map[string]interface{}{
-				PreviousExecutionTimeKey:   time.Now().Add(-initialLookBackPeriod).Format(DefaultTimeFormat),
-				PreviousIntervalEndTimeKey: time.Now().Add(-initialLookBackPeriod).Format(DefaultTimeFormat),
-			},
-		}, nil
+		modelPropertiesMap := map[string]interface{}{}
+		err := mapstructure.WeakDecode(modelProperties, &modelPropertiesMap)
+		if err != nil {
+			return nil, fmt.Errorf("failed to encode result properties: %w", err)
+		}
+		return &drivers.ModelResult{Properties: modelPropertiesMap}, nil
 	}
-	return d.executorOptions.PreviousResult, nil
+	return e.executorOptions.PreviousResult, nil
 }
 
 // generatePrefixes generates a list of prefixes based on the provided path, pattern, and granularity.
@@ -204,64 +210,6 @@ func renderIndexJson(indexJson string, intervals, prefixes []string) (string, er
 	return buf.String(), nil
 }
 
-// getDurationFromProperty retrieves a duration from properties or returns the default value.
-func getDurationFromProperty(props map[string]interface{}, key string, defaultValue time.Duration) (time.Duration, error) {
-	if value, ok := props[key]; ok {
-		if durationStr, ok := value.(string); ok {
-			return time.ParseDuration(durationStr)
-		}
-		return 0, fmt.Errorf("invalid duration format for %s", key)
-	}
-	return defaultValue, nil
-}
-
-// getMapFromProperty retrieves a map from properties.
-func getMapFromProperty(props map[string]interface{}, key string) (map[string]interface{}, error) {
-	if value, ok := props[key]; ok {
-		if m, ok := value.(map[string]interface{}); ok {
-			return m, nil
-		}
-		return nil, fmt.Errorf("%s is expected to be a map", key)
-	}
-	return nil, fmt.Errorf("%s is expected", key)
-}
-
-// getStringFromProperty retrieves a string from properties.
-func getStringFromProperty(props map[string]interface{}, key string) (string, error) {
-	if value, ok := props[key]; ok {
-		if str, ok := value.(string); ok {
-			return str, nil
-		}
-		return "", fmt.Errorf("%s is expected to be a string", key)
-	}
-	return "", fmt.Errorf("%s is expected", key)
-}
-
-// getBoolFromProperty retrieves a boolean from properties.
-func getBoolFromProperty(props map[string]interface{}, key string) (bool, error) {
-	value, ok := props[key]
-	if !ok {
-		return false, fmt.Errorf("%s is expected", key)
-	}
-
-	switch v := value.(type) {
-	case string:
-		return strconv.ParseBool(v)
-	case bool:
-		return v, nil
-	default:
-		return false, fmt.Errorf("invalid boolean format for %s", key)
-	}
-}
-
-// getTimeFromProperty retrieves a time from properties using the provided format.
-func getTimeFromProperty(props map[string]interface{}, key, format string) (time.Time, error) {
-	if value, ok := props[key]; ok {
-		return time.Parse(format, value.(string))
-	}
-	return time.Time{}, fmt.Errorf("%s is expected", key)
-}
-
 // calculateStartTime calculates the start time based on the provided parameters.
 func calculateStartTime(previousExecutionTime, previousIntervalEndTime time.Time, periodBefore time.Duration, catchup bool, quietPeriod time.Duration) time.Time {
 	if catchup {
@@ -277,14 +225,4 @@ func calculateEndTime(startTime time.Time, maxWork, quietPeriod time.Duration) t
 		return maxEndTime
 	}
 	return startTime.Add(maxWork)
-}
-
-// getStringWithDefault retrieves a string from properties or returns the default value.
-func getStringWithDefault(props map[string]interface{}, key, defaultValue string) string {
-	if value, ok := props[key]; ok {
-		if str, ok := value.(string); ok {
-			return str
-		}
-	}
-	return defaultValue
 }
