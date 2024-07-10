@@ -61,7 +61,12 @@ type coordinatorHTTPCheck struct {
 
 var _ retrier.AdditionalTest = &coordinatorHTTPCheck{}
 
-// if Coordinator is down for a transient reason it's not a hard failure
+// isHardFailure is called when the previous error doesn't say explicitly if the issue with a datasource or the coordinator.
+// If Coordinator is down for a transient reason it's not a hard failure.
+// For example, the previous request can return `no such table 'A'`, then isHardFailure checks
+// a) if the coordinator is OK -> hard-failure - the table 'A' definitely doesn't exist
+// b) if the coordinator has a transient error -> not a hard-failure - the table 'A' still can exist
+// c) if the coordinator returns not a transient error (ie access-denied) -> hard-failure - we shouldn't wait until the configuration is changed by someone
 func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error) {
 	dr := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil)
 	b, err := json.Marshal(dr)
