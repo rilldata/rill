@@ -71,21 +71,15 @@ func (q *ColumnDescriptiveStatistics) Resolve(ctx context.Context, rt *runtime.R
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	case drivers.DialectClickHouse:
-		descriptiveStatisticsSQL = fmt.Sprintf("SELECT "+
-			"min(%s)::DOUBLE as min, "+
-			"quantileTDigest(0.25)(%s)::DOUBLE as q25, "+
-			"quantileTDigest(0.5)(%s)::DOUBLE as q50, "+
-			"quantileTDigest(0.75)(%s)::DOUBLE as q75, "+
-			"max(%s)::DOUBLE as max, "+
-			"avg(%s)::DOUBLE as mean, "+
-			"stddevSamp(%s)::DOUBLE as sd "+
-			"FROM %s",
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
-			sanitizedColumnName,
+		descriptiveStatisticsSQL = fmt.Sprintf(`SELECT 
+			min(%[1]s)::DOUBLE as min, 
+			quantileTDigest(0.25)(%[1]s)::DOUBLE as q25, 
+			quantileTDigest(0.5)(%[1]s)::DOUBLE as q50, 
+			quantileTDigest(0.75)(%[1]s)::DOUBLE as q75, 
+			max(%[1]s)::DOUBLE as max, 
+			avg(%[1]s)::DOUBLE as mean, 
+			stddevSamp(%[1]s)::DOUBLE as sd 
+			FROM %[2]s WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+``,
 			sanitizedColumnName,
 			olap.Dialect().EscapeTable(q.Database, q.DatabaseSchema, q.TableName))
 	default:
