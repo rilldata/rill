@@ -65,7 +65,6 @@ func (e *druidIndexExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		return nil, fmt.Errorf("failed to parse previous result properties: %w", err)
 	}
 
-	// Assuming the correct format is "2006-01-02T15:04:05Z07:00" which is RFC3339
 	previousExecutionTime, err := time.Parse(time.RFC3339, prevModelResultProperties.PreviousExecutionTime)
 	if err != nil {
 		return nil, fmt.Errorf("error getting previous execution time: %w", err)
