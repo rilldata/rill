@@ -256,12 +256,19 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.OutputHandle == c && opts.InputConnector == "gcs" {
+		objStore, ok := opts.InputHandle.AsObjectStore()
+		if !ok {
+			return nil, false
+		}
+		return &druidIndexExecutor{c, objStore, opts}, true
+	}
 	return nil, false
 }
 
 // AsModelManager implements drivers.Handle.
 func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsTransporter implements drivers.Connection.
