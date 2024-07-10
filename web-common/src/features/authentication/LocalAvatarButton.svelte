@@ -10,19 +10,12 @@
   $: user = createLocalServiceGetCurrentUser();
   $: deployValidation = createLocalServiceDeployValidation();
 
-  function makeLogInHref() {
-    return `${$deployValidation.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
-  }
-
-  function makeLogOutHref(): string {
-    // Create the logout URL, providing the current URL
-    return `${$deployValidation.data?.loginUrl}/logout?redirect=${$page.url.href}`;
-  }
-
+  $: loginUrl = `${$deployValidation.data?.loginUrl}/?redirect=${window.location.origin}${window.location.pathname}`;
+  $: logoutUrl = `${$deployValidation.data?.loginUrl}/logout?redirect=${$page.url.href}`;
   $: loggedIn = $user.isSuccess && $user.data?.user;
 </script>
 
-{#if !$user.isFetching}
+{#if !$user.isFetching && $deployValidation.data}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger class="flex-none">
       {#if loggedIn}
@@ -58,17 +51,11 @@
       <!--   Contact Rill support-->
       <!-- </DropdownMenu.Item>-->
       {#if loggedIn}
-        <DropdownMenu.Item
-          href={makeLogOutHref()}
-          class="text-gray-800 font-normal"
-        >
+        <DropdownMenu.Item href={logoutUrl} class="text-gray-800 font-normal">
           Logout
         </DropdownMenu.Item>
       {:else}
-        <DropdownMenu.Item
-          href={makeLogInHref()}
-          class="text-gray-800 font-normal"
-        >
+        <DropdownMenu.Item href={loginUrl} class="text-gray-800 font-normal">
           Log in / Sign up
         </DropdownMenu.Item>
       {/if}
