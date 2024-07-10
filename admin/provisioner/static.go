@@ -129,3 +129,12 @@ func (p *StaticProvisioner) Update(ctx context.Context, provisionID, newVersion 
 	// No-op
 	return nil
 }
+
+func (p *StaticProvisioner) ValidateConfig(ctx context.Context, provisionID string) (bool, error) {
+	// No-op
+	return true, nil
+}
+
+func (p *StaticProvisioner) Type() string {
+	return "static"
+}
