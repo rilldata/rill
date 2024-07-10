@@ -2125,7 +2125,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
@@ -2246,6 +2246,7 @@ export interface MetricsViewSpecDimensionV2 {
   label?: string;
   description?: string;
   unnest?: boolean;
+  uri?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {
