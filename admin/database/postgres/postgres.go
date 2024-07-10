@@ -1637,28 +1637,11 @@ func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageRepo
 	return checkUpdateRow("billing usage", res, err)
 }
 
-func (c *connection) FindBillingRepairedOn(ctx context.Context) (time.Time, error) {
-	var repairedOn sql.NullTime
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT repaired_on FROM billing_worker_time`).Scan(&repairedOn)
+func (c *connection) FindOrganizationWithoutPaymentCustomerID(ctx context.Context) ([]*database.Organization, error) {
+	var res []*database.Organization
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
 	if err != nil {
-		return time.Time{}, parseErr("billing repaired", err)
-	}
-	if !repairedOn.Valid {
-		return time.Time{}, nil
-	}
-	return repairedOn.Time, nil
-}
-
-func (c *connection) UpdateBillingRepairedOn(ctx context.Context, repairedOn time.Time) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_worker_time SET repaired_on=$1`, repairedOn)
-	return checkUpdateRow("billing repaired", res, err)
-}
-
-func (c *connection) FindOrganizationIDsWithoutPaymentCreatedOnOrAfter(ctx context.Context, createdAfter time.Time) ([]string, error) {
-	var res []string
-	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE payment_customer_id = '' AND created_on >= $1`, createdAfter)
-	if err != nil {
-		return nil, parseErr("billing orgs", err)
+		return nil, parseErr("billing orgs without payment id", err)
 	}
 	return res, nil
 }

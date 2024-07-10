@@ -38,7 +38,7 @@ func (n noop) GetPublicPlans(ctx context.Context) ([]*Plan, error) {
 	return nil, nil
 }
 
-func (n noop) CreateCustomer(ctx context.Context, organization *database.Organization) (*Customer, error) {
+func (n noop) CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error) {
 	return &Customer{}, nil
 }
 
@@ -46,7 +46,7 @@ func (n noop) FindCustomer(ctx context.Context, customerID string) (*Customer, e
 	return &Customer{}, nil
 }
 
-func (n noop) UpdateCustomerPaymentID(ctx context.Context, customerID, paymentID string) error {
+func (n noop) UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error {
 	return nil
 }
 

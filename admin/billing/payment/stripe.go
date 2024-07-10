@@ -11,7 +11,7 @@ import (
 	"github.com/stripe/stripe-go/v79/customer"
 )
 
-var _ Payment = &Stripe{}
+var _ Provider = &Stripe{}
 
 type Stripe struct{}
 
@@ -93,7 +93,7 @@ func (s *Stripe) DeleteCustomer(ctx context.Context, customerID string) error {
 	return err
 }
 
-func (s *Stripe) GetBillingSessionURL(ctx context.Context, customerID, returnURL string) (string, error) {
+func (s *Stripe) GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error) {
 	params := &stripe.BillingPortalSessionParams{
 		Customer:  stripe.String(customerID),
 		ReturnURL: stripe.String(returnURL),

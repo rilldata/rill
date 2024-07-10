@@ -12,7 +12,7 @@ import (
 
 func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Organization) (*database.Organization, *billing.Subscription, error) {
 	// create payment customer
-	pc, err := s.Payment.CreateCustomer(ctx, org)
+	pc, err := s.PaymentProvider.CreateCustomer(ctx, org)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -20,7 +20,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 	org.PaymentCustomerID = pc.ID
 
 	// create billing customer
-	bc, err := s.Biller.CreateCustomer(ctx, org)
+	bc, err := s.Biller.CreateCustomer(ctx, org, billing.PaymentProviderStripe)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -90,17 +90,17 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 
 	if billingCustomer != nil {
 		org.BillingCustomerID = billingCustomer.ID
-		if billingCustomer.PaymentID != "" {
-			org.PaymentCustomerID = billingCustomer.PaymentID
+		if billingCustomer.PaymentProviderID != "" {
+			org.PaymentCustomerID = billingCustomer.PaymentProviderID
 		}
 	}
 
 	if org.PaymentCustomerID == "" {
-		cust, err := s.Payment.FindCustomerForOrg(ctx, org)
+		cust, err := s.PaymentProvider.FindCustomerForOrg(ctx, org)
 		if err != nil {
 			if errors.Is(err, billing.ErrNotFound) {
 				// Create a new customer
-				cust, err = s.Payment.CreateCustomer(ctx, org)
+				cust, err = s.PaymentProvider.CreateCustomer(ctx, org)
 				if err != nil {
 					return nil, nil, fmt.Errorf("failed to create payment customer: %w", err)
 				}
@@ -114,15 +114,15 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 
 	if billingCustomer == nil {
 		// create a new customer
-		cust, err := s.Biller.CreateCustomer(ctx, org)
+		cust, err := s.Biller.CreateCustomer(ctx, org, billing.PaymentProviderStripe)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to create billing customer: %w", err)
 		}
 		s.Logger.Info("created billing customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("billing_customer_id", cust.ID))
 		org.BillingCustomerID = cust.ID
-	} else if billingCustomer.PaymentID == "" {
+	} else if billingCustomer.PaymentProviderID == "" {
 		// update payment customer id in billing system
-		err = s.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, org.PaymentCustomerID)
+		err = s.Biller.UpdateCustomerPaymentID(ctx, org.BillingCustomerID, billing.PaymentProviderStripe, org.PaymentCustomerID)
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to update payment customer id: %w", err)
 		}

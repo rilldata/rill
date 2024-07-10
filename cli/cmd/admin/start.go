@@ -262,7 +262,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				biller = billing.NewNoop()
 			}
 
-			var p payment.Payment
+			var p payment.Provider
 			if conf.StripeAPIKey != "" {
 				p = payment.NewStripe(conf.StripeAPIKey)
 			} else {

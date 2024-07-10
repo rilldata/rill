@@ -6,11 +6,11 @@ import (
 	"github.com/rilldata/rill/admin/database"
 )
 
-var _ Payment = &noop{}
+var _ Provider = &noop{}
 
 type noop struct{}
 
-func NewNoop() Payment {
+func NewNoop() Provider {
 	return noop{}
 }
 
@@ -30,6 +30,6 @@ func (n noop) DeleteCustomer(ctx context.Context, customerID string) error {
 	return nil
 }
 
-func (n noop) GetBillingSessionURL(ctx context.Context, customerID, returnURL string) (string, error) {
+func (n noop) GetBillingPortalURL(ctx context.Context, customerID, returnURL string) (string, error) {
 	return "", nil
 }

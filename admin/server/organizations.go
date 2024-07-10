@@ -164,7 +164,7 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 
 	// delete payment customer
 	if org.PaymentCustomerID != "" {
-		err = s.admin.Payment.DeleteCustomer(ctx, org.PaymentCustomerID)
+		err = s.admin.PaymentProvider.DeleteCustomer(ctx, org.PaymentCustomerID)
 		if err != nil {
 			s.logger.Error("failed to delete payment customer", zap.String("org", org.Name), zap.Error(err))
 		}
@@ -263,7 +263,7 @@ func (s *Server) UpdateOrganizationBillingSubscription(ctx context.Context, req 
 	}
 
 	if planChange {
-		c, err := s.admin.Payment.FindCustomer(ctx, org.PaymentCustomerID)
+		c, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -359,7 +359,7 @@ func (s *Server) GetOrganizationBillingSubscription(ctx context.Context, req *ad
 
 	hasPaymentMethod := false
 	if org.PaymentCustomerID != "" {
-		paymentCust, err := s.admin.Payment.FindCustomer(ctx, org.PaymentCustomerID)
+		paymentCust, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
@@ -395,7 +395,7 @@ func (s *Server) GetOrganizationBillingSessionURL(ctx context.Context, req *admi
 		}
 	}
 
-	url, err := s.admin.Payment.GetBillingSessionURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
+	url, err := s.admin.PaymentProvider.GetBillingPortalURL(ctx, org.PaymentCustomerID, req.ReturnUrl)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
