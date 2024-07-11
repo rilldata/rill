@@ -18,6 +18,7 @@ import (
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
+	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -566,6 +567,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.IncrementalStateResolver,
 		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
+		Claims:             auth.GetClaims(ctx).SecurityClaims(),
 	})
 	if err != nil {
 		return nil, nil, err
