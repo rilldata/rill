@@ -1622,7 +1622,7 @@ func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, or
 
 func (c *connection) FindBillingUsageReportedOn(ctx context.Context) (time.Time, error) {
 	var usageReportedOn sql.NullTime
-	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT usage_reported_on FROM billing_worker_time`).Scan(&usageReportedOn)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT usage_reported_on FROM billing_reporting_time`).Scan(&usageReportedOn)
 	if err != nil {
 		return time.Time{}, parseErr("billing usage", err)
 	}
@@ -1633,7 +1633,7 @@ func (c *connection) FindBillingUsageReportedOn(ctx context.Context) (time.Time,
 }
 
 func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_worker_time SET usage_reported_on=$1`, usageReportedOn)
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_reporting_time SET usage_reported_on=$1`, usageReportedOn)
 	return checkUpdateRow("billing usage", res, err)
 }
 
