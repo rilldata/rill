@@ -104,14 +104,14 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 	}
 	switch v := obj.(type) {
 	case map[string]any:
-		if v["errorCode"] != "invalidInput" {
-			return false, fmt.Errorf("%v", obj)
+		if em, ok := v["errorMessage"].(string); ok && coordinatorDown.MatchString(em) {
+			return false, nil
 		}
 		return true, nil
 	case []any:
 		return true, nil
 	default:
-		return false, fmt.Errorf("unexpected response: %v", obj)
+		return true, fmt.Errorf("unexpected response: %v", obj)
 	}
 }
 
