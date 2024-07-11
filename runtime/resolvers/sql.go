@@ -67,7 +67,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
-	var userAttributes map[string]any = nil
+	var userAttributes map[string]any
 	if opts.Claims != nil {
 		userAttributes = opts.Claims.UserAttributes
 	}
