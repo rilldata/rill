@@ -101,6 +101,7 @@
       bookmark = detail;
     }}
     on:select={({ detail }) => selectBookmark(detail)}
+    {metricsViewName}
   />
 </DropdownMenu>
 
