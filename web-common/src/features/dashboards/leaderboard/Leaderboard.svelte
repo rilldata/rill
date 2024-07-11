@@ -13,7 +13,8 @@
   import LoadingRows from "./LoadingRows.svelte";
 
   const slice = 7;
-  const columnWidth = 64;
+  const columnWidth = 66;
+  const gutterWidth = 24;
 
   export let parentElement: HTMLElement;
   export let dimensionName: string;
@@ -44,7 +45,12 @@
 
   const {
     selectors: {
-      dimensions: { getDimensionDisplayName, getDimensionDescription },
+      dimensions: {
+        getDimensionDisplayName,
+        getDimensionDescription,
+        getDimensionByName,
+      },
+
       activeMeasure: { activeMeasureName, isValidPercentOfTotal },
       dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
@@ -64,6 +70,8 @@
     metricsViewName,
     runtime,
   } = getStateManagers();
+
+  $: dimension = $getDimensionByName(dimensionName);
 
   $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
@@ -126,7 +134,7 @@
 >
   <table>
     <colgroup>
-      <col style:width="24px" />
+      <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
       <col style:width="{columnWidth}px" />
       {#if $isTimeComparisonActive}
@@ -160,9 +168,13 @@
           <LeaderboardRow
             {tableWidth}
             {dimensionName}
+            uri={dimension?.uri}
             {itemData}
             isValidPercentOfTotal={$isValidPercentOfTotal}
             isTimeComparisonActive={$isTimeComparisonActive}
+            {columnWidth}
+            {gutterWidth}
+            {firstColumnWidth}
           />
         {/each}
       {/if}
@@ -172,10 +184,14 @@
           {itemData}
           {tableWidth}
           {dimensionName}
+          uri={dimension?.uri}
           isValidPercentOfTotal={$isValidPercentOfTotal}
           isTimeComparisonActive={$isTimeComparisonActive}
           borderTop={i === 0}
           borderBottom={i === selectedBelowTheFold.length - 1}
+          {columnWidth}
+          {gutterWidth}
+          {firstColumnWidth}
         />
       {/each}
     </tbody>
@@ -203,6 +219,10 @@
     @apply p-0 m-0 border-spacing-0 border-collapse w-fit;
     @apply font-normal cursor-pointer select-none;
     @apply table-fixed;
+  }
+
+  tbody {
+    /* @apply bg-gray-50; */
   }
 
   .table-message {

@@ -168,10 +168,10 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
 					Condition: fmt.Sprintf(
-						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ .self.name }}'=%s)",
+						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ lower .self.name }}'=%s)",
 						runtime.ResourceKindTheme,
 						runtime.ResourceKindMetricsView,
-						duckdbsql.EscapeStringValue(mdl.MetricsView),
+						duckdbsql.EscapeStringValue(strings.ToLower(mdl.MetricsView)),
 					),
 					Allow: false,
 				},
@@ -331,13 +331,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
 	)
 
-	// Check the request is made by a user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
-	userID := claims.OwnerID()
-
 	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
 	if err != nil {
@@ -345,6 +338,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Check permissions
+	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).CreateProjects {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
@@ -387,12 +381,19 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		req.ProdVersion = "latest"
 	}
 
+	// Capture creating user (can be nil if created with a service token)
+	var userID *string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		tmp := claims.OwnerID()
+		userID = &tmp
+	}
+
 	opts := &database.InsertProjectOptions{
 		OrganizationID:  org.ID,
 		Name:            req.Name,
 		Description:     req.Description,
 		Public:          req.Public,
-		CreatedByUserID: &userID,
+		CreatedByUserID: userID,
 		Provisioner:     req.Provisioner,
 		ProdVersion:     req.ProdVersion,
 		ProdOLAPDriver:  req.ProdOlapDriver,
@@ -403,8 +404,13 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	if req.GithubUrl != "" {
+		// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
+		if userID == nil {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+
 		// Check Github app is installed and caller has access on the repo
-		installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, userID)
+		installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, *userID)
 		if err != nil {
 			return nil, err
 		}
@@ -495,18 +501,13 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
 	}
 
-	// Check the request is made by a user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
-	}
-
 	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
@@ -519,6 +520,11 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
 		if safeStr(proj.GithubURL) != *req.GithubUrl {
+			// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
+			if claims.OwnerType() != auth.OwnerTypeUser {
+				return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+			}
+
 			_, err = s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
 			if err != nil {
 				return nil, err
@@ -598,12 +604,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
-	}
-
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}

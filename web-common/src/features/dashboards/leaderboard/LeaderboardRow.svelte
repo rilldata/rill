@@ -1,6 +1,6 @@
 <script lang="ts">
+  import { clamp } from "@rilldata/web-common/lib/clamp";
   import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
-  import LeaderboardValueCell from "./LeaderboardValueCell.svelte";
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
   import { LeaderboardItemData } from "./leaderboard-utils";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -11,6 +11,9 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
+  import LongBarZigZag from "./LongBarZigZag.svelte";
+  import { slide } from "svelte/transition";
+  import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -19,6 +22,10 @@
   export let tableWidth: number;
   export let borderTop = false;
   export let borderBottom = false;
+  export let uri: string | undefined;
+  export let firstColumnWidth: number;
+  export let columnWidth: number;
+  export let gutterWidth: number;
 
   let hovered = false;
 
@@ -34,6 +41,7 @@
 
   const {
     selectors: {
+      activeMeasure: { isSummableMeasure },
       numberFormat: { activeMeasureFormatter },
       dimensionFilters: { atLeastOneSelection, isFilterExcludeMode },
       comparison: { isBeingCompared: isBeingComparedReadable },
@@ -75,6 +83,72 @@
       `copied dimension value "${truncatedLabel}" to clipboard`,
     );
   }
+
+  $: href = makeHref(uri);
+
+  $: percentOfTotal = $isSummableMeasure && pctOfTotal ? pctOfTotal : 0;
+
+  $: barLength = (tableWidth - gutterWidth) * percentOfTotal;
+
+  $: barColor = excluded
+    ? "rgb(243 244 246)"
+    : selected || hovered
+      ? "var(--color-primary-200)"
+      : "var(--color-primary-100)";
+
+  // Bar gradient has to be split up across cells because of a bug in Safari
+  // This is not necessary in other browsers, but doing it this way ensures consistency
+
+  $: secondCellBarLength = clamp(0, barLength - firstColumnWidth, columnWidth);
+  $: thirdCellBarLength = clamp(
+    0,
+    barLength - (firstColumnWidth + columnWidth),
+    columnWidth,
+  );
+  $: fourthCellBarLength = clamp(
+    0,
+    Math.max(barLength - (firstColumnWidth + columnWidth * 2), 0),
+    columnWidth,
+  );
+
+  $: firstCellGradient = `linear-gradient(to right, ${barColor}
+    ${barLength}px, transparent ${barLength}px)`;
+
+  $: secondCellGradient = secondCellBarLength
+    ? `linear-gradient(to right, ${barColor}
+    ${secondCellBarLength}px, transparent ${secondCellBarLength}px)`
+    : undefined;
+
+  $: thirdCellGradient = thirdCellBarLength
+    ? `linear-gradient(to right, ${barColor}
+    ${thirdCellBarLength}px, transparent ${thirdCellBarLength}px)`
+    : undefined;
+
+  $: fourthCellGradient = fourthCellBarLength
+    ? `linear-gradient(to right, ${barColor}
+    ${fourthCellBarLength}px, transparent ${fourthCellBarLength}px)`
+    : undefined;
+
+  $: showZigZag = barLength > tableWidth;
+
+  function makeHref(uri: string | undefined) {
+    if (!uri) {
+      return undefined;
+    }
+
+    const hasProtocol = /^[a-zA-Z][a-zA-Z\d+\-.]*:/.test(uri);
+    if (uri === "true") {
+      if (!hasProtocol) {
+        uri = "https://" + label;
+      }
+      return uri;
+    }
+
+    if (!hasProtocol) {
+      uri = "https://" + uri;
+    }
+    return uri.replace(/\s/g, "").replace(`{{${dimensionName}}}`, label);
+  }
 </script>
 
 <tr
@@ -100,71 +174,87 @@
       selectionIndex={itemData?.selectedIndex}
     />
   </td>
-  <td>
+  <td
+    style:background={firstCellGradient}
+    class:ui-copy={!atLeastOneActive}
+    class:ui-copy-disabled={excluded}
+    class:ui-copy-strong={!excluded && selected}
+    class="relative size-full flex flex-none justify-between items-center leaderboard-label"
+  >
     <Tooltip location="left" distance={20}>
-      <LeaderboardValueCell
-        {selected}
-        {pctOfTotal}
-        {label}
-        {dimensionName}
-        {tableWidth}
-        {previousValueString}
-        {hovered}
-      />
+      <FormattedDataType value={label} truncate />
+
+      {#if previousValueString && hovered}
+        <span
+          class="opacity-50 whitespace-nowrap font-normal"
+          transition:slide={{ axis: "x", duration: 200 }}
+        >
+          {previousValueString} →
+        </span>
+      {/if}
+
+      {#if hovered && href}
+        <a
+          target="_blank"
+          rel="noopener noreferrer"
+          {href}
+          title={href}
+          on:click|stopPropagation
+        >
+          <ExternalLink className="fill-primary-600" />
+        </a>
+      {/if}
 
       <LeaderboardTooltipContent
+        slot="tooltip-content"
         {atLeastOneActive}
         {excluded}
         {filterExcludeMode}
         {label}
         {selected}
-        slot="tooltip-content"
       />
     </Tooltip>
   </td>
-  <td>
-    <div class="value-cell">
-      <span>
-        <FormattedDataType
-          type="INTEGER"
-          value={formattedValue || measureValue}
-        />
-      </span>
-    </div>
+  <td style:background={secondCellGradient}>
+    <FormattedDataType type="INTEGER" value={formattedValue || measureValue} />
+    {#if showZigZag && !isTimeComparisonActive && !isValidPercentOfTotal}
+      <LongBarZigZag />
+    {/if}
   </td>
   {#if isTimeComparisonActive}
-    <td>
-      <div class="value-cell">
-        <FormattedDataType
-          type="INTEGER"
-          value={itemData.deltaAbs
-            ? $activeMeasureFormatter(itemData.deltaAbs)
-            : null}
-          customStyle={negativeChange ? "text-red-500" : ""}
-        />
-      </div>
+    <td style:background={thirdCellGradient}>
+      <FormattedDataType
+        type="INTEGER"
+        value={itemData.deltaAbs
+          ? $activeMeasureFormatter(itemData.deltaAbs)
+          : null}
+        customStyle={negativeChange ? "text-red-500" : ""}
+      />
     </td>
-    <td>
-      <div class="value-cell">
-        <PercentageChange
-          value={itemData.deltaRel
-            ? formatMeasurePercentageDifference(itemData.deltaRel)
-            : null}
-        />
-      </div>
+    <td style:background={fourthCellGradient}>
+      <PercentageChange
+        value={itemData.deltaRel
+          ? formatMeasurePercentageDifference(itemData.deltaRel)
+          : null}
+      />
+      {#if showZigZag}
+        <LongBarZigZag />
+      {/if}
     </td>
   {:else if isValidPercentOfTotal}
-    <td>
-      <div class="value-cell">
-        <PercentageChange value={itemData.pctOfTotal} />
-      </div>
+    <td style:background={thirdCellGradient}>
+      <PercentageChange value={itemData.pctOfTotal} />
+      {#if showZigZag}
+        <LongBarZigZag />
+      {/if}
     </td>
   {/if}
 </tr>
 
 <style lang="postcss">
   td {
-    @apply text-right p-0;
+    @apply text-right p-0 z-10;
+    @apply px-2  relative;
     height: 22px;
   }
 
@@ -173,14 +263,19 @@
   }
 
   tr:hover {
-    @apply bg-background;
+    @apply bg-gray-100;
   }
 
-  tr:hover td:not(:first-of-type) {
-    @apply brightness-95;
+  td:first-of-type {
+    @apply p-0 bg-background;
   }
 
-  .value-cell {
-    @apply pr-2 flex justify-end items-center whitespace-nowrap;
+  a {
+    @apply absolute right-0 z-50  h-[22px] w-[32px];
+    @apply bg-white flex items-center justify-center shadow-md rounded-sm;
+  }
+
+  a:hover {
+    @apply bg-primary-100;
   }
 </style>
