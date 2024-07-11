@@ -332,8 +332,10 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 			return err
 		}
 	}
-	localProjectPath := opts.GitPath
-
+	_, localProjectPath, err := validateLocalProject(ctx, ch, opts)
+	if err != nil {
+		return err
+	}
 	// If no project name was provided, default to dir name
 	if opts.Name == "" {
 		opts.Name = filepath.Base(localProjectPath)
