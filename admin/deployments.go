@@ -315,7 +315,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 
 		s.Logger.Info("hibernate: deleting deployment", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID))
 
-		err = s.teardownDeployment(ctx, depl)
+		err = s.TeardownDeployment(ctx, depl)
 		if err != nil {
 			s.Logger.Error("hibernate: teardown deployment error", zap.String("project_id", proj.ID), zap.String("deployment_id", depl.ID), zap.Error(err), observability.ZapCtx(ctx))
 			continue
@@ -366,7 +366,7 @@ func (s *Service) OpenRuntimeClient(host, audience string) (*client.Client, erro
 	return rt, nil
 }
 
-func (s *Service) teardownDeployment(ctx context.Context, depl *database.Deployment) error {
+func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deployment) error {
 	// Delete the deployment
 	err := s.DB.DeleteDeployment(ctx, depl.ID)
 	if err != nil {

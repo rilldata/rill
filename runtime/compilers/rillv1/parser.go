@@ -261,7 +261,7 @@ func (p *Parser) Reparse(ctx context.Context, paths []string) (*Diff, error) {
 // IsSkippable returns true if the path will be skipped by Reparse.
 // It's useful for callers to avoid triggering a reparse when they know the path is not relevant.
 func (p *Parser) IsSkippable(path string) bool {
-	return !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
+	return pathIsIgnored(path) || !pathIsYAML(path) && !pathIsSQL(path) && !pathIsDotEnv(path)
 }
 
 // TrackedPathsInDir returns the paths under the given directory that the parser currently has cached results for.
@@ -360,6 +360,11 @@ func (p *Parser) reparseExceptRillYAML(ctx context.Context, paths []string) (*Di
 			continue
 		}
 		seenPaths[path] = true
+
+		// Skip ignored paths
+		if pathIsIgnored(path) {
+			continue
+		}
 
 		isSQL := pathIsSQL(path)
 		isYAML := pathIsYAML(path)
@@ -988,6 +993,13 @@ func pathIsRillYAML(path string) bool {
 // pathIsDotEnv returns true if the path is .env
 func pathIsDotEnv(path string) bool {
 	return path == "/.env"
+}
+
+// pathIsIgnored returns true if the path should be ignored by the parser.
+// Note: Generally these defaults should be applied at the repo level (in the defaults for ignore_paths in rill.yaml).
+// This is only for files we DO want to list and show in the UI, but don't want to parse.
+func pathIsIgnored(p string) bool {
+	return strings.HasPrefix(p, "/.rillcloud/")
 }
 
 // normalizePath normalizes a user-provided path to the format returned from ListRecursive.
