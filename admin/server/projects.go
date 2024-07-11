@@ -1258,7 +1258,7 @@ func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID
 	if err != nil {
 		return false
 	}
-	return asset.OrganizationID == orgID && asset.OwnerID == ownerID
+	return asset.OrganizationID != nil && *asset.OrganizationID == orgID && asset.OwnerID == ownerID
 }
 
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {
