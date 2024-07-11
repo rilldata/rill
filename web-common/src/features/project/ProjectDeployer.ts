@@ -17,17 +17,23 @@ export class ProjectDeployer {
       refetchOnWindowFocus: true,
     },
   });
-  public readonly deploying = writable(false);
+  public readonly validating = writable(false);
 
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
 
   public getStatus() {
     return derived(
-      [this.validation, this.deployMutation, this.redeployMutation],
-      ([validation, deployMutation, redeployMutation]) => {
+      [
+        this.validation,
+        this.validating,
+        this.deployMutation,
+        this.redeployMutation,
+      ],
+      ([validation, validating, deployMutation, redeployMutation]) => {
         if (
           validation.isFetching ||
+          validating ||
           deployMutation.isLoading ||
           redeployMutation.isLoading
         ) {
@@ -54,7 +60,7 @@ export class ProjectDeployer {
   }
 
   public async validate() {
-    this.deploying.set(false);
+    this.validating.set(false);
     let validation = get(this.validation).data as DeployValidationResponse;
     if (validation?.deployedProjectId) {
       return true;
@@ -65,19 +71,20 @@ export class ProjectDeployer {
 
     if (!validation.isAuthenticated) {
       window.open(`${validation.loginUrl}`, "__target");
-      this.deploying.set(true);
+      this.validating.set(true);
       return false;
     }
 
-    if (
-      validation.isGithubRepo &&
-      (!validation.isGithubConnected || !validation.isGithubRepoAccessGranted)
-    ) {
-      // if the project is a github repo and not connected to github then redirect to grant access
-      window.open(`${validation.githubGrantAccessUrl}`, "__target");
-      this.deploying.set(true);
-      return false;
-    }
+    // Disabling for now. Will support this though "Connect to github"
+    // if (
+    //   validation.isGithubRepo &&
+    //   (!validation.isGithubConnected || !validation.isGithubRepoAccessGranted)
+    // ) {
+    //   // if the project is a github repo and not connected to github then redirect to grant access
+    //   window.open(`${validation.githubGrantAccessUrl}`, "__target");
+    //   this.deploying.set(true);
+    //   return false;
+    // }
 
     return true;
   }
