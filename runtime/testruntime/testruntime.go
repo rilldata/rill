@@ -5,12 +5,10 @@ import (
 	"encoding/base64"
 	"fmt"
 	"maps"
-	"net/url"
 	"os"
 	"path/filepath"
 	goruntime "runtime"
 	"strconv"
-	"strings"
 	"testing"
 
 	"github.com/c2h5oh/datasize"
@@ -231,7 +229,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 }
 
 func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) {
-	if os.Getenv("METRICS_CREDS") == "" {
+	if os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN") == "" {
 		t.Skip("skipping the test without the test instance")
 	}
 
@@ -240,19 +238,10 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
 	var err error
-	creds := os.Getenv("METRICS_CREDS")
-	address := os.Getenv("METRICS_ADDRESS")
-	data, err := base64.StdEncoding.DecodeString(creds)
+	b64 := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
+	dsn, err := base64.StdEncoding.DecodeString(b64)
 	if err != nil {
 		return nil, "", err
-	}
-
-	splits := strings.Split(string(data), ":")
-	if len(splits) < 2 {
-		return nil, "", fmt.Errorf("incorrect credentials")
-	}
-	for i := range splits {
-		splits[i] = url.QueryEscape(splits[i])
 	}
 
 	inst := &drivers.Instance{
@@ -270,7 +259,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 			{
 				Type:   "druid",
 				Name:   "druid",
-				Config: map[string]string{"dsn": fmt.Sprintf("https://%s:%s@%s/druid/v2/sql", splits[0], splits[1], address)},
+				Config: map[string]string{"dsn": string(dsn)},
 			},
 			{
 				Type: "sqlite",
