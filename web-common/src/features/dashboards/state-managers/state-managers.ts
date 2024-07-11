@@ -95,9 +95,19 @@ export function createStateManagers({
       r.instanceId,
       metricViewName,
       ResourceKind.MetricsView,
-      (data) => data.metricsView?.state?.validSpec,
+      undefined,
       queryClient,
-    ).subscribe(set);
+    ).subscribe((result) => {
+      // In case the store was created with a name that has incorrect casing
+      if (result.data?.meta?.name?.name) {
+        metricsViewNameStore.set(result.data.meta.name.name);
+      }
+
+      return set({
+        ...result,
+        data: result.data?.metricsView?.state?.validSpec,
+      });
+    });
   });
 
   const timeRangeSummaryStore: Readable<
@@ -141,9 +151,7 @@ export function createStateManagers({
     timeRangeSummaryStore,
     queryClient,
     dashboardStore,
-    setMetricsViewName: (name) => {
-      metricsViewNameStore.set(name);
-    },
+
     updateDashboard,
     /**
      * A collection of Readables that can be used to select data from the dashboard.

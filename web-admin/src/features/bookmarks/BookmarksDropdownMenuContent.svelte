@@ -20,6 +20,8 @@
   import { createEventDispatcher } from "svelte";
   import HomeBookmarkPlus from "@rilldata/web-common/components/icons/HomeBookmarkPlus.svelte";
 
+  export let metricViewName: string;
+
   const dispatch = createEventDispatcher();
   const queryClient = useQueryClient();
 
@@ -33,7 +35,7 @@
     $runtime?.instanceId,
     organization,
     project,
-    $page.params.dashboard,
+    metricViewName,
   );
   $: filteredBookmarks = searchBookmarks($bookmarks.data, searchText);
 
