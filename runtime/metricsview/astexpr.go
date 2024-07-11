@@ -339,9 +339,9 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		b.writeString(")")
 
 		if not {
-			b.writeString(" NOT ILIKE ")
+			b.writeString(" NOT LIKE ")
 		} else {
-			b.writeString(" ILIKE ")
+			b.writeString(" LIKE ")
 		}
 
 		b.writeString("LOWER(")
