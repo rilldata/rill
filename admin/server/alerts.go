@@ -570,7 +570,7 @@ type alertYAML struct {
 	Intervals struct {
 		Duration string `yaml:"duration"`
 	} `yaml:"intervals"`
-	Data map[string]any `yaml:"data"`
+	Data map[string]any `yaml:"data,omitempty"`
 	For  struct {
 		UserID string `yaml:"user_id"`
 	} `yaml:"for"`
