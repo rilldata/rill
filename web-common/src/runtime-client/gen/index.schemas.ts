@@ -2043,11 +2043,11 @@ export interface V1AnalyzeConnectorsResponse {
   connectors?: V1AnalyzedConnector[];
 }
 
-export type V1AlertSpecResolverProperties = { [key: string]: any };
-
 export type V1AlertSpecAnnotations = { [key: string]: string };
 
 export type V1AlertSpecQueryForAttributes = { [key: string]: any };
+
+export type V1AlertSpecResolverProperties = { [key: string]: any };
 
 export interface V1AlertSpec {
   trigger?: boolean;
@@ -2059,6 +2059,8 @@ export interface V1AlertSpec {
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
+  resolver?: string;
+  resolverProperties?: V1AlertSpecResolverProperties;
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
@@ -2069,8 +2071,6 @@ export interface V1AlertSpec {
   renotifyAfterSeconds?: number;
   notifiers?: V1Notifier[];
   annotations?: V1AlertSpecAnnotations;
-  resolver?: string;
-  resolverProperties?: V1AlertSpecResolverProperties;
 }
 
 export interface V1AlertExecution {

@@ -3058,10 +3058,16 @@ definitions:
         type: string
       intervalDuration:
         type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
       queryName:
         type: string
+        description: 'DEPRECATED: Use resolver and resolver_properties instead.'
       queryArgsJson:
         type: string
+        description: 'DEPRECATED: Use resolver and resolver_properties instead.'
       metricsViewName:
         type: string
       renotify:
@@ -3088,8 +3094,6 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the dashboard when it was created
-      dataProps:
-        type: object
   v1BillingPlan:
     type: object
     properties:

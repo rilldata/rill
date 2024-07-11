@@ -464,8 +464,10 @@ func (s *Server) yamlForManagedAlert(opts *adminv1.AlertOptions, ownerUserID str
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	if opts.DataProps != nil {
-		res.Data = opts.DataProps.AsMap()
+	if opts.Resolver != "" {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties,
+		}
 	}
 	res.Query.Name = opts.QueryName
 	res.Query.ArgsJSON = opts.QueryArgsJson
@@ -503,8 +505,10 @@ func (s *Server) yamlForCommittedAlert(opts *adminv1.AlertOptions) ([]byte, erro
 	res.Title = opts.Title
 	res.Watermark = "inherit"
 	res.Intervals.Duration = opts.IntervalDuration
-	if opts.DataProps != nil {
-		res.Data = opts.DataProps.AsMap()
+	if opts.Resolver != "" {
+		res.Data = map[string]any{
+			opts.Resolver: opts.ResolverProperties,
+		}
 	}
 	res.Query.Name = opts.QueryName
 	res.Query.Args = args

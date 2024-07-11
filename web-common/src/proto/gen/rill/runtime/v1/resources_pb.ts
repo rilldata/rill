@@ -2364,6 +2364,16 @@ export class AlertSpec extends Message<AlertSpec> {
   timeoutSeconds = 0;
 
   /**
+   * @generated from field: string resolver = 22;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 23;
+   */
+  resolverProperties?: Struct;
+
+  /**
    * @generated from oneof rill.runtime.v1.AlertSpec.query_for
    */
   queryFor: {
@@ -2421,16 +2431,6 @@ export class AlertSpec extends Message<AlertSpec> {
    */
   annotations: { [key: string]: string } = {};
 
-  /**
-   * @generated from field: string resolver = 22;
-   */
-  resolver = "";
-
-  /**
-   * @generated from field: google.protobuf.Struct resolver_properties = 23;
-   */
-  resolverProperties?: Struct;
-
   constructor(data?: PartialMessage<AlertSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -2447,6 +2447,8 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 6, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 7, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 22, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "resolver_properties", kind: "message", T: Struct },
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
@@ -2457,8 +2459,6 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 19, name: "renotify_after_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 21, name: "notifiers", kind: "message", T: Notifier, repeated: true },
     { no: 20, name: "annotations", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "scalar", T: 9 /* ScalarType.STRING */} },
-    { no: 22, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 23, name: "resolver_properties", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): AlertSpec {

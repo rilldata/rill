@@ -1177,12 +1177,16 @@ export interface V1BillingPlan {
   quotas?: V1Quotas;
 }
 
-export type V1AlertOptionsDataProps = { [key: string]: any };
+export type V1AlertOptionsResolverProperties = { [key: string]: any };
 
 export interface V1AlertOptions {
   title?: string;
   intervalDuration?: string;
+  resolver?: string;
+  resolverProperties?: V1AlertOptionsResolverProperties;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryName?: string;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
   metricsViewName?: string;
   renotify?: boolean;
@@ -1192,7 +1196,6 @@ export interface V1AlertOptions {
   slackChannels?: string[];
   slackWebhooks?: string[];
   webOpenState?: string;
-  dataProps?: V1AlertOptionsDataProps;
 }
 
 export interface V1AddUsergroupMemberUserResponse {

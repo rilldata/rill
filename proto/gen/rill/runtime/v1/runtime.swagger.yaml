@@ -3001,6 +3001,10 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
       queryForUserId:
         type: string
       queryForUserEmail:
@@ -3027,10 +3031,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-      resolver:
-        type: string
-      resolverProperties:
-        type: object
   v1AlertState:
     type: object
     properties:

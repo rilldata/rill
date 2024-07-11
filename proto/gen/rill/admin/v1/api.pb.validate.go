@@ -29930,6 +29930,37 @@ func (m *AlertOptions) validate(all bool) error {
 
 	// no validation rules for IntervalDuration
 
+	// no validation rules for Resolver
+
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertOptionsValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertOptionsValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertOptionsValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for QueryName
 
 	// no validation rules for QueryArgsJson
@@ -29941,35 +29972,6 @@ func (m *AlertOptions) validate(all bool) error {
 	// no validation rules for RenotifyAfterSeconds
 
 	// no validation rules for WebOpenState
-
-	if all {
-		switch v := interface{}(m.GetDataProps()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AlertOptionsValidationError{
-					field:  "DataProps",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, AlertOptionsValidationError{
-					field:  "DataProps",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetDataProps()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return AlertOptionsValidationError{
-				field:  "DataProps",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
 
 	if len(errors) > 0 {
 		return AlertOptionsMultiError(errors)

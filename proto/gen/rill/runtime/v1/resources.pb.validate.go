@@ -5186,6 +5186,37 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
+	// no validation rules for Resolver
+
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertSpecValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertSpecValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertSpecValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for NotifyOnRecover
 
 	// no validation rules for NotifyOnFail
@@ -5231,37 +5262,6 @@ func (m *AlertSpec) validate(all bool) error {
 	}
 
 	// no validation rules for Annotations
-
-	// no validation rules for Resolver
-
-	if all {
-		switch v := interface{}(m.GetResolverProperties()).(type) {
-		case interface{ ValidateAll() error }:
-			if err := v.ValidateAll(); err != nil {
-				errors = append(errors, AlertSpecValidationError{
-					field:  "ResolverProperties",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		case interface{ Validate() error }:
-			if err := v.Validate(); err != nil {
-				errors = append(errors, AlertSpecValidationError{
-					field:  "ResolverProperties",
-					reason: "embedded message failed validation",
-					cause:  err,
-				})
-			}
-		}
-	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
-		if err := v.Validate(); err != nil {
-			return AlertSpecValidationError{
-				field:  "ResolverProperties",
-				reason: "embedded message failed validation",
-				cause:  err,
-			}
-		}
-	}
 
 	switch v := m.QueryFor.(type) {
 	case *AlertSpec_QueryForUserId:
