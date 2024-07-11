@@ -4,7 +4,6 @@
   import {
     createAdminServiceDenyProjectAccess,
     createAdminServiceGetProjectAccessRequest,
-    type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { parseAccessRequestError } from "@rilldata/web-admin/features/access-request/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
