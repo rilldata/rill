@@ -183,6 +183,7 @@ type DB interface {
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
+	FindOrganizationMemberWithManageUsersRole(ctx context.Context, orgID string) ([]*MemberUser, error)
 
 	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*MemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
@@ -215,9 +216,8 @@ type DB interface {
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 
-	FindProjectAccessRequests(ctx context.Context, projectID, afterEmail string, limit int) ([]*ProjectAccessRequest, error)
-	FindProjectAccessRequestsByEmail(ctx context.Context, userEmail string) ([]*ProjectAccessRequest, error)
-	FindProjectAccessRequest(ctx context.Context, projectID, userEmail string) (*ProjectAccessRequest, error)
+	FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*ProjectAccessRequest, error)
+	FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*ProjectAccessRequest, error)
 	FindProjectAccessRequestByID(ctx context.Context, id string) (*ProjectAccessRequest, error)
 	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
 	DeleteProjectAccessRequest(ctx context.Context, id string) error
@@ -826,13 +826,13 @@ type InsertProjectInviteOptions struct {
 
 type ProjectAccessRequest struct {
 	ID        string
-	Email     string
+	UserID    string    `db:"user_id"`
 	ProjectID string    `db:"project_id"`
 	CreatedOn time.Time `db:"created_on"`
 }
 
 type InsertProjectAccessRequestOptions struct {
-	Email     string `validate:"email"`
+	UserID    string `validate:"required"`
 	ProjectID string `validate:"required"`
 }
 

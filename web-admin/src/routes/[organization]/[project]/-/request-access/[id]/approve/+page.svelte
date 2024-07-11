@@ -3,14 +3,14 @@
   import { page } from "$app/stores";
   import {
     createAdminServiceApproveProjectAccess,
-    createAdminServiceGetProjectAccess,
-    type RpcStatus,
+    createAdminServiceGetProjectAccessRequest,
   } from "@rilldata/web-admin/client";
   import { parseAccessRequestError } from "@rilldata/web-admin/features/access-request/utils";
   import { Button } from "@rilldata/web-common/components/button";
   import AccessRequestContainer from "@rilldata/web-admin/features/access-request/AccessRequestContainer.svelte";
   import CheckCircle from "@rilldata/web-common/components/icons/CheckCircle.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { AxiosError } from "axios";
 
   $: organization = $page.params.organization;
@@ -20,28 +20,52 @@
   let requested = false;
   let role = "viewer";
   $: approveAccess = createAdminServiceApproveProjectAccess();
-  function onApprove() {
+  $: requestAccess = createAdminServiceGetProjectAccessRequest(id);
+
+  async function onApprove() {
     requested = true;
-    void $approveAccess.mutateAsync({
-      organization,
-      project,
-      id,
-      data: {
-        role,
+    try {
+      await $approveAccess.mutateAsync({
+        id,
+        data: {
+          role,
+        },
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `${$requestAccess.data.email} has been added to ${project} as a ${role}`,
+        options: {
+          persisted: true,
+        },
+      });
+    } catch (e) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: parseAccessRequestError(
+          project,
+          $requestAccess.error as unknown as AxiosError,
+        ),
+        options: {
+          persisted: true,
+        },
+      });
+    }
+    return goto(`/${organization}/${project}`);
+  }
+
+  $: if ($requestAccess.error) {
+    eventBus.emit("notification", {
+      type: "error",
+      message: parseAccessRequestError(
+        project,
+        $requestAccess.error as unknown as AxiosError,
+      ),
+      options: {
+        persisted: true,
       },
     });
     goto(`/${organization}/${project}`);
   }
-
-  $: error = parseAccessRequestError(
-    $approveAccess.error as unknown as AxiosError<RpcStatus>,
-  );
-
-  $: requestAccess = createAdminServiceGetProjectAccess(
-    organization,
-    project,
-    id,
-  );
 </script>
 
 <AccessRequestContainer>
@@ -70,10 +94,5 @@
     >
       Grant access
     </Button>
-  {/if}
-  {#if error}
-    <div class="text-slate-500 text-base">
-      {error}
-    </div>
   {/if}
 </AccessRequestContainer>

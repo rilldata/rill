@@ -1,15 +1,16 @@
 <script lang="ts">
+  import { goto } from "$app/navigation";
   import { page } from "$app/stores";
   import {
     createAdminServiceDenyProjectAccess,
-    createAdminServiceGetProjectAccess,
+    createAdminServiceGetProjectAccessRequest,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { parseAccessRequestError } from "@rilldata/web-admin/features/access-request/utils";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import AccessRequestContainer from "@rilldata/web-admin/features/access-request/AccessRequestContainer.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import type { AxiosError } from "axios";
 
   $: organization = $page.params.organization;
@@ -18,42 +19,64 @@
 
   let requested = false;
   $: denyAccess = createAdminServiceDenyProjectAccess();
-  $: if (organization && project && id && !requested) {
-    requested = true;
-    void $denyAccess.mutateAsync({
-      organization,
-      project,
-      id,
-      data: {},
-    });
-  }
-  $: error = parseAccessRequestError(
-    $denyAccess.error as unknown as AxiosError<RpcStatus>,
-  );
+  $: requestAccess = createAdminServiceGetProjectAccessRequest(id);
 
-  $: requestAccess = createAdminServiceGetProjectAccess(
-    organization,
-    project,
-    id,
-  );
+  async function onDeny() {
+    if ($requestAccess.error) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: parseAccessRequestError(
+          project,
+          $requestAccess.error as unknown as AxiosError,
+        ),
+        options: {
+          persisted: true,
+        },
+      });
+      return goto(`/${organization}/${project}`);
+    }
+
+    requested = true;
+    try {
+      await $denyAccess.mutateAsync({
+        id,
+        data: {},
+      });
+      eventBus.emit("notification", {
+        type: "success",
+        message: `${$requestAccess.data.email} has been denied access to ${project}`,
+      });
+    } catch (e) {
+      eventBus.emit("notification", {
+        type: "error",
+        message: parseAccessRequestError(
+          project,
+          $requestAccess.error as unknown as AxiosError,
+        ),
+        options: {
+          persisted: true,
+        },
+      });
+    }
+    return goto(`/${organization}/${project}`);
+  }
+  $: if (
+    organization &&
+    project &&
+    id &&
+    !$requestAccess.isLoading &&
+    !requested
+  ) {
+    onDeny();
+  }
 </script>
 
 <AccessRequestContainer>
-  {#if $denyAccess.isLoading}
-    <div class="h-36 mt-10">
-      <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
+  {#if $denyAccess.isLoading && $requestAccess.data}
+    <Spinner status={EntityStatus.Running} size="2rem" duration={725} />
+    <div>
+      Denying <b>{$requestAccess.data.email}</b> access to
+      <b>{project}</b>
     </div>
-  {:else if error}
-    <div class="text-slate-500 text-base">
-      {error}
-    </div>
-  {:else}
-    <CrossIcon size="30px" className="text-red-500" />
-    <h2 class="text-lg font-normal">Access denied</h2>
-    {#if $requestAccess.data}
-      <div class="text-slate-500 text-base">
-        <b>{$requestAccess.data.email}</b> denied access to <b>{project}</b>.
-      </div>
-    {/if}
   {/if}
 </AccessRequestContainer>

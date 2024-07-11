@@ -139,6 +139,14 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       }
     }
 
+    // do not block on request access failures
+    if (
+      isProjectRequestAccessPage(get(page)) &&
+      error.response?.status !== 403
+    ) {
+      return;
+    }
+
     // Create a pretty message for the error page
     const errorStoreState = createErrorStoreStateFromAxiosError(error);
 

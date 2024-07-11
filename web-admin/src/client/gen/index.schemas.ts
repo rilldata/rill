@@ -916,7 +916,7 @@ export interface V1GetProjectByIDResponse {
   project?: V1Project;
 }
 
-export interface V1GetProjectAccessResponse {
+export interface V1GetProjectAccessRequestResponse {
   email?: string;
 }
 
@@ -1238,7 +1238,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

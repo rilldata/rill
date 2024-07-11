@@ -1320,6 +1320,21 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 	return count, nil
 }
 
+func (c *connection) FindOrganizationMemberWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
+	var res []*database.MemberUser
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+			JOIN users_orgs_roles uor ON u.id = uor.user_id
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id=$1 AND r.manage_org_members=true
+		ORDER BY lower(u.email)
+	`, orgID)
+	if err != nil {
+		return nil, parseErr("org members", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -1582,32 +1597,23 @@ func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID str
 	return checkUpdateRow("project invite", res, err)
 }
 
-func (c *connection) FindProjectAccessRequests(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.ProjectAccessRequest, error) {
+func (c *connection) FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*database.ProjectAccessRequest, error) {
 	var res []*database.ProjectAccessRequest
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-			SELECT par.email
-			FROM project_access_request par
-			WHERE par.project_id = $1 AND lower(par.email) > lower($2)
+			SELECT par.user_id
+			FROM project_access_requests par
+			WHERE par.project_id = $1 AND par.user_id > lower($2)
 			ORDER BY lower(par.email) LIMIT $3
-	`, projectID, afterEmail, limit)
+	`, projectID, afterID, limit)
 	if err != nil {
 		return nil, parseErr("project access request", err)
 	}
 	return res, nil
 }
 
-func (c *connection) FindProjectAccessRequestsByEmail(ctx context.Context, userEmail string) ([]*database.ProjectAccessRequest, error) {
-	var res []*database.ProjectAccessRequest
-	err := c.getDB(ctx).SelectContext(ctx, &res, "SELECT * FROM project_access_request WHERE lower(email) = lower($1)", userEmail)
-	if err != nil {
-		return nil, parseErr("project access request", err)
-	}
-	return res, nil
-}
-
-func (c *connection) FindProjectAccessRequest(ctx context.Context, projectID, userEmail string) (*database.ProjectAccessRequest, error) {
+func (c *connection) FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*database.ProjectAccessRequest, error) {
 	res := &database.ProjectAccessRequest{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_request WHERE lower(email) = lower($1) AND project_id = $2", userEmail, projectID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_requests WHERE user_id = $1 AND project_id = $2", userID, projectID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project access request", err)
 	}
@@ -1616,7 +1622,7 @@ func (c *connection) FindProjectAccessRequest(ctx context.Context, projectID, us
 
 func (c *connection) FindProjectAccessRequestByID(ctx context.Context, id string) (*database.ProjectAccessRequest, error) {
 	res := &database.ProjectAccessRequest{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_request WHERE id=$1", id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_requests WHERE id=$1", id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project access request", err)
 	}
@@ -1629,7 +1635,7 @@ func (c *connection) InsertProjectAccessRequest(ctx context.Context, opts *datab
 	}
 
 	res := &database.ProjectAccessRequest{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO project_access_request (email, project_id) VALUES ($1, $2) RETURNING *", opts.Email, opts.ProjectID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO project_access_requests (user_id, project_id) VALUES ($1, $2) RETURNING *", opts.UserID, opts.ProjectID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("project access request", err)
 	}
@@ -1637,7 +1643,7 @@ func (c *connection) InsertProjectAccessRequest(ctx context.Context, opts *datab
 }
 
 func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) error {
-	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM project_access_request WHERE id = $1", id)
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM project_access_requests WHERE id = $1", id)
 	return checkDeleteRow("project access request", res, err)
 }
 

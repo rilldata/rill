@@ -1005,7 +1005,7 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	}
 	// TODO: quotas
 
-	existing, err := s.admin.DB.FindProjectAccessRequest(ctx, proj.ID, user.Email)
+	existing, err := s.admin.DB.FindProjectAccessRequest(ctx, proj.ID, user.ID)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
 		return nil, err
 	}
@@ -1014,19 +1014,14 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	}
 
 	accessReq, err := s.admin.DB.InsertProjectAccessRequest(ctx, &database.InsertProjectAccessRequestOptions{
-		Email:     user.Email,
+		UserID:    user.ID,
 		ProjectID: proj.ID,
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	adminRole, err := s.admin.DB.FindOrganizationRole(ctx, "admin")
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	admins, err := s.admin.DB.FindOrganizationMemberUsersByRole(ctx, proj.OrganizationID, adminRole.ID)
+	admins, err := s.admin.DB.FindOrganizationMemberWithManageUsersRole(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -1059,14 +1054,17 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	return &adminv1.RequestProjectAccessResponse{}, nil
 }
 
-func (s *Server) GetProjectAccess(ctx context.Context, req *adminv1.GetProjectAccessRequest) (*adminv1.GetProjectAccessResponse, error) {
+func (s *Server) GetProjectAccessRequest(ctx context.Context, req *adminv1.GetProjectAccessRequestRequest) (*adminv1.GetProjectAccessRequestResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
-		attribute.String("args.project", req.Project),
 		attribute.String("args.id", req.Id),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -1077,21 +1075,25 @@ func (s *Server) GetProjectAccess(ctx context.Context, req *adminv1.GetProjectAc
 		return nil, status.Error(codes.PermissionDenied, "not allowed to view project access request")
 	}
 
+	user, err := s.admin.DB.FindUser(ctx, accessReq.UserID)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	return &adminv1.GetProjectAccessRequestResponse{Email: user.Email}, nil
+}
+
+func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveProjectAccessRequest) (*adminv1.ApproveProjectAccessResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.id", req.Id),
+	)
+
 	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
 	if err != nil {
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
-	return &adminv1.GetProjectAccessResponse{Email: accessReq.Email}, nil
-}
-
-func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveProjectAccessRequest) (*adminv1.ApproveProjectAccessResponse, error) {
-	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
-		attribute.String("args.project", req.Project),
-	)
-
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -1101,12 +1103,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
 	}
 
-	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
-	if err != nil {
-		return nil, status.Error(codes.NotFound, err.Error())
-	}
-
-	user, err := s.admin.DB.FindUserByEmail(ctx, accessReq.Email)
+	user, err := s.admin.DB.FindUser(ctx, accessReq.UserID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -1135,7 +1132,7 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	}
 
 	err = s.admin.Email.SendProjectAccessGranted(&email.ProjectAccessGranted{
-		ToEmail:     accessReq.Email,
+		ToEmail:     user.Email,
 		ToName:      user.DisplayName,
 		FrontendURL: s.opts.FrontendURL,
 		OrgName:     org.Name,
@@ -1150,11 +1147,15 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 
 func (s *Server) DenyProjectAccess(ctx context.Context, req *adminv1.DenyProjectAccessRequest) (*adminv1.DenyProjectAccessResponse, error) {
 	observability.AddRequestAttributes(ctx,
-		attribute.String("args.org", req.Organization),
-		attribute.String("args.project", req.Project),
+		attribute.String("args.id", req.Id),
 	)
 
-	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -1164,11 +1165,7 @@ func (s *Server) DenyProjectAccess(ctx context.Context, req *adminv1.DenyProject
 		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
 	}
 
-	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	user, err := s.admin.DB.FindUserByEmail(ctx, accessReq.Email)
+	user, err := s.admin.DB.FindUser(ctx, accessReq.UserID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -1184,7 +1181,7 @@ func (s *Server) DenyProjectAccess(ctx context.Context, req *adminv1.DenyProject
 	}
 
 	err = s.admin.Email.SendProjectAccessRejected(&email.ProjectAccessRejected{
-		ToEmail:     accessReq.Email,
+		ToEmail:     user.Email,
 		ToName:      user.DisplayName,
 		OrgName:     org.Name,
 		ProjectName: proj.Name,

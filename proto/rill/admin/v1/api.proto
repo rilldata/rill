@@ -693,25 +693,25 @@ service AdminService {
 
   rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/access-request",
+      post: "/v1/organizations/{organization}/projects/{project}/request-access",
       body: "*"
     };
   }
 
-  rpc GetProjectAccess(GetProjectAccessRequest) returns (GetProjectAccessResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/access-request/{id}"};
+  rpc GetProjectAccessRequest(GetProjectAccessRequestRequest) returns (GetProjectAccessRequestResponse) {
+    option (google.api.http) = {get: "/v1/project-access-request/{id}"};
   }
 
   rpc ApproveProjectAccess(ApproveProjectAccessRequest) returns (ApproveProjectAccessResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/approve",
+      post: "/v1/project-access-request/{id}/approve",
       body: "*"
     };
   }
 
   rpc DenyProjectAccess(DenyProjectAccessRequest) returns (DenyProjectAccessResponse) {
     option (google.api.http) = {
-      post: "/v1/organizations/{organization}/projects/{project}/access-request/{id}/deny",
+      post: "/v1/project-access-request/{id}/deny",
       body: "*"
     };
   }
@@ -1824,29 +1824,23 @@ message RequestProjectAccessRequest {
 
 message RequestProjectAccessResponse {}
 
-message GetProjectAccessRequest {
-  string organization = 1;
-  string project = 2;
-  string id = 3;
+message GetProjectAccessRequestRequest {
+  string id = 1;
 }
 
-message GetProjectAccessResponse {
+message GetProjectAccessRequestResponse {
   string email = 1;
 }
 
 message ApproveProjectAccessRequest {
-  string organization = 1;
-  string project = 2;
-  string id = 3;
-  string role = 4;
+  string id = 1;
+  string role = 2;
 }
 
 message ApproveProjectAccessResponse {}
 
 message DenyProjectAccessRequest {
-  string organization = 1;
-  string project = 2;
-  string id = 3;
+  string id = 1;
 }
 
 message DenyProjectAccessResponse {}
