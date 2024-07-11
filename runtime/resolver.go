@@ -156,19 +156,26 @@ type ResolveResult struct {
 
 // Resolve resolves a query using the given options.
 func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveResult, error) {
+	// Prepare options
+	claims := opts.Claims
+	if claims == nil {
+		claims = &SecurityClaims{SkipChecks: true}
+	}
+	resolverOpts := &ResolverOptions{
+		Runtime:    r,
+		InstanceID: opts.InstanceID,
+		Properties: opts.ResolverProperties,
+		Args:       opts.Args,
+		Claims:     claims,
+		ForExport:  false,
+	}
+
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
 		return ResolveResult{}, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
-	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:    r,
-		InstanceID: opts.InstanceID,
-		Properties: opts.ResolverProperties,
-		Args:       opts.Args,
-		Claims:     opts.Claims,
-		ForExport:  false,
-	})
+	resolver, err := initializer(ctx, resolverOpts)
 	if err != nil {
 		return ResolveResult{}, err
 	}
