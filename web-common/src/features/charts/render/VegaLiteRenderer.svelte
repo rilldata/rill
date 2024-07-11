@@ -1,10 +1,7 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
-  import {
-    JWT,
-    runtime,
-  } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { get } from "svelte/store";
   import {
     SignalListeners,
