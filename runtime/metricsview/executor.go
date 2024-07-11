@@ -160,7 +160,8 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, runtime.ErrForbidden
 	}
 
-	if err := e.rewriteQueryLimit(qry); err != nil {
+	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
+	if err != nil {
 		return nil, false, err
 	}
 
@@ -182,11 +183,13 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, err
 	}
 
-	if err := e.rewriteApproximateComparisons(ast); err != nil {
+	e.rewriteApproxComparisons(ast)
+
+	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return nil, false, err
 	}
 
-	if err := e.rewriteDruidJoins(ast); err != nil {
+	if err := e.rewriteDruidGroups(ast); err != nil {
 		return nil, false, err
 	}
 
@@ -255,9 +258,8 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		})
 	}
 
-	limitCap := e.instanceCfg.InteractiveSQLRowLimit
-	if limitCap > 0 {
-		res.SetCap(limitCap)
+	if rowsCap > 0 {
+		res.SetCap(rowsCap)
 	}
 
 	// TODO: Get from OLAP instead of hardcoding
@@ -291,11 +293,13 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	if err := e.rewriteApproximateComparisons(ast); err != nil {
+	e.rewriteApproxComparisons(ast)
+
+	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return "", err
 	}
 
-	if err := e.rewriteDruidJoins(ast); err != nil {
+	if err := e.rewriteDruidGroups(ast); err != nil {
 		return "", err
 	}
 
