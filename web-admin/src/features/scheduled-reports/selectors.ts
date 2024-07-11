@@ -14,7 +14,7 @@ export function useReports(instanceId: string, enabled = true) {
     },
     {
       query: {
-        enabled,
+        enabled: enabled && !!instanceId,
       },
     },
   );

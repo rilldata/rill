@@ -1,3 +1,3 @@
-ALTER TABLE orgs ADD COLUMN payment_customer_id TEXT NOT NULL DEFAULT '';
-
-CREATE UNIQUE INDEX orgs_payment_customer_id_idx ON orgs (payment_customer_id) WHERE payment_customer_id <> '';
+ALTER TABLE usergroups ADD COLUMN description TEXT NOT NULL DEFAULT '';
+ALTER TABLE usergroups ADD COLUMN created_on TIMESTAMPTZ DEFAULT now() NOT NULL;
+ALTER TABLE usergroups ADD COLUMN updated_on TIMESTAMPTZ DEFAULT now() NOT NULL;
