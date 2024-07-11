@@ -207,26 +207,27 @@ func (f *fileIterator) Next() ([]string, error) {
 	// mutex to protect file writes
 	var mu sync.Mutex
 	batchesLeft := len(f.batches)
+	start := time.Now()
 
 	for _, batch := range f.batches {
 		b := batch
 		errGrp.Go(func() error {
-			fetchStart := time.Now()
 			records, err := b.Fetch()
 			if err != nil {
 				return err
 			}
-			f.logger.Debug(
-				"fetched an arrow batch",
-				zap.Duration("duration", time.Since(fetchStart)),
-				zap.Int("row_count", b.GetRowCount()),
-			)
 			mu.Lock()
 			defer mu.Unlock()
-			writeStart := time.Now()
+
 			for _, rec := range *records {
 				if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 					writer.NewBufferedRowGroup()
+					f.logger.Debug(
+						"starting writing to new parquet row group",
+						zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
+						zap.Int("total_records", int(f.totalRecords)),
+						zap.Duration("elapsed", time.Since(start)),
+					)
 				}
 				if err := writer.WriteBuffered(rec); err != nil {
 					return err
@@ -239,12 +240,6 @@ func (f *fileIterator) Next() ([]string, error) {
 				}
 			}
 			batchesLeft--
-			f.logger.Debug(
-				"wrote an arrow batch to a parquet file",
-				zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
-				zap.Int("row_count", b.GetRowCount()),
-				zap.Duration("write_duration", time.Since(writeStart)),
-			)
 			f.totalRecords += int64(b.GetRowCount())
 			return nil
 		})

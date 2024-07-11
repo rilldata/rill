@@ -14,3 +14,8 @@ export interface NotificationMessage {
 interface NotificationOptions {
   persisted?: boolean;
 }
+
+export interface BannerMessage {
+  message: string;
+  includesHtml?: boolean;
+}

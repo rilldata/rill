@@ -1,7 +1,6 @@
 <script lang="ts">
   import { WithTween } from "@rilldata/web-common/components/data-graphic/functional-components";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
-  import CrossIcon from "@rilldata/web-common/components/icons/CrossIcon.svelte";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -27,6 +26,7 @@
   export let comparisonValue: number | undefined = undefined;
   export let showComparison = false;
   export let status: EntityStatus;
+  export let errorMessage: string | undefined = undefined;
   export let withTimeseries = true;
   export let isMeasureExpanded = false;
 
@@ -182,7 +182,13 @@
           </div>
         {/if}
       {:else if status === EntityStatus.Error}
-        <CrossIcon />
+        <div class="text-xs pt-1">
+          {#if errorMessage}
+            Error: {errorMessage}
+          {:else}
+            Error fetching totals data
+          {/if}
+        </div>
       {:else if status === EntityStatus.Running}
         <div
           class="absolute p-2"

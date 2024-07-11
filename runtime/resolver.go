@@ -117,13 +117,12 @@ type ResolverExportOptions struct {
 
 // ResolverOptions are the options passed to a resolver initializer.
 type ResolverOptions struct {
-	Runtime        *Runtime
-	InstanceID     string
-	Properties     map[string]any
-	Args           map[string]any
-	UserAttributes map[string]any
-	Security       *runtimev1.MetricsViewSpec_SecurityV2
-	ForExport      bool
+	Runtime    *Runtime
+	InstanceID string
+	Properties map[string]any
+	Args       map[string]any
+	Claims     *SecurityClaims
+	ForExport  bool
 }
 
 // ResolverInitializer is a function that initializes a resolver.
@@ -146,7 +145,7 @@ type ResolveOptions struct {
 	Resolver           string
 	ResolverProperties map[string]any
 	Args               map[string]any
-	UserAttributes     map[string]any
+	Claims             *SecurityClaims
 }
 
 // ResolveResult is subset of ResolverResult that is cached
@@ -157,18 +156,24 @@ type ResolveResult struct {
 
 // Resolve resolves a query using the given options.
 func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveResult, error) {
+	// Since claims don't really make sense for some resolver use cases, it's easy to forget to set them.
+	// Adding an early panic to catch this.
+	if opts.Claims == nil {
+		panic("received nil claims")
+	}
+
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {
 		return ResolveResult{}, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
 	resolver, err := initializer(ctx, &ResolverOptions{
-		Runtime:        r,
-		InstanceID:     opts.InstanceID,
-		Properties:     opts.ResolverProperties,
-		Args:           opts.Args,
-		UserAttributes: opts.UserAttributes,
-		ForExport:      false,
+		Runtime:    r,
+		InstanceID: opts.InstanceID,
+		Properties: opts.ResolverProperties,
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  false,
 	})
 	if err != nil {
 		return ResolveResult{}, err

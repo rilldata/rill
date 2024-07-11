@@ -95,6 +95,13 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 		return true, fmt.Errorf("Unauthorized request")
 	}
 
+	// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
+	// ref - https://druid.apache.org/docs/latest/api-reference/sql-api/#responses
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusBadRequest && resp.StatusCode != http.StatusInternalServerError {
+		resp.Body.Close()
+		return nil, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
+	}
+
 	dec := json.NewDecoder(resp.Body)
 
 	var obj any

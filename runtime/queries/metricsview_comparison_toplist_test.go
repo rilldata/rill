@@ -91,7 +91,8 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 				Desc:     false,
 			},
 		},
-		Limit: 10,
+		Limit:          10,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -132,7 +133,8 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 				Desc:     false,
 			},
 		},
-		Limit: 10,
+		Limit:          10,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -282,7 +284,8 @@ func TestMetricsViewsComparison_dim_order(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -327,7 +330,8 @@ func TestMetricsViewsComparison_dim_order_no_sort_order(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -369,7 +373,8 @@ func TestMetricsViewsComparison_measure_order(t *testing.T) {
 				Desc:     true,
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -430,6 +435,7 @@ func TestMetricsViewsComparison_measure_filters(t *testing.T) {
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -503,6 +509,7 @@ func TestMetricsViewsComparison_measure_filters_with_compare_no_alias(t *testing
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -563,7 +570,8 @@ func TestMetricsViewsComparison_measure_filters_with_compare_base_measure(t *tes
 				},
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -636,7 +644,8 @@ func TestMetricsViewsComparison_measure_filters_with_compare_aliases(t *testing.
 				Alias: "measure_1_delta",
 			},
 		},
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -680,7 +689,8 @@ func TestMetricsViewsComparison_export_xlsx(t *testing.T) {
 				Desc:     false,
 			},
 		},
-		Limit: 10,
+		Limit:          10,
+		SecurityClaims: testClaims(),
 	}
 
 	var buf bytes.Buffer
@@ -733,7 +743,8 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 				Desc:     false,
 			},
 		},
-		Limit: 10,
+		Limit:          10,
+		SecurityClaims: testClaims(),
 	}
 
 	var buf bytes.Buffer
@@ -788,6 +799,7 @@ func TestServer_MetricsViewTimeseries_export_csv(t *testing.T) {
 // 			expressionpb.IdentIn("id", expressionpb.Number(0)),
 // 		),
 // 		Limit: 250,
+//      SecurityClaims: testClaims(),
 // 	}
 
 // 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -825,7 +837,8 @@ func TestMetricsViewsComparison_comparsion_no_dim_values(t *testing.T) {
 		Where: expressionpb.AndAll(
 			expressionpb.IdentIn("pub", expressionpb.String("Yahoo1")),
 		),
-		Limit: 250,
+		Limit:          250,
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -888,6 +901,7 @@ func TestMetricsViewsComparison_comparsion_having_same_name(t *testing.T) {
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -950,6 +964,7 @@ func TestMetricsViewsComparison_general_toplist_having_same_name(t *testing.T) {
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)

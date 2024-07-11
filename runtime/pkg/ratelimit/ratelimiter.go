@@ -12,15 +12,23 @@ import (
 // Limiter returns an error if quota per key is exceeded.
 type Limiter interface {
 	Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error
+	Ping(ctx context.Context) error
 }
 
 // Redis offers rate limiting functionality using a Redis-based rate limiter.
 type Redis struct {
 	*redis_rate.Limiter
+	ping func(ctx context.Context) error
 }
 
 func NewRedis(client *redis.Client) *Redis {
-	return &Redis{Limiter: redis_rate.NewLimiter(client)}
+	return &Redis{
+		Limiter: redis_rate.NewLimiter(client),
+		ping: func(ctx context.Context) error {
+			status := client.Ping(ctx)
+			return status.Err()
+		},
+	}
 }
 
 func (l *Redis) Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error {
@@ -44,6 +52,10 @@ func (l *Redis) Limit(ctx context.Context, limitKey string, limit redis_rate.Lim
 	return nil
 }
 
+func (l *Redis) Ping(ctx context.Context) error {
+	return l.ping(ctx)
+}
+
 // Noop performs no rate limiting.
 // This can be useful in local/testing environments or when rate limiting is not required.
 type Noop struct{}
@@ -53,6 +65,10 @@ func NewNoop() *Noop {
 }
 
 func (n Noop) Limit(ctx context.Context, limitKey string, limit redis_rate.Limit) error {
+	return nil
+}
+
+func (n Noop) Ping(ctx context.Context) error {
 	return nil
 }
 

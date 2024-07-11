@@ -8,6 +8,7 @@ import (
 	"time"
 
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/expressionpb"
 	"github.com/rilldata/rill/runtime/queries"
 	"github.com/rilldata/rill/runtime/testruntime"
@@ -83,6 +84,10 @@ func Ignore_TestMetricViewAggregationAgainstClickHouse(t *testing.T) {
 	})
 }
 
+func testClaims() *runtime.SecurityClaims {
+	return &runtime.SecurityClaims{SkipChecks: true}
+}
+
 func TestMetricsViewsAggregation(t *testing.T) {
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
@@ -112,8 +117,8 @@ func TestMetricsViewsAggregation(t *testing.T) {
 				Name: "timestamp",
 			},
 		},
-
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -179,8 +184,9 @@ func TestMetricsViewsAggregation_export_day(t *testing.T) {
 			},
 		},
 
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -222,8 +228,9 @@ func TestMetricsViewsAggregation_export_hour(t *testing.T) {
 			},
 		},
 
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -263,6 +270,7 @@ func TestMetricsViewsAggregation_no_limit(t *testing.T) {
 				Name: "timestamp",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -296,7 +304,8 @@ func TestMetricsViewsAggregation_no_limit_pivot(t *testing.T) {
 				Name: "pub",
 			},
 		},
-		PivotOn: []string{"timestamp"},
+		PivotOn:        []string{"timestamp"},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -334,7 +343,8 @@ func TestMetricsViewsAggregation_pivot_having_same_name(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -386,7 +396,8 @@ func TestMetricsViewsAggregation_pivot(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -443,8 +454,9 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns_limit_exceed
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -485,8 +497,9 @@ func TestMetricsViewsAggregation_pivot_export_labels_2_time_columns(t *testing.T
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -533,8 +546,9 @@ func TestMetricsViewsAggregation_pivot_export_labels(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -586,8 +600,9 @@ func TestMetricsViewsAggregation_pivot_export_nolabel(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -639,8 +654,9 @@ func TestMetricsViewsAggregation_pivot_export_nolabel_measure(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -695,7 +711,8 @@ func TestMetricsViewsAggregation_pivot_2_measures(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -761,8 +778,9 @@ func TestMetricsViewsAggregation_pivot_2_measures_with_labels(t *testing.T) {
 		PivotOn: []string{
 			"timestamp",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -829,7 +847,8 @@ func TestMetricsViewsAggregation_pivot_2_measures_and_filter(t *testing.T) {
 				},
 			},
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -898,8 +917,9 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure_labels(t *testing.T) {
 			"timestamp",
 			"space_label",
 		},
-		Limit:     &limit,
-		Exporting: true,
+		Limit:          &limit,
+		Exporting:      true,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -955,7 +975,8 @@ func TestMetricsViewsAggregation_pivot_dim_and_measure(t *testing.T) {
 			"timestamp",
 			"pub",
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1322,6 +1343,7 @@ func TestMetricsViewAggregation_measure_filters(t *testing.T) {
 				},
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -1362,8 +1384,8 @@ func TestMetricsViewsAggregation_timezone(t *testing.T) {
 				Name: "timestamp",
 			},
 		},
-
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1413,6 +1435,7 @@ func TestMetricsViewsAggregation_filter(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1502,6 +1525,7 @@ func TestMetricsViewsAggregation_filter_with_timestamp(t *testing.T) {
 				Name: "time_year",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1577,6 +1601,7 @@ func TestMetricsViewsAggregation_filter_2dims(t *testing.T) {
 				Name: "dom",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1669,6 +1694,7 @@ func TestMetricsViewsAggregation_having_gt(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1722,6 +1748,7 @@ func TestMetricsViewsAggregation_having_same_name(t *testing.T) {
 				Desc: true,
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1774,6 +1801,7 @@ func TestMetricsViewsAggregation_having(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1825,6 +1853,7 @@ func TestMetricsViewsAggregation_where(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1876,6 +1905,7 @@ func TestMetricsViewsAggregation_filter_having_measure(t *testing.T) {
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -1980,6 +2010,7 @@ func TestMetricsViewsAggregation_filter_with_where_and_having_measure(t *testing
 				Name: "pub",
 			},
 		},
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2093,8 +2124,8 @@ func TestMetricsViewsAggregation_2time_aggregations(t *testing.T) {
 				Name: "timestamp",
 			},
 		},
-
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2145,6 +2176,7 @@ measures:
 		Measures: []*runtimev1.MetricsViewAggregationMeasure{
 			{Name: "count"},
 		},
+		SecurityClaims: testClaims(),
 	}
 
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
@@ -2409,7 +2441,8 @@ func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2482,7 +2515,8 @@ func TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2549,7 +2583,8 @@ func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2636,7 +2671,6 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *
 				Name: "m1_p",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -2645,7 +2679,8 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2737,7 +2772,6 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivat
 				Name: "m1_p",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -2746,7 +2780,8 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivat
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2836,7 +2871,6 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_no_duplicates(t
 				Name: "m1_p",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -2845,7 +2879,8 @@ func TestMetricsViewsAggregation_Druid_comparison_measure_filter_no_duplicates(t
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -2927,7 +2962,6 @@ func TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t *test
 				Name: "m1_p",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -2936,7 +2970,8 @@ func TestMetricsViewsAggregation_comparison_measure_filter_no_duplicates(t *test
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3024,7 +3059,6 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 				Name: "m1_p",
 			},
 		},
-
 		TimeRange: &runtimev1.TimeRange{
 			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
@@ -3033,7 +3067,8 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_totals(t *testin
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3564,8 +3599,9 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 5, 0, 0, 0, 0, time.UTC)),
 		},
-		PivotOn: []string{"dom"},
-		Limit:   &limit,
+		PivotOn:        []string{"dom"},
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3829,7 +3865,8 @@ func TestMetricsViewsAggregation_Druid_comparison_empty_set_previous_sorted(t *t
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -3905,7 +3942,8 @@ func TestMetricsViewsAggregation_Druid_comparison_empty_set(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit: &limit,
+		Limit:          &limit,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -4215,8 +4253,9 @@ func TestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit:  &limit,
-		Offset: 1,
+		Limit:          &limit,
+		Offset:         1,
+		SecurityClaims: testClaims(),
 	}
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)
@@ -4286,8 +4325,9 @@ func TestMetricsViewsAggregation_comparison_with_offset(t *testing.T) {
 			Start: timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
 			End:   timestamppb.New(time.Date(2022, 1, 3, 0, 0, 0, 0, time.UTC)),
 		},
-		Limit:  &limit,
-		Offset: 1,
+		Limit:          &limit,
+		Offset:         1,
+		SecurityClaims: testClaims(),
 	}
 	err := q.Resolve(context.Background(), rt, instanceID, 0)
 	require.NoError(t, err)

@@ -364,7 +364,7 @@ func (s *Server) GetOrganizationBillingSubscription(ctx context.Context, req *ad
 	}, nil
 }
 
-func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {
+func (s *Server) ListOrganizationMemberUsers(ctx context.Context, req *adminv1.ListOrganizationMemberUsersRequest) (*adminv1.ListOrganizationMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 	)
@@ -395,12 +395,12 @@ func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListO
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.Member, len(members))
+	dtos := make([]*adminv1.MemberUser, len(members))
 	for i, user := range members {
-		dtos[i] = memberToPB(user)
+		dtos[i] = memberUserToPB(user)
 	}
 
-	return &adminv1.ListOrganizationMembersResponse{
+	return &adminv1.ListOrganizationMemberUsersResponse{
 		Members:       dtos,
 		NextPageToken: nextToken,
 	}, nil
@@ -449,7 +449,7 @@ func (s *Server) ListOrganizationInvites(ctx context.Context, req *adminv1.ListO
 	}, nil
 }
 
-func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrganizationMemberRequest) (*adminv1.AddOrganizationMemberResponse, error) {
+func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.AddOrganizationMemberUserRequest) (*adminv1.AddOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.role", req.Role),
@@ -522,7 +522,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		return &adminv1.AddOrganizationMemberResponse{
+		return &adminv1.AddOrganizationMemberUserResponse{
 			PendingSignup: true,
 		}, nil
 	}
@@ -538,7 +538,7 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+	err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 	if err != nil {
 		if !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -563,12 +563,12 @@ func (s *Server) AddOrganizationMember(ctx context.Context, req *adminv1.AddOrga
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddOrganizationMemberResponse{
+	return &adminv1.AddOrganizationMemberUserResponse{
 		PendingSignup: false,
 	}, nil
 }
 
-func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.RemoveOrganizationMemberRequest) (*adminv1.RemoveOrganizationMemberResponse, error) {
+func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.RemoveOrganizationMemberUserRequest) (*adminv1.RemoveOrganizationMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.Bool("args.keep_project_roles", req.KeepProjectRoles),
@@ -606,7 +606,7 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		return &adminv1.RemoveOrganizationMemberResponse{}, nil
+		return &adminv1.RemoveOrganizationMemberUserResponse{}, nil
 	}
 
 	// The caller must either have ManageOrgMembers permission or be the user being removed.
@@ -641,8 +641,8 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// delete from all user group
-	err = s.admin.DB.DeleteUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+	// delete from all user groups of the org
+	err = s.admin.DB.DeleteUsergroupsMemberUser(ctx, org.ID, user.ID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -660,10 +660,10 @@ func (s *Server) RemoveOrganizationMember(ctx context.Context, req *adminv1.Remo
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RemoveOrganizationMemberResponse{}, nil
+	return &adminv1.RemoveOrganizationMemberUserResponse{}, nil
 }
 
-func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.SetOrganizationMemberRoleRequest) (*adminv1.SetOrganizationMemberRoleResponse, error) {
+func (s *Server) SetOrganizationMemberUserRole(ctx context.Context, req *adminv1.SetOrganizationMemberUserRoleRequest) (*adminv1.SetOrganizationMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.role", req.Role),
@@ -701,7 +701,7 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return &adminv1.SetOrganizationMemberRoleResponse{}, nil
+		return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 	}
 
 	// Check if the user is the last owner
@@ -726,7 +726,7 @@ func (s *Server) SetOrganizationMemberRole(ctx context.Context, req *adminv1.Set
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.SetOrganizationMemberRoleResponse{}, nil
+	return &adminv1.SetOrganizationMemberUserRoleResponse{}, nil
 }
 
 func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrganizationRequest) (*adminv1.LeaveOrganizationResponse, error) {
@@ -776,11 +776,12 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// delete from all user group
-	err = s.admin.DB.DeleteUsergroupMember(ctx, *org.AllUsergroupID, claims.OwnerID())
+	// delete from all user groups of the org
+	err = s.admin.DB.DeleteUsergroupsMemberUser(ctx, org.ID, claims.OwnerID())
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
+
 	err = tx.Commit()
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -876,7 +877,7 @@ func (s *Server) CreateWhitelistedDomain(ctx context.Context, req *adminv1.Creat
 		}
 
 		// add to all user group
-		err = s.admin.DB.InsertUsergroupMember(ctx, *org.AllUsergroupID, user.ID)
+		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
