@@ -315,9 +315,11 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	// Open browser
 	if res.Project.FrontendUrl != "" {
 		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
-		ch.PrintfSuccess("Opening project in browser...\n")
-		time.Sleep(3 * time.Second)
-		_ = browser.Open(res.Project.FrontendUrl)
+		if ch.Interactive {
+			ch.PrintfSuccess("Opening project in browser...\n")
+			time.Sleep(3 * time.Second)
+			_ = browser.Open(res.Project.FrontendUrl)
+		}
 	}
 
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
@@ -454,9 +456,11 @@ func deployWithUploadFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	// Open browser
 	if res.Project.FrontendUrl != "" {
 		ch.PrintfSuccess("Your project can be accessed at: %s\n", res.Project.FrontendUrl)
-		ch.PrintfSuccess("Opening project in browser...\n")
-		time.Sleep(3 * time.Second)
-		_ = browser.Open(res.Project.FrontendUrl)
+		if ch.Interactive {
+			ch.PrintfSuccess("Opening project in browser...\n")
+			time.Sleep(3 * time.Second)
+			_ = browser.Open(res.Project.FrontendUrl)
+		}
 	}
 	ch.Telemetry(ctx).RecordBehavioralLegacy(activity.BehavioralEventDeploySuccess)
 	return nil
