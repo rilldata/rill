@@ -137,7 +137,7 @@ export function ISODurationToTimePreset(
 
 /* Converts a Time Range preset to a TimeRange object */
 export function convertTimeRangePreset(
-  timeRangePreset: TimeRangePreset,
+  timeRangePreset: TimeRangePreset | TimeComparisonOption,
   start: Date,
   end: Date,
   zone: string,
@@ -331,9 +331,9 @@ export function getAdjustedFetchTime(
   startTime: Date,
   endTime: Date,
   zone: string,
-  interval: V1TimeGrain,
+  interval: V1TimeGrain | undefined,
 ) {
-  if (!startTime || !endTime)
+  if (!startTime || !endTime || !interval)
     return { start: startTime?.toISOString(), end: endTime?.toISOString() };
   const offsetedStartTime = getOffset(
     startTime,

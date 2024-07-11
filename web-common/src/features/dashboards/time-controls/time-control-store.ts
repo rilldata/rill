@@ -87,7 +87,9 @@ export const timeControlStateSelector = ([
     !metricsExplorer ||
     !metricsView.data ||
     !timeRangeResponse ||
-    !timeRangeResponse.isSuccess
+    !timeRangeResponse.isSuccess ||
+    !timeRangeResponse.data.timeRangeSummary?.min ||
+    !timeRangeResponse.data.timeRangeSummary?.max
   ) {
     return {
       isFetching: metricsView.isFetching || timeRangeResponse.isRefetching,
@@ -124,7 +126,7 @@ export const timeControlStateSelector = ([
   }
 
   const comparisonTimeRangeState = calculateComparisonTimeRangePartial(
-    metricsView,
+    metricsView.data,
     metricsExplorer,
     allTimeRange,
     timeRangeState,
@@ -234,7 +236,7 @@ function calculateComparisonTimeRangePartial(
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
       metricsExplorer.selectedTimezone,
-      timeRangeState.selectedTimeRange.interval,
+      timeRangeState.selectedTimeRange?.interval,
     );
     comparisonAdjustedStart = adjustedComparisonTime.start;
     comparisonAdjustedEnd = adjustedComparisonTime.end;
@@ -248,9 +250,13 @@ function calculateComparisonTimeRangePartial(
       metricsExplorer.lastDefinedScrubRange.end,
     );
 
+    if (!timeRangeState.selectedTimeRange?.start) {
+      throw new Error("No time range");
+    }
+
     const comparisonRange = getComparionRangeForScrub(
-      timeRangeState.selectedTimeRange.start,
-      timeRangeState.selectedTimeRange.end,
+      timeRangeState.selectedTimeRange?.start,
+      timeRangeState.selectedTimeRange?.end,
       selectedComparisonTimeRange.start,
       selectedComparisonTimeRange.end,
       start,
@@ -322,14 +328,14 @@ function getTimeGrain(
 ) {
   const timeGrainOptions = getAllowedTimeGrains(timeRange.start, timeRange.end);
   const isValidTimeGrain = checkValidTimeGrain(
-    metricsExplorer.selectedTimeRange.interval,
+    metricsExplorer.selectedTimeRange?.interval,
     timeGrainOptions,
     minTimeGrain,
   );
 
-  let timeGrain: V1TimeGrain;
+  let timeGrain: V1TimeGrain | undefined;
   if (isValidTimeGrain) {
-    timeGrain = metricsExplorer.selectedTimeRange.interval;
+    timeGrain = metricsExplorer.selectedTimeRange?.interval;
   } else {
     const defaultTimeGrain = getDefaultTimeGrain(
       timeRange.start,
@@ -348,11 +354,12 @@ function getTimeGrain(
 function getComparisonTimeRange(
   metricsView: V1MetricsViewSpec,
   metricsExplorer: MetricsExplorerEntity,
-  allTimeRange: DashboardTimeControls,
-  timeRange: DashboardTimeControls,
-  comparisonTimeRange: DashboardTimeControls,
+  allTimeRange: DashboardTimeControls | undefined,
+  timeRange: DashboardTimeControls | undefined,
+  comparisonTimeRange: DashboardTimeControls | undefined,
 ) {
-  if (!comparisonTimeRange || !timeRange.name) return undefined;
+  if (!comparisonTimeRange || !timeRange || !timeRange.name || !allTimeRange)
+    return undefined;
 
   let selectedComparisonTimeRange: DashboardTimeControls | undefined =
     undefined;
@@ -371,7 +378,7 @@ function getComparisonTimeRange(
       timeRange.end,
     );
 
-    if (range.isComparisonRangeAvailable) {
+    if (range.isComparisonRangeAvailable && range.start && range.end) {
       selectedComparisonTimeRange = {
         start: range.start,
         end: range.end,
@@ -410,7 +417,12 @@ export function selectedTimeRangeSelector([
   QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>,
   MetricsExplorerEntity,
 ]) {
-  if (!metricsView.data || !timeRangeResponse.data?.timeRangeSummary) {
+  if (
+    !metricsView.data ||
+    !timeRangeResponse.data?.timeRangeSummary ||
+    !timeRangeResponse.data.timeRangeSummary.min ||
+    !timeRangeResponse.data.timeRangeSummary.max
+  ) {
     return undefined;
   }
 
