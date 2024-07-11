@@ -12,7 +12,7 @@
   const queryClient = useQueryClient();
   const stateManagers = createStateManagers({
     queryClient,
-    metricsViewName: metricsViewName,
+    metricsViewName,
     extraKeyPrefix:
       orgName && projectName ? `__${orgName}__${projectName}` : "",
   });
