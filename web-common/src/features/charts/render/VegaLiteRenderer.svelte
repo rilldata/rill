@@ -1,6 +1,8 @@
 <script lang="ts">
   import CancelCircle from "@rilldata/web-common/components/icons/CancelCircle.svelte";
   import { getRillTheme } from "@rilldata/web-common/features/charts/render/vega-config";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { get } from "svelte/store";
   import {
     SignalListeners,
     VegaLite,
@@ -23,6 +25,7 @@
   export let viewVL: View;
 
   let contentRect = new DOMRect(0, 0, 0, 0);
+  let jwt = get(runtime).jwt;
 
   $: width = contentRect.width;
   $: height = contentRect.height * 0.95 - 80;
@@ -41,6 +44,17 @@
     width: customDashboard ? width : undefined,
     expressionFunctions,
     height: chartView || !customDashboard ? undefined : height,
+    loader: {
+      baseURL: `${get(runtime).host}/v1/instances/${get(runtime).instanceId}/assets/`,
+      ...(jwt &&
+        jwt.token && {
+          http: {
+            headers: {
+              Authorization: `Bearer ${jwt.token}`,
+            },
+          },
+        }),
+    },
   };
 
   const onError = (e: CustomEvent<{ error: Error }>) => {
