@@ -22,13 +22,13 @@ import (
 
 var (
 	// non-retryable HTTP errors
-	tooManyRedirects = regexp.MustCompile(`stopped after \d+ redirects\z`)
-	invalidProtocol  = regexp.MustCompile(`unsupported protocol scheme`)
-	TLSCert          = regexp.MustCompile(`certificate is not trusted`)
+	errTooManyRedirects = regexp.MustCompile(`stopped after \d+ redirects\z`)
+	errInvalidProtocol  = regexp.MustCompile(`unsupported protocol scheme`)
+	errTLSCert          = regexp.MustCompile(`certificate is not trusted`)
 	// retryable Druid errors
-	coordinatorDown = regexp.MustCompile("A leader node could not be found for")
-	brokerDown      = regexp.MustCompile("There are no available brokers")
-	noObject        = regexp.MustCompile("Object '.*' not found")
+	errCoordinatorDown = regexp.MustCompile("A leader node could not be found for")
+	errBrokerDown      = regexp.MustCompile("There are no available brokers")
+	errNoObject        = regexp.MustCompile("Object '.*' not found")
 )
 
 type druidSQLDriver struct{}
@@ -104,7 +104,7 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 	}
 	switch v := obj.(type) {
 	case map[string]any:
-		if em, ok := v["errorMessage"].(string); ok && coordinatorDown.MatchString(em) {
+		if em, ok := v["errorMessage"].(string); ok && errCoordinatorDown.MatchString(em) {
 			return false, nil
 		}
 		return true, nil
@@ -154,17 +154,17 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		if err != nil {
 			// nolint:errorlint // there's no wrapping
 			if v, ok := err.(*url.Error); ok {
-				if tooManyRedirects.MatchString(v.Error()) {
+				if errTooManyRedirects.MatchString(v.Error()) {
 					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 
-				if invalidProtocol.MatchString(v.Error()) {
+				if errInvalidProtocol.MatchString(v.Error()) {
 					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 
-				if TLSCert.MatchString(v.Error()) {
+				if errTLSCert.MatchString(v.Error()) {
 					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
@@ -202,9 +202,9 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 			resp.Body.Close()
 			a := retrier.Fail
 			if em, ok := v["errorMessage"].(string); ok {
-				if coordinatorDown.MatchString(em) || brokerDown.MatchString(em) {
+				if errCoordinatorDown.MatchString(em) || errBrokerDown.MatchString(em) {
 					a = retrier.Retry
-				} else if noObject.MatchString(em) {
+				} else if errNoObject.MatchString(em) {
 					// if a table doesn't exist then it can be a restarting Coordinator
 					// note: there's still can be a restarting historical node that cannot be identifed by error messages
 					a = retrier.AdditionalCheck

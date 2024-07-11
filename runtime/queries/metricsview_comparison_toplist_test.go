@@ -195,9 +195,6 @@ func TestMetricsViewsComparison_dim_order_comparison_toplist_vs_general_toplist(
 // }
 
 func TestMetricsViewsComparison_Druid_dim_order(t *testing.T) {
-	if os.Getenv("METRICS_CREDS") == "" {
-		t.Skip("skipping the test without the test instance")
-	}
 
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)

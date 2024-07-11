@@ -2262,10 +2262,6 @@ measures:
 // }
 
 func TestMetricsViewsAggregation_Druid_comparison_no_time_dim(t *testing.T) {
-	if os.Getenv("METRICS_CREDS") == "" {
-		t.Skip("skipping the test without the test instance")
-	}
-
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)
 
@@ -2447,9 +2443,6 @@ func TestMetricsViewsAggregation_comparison_no_time_dim(t *testing.T) {
 }
 
 func TestMetricsViewsAggregation_comparison_Druid_no_dims(t *testing.T) {
-	if os.Getenv("METRICS_CREDS") == "" {
-		t.Skip("skipping the test without the test instance")
-	}
 
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)
@@ -2586,9 +2579,6 @@ func TestMetricsViewsAggregation_comparison_no_dims(t *testing.T) {
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_measure_filter_with_totals(t *testing.T) {
-	if os.Getenv("METRICS_CREDS") == "" {
-		t.Skip("skipping the test without the test instance")
-	}
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)
 
@@ -2792,9 +2782,6 @@ func TestMetricsViewsAggregation_comparison_measure_filter_with_a_single_derivat
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_measure_filter_no_duplicates(t *testing.T) {
-	if os.Getenv("METRICS_CREDS") == "" {
-		t.Skip("skipping the test without the test instance")
-	}
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)
 
@@ -3792,9 +3779,6 @@ func TestMetricsViewsAggregation_comparison_pivot(t *testing.T) {
 // }
 
 func TestMetricsViewsAggregation_Druid_comparison_empty_set_previous_sorted(t *testing.T) {
-	if os.Getenv("METRICS_CREDS") == "" {
-		t.Skip("skipping the test without the test instance")
-	}
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)
 
@@ -3871,9 +3855,6 @@ func TestMetricsViewsAggregation_Druid_comparison_empty_set_previous_sorted(t *t
 }
 
 func TestMetricsViewsAggregation_Druid_comparison_empty_set(t *testing.T) {
-	if os.Getenv("METRICS_CREDS") == "" {
-		t.Skip("skipping the test without the test instance")
-	}
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)
 
@@ -4192,9 +4173,6 @@ func TestMetricsViewsAggregation_Druid_comparison_empty_set(t *testing.T) {
 // }
 
 func TestMetricsViewsAggregation_Druid_comparison_with_offset(t *testing.T) {
-	if os.Getenv("METRICS_CREDS") == "" {
-		t.Skip("skipping the test without the test instance")
-	}
 	rt, instanceID, err := testruntime.NewInstanceForDruidProject(t)
 	require.NoError(t, err)
 

@@ -11,6 +11,7 @@ import (
 	goruntime "runtime"
 	"strconv"
 	"strings"
+	"testing"
 
 	"github.com/c2h5oh/datasize"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
@@ -229,7 +230,11 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	return rt, inst.ID
 }
 
-func NewInstanceForDruidProject(t TestingT) (*runtime.Runtime, string, error) {
+func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) {
+	if os.Getenv("METRICS_CREDS") == "" {
+		t.Skip("skipping the test without the test instance")
+	}
+
 	rt := New(t)
 
 	_, currentFile, _, _ := goruntime.Caller(0)
