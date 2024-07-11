@@ -168,10 +168,10 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 			Rule: &runtimev1.SecurityRule_Access{
 				Access: &runtimev1.SecurityRuleAccess{
 					Condition: fmt.Sprintf(
-						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ .self.name }}'=%s)",
+						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ lower .self.name }}'=%s)",
 						runtime.ResourceKindTheme,
 						runtime.ResourceKindMetricsView,
-						duckdbsql.EscapeStringValue(mdl.MetricsView),
+						duckdbsql.EscapeStringValue(strings.ToLower(mdl.MetricsView)),
 					),
 					Allow: false,
 				},
