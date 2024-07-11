@@ -10,25 +10,31 @@ When you add olap_connector to your rill.yaml file, you will need to set up a `<
 
 :::tip Did you know?
 
-You can have multiple OLAP engines in a single project and have each dashboard run on a different engine using the olap_connector parameter directly on a dashboard.
+Starting from Rill 0.46, you can directly create OLAP engines from the UI! 
+Select + Add -> Data -> Connect an OLAP engine
 
 :::
 
 
 ## Properties
 
-**`type`** - refers to the resource type and must be connector
+**`type`** - refers to the resource type and must be 'connector'
 
-**`driver`** - refers to the OLAP engine
-
+**`driver`** - refers to the [OLAP engine](../olap-engines/multiple-olap.md)
 - _`duckdb`_   link to [ DuckDB Documentation](https://duckdb.org/docs/guides/overview.html)
 - _`clickhouse`_ link to[ Clickhouse documentation](https://clickhouse.com/docs/en/intro)
 - _`druid`_ link to[ Druid documentation](https://druid.apache.org/docs/latest/design/)
 - _`pinot`_ link to[ Pinot documentation](https://docs.pinot.apache.org/)
 
-**`host`** - refers the hostname for your OLAP engine
+:::tip A note on OLAP engines
 
-**`port`** - refers the port for your OLAP engine
+You can have multiple OLAP engines in a single project and have each dashboard run on a different engine using the olap_connector parameter directly on a dashboard.
+
+:::
+
+**`host`** - refers to the hostname
+
+**`port`** - refers to the port 
 
 **`username`** - the username, in plaintext
 
