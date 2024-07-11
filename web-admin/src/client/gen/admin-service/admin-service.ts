@@ -32,11 +32,11 @@ import type {
   V1DeleteOrganizationResponse,
   V1UpdateOrganizationResponse,
   AdminServiceUpdateOrganizationBody,
-  V1GetOrganizationBillingSessionURLResponse,
-  AdminServiceGetOrganizationBillingSessionURLParams,
-  V1GetOrganizationBillingSubscriptionResponse,
-  V1UpdateOrganizationBillingSubscriptionResponse,
-  AdminServiceUpdateOrganizationBillingSubscriptionBody,
+  V1GetPaymentsPortalURLResponse,
+  AdminServiceGetPaymentsPortalURLParams,
+  V1GetBillingSubscriptionResponse,
+  V1UpdateBillingSubscriptionResponse,
+  AdminServiceUpdateBillingSubscriptionBody,
   V1ListOrganizationInvitesResponse,
   AdminServiceListOrganizationInvitesParams,
   V1ListOrganizationMembersResponse,
@@ -746,46 +746,43 @@ export const createAdminServiceUpdateOrganization = <
   >(mutationFn, mutationOptions);
 };
 /**
- * @summary GetOrganizationBillingSessionURL returns the URL for the billing session to collect payment method
+ * @summary GetPaymentsPortalURL returns the URL for the billing session to collect payment method
  */
-export const adminServiceGetOrganizationBillingSessionURL = (
+export const adminServiceGetPaymentsPortalURL = (
   orgName: string,
-  params?: AdminServiceGetOrganizationBillingSessionURLParams,
+  params?: AdminServiceGetPaymentsPortalURLParams,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1GetOrganizationBillingSessionURLResponse>({
-    url: `/v1/organizations/${orgName}/billing/payments/session-url`,
+  return httpClient<V1GetPaymentsPortalURLResponse>({
+    url: `/v1/organizations/${orgName}/billing/payments/portal-url`,
     method: "get",
     params,
     signal,
   });
 };
 
-export const getAdminServiceGetOrganizationBillingSessionURLQueryKey = (
+export const getAdminServiceGetPaymentsPortalURLQueryKey = (
   orgName: string,
-  params?: AdminServiceGetOrganizationBillingSessionURLParams,
+  params?: AdminServiceGetPaymentsPortalURLParams,
 ) => [
-  `/v1/organizations/${orgName}/billing/payments/session-url`,
+  `/v1/organizations/${orgName}/billing/payments/portal-url`,
   ...(params ? [params] : []),
 ];
 
-export type AdminServiceGetOrganizationBillingSessionURLQueryResult =
-  NonNullable<
-    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>>
-  >;
-export type AdminServiceGetOrganizationBillingSessionURLQueryError = RpcStatus;
+export type AdminServiceGetPaymentsPortalURLQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>
+>;
+export type AdminServiceGetPaymentsPortalURLQueryError = RpcStatus;
 
-export const createAdminServiceGetOrganizationBillingSessionURL = <
-  TData = Awaited<
-    ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>
-  >,
+export const createAdminServiceGetPaymentsPortalURL = <
+  TData = Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
   TError = RpcStatus,
 >(
   orgName: string,
-  params?: AdminServiceGetOrganizationBillingSessionURLParams,
+  params?: AdminServiceGetPaymentsPortalURLParams,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>>,
+      Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
       TError,
       TData
     >;
@@ -795,15 +792,14 @@ export const createAdminServiceGetOrganizationBillingSessionURL = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetOrganizationBillingSessionURLQueryKey(orgName, params);
+    getAdminServiceGetPaymentsPortalURLQueryKey(orgName, params);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>>
-  > = ({ signal }) =>
-    adminServiceGetOrganizationBillingSessionURL(orgName, params, signal);
+    Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>
+  > = ({ signal }) => adminServiceGetPaymentsPortalURL(orgName, params, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSessionURL>>,
+    Awaited<ReturnType<typeof adminServiceGetPaymentsPortalURL>>,
     TError,
     TData
   >({
@@ -819,42 +815,36 @@ export const createAdminServiceGetOrganizationBillingSessionURL = <
 };
 
 /**
- * @summary GetOrganizationBillingSubscription lists the subscription for the organization
+ * @summary GetBillingSubscription lists the subscription for the organization
  */
-export const adminServiceGetOrganizationBillingSubscription = (
+export const adminServiceGetBillingSubscription = (
   orgName: string,
   signal?: AbortSignal,
 ) => {
-  return httpClient<V1GetOrganizationBillingSubscriptionResponse>({
+  return httpClient<V1GetBillingSubscriptionResponse>({
     url: `/v1/organizations/${orgName}/billing/subscriptions`,
     method: "get",
     signal,
   });
 };
 
-export const getAdminServiceGetOrganizationBillingSubscriptionQueryKey = (
+export const getAdminServiceGetBillingSubscriptionQueryKey = (
   orgName: string,
 ) => [`/v1/organizations/${orgName}/billing/subscriptions`];
 
-export type AdminServiceGetOrganizationBillingSubscriptionQueryResult =
-  NonNullable<
-    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSubscription>>
-  >;
-export type AdminServiceGetOrganizationBillingSubscriptionQueryError =
-  RpcStatus;
+export type AdminServiceGetBillingSubscriptionQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>
+>;
+export type AdminServiceGetBillingSubscriptionQueryError = RpcStatus;
 
-export const createAdminServiceGetOrganizationBillingSubscription = <
-  TData = Awaited<
-    ReturnType<typeof adminServiceGetOrganizationBillingSubscription>
-  >,
+export const createAdminServiceGetBillingSubscription = <
+  TData = Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
   TError = RpcStatus,
 >(
   orgName: string,
   options?: {
     query?: CreateQueryOptions<
-      Awaited<
-        ReturnType<typeof adminServiceGetOrganizationBillingSubscription>
-      >,
+      Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
       TError,
       TData
     >;
@@ -864,15 +854,14 @@ export const createAdminServiceGetOrganizationBillingSubscription = <
 
   const queryKey =
     queryOptions?.queryKey ??
-    getAdminServiceGetOrganizationBillingSubscriptionQueryKey(orgName);
+    getAdminServiceGetBillingSubscriptionQueryKey(orgName);
 
   const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSubscription>>
-  > = ({ signal }) =>
-    adminServiceGetOrganizationBillingSubscription(orgName, signal);
+    Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>
+  > = ({ signal }) => adminServiceGetBillingSubscription(orgName, signal);
 
   const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceGetOrganizationBillingSubscription>>,
+    Awaited<ReturnType<typeof adminServiceGetBillingSubscription>>,
     TError,
     TData
   >({
@@ -888,72 +877,53 @@ export const createAdminServiceGetOrganizationBillingSubscription = <
 };
 
 /**
- * @summary UpdateOrganizationBillingSubscription updates the billing plan for the organization
+ * @summary UpdateBillingSubscription updates the billing plan for the organization
  */
-export const adminServiceUpdateOrganizationBillingSubscription = (
+export const adminServiceUpdateBillingSubscription = (
   orgName: string,
-  adminServiceUpdateOrganizationBillingSubscriptionBody: AdminServiceUpdateOrganizationBillingSubscriptionBody,
+  adminServiceUpdateBillingSubscriptionBody: AdminServiceUpdateBillingSubscriptionBody,
 ) => {
-  return httpClient<V1UpdateOrganizationBillingSubscriptionResponse>({
+  return httpClient<V1UpdateBillingSubscriptionResponse>({
     url: `/v1/organizations/${orgName}/billing/subscriptions`,
     method: "patch",
     headers: { "Content-Type": "application/json" },
-    data: adminServiceUpdateOrganizationBillingSubscriptionBody,
+    data: adminServiceUpdateBillingSubscriptionBody,
   });
 };
 
-export type AdminServiceUpdateOrganizationBillingSubscriptionMutationResult =
-  NonNullable<
-    Awaited<
-      ReturnType<typeof adminServiceUpdateOrganizationBillingSubscription>
-    >
-  >;
-export type AdminServiceUpdateOrganizationBillingSubscriptionMutationBody =
-  AdminServiceUpdateOrganizationBillingSubscriptionBody;
-export type AdminServiceUpdateOrganizationBillingSubscriptionMutationError =
-  RpcStatus;
+export type AdminServiceUpdateBillingSubscriptionMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>
+>;
+export type AdminServiceUpdateBillingSubscriptionMutationBody =
+  AdminServiceUpdateBillingSubscriptionBody;
+export type AdminServiceUpdateBillingSubscriptionMutationError = RpcStatus;
 
-export const createAdminServiceUpdateOrganizationBillingSubscription = <
+export const createAdminServiceUpdateBillingSubscription = <
   TError = RpcStatus,
   TContext = unknown,
 >(options?: {
   mutation?: CreateMutationOptions<
-    Awaited<
-      ReturnType<typeof adminServiceUpdateOrganizationBillingSubscription>
-    >,
+    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
     TError,
-    {
-      orgName: string;
-      data: AdminServiceUpdateOrganizationBillingSubscriptionBody;
-    },
+    { orgName: string; data: AdminServiceUpdateBillingSubscriptionBody },
     TContext
   >;
 }) => {
   const { mutation: mutationOptions } = options ?? {};
 
   const mutationFn: MutationFunction<
-    Awaited<
-      ReturnType<typeof adminServiceUpdateOrganizationBillingSubscription>
-    >,
-    {
-      orgName: string;
-      data: AdminServiceUpdateOrganizationBillingSubscriptionBody;
-    }
+    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
+    { orgName: string; data: AdminServiceUpdateBillingSubscriptionBody }
   > = (props) => {
     const { orgName, data } = props ?? {};
 
-    return adminServiceUpdateOrganizationBillingSubscription(orgName, data);
+    return adminServiceUpdateBillingSubscription(orgName, data);
   };
 
   return createMutation<
-    Awaited<
-      ReturnType<typeof adminServiceUpdateOrganizationBillingSubscription>
-    >,
+    Awaited<ReturnType<typeof adminServiceUpdateBillingSubscription>>,
     TError,
-    {
-      orgName: string;
-      data: AdminServiceUpdateOrganizationBillingSubscriptionBody;
-    },
+    { orgName: string; data: AdminServiceUpdateBillingSubscriptionBody },
     TContext
   >(mutationFn, mutationOptions);
 };

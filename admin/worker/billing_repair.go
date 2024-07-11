@@ -8,7 +8,7 @@ import (
 )
 
 func (w *Worker) repairOrgBilling(ctx context.Context) error {
-	orgs, err := w.admin.DB.FindOrganizationWithoutPaymentCustomerID(ctx)
+	orgs, err := w.admin.DB.FindOrganizationsWithoutPaymentCustomerID(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to get organizations without payment id: %w", err)
 	}

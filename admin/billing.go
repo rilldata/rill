@@ -79,6 +79,9 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 			s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 			subs = append(subs, sub)
 		}
+		if len(subs) > 1 {
+			s.Logger.Warn("multiple subscriptions found for the customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Int("num_subscriptions", len(subs)))
+		}
 		return org, subs, nil
 	}
 
@@ -146,10 +149,11 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 		}
 		s.Logger.Info("created subscription", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("subscription_id", sub.ID))
 		subs = append(subs, sub)
-	} else {
-		// get the latest subscription
-		plan = subs[0].Plan
+	} else if len(subs) > 1 {
+		s.Logger.Warn("multiple subscriptions found for the customer", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Int("num_subscriptions", len(subs)))
 	}
+	// get the latest subscription
+	plan = subs[0].Plan
 
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,

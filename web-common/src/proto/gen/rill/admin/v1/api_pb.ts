@@ -541,264 +541,6 @@ export class UpdateOrganizationResponse extends Message<UpdateOrganizationRespon
 }
 
 /**
- * @generated from message rill.admin.v1.UpdateOrganizationBillingSubscriptionRequest
- */
-export class UpdateOrganizationBillingSubscriptionRequest extends Message<UpdateOrganizationBillingSubscriptionRequest> {
-  /**
-   * @generated from field: string org_name = 1;
-   */
-  orgName = "";
-
-  /**
-   * @generated from field: string plan_name = 2;
-   */
-  planName = "";
-
-  constructor(data?: PartialMessage<UpdateOrganizationBillingSubscriptionRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.UpdateOrganizationBillingSubscriptionRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationBillingSubscriptionRequest {
-    return new UpdateOrganizationBillingSubscriptionRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateOrganizationBillingSubscriptionRequest {
-    return new UpdateOrganizationBillingSubscriptionRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateOrganizationBillingSubscriptionRequest {
-    return new UpdateOrganizationBillingSubscriptionRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: UpdateOrganizationBillingSubscriptionRequest | PlainMessage<UpdateOrganizationBillingSubscriptionRequest> | undefined, b: UpdateOrganizationBillingSubscriptionRequest | PlainMessage<UpdateOrganizationBillingSubscriptionRequest> | undefined): boolean {
-    return proto3.util.equals(UpdateOrganizationBillingSubscriptionRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.UpdateOrganizationBillingSubscriptionResponse
- */
-export class UpdateOrganizationBillingSubscriptionResponse extends Message<UpdateOrganizationBillingSubscriptionResponse> {
-  /**
-   * @generated from field: rill.admin.v1.Organization organization = 1;
-   */
-  organization?: Organization;
-
-  /**
-   * @generated from field: repeated rill.admin.v1.Subscription subscriptions = 2;
-   */
-  subscriptions: Subscription[] = [];
-
-  constructor(data?: PartialMessage<UpdateOrganizationBillingSubscriptionResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.UpdateOrganizationBillingSubscriptionResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "organization", kind: "message", T: Organization },
-    { no: 2, name: "subscriptions", kind: "message", T: Subscription, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationBillingSubscriptionResponse {
-    return new UpdateOrganizationBillingSubscriptionResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateOrganizationBillingSubscriptionResponse {
-    return new UpdateOrganizationBillingSubscriptionResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateOrganizationBillingSubscriptionResponse {
-    return new UpdateOrganizationBillingSubscriptionResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: UpdateOrganizationBillingSubscriptionResponse | PlainMessage<UpdateOrganizationBillingSubscriptionResponse> | undefined, b: UpdateOrganizationBillingSubscriptionResponse | PlainMessage<UpdateOrganizationBillingSubscriptionResponse> | undefined): boolean {
-    return proto3.util.equals(UpdateOrganizationBillingSubscriptionResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.GetOrganizationBillingSubscriptionRequest
- */
-export class GetOrganizationBillingSubscriptionRequest extends Message<GetOrganizationBillingSubscriptionRequest> {
-  /**
-   * @generated from field: string org_name = 1;
-   */
-  orgName = "";
-
-  constructor(data?: PartialMessage<GetOrganizationBillingSubscriptionRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetOrganizationBillingSubscriptionRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationBillingSubscriptionRequest {
-    return new GetOrganizationBillingSubscriptionRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationBillingSubscriptionRequest {
-    return new GetOrganizationBillingSubscriptionRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationBillingSubscriptionRequest {
-    return new GetOrganizationBillingSubscriptionRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GetOrganizationBillingSubscriptionRequest | PlainMessage<GetOrganizationBillingSubscriptionRequest> | undefined, b: GetOrganizationBillingSubscriptionRequest | PlainMessage<GetOrganizationBillingSubscriptionRequest> | undefined): boolean {
-    return proto3.util.equals(GetOrganizationBillingSubscriptionRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.GetOrganizationBillingSubscriptionResponse
- */
-export class GetOrganizationBillingSubscriptionResponse extends Message<GetOrganizationBillingSubscriptionResponse> {
-  /**
-   * @generated from field: rill.admin.v1.Organization organization = 1;
-   */
-  organization?: Organization;
-
-  /**
-   * @generated from field: rill.admin.v1.Subscription subscription = 2;
-   */
-  subscription?: Subscription;
-
-  /**
-   * @generated from field: string billing_portal_url = 3;
-   */
-  billingPortalUrl = "";
-
-  /**
-   * @generated from field: bool has_payment_method = 4;
-   */
-  hasPaymentMethod = false;
-
-  constructor(data?: PartialMessage<GetOrganizationBillingSubscriptionResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetOrganizationBillingSubscriptionResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "organization", kind: "message", T: Organization },
-    { no: 2, name: "subscription", kind: "message", T: Subscription },
-    { no: 3, name: "billing_portal_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "has_payment_method", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationBillingSubscriptionResponse {
-    return new GetOrganizationBillingSubscriptionResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationBillingSubscriptionResponse {
-    return new GetOrganizationBillingSubscriptionResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationBillingSubscriptionResponse {
-    return new GetOrganizationBillingSubscriptionResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GetOrganizationBillingSubscriptionResponse | PlainMessage<GetOrganizationBillingSubscriptionResponse> | undefined, b: GetOrganizationBillingSubscriptionResponse | PlainMessage<GetOrganizationBillingSubscriptionResponse> | undefined): boolean {
-    return proto3.util.equals(GetOrganizationBillingSubscriptionResponse, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.GetOrganizationBillingSessionURLRequest
- */
-export class GetOrganizationBillingSessionURLRequest extends Message<GetOrganizationBillingSessionURLRequest> {
-  /**
-   * @generated from field: string org_name = 1;
-   */
-  orgName = "";
-
-  /**
-   * @generated from field: string return_url = 2;
-   */
-  returnUrl = "";
-
-  constructor(data?: PartialMessage<GetOrganizationBillingSessionURLRequest>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetOrganizationBillingSessionURLRequest";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "return_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationBillingSessionURLRequest {
-    return new GetOrganizationBillingSessionURLRequest().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationBillingSessionURLRequest {
-    return new GetOrganizationBillingSessionURLRequest().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationBillingSessionURLRequest {
-    return new GetOrganizationBillingSessionURLRequest().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GetOrganizationBillingSessionURLRequest | PlainMessage<GetOrganizationBillingSessionURLRequest> | undefined, b: GetOrganizationBillingSessionURLRequest | PlainMessage<GetOrganizationBillingSessionURLRequest> | undefined): boolean {
-    return proto3.util.equals(GetOrganizationBillingSessionURLRequest, a, b);
-  }
-}
-
-/**
- * @generated from message rill.admin.v1.GetOrganizationBillingSessionURLResponse
- */
-export class GetOrganizationBillingSessionURLResponse extends Message<GetOrganizationBillingSessionURLResponse> {
-  /**
-   * @generated from field: string url = 1;
-   */
-  url = "";
-
-  constructor(data?: PartialMessage<GetOrganizationBillingSessionURLResponse>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.admin.v1.GetOrganizationBillingSessionURLResponse";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetOrganizationBillingSessionURLResponse {
-    return new GetOrganizationBillingSessionURLResponse().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetOrganizationBillingSessionURLResponse {
-    return new GetOrganizationBillingSessionURLResponse().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetOrganizationBillingSessionURLResponse {
-    return new GetOrganizationBillingSessionURLResponse().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: GetOrganizationBillingSessionURLResponse | PlainMessage<GetOrganizationBillingSessionURLResponse> | undefined, b: GetOrganizationBillingSessionURLResponse | PlainMessage<GetOrganizationBillingSessionURLResponse> | undefined): boolean {
-    return proto3.util.equals(GetOrganizationBillingSessionURLResponse, a, b);
-  }
-}
-
-/**
  * @generated from message rill.admin.v1.ListProjectsForOrganizationRequest
  */
 export class ListProjectsForOrganizationRequest extends Message<ListProjectsForOrganizationRequest> {
@@ -8076,6 +7818,264 @@ export class GetAlertYAMLResponse extends Message<GetAlertYAMLResponse> {
 
   static equals(a: GetAlertYAMLResponse | PlainMessage<GetAlertYAMLResponse> | undefined, b: GetAlertYAMLResponse | PlainMessage<GetAlertYAMLResponse> | undefined): boolean {
     return proto3.util.equals(GetAlertYAMLResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetBillingSubscriptionRequest
+ */
+export class GetBillingSubscriptionRequest extends Message<GetBillingSubscriptionRequest> {
+  /**
+   * @generated from field: string org_name = 1;
+   */
+  orgName = "";
+
+  constructor(data?: PartialMessage<GetBillingSubscriptionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetBillingSubscriptionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingSubscriptionRequest {
+    return new GetBillingSubscriptionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBillingSubscriptionRequest {
+    return new GetBillingSubscriptionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBillingSubscriptionRequest {
+    return new GetBillingSubscriptionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBillingSubscriptionRequest | PlainMessage<GetBillingSubscriptionRequest> | undefined, b: GetBillingSubscriptionRequest | PlainMessage<GetBillingSubscriptionRequest> | undefined): boolean {
+    return proto3.util.equals(GetBillingSubscriptionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetBillingSubscriptionResponse
+ */
+export class GetBillingSubscriptionResponse extends Message<GetBillingSubscriptionResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Organization organization = 1;
+   */
+  organization?: Organization;
+
+  /**
+   * @generated from field: rill.admin.v1.Subscription subscription = 2;
+   */
+  subscription?: Subscription;
+
+  /**
+   * @generated from field: string billing_portal_url = 3;
+   */
+  billingPortalUrl = "";
+
+  /**
+   * @generated from field: bool has_payment_method = 4;
+   */
+  hasPaymentMethod = false;
+
+  constructor(data?: PartialMessage<GetBillingSubscriptionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetBillingSubscriptionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "message", T: Organization },
+    { no: 2, name: "subscription", kind: "message", T: Subscription },
+    { no: 3, name: "billing_portal_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "has_payment_method", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingSubscriptionResponse {
+    return new GetBillingSubscriptionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetBillingSubscriptionResponse {
+    return new GetBillingSubscriptionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetBillingSubscriptionResponse {
+    return new GetBillingSubscriptionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetBillingSubscriptionResponse | PlainMessage<GetBillingSubscriptionResponse> | undefined, b: GetBillingSubscriptionResponse | PlainMessage<GetBillingSubscriptionResponse> | undefined): boolean {
+    return proto3.util.equals(GetBillingSubscriptionResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateBillingSubscriptionRequest
+ */
+export class UpdateBillingSubscriptionRequest extends Message<UpdateBillingSubscriptionRequest> {
+  /**
+   * @generated from field: string org_name = 1;
+   */
+  orgName = "";
+
+  /**
+   * @generated from field: string plan_name = 2;
+   */
+  planName = "";
+
+  constructor(data?: PartialMessage<UpdateBillingSubscriptionRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateBillingSubscriptionRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "plan_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBillingSubscriptionRequest {
+    return new UpdateBillingSubscriptionRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateBillingSubscriptionRequest {
+    return new UpdateBillingSubscriptionRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateBillingSubscriptionRequest {
+    return new UpdateBillingSubscriptionRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateBillingSubscriptionRequest | PlainMessage<UpdateBillingSubscriptionRequest> | undefined, b: UpdateBillingSubscriptionRequest | PlainMessage<UpdateBillingSubscriptionRequest> | undefined): boolean {
+    return proto3.util.equals(UpdateBillingSubscriptionRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.UpdateBillingSubscriptionResponse
+ */
+export class UpdateBillingSubscriptionResponse extends Message<UpdateBillingSubscriptionResponse> {
+  /**
+   * @generated from field: rill.admin.v1.Organization organization = 1;
+   */
+  organization?: Organization;
+
+  /**
+   * @generated from field: repeated rill.admin.v1.Subscription subscriptions = 2;
+   */
+  subscriptions: Subscription[] = [];
+
+  constructor(data?: PartialMessage<UpdateBillingSubscriptionResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.UpdateBillingSubscriptionResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "message", T: Organization },
+    { no: 2, name: "subscriptions", kind: "message", T: Subscription, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateBillingSubscriptionResponse {
+    return new UpdateBillingSubscriptionResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): UpdateBillingSubscriptionResponse {
+    return new UpdateBillingSubscriptionResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): UpdateBillingSubscriptionResponse {
+    return new UpdateBillingSubscriptionResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: UpdateBillingSubscriptionResponse | PlainMessage<UpdateBillingSubscriptionResponse> | undefined, b: UpdateBillingSubscriptionResponse | PlainMessage<UpdateBillingSubscriptionResponse> | undefined): boolean {
+    return proto3.util.equals(UpdateBillingSubscriptionResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetPaymentsPortalURLRequest
+ */
+export class GetPaymentsPortalURLRequest extends Message<GetPaymentsPortalURLRequest> {
+  /**
+   * @generated from field: string org_name = 1;
+   */
+  orgName = "";
+
+  /**
+   * @generated from field: string return_url = 2;
+   */
+  returnUrl = "";
+
+  constructor(data?: PartialMessage<GetPaymentsPortalURLRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetPaymentsPortalURLRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "org_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "return_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPaymentsPortalURLRequest {
+    return new GetPaymentsPortalURLRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPaymentsPortalURLRequest {
+    return new GetPaymentsPortalURLRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPaymentsPortalURLRequest {
+    return new GetPaymentsPortalURLRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPaymentsPortalURLRequest | PlainMessage<GetPaymentsPortalURLRequest> | undefined, b: GetPaymentsPortalURLRequest | PlainMessage<GetPaymentsPortalURLRequest> | undefined): boolean {
+    return proto3.util.equals(GetPaymentsPortalURLRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetPaymentsPortalURLResponse
+ */
+export class GetPaymentsPortalURLResponse extends Message<GetPaymentsPortalURLResponse> {
+  /**
+   * @generated from field: string url = 1;
+   */
+  url = "";
+
+  constructor(data?: PartialMessage<GetPaymentsPortalURLResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetPaymentsPortalURLResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetPaymentsPortalURLResponse {
+    return new GetPaymentsPortalURLResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetPaymentsPortalURLResponse {
+    return new GetPaymentsPortalURLResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetPaymentsPortalURLResponse {
+    return new GetPaymentsPortalURLResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetPaymentsPortalURLResponse | PlainMessage<GetPaymentsPortalURLResponse> | undefined, b: GetPaymentsPortalURLResponse | PlainMessage<GetPaymentsPortalURLResponse> | undefined): boolean {
+    return proto3.util.equals(GetPaymentsPortalURLResponse, a, b);
   }
 }
 

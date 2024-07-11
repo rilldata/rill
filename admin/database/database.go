@@ -225,7 +225,7 @@ type DB interface {
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
 
-	FindOrganizationWithoutPaymentCustomerID(ctx context.Context) ([]*Organization, error)
+	FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*Organization, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.

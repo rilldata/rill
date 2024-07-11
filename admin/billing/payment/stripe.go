@@ -3,6 +3,7 @@ package payment
 import (
 	"context"
 	"errors"
+	"time"
 
 	"github.com/rilldata/rill/admin/billing"
 	"github.com/rilldata/rill/admin/database"
@@ -62,10 +63,13 @@ func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer
 }
 
 func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error) {
-	// TODO once we capture billing email then we can use that directly to find the customer
+	// TODO once we capture billing email then we can use that to list customers
+	searchStart := organization.CreatedOn.Add(-5 * time.Minute) // search 5 minutes before the org creation time
+	searchEnd := organization.CreatedOn.Add(5 * time.Minute)    // search 5 minutes after the org creation time
 	params := &stripe.CustomerListParams{
 		CreatedRange: &stripe.RangeQueryParams{
-			GreaterThanOrEqual: organization.CreatedOn.Unix(),
+			GreaterThanOrEqual: searchStart.Unix(),
+			LesserThanOrEqual:  searchEnd.Unix(),
 		},
 	}
 

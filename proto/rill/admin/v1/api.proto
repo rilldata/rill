@@ -45,24 +45,6 @@ service AdminService {
     };
   }
 
-  // UpdateOrganizationBillingSubscription updates the billing plan for the organization
-  rpc UpdateOrganizationBillingSubscription(UpdateOrganizationBillingSubscriptionRequest) returns (UpdateOrganizationBillingSubscriptionResponse) {
-    option (google.api.http) = {
-      patch: "/v1/organizations/{org_name}/billing/subscriptions",
-      body: "*"
-    };
-  }
-
-  // GetOrganizationBillingSubscription lists the subscription for the organization
-  rpc GetOrganizationBillingSubscription(GetOrganizationBillingSubscriptionRequest) returns (GetOrganizationBillingSubscriptionResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/subscriptions"};
-  }
-
-  // GetOrganizationBillingSessionURL returns the URL for the billing session to collect payment method
-  rpc GetOrganizationBillingSessionURL(GetOrganizationBillingSessionURLRequest) returns (GetOrganizationBillingSessionURLResponse) {
-    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/payments/session-url"};
-  }
-
   // ListProjectsForOrganization lists all the projects currently available for given organizations
   rpc ListProjectsForOrganization(ListProjectsForOrganizationRequest) returns (ListProjectsForOrganizationResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization_name}/projects"};
@@ -585,6 +567,24 @@ service AdminService {
     };
   }
 
+  // GetBillingSubscription lists the subscription for the organization
+  rpc GetBillingSubscription(GetBillingSubscriptionRequest) returns (GetBillingSubscriptionResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/subscriptions"};
+  }
+
+  // UpdateBillingSubscription updates the billing plan for the organization
+  rpc UpdateBillingSubscription(UpdateBillingSubscriptionRequest) returns (UpdateBillingSubscriptionResponse) {
+    option (google.api.http) = {
+      patch: "/v1/organizations/{org_name}/billing/subscriptions",
+      body: "*"
+    };
+  }
+
+  // GetPaymentsPortalURL returns the URL for the billing session to collect payment method
+  rpc GetPaymentsPortalURL(GetPaymentsPortalURLRequest) returns (GetPaymentsPortalURLResponse) {
+    option (google.api.http) = {get: "/v1/organizations/{org_name}/billing/payments/portal-url"};
+  }
+
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
@@ -640,36 +640,6 @@ message UpdateOrganizationRequest {
 
 message UpdateOrganizationResponse {
   Organization organization = 1;
-}
-
-message UpdateOrganizationBillingSubscriptionRequest {
-  string org_name = 1;
-  string plan_name = 2;
-}
-
-message UpdateOrganizationBillingSubscriptionResponse {
-  Organization organization = 1;
-  repeated Subscription subscriptions = 2;
-}
-
-message GetOrganizationBillingSubscriptionRequest {
-  string org_name = 1;
-}
-
-message GetOrganizationBillingSubscriptionResponse {
-  Organization organization = 1;
-  Subscription subscription = 2;
-  string billing_portal_url = 3;
-  bool has_payment_method = 4;
-}
-
-message GetOrganizationBillingSessionURLRequest {
-  string org_name = 1;
-  string return_url = 2;
-}
-
-message GetOrganizationBillingSessionURLResponse {
-  string url = 1;
 }
 
 message ListProjectsForOrganizationRequest {
@@ -1541,6 +1511,36 @@ message GetAlertYAMLRequest {
 
 message GetAlertYAMLResponse {
   string yaml = 1;
+}
+
+message GetBillingSubscriptionRequest {
+  string org_name = 1;
+}
+
+message GetBillingSubscriptionResponse {
+  Organization organization = 1;
+  Subscription subscription = 2;
+  string billing_portal_url = 3;
+  bool has_payment_method = 4;
+}
+
+message UpdateBillingSubscriptionRequest {
+  string org_name = 1;
+  string plan_name = 2;
+}
+
+message UpdateBillingSubscriptionResponse {
+  Organization organization = 1;
+  repeated Subscription subscriptions = 2;
+}
+
+message GetPaymentsPortalURLRequest {
+  string org_name = 1;
+  string return_url = 2;
+}
+
+message GetPaymentsPortalURLResponse {
+  string url = 1;
 }
 
 message ListPublicBillingPlansRequest {}

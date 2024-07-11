@@ -221,7 +221,54 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}, nil
 }
 
-func (s *Server) UpdateOrganizationBillingSubscription(ctx context.Context, req *adminv1.UpdateOrganizationBillingSubscriptionRequest) (*adminv1.UpdateOrganizationBillingSubscriptionResponse, error) {
+func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBillingSubscriptionRequest) (*adminv1.GetBillingSubscriptionResponse, error) {
+	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
+
+	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to read org subscriptions")
+	}
+
+	if org.BillingCustomerID == "" {
+		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
+	}
+
+	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if len(subs) == 0 {
+		return &adminv1.GetBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
+	}
+
+	if len(subs) > 1 {
+		s.logger.Warn("multiple subscriptions found for the organization", zap.String("org", org.Name))
+	}
+
+	hasPaymentMethod := false
+	if org.PaymentCustomerID != "" {
+		paymentCust, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		hasPaymentMethod = paymentCust.ValidPaymentMethod
+	}
+
+	return &adminv1.GetBillingSubscriptionResponse{
+		Organization:     organizationToDTO(org),
+		Subscription:     subscriptionToDTO(subs[0]),
+		BillingPortalUrl: subs[0].Customer.PortalURL,
+		HasPaymentMethod: hasPaymentMethod,
+	}, nil
+}
+
+func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.UpdateBillingSubscriptionRequest) (*adminv1.UpdateBillingSubscriptionResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
 	if req.PlanName != "" {
 		observability.AddRequestAttributes(ctx, attribute.String("args.plan_name", req.PlanName))
@@ -278,8 +325,8 @@ func (s *Server) UpdateOrganizationBillingSubscription(ctx context.Context, req 
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		} else {
-			// multiple subscriptions, cancel them first immediately and assign new plan
-			// should not happen unless externally assigned multiple subscriptions to the same org in the billing system
+			// multiple subscriptions, cancel them first immediately and assign new plan should not happen unless externally assigned multiple subscriptions to the same org in the billing system.
+			// RepairOrgBilling does not fix multiple subscription issue, we are not sure which subscription to cancel and which to keep. However, in case of plan change we can safely cancel all older subscriptions and create a new one with new plan.
 			for _, sub := range subs {
 				err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
 				if err != nil {
@@ -321,60 +368,13 @@ func (s *Server) UpdateOrganizationBillingSubscription(ctx context.Context, req 
 		subscriptions = append(subscriptions, subscriptionToDTO(sub))
 	}
 
-	return &adminv1.UpdateOrganizationBillingSubscriptionResponse{
+	return &adminv1.UpdateBillingSubscriptionResponse{
 		Organization:  organizationToDTO(org),
 		Subscriptions: subscriptions,
 	}, nil
 }
 
-func (s *Server) GetOrganizationBillingSubscription(ctx context.Context, req *adminv1.GetOrganizationBillingSubscriptionRequest) (*adminv1.GetOrganizationBillingSubscriptionResponse, error) {
-	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
-
-	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrgName)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-
-	claims := auth.GetClaims(ctx)
-	if !claims.OrganizationPermissions(ctx, org.ID).ManageOrg && !claims.Superuser(ctx) {
-		return nil, status.Error(codes.PermissionDenied, "not allowed to read org subscriptions")
-	}
-
-	if org.BillingCustomerID == "" {
-		return &adminv1.GetOrganizationBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
-	}
-
-	subs, err := s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	if len(subs) == 0 {
-		return &adminv1.GetOrganizationBillingSubscriptionResponse{Organization: organizationToDTO(org)}, nil
-	}
-
-	if len(subs) > 1 {
-		s.logger.Warn("multiple subscriptions found for the organization", zap.String("org", org.Name))
-	}
-
-	hasPaymentMethod := false
-	if org.PaymentCustomerID != "" {
-		paymentCust, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		hasPaymentMethod = paymentCust.ValidPaymentMethod
-	}
-
-	return &adminv1.GetOrganizationBillingSubscriptionResponse{
-		Organization:     organizationToDTO(org),
-		Subscription:     subscriptionToDTO(subs[0]),
-		BillingPortalUrl: subs[0].Customer.PortalURL,
-		HasPaymentMethod: hasPaymentMethod,
-	}, nil
-}
-
-func (s *Server) GetOrganizationBillingSessionURL(ctx context.Context, req *adminv1.GetOrganizationBillingSessionURLRequest) (*adminv1.GetOrganizationBillingSessionURLResponse, error) {
+func (s *Server) GetPaymentsPortalURL(ctx context.Context, req *adminv1.GetPaymentsPortalURLRequest) (*adminv1.GetPaymentsPortalURLResponse, error) {
 	observability.AddRequestAttributes(ctx, attribute.String("args.org", req.OrgName))
 	observability.AddRequestAttributes(ctx, attribute.String("args.return_url", req.ReturnUrl))
 
@@ -400,7 +400,7 @@ func (s *Server) GetOrganizationBillingSessionURL(ctx context.Context, req *admi
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.GetOrganizationBillingSessionURLResponse{Url: url}, nil
+	return &adminv1.GetPaymentsPortalURLResponse{Url: url}, nil
 }
 
 func (s *Server) ListOrganizationMembers(ctx context.Context, req *adminv1.ListOrganizationMembersRequest) (*adminv1.ListOrganizationMembersResponse, error) {

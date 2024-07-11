@@ -1637,7 +1637,7 @@ func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageRepo
 	return checkUpdateRow("billing usage", res, err)
 }
 
-func (c *connection) FindOrganizationWithoutPaymentCustomerID(ctx context.Context) ([]*database.Organization, error) {
+func (c *connection) FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*database.Organization, error) {
 	var res []*database.Organization
 	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
 	if err != nil {
