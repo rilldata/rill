@@ -11,7 +11,6 @@ import type {
   V1MetricsViewAggregationMeasure,
   V1Expression,
   QueryServiceMetricsViewAggregationBody,
-  V1TimeRange,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
 import { SortType } from "./proto-state/derived-types";
