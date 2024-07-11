@@ -223,114 +223,7 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 
 			transformers := make([]func(any) (any, error), len(columns))
 			for i, c := range types {
-				transformers[i] = identityTransformer
-				switch c {
-				case "TINYINT":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case float64:
-							return int8(v), nil
-						default:
-							return v, nil
-						}
-					}
-				case "SMALLINT":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case float64:
-							return int16(v), nil
-						default:
-							return v, nil
-						}
-					}
-				case "INTEGER":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case float64:
-							return int32(v), nil
-						default:
-							return v, nil
-						}
-					}
-				case "BIGINT":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case float64:
-							return int64(v), nil
-						default:
-							return v, nil
-						}
-					}
-				case "FLOAT":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case float64:
-							return float32(v), nil
-						case string:
-							return strconv.ParseFloat(v, 32)
-						default:
-							return v, nil
-						}
-					}
-				case "DOUBLE":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case string:
-							return strconv.ParseFloat(v, 64)
-						default:
-							return v, nil
-						}
-					}
-				case "REAL":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case string:
-							return strconv.ParseFloat(v, 64)
-						default:
-							return v, nil
-						}
-					}
-				case "DECIMAL":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case string:
-							return strconv.ParseFloat(v, 64)
-						default:
-							return v, nil
-						}
-					}
-				case "TIMESTAMP":
-					transformers[i] = func(v any) (any, error) {
-						switch v := v.(type) {
-						case string:
-							t, err := time.Parse(time.RFC3339, v)
-							if err != nil {
-								return nil, err
-							}
-							return t, nil
-						default:
-							return v, nil
-						}
-					}
-				case "ARRAY":
-					transformers[i] = func(v any) (any, error) {
-						var l []any
-						err := json.Unmarshal([]byte(v.(string)), &l)
-						if err != nil {
-							return nil, err
-						}
-						return l, nil
-					}
-				case "OTHER":
-					transformers[i] = func(v any) (any, error) {
-						var l map[string]any
-						err := json.Unmarshal([]byte(v.(string)), &l)
-						if err != nil {
-							return nil, err
-						}
-						return l, nil
-					}
-				}
+				transformers[i] = createTransformer(c)
 			}
 
 			druidRows := &druidRows{
@@ -347,6 +240,84 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 			return nil, retrier.Fail, fmt.Errorf("unexpected response: %v", obj)
 		}
 	})
+}
+
+func createTransformer(columnType string) func(any) (any, error) {
+	switch columnType {
+	case "TINYINT":
+		return func(v any) (any, error) {
+			if f, ok := v.(float64); ok {
+				return int8(f), nil
+			}
+			return v, nil
+		}
+	case "SMALLINT":
+		return func(v any) (any, error) {
+			if f, ok := v.(float64); ok {
+				return int16(f), nil
+			}
+			return v, nil
+		}
+	case "INTEGER":
+		return func(v any) (any, error) {
+			if f, ok := v.(float64); ok {
+				return int32(f), nil
+			}
+			return v, nil
+		}
+	case "BIGINT":
+		return func(v any) (any, error) {
+			if f, ok := v.(float64); ok {
+				return int64(f), nil
+			}
+			return v, nil
+		}
+	case "FLOAT":
+		return func(v any) (any, error) {
+			switch v := v.(type) {
+			case float64:
+				return float32(v), nil
+			case string:
+				return strconv.ParseFloat(v, 32)
+			default:
+				return v, nil
+			}
+		}
+	case "DOUBLE", "REAL", "DECIMAL":
+		return func(v any) (any, error) {
+			if s, ok := v.(string); ok {
+				return strconv.ParseFloat(s, 64)
+			}
+			return v, nil
+		}
+	case "TIMESTAMP":
+		return func(v any) (any, error) {
+			if s, ok := v.(string); ok {
+				return time.Parse(time.RFC3339, s)
+			}
+			return v, nil
+		}
+	case "ARRAY":
+		return func(v any) (any, error) {
+			if s, ok := v.(string); ok {
+				var l []any
+				err := json.Unmarshal([]byte(s), &l)
+				return l, err
+			}
+			return v, nil
+		}
+	case "OTHER":
+		return func(v any) (any, error) {
+			if s, ok := v.(string); ok {
+				var l map[string]any
+				err := json.Unmarshal([]byte(s), &l)
+				return l, err
+			}
+			return v, nil
+		}
+	default:
+		return identityTransformer
+	}
 }
 
 type druidRows struct {
