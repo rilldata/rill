@@ -156,18 +156,10 @@ type ResolveResult struct {
 
 // Resolve resolves a query using the given options.
 func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveResult, error) {
-	// Prepare options
-	claims := opts.Claims
-	if claims == nil {
-		claims = &SecurityClaims{SkipChecks: true}
-	}
-	resolverOpts := &ResolverOptions{
-		Runtime:    r,
-		InstanceID: opts.InstanceID,
-		Properties: opts.ResolverProperties,
-		Args:       opts.Args,
-		Claims:     claims,
-		ForExport:  false,
+	// Since claims don't really make sense for some resolver use cases, it's easy to forget to set them.
+	// Adding an early panic to catch this.
+	if opts.Claims == nil {
+		panic("received nil claims")
 	}
 
 	// Initialize the resolver
@@ -175,7 +167,14 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveRes
 	if !ok {
 		return ResolveResult{}, fmt.Errorf("no resolver found for name %q", opts.Resolver)
 	}
-	resolver, err := initializer(ctx, resolverOpts)
+	resolver, err := initializer(ctx, &ResolverOptions{
+		Runtime:    r,
+		InstanceID: opts.InstanceID,
+		Properties: opts.ResolverProperties,
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  false,
+	})
 	if err != nil {
 		return ResolveResult{}, err
 	}
