@@ -44,7 +44,6 @@ export type StateManagers = {
     QueryObserverResult<V1MetricsViewTimeRangeResponse, unknown>
   >;
   queryClient: QueryClient;
-  setMetricsViewName: (s: string) => void;
   updateDashboard: DashboardCallbackExecutor;
   /**
    * A collection of Readables that can be used to select data from the dashboard.

@@ -189,7 +189,7 @@ describe("dashboard-stores", () => {
         dimensionsFilter: { toggleDimensionValueSelection },
       },
     } = stateManagers;
-    stateManagers.setMetricsViewName(AD_BIDS_NO_TIMESTAMP_NAME);
+
     metricsExplorerStore.init(
       AD_BIDS_NO_TIMESTAMP_NAME,
       AD_BIDS_INIT,
