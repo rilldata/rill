@@ -97,8 +97,6 @@ func (e *druidIndexExecutor) Execute(ctx context.Context) (*drivers.ModelResult,
 		return nil, fmt.Errorf("end time is before start time")
 	}
 
-	fmt.Println("==>inputProperties", inputProperties)
-	fmt.Println("==>outputProperties", outputProperties)
 	gran, err := time.ParseDuration(inputProperties.Granularity)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse granularity: %w", err)
