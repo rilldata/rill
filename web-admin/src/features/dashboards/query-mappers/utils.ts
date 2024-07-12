@@ -1,16 +1,16 @@
 import {
   ComparisonDeltaAbsoluteSuffix,
   ComparisonDeltaRelativeSuffix,
-} from "../../../../../web-common/src/features/dashboards/filters/measure-filters/measure-filter-entry";
-import { createInExpression } from "../../../../../web-common/src/features/dashboards/stores/filter-utils";
-import type { MetricsExplorerEntity } from "../../../../../web-common/src/features/dashboards/stores/metrics-explorer-entity";
-import { PreviousCompleteRangeMap } from "../../../../../web-common/src/features/dashboards/time-controls/time-range-mappers";
-import { isoDurationToFullTimeRange } from "../../../../../web-common/src/lib/time/ranges/iso-ranges";
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
+import { createInExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { PreviousCompleteRangeMap } from "@rilldata/web-common/features/dashboards/time-controls/time-range-mappers";
+import { isoDurationToFullTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import {
   type DashboardTimeControls,
   TimeComparisonOption,
   TimeRangePreset,
-} from "../../../../../web-common/src/lib/time/types";
+} from "@rilldata/web-common/lib/time/types";
 import {
   getQueryServiceMetricsViewAggregationQueryKey,
   queryServiceMetricsViewAggregation,
@@ -18,10 +18,8 @@ import {
   type V1Expression,
   type V1TimeRange,
   type V1TimeRangeSummary,
-} from "../../../../../web-common/src/runtime-client";
+} from "@rilldata/web-common/runtime-client";
 import type { QueryClient } from "@tanstack/svelte-query";
-
-// import { what} from "../../../../../web-common"
 
 // We are manually sending in duration, offset and round to grain for previous complete ranges.
 // This is to map back that split
