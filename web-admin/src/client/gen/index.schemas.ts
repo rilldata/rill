@@ -837,6 +837,10 @@ export interface V1ListMagicAuthTokensResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListGithubUserReposResponse {
+  repos?: ListGithubUserReposResponseRepo[];
+}
+
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
 }
@@ -1222,7 +1226,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
@@ -1237,4 +1241,11 @@ export const ProtobufNullValue = {
 export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
+}
+
+export interface ListGithubUserReposResponseRepo {
+  name?: string;
+  owner?: string;
+  description?: string;
+  url?: string;
 }

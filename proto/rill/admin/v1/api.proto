@@ -349,6 +349,10 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user"};
   }
 
+  rpc ListGithubUserRepos(ListGithubUserReposRequest) returns (ListGithubUserReposResponse) {
+    option (google.api.http) = {get: "/v1/github/repositories/list"};
+  }
+
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -1534,6 +1538,18 @@ message GetGithubUserStatusResponse {
   map<string, GithubPermission> organization_installation_permissions = 7;
   // DEPRECATED: Use organization_installation_permissions instead.
   repeated string organizations = 5 [deprecated = true];
+}
+
+message ListGithubUserReposRequest {}
+
+message ListGithubUserReposResponse {
+  message Repo {
+    string name = 1;
+    string owner = 2;
+    string description = 3;
+    string url = 4;
+  }
+  repeated Repo repos = 1;
 }
 
 enum GithubPermission {

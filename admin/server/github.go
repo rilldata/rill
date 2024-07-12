@@ -237,6 +237,100 @@ func (s *Server) GetGithubRepoStatus(ctx context.Context, req *adminv1.GetGithub
 	return res, nil
 }
 
+func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithubUserReposRequest) (*adminv1.ListGithubUserReposResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	userID := claims.OwnerID()
+	user, err := s.admin.DB.FindUser(ctx, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	// user has not authorized github app
+	if user.GithubUsername == "" {
+		// TODO
+		return nil, status.Error(codes.Unauthenticated, "not authenticated")
+	}
+
+	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
+	if err != nil {
+		return nil, status.Error(codes.Internal, "userAccessToken: "+err.Error())
+	}
+
+	// refresh token changes after using it for getting a new token
+	// so saving the updated refresh token
+	user, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		GithubRefreshToken:  refreshToken,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	client := github.NewTokenClient(ctx, token)
+
+	// use a client with user's token to get installations
+	installations, _, err := client.Apps.ListUserInstallations(ctx, &github.ListOptions{
+		Page:    0,
+		PerPage: 0,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, "ListUserInstallations:"+err.Error())
+	}
+
+	repos := make([]*adminv1.ListGithubUserReposResponse_Repo, 0)
+	for _, installation := range installations {
+		instToken, _, err := s.admin.Github.AppClient().Apps.CreateInstallationToken(ctx, *installation.ID, &github.InstallationTokenOptions{
+			RepositoryIDs: nil,
+			Repositories:  nil,
+			Permissions:   nil,
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, "get token:"+err.Error())
+		}
+
+		// use the installation token to fetch the repos accessible to it
+		instClient := github.NewTokenClient(ctx, *instToken.Token)
+
+		req, err := instClient.NewRequest("GET", *installation.RepositoriesURL, nil)
+		if err != nil {
+			return nil, status.Error(codes.Internal, "get repos:"+err.Error())
+		}
+
+		var reposResp struct {
+			Repositories []*github.Repository `json:"repositories"`
+		}
+		_, err = instClient.Do(ctx, req, &reposResp)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+
+		for _, repo := range reposResp.Repositories {
+			var owner string
+			if repo.Owner != nil {
+				owner = fromStringPtr(repo.Owner.Login)
+			}
+			repos = append(repos, &adminv1.ListGithubUserReposResponse_Repo{
+				Name:        fromStringPtr(repo.Name),
+				Owner:       owner,
+				Description: fromStringPtr(repo.Description),
+				Url:         fromStringPtr(repo.HTMLURL),
+			})
+		}
+	}
+
+	return &adminv1.ListGithubUserReposResponse{
+		Repos: repos,
+	}, nil
+}
+
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
 func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up
@@ -743,4 +837,11 @@ func (s *Server) userAccessToken(ctx context.Context, refreshToken string) (stri
 	}
 
 	return oauthToken.AccessToken, oauthToken.RefreshToken, nil
+}
+
+func fromStringPtr(s *string) string {
+	if s == nil {
+		return ""
+	}
+	return *s
 }
