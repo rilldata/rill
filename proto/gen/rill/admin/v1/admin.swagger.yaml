@@ -1211,6 +1211,34 @@ paths:
             type: object
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/request-access:
+    post:
+      operationId: AdminService_RequestProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1RequestProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/tokens/magic:
     get:
       summary: ListMagicAuthTokens lists all the magic auth tokens for a specific project.
@@ -2384,6 +2412,76 @@ paths:
             $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
+  /v1/project-access-request/{id}:
+    get:
+      operationId: AdminService_GetProjectAccessRequest
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetProjectAccessRequestResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
+  /v1/project-access-request/{id}/approve:
+    post:
+      operationId: AdminService_ApproveProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ApproveProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              role:
+                type: string
+      tags:
+        - AdminService
+  /v1/project-access-request/{id}/deny:
+    post:
+      operationId: AdminService_DenyProjectAccess
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1DenyProjectAccessResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: id
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+      tags:
+        - AdminService
   /v1/projects/-/redeploy:
     post:
       summary: TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
@@ -3113,6 +3211,8 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the dashboard when it was created
+  v1ApproveProjectAccessResponse:
+    type: object
   v1BillingPlan:
     type: object
     properties:
@@ -3283,6 +3383,8 @@ definitions:
       service:
         $ref: '#/definitions/v1Service'
   v1DeleteUsergroupResponse:
+    type: object
+  v1DenyProjectAccessResponse:
     type: object
   v1Deployment:
     type: object
@@ -3465,6 +3567,11 @@ definitions:
         $ref: '#/definitions/v1Organization'
       permissions:
         $ref: '#/definitions/v1OrganizationPermissions'
+  v1GetProjectAccessRequestResponse:
+    type: object
+    properties:
+      email:
+        type: string
   v1GetProjectByIDResponse:
     type: object
     properties:
@@ -4053,6 +4160,8 @@ definitions:
       webOpenState:
         type: string
         title: base64 state url of the metrics_view when it was created
+  v1RequestProjectAccessResponse:
+    type: object
   v1RevokeCurrentAuthTokenResponse:
     type: object
     properties:

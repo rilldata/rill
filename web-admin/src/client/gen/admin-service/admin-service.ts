@@ -75,6 +75,7 @@ import type {
   V1EditReportResponse,
   V1TriggerReportResponse,
   V1UnsubscribeReportResponse,
+  V1RequestProjectAccessResponse,
   V1ListMagicAuthTokensResponse,
   AdminServiceListMagicAuthTokensParams,
   V1IssueMagicAuthTokenResponse,
@@ -131,6 +132,9 @@ import type {
   V1ListServiceAuthTokensResponse,
   V1IssueServiceAuthTokenResponse,
   V1PingResponse,
+  V1GetProjectAccessRequestResponse,
+  V1ApproveProjectAccessResponse,
+  V1DenyProjectAccessResponse,
   V1TriggerRedeployResponse,
   V1TriggerRedeployRequest,
   V1GetProjectByIDResponse,
@@ -2723,6 +2727,67 @@ export const createAdminServiceUnsubscribeReport = <
     TContext
   >(mutationFn, mutationOptions);
 };
+export const adminServiceRequestProjectAccess = (
+  organization: string,
+  project: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1RequestProjectAccessResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/request-access`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceRequestProjectAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>
+>;
+export type AdminServiceRequestProjectAccessMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceRequestProjectAccessMutationError = RpcStatus;
+
+export const createAdminServiceRequestProjectAccess = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    }
+  > = (props) => {
+    const { organization, project, data } = props ?? {};
+
+    return adminServiceRequestProjectAccess(organization, project, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceRequestProjectAccess>>,
+    TError,
+    {
+      organization: string;
+      project: string;
+      data: AdminServiceTriggerReconcileBodyBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary ListMagicAuthTokens lists all the magic auth tokens for a specific project.
  */
@@ -5161,6 +5226,159 @@ export const createAdminServicePing = <
   return query;
 };
 
+export const adminServiceGetProjectAccessRequest = (
+  id: string,
+  signal?: AbortSignal,
+) => {
+  return httpClient<V1GetProjectAccessRequestResponse>({
+    url: `/v1/project-access-request/${id}`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetProjectAccessRequestQueryKey = (id: string) => [
+  `/v1/project-access-request/${id}`,
+];
+
+export type AdminServiceGetProjectAccessRequestQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetProjectAccessRequest>>
+>;
+export type AdminServiceGetProjectAccessRequestQueryError = RpcStatus;
+
+export const createAdminServiceGetProjectAccessRequest = <
+  TData = Awaited<ReturnType<typeof adminServiceGetProjectAccessRequest>>,
+  TError = RpcStatus,
+>(
+  id: string,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof adminServiceGetProjectAccessRequest>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getAdminServiceGetProjectAccessRequestQueryKey(id);
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetProjectAccessRequest>>
+  > = ({ signal }) => adminServiceGetProjectAccessRequest(id, signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetProjectAccessRequest>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, enabled: !!id, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
+export const adminServiceApproveProjectAccess = (
+  id: string,
+  adminServiceSetOrganizationMemberUserRoleBodyBody: AdminServiceSetOrganizationMemberUserRoleBodyBody,
+) => {
+  return httpClient<V1ApproveProjectAccessResponse>({
+    url: `/v1/project-access-request/${id}/approve`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceSetOrganizationMemberUserRoleBodyBody,
+  });
+};
+
+export type AdminServiceApproveProjectAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>
+>;
+export type AdminServiceApproveProjectAccessMutationBody =
+  AdminServiceSetOrganizationMemberUserRoleBodyBody;
+export type AdminServiceApproveProjectAccessMutationError = RpcStatus;
+
+export const createAdminServiceApproveProjectAccess = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
+    TError,
+    { id: string; data: AdminServiceSetOrganizationMemberUserRoleBodyBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
+    { id: string; data: AdminServiceSetOrganizationMemberUserRoleBodyBody }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminServiceApproveProjectAccess(id, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceApproveProjectAccess>>,
+    TError,
+    { id: string; data: AdminServiceSetOrganizationMemberUserRoleBodyBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+export const adminServiceDenyProjectAccess = (
+  id: string,
+  adminServiceTriggerReconcileBodyBody: AdminServiceTriggerReconcileBodyBody,
+) => {
+  return httpClient<V1DenyProjectAccessResponse>({
+    url: `/v1/project-access-request/${id}/deny`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: adminServiceTriggerReconcileBodyBody,
+  });
+};
+
+export type AdminServiceDenyProjectAccessMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>
+>;
+export type AdminServiceDenyProjectAccessMutationBody =
+  AdminServiceTriggerReconcileBodyBody;
+export type AdminServiceDenyProjectAccessMutationError = RpcStatus;
+
+export const createAdminServiceDenyProjectAccess = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
+    TError,
+    { id: string; data: AdminServiceTriggerReconcileBodyBody },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
+    { id: string; data: AdminServiceTriggerReconcileBodyBody }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return adminServiceDenyProjectAccess(id, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceDenyProjectAccess>>,
+    TError,
+    { id: string; data: AdminServiceTriggerReconcileBodyBody },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary TriggerRedeploy creates a new deployment and teardown the old deployment for production deployment
  */

@@ -183,6 +183,7 @@ type DB interface {
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
+	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*MemberUser, error)
 
 	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*MemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
@@ -214,6 +215,12 @@ type DB interface {
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
+
+	FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*ProjectAccessRequest, error)
+	FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*ProjectAccessRequest, error)
+	FindProjectAccessRequestByID(ctx context.Context, id string) (*ProjectAccessRequest, error)
+	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
+	DeleteProjectAccessRequest(ctx context.Context, id string) error
 
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
@@ -817,6 +824,18 @@ type InsertProjectInviteOptions struct {
 	RoleID    string `validate:"required"`
 }
 
+type ProjectAccessRequest struct {
+	ID        string
+	UserID    string    `db:"user_id"`
+	ProjectID string    `db:"project_id"`
+	CreatedOn time.Time `db:"created_on"`
+}
+
+type InsertProjectAccessRequestOptions struct {
+	UserID    string `validate:"required"`
+	ProjectID string `validate:"required"`
+}
+
 type Bookmark struct {
 	ID           string
 	DisplayName  string    `db:"display_name"`
@@ -872,7 +891,7 @@ type InsertVirtualFileOptions struct {
 
 type Asset struct {
 	ID             string
-	OrganizationID string    `db:"org_id"`
+	OrganizationID *string   `db:"org_id"`
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
