@@ -19,6 +19,7 @@ export const COMPARISON_PERCENT = "__comparison_percent";
 
 export interface PivotDataState {
   isFetching: boolean;
+  error?: string | undefined;
   data: PivotDataRow[];
   columnDef: ColumnDef<PivotDataRow>[];
   assembled: boolean;

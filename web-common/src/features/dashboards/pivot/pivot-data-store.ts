@@ -11,6 +11,7 @@ import type {
   V1MetricsViewAggregationResponse,
   V1MetricsViewAggregationResponseDataItem,
 } from "@rilldata/web-common/runtime-client";
+import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import type { ColumnDef } from "@tanstack/svelte-table";
 import { Readable, derived, readable } from "svelte/store";
@@ -364,11 +365,11 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
         let globalTotalsQuery:
           | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
           readable(null);
         let totalsRowQuery:
           | Readable<null>
-          | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+          | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
           readable(null);
         if (rowDimensionNames.length && measureNames.length) {
           globalTotalsQuery = createPivotAggregationRowQuery(
@@ -471,7 +472,7 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
 
             let initialTableCellQuery:
               | Readable<null>
-              | CreateQueryResult<V1MetricsViewAggregationResponse, unknown> =
+              | CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> =
               readable(null);
 
             let columnDef: ColumnDef<PivotDataRow>[] = [];
@@ -540,6 +541,17 @@ function createPivotDataStore(ctx: StateManagers): PivotDataStore {
                   if (initialTableCellData === null) {
                     cellData = pivotSkeleton;
                   } else {
+                    if (initialTableCellData.isError) {
+                      return cellSet({
+                        isFetching: false,
+                        error: initialTableCellData.error.message,
+                        data: [],
+                        columnDef,
+                        assembled: true,
+                        totalColumns,
+                        totalsRowData: undefined,
+                      });
+                    }
                     if (initialTableCellData.isFetching) {
                       return cellSet({
                         isFetching: true,

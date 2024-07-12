@@ -15,6 +15,7 @@ import {
   createQueryServiceMetricsViewAggregation,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
+import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { Readable, derived, readable } from "svelte/store";
 import { mergeFilters } from "./pivot-merge-filters";
@@ -22,7 +23,6 @@ import {
   getFilterForMeasuresTotalsAxesQuery,
   getTimeGrainFromDimension,
   isTimeDimension,
-  prepareMeasureForComparison,
 } from "./pivot-utils";
 import {
   COMPARISON_DELTA,
@@ -43,7 +43,7 @@ export function createPivotAggregationRowQuery(
   limit = "100",
   offset = "0",
   timeRange: TimeRangeString | undefined = undefined,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   if (!sort.length) {
     sort = [
       {
@@ -71,7 +71,7 @@ export function createPivotAggregationRowQuery(
         runtime.instanceId,
         metricViewName,
         {
-          measures: prepareMeasureForComparison(measures),
+          measures: [],
           dimensions,
           where: sanitiseExpression(whereFilter, undefined),
           timeRange: {
