@@ -34,6 +34,6 @@ func MapToSchema(schema map[string]any) (*openapi3.Schema, error) {
 	if err != nil {
 		return nil, err
 	}
-	
+
 	return &specSchema, nil
 }
