@@ -87,7 +87,8 @@ func TestMetricsViewsToplist_measure_filters(t *testing.T) {
 				Ascending: false,
 			},
 		},
-		Limit: &lmt,
+		Limit:          &lmt,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)
@@ -143,7 +144,8 @@ func TestMetricsViewsToplist_measure_filters_same_name(t *testing.T) {
 				Ascending: false,
 			},
 		},
-		Limit: &lmt,
+		Limit:          &lmt,
+		SecurityClaims: testClaims(),
 	}
 
 	err = q.Resolve(context.Background(), rt, instanceID, 0)

@@ -34,7 +34,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 
 			if projectName != "" {
-				_, err = client.SetProjectMemberRole(cmd.Context(), &adminv1.SetProjectMemberRoleRequest{
+				_, err = client.SetProjectMemberUserRole(cmd.Context(), &adminv1.SetProjectMemberUserRoleRequest{
 					Organization: ch.Org,
 					Project:      projectName,
 					Email:        email,
@@ -45,7 +45,7 @@ func SetRoleCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				ch.PrintfSuccess("Updated role of user %q to %q in the project \"%s/%s\"\n", email, role, ch.Org, projectName)
 			} else {
-				_, err = client.SetOrganizationMemberRole(cmd.Context(), &adminv1.SetOrganizationMemberRoleRequest{
+				_, err = client.SetOrganizationMemberUserRole(cmd.Context(), &adminv1.SetOrganizationMemberUserRoleRequest{
 					Organization: ch.Org,
 					Email:        email,
 					Role:         role,

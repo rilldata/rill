@@ -45,7 +45,13 @@
     dashboardOptions,
   ];
 
-  $: currentPath = [projectTitle, dashboardName];
+  $: currentPath = [projectTitle, dashboardName.toLowerCase()];
+
+  $: currentDashboard = dashboards.find(
+    (d) => d.meta?.name?.name?.toLowerCase() === dashboardName.toLowerCase(),
+  );
+
+  $: metricsViewName = currentDashboard?.meta?.name?.name;
 </script>
 
 <div class="flex flex-col size-full">
@@ -60,9 +66,9 @@
     <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
       PREVIEW
     </span>
-    {#if route.id?.includes("dashboard")}
-      <StateManagersProvider metricsViewName={dashboardName}>
-        <DashboardCtAs metricViewName={dashboardName} />
+    {#if route.id?.includes("dashboard") && metricsViewName}
+      <StateManagersProvider {metricsViewName}>
+        <DashboardCtAs metricViewName={metricsViewName} />
       </StateManagersProvider>
     {/if}
   </header>

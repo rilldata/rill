@@ -4,20 +4,22 @@ import (
 	"context"
 	"testing"
 
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
 )
 
 func TestCompiler_Compile(t *testing.T) {
-	runtime, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-	ctrl, err := runtime.Controller(context.Background(), instanceID)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
-	olap, release, err := runtime.OLAP(context.Background(), instanceID, "")
+	olap, release, err := rt.OLAP(context.Background(), instanceID, "")
 	require.NoError(t, err)
 	defer release()
 
-	compiler := New(ctrl, instanceID, make(map[string]any), 1)
+	claims := &runtime.SecurityClaims{}
+	compiler := New(ctrl, instanceID, claims, 1)
 	passTests := map[string]string{
 		"select pub, dom from ad_bids_metrics":                                                                                                        "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\"",
 		"select pub, dom from ad_bids_metrics LIMIT 5":                                                                                                "SELECT \"publisher\" AS \"pub\", \"domain\" AS \"dom\" FROM \"ad_bids\" LIMIT 5",
@@ -63,11 +65,12 @@ func TestCompiler_Compile(t *testing.T) {
 }
 
 func TestCompiler_CompileError(t *testing.T) {
-	runtime, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
-	ctrl, err := runtime.Controller(context.Background(), instanceID)
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+	ctrl, err := rt.Controller(context.Background(), instanceID)
 	require.NoError(t, err)
 
-	compiler := New(ctrl, instanceID, make(map[string]any), 1)
+	claims := &runtime.SecurityClaims{}
+	compiler := New(ctrl, instanceID, claims, 1)
 
 	sqlToErrMsg := map[string]string{
 		"select max(pub), dom from ad_bids_metrics":                         "metrics sql: can only select plain dimension/measures",

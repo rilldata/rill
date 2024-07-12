@@ -21,7 +21,7 @@ func TestSimpleSQLApi(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     nil,
+		Claims:             &runtime.SecurityClaims{},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, res)
@@ -48,7 +48,7 @@ func TestTemplateSQLApi(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"domain": "sports.yahoo.com"},
-		UserAttributes:     nil,
+		Claims:             &runtime.SecurityClaims{},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, res)
@@ -78,7 +78,7 @@ func TestTemplateSQLApi2(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"pageSize": 5},
-		UserAttributes:     map[string]any{"domain": "msn.com"},
+		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "msn.com"}},
 	})
 	require.NoError(t, err)
 	require.NotNil(t, res)

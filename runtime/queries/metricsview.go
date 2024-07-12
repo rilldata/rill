@@ -30,38 +30,19 @@ import (
 var ErrForbidden = errors.New("action not allowed")
 
 // resolveMVAndSecurityFromAttributes resolves the metrics view and security policy from the attributes
-func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, attrs map[string]any, policy *runtimev1.MetricsViewSpec_SecurityV2, dims []*runtimev1.MetricsViewAggregationDimension, measures []*runtimev1.MetricsViewAggregationMeasure) (*runtimev1.MetricsViewSpec, *runtime.ResolvedMetricsViewSecurity, error) {
+func resolveMVAndSecurityFromAttributes(ctx context.Context, rt *runtime.Runtime, instanceID, metricsViewName string, claims *runtime.SecurityClaims) (*runtimev1.MetricsViewSpec, *runtime.ResolvedSecurity, error) {
 	res, mv, err := lookupMetricsView(ctx, rt, instanceID, metricsViewName)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	resolvedSecurity, err := rt.ResolveMetricsViewSecurity(instanceID, attrs, res, mv.Security, policy)
+	resolvedSecurity, err := rt.ResolveSecurity(instanceID, claims, res)
 	if err != nil {
 		return nil, nil, err
 	}
 
-	if resolvedSecurity != nil && !resolvedSecurity.Access {
+	if !resolvedSecurity.CanAccess() {
 		return nil, nil, ErrForbidden
-	}
-
-	for _, dim := range dims {
-		if dim.Name == mv.TimeDimension {
-			// checkFieldAccess doesn't currently check the time dimension
-			continue
-		}
-		if !checkFieldAccess(dim.Name, resolvedSecurity) {
-			return nil, nil, ErrForbidden
-		}
-	}
-
-	for _, m := range measures {
-		if m.BuiltinMeasure != runtimev1.BuiltinMeasure_BUILTIN_MEASURE_UNSPECIFIED {
-			continue
-		}
-		if !checkFieldAccess(m.Name, resolvedSecurity) {
-			return nil, nil, ErrForbidden
-		}
 	}
 
 	return mv, resolvedSecurity, nil
@@ -86,32 +67,6 @@ func lookupMetricsView(ctx context.Context, rt *runtime.Runtime, instanceID, nam
 	}
 
 	return res, spec, nil
-}
-
-func checkFieldAccess(field string, policy *runtime.ResolvedMetricsViewSecurity) bool {
-	if policy != nil {
-		if !policy.Access {
-			return false
-		}
-
-		if len(policy.Include) > 0 {
-			for _, include := range policy.Include {
-				if include == field {
-					return true
-				}
-			}
-		} else if len(policy.Exclude) > 0 {
-			for _, exclude := range policy.Exclude {
-				if exclude == field {
-					return false
-				}
-			}
-		} else {
-			// if no include/exclude is specified, then all fields are allowed
-			return true
-		}
-	}
-	return true
 }
 
 func metricsQuery(ctx context.Context, olap drivers.OLAPStore, priority int, sql string, args []any) ([]*runtimev1.MetricsViewColumn, []*structpb.Struct, error) {
