@@ -725,7 +725,7 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 
 func (c *connection) UpdateUsergroupName(ctx context.Context, name, groupID string) (*database.Usergroup, error) {
 	res := &database.Usergroup{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET name=$1 WHERE id=$2 RETURNING *", name, groupID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET name=$1, updated_on=now() WHERE id=$2 RETURNING *", name, groupID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}
@@ -734,7 +734,7 @@ func (c *connection) UpdateUsergroupName(ctx context.Context, name, groupID stri
 
 func (c *connection) UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*database.Usergroup, error) {
 	res := &database.Usergroup{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET description=$1 WHERE id=$2 RETURNING *", description, groupID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET description=$1, updated_on=now() WHERE id=$2 RETURNING *", description, groupID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}

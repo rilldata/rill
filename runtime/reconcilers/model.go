@@ -566,6 +566,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.IncrementalStateResolver,
 		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
+		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
 		return nil, nil, err

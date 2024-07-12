@@ -45,7 +45,7 @@
     (referencedThings) => referencedThings,
   );
 
-  $: references = $referencedWithMetadata;
+  $: references = $referencedWithMetadata.filter((ref) => ref.reference);
 
   function blur() {
     eventBus.emit("highlightSelection", []);
