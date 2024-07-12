@@ -9,7 +9,7 @@
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import KeyboardKey from "@rilldata/web-common/components/calls-to-action/KeyboardKey.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import GithubRepoInline from "../../../../../features/projects/GithubRepoInline.svelte";
+  import GithubRepoInline from "web-admin/src/features/projects/github/GithubRepoInline.svelte";
 
   const remote = new URLSearchParams(window.location.search).get("remote");
   const user = createAdminServiceGetCurrentUser({

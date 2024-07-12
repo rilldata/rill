@@ -8,7 +8,7 @@
   import CtaLayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CtaMessage from "@rilldata/web-common/components/calls-to-action/CTAMessage.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import GithubRepoInline from "../../../../features/projects/GithubRepoInline.svelte";
+  import GithubRepoInline from "web-admin/src/features/projects/github/GithubRepoInline.svelte";
 
   const urlParams = new URLSearchParams(window.location.search);
   const redirectURL = urlParams.get("redirect");

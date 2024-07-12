@@ -1,12 +1,14 @@
 <script lang="ts">
-  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import ProjectConnectToGithub from "@rilldata/web-admin/features/projects/github/ProjectConnectToGithub.svelte";
+  import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createAdminServiceGetProject } from "../../../client";
-  import { useDashboardsLastUpdated } from "../../dashboards/listing/selectors";
-  import { getRepoNameFromGithubUrl } from "../github-utils";
+  import {
+    createAdminServiceGetGithubUserStatus,
+    createAdminServiceGetProject,
+  } from "web-admin/src/client";
+  import { useDashboardsLastUpdated } from "web-admin/src/features/dashboards/listing/selectors";
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
 
   export let organization: string;
   export let project: string;
@@ -25,16 +27,16 @@
 </script>
 
 {#if $proj.data}
-  <div class="flex flex-col gap-y-1">
+  <div class="flex flex-col gap-y-1 max-w-[400px]">
     <span class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
       >Github</span
     >
-    {#if isGithubConnected}
-      <div class="flex items-start gap-x-1">
-        <div class="py-0.5">
-          <Github className="w-4 h-4" />
-        </div>
-        <div class="flex flex-col">
+    <div class="flex items-start gap-x-1">
+      <div class="py-0.5">
+        <Github className="w-4 h-4" />
+      </div>
+      <div class="flex flex-col">
+        {#if isGithubConnected}
           <a
             href={$proj.data?.project?.githubUrl}
             class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
@@ -61,19 +63,10 @@
               })}
             </span>
           {/if}
-        </div>
+        {:else}
+          <ProjectConnectToGithub />
+        {/if}
       </div>
-    {:else}
-      <Tooltip alignment="start" distance={4}>
-        <div class="flex items-center gap-x-1">
-          <AlertCircleOutline className="text-red-400" size={"16px"} />
-          <span>Not connected to a repository</span>
-        </div>
-        <TooltipContent slot="tooltip-content" maxWidth="300px"
-          >This project is no longer connected to a Github repository. This is
-          how we ensure this project is up to date.</TooltipContent
-        >
-      </Tooltip>
-    {/if}
+    </div>
   </div>
 {/if}
