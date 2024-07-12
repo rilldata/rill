@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/go-openapi/spec"
+	"github.com/getkin/kin-openapi/openapi3"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -169,7 +169,7 @@ func (s *Server) combinedOpenAPISpec(w http.ResponseWriter, req *http.Request) e
 	return nil
 }
 
-func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, apis map[string]*runtimev1.API) (*spec.Swagger, error) {
+func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, apis map[string]*runtimev1.API) (*openapi3.T, error) {
 	attributes := s.runtime.GetInstanceAttributes(ctx, instanceID)
 	var organization, project string
 	for _, attr := range attributes {
@@ -185,21 +185,14 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 	} else {
 		title = "Rill project API"
 	}
-	baseSpec := &spec.Swagger{
-		SwaggerProps: spec.SwaggerProps{
-			Swagger:  "2.0",
-			Produces: []string{"application/json"},
-			Info: &spec.Info{
-				InfoProps: spec.InfoProps{
-					Title:   title,
-					Version: "1.0.0",
-				},
-			},
-			BasePath: fmt.Sprintf("/v1/instances/%s/api", instanceID),
-			Paths: &spec.Paths{
-				Paths: make(map[string]spec.PathItem),
-			},
+
+	doc := &openapi3.T{
+		OpenAPI: "3.0.3",
+		Info: &openapi3.Info{
+			Title:   title,
+			Version: "1.0.0",
 		},
+		Paths: &openapi3.Paths{},
 	}
 
 	var runtimeHost string
@@ -213,7 +206,11 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 		runtimeHost = fmt.Sprintf("localhost:%d", s.opts.HTTPPort)
 	}
 
-	baseSpec.SwaggerProps.Host = runtimeHost
+	doc.Servers = openapi3.Servers{
+		&openapi3.Server{
+			URL: fmt.Sprintf("http://%s/v1/instances/%s/api", runtimeHost, instanceID),
+		},
+	}
 
 	for name, api := range apis {
 		pathItem, err := s.generatePathItemSpec(name, api)
@@ -221,14 +218,13 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 			return nil, err
 		}
 
-		baseSpec.Paths.Paths[fmt.Sprintf("/%s", name)] = *pathItem
+		doc.Paths.Set(fmt.Sprintf("/%s", name), pathItem)
 	}
 
-	return baseSpec, nil
+	return doc, nil
 }
 
-func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*spec.PathItem, error) {
-	var err error
+func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi3.PathItem, error) {
 	summary := ""
 	if api.Spec.OpenapiSummary != "" {
 		summary = api.Spec.OpenapiSummary
@@ -237,78 +233,68 @@ func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*spec.Pa
 		summary = fmt.Sprintf("Query %s resolver", name)
 	}
 
-	var params []spec.Parameter
+	var parameters openapi3.Parameters
 	if api.Spec.OpenapiParameters != nil {
 		maps := make([]map[string]any, len(api.Spec.OpenapiParameters))
 		for i, param := range api.Spec.OpenapiParameters {
 			maps[i] = param.AsMap()
 		}
-		params, err = openapiutil.MapToParameters(maps)
+		var err error
+		parameters, err = openapiutil.MapToParameters(maps)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	var schema *spec.Schema
+	var schema *openapi3.Schema
 	if api.Spec.OpenapiResponseSchema != nil {
+		var err error
 		schema, err = openapiutil.MapToSchema(api.Spec.OpenapiResponseSchema.AsMap())
 		if err != nil {
 			return nil, err
 		}
 	} else {
-		schema = &spec.Schema{
-			SchemaProps: spec.SchemaProps{
-				Type: []string{"object"},
-			},
+		schema = &openapi3.Schema{
+			Type: &openapi3.Types{"object"},
 		}
 	}
 
-	pathItem := spec.PathItem{
-		PathItemProps: spec.PathItemProps{
-			Get: &spec.Operation{
-				OperationProps: spec.OperationProps{
-					Summary:    summary,
-					Parameters: params,
-					Responses: &spec.Responses{
-						ResponsesProps: spec.ResponsesProps{
-							StatusCodeResponses: map[int]spec.Response{
-								200: {
-									ResponseProps: spec.ResponseProps{
-										Description: fmt.Sprintf("Successful response of %s resolver", name),
-										Schema: &spec.Schema{
-											SchemaProps: spec.SchemaProps{
-												Type: []string{"array"},
-												Items: &spec.SchemaOrArray{
-													Schema: schema,
-												},
-											},
-										},
-									},
-								},
-								400: {
-									ResponseProps: spec.ResponseProps{
-										Description: "Bad request",
-										Schema: &spec.Schema{
-											SchemaProps: spec.SchemaProps{
-												Type: []string{"object"},
-												Properties: map[string]spec.Schema{
-													"error": {
-														SchemaProps: spec.SchemaProps{
-															Type: []string{"string"},
-														},
-													},
-												},
-											},
-										},
+	pathItem := &openapi3.PathItem{
+		Get: &openapi3.Operation{
+			Summary:    summary,
+			Parameters: parameters,
+			Responses: openapi3.NewResponses(
+				openapi3.WithStatus(200, &openapi3.ResponseRef{
+					Value: openapi3.NewResponse().WithDescription(
+						fmt.Sprintf("Successful response of %s resolver", name),
+					).WithContent(
+						openapi3.NewContentWithJSONSchema(&openapi3.Schema{
+							Type: &openapi3.Types{"array"},
+							Items: &openapi3.SchemaRef{
+								Value: schema,
+							},
+						}),
+					),
+				}),
+				openapi3.WithStatus(400, &openapi3.ResponseRef{
+					Value: openapi3.NewResponse().WithDescription(
+						"Bad request",
+					).WithContent(
+						openapi3.NewContentWithJSONSchema(&openapi3.Schema{
+							Type: &openapi3.Types{"object"},
+							Properties: map[string]*openapi3.SchemaRef{
+								"error": {
+									Value: &openapi3.Schema{
+										Type: &openapi3.Types{"string"},
 									},
 								},
 							},
-						},
-					},
-				},
-			},
+						}),
+					),
+				}),
+			),
 		},
 	}
 
-	return &pathItem, nil
+	return pathItem, nil
 }

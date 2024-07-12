@@ -37,10 +37,10 @@ require (
 	github.com/envoyproxy/protoc-gen-validate v1.0.4
 	github.com/fatih/color v1.15.0
 	github.com/fsnotify/fsnotify v1.7.0
+	github.com/getkin/kin-openapi v0.126.0
 	github.com/go-git/go-git/v5 v5.12.0
 	github.com/go-jose/go-jose/v3 v3.0.1
 	github.com/go-logr/zapr v1.2.4
-	github.com/go-openapi/spec v0.21.0
 	github.com/go-playground/validator/v10 v10.14.0
 	github.com/go-redis/redis_rate/v10 v10.0.1
 	github.com/go-sql-driver/mysql v1.7.1
@@ -235,6 +235,7 @@ require (
 	github.com/huandu/xstrings v1.4.0 // indirect
 	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
+	github.com/invopop/yaml v0.3.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect
 	github.com/jackc/pgio v1.0.0 // indirect
 	github.com/jackc/pgpassfile v1.0.0 // indirect
@@ -275,6 +276,7 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0-rc5 // indirect
 	github.com/paulmach/orb v0.10.0 // indirect
+	github.com/perimeterx/marshmallow v1.1.5 // indirect
 	github.com/pierrec/lz4/v4 v4.1.18 // indirect
 	github.com/pingcap/errors v0.11.5-0.20221009092201-b66cddb77c32 // indirect
 	github.com/pingcap/failpoint v0.0.0-20220801062533-2eaa32854a6c // indirect
@@ -304,6 +306,7 @@ require (
 	github.com/tidwall/sjson v1.2.5 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
+	github.com/ugorji/go v1.1.4 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
 	github.com/xuri/efp v0.0.0-20220603152613-6918739fd470 // indirect
 	github.com/xuri/nfp v0.0.0-20220409054826-5e722a1d9e22 // indirect

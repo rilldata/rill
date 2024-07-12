@@ -3,28 +3,26 @@ package openapiutil
 import (
 	"encoding/json"
 
-	"github.com/go-openapi/spec"
+	"github.com/getkin/kin-openapi/openapi3"
 )
 
-func MapToParameters(params []map[string]any) ([]spec.Parameter, error) {
-	var parameters []spec.Parameter
-	for _, param := range params {
-		var specParam spec.Parameter
-		jsonData, err := json.Marshal(param)
-		if err != nil {
-			return nil, err
-		}
-		err = specParam.UnmarshalJSON(jsonData)
-		if err != nil {
-			return nil, err
-		}
-		parameters = append(parameters, specParam)
+func MapToParameters(params []map[string]any) (openapi3.Parameters, error) {
+	var parameters openapi3.Parameters
+	jsonData, err := json.Marshal(params)
+	if err != nil {
+		return nil, err
 	}
+
+	err = json.Unmarshal(jsonData, &parameters)
+	if err != nil {
+		return nil, err
+	}
+
 	return parameters, nil
 }
 
-func MapToSchema(schema map[string]any) (*spec.Schema, error) {
-	specSchema := spec.Schema{}
+func MapToSchema(schema map[string]any) (*openapi3.Schema, error) {
+	specSchema := openapi3.Schema{}
 	jsonData, err := json.Marshal(schema)
 	if err != nil {
 		return nil, err
