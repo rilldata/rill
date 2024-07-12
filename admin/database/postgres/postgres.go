@@ -1320,7 +1320,7 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 	return count, nil
 }
 
-func (c *connection) FindOrganizationMemberWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
+func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
@@ -1599,12 +1599,22 @@ func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID str
 
 func (c *connection) FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*database.ProjectAccessRequest, error) {
 	var res []*database.ProjectAccessRequest
-	err := c.getDB(ctx).SelectContext(ctx, &res, `
+	var err error
+	if afterID != "" {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
 			SELECT par.user_id
 			FROM project_access_requests par
-			WHERE par.project_id = $1 AND par.user_id > lower($2)
-			ORDER BY lower(par.email) LIMIT $3
-	`, projectID, afterID, limit)
+			WHERE par.project_id = $1 AND par.user_id > $2
+			ORDER BY par.user_id LIMIT $3
+		`, projectID, afterID, limit)
+	} else {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT par.user_id
+			FROM project_access_requests par
+			WHERE par.project_id = $1
+			ORDER BY par.user_id LIMIT $2
+		`, projectID, limit)
+	}
 	if err != nil {
 		return nil, parseErr("project access request", err)
 	}

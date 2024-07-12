@@ -1004,7 +1004,6 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	// TODO: quotas
 
 	existing, err := s.admin.DB.FindProjectAccessRequest(ctx, proj.ID, user.ID)
 	if err != nil && !errors.Is(err, database.ErrNotFound) {
@@ -1022,17 +1021,7 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	admins, err := s.admin.DB.FindOrganizationMemberWithManageUsersRole(ctx, proj.OrganizationID)
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	approveLink, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name, "-", "request-access", accessReq.ID, "approve")
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	denyLink, err := url.JoinPath(s.opts.FrontendURL, org.Name, proj.Name, "-", "request-access", accessReq.ID, "deny")
+	admins, err := s.admin.DB.FindOrganizationMembersWithManageUsersRole(ctx, proj.OrganizationID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
@@ -1044,8 +1033,8 @@ func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestP
 			Email:       user.Email,
 			OrgName:     org.Name,
 			ProjectName: proj.Name,
-			ApproveLink: approveLink,
-			DenyLink:    denyLink,
+			ApproveLink: s.urls.approveProjectAccess(org.Name, proj.Name, accessReq.ID),
+			DenyLink:    s.urls.denyProjectAccess(org.Name, proj.Name, accessReq.ID),
 		})
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
@@ -1113,7 +1102,6 @@ func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveP
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	// TODO: quotas
 
 	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
 	if err != nil {
