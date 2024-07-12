@@ -26,9 +26,9 @@ var (
 	errInvalidProtocol  = regexp.MustCompile(`unsupported protocol scheme`)
 	errTLSCert          = regexp.MustCompile(`certificate is not trusted`)
 	// retryable Druid errors
-	errCoordinatorDown = regexp.MustCompile("A leader node could not be found for")
-	errBrokerDown      = regexp.MustCompile("There are no available brokers")
-	errNoObject        = regexp.MustCompile("Object '.*' not found")
+	errCoordinatorDown = regexp.MustCompile("A leader node could not be found for") // HTTP 500
+	errBrokerDown      = regexp.MustCompile("There are no available brokers")       // HTTP 500
+	errNoObject        = regexp.MustCompile("Object '.*' not found")                // HTTP 400
 )
 
 type druidSQLDriver struct{}
@@ -95,11 +95,16 @@ func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error
 		return true, fmt.Errorf("Unauthorized request")
 	}
 
+	if resp.StatusCode == http.StatusTooManyRequests {
+		resp.Body.Close()
+		return false, nil
+	}
+
 	// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
 	// ref - https://druid.apache.org/docs/latest/api-reference/sql-api/#responses
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusBadRequest && resp.StatusCode != http.StatusInternalServerError {
 		resp.Body.Close()
-		return nil, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
+		return true, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
 	}
 
 	dec := json.NewDecoder(resp.Body)
@@ -187,13 +192,16 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 			return nil, retrier.Retry, err
 		}
 
-		switch resp.StatusCode {
-		case http.StatusTooManyRequests:
+		if resp.StatusCode == http.StatusTooManyRequests {
 			resp.Body.Close()
 			return nil, retrier.Retry, fmt.Errorf("Too many requests")
-		case http.StatusUnauthorized, http.StatusForbidden:
+		}
+
+		// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
+		// ref - https://druid.apache.org/docs/latest/api-reference/sql-api/#responses
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusBadRequest && resp.StatusCode != http.StatusInternalServerError {
 			resp.Body.Close()
-			return nil, retrier.Fail, fmt.Errorf("Unauthorized request")
+			return nil, retrier.Fail, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
 		}
 
 		dec := json.NewDecoder(resp.Body)
@@ -217,6 +225,8 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 					a = retrier.AdditionalCheck
 				}
 			}
+			// example:
+			// 500: Unable to parse the SQL
 			return nil, a, fmt.Errorf("%v", obj)
 		case []any:
 			columns := toStringArray(v)
