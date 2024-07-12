@@ -251,18 +251,17 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 
 	// user has not authorized github app
 	if user.GithubUsername == "" {
-		// TODO
 		return nil, status.Error(codes.Unauthenticated, "not authenticated")
 	}
 
 	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
 	if err != nil {
-		return nil, status.Error(codes.Internal, "userAccessToken: "+err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	// refresh token changes after using it for getting a new token
 	// so saving the updated refresh token
-	user, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
+	_, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
 		DisplayName:         user.DisplayName,
 		PhotoURL:            user.PhotoURL,
 		GithubUsername:      user.GithubUsername,
@@ -282,18 +281,14 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 		PerPage: 0,
 	})
 	if err != nil {
-		return nil, status.Error(codes.Internal, "ListUserInstallations:"+err.Error())
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	repos := make([]*adminv1.ListGithubUserReposResponse_Repo, 0)
 	for _, installation := range installations {
-		instToken, _, err := s.admin.Github.AppClient().Apps.CreateInstallationToken(ctx, *installation.ID, &github.InstallationTokenOptions{
-			RepositoryIDs: nil,
-			Repositories:  nil,
-			Permissions:   nil,
-		})
+		instToken, _, err := s.admin.Github.AppClient().Apps.CreateInstallationToken(ctx, *installation.ID, nil)
 		if err != nil {
-			return nil, status.Error(codes.Internal, "get token:"+err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		// use the installation token to fetch the repos accessible to it
@@ -301,7 +296,7 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 
 		req, err := instClient.NewRequest("GET", *installation.RepositoriesURL, nil)
 		if err != nil {
-			return nil, status.Error(codes.Internal, "get repos:"+err.Error())
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 
 		var reposResp struct {
