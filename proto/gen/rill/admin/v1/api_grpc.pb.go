@@ -124,6 +124,10 @@ const (
 	AdminService_GenerateAlertYAML_FullMethodName                     = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                          = "/rill.admin.v1.AdminService/GetAlertYAML"
 	AdminService_ListPublicBillingPlans_FullMethodName                = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
+	AdminService_RequestProjectAccess_FullMethodName                  = "/rill.admin.v1.AdminService/RequestProjectAccess"
+	AdminService_GetProjectAccessRequest_FullMethodName               = "/rill.admin.v1.AdminService/GetProjectAccessRequest"
+	AdminService_ApproveProjectAccess_FullMethodName                  = "/rill.admin.v1.AdminService/ApproveProjectAccess"
+	AdminService_DenyProjectAccess_FullMethodName                     = "/rill.admin.v1.AdminService/DenyProjectAccess"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -342,6 +346,10 @@ type AdminServiceClient interface {
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
+	RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error)
+	GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error)
+	ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error)
+	DenyProjectAccess(ctx context.Context, in *DenyProjectAccessRequest, opts ...grpc.CallOption) (*DenyProjectAccessResponse, error)
 }
 
 type adminServiceClient struct {
@@ -1402,6 +1410,46 @@ func (c *adminServiceClient) ListPublicBillingPlans(ctx context.Context, in *Lis
 	return out, nil
 }
 
+func (c *adminServiceClient) RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestProjectAccessResponse)
+	err := c.cc.Invoke(ctx, AdminService_RequestProjectAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectAccessRequestResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetProjectAccessRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApproveProjectAccessResponse)
+	err := c.cc.Invoke(ctx, AdminService_ApproveProjectAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DenyProjectAccess(ctx context.Context, in *DenyProjectAccessRequest, opts ...grpc.CallOption) (*DenyProjectAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DenyProjectAccessResponse)
+	err := c.cc.Invoke(ctx, AdminService_DenyProjectAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -1618,6 +1666,10 @@ type AdminServiceServer interface {
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
+	RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error)
+	GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error)
+	ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error)
+	DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1939,6 +1991,18 @@ func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYA
 }
 func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPublicBillingPlans not implemented")
+}
+func (UnimplementedAdminServiceServer) RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestProjectAccess not implemented")
+}
+func (UnimplementedAdminServiceServer) GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectAccessRequest not implemented")
+}
+func (UnimplementedAdminServiceServer) ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApproveProjectAccess not implemented")
+}
+func (UnimplementedAdminServiceServer) DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DenyProjectAccess not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -3843,6 +3907,78 @@ func _AdminService_ListPublicBillingPlans_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_RequestProjectAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestProjectAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RequestProjectAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RequestProjectAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RequestProjectAccess(ctx, req.(*RequestProjectAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetProjectAccessRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectAccessRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetProjectAccessRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetProjectAccessRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetProjectAccessRequest(ctx, req.(*GetProjectAccessRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ApproveProjectAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApproveProjectAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ApproveProjectAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ApproveProjectAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ApproveProjectAccess(ctx, req.(*ApproveProjectAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DenyProjectAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DenyProjectAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DenyProjectAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DenyProjectAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DenyProjectAccess(ctx, req.(*DenyProjectAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -4269,6 +4405,22 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPublicBillingPlans",
 			Handler:    _AdminService_ListPublicBillingPlans_Handler,
+		},
+		{
+			MethodName: "RequestProjectAccess",
+			Handler:    _AdminService_RequestProjectAccess_Handler,
+		},
+		{
+			MethodName: "GetProjectAccessRequest",
+			Handler:    _AdminService_GetProjectAccessRequest_Handler,
+		},
+		{
+			MethodName: "ApproveProjectAccess",
+			Handler:    _AdminService_ApproveProjectAccess_Handler,
+		},
+		{
+			MethodName: "DenyProjectAccess",
+			Handler:    _AdminService_DenyProjectAccess_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},
