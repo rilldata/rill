@@ -186,7 +186,7 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 		title = "Rill project API"
 	}
 
-	doc := &openapi3.T{
+	spec := &openapi3.T{
 		OpenAPI: "3.0.3",
 		Info: &openapi3.Info{
 			Title:   title,
@@ -206,7 +206,7 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 		runtimeHost = fmt.Sprintf("localhost:%d", s.opts.HTTPPort)
 	}
 
-	doc.Servers = openapi3.Servers{
+	spec.Servers = openapi3.Servers{
 		&openapi3.Server{
 			URL: fmt.Sprintf("http://%s/v1/instances/%s/api", runtimeHost, instanceID),
 		},
@@ -218,10 +218,10 @@ func (s *Server) generateOpenAPISpec(ctx context.Context, instanceID string, api
 			return nil, err
 		}
 
-		doc.Paths.Set(fmt.Sprintf("/%s", name), pathItem)
+		spec.Paths.Set(fmt.Sprintf("/%s", name), pathItem)
 	}
 
-	return doc, nil
+	return spec, nil
 }
 
 func (s *Server) generatePathItemSpec(name string, api *runtimev1.API) (*openapi3.PathItem, error) {
