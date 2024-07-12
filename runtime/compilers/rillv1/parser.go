@@ -22,6 +22,14 @@ const (
 	maxFileSize = 1 << 17 // 128kb
 )
 
+// ignorePathPrefixes are prefixes of paths that should be ignored by the parser.
+// Note: Generally these ignores should be applied at the repo level (through the defaults for ignore_paths in rill.yaml).
+// This is only for files we DO want to list and show in the UI, but don't want to parse.
+var ignorePathPrefixes = []string{
+	"/.rillcloud/",
+	"/.github/",
+}
+
 // Resource parsed from code files.
 // One file may output multiple resources and multiple files may contribute config to one resource.
 type Resource struct {
@@ -996,10 +1004,13 @@ func pathIsDotEnv(path string) bool {
 }
 
 // pathIsIgnored returns true if the path should be ignored by the parser.
-// Note: Generally these defaults should be applied at the repo level (in the defaults for ignore_paths in rill.yaml).
-// This is only for files we DO want to list and show in the UI, but don't want to parse.
 func pathIsIgnored(p string) bool {
-	return strings.HasPrefix(p, "/.rillcloud/")
+	for _, prefix := range ignorePathPrefixes {
+		if strings.HasPrefix(p, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // normalizePath normalizes a user-provided path to the format returned from ListRecursive.
