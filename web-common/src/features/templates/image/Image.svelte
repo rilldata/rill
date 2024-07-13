@@ -27,12 +27,12 @@
     ...rendererProperties,
     css: {
       ...DEFAULT_IMAGE_PROPERTIES.css,
-      ...rendererProperties.style,
+      ...rendererProperties.css,
     },
   } as ImageProperties;
 
   $: styleString = Object.entries(imageProperties.css || {})
-    .map(([k, v]) => `${k}:${v}`)
+    .map(([k, v]) => `${camelToKebab(k)}:${v}`)
     .join(";");
 
   let imageSrc: string | null = null;
@@ -80,6 +80,10 @@
     const regex = /^(https?):\/\/[^\s/$.?#].[^\s]*$/i;
     return regex.test(string);
   };
+
+  function camelToKebab(str) {
+    return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
+  }
 </script>
 
 {#if errorMessage}
