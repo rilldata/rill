@@ -57,8 +57,7 @@ export interface ImageAdjust {
 }
 export interface ImageProperties {
   url: string;
-  size?: string;
-  adjust?: ImageAdjust;
+  css?: { [key: string]: any };
 }
 
 export interface ImageTemplateT {

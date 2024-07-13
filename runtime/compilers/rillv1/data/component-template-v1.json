@@ -27,29 +27,11 @@
       ],
       "type": "object"
     },
-    "ImageAdjust": {
-      "additionalProperties": false,
-      "properties": {
-        "blur": {
-          "type": "number"
-        },
-        "opacity": {
-          "type": "number"
-        },
-        "saturation": {
-          "type": "number"
-        }
-      },
-      "type": "object"
-    },
     "ImageProperties": {
       "additionalProperties": false,
       "properties": {
-        "adjust": {
-          "$ref": "#/definitions/ImageAdjust"
-        },
-        "size": {
-          "type": "string"
+        "css": {
+          "type": "object"
         },
         "url": {
           "type": "string"
