@@ -7,16 +7,11 @@
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
-  interface ImageProperties {
-    url: string;
-    css?: Partial<CSSStyleDeclaration>;
-  }
-
   const instanceId = get(runtime).instanceId;
   const DEFAULT_IMAGE_PROPERTIES: ImageProperties = {
     url: "",
     css: {
-      objectFit: "contain",
+      "object-fit": "contain",
       opacity: "1",
       filter: "blur(0px) saturate(1)",
     },
@@ -32,7 +27,7 @@
   } as ImageProperties;
 
   $: styleString = Object.entries(imageProperties.css || {})
-    .map(([k, v]) => `${camelToKebab(k)}:${v}`)
+    .map(([k, v]) => `${k}:${v}`)
     .join(";");
 
   let imageSrc: string | null = null;
@@ -80,10 +75,6 @@
     const regex = /^(https?):\/\/[^\s/$.?#].[^\s]*$/i;
     return regex.test(string);
   };
-
-  function camelToKebab(str) {
-    return str.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
-  }
 </script>
 
 {#if errorMessage}
