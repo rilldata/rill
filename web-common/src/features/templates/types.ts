@@ -50,11 +50,6 @@ export interface MarkdownTemplateT {
   markdown: MarkdownProperties;
 }
 
-export interface ImageAdjust {
-  opacity?: number;
-  blur?: number;
-  saturation?: number;
-}
 export interface ImageProperties {
   url: string;
   css?: { [key: string]: any };
