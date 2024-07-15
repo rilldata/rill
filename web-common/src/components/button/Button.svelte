@@ -32,6 +32,8 @@
   export let builders: Builder[] = [];
   export let loading = false;
   export let target: string | undefined = undefined;
+  // needed to set certain style that could be overridden by the style block in this component
+  export let forcedStyle = "";
 
   const dispatch = createEventDispatcher();
 
@@ -68,6 +70,7 @@
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
   on:click={handleClick}
+  style={forcedStyle}
 >
   {#if loading}
     <svg

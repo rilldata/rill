@@ -22,7 +22,7 @@
   };
   const schema = yup(
     object({
-      emails: array(string().email("Invalid email")).min(1).max(2),
+      emails: array(string().email("Invalid email")),
       role: string().required(),
     }),
   );
@@ -50,6 +50,7 @@
         );
         onInvite();
       },
+      validationMethod: "oninput",
     },
   );
 </script>
@@ -68,7 +69,7 @@
     errors={$errors.emails}
     useTab
   >
-    <div slot="within-input" class=" h-full items-center flex">
+    <div slot="within-input" class="h-full items-center flex">
       <UserRoleSelect bind:value={$form.role} />
     </div>
     <Button
@@ -76,7 +77,10 @@
       type="primary"
       form="user-invite-form"
       slot="beside-input"
-      disabled={$submitting}>Invite</Button
+      disabled={$submitting}
+      forcedStyle="height: 32px !important;"
     >
+      Invite
+    </Button>
   </MultiInput>
 </form>

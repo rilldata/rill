@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { IconButton } from "@rilldata/web-common/components/button";
+  import { compact, IconButton } from "@rilldata/web-common/components/button";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import { slide } from "svelte/transition";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -21,6 +21,7 @@
 
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
+  export let onChange = () => {};
 
   let editingInput = "";
   let focused = false;
@@ -68,12 +69,12 @@
   {/if}
   <div class="flex flex-row gap-1.5 items-center">
     <div
-      class="flex flex-row items-center bg-white rounded-sm border border-gray-300 px-3 py-[5px] w-full {contentClassName}"
+      class="flex flex-row items-center bg-white rounded-sm border border-gray-300 px-1 py-[3px] w-full {contentClassName}"
       class:outline={focused || hasSomeErrors}
       class:outline-red-500={hasSomeErrors}
       class:outline-primary-500={focused && !hasSomeErrors}
     >
-      <div class="flex flex-wrap gap-2 w-full">
+      <div class="flex flex-wrap gap-1 w-full min-h-[24px]">
         {#each values as _, i}
           {@const hasError = errors?.[i]?.length}
           <div
@@ -86,8 +87,8 @@
             >
               {values[i]}
             </div>
-            <IconButton disableHover on:click={() => handleRemove(i)}>
-              <XIcon size="16px" className="text-gray-500 cursor-pointer" />
+            <IconButton disableHover compact on:click={() => handleRemove(i)}>
+              <XIcon size="12px" className="text-gray-500 cursor-pointer" />
             </IconButton>
           </div>
         {/each}
