@@ -114,7 +114,10 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 			w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project", d.ProjectID), zap.String("deployment", d.ID), zap.Error(err))
 			return nil
 		}
-		f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", id), zap.Object("annotations", annotations)}
+		f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", id)}
+		for k, v := range annotations.ToMap() {
+			f = append(f, zap.String(k, v))
+		}
 		if i.OlapError != "" {
 			f = append(f, zap.String("olap_error", i.OlapError))
 		}
