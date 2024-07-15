@@ -12,7 +12,6 @@ import (
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
@@ -88,21 +87,46 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 		return nil
 	}
 
-	if !isRuntimeHealthy(resp) {
-		s, _ := protojson.Marshal(resp)
-		w.logger.Error("deploymentsHealthCheck: runtime is unhealthy", zap.String("host", d.RuntimeHost), zap.ByteString("health_response", s))
+	if runtimeUnhealthy(resp) {
+		f := []zap.Field{zap.String("host", d.RuntimeHost)}
+		if resp.LimiterError != "" {
+			f = append(f, zap.String("limiter_error", resp.LimiterError))
+		}
+		if resp.ConnCacheError != "" {
+			f = append(f, zap.String("conn_cache_error", resp.ConnCacheError))
+		}
+		if resp.MetastoreError != "" {
+			f = append(f, zap.String("metastore_error", resp.MetastoreError))
+		}
+		if resp.NetworkError != "" {
+			f = append(f, zap.String("network_error", resp.NetworkError))
+		}
+		w.logger.Error("deploymentsHealthCheck: runtime is unhealthy", f...)
+		return nil
+	}
+	for id, i := range resp.InstancesHealth {
+		if !instanceUnhealthy(i) {
+			continue
+		}
+		f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", id)}
+		if i.OlapError != "" {
+			f = append(f, zap.String("olap_error", i.OlapError))
+		}
+		if i.ControllerError != "" {
+			f = append(f, zap.String("controller_error", i.ControllerError))
+		}
+		if i.RepoError != "" {
+			f = append(f, zap.String("repo_error", i.RepoError))
+		}
+		w.logger.Error("deploymentsHealthCheck: runtime instance is unhealthy", f...)
 	}
 	return nil
 }
 
-func isRuntimeHealthy(r *runtimev1.HealthResponse) bool {
-	if r.LimiterError != "" || r.ConnCacheError != "" || r.MetastoreError != "" || r.NetworkError != "" {
-		return false
-	}
-	for _, v := range r.InstancesHealth {
-		if v.ControllerError != "" || v.OlapError != "" || v.RepoError != "" {
-			return false
-		}
-	}
-	return true
+func runtimeUnhealthy(r *runtimev1.HealthResponse) bool {
+	return r.LimiterError != "" || r.ConnCacheError != "" || r.MetastoreError != "" || r.NetworkError != ""
+}
+
+func instanceUnhealthy(i *runtimev1.InstanceHealth) bool {
+	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != ""
 }
