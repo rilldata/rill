@@ -32,15 +32,15 @@ import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileCreateSourceYAML } from "../sourceUtils";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
-export interface RemoteSourceFormValues {
+interface AddDataFormValues {
   // sourceName: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: any;
 }
 
-export async function submitRemoteSourceForm(
+export async function submitAddDataForm(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
-  values: RemoteSourceFormValues,
+  values: AddDataFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
 

@@ -15,7 +15,7 @@
   import { overlay } from "../../../layout/overlay-store";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
-  import { submitRemoteSourceForm } from "./submitRemoteSourceForm";
+  import { submitAddDataForm } from "./submitAddDataForm";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
 
   export let connector: V1ConnectorDriver;
@@ -34,7 +34,7 @@
         if (!connector.implementsOlap) {
           overlay.set({ title: `Importing ${values.sourceName}` });
           try {
-            await submitRemoteSourceForm(queryClient, connector, values);
+            await submitAddDataForm(queryClient, connector, values);
             await goto(`/files/sources/${values.sourceName}.yaml`);
             dispatch("close");
           } catch (e) {
@@ -46,7 +46,7 @@
 
         // Connectors
         try {
-          await submitRemoteSourceForm(queryClient, connector, values);
+          await submitAddDataForm(queryClient, connector, values);
           await goto(`/files/connectors/${connector.name}.yaml`);
           dispatch("close");
         } catch (e) {

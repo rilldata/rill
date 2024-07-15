@@ -30,9 +30,9 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { duplicateSourceName } from "../sources-store";
+  import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
-  import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
 
   let step = 0;
@@ -233,7 +233,7 @@
           {#if selectedConnector.name === "local_file"}
             <LocalSourceUpload on:close={resetModal} on:back={back} />
           {:else if selectedConnector}
-            <RemoteSourceForm
+            <AddDataForm
               connector={selectedConnector}
               on:close={resetModal}
               on:back={back}
