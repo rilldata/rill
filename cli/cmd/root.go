@@ -8,6 +8,7 @@ import (
 
 	"github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/cli/cmd/auth"
+	"github.com/rilldata/rill/cli/cmd/billing"
 	"github.com/rilldata/rill/cli/cmd/deploy"
 	"github.com/rilldata/rill/cli/cmd/devtool"
 	"github.com/rilldata/rill/cli/cmd/docs"
@@ -22,6 +23,7 @@ import (
 	"github.com/rilldata/rill/cli/cmd/uninstall"
 	"github.com/rilldata/rill/cli/cmd/upgrade"
 	"github.com/rilldata/rill/cli/cmd/user"
+	"github.com/rilldata/rill/cli/cmd/usergroup"
 	versioncmd "github.com/rilldata/rill/cli/cmd/version"
 	"github.com/rilldata/rill/cli/cmd/whoami"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -145,6 +147,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		deploy.DeployCmd(ch),
 		env.EnvCmd(ch),
 		user.UserCmd(ch),
+		usergroup.UsergroupCmd(ch),
 		org.OrgCmd(ch),
 		project.ProjectCmd(ch),
 		shareurl.ShareURLCmd(ch),
@@ -162,6 +165,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		admin.AdminCmd(ch),
 		runtime.RuntimeCmd(ch),
 		verifyInstallCmd(ch),
+		billing.BillingCmd(ch),
 	)
 
 	return rootCmd.ExecuteContext(ctx)

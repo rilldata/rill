@@ -86,6 +86,7 @@ type DB interface {
 	InsertProjectWhitelistedDomain(ctx context.Context, opts *InsertProjectWhitelistedDomainOptions) (*ProjectWhitelistedDomain, error)
 	DeleteProjectWhitelistedDomain(ctx context.Context, id string) error
 
+	FindDeployments(ctx context.Context, afterID string, limit int) ([]*Deployment, error)
 	FindExpiredDeployments(ctx context.Context) ([]*Deployment, error)
 	FindDeploymentsForProject(ctx context.Context, projectID string) ([]*Deployment, error)
 	FindDeployment(ctx context.Context, id string) (*Deployment, error)
@@ -115,9 +116,15 @@ type DB interface {
 	CheckUserIsAProjectMember(ctx context.Context, userID, projectID string) (bool, error)
 
 	InsertUsergroup(ctx context.Context, opts *InsertUsergroupOptions) (*Usergroup, error)
+	UpdateUsergroupName(ctx context.Context, name, groupID string) (*Usergroup, error)
+	UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*Usergroup, error)
+	DeleteUsergroup(ctx context.Context, groupID string) error
+	FindUsergroupByName(ctx context.Context, orgName, name string) (*Usergroup, error)
 	FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*Usergroup, error)
-	InsertUsergroupMember(ctx context.Context, groupID, userID string) error
-	DeleteUsergroupMember(ctx context.Context, groupID, userID string) error
+	InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error
+	FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*MemberUser, error)
+	DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error
+	DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error
 
 	FindUserAuthTokens(ctx context.Context, userID string) ([]*UserAuthToken, error)
 	FindUserAuthToken(ctx context.Context, id string) (*UserAuthToken, error)
@@ -170,19 +177,29 @@ type DB interface {
 	ResolveOrganizationRolesForUser(ctx context.Context, userID, orgID string) ([]*OrganizationRole, error)
 	ResolveProjectRolesForUser(ctx context.Context, userID, projectID string) ([]*ProjectRole, error)
 
-	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*Member, error)
+	FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*MemberUser, error)
 	FindOrganizationMemberUsersByRole(ctx context.Context, orgID, roleID string) ([]*User, error)
 	InsertOrganizationMemberUser(ctx context.Context, orgID, userID, roleID string) error
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
+	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*MemberUser, error)
 
-	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*Member, error)
+	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*MemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
-	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
 	DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error
 	DeleteAllProjectMemberUserForOrganization(ctx context.Context, orgID, userID string) error
 	UpdateProjectMemberUserRole(ctx context.Context, projectID, userID, roleID string) error
+
+	FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*MemberUsergroup, error)
+	InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
+	UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error
+	DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error
+
+	FindProjectMemberUsergroups(ctx context.Context, projectID, afterName string, limit int) ([]*MemberUsergroup, error)
+	InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error
+	DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error
 
 	FindOrganizationInvites(ctx context.Context, orgID, afterEmail string, limit int) ([]*Invite, error)
 	FindOrganizationInvitesByEmail(ctx context.Context, userEmail string) ([]*OrganizationInvite, error)
@@ -198,6 +215,12 @@ type DB interface {
 	InsertProjectInvite(ctx context.Context, opts *InsertProjectInviteOptions) error
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
+
+	FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*ProjectAccessRequest, error)
+	FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*ProjectAccessRequest, error)
+	FindProjectAccessRequestByID(ctx context.Context, id string) (*ProjectAccessRequest, error)
+	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
+	DeleteProjectAccessRequest(ctx context.Context, id string) error
 
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
@@ -218,6 +241,12 @@ type DB interface {
 	FindUnusedAssets(ctx context.Context, limit int) ([]*Asset, error)
 	InsertAsset(ctx context.Context, organizationID, path, ownerID string) (*Asset, error)
 	DeleteAssets(ctx context.Context, ids []string) error
+
+	FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error)
+	// CountBillingProjectsForOrganization counts the projects which are not hibernated and created before the given time
+	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
+	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
+	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -239,39 +268,45 @@ var ErrNotUnique = errors.New("database: violates unique constraint")
 
 // Organization represents a tenant.
 type Organization struct {
-	ID                      string
-	Name                    string
-	Description             string
-	AllUsergroupID          *string   `db:"all_usergroup_id"`
-	CreatedOn               time.Time `db:"created_on"`
-	UpdatedOn               time.Time `db:"updated_on"`
-	QuotaProjects           int       `db:"quota_projects"`
-	QuotaDeployments        int       `db:"quota_deployments"`
-	QuotaSlotsTotal         int       `db:"quota_slots_total"`
-	QuotaSlotsPerDeployment int       `db:"quota_slots_per_deployment"`
-	QuotaOutstandingInvites int       `db:"quota_outstanding_invites"`
+	ID                                  string
+	Name                                string
+	Description                         string
+	AllUsergroupID                      *string   `db:"all_usergroup_id"`
+	CreatedOn                           time.Time `db:"created_on"`
+	UpdatedOn                           time.Time `db:"updated_on"`
+	QuotaProjects                       int       `db:"quota_projects"`
+	QuotaDeployments                    int       `db:"quota_deployments"`
+	QuotaSlotsTotal                     int       `db:"quota_slots_total"`
+	QuotaSlotsPerDeployment             int       `db:"quota_slots_per_deployment"`
+	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
+	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
+	BillingCustomerID                   string    `db:"billing_customer_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
 type InsertOrganizationOptions struct {
-	Name                    string `validate:"slug"`
-	Description             string
-	QuotaProjects           int
-	QuotaDeployments        int
-	QuotaSlotsTotal         int
-	QuotaSlotsPerDeployment int
-	QuotaOutstandingInvites int
+	Name                                string `validate:"slug"`
+	Description                         string
+	QuotaProjects                       int
+	QuotaDeployments                    int
+	QuotaSlotsTotal                     int
+	QuotaSlotsPerDeployment             int
+	QuotaOutstandingInvites             int
+	QuotaStorageLimitBytesPerDeployment int64
+	BillingCustomerID                   string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
 type UpdateOrganizationOptions struct {
-	Name                    string `validate:"slug"`
-	Description             string
-	QuotaProjects           int
-	QuotaDeployments        int
-	QuotaSlotsTotal         int
-	QuotaSlotsPerDeployment int
-	QuotaOutstandingInvites int
+	Name                                string `validate:"slug"`
+	Description                         string
+	QuotaProjects                       int
+	QuotaDeployments                    int
+	QuotaSlotsTotal                     int
+	QuotaSlotsPerDeployment             int
+	QuotaOutstandingInvites             int
+	QuotaStorageLimitBytesPerDeployment int64
+	BillingCustomerID                   string
 }
 
 // Project represents one Git connection.
@@ -351,6 +386,19 @@ const (
 	DeploymentStatusOK          DeploymentStatus = 2
 	DeploymentStatusError       DeploymentStatus = 4
 )
+
+func (d DeploymentStatus) String() string {
+	switch d {
+	case DeploymentStatusPending:
+		return "Pending"
+	case DeploymentStatusOK:
+		return "OK"
+	case DeploymentStatusError:
+		return "Error"
+	default:
+		return "Unspecified"
+	}
+}
 
 // Deployment is a single deployment of a git branch.
 // Deployments belong to a project.
@@ -453,9 +501,12 @@ type UpdateServiceOptions struct {
 
 // Usergroup represents a group of org members
 type Usergroup struct {
-	ID    string `db:"id"`
-	OrgID string `db:"org_id"`
-	Name  string `db:"name" validate:"slug"`
+	ID          string    `db:"id"`
+	OrgID       string    `db:"org_id"`
+	Name        string    `db:"name" validate:"slug"`
+	Description string    `db:"description"`
+	CreatedOn   time.Time `db:"created_on"`
+	UpdatedOn   time.Time `db:"updated_on"`
 }
 
 // InsertUsergroupOptions defines options for inserting a new usergroup
@@ -658,14 +709,22 @@ type ProjectRole struct {
 	ManageBookmarks       bool `db:"manage_bookmarks"`
 }
 
-// Member is a convenience type used for display-friendly representation of an org or project member.
-type Member struct {
+// MemberUser is a convenience type used for display-friendly representation of an org or project member.
+type MemberUser struct {
 	ID          string
 	Email       string
 	DisplayName string    `db:"display_name"`
 	RoleName    string    `db:"name"`
 	CreatedOn   time.Time `db:"created_on"`
 	UpdatedOn   time.Time `db:"updated_on"`
+}
+
+type MemberUsergroup struct {
+	ID        string    `db:"id"`
+	Name      string    `db:"name" validate:"slug"`
+	RoleName  string    `db:"role_name"`
+	CreatedOn time.Time `db:"created_on"`
+	UpdatedOn time.Time `db:"updated_on"`
 }
 
 // OrganizationInvite represents an outstanding invitation to join an org.
@@ -742,12 +801,13 @@ type ProjectWhitelistedDomainWithJoinedRoleNames struct {
 }
 
 const (
-	DefaultQuotaProjects           = 5
-	DefaultQuotaDeployments        = 10
-	DefaultQuotaSlotsTotal         = 20
-	DefaultQuotaSlotsPerDeployment = 5
-	DefaultQuotaOutstandingInvites = 200
-	DefaultQuotaSingleuserOrgs     = 3
+	DefaultQuotaProjects                       = 5
+	DefaultQuotaDeployments                    = 10
+	DefaultQuotaSlotsTotal                     = 20
+	DefaultQuotaSlotsPerDeployment             = 5
+	DefaultQuotaOutstandingInvites             = 200
+	DefaultQuotaSingleuserOrgs                 = 3
+	DefaultQuotaStorageLimitBytesPerDeployment = int64(5368709120)
 )
 
 type InsertOrganizationInviteOptions struct {
@@ -762,6 +822,18 @@ type InsertProjectInviteOptions struct {
 	InviterID string
 	ProjectID string `validate:"required"`
 	RoleID    string `validate:"required"`
+}
+
+type ProjectAccessRequest struct {
+	ID        string
+	UserID    string    `db:"user_id"`
+	ProjectID string    `db:"project_id"`
+	CreatedOn time.Time `db:"created_on"`
+}
+
+type InsertProjectAccessRequestOptions struct {
+	UserID    string `validate:"required"`
+	ProjectID string `validate:"required"`
 }
 
 type Bookmark struct {
@@ -819,7 +891,7 @@ type InsertVirtualFileOptions struct {
 
 type Asset struct {
 	ID             string
-	OrganizationID string    `db:"org_id"`
+	OrganizationID *string   `db:"org_id"`
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`

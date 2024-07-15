@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/XSAM/otelsql"
@@ -121,9 +122,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites)
-		VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
-		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -141,7 +142,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, updated_on=now() WHERE id=$8 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, updated_on=now() WHERE id=$10 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -441,6 +442,25 @@ func (c *connection) DeleteProjectWhitelistedDomain(ctx context.Context, id stri
 	return checkDeleteRow("project whitelist domain", res, err)
 }
 
+func (c *connection) FindDeployments(ctx context.Context, afterID string, limit int) ([]*database.Deployment, error) {
+	var qry strings.Builder
+	var args []any
+	qry.WriteString("SELECT d.* FROM deployments d ")
+	if afterID != "" {
+		qry.WriteString("WHERE d.id > $1 ORDER BY d.id LIMIT $2")
+		args = []any{afterID, limit}
+	} else {
+		qry.WriteString("ORDER BY d.id LIMIT $1")
+		args = []any{limit}
+	}
+	var res []*database.Deployment
+	err := c.getDB(ctx).SelectContext(ctx, &res, qry.String(), args...)
+	if err != nil {
+		return nil, parseErr("deployments", err)
+	}
+	return res, nil
+}
+
 // FindExpiredDeployments returns all the deployments which are expired as per prod ttl
 func (c *connection) FindExpiredDeployments(ctx context.Context) ([]*database.Deployment, error) {
 	var res []*database.Deployment
@@ -703,6 +723,41 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 	return res, nil
 }
 
+func (c *connection) UpdateUsergroupName(ctx context.Context, name, groupID string) (*database.Usergroup, error) {
+	res := &database.Usergroup{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET name=$1, updated_on=now() WHERE id=$2 RETURNING *", name, groupID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("usergroup", err)
+	}
+	return res, nil
+}
+
+func (c *connection) UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*database.Usergroup, error) {
+	res := &database.Usergroup{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET description=$1, updated_on=now() WHERE id=$2 RETURNING *", description, groupID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("usergroup", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteUsergroup(ctx context.Context, groupID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups WHERE id=$1", groupID)
+	return checkDeleteRow("usergroup", res, err)
+}
+
+func (c *connection) FindUsergroupByName(ctx context.Context, orgName, name string) (*database.Usergroup, error) {
+	res := &database.Usergroup{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, `
+		SELECT ug.* FROM usergroups ug JOIN orgs o ON ug.org_id = o.id
+		WHERE lower(ug.name)=lower($1) AND lower(o.name)=lower($2)
+	`, name, orgName).StructScan(res)
+	if err != nil {
+		return nil, parseErr("usergroup", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID string) ([]*database.Usergroup, error) {
 	var res []*database.Usergroup
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -715,7 +770,7 @@ func (c *connection) FindUsergroupsForUser(ctx context.Context, userID, orgID st
 	return res, nil
 }
 
-func (c *connection) InsertUsergroupMember(ctx context.Context, groupID, userID string) error {
+func (c *connection) InsertUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_users (user_id, usergroup_id) VALUES ($1, $2)", userID, groupID)
 	if err != nil {
 		return parseErr("usergroup member", err)
@@ -723,9 +778,33 @@ func (c *connection) InsertUsergroupMember(ctx context.Context, groupID, userID 
 	return nil
 }
 
-func (c *connection) DeleteUsergroupMember(ctx context.Context, groupID, userID string) error {
+func (c *connection) FindUsergroupMemberUsers(ctx context.Context, groupID, afterEmail string, limit int) ([]*database.MemberUser, error) {
+	var res []*database.MemberUser
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT uug.user_id as "id", u.email, u.display_name FROM usergroups_users uug
+		JOIN users u ON uug.user_id = u.id
+		WHERE uug.usergroup_id = $1 AND lower(u.email) > lower($2)
+		ORDER BY lower(u.email) LIMIT $3
+	`, groupID, afterEmail, limit)
+	if err != nil {
+		return nil, parseErr("usergroup member", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteUsergroupMemberUser(ctx context.Context, groupID, userID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id = $2", userID, groupID)
 	return checkDeleteRow("usergroup member", res, err)
+}
+
+func (c *connection) DeleteUsergroupsMemberUser(ctx context.Context, orgID, userID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		DELETE FROM usergroups_users WHERE user_id = $1 AND usergroup_id IN (SELECT id FROM usergroups WHERE org_id = $2)
+	`, userID, orgID)
+	if err != nil {
+		return parseErr("usergroup member", err)
+	}
+	return nil
 }
 
 func (c *connection) FindUserAuthTokens(ctx context.Context, userID string) ([]*database.UserAuthToken, error) {
@@ -1176,8 +1255,8 @@ func (c *connection) ResolveProjectRolesForUser(ctx context.Context, userID, pro
 	return res, nil
 }
 
-func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.Member, error) {
-	var res []*database.Member
+func (c *connection) FindOrganizationMemberUsers(ctx context.Context, orgID, afterEmail string, limit int) ([]*database.MemberUser, error) {
+	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
     	JOIN users_orgs_roles uor ON u.id = uor.user_id
@@ -1241,8 +1320,23 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 	return count, nil
 }
 
-func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.Member, error) {
-	var res []*database.Member
+func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
+	var res []*database.MemberUser
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+			JOIN users_orgs_roles uor ON u.id = uor.user_id
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id=$1 AND r.manage_org_members=true
+		ORDER BY lower(u.email)
+	`, orgID)
+	if err != nil {
+		return nil, parseErr("org members", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.MemberUser, error) {
+	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
 		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
     	JOIN users_projects_roles upr ON u.id = upr.user_id
@@ -1285,12 +1379,80 @@ func (c *connection) InsertProjectMemberUser(ctx context.Context, projectID, use
 	return nil
 }
 
+// FindOrganizationMemberUsergroups returns org user groups as a collection of MemberUsergroup.
+// If a user group has no org role then RoleName is empty.
+func (c *connection) FindOrganizationMemberUsergroups(ctx context.Context, orgID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+	var res []*database.MemberUsergroup
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT ug.id, ug.name, ug.created_on, ug.updated_on, COALESCE(r.name, '') as "role_name" FROM usergroups ug
+		LEFT JOIN usergroups_orgs_roles uor ON ug.id = uor.usergroup_id
+		LEFT JOIN org_roles r ON uor.org_role_id = r.id
+		WHERE ug.org_id=$1 AND lower(ug.name) > lower($2)
+		ORDER BY lower(ug.name) LIMIT $3
+	`, orgID, afterName, limit)
+	if err != nil {
+		return nil, parseErr("org groups", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error {
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_orgs_roles (usergroup_id, org_id, org_role_id) VALUES ($1, $2, $3)
+	`, groupID, orgID, roleID)
+	if err != nil {
+		return parseErr("org group member", err)
+	}
+	return nil
+}
+
+func (c *connection) UpdateOrganizationMemberUsergroup(ctx context.Context, groupID, orgID, roleID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE usergroups_orgs_roles SET org_role_id = $3 WHERE usergroup_id = $1 AND org_id = $2
+	`, groupID, orgID, roleID)
+	return checkUpdateRow("org group member", res, err)
+}
+
+func (c *connection) DeleteOrganizationMemberUsergroup(ctx context.Context, groupID, orgID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_orgs_roles WHERE usergroup_id = $1 AND org_id = $2", groupID, orgID)
+	return checkDeleteRow("org group member", res, err)
+}
+
+func (c *connection) FindProjectMemberUsergroups(ctx context.Context, projectID, afterName string, limit int) ([]*database.MemberUsergroup, error) {
+	var res []*database.MemberUsergroup
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT ug.id, ug.name, ug.created_on, ug.updated_on, r.name as "role_name" FROM usergroups ug
+		JOIN usergroups_projects_roles upr ON ug.id = upr.usergroup_id
+		JOIN project_roles r ON upr.project_role_id = r.id
+		WHERE upr.project_id=$1 AND lower(ug.name) > lower($2)
+		ORDER BY lower(ug.name) LIMIT $3
+	`, projectID, afterName, limit)
+	if err != nil {
+		return nil, parseErr("project groups", err)
+	}
+	return res, nil
+}
+
 func (c *connection) InsertProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
-	_, err := c.getDB(ctx).ExecContext(ctx, "INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id) VALUES ($1, $2, $3)", groupID, projectID, roleID)
+	_, err := c.getDB(ctx).ExecContext(ctx, `
+		INSERT INTO usergroups_projects_roles (usergroup_id, project_id, project_role_id) VALUES ($1, $2, $3)
+	`, groupID, projectID, roleID)
 	if err != nil {
 		return parseErr("project group member", err)
 	}
 	return nil
+}
+
+func (c *connection) UpdateProjectMemberUsergroup(ctx context.Context, groupID, projectID, roleID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `
+		UPDATE usergroups_projects_roles SET project_role_id = $3 WHERE usergroup_id = $1 AND project_id = $2
+	`, groupID, projectID, roleID)
+	return checkUpdateRow("project group member", res, err)
+}
+
+func (c *connection) DeleteProjectMemberUsergroup(ctx context.Context, groupID, projectID string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM usergroups_projects_roles WHERE usergroup_id = $1 AND project_id = $2", groupID, projectID)
+	return checkDeleteRow("project group member", res, err)
 }
 
 func (c *connection) DeleteProjectMemberUser(ctx context.Context, projectID, userID string) error {
@@ -1433,6 +1595,66 @@ func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1 WHERE id = $2`, roleID, id)
 	return checkUpdateRow("project invite", res, err)
+}
+
+func (c *connection) FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*database.ProjectAccessRequest, error) {
+	var res []*database.ProjectAccessRequest
+	var err error
+	if afterID != "" {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT par.user_id
+			FROM project_access_requests par
+			WHERE par.project_id = $1 AND par.user_id > $2
+			ORDER BY par.user_id LIMIT $3
+		`, projectID, afterID, limit)
+	} else {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT par.user_id
+			FROM project_access_requests par
+			WHERE par.project_id = $1
+			ORDER BY par.user_id LIMIT $2
+		`, projectID, limit)
+	}
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*database.ProjectAccessRequest, error) {
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_requests WHERE user_id = $1 AND project_id = $2", userID, projectID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectAccessRequestByID(ctx context.Context, id string) (*database.ProjectAccessRequest, error) {
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_requests WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertProjectAccessRequest(ctx context.Context, opts *database.InsertProjectAccessRequestOptions) (*database.ProjectAccessRequest, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO project_access_requests (user_id, project_id) VALUES ($1, $2) RETURNING *", opts.UserID, opts.ProjectID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM project_access_requests WHERE id = $1", id)
+	return checkDeleteRow("project access request", res, err)
 }
 
 // FindBookmarks returns a list of bookmarks for a user per project
@@ -1600,6 +1822,41 @@ func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*databa
 func (c *connection) DeleteAssets(ctx context.Context, ids []string) error {
 	_, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM assets WHERE id=ANY($1)", ids)
 	return parseErr("asset", err)
+}
+
+func (c *connection) FindOrganizationIDsWithBilling(ctx context.Context) ([]string, error) {
+	var res []string
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT id FROM orgs WHERE billing_customer_id <> ''`)
+	if err != nil {
+		return nil, parseErr("billing orgs", err)
+	}
+	return res, nil
+}
+
+func (c *connection) CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error) {
+	var count int
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT COUNT(*) FROM projects WHERE org_id = $1 AND prod_deployment_id IS NOT NULL AND created_on < $2`, orgID, createdBefore).Scan(&count)
+	if err != nil {
+		return 0, parseErr("billing projects", err)
+	}
+	return count, nil
+}
+
+func (c *connection) FindBillingUsageReportedOn(ctx context.Context) (time.Time, error) {
+	var usageReportedOn sql.NullTime
+	err := c.getDB(ctx).QueryRowxContext(ctx, `SELECT usage_reported_on FROM billing_reporting_time`).Scan(&usageReportedOn)
+	if err != nil {
+		return time.Time{}, parseErr("billing usage", err)
+	}
+	if !usageReportedOn.Valid {
+		return time.Time{}, nil
+	}
+	return usageReportedOn.Time, nil
+}
+
+func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_reporting_time SET usage_reported_on=$1`, usageReportedOn)
+	return checkUpdateRow("billing usage", res, err)
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.

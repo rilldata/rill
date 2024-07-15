@@ -23,12 +23,9 @@ type builtinSQLArgs struct {
 // It executes a SQL query provided dynamically through the args.
 // It errors if the user identified by the attributes is not an admin.
 func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolver, error) {
-	// Only admins and non-users (i.e. local users and service accounts) can run arbitrary SQL queries.
-	if len(opts.UserAttributes) > 0 {
-		admin, ok := opts.UserAttributes["admin"].(bool)
-		if !ok || !admin {
-			return nil, errors.New("must be an admin to run arbitrary SQL queries")
-		}
+	// Only admins can run arbitrary SQL queries.
+	if !opts.Claims.SkipChecks && !opts.Claims.Admin() {
+		return nil, errors.New("must be an admin to run arbitrary SQL queries")
 	}
 
 	// Decode the args
@@ -48,7 +45,7 @@ func newBuiltinSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.
 		Args: map[string]any{
 			"priority": args.Priority,
 		},
-		UserAttributes: opts.UserAttributes,
-		ForExport:      opts.ForExport,
+		Claims:    opts.Claims,
+		ForExport: opts.ForExport,
 	})
 }

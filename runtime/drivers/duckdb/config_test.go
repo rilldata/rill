@@ -26,7 +26,7 @@ func TestConfig(t *testing.T) {
 
 	cfg, err = newConfig(map[string]any{"dsn": "", "memory_limit_gb": "1", "cpu": 2})
 	require.NoError(t, err)
-	require.Equal(t, "?custom_user_agent=rill&max_memory=1GB&threads=1", cfg.DSN)
+	require.Equal(t, "?custom_user_agent=rill&max_memory=1GB&threads=2", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"data_dir": "path/to"})
@@ -72,10 +72,10 @@ func TestConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, "duck.db", cfg.DBFilePath)
 
-	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "4", "cpu": "2"})
+	cfg, err = newConfig(map[string]any{"dsn": "duck.db", "memory_limit_gb": "8", "cpu": "2"})
 	require.NoError(t, err)
 	require.Equal(t, "duck.db", cfg.DBFilePath)
-	require.Equal(t, "duck.db?custom_user_agent=rill&max_memory=4GB&threads=1", cfg.DSN)
+	require.Equal(t, "duck.db?custom_user_agent=rill&max_memory=8GB&threads=2", cfg.DSN)
 	require.Equal(t, 2, cfg.PoolSize)
 
 	cfg, err = newConfig(map[string]any{"dsn": "duck.db?max_memory=2GB&rill_pool_size=4"})
@@ -92,7 +92,7 @@ func Test_specialCharInPath(t *testing.T) {
 	require.NoError(t, err)
 
 	dbFile := filepath.Join(path, "st@g3's.db")
-	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "memory_limit_gb": "4", "cpu": "2"}, activity.NewNoopClient(), zap.NewNop())
+	conn, err := Driver{}.Open("default", map[string]any{"path": dbFile, "memory_limit_gb": "4", "cpu": "1"}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 	config := conn.(*connection).config
 	require.Equal(t, filepath.Join(path, "st@g3's.db?custom_user_agent=rill&max_memory=4GB&threads=1"), config.DSN)

@@ -19,18 +19,12 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 	ctx, cancel := context.WithTimeout(ctx, defaultExportTimeout)
 	defer cancel()
 
-	path := e.rt.TempDir(e.instanceID, "metrics_export")
-	err := os.MkdirAll(path, os.ModePerm)
-	if err != nil {
-		return "", err
-	}
-
 	name, err := randomString("export-", 16)
 	if err != nil {
 		return "", err
 	}
 	name = format.Filename(name)
-	path = filepath.Join(path, name)
+	path := filepath.Join(e.rt.TempDir(e.instanceID), name)
 
 	ic, ir, err := e.rt.AcquireHandle(ctx, e.instanceID, inputConnector)
 	if err != nil {
@@ -59,8 +53,9 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 		OutputHandle:    oc,
 		OutputConnector: "file",
 		OutputProperties: map[string]any{
-			"path":   path,
-			"format": format,
+			"path":                  path,
+			"format":                format,
+			"file_size_limit_bytes": e.instanceCfg.DownloadLimitBytes,
 		},
 		Priority: e.priority,
 	}
@@ -75,6 +70,7 @@ func (e *Executor) executeExport(ctx context.Context, format drivers.FileFormat,
 
 	_, err = me.Execute(ctx)
 	if err != nil {
+		_ = os.Remove(path)
 		return "", fmt.Errorf("failed to execute export: %w", err)
 	}
 
