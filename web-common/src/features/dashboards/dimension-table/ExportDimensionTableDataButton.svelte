@@ -43,6 +43,7 @@
   });
 
   $: scheduledReportsQueryArgs = getDimensionTableExportArgs(ctx);
+  $: console.log($scheduledReportsQueryArgs);
 </script>
 
 <WithTogglableFloatingElement
