@@ -1,23 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user list
+title: rill share-url delete
 ---
-## rill user list
+## rill share-url delete
 
-List
-
-```
-rill user list [flags]
-```
-
-### Flags
+Delete a shareable URL
 
 ```
-      --group string        User group
-      --org string          Organization
-      --page-size uint32    Number of users to return per page (default 50)
-      --page-token string   Pagination token
-      --project string      Project
+rill share-url delete <id> [flags]
 ```
 
 ### Global flags
@@ -27,9 +17,10 @@ rill user list [flags]
       --format string      Output format (options: "human", "json", "csv") (default "human")
   -h, --help               Print usage
       --interactive        Prompt for missing required parameters (default true)
+      --org string         Organization Name
 ```
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill share-url](share-url.md)	 - Manage shareable URLs
 
