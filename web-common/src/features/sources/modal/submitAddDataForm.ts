@@ -33,7 +33,7 @@ import { compileCreateSourceYAML } from "../sourceUtils";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
 interface AddDataFormValues {
-  // sourceName: string; // Commenting out until we add user-provided names for Connectors
+  // name: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: any;
 }
 
@@ -84,7 +84,7 @@ export async function submitAddDataForm(
   if (!connector.implementsOlap) {
     // Make a new <source>.yaml file
     await runtimeServicePutFile(instanceId, {
-      path: getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+      path: getFileAPIPathFromNameAndType(values.name, EntityType.Table),
       blob: compileCreateSourceYAML(formValues, connector.name as string),
       create: true,
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
@@ -92,7 +92,7 @@ export async function submitAddDataForm(
 
     await checkSourceImported(
       queryClient,
-      getFilePathFromNameAndType(values.sourceName, EntityType.Table),
+      getFilePathFromNameAndType(values.name, EntityType.Table),
     );
 
     return;
