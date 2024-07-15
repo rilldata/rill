@@ -192,6 +192,7 @@ func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriv
 	return &runtimev1.ConnectorDriver_Property{
 		Key:         spec.Key,
 		Type:        t,
+		Prompt:      spec.Prompt,
 		Required:    spec.Required,
 		DisplayName: spec.DisplayName,
 		Description: spec.Description,

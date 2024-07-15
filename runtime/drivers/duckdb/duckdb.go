@@ -46,18 +46,13 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:  "path",
-			Type: drivers.StringPropertyType,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "db",
+			Key:         "path",
 			Type:        drivers.StringPropertyType,
+			Prompt:      true,
 			Required:    true,
-			DisplayName: "DB",
-			Description: "Path to external DuckDB database. Use md:<dbname> for motherduckb.",
-			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
+			DisplayName: "Path",
+			Description: "Path to external DuckDB database.",
+			Placeholder: "/path/to/main.db",
 		},
 	},
 	ImplementsCatalog: true,

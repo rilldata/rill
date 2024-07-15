@@ -661,22 +661,24 @@ message ConnectorDriver {
     string key = 1;
     // The type expected for this property
     Type type = 2;
+    // If true, the property should be displayed in the UI
+    bool prompt = 3;
     // Required is true if the field must be set
-    bool required = 3;
+    bool required = 4;
     // Pretty name for the property
-    string display_name = 4;
+    string display_name = 5;
     // Human readable description of the field
-    string description = 5;
+    string description = 6;
     // Link to documentation for this property
-    string docs_url = 6;
+    string docs_url = 7;
     // Additional textual explanation for use in UIs
-    string hint = 7;
+    string hint = 8;
     // Default value for the property
-    string default = 8;
+    string default = 9;
     // Placeholder value for use in UIs
-    string placeholder = 9;
+    string placeholder = 10;
     // If true, the property is a secret and should not be displayed in UIs
-    bool secret = 10;
+    bool secret = 11;
   }
   // Name is the name of the connector
   string name = 1;

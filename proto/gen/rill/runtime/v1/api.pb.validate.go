@@ -8942,6 +8942,8 @@ func (m *ConnectorDriver_Property) validate(all bool) error {
 
 	// no validation rules for Type
 
+	// no validation rules for Prompt
+
 	// no validation rules for Required
 
 	// no validation rules for DisplayName

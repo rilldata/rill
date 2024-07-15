@@ -2312,6 +2312,7 @@ export const ConnectorDriverPropertyType = {
 export interface ConnectorDriverProperty {
   key?: string;
   type?: ConnectorDriverPropertyType;
+  prompt?: boolean;
   required?: boolean;
   displayName?: string;
   description?: string;

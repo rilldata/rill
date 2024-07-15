@@ -29,6 +29,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
+			Prompt:      false,
 			Required:    false,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
@@ -36,42 +37,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-			Placeholder: "localhost",
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "9000",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-			Placeholder: "default",
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
+			Prompt:      true,
 			Required:    true,
 			DisplayName: "Host",
 			Description: "Hostname or IP address of the ClickHouse server",
@@ -80,6 +46,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "port",
 			Type:        drivers.NumberPropertyType,
+			Prompt:      true,
 			Required:    true,
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
@@ -88,6 +55,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
+			Prompt:      true,
 			Required:    false,
 			DisplayName: "Username",
 			Description: "Username to connect to the ClickHouse server",
@@ -96,6 +64,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
+			Prompt:      true,
 			Required:    false,
 			DisplayName: "Password",
 			Description: "Password to connect to the ClickHouse server",
@@ -105,6 +74,7 @@ var spec = drivers.Spec{
 		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
+			Prompt:      true,
 			Required:    true,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the ClickHouse server",

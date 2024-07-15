@@ -3160,58 +3160,65 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
   type = ConnectorDriver_Property_Type.UNSPECIFIED;
 
   /**
+   * If true, the property should be displayed in the UI
+   *
+   * @generated from field: bool prompt = 3;
+   */
+  prompt = false;
+
+  /**
    * Required is true if the field must be set
    *
-   * @generated from field: bool required = 3;
+   * @generated from field: bool required = 4;
    */
   required = false;
 
   /**
    * Pretty name for the property
    *
-   * @generated from field: string display_name = 4;
+   * @generated from field: string display_name = 5;
    */
   displayName = "";
 
   /**
    * Human readable description of the field
    *
-   * @generated from field: string description = 5;
+   * @generated from field: string description = 6;
    */
   description = "";
 
   /**
    * Link to documentation for this property
    *
-   * @generated from field: string docs_url = 6;
+   * @generated from field: string docs_url = 7;
    */
   docsUrl = "";
 
   /**
    * Additional textual explanation for use in UIs
    *
-   * @generated from field: string hint = 7;
+   * @generated from field: string hint = 8;
    */
   hint = "";
 
   /**
    * Default value for the property
    *
-   * @generated from field: string default = 8;
+   * @generated from field: string default = 9;
    */
   default = "";
 
   /**
    * Placeholder value for use in UIs
    *
-   * @generated from field: string placeholder = 9;
+   * @generated from field: string placeholder = 10;
    */
   placeholder = "";
 
   /**
    * If true, the property is a secret and should not be displayed in UIs
    *
-   * @generated from field: bool secret = 10;
+   * @generated from field: bool secret = 11;
    */
   secret = false;
 
@@ -3225,14 +3232,15 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "key", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "type", kind: "enum", T: proto3.getEnumType(ConnectorDriver_Property_Type) },
-    { no: 3, name: "required", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 4, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 5, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 6, name: "docs_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 7, name: "hint", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 8, name: "default", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 9, name: "placeholder", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "secret", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "prompt", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 4, name: "required", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "display_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 7, name: "docs_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 8, name: "hint", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "default", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "placeholder", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "secret", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver_Property {
