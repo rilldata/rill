@@ -19,6 +19,18 @@ var spec = drivers.Spec{
 	DisplayName: "Amazon Athena",
 	Description: "Connect to Amazon Athena database.",
 	DocsURL:     "",
+	ConfigProperties: []*drivers.PropertySpec{
+		{
+			Key:    "aws_access_key_id",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+		{
+			Key:    "aws_secret_access_key",
+			Type:   drivers.StringPropertyType,
+			Secret: true,
+		},
+	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
 			Key:         "sql",
@@ -52,17 +64,13 @@ var spec = drivers.Spec{
 			Placeholder: "us-east-1",
 			Required:    false,
 		},
-	},
-	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:    "aws_access_key_id",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
-		},
-		{
-			Key:    "aws_secret_access_key",
-			Type:   drivers.StringPropertyType,
-			Secret: true,
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
 		},
 	},
 }

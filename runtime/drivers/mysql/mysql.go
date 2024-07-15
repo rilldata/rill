@@ -43,6 +43,14 @@ var spec = drivers.Spec{
 			Placeholder: "username:password@tcp(example.com:3306)/my-db",
 			Hint:        "Either set this or pass --var connector.mysql.dsn=... to rill start",
 		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
 	ImplementsSQLStore: true,
 }
