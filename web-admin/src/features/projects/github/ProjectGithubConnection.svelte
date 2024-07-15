@@ -1,11 +1,13 @@
 <script lang="ts">
-  import ProjectConnectToGithub from "@rilldata/web-admin/features/projects/github/ProjectConnectToGithub.svelte";
+  import ConnectToGithubConfirmDialog from "@rilldata/web-admin/features/projects/github/ConnectToGithubConfirmDialog.svelte";
+  import { GithubConnection } from "@rilldata/web-admin/features/projects/github/GithubConnection";
+  import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
-    createAdminServiceGetGithubUserStatus,
     createAdminServiceGetProject,
+    createAdminServiceUpdateProject,
   } from "web-admin/src/client";
   import { useDashboardsLastUpdated } from "web-admin/src/features/dashboards/listing/selectors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
@@ -24,7 +26,42 @@
     organization,
     project,
   );
+
+  let confirmDialogOpen = false;
+  let githubSelectionOpen = false;
+
+  const githubConnection = new GithubConnection(() => {
+    if (isGithubConnected) {
+      githubSelectionOpen = true;
+    } else {
+      confirmDialogOpen = true;
+    }
+  });
+  const userStatus = githubConnection.userStatus;
+
+  function connectToGithub() {
+    void githubConnection.check();
+  }
+
+  const updateProject = createAdminServiceUpdateProject();
+  async function updateGithubUrl(url: string) {
+    await $updateProject.mutateAsync({
+      name: project,
+      organizationName: organization,
+      data: {
+        githubUrl: url,
+        archiveAssetId: "",
+      },
+    });
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState !== "visible") return;
+    githubConnection.focused();
+  }
 </script>
+
+<svelte:window on:visibilitychange={handleVisibilityChange} />
 
 {#if $proj.data}
   <div class="flex flex-col gap-y-1 max-w-[400px]">
@@ -64,9 +101,33 @@
             </span>
           {/if}
         {:else}
-          <ProjectConnectToGithub />
+          <span>
+            Unlock the power of BI-as-code with Github-backed collaboration,
+            version control, and approval workflows.
+          </span>
+          <Button
+            type="primary"
+            class="w-fit mt-1"
+            loading={$userStatus.isFetching}
+            on:click={connectToGithub}
+          >
+            Connect to Github
+          </Button>
         {/if}
       </div>
     </div>
   </div>
 {/if}
+
+<ConnectToGithubConfirmDialog
+  bind:open={confirmDialogOpen}
+  onContinue={() => {
+    confirmDialogOpen = false;
+    githubSelectionOpen = true;
+  }}
+/>
+
+<GithubRepoSelectionDialog
+  bind:open={githubSelectionOpen}
+  onConnect={updateGithubUrl}
+/>
