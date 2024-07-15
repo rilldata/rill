@@ -18,6 +18,7 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type createDeploymentOptions struct {
@@ -411,6 +412,7 @@ type DeploymentAnnotations struct {
 	projID          string
 	projName        string
 	projAnnotations map[string]string
+	// Also update MarshalLogObject when adding new fields
 }
 
 func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
@@ -462,4 +464,15 @@ func (da *DeploymentAnnotations) toMap() map[string]string {
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	return res
+}
+
+func (da *DeploymentAnnotations) MarshalLogObject(enc zapcore.ObjectEncoder) error {
+	enc.AddString("org_id", da.orgID)
+	enc.AddString("org_name", da.orgName)
+	enc.AddString("project_id", da.projID)
+	enc.AddString("project_name", da.projName)
+	for k, v := range da.projAnnotations {
+		enc.AddString(k, v)
+	}
+	return nil
 }
