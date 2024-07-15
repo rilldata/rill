@@ -552,6 +552,10 @@ export interface V1RevokeCurrentAuthTokenResponse {
   tokenId?: string;
 }
 
+export interface V1RequestProjectAccessResponse {
+  [key: string]: any;
+}
+
 export interface V1ReportOptions {
   title?: string;
   refreshCron?: string;
@@ -912,6 +916,10 @@ export interface V1GetProjectByIDResponse {
   project?: V1Project;
 }
 
+export interface V1GetProjectAccessRequestResponse {
+  email?: string;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
@@ -1050,6 +1058,10 @@ export interface V1Deployment {
   updatedOn?: string;
 }
 
+export interface V1DenyProjectAccessResponse {
+  [key: string]: any;
+}
+
 export interface V1DeleteUsergroupResponse {
   [key: string]: any;
 }
@@ -1175,6 +1187,10 @@ export interface V1BillingPlan {
   trialPeriodDays?: number;
   default?: boolean;
   quotas?: V1Quotas;
+}
+
+export interface V1ApproveProjectAccessResponse {
+  [key: string]: any;
 }
 
 export interface V1AlertOptions {

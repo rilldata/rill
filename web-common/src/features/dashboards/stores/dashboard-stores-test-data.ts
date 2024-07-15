@@ -399,10 +399,11 @@ export function getOffsetByHour(time: Date) {
 export function initStateManagers(
   dashboardFetchMocks?: DashboardFetchMocks,
   resp?: V1MetricsViewSpec,
+  name?: string,
 ) {
   initAdBidsInStore();
   if (dashboardFetchMocks && resp)
-    dashboardFetchMocks.mockMetricsView(AD_BIDS_NAME, resp);
+    dashboardFetchMocks.mockMetricsView(name ?? AD_BIDS_NAME, resp);
 
   const queryClient = new QueryClient({
     defaultOptions: {
@@ -417,7 +418,7 @@ export function initStateManagers(
   });
   const stateManagers = createStateManagers({
     queryClient,
-    metricsViewName: AD_BIDS_NAME,
+    metricsViewName: name ?? AD_BIDS_NAME,
   });
 
   return { stateManagers, queryClient };

@@ -2728,6 +2728,8 @@ definitions:
         type: string
       unnest:
         type: boolean
+      uri:
+        type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecMeasureType:
     type: string

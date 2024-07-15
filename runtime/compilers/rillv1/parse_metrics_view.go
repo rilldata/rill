@@ -40,6 +40,7 @@ type MetricsViewYAML struct {
 		Description string
 		Ignore      bool `yaml:"ignore"`
 		Unnest      bool
+		URI         string
 	}
 	DefaultDimensions []string `yaml:"default_dimensions"`
 	Measures          []*struct {
@@ -853,6 +854,7 @@ func (p *Parser) parseMetricsView(node *Node) error {
 			Label:       dim.Label,
 			Description: dim.Description,
 			Unnest:      dim.Unnest,
+			Uri:         dim.URI,
 		})
 	}
 	spec.DefaultDimensions = tmp.DefaultDimensions

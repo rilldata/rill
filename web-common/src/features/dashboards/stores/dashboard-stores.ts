@@ -1,6 +1,7 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
+import { setContextColumn } from "@rilldata/web-common/features/dashboards/state-managers/actions/context-columns";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import {
@@ -13,6 +14,7 @@ import {
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
+import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
@@ -560,8 +562,13 @@ export function setDisplayComparison(
     showTimeComparison &&
     metricsExplorer.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN
   ) {
-    metricsExplorer.leaderboardContextColumn =
-      LeaderboardContextColumn.DELTA_PERCENT;
+    setContextColumn(
+      {
+        dashboard: metricsExplorer,
+        persistentDashboardStore: getPersistentDashboardStore(),
+      },
+      LeaderboardContextColumn.DELTA_PERCENT,
+    );
   }
 
   // if setting showTimeComparison===false and currently
@@ -571,7 +578,13 @@ export function setDisplayComparison(
     metricsExplorer.leaderboardContextColumn ===
       LeaderboardContextColumn.DELTA_PERCENT
   ) {
-    metricsExplorer.leaderboardContextColumn = LeaderboardContextColumn.HIDDEN;
+    setContextColumn(
+      {
+        dashboard: metricsExplorer,
+        persistentDashboardStore: getPersistentDashboardStore(),
+      },
+      LeaderboardContextColumn.HIDDEN,
+    );
   }
 }
 

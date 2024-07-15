@@ -725,7 +725,7 @@ func (c *connection) InsertUsergroup(ctx context.Context, opts *database.InsertU
 
 func (c *connection) UpdateUsergroupName(ctx context.Context, name, groupID string) (*database.Usergroup, error) {
 	res := &database.Usergroup{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET name=$1 WHERE id=$2 RETURNING *", name, groupID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET name=$1, updated_on=now() WHERE id=$2 RETURNING *", name, groupID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}
@@ -734,7 +734,7 @@ func (c *connection) UpdateUsergroupName(ctx context.Context, name, groupID stri
 
 func (c *connection) UpdateUsergroupDescription(ctx context.Context, description, groupID string) (*database.Usergroup, error) {
 	res := &database.Usergroup{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET description=$1 WHERE id=$2 RETURNING *", description, groupID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE usergroups SET description=$1, updated_on=now() WHERE id=$2 RETURNING *", description, groupID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("usergroup", err)
 	}
@@ -1320,6 +1320,21 @@ func (c *connection) CountSingleuserOrganizationsForMemberUser(ctx context.Conte
 	return count, nil
 }
 
+func (c *connection) FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*database.MemberUser, error) {
+	var res []*database.MemberUser
+	err := c.getDB(ctx).SelectContext(ctx, &res, `
+		SELECT u.id, u.email, u.display_name, u.created_on, u.updated_on, r.name FROM users u
+			JOIN users_orgs_roles uor ON u.id = uor.user_id
+		JOIN org_roles r ON r.id = uor.org_role_id
+		WHERE uor.org_id=$1 AND r.manage_org_members=true
+		ORDER BY lower(u.email)
+	`, orgID)
+	if err != nil {
+		return nil, parseErr("org members", err)
+	}
+	return res, nil
+}
+
 func (c *connection) FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*database.MemberUser, error) {
 	var res []*database.MemberUser
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
@@ -1580,6 +1595,66 @@ func (c *connection) DeleteProjectInvite(ctx context.Context, id string) error {
 func (c *connection) UpdateProjectInviteRole(ctx context.Context, id, roleID string) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE project_invites SET project_role_id = $1 WHERE id = $2`, roleID, id)
 	return checkUpdateRow("project invite", res, err)
+}
+
+func (c *connection) FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*database.ProjectAccessRequest, error) {
+	var res []*database.ProjectAccessRequest
+	var err error
+	if afterID != "" {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT par.user_id
+			FROM project_access_requests par
+			WHERE par.project_id = $1 AND par.user_id > $2
+			ORDER BY par.user_id LIMIT $3
+		`, projectID, afterID, limit)
+	} else {
+		err = c.getDB(ctx).SelectContext(ctx, &res, `
+			SELECT par.user_id
+			FROM project_access_requests par
+			WHERE par.project_id = $1
+			ORDER BY par.user_id LIMIT $2
+		`, projectID, limit)
+	}
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*database.ProjectAccessRequest, error) {
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_requests WHERE user_id = $1 AND project_id = $2", userID, projectID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) FindProjectAccessRequestByID(ctx context.Context, id string) (*database.ProjectAccessRequest, error) {
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "SELECT * FROM project_access_requests WHERE id=$1", id).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) InsertProjectAccessRequest(ctx context.Context, opts *database.InsertProjectAccessRequestOptions) (*database.ProjectAccessRequest, error) {
+	if err := database.Validate(opts); err != nil {
+		return nil, err
+	}
+
+	res := &database.ProjectAccessRequest{}
+	err := c.getDB(ctx).QueryRowxContext(ctx, "INSERT INTO project_access_requests (user_id, project_id) VALUES ($1, $2) RETURNING *", opts.UserID, opts.ProjectID).StructScan(res)
+	if err != nil {
+		return nil, parseErr("project access request", err)
+	}
+	return res, nil
+}
+
+func (c *connection) DeleteProjectAccessRequest(ctx context.Context, id string) error {
+	res, err := c.getDB(ctx).ExecContext(ctx, "DELETE FROM project_access_requests WHERE id = $1", id)
+	return checkDeleteRow("project access request", res, err)
 }
 
 // FindBookmarks returns a list of bookmarks for a user per project
