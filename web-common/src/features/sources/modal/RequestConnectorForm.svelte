@@ -1,10 +1,10 @@
 <script lang="ts">
   import { Button } from "@rilldata/web-common/components/button";
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { createEventDispatcher } from "svelte";
   import { createForm } from "svelte-forms-lib";
   import { object, string } from "yup";
-  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
   const dispatch = createEventDispatcher();
 
@@ -49,42 +49,44 @@
 
 <div class="flex flex-col">
   <form on:submit|preventDefault={handleSubmit} id="request-connector-form">
-    <span class="text-slate-500 pb-4 text-sm">
-      Don’t see the connector you’re looking for? Let us know what we’re
+    <span class="text-slate-500 text-sm">
+      Don't see the connector you're looking for? Let us know what we're
       missing!
     </span>
 
-    <div class="pt-4 pb-5 text-slate-800">
-      <Input
-        id="request"
-        label="Connector"
-        placeholder="Your data source"
-        errors={$errors["request"]}
-        bind:value={$form["request"]}
-        onChange={handleChange}
-      />
-    </div>
-    <div class="pt-4 pb-5 text-slate-800">
-      <Input
-        id="email"
-        label="Optionally, we can let you know when the connector is available."
-        placeholder="Your email address"
-        errors={$errors["email"]}
-        bind:value={$form["email"]}
-        onChange={handleChange}
-      />
+    <Input
+      id="request"
+      label="Connector"
+      placeholder="Your data source"
+      errors={$errors["request"]}
+      bind:value={$form["request"]}
+      onChange={handleChange}
+    />
+    <Input
+      id="email"
+      label="Optionally, we can let you know when the connector is available."
+      placeholder="Your email address"
+      errors={$errors["email"]}
+      bind:value={$form["email"]}
+      onChange={handleChange}
+    />
+    <div class="flex gap-x-2">
+      <div class="grow" />
+      <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
+      <Button
+        type="primary"
+        submitForm
+        form="request-connector-form"
+        disabled={$isSubmitting}
+      >
+        Request connector
+      </Button>
     </div>
   </form>
-  <div class="flex gap-x-2">
-    <div class="grow" />
-    <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
-    <Button
-      type="primary"
-      submitForm
-      form="request-connector-form"
-      disabled={$isSubmitting}
-    >
-      Request connector
-    </Button>
-  </div>
 </div>
+
+<style lang="postcss">
+  form {
+    @apply flex flex-col gap-y-4;
+  }
+</style>
