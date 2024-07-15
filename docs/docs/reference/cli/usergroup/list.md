@@ -1,21 +1,20 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user list
+title: rill usergroup list
 ---
-## rill user list
+## rill usergroup list
 
-List
+List user groups
 
 ```
-rill user list [flags]
+rill usergroup list [flags]
 ```
 
 ### Flags
 
 ```
-      --group string        User group
       --org string          Organization
-      --page-size uint32    Number of users to return per page (default 50)
+      --page-size uint32    Number of user groups to return per page (default 50)
       --page-token string   Pagination token
       --project string      Project
 ```
@@ -31,5 +30,5 @@ rill user list [flags]
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill usergroup](usergroup.md)	 - Manage user groups
 

@@ -1,23 +1,19 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user list
+title: rill usergroup delete
 ---
-## rill user list
+## rill usergroup delete
 
-List
+Delete a user group
 
 ```
-rill user list [flags]
+rill usergroup delete <name> [flags]
 ```
 
 ### Flags
 
 ```
-      --group string        User group
-      --org string          Organization
-      --page-size uint32    Number of users to return per page (default 50)
-      --page-token string   Pagination token
-      --project string      Project
+      --org string   Organization
 ```
 
 ### Global flags
@@ -31,5 +27,5 @@ rill user list [flags]
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill usergroup](usergroup.md)	 - Manage user groups
 
