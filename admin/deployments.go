@@ -405,25 +405,6 @@ func (s *Service) openRuntimeClientForDeployment(d *database.Deployment) (*clien
 	return s.OpenRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
 }
 
-type DeploymentAnnotations struct {
-	orgID           string
-	orgName         string
-	projID          string
-	projName        string
-	projAnnotations map[string]string
-	// Also update MarshalLogObject when adding new fields
-}
-
-func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
-	return DeploymentAnnotations{
-		orgID:           org.ID,
-		orgName:         org.Name,
-		projID:          proj.ID,
-		projName:        proj.Name,
-		projAnnotations: proj.Annotations,
-	}
-}
-
 func (s *Service) ResolveLatestRuntimeVersion() string {
 	if s.VersionNumber != "" {
 		return s.VersionNumber
@@ -451,6 +432,24 @@ func (s *Service) ValidateRuntimeVersion(ver string) error {
 	}
 
 	return nil
+}
+
+func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+	return DeploymentAnnotations{
+		orgID:           org.ID,
+		orgName:         org.Name,
+		projID:          proj.ID,
+		projName:        proj.Name,
+		projAnnotations: proj.Annotations,
+	}
+}
+
+type DeploymentAnnotations struct {
+	orgID           string
+	orgName         string
+	projID          string
+	projName        string
+	projAnnotations map[string]string
 }
 
 func (da *DeploymentAnnotations) ToMap() map[string]string {
