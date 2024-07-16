@@ -261,8 +261,7 @@ export function prepareVirtualizedDimTableColumns(
     allMeasures.some((am) => am.name === m),
   );
 
-  // don't add context columns if sorting by dimension
-  if (selectedMeasure && sortType !== SortType.DIMENSION) {
+  if (selectedMeasure) {
     addContextColumnNames(
       columnNames,
       timeComparison,

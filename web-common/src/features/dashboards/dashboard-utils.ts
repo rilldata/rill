@@ -40,8 +40,8 @@ export function prepareSortedQueryBody(
   dimensionName: string,
   measureNames: string[],
   timeControls: TimeControlState,
-  // Note: sortMeasureName may be null if we are sorting by dimension values
-  sortMeasureName: string | null,
+  selectedMeasure: string,
+  apiSortName: string | null,
   sortType: SortType,
   sortAscending: boolean,
   whereFilterForDimension: V1Expression,
@@ -54,19 +54,14 @@ export function prepareSortedQueryBody(
       },
   );
 
-  let apiSortName = sortMeasureName;
-  if (sortType === SortType.DIMENSION || sortMeasureName === null) {
-    apiSortName = dimensionName;
-  }
-
-  if (!!timeControls.selectedComparisonTimeRange && sortMeasureName) {
+  if (!!timeControls.selectedComparisonTimeRange && selectedMeasure) {
     // insert beside the correct measure
     measures.splice(
-      measures.findIndex((m) => m.name === sortMeasureName),
+      measures.findIndex((m) => m.name === selectedMeasure) + 1,
       0,
-      ...getComparisonRequestMeasures(sortMeasureName),
+      ...getComparisonRequestMeasures(selectedMeasure),
     );
-    if (apiSortName === sortMeasureName) {
+    if (apiSortName === selectedMeasure) {
       // only update if the sort was on measure
       switch (sortType) {
         case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
