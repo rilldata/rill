@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { compact, IconButton } from "@rilldata/web-common/components/button";
+  import { IconButton } from "@rilldata/web-common/components/button";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
   import { slide } from "svelte/transition";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
@@ -21,7 +21,6 @@
 
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
-  export let onChange = () => {};
 
   let editingInput = "";
   let focused = false;
