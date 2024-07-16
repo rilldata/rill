@@ -11,6 +11,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/server"
 	admincli "github.com/rilldata/rill/cli/cmd/admin"
 	"github.com/rilldata/rill/runtime/pkg/activity"
@@ -48,7 +49,7 @@ func AdminService(ctx context.Context, logger *zap.Logger, databaseURL string) (
 		VersionCommit:      "",
 	}
 
-	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop(), nil, billing.NewNoop())
+	adm, err := admin.New(ctx, admOpts, logger, issuer, emailClient, gh, ai.NewNoop(), nil, billing.NewNoop(), payment.NewNoop())
 	if err != nil {
 		return nil, err
 	}

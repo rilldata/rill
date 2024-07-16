@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -62,6 +63,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		ai.NewNoop(),
 		nil,
 		billing.NewNoop(),
+		payment.NewNoop(),
 	)
 	require.NoError(t, err)
 

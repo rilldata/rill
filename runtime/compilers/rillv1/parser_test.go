@@ -1410,8 +1410,11 @@ annotations:
 				WatermarkInherit:     true,
 				IntervalsIsoDuration: "PT1H",
 				IntervalsLimit:       10,
-				QueryName:            "MetricsViewToplist",
-				QueryArgsJson:        `{"metrics_view":"mv1"}`,
+				Resolver:             "legacy_metrics",
+				ResolverProperties: must(structpb.NewStruct(map[string]any{
+					"query_name":      "MetricsViewToplist",
+					"query_args_json": `{"metrics_view":"mv1"}`,
+				})),
 				QueryFor:             &runtimev1.AlertSpec_QueryForUserEmail{QueryForUserEmail: "benjamin@example.com"},
 				NotifyOnRecover:      true,
 				NotifyOnFail:         true,

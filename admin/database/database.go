@@ -183,6 +183,7 @@ type DB interface {
 	DeleteOrganizationMemberUser(ctx context.Context, orgID, userID string) error
 	UpdateOrganizationMemberUserRole(ctx context.Context, orgID, userID, roleID string) error
 	CountSingleuserOrganizationsForMemberUser(ctx context.Context, userID string) (int, error)
+	FindOrganizationMembersWithManageUsersRole(ctx context.Context, orgID string) ([]*MemberUser, error)
 
 	FindProjectMemberUsers(ctx context.Context, projectID, afterEmail string, limit int) ([]*MemberUser, error)
 	InsertProjectMemberUser(ctx context.Context, projectID, userID, roleID string) error
@@ -215,6 +216,12 @@ type DB interface {
 	DeleteProjectInvite(ctx context.Context, id string) error
 	UpdateProjectInviteRole(ctx context.Context, id, roleID string) error
 
+	FindProjectAccessRequests(ctx context.Context, projectID, afterID string, limit int) ([]*ProjectAccessRequest, error)
+	FindProjectAccessRequest(ctx context.Context, projectID, userID string) (*ProjectAccessRequest, error)
+	FindProjectAccessRequestByID(ctx context.Context, id string) (*ProjectAccessRequest, error)
+	InsertProjectAccessRequest(ctx context.Context, opts *InsertProjectAccessRequestOptions) (*ProjectAccessRequest, error)
+	DeleteProjectAccessRequest(ctx context.Context, id string) error
+
 	FindBookmarks(ctx context.Context, projectID, resourceKind, resourceName, userID string) ([]*Bookmark, error)
 	FindBookmark(ctx context.Context, bookmarkID string) (*Bookmark, error)
 	FindDefaultBookmark(ctx context.Context, projectID, resourceKind, resourceName string) (*Bookmark, error)
@@ -240,6 +247,8 @@ type DB interface {
 	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
+
+	FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*Organization, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -274,6 +283,7 @@ type Organization struct {
 	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
+	PaymentCustomerID                   string    `db:"payment_customer_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -287,6 +297,7 @@ type InsertOrganizationOptions struct {
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
+	PaymentCustomerID                   string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -300,6 +311,7 @@ type UpdateOrganizationOptions struct {
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
+	PaymentCustomerID                   string
 }
 
 // Project represents one Git connection.
@@ -817,6 +829,18 @@ type InsertProjectInviteOptions struct {
 	RoleID    string `validate:"required"`
 }
 
+type ProjectAccessRequest struct {
+	ID        string
+	UserID    string    `db:"user_id"`
+	ProjectID string    `db:"project_id"`
+	CreatedOn time.Time `db:"created_on"`
+}
+
+type InsertProjectAccessRequestOptions struct {
+	UserID    string `validate:"required"`
+	ProjectID string `validate:"required"`
+}
+
 type Bookmark struct {
 	ID           string
 	DisplayName  string    `db:"display_name"`
@@ -872,7 +896,7 @@ type InsertVirtualFileOptions struct {
 
 type Asset struct {
 	ID             string
-	OrganizationID string    `db:"org_id"`
+	OrganizationID *string   `db:"org_id"`
 	Path           string    `db:"path"`
 	OwnerID        string    `db:"owner_id"`
 	CreatedOn      time.Time `db:"created_on"`
