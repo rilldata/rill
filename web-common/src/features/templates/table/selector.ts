@@ -12,6 +12,11 @@ import {
 import { createAndExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import { useStartEndTime } from "@rilldata/web-common/features/templates/kpi/selector";
 import { TableProperties } from "@rilldata/web-common/features/templates/types";
+import {
+  validateDimensions,
+  validateMeasures,
+  validateMetricsView,
+} from "@rilldata/web-common/features/templates/utils";
 import { isoDurationToTimeRange } from "@rilldata/web-common/lib/time/ranges/iso-ranges";
 import { Readable, derived } from "svelte/store";
 
@@ -92,6 +97,56 @@ export function getTableConfig(
       };
 
       return config;
+    },
+  );
+}
+
+export function hasValidTableSchema(
+  instanceId: string,
+  tableProperties: TableProperties,
+) {
+  return derived(
+    [useMetricsView(instanceId, tableProperties.metric_view)],
+    ([metricsView]) => {
+      const measures = tableProperties.measures;
+      const rowDimensions = tableProperties.row_dimensions || [];
+      const colDimensions = tableProperties.col_dimensions || [];
+
+      const validateMetricsViewRes = validateMetricsView(metricsView);
+
+      if (!validateMetricsViewRes.isValid) {
+        return {
+          isValid: false,
+          error: validateMetricsViewRes.error,
+        };
+      }
+      const validateMeasuresRes = validateMeasures(metricsView, measures);
+      if (!validateMeasuresRes.isValid) {
+        const invalidMeasures = validateMeasuresRes.invalidMeasures.join(", ");
+        return {
+          isValid: false,
+          error: `Invalid measure(s) ${invalidMeasures} selected for the table`,
+        };
+      }
+
+      const validateDimensionsRes = validateDimensions(
+        metricsView,
+        rowDimensions.concat(colDimensions),
+      );
+
+      if (!validateDimensionsRes.isValid) {
+        const invalidDimensions =
+          validateDimensionsRes.invalidDimensions.join(", ");
+
+        return {
+          isValid: false,
+          error: `Invalid dimension(s) ${invalidDimensions} selected for the table`,
+        };
+      }
+      return {
+        isValid: true,
+        error: undefined,
+      };
     },
   );
 }

@@ -2,6 +2,8 @@
   import { createPivotDataStore } from "@rilldata/web-common/features/dashboards/pivot/pivot-data-store";
   import {
     PivotChipType,
+    PivotDataStore,
+    PivotDataStoreConfig,
     PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { createStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
@@ -10,8 +12,8 @@
   import { V1ComponentSpecRendererProperties } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { useQueryClient } from "@tanstack/svelte-query";
-  import { writable } from "svelte/store";
-  import { getTableConfig } from "./selector";
+  import { Readable, writable } from "svelte/store";
+  import { getTableConfig, hasValidTableSchema } from "./selector";
 
   export let rendererProperties: V1ComponentSpecRendererProperties;
 
@@ -22,14 +24,12 @@
 
   $: tableProperties = rendererProperties as TableProperties;
 
+  $: tableSchema = hasValidTableSchema(instanceId, tableProperties);
+
+  $: isValidSchema = $tableSchema.isValid;
+
   $: colDimensions = tableProperties.col_dimensions || [];
   $: rowDimensions = tableProperties.row_dimensions || [];
-
-  $: stateManagerContext = createStateManagers({
-    queryClient,
-    metricsViewName: tableProperties.metric_view,
-    extraKeyPrefix: TABLE_PREFIX,
-  });
 
   $: pivotState = writable<PivotState>({
     active: true,
@@ -60,17 +60,31 @@
     rowJoinType: "nest",
   });
 
-  $: pivotConfig = getTableConfig(instanceId, tableProperties, $pivotState);
-  $: pivotDataStore = createPivotDataStore(stateManagerContext, pivotConfig);
+  let pivotDataStore: PivotDataStore | undefined = undefined;
+  let pivotConfig: Readable<PivotDataStoreConfig> | undefined = undefined;
+  $: if (isValidSchema) {
+    const stateManagerContext = createStateManagers({
+      queryClient,
+      metricsViewName: tableProperties.metric_view,
+      extraKeyPrefix: TABLE_PREFIX,
+    });
+
+    pivotConfig = getTableConfig(instanceId, tableProperties, $pivotState);
+    pivotDataStore = createPivotDataStore(stateManagerContext, pivotConfig);
+  }
 </script>
 
 <div>
-  {#if $pivotDataStore}
+  {#if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
     <TableRenderer
       metricsViewName={tableProperties.metric_view + TABLE_PREFIX}
       {pivotDataStore}
       config={$pivotConfig}
       pivotDashboardStore={pivotState}
     />
+  {:else if !isValidSchema}
+    <div>{$tableSchema.error}</div>
+  {:else}
+    <div>Loading...</div>
   {/if}
 </div>
