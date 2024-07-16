@@ -176,7 +176,7 @@
         <GlobalDimensionSearch metricsViewName={dashboard} />
         {#if $user.isSuccess && $user.data.user && !onMagicLinkPage}
           <CreateAlert />
-          <Bookmarks />
+          <Bookmarks metricsViewName={dashboard} />
           <ShareDashboardButton {createMagicAuthTokens} />
         {/if}
       </StateManagersProvider>

@@ -3651,6 +3651,21 @@ export class APISpec extends Message<APISpec> {
    */
   resolverProperties?: Struct;
 
+  /**
+   * @generated from field: string openapi_summary = 3;
+   */
+  openapiSummary = "";
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   */
+  openapiParameters: Struct[] = [];
+
+  /**
+   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   */
+  openapiResponseSchema?: Struct;
+
   constructor(data?: PartialMessage<APISpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3661,6 +3676,9 @@ export class APISpec extends Message<APISpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
+    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {

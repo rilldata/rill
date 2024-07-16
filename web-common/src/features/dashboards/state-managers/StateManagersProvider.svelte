@@ -17,11 +17,6 @@
       orgName && projectName ? `__${orgName}__${projectName}` : "",
   });
   setContext(DEFAULT_STORE_KEY, stateManagers);
-
-  $: {
-    // update metrics view name
-    stateManagers.setMetricsViewName(metricsViewName);
-  }
 </script>
 
 <slot />

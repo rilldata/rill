@@ -506,6 +506,9 @@ message API {
 message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
+  string openapi_summary = 3;
+  repeated google.protobuf.Struct openapi_parameters = 4;
+  google.protobuf.Struct openapi_response_schema = 5;
 }
 
 message APIState {}

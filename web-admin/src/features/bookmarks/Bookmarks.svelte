@@ -24,7 +24,7 @@
   import { BookmarkIcon } from "lucide-svelte";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 
-  $: metricsViewName = $page.params.dashboard;
+  export let metricsViewName: string;
 
   let createBookmark = false;
   let editBookmark = false;
@@ -101,6 +101,7 @@
       bookmark = detail;
     }}
     on:select={({ detail }) => selectBookmark(detail)}
+    {metricsViewName}
   />
 </DropdownMenu>
 

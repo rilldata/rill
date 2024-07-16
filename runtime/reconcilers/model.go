@@ -23,7 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultModelTimeout = 15 * time.Minute
+const _defaultModelTimeout = 60 * time.Minute
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -578,6 +578,7 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 		InstanceID:         r.C.InstanceID,
 		Resolver:           mdl.Spec.IncrementalStateResolver,
 		ResolverProperties: mdl.Spec.IncrementalStateResolverProperties.AsMap(),
+		Claims:             &runtime.SecurityClaims{SkipChecks: true},
 	})
 	if err != nil {
 		return nil, nil, err

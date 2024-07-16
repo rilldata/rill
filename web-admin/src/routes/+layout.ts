@@ -5,6 +5,7 @@ ensure the same single-page app behavior in development.
 */
 export const ssr = false;
 
+import { goto } from "$app/navigation";
 import type { V1ProjectPermissions } from "@rilldata/web-admin/client";
 import { adminServiceGetProject } from "@rilldata/web-admin/client/index.js";
 import { getAdminServiceGetProjectQueryKey } from "@rilldata/web-admin/client/index.js";
@@ -65,7 +66,12 @@ export const load = async ({ params }) => {
       projectPermissions,
     };
   } catch (e) {
-    console.error(e);
-    throw error(e.response.status, "Error fetching deployment");
+    if (e.response?.status !== 403) {
+      console.error(e);
+      throw error(e.response.status, "Error fetching deployment");
+    }
+    return goto(
+      `/-/request-project-access/?organization=${organization}&project=${project}`,
+    );
   }
 };

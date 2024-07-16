@@ -16,9 +16,11 @@
 
   $: instanceId = $runtime?.instanceId;
 
-  $: orgName = $page.params.organization;
-  $: projectName = $page.params.project;
-  $: dashboardName = $page.params.dashboard;
+  $: ({
+    organization: orgName,
+    project: projectName,
+    dashboard: dashboardName,
+  } = $page.params);
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -31,7 +33,7 @@
   // from previous valid dashboards, allowing display even when the current dashboard spec is invalid
   // and a meta.reconcileError exists.
   $: isDashboardErrored = !$dashboard.data?.metricsView?.state?.validSpec;
-
+  $: metricViewName = $dashboard.data?.meta.name.name;
   // If no dashboard is found, show a 404 page
   $: if (isDashboardNotFound) {
     errorStore.set({
@@ -59,22 +61,22 @@
 {#if $dashboard.isSuccess}
   {#if isDashboardErrored}
     <ProjectErrored organization={orgName} project={projectName} />
-  {:else}
-    {#key dashboardName}
-      <StateManagersProvider metricsViewName={dashboardName}>
+  {:else if metricViewName}
+    {#key metricViewName}
+      <StateManagersProvider metricsViewName={metricViewName}>
         {#if $user.isSuccess && $user.data.user}
-          <DashboardBookmarksStateProvider metricViewName={dashboardName}>
-            <DashboardURLStateProvider metricViewName={dashboardName}>
+          <DashboardBookmarksStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard metricViewName={dashboardName} />
+                <Dashboard {metricViewName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardBookmarksStateProvider>
         {:else}
-          <DashboardStateProvider metricViewName={dashboardName}>
-            <DashboardURLStateProvider metricViewName={dashboardName}>
+          <DashboardStateProvider {metricViewName}>
+            <DashboardURLStateProvider {metricViewName}>
               <DashboardThemeProvider>
-                <Dashboard metricViewName={dashboardName} />
+                <Dashboard {metricViewName} />
               </DashboardThemeProvider>
             </DashboardURLStateProvider>
           </DashboardStateProvider>

@@ -94,18 +94,73 @@ func (o *Orb) GetPlanByName(ctx context.Context, name string) (*Plan, error) {
 	return nil, ErrNotFound
 }
 
-func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization) (string, error) {
+func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error) {
+	var paymentProviderType orb.CustomerNewParamsPaymentProvider
+	switch provider {
+	case PaymentProviderStripe:
+		paymentProviderType = orb.CustomerNewParamsPaymentProviderStripeCharge
+	default:
+		return nil, fmt.Errorf("unsupported payment provider: %s", provider)
+	}
+
 	customer, err := o.client.Customers.New(ctx, orb.CustomerNewParams{
 		Email:              orb.String(SupportEmail), // TODO use creators email or capture organization billing email
 		Name:               orb.String(organization.Name),
 		ExternalCustomerID: orb.String(organization.ID),
 		Timezone:           orb.String(DefaultTimeZone),
+		PaymentProvider:    orb.F(paymentProviderType),
+		PaymentProviderID:  orb.String(organization.PaymentCustomerID),
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 
-	return customer.ExternalCustomerID, nil
+	return &Customer{
+		ID:                customer.ExternalCustomerID,
+		Email:             customer.Email,
+		Name:              customer.Name,
+		PaymentProviderID: customer.PaymentProviderID,
+		PortalURL:         customer.PortalURL,
+	}, nil
+}
+
+func (o *Orb) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
+	customer, err := o.client.Customers.FetchByExternalID(ctx, customerID)
+	if err != nil {
+		var orbErr *orb.Error
+		if errors.As(err, &orbErr) {
+			if orbErr.Status == orb.ErrorStatus404 {
+				return nil, ErrNotFound
+			}
+		}
+		return nil, err
+	}
+
+	return &Customer{
+		ID:                customer.ExternalCustomerID,
+		Email:             customer.Email,
+		Name:              customer.Name,
+		PaymentProviderID: customer.PaymentProviderID,
+		PortalURL:         customer.PortalURL,
+	}, nil
+}
+
+func (o *Orb) UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error {
+	var paymentProviderType orb.CustomerUpdateByExternalIDParamsPaymentProvider
+	switch provider {
+	case PaymentProviderStripe:
+		paymentProviderType = orb.CustomerUpdateByExternalIDParamsPaymentProviderStripeCharge
+	default:
+		return fmt.Errorf("unsupported payment provider: %s", provider)
+	}
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		PaymentProvider:   orb.F(paymentProviderType),
+		PaymentProviderID: orb.String(paymentProviderID),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
@@ -118,8 +173,14 @@ func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *P
 	}
 
 	return &Subscription{
-		ID:                           sub.ID,
-		CustomerID:                   sub.Customer.ExternalCustomerID,
+		ID: sub.ID,
+		Customer: &Customer{
+			ID:                sub.Customer.ExternalCustomerID,
+			Email:             sub.Customer.Email,
+			Name:              sub.Customer.Name,
+			PaymentProviderID: sub.Customer.PaymentProviderID,
+			PortalURL:         sub.Customer.PortalURL,
+		},
 		Plan:                         plan,
 		StartDate:                    sub.StartDate,
 		EndDate:                      sub.EndDate,
@@ -148,8 +209,14 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 		}
 
 		subscriptions = append(subscriptions, &Subscription{
-			ID:                           s.ID,
-			CustomerID:                   s.Customer.ExternalCustomerID,
+			ID: s.ID,
+			Customer: &Customer{
+				ID:                s.Customer.ExternalCustomerID,
+				Email:             s.Customer.Email,
+				Name:              s.Customer.Name,
+				PaymentProviderID: s.Customer.PaymentProviderID,
+				PortalURL:         s.Customer.PortalURL,
+			},
 			Plan:                         plan,
 			StartDate:                    s.StartDate,
 			EndDate:                      s.EndDate,
@@ -171,8 +238,14 @@ func (o *Orb) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string,
 		return nil, err
 	}
 	return &Subscription{
-		ID:                           s.ID,
-		CustomerID:                   s.Customer.ExternalCustomerID,
+		ID: s.ID,
+		Customer: &Customer{
+			ID:                s.Customer.ExternalCustomerID,
+			Email:             s.Customer.Email,
+			Name:              s.Customer.Name,
+			PaymentProviderID: s.Customer.PaymentProviderID,
+			PortalURL:         s.Customer.PortalURL,
+		},
 		Plan:                         plan,
 		StartDate:                    s.StartDate,
 		EndDate:                      s.EndDate,

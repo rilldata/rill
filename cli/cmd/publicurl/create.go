@@ -1,11 +1,15 @@
-package shareurl
+package publicurl
 
 import (
+	"context"
 	"fmt"
+	"strings"
 
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
+	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/spf13/cobra"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -18,7 +22,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	createCmd := &cobra.Command{
 		Use:   "create [<project-name>] <metrics view>",
-		Short: "Create a shareable URL",
+		Short: "Create a public URL",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
@@ -48,6 +52,11 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
+			err = validateMetricsView(cmd.Context(), ch, project, metricsView, fields)
+			if err != nil {
+				return err
+			}
+
 			res, err := client.IssueMagicAuthToken(cmd.Context(), &adminv1.IssueMagicAuthTokenRequest{
 				Organization:      ch.Org,
 				Project:           project,
@@ -73,4 +82,74 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 	createCmd.Flags().StringSliceVar(&fields, "fields", nil, "Limit access to the provided fields")
 
 	return createCmd
+}
+
+func validateMetricsView(ctx context.Context, ch *cmdutil.Helper, project, metricsView string, fields []string) error {
+	client, err := ch.Client()
+	if err != nil {
+		return err
+	}
+
+	proj, err := client.GetProject(ctx, &adminv1.GetProjectRequest{
+		OrganizationName: ch.Org,
+		Name:             project,
+	})
+	if err != nil {
+		return err
+	}
+
+	if proj.ProdDeployment == nil {
+		ch.PrintfWarn("Could not validate metrics view: project has no production deployment")
+		return nil
+	}
+	depl := proj.ProdDeployment
+
+	rt, err := runtimeclient.New(depl.RuntimeHost, proj.Jwt)
+	if err != nil {
+		return fmt.Errorf("failed to connect to runtime: %w", err)
+	}
+
+	mv, err := rt.GetResource(ctx, &runtimev1.GetResourceRequest{
+		InstanceId: depl.RuntimeInstanceId,
+		Name: &runtimev1.ResourceName{
+			Kind: runtime.ResourceKindMetricsView,
+			Name: metricsView,
+		},
+	})
+	if err != nil {
+		return fmt.Errorf("failed to get metrics view %q: %w", metricsView, err)
+	}
+
+	spec := mv.Resource.GetMetricsView().Spec
+
+	for _, f := range fields {
+		if strings.EqualFold(f, spec.TimeDimension) {
+			continue
+		}
+
+		found := false
+		for _, dim := range spec.Dimensions {
+			if strings.EqualFold(f, dim.Name) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
+		for _, m := range spec.Measures {
+			if strings.EqualFold(f, m.Name) {
+				found = true
+				break
+			}
+		}
+		if found {
+			continue
+		}
+
+		return fmt.Errorf("field %q not found in metrics view %q", f, metricsView)
+	}
+
+	return nil
 }
