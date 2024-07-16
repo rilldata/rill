@@ -863,6 +863,10 @@ export interface V1IssueMagicAuthTokenResponse {
   url?: string;
 }
 
+export interface V1HibernateProjectResponse {
+  [key: string]: any;
+}
+
 export type V1GithubPermission =
   (typeof V1GithubPermission)[keyof typeof V1GithubPermission];
 
@@ -1222,7 +1226,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

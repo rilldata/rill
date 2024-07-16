@@ -321,6 +321,10 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			continue
 		}
 
+		if proj.ProdDeploymentID != nil && *proj.ProdDeploymentID != depl.ID {
+			continue
+		}
+
 		// Update prod deployment on project
 		_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
 			Name:                 proj.Name,
