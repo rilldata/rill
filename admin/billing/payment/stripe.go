@@ -65,7 +65,7 @@ func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer
 func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error) {
 	// TODO once we capture billing email then we can use that to list customers
 	searchStart := organization.CreatedOn.Add(-5 * time.Minute) // search 5 minutes before the org creation time
-	searchEnd := organization.CreatedOn.Add(15 * time.Minute)   // search 15 minutes after the org creation time, just to include one cycle of repair billing job
+	searchEnd := organization.CreatedOn.Add(5 * time.Minute)    // search 5 minutes after the org creation time
 	params := &stripe.CustomerListParams{
 		CreatedRange: &stripe.RangeQueryParams{
 			GreaterThanOrEqual: searchStart.Unix(),
