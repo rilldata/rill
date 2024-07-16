@@ -131,7 +131,7 @@
   on:mouseleave={() => (hovered = false)}
   bind:this={container}
 >
-  <table>
+  <table style:width="{tableWidth + gutterWidth}px">
     <colgroup>
       <col style:width="{gutterWidth}px" />
       <col style:width="{firstColumnWidth}px" />
