@@ -6,13 +6,13 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.uber.org/zap"
 	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
-	"google.golang.org/protobuf/encoding/protojson"
 )
 
 func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
@@ -22,7 +22,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 	for {
 		deployments, err := w.admin.DB.FindDeployments(ctx, afterID, limit)
 		if err != nil {
-			return fmt.Errorf("deploymentsHealthCheck: failed to get deployments: %w", err)
+			return fmt.Errorf("deployment health check: failed to get deployments: %w", err)
 		}
 		if len(deployments) == 0 {
 			return nil
@@ -34,7 +34,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 			d := d
 			if d.Status != database.DeploymentStatusOK {
 				if time.Since(d.UpdatedOn) > time.Hour {
-					w.logger.Error("deploymentsHealthCheck: failing deployment", zap.String("id", d.ID), zap.String("status", d.Status.String()), zap.Duration("duration", time.Since(d.UpdatedOn)))
+					w.logger.Error("deployment health check: failing deployment", zap.String("id", d.ID), zap.String("status", d.Status.String()), zap.Duration("duration", time.Since(d.UpdatedOn)))
 				}
 				continue
 			}
@@ -60,7 +60,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployment) error {
 	client, err := w.admin.OpenRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
 	if err != nil {
-		w.logger.Error("deploymentsHealthCheck: failed to open runtime client", zap.String("host", d.RuntimeHost), zap.Error(err))
+		w.logger.Error("deployment health check: failed to open runtime client", zap.String("host", d.RuntimeHost), zap.Error(err))
 		return nil
 	}
 	defer client.Close()
@@ -68,7 +68,7 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 	resp, err := client.Health(ctx, &runtimev1.HealthRequest{})
 	if err != nil {
 		if status.Code(err) != codes.Unavailable {
-			w.logger.Error("deploymentsHealthCheck: health check call failed", zap.String("host", d.RuntimeHost), zap.Error(err))
+			w.logger.Error("deployment health check: health check call failed", zap.String("host", d.RuntimeHost), zap.Error(err))
 			return nil
 		}
 		// an unavailable error could also be because the deployment got deleted
@@ -78,31 +78,77 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 				// Deployment was deleted
 				return nil
 			}
-			w.logger.Error("deploymentsHealthCheck: failed to find deployment", zap.String("deployment", d.ID), zap.Error(dbErr))
+			w.logger.Error("deployment health check: failed to find deployment", zap.String("deployment", d.ID), zap.Error(dbErr))
 			return nil
 		}
 		if d.Status == database.DeploymentStatusOK {
-			w.logger.Error("deploymentsHealthCheck: health check call failed", zap.String("host", d.RuntimeHost), zap.Error(err))
+			w.logger.Error("deployment health check: health check call failed", zap.String("host", d.RuntimeHost), zap.Error(err))
 		}
 		// Deployment status changed (probably being deleted)
 		return nil
 	}
 
-	if !isRuntimeHealthy(resp) {
-		s, _ := protojson.Marshal(resp)
-		w.logger.Error("deploymentsHealthCheck: runtime is unhealthy", zap.String("host", d.RuntimeHost), zap.ByteString("health_response", s))
+	if runtimeUnhealthy(resp) {
+		f := []zap.Field{zap.String("host", d.RuntimeHost)}
+		if resp.LimiterError != "" {
+			f = append(f, zap.String("limiter_error", resp.LimiterError))
+		}
+		if resp.ConnCacheError != "" {
+			f = append(f, zap.String("conn_cache_error", resp.ConnCacheError))
+		}
+		if resp.MetastoreError != "" {
+			f = append(f, zap.String("metastore_error", resp.MetastoreError))
+		}
+		if resp.NetworkError != "" {
+			f = append(f, zap.String("network_error", resp.NetworkError))
+		}
+		w.logger.Error("deployment health check: runtime is unhealthy", f...)
+		return nil
+	}
+	for id, i := range resp.InstancesHealth {
+		if !instanceUnhealthy(i) {
+			continue
+		}
+		annotations, err := w.annotationsForDeployment(ctx, d)
+		if err != nil {
+			w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project", d.ProjectID), zap.String("deployment", d.ID), zap.Error(err))
+			return nil
+		}
+		f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", id)}
+		for k, v := range annotations.ToMap() {
+			f = append(f, zap.String(k, v))
+		}
+		if i.OlapError != "" {
+			f = append(f, zap.String("olap_error", i.OlapError))
+		}
+		if i.ControllerError != "" {
+			f = append(f, zap.String("controller_error", i.ControllerError))
+		}
+		if i.RepoError != "" {
+			f = append(f, zap.String("repo_error", i.RepoError))
+		}
+		w.logger.Error("deployment health check: runtime instance is unhealthy", f...)
 	}
 	return nil
 }
 
-func isRuntimeHealthy(r *runtimev1.HealthResponse) bool {
-	if r.LimiterError != "" || r.ConnCacheError != "" || r.MetastoreError != "" || r.NetworkError != "" {
-		return false
+func (w *Worker) annotationsForDeployment(ctx context.Context, d *database.Deployment) (*admin.DeploymentAnnotations, error) {
+	proj, err := w.admin.DB.FindProject(ctx, d.ProjectID)
+	if err != nil {
+		return nil, err
 	}
-	for _, v := range r.InstancesHealth {
-		if v.ControllerError != "" || v.OlapError != "" || v.RepoError != "" {
-			return false
-		}
+	org, err := w.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, err
 	}
-	return true
+	annotations := w.admin.NewDeploymentAnnotations(org, proj)
+	return &annotations, nil
+}
+
+func runtimeUnhealthy(r *runtimev1.HealthResponse) bool {
+	return r.LimiterError != "" || r.ConnCacheError != "" || r.MetastoreError != "" || r.NetworkError != ""
+}
+
+func instanceUnhealthy(i *runtimev1.InstanceHealth) bool {
+	return i.OlapError != "" || i.ControllerError != "" || i.RepoError != ""
 }

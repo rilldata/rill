@@ -156,6 +156,12 @@ type ResolveResult struct {
 
 // Resolve resolves a query using the given options.
 func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolveResult, error) {
+	// Since claims don't really make sense for some resolver use cases, it's easy to forget to set them.
+	// Adding an early panic to catch this.
+	if opts.Claims == nil {
+		panic("received nil claims")
+	}
+
 	// Initialize the resolver
 	initializer, ok := ResolverInitializers[opts.Resolver]
 	if !ok {

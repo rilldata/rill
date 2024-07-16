@@ -12,7 +12,7 @@
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
 
-  $: ({ organization, project, dashboard } = $page.params);
+  $: ({ organization, project } = $page.params);
 
   let token: string;
   let setExpiration = false;
@@ -20,6 +20,8 @@
 
   const {
     dashboardStore,
+
+    metricsViewName,
     selectors: {
       measures: { visibleMeasures },
       dimensions: { visibleDimensions },
@@ -51,7 +53,7 @@
             organization,
             project,
             data: {
-              metricsView: dashboard,
+              metricsView: $metricsViewName,
               metricsViewFilter: hasDashboardWhereFilter()
                 ? $dashboardStore.whereFilter
                 : undefined,
@@ -108,7 +110,7 @@
       {#if hasDashboardWhereFilter()}
         <div>
           <FilterChipsReadOnly
-            metricsViewName={dashboard}
+            metricsViewName={$metricsViewName}
             filters={$dashboardStore.whereFilter}
             dimensionThresholdFilters={[]}
             timeRange={undefined}

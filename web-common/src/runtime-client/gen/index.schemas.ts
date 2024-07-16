@@ -534,6 +534,12 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
+
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -561,12 +567,6 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
-
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
 
 export interface V1TimeRange {
   start?: string;
@@ -794,6 +794,13 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -820,13 +827,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -2100,11 +2100,18 @@ export interface V1APIState {
   [key: string]: any;
 }
 
+export type V1APISpecOpenapiResponseSchema = { [key: string]: any };
+
+export type V1APISpecOpenapiParametersItem = { [key: string]: any };
+
 export type V1APISpecResolverProperties = { [key: string]: any };
 
 export interface V1APISpec {
   resolver?: string;
   resolverProperties?: V1APISpecResolverProperties;
+  openapiSummary?: string;
+  openapiParameters?: V1APISpecOpenapiParametersItem[];
+  openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
 }
 
 /**
@@ -2127,7 +2134,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

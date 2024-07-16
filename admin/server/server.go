@@ -496,3 +496,11 @@ func (u *externalURLs) alertEdit(org, project, alert string) string {
 func (u *externalURLs) magicAuthTokenOpen(org, project, token string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "share", token)
 }
+
+func (u *externalURLs) approveProjectAccess(org, project, id string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "request-access", id, "approve")
+}
+
+func (u *externalURLs) denyProjectAccess(org, project, id string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "request-access", id, "deny")
+}
