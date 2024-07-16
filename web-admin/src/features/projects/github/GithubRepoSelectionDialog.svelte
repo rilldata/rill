@@ -26,7 +26,6 @@
   $: githubUserRepos = createAdminServiceListGithubUserRepos({
     query: {
       enabled: !!$githubUserStatus.data?.hasAccess,
-      refetchOnWindowFocus: true,
     },
   });
   $: repoSelections =

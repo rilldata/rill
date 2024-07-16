@@ -3,6 +3,7 @@
   import { GithubConnection } from "@rilldata/web-admin/features/projects/github/GithubConnection";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
+  import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import {
@@ -74,14 +75,23 @@
       </div>
       <div class="flex flex-col">
         {#if isGithubConnected}
-          <a
-            href={$proj.data?.project?.githubUrl}
-            class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
-            target="_blank"
-            rel="noreferrer noopener"
-          >
-            {repoName}
-          </a>
+          <div class="flex flex-row items-center">
+            <a
+              href={$proj.data?.project?.githubUrl}
+              class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
+              target="_blank"
+              rel="noreferrer noopener"
+            >
+              {repoName}
+            </a>
+            <Button
+              on:click={() => (githubSelectionOpen = true)}
+              type="ghost"
+              compact
+            >
+              <EditIcon size="16px" />
+            </Button>
+          </div>
           {#if subpath}
             <div class="flex items-center">
               <span class="font-mono">subpath</span>
