@@ -24,10 +24,11 @@
     email: string().email("Invalid email"),
   });
 
-  const { form, enhance, submit, allErrors, submitting } = superForm(
+  const { form, enhance, submit, errors, submitting } = superForm(
     defaults(initialValues, yup(validationSchema)),
     {
       SPA: true,
+      validators: yup(validationSchema),
       async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
@@ -71,8 +72,9 @@
         id="request"
         label="Connector"
         placeholder="Your data source"
-        errors={$allErrors["request"]}
+        errors={$errors.request}
         bind:value={$form.request}
+        alwaysShowError
       />
     </div>
     <div class="pt-4 pb-5 text-slate-800">
@@ -80,7 +82,7 @@
         id="email"
         label="Optionally, we can let you know when the connector is available."
         placeholder="Your email address"
-        errors={$allErrors["email"]}
+        errors={$errors.email}
         bind:value={$form.email}
       />
     </div>
