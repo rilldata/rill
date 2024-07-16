@@ -20,9 +20,9 @@ import type {
   AdminServiceTriggerReconcileBodyBody,
   V1TriggerRefreshSourcesResponse,
   AdminServiceTriggerRefreshSourcesBody,
+  V1ListGithubUserReposResponse,
   V1GetGithubRepoStatusResponse,
   AdminServiceGetGithubRepoStatusParams,
-  V1ListGithubUserReposResponse,
   V1GetGithubUserStatusResponse,
   V1RevokeMagicAuthTokenResponse,
   V1ListOrganizationsResponse,
@@ -342,6 +342,56 @@ export const createAdminServiceTriggerRefreshSources = <
     TContext
   >(mutationFn, mutationOptions);
 };
+export const adminServiceListGithubUserRepos = (signal?: AbortSignal) => {
+  return httpClient<V1ListGithubUserReposResponse>({
+    url: `/v1/github/repositories`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceListGithubUserReposQueryKey = () => [
+  `/v1/github/repositories`,
+];
+
+export type AdminServiceListGithubUserReposQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>
+>;
+export type AdminServiceListGithubUserReposQueryError = RpcStatus;
+
+export const createAdminServiceListGithubUserRepos = <
+  TData = Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>,
+  TError = RpcStatus,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceListGithubUserReposQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>
+  > = ({ signal }) => adminServiceListGithubUserRepos(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
 If the caller has not granted access to the repository, instructions for granting access are returned.
@@ -351,7 +401,7 @@ export const adminServiceGetGithubRepoStatus = (
   signal?: AbortSignal,
 ) => {
   return httpClient<V1GetGithubRepoStatusResponse>({
-    url: `/v1/github/repositories`,
+    url: `/v1/github/repositories/status`,
     method: "get",
     params,
     signal,
@@ -360,7 +410,7 @@ export const adminServiceGetGithubRepoStatus = (
 
 export const getAdminServiceGetGithubRepoStatusQueryKey = (
   params?: AdminServiceGetGithubRepoStatusParams,
-) => [`/v1/github/repositories`, ...(params ? [params] : [])];
+) => [`/v1/github/repositories/status`, ...(params ? [params] : [])];
 
 export type AdminServiceGetGithubRepoStatusQueryResult = NonNullable<
   Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>
@@ -392,56 +442,6 @@ export const createAdminServiceGetGithubRepoStatus = <
 
   const query = createQuery<
     Awaited<ReturnType<typeof adminServiceGetGithubRepoStatus>>,
-    TError,
-    TData
-  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
-    TData,
-    TError
-  > & { queryKey: QueryKey };
-
-  query.queryKey = queryKey;
-
-  return query;
-};
-
-export const adminServiceListGithubUserRepos = (signal?: AbortSignal) => {
-  return httpClient<V1ListGithubUserReposResponse>({
-    url: `/v1/github/repositories/list`,
-    method: "get",
-    signal,
-  });
-};
-
-export const getAdminServiceListGithubUserReposQueryKey = () => [
-  `/v1/github/repositories/list`,
-];
-
-export type AdminServiceListGithubUserReposQueryResult = NonNullable<
-  Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>
->;
-export type AdminServiceListGithubUserReposQueryError = RpcStatus;
-
-export const createAdminServiceListGithubUserRepos = <
-  TData = Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>,
-  TError = RpcStatus,
->(options?: {
-  query?: CreateQueryOptions<
-    Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>,
-    TError,
-    TData
-  >;
-}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
-  const { query: queryOptions } = options ?? {};
-
-  const queryKey =
-    queryOptions?.queryKey ?? getAdminServiceListGithubUserReposQueryKey();
-
-  const queryFn: QueryFunction<
-    Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>
-  > = ({ signal }) => adminServiceListGithubUserRepos(signal);
-
-  const query = createQuery<
-    Awaited<ReturnType<typeof adminServiceListGithubUserRepos>>,
     TError,
     TData
   >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<

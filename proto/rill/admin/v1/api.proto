@@ -340,7 +340,7 @@ service AdminService {
   // GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
   // If the caller has not granted access to the repository, instructions for granting access are returned.
   rpc GetGithubRepoStatus(GetGithubRepoStatusRequest) returns (GetGithubRepoStatusResponse) {
-    option (google.api.http) = {get: "/v1/github/repositories"};
+    option (google.api.http) = {get: "/v1/github/repositories/status"};
   }
 
   // GetGithubUserStatus returns info about a Github user account based on the caller's installations.
@@ -350,7 +350,7 @@ service AdminService {
   }
 
   rpc ListGithubUserRepos(ListGithubUserReposRequest) returns (ListGithubUserReposResponse) {
-    option (google.api.http) = {get: "/v1/github/repositories/list"};
+    option (google.api.http) = {get: "/v1/github/repositories"};
   }
 
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.

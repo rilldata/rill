@@ -276,10 +276,7 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 	client := github.NewTokenClient(ctx, token)
 
 	// use a client with user's token to get installations
-	installations, _, err := client.Apps.ListUserInstallations(ctx, &github.ListOptions{
-		Page:    0,
-		PerPage: 0,
-	})
+	installations, _, err := client.Apps.ListUserInstallations(ctx, nil)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}

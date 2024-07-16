@@ -104,6 +104,20 @@ paths:
         - AdminService
   /v1/github/repositories:
     get:
+      operationId: AdminService_ListGithubUserRepos
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGithubUserReposResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/github/repositories/status:
+    get:
       summary: |-
         GetGithubRepoRequest returns info about a Github repo based on the caller's installations.
         If the caller has not granted access to the repository, instructions for granting access are returned.
@@ -122,20 +136,6 @@ paths:
           in: query
           required: false
           type: string
-      tags:
-        - AdminService
-  /v1/github/repositories/list:
-    get:
-      operationId: AdminService_ListGithubUserRepos
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListGithubUserReposResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
       tags:
         - AdminService
   /v1/github/user:
