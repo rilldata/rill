@@ -841,6 +841,10 @@ export interface V1ListMagicAuthTokensResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListGithubUserReposResponse {
+  repos?: ListGithubUserReposResponseRepo[];
+}
+
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
 }
@@ -1257,4 +1261,11 @@ export const ProtobufNullValue = {
 export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
+}
+
+export interface ListGithubUserReposResponseRepo {
+  name?: string;
+  owner?: string;
+  description?: string;
+  url?: string;
 }

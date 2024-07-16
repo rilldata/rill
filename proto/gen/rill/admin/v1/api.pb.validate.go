@@ -21268,6 +21268,245 @@ var _ interface {
 	ErrorName() string
 } = GetGithubUserStatusResponseValidationError{}
 
+// Validate checks the field values on ListGithubUserReposRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListGithubUserReposRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGithubUserReposRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListGithubUserReposRequestMultiError, or nil if none found.
+func (m *ListGithubUserReposRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGithubUserReposRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ListGithubUserReposRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGithubUserReposRequestMultiError is an error wrapping multiple
+// validation errors returned by ListGithubUserReposRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ListGithubUserReposRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGithubUserReposRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGithubUserReposRequestMultiError) AllErrors() []error { return m }
+
+// ListGithubUserReposRequestValidationError is the validation error returned
+// by ListGithubUserReposRequest.Validate if the designated constraints aren't met.
+type ListGithubUserReposRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGithubUserReposRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGithubUserReposRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGithubUserReposRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGithubUserReposRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGithubUserReposRequestValidationError) ErrorName() string {
+	return "ListGithubUserReposRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGithubUserReposRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGithubUserReposRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGithubUserReposRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGithubUserReposRequestValidationError{}
+
+// Validate checks the field values on ListGithubUserReposResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ListGithubUserReposResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGithubUserReposResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ListGithubUserReposResponseMultiError, or nil if none found.
+func (m *ListGithubUserReposResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGithubUserReposResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	for idx, item := range m.GetRepos() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, ListGithubUserReposResponseValidationError{
+						field:  fmt.Sprintf("Repos[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, ListGithubUserReposResponseValidationError{
+						field:  fmt.Sprintf("Repos[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return ListGithubUserReposResponseValidationError{
+					field:  fmt.Sprintf("Repos[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if len(errors) > 0 {
+		return ListGithubUserReposResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGithubUserReposResponseMultiError is an error wrapping multiple
+// validation errors returned by ListGithubUserReposResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ListGithubUserReposResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGithubUserReposResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGithubUserReposResponseMultiError) AllErrors() []error { return m }
+
+// ListGithubUserReposResponseValidationError is the validation error returned
+// by ListGithubUserReposResponse.Validate if the designated constraints
+// aren't met.
+type ListGithubUserReposResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGithubUserReposResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGithubUserReposResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGithubUserReposResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGithubUserReposResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGithubUserReposResponseValidationError) ErrorName() string {
+	return "ListGithubUserReposResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGithubUserReposResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGithubUserReposResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGithubUserReposResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGithubUserReposResponseValidationError{}
+
 // Validate checks the field values on GetCloneCredentialsRequest with the
 // rules defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.
@@ -31639,3 +31878,116 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MemberUsergroupValidationError{}
+
+// Validate checks the field values on ListGithubUserReposResponse_Repo with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *ListGithubUserReposResponse_Repo) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ListGithubUserReposResponse_Repo with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the result is a list of violation errors wrapped in
+// ListGithubUserReposResponse_RepoMultiError, or nil if none found.
+func (m *ListGithubUserReposResponse_Repo) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ListGithubUserReposResponse_Repo) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Name
+
+	// no validation rules for Owner
+
+	// no validation rules for Description
+
+	// no validation rules for Url
+
+	if len(errors) > 0 {
+		return ListGithubUserReposResponse_RepoMultiError(errors)
+	}
+
+	return nil
+}
+
+// ListGithubUserReposResponse_RepoMultiError is an error wrapping multiple
+// validation errors returned by
+// ListGithubUserReposResponse_Repo.ValidateAll() if the designated
+// constraints aren't met.
+type ListGithubUserReposResponse_RepoMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ListGithubUserReposResponse_RepoMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ListGithubUserReposResponse_RepoMultiError) AllErrors() []error { return m }
+
+// ListGithubUserReposResponse_RepoValidationError is the validation error
+// returned by ListGithubUserReposResponse_Repo.Validate if the designated
+// constraints aren't met.
+type ListGithubUserReposResponse_RepoValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ListGithubUserReposResponse_RepoValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ListGithubUserReposResponse_RepoValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ListGithubUserReposResponse_RepoValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ListGithubUserReposResponse_RepoValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ListGithubUserReposResponse_RepoValidationError) ErrorName() string {
+	return "ListGithubUserReposResponse_RepoValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ListGithubUserReposResponse_RepoValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sListGithubUserReposResponse_Repo.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ListGithubUserReposResponse_RepoValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ListGithubUserReposResponse_RepoValidationError{}

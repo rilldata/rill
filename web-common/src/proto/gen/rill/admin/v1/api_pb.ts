@@ -7382,6 +7382,129 @@ export class GetGithubUserStatusResponse extends Message<GetGithubUserStatusResp
 }
 
 /**
+ * @generated from message rill.admin.v1.ListGithubUserReposRequest
+ */
+export class ListGithubUserReposRequest extends Message<ListGithubUserReposRequest> {
+  constructor(data?: PartialMessage<ListGithubUserReposRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListGithubUserReposRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGithubUserReposRequest {
+    return new ListGithubUserReposRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListGithubUserReposRequest {
+    return new ListGithubUserReposRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListGithubUserReposRequest {
+    return new ListGithubUserReposRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListGithubUserReposRequest | PlainMessage<ListGithubUserReposRequest> | undefined, b: ListGithubUserReposRequest | PlainMessage<ListGithubUserReposRequest> | undefined): boolean {
+    return proto3.util.equals(ListGithubUserReposRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListGithubUserReposResponse
+ */
+export class ListGithubUserReposResponse extends Message<ListGithubUserReposResponse> {
+  /**
+   * @generated from field: repeated rill.admin.v1.ListGithubUserReposResponse.Repo repos = 1;
+   */
+  repos: ListGithubUserReposResponse_Repo[] = [];
+
+  constructor(data?: PartialMessage<ListGithubUserReposResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListGithubUserReposResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "repos", kind: "message", T: ListGithubUserReposResponse_Repo, repeated: true },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGithubUserReposResponse {
+    return new ListGithubUserReposResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListGithubUserReposResponse {
+    return new ListGithubUserReposResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListGithubUserReposResponse {
+    return new ListGithubUserReposResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListGithubUserReposResponse | PlainMessage<ListGithubUserReposResponse> | undefined, b: ListGithubUserReposResponse | PlainMessage<ListGithubUserReposResponse> | undefined): boolean {
+    return proto3.util.equals(ListGithubUserReposResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ListGithubUserReposResponse.Repo
+ */
+export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserReposResponse_Repo> {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name = "";
+
+  /**
+   * @generated from field: string owner = 2;
+   */
+  owner = "";
+
+  /**
+   * @generated from field: string description = 3;
+   */
+  description = "";
+
+  /**
+   * @generated from field: string url = 4;
+   */
+  url = "";
+
+  constructor(data?: PartialMessage<ListGithubUserReposResponse_Repo>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ListGithubUserReposResponse.Repo";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "owner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGithubUserReposResponse_Repo {
+    return new ListGithubUserReposResponse_Repo().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ListGithubUserReposResponse_Repo {
+    return new ListGithubUserReposResponse_Repo().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ListGithubUserReposResponse_Repo {
+    return new ListGithubUserReposResponse_Repo().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ListGithubUserReposResponse_Repo | PlainMessage<ListGithubUserReposResponse_Repo> | undefined, b: ListGithubUserReposResponse_Repo | PlainMessage<ListGithubUserReposResponse_Repo> | undefined): boolean {
+    return proto3.util.equals(ListGithubUserReposResponse_Repo, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetCloneCredentialsRequest
  */
 export class GetCloneCredentialsRequest extends Message<GetCloneCredentialsRequest> {
