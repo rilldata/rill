@@ -58,7 +58,6 @@
         <TimeRangeReadOnly {timeRange} {comparisonTimeRange} />
       {/if}
       {#each currentDimensionFilters as { name, label, selectedValues, isInclude } (name)}
-        {@const dimension = dimensionIdMap.get(name)}
         <div animate:flip={{ duration: 200 }}>
           <DimensionFilterReadOnlyChip
             label={label ?? name}
