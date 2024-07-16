@@ -1,4 +1,4 @@
-package shareurl
+package publicurl
 
 import (
 	"context"
@@ -22,7 +22,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	createCmd := &cobra.Command{
 		Use:   "create [<project-name>] <metrics view>",
-		Short: "Create a shareable URL",
+		Short: "Create a public URL",
 		Args:  cobra.RangeArgs(1, 2),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()

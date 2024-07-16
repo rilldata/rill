@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill share-url delete
+title: rill public-url delete
 ---
-## rill share-url delete
+## rill public-url delete
 
-Delete a shareable URL
+Delete a public URL
 
 ```
-rill share-url delete <id> [flags]
+rill public-url delete <id> [flags]
 ```
 
 ### Global flags
@@ -22,5 +22,5 @@ rill share-url delete <id> [flags]
 
 ### SEE ALSO
 
-* [rill share-url](share-url.md)	 - Manage shareable URLs
+* [rill public-url](public-url.md)	 - Manage public URLs
 

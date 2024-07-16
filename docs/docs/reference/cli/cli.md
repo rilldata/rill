@@ -27,8 +27,8 @@ Rill CLI
 * [rill logout](logout.md)	 - Logout of the Rill API
 * [rill org](org/org.md)	 - Manage organisations
 * [rill project](project/project.md)	 - Manage projects
+* [rill public-url](public-url/public-url.md)	 - Manage public URLs
 * [rill service](service/service.md)	 - Manage service accounts
-* [rill share-url](share-url/share-url.md)	 - Manage shareable URLs
 * [rill start](start.md)	 - Build project and start web app
 * [rill uninstall](uninstall.md)	 - Uninstall the Rill binary
 * [rill upgrade](upgrade.md)	 - Upgrade Rill to the latest version
