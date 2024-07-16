@@ -66,10 +66,14 @@ export function extractAlertFormValues(
   );
 
   return {
-    measures: measures.filter(m => !m.comparisonDelta && !m.comparisonRatio).map(m => {
-      const mappedMeasure = metricsViewSpec.measures ? metricsViewSpec.measures.find(mm => (mm.name === m.name)) : null
-      return { value: m.name, label: mappedMeasure?.label }
-    }),
+    measures: measures
+      .filter((m) => !m.comparisonDelta && !m.comparisonRatio)
+      .map((m) => {
+        const mappedMeasure = metricsViewSpec.measures
+          ? metricsViewSpec.measures.find((mm) => mm.name === m.name)
+          : null;
+        return { value: m.name, label: mappedMeasure?.label };
+      }),
     splitByDimension: dimensions[0]?.name ?? "",
 
     criteria: (queryArgs.having?.cond?.exprs?.map(

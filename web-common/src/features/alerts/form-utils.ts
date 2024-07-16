@@ -17,7 +17,7 @@ import * as yup from "yup";
 
 export type AlertFormValues = {
   name: string;
-  measures: { label?: string, value: string }[];
+  measures: { label?: string; value: string }[];
   splitByDimension: string;
   criteria: MeasureFilterEntry[];
   criteriaOperation: V1Operation;
@@ -42,23 +42,25 @@ export function getAlertQueryArgsFromFormValues(
 ): V1MetricsViewAggregationRequest {
   return {
     metricsView: formValues.metricsViewName,
-    measures: formValues.measures.map(m => {
-      if (formValues.comparisonTimeRange) {
-        return [
-          { name: m.value },
-          {
-            name: m.value + ComparisonDeltaAbsoluteSuffix,
-            comparisonDelta: { measure: m.value }
-          },
-          {
-            name: m.value + ComparisonDeltaRelativeSuffix,
-            comparisonRatio: { measure: m.value }
-          },
-        ];
-      } else {
-        return { name: m.value };
-      }
-    }).flat(),
+    measures: formValues.measures
+      .map((m) => {
+        if (formValues.comparisonTimeRange) {
+          return [
+            { name: m.value },
+            {
+              name: m.value + ComparisonDeltaAbsoluteSuffix,
+              comparisonDelta: { measure: m.value },
+            },
+            {
+              name: m.value + ComparisonDeltaRelativeSuffix,
+              comparisonRatio: { measure: m.value },
+            },
+          ];
+        } else {
+          return { name: m.value };
+        }
+      })
+      .flat(),
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
@@ -82,31 +84,34 @@ export function getAlertQueryArgsFromFormValues(
       timeZone: formValues.timeRange.timeZone,
       roundToGrain: formValues.timeRange.roundToGrain,
     },
-    sort: formValues.measures.map(m => {
+    sort: formValues.measures.map((m) => {
       return {
         name: m.value,
-        desc: false
-      }
+        desc: false,
+      };
     }),
     ...(formValues.comparisonTimeRange
       ? {
-        comparisonTimeRange: {
-          isoDuration: formValues.comparisonTimeRange.isoDuration,
-          isoOffset: formValues.comparisonTimeRange.isoOffset,
-        },
-      }
+          comparisonTimeRange: {
+            isoDuration: formValues.comparisonTimeRange.isoDuration,
+            isoOffset: formValues.comparisonTimeRange.isoOffset,
+          },
+        }
       : {}),
   };
 }
 
 export const alertFormValidationSchema = yup.object({
   name: yup.string().required("Required"),
-  measures: yup.array().of(
-    yup.object().shape({
-      value: yup.string().required("Required"),
-      label: yup.string().optional()
-    })
-  ).required("Required"),
+  measures: yup
+    .array()
+    .of(
+      yup.object().shape({
+        value: yup.string().required("Required"),
+        label: yup.string().optional(),
+      }),
+    )
+    .required("Required"),
   criteria: yup.array().of(
     yup.object().shape({
       measure: yup.string().required("Required"),
@@ -159,11 +164,11 @@ export function checkIsTabValid(
       typeof errors.criteria === "string"
         ? !!errors.criteria
         : (errors.criteria as Array<MeasureFilterEntry>).some(
-          (c) =>
-            c.measure !== "" ||
-            (c.operation as string) !== "" ||
-            c.measure !== "",
-        );
+            (c) =>
+              c.measure !== "" ||
+              (c.operation as string) !== "" ||
+              c.measure !== "",
+          );
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =
