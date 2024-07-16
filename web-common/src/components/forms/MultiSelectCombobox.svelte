@@ -7,33 +7,29 @@
   import { Menu, MenuItem } from "../menu";
   import Tooltip from "../tooltip/Tooltip.svelte";
   import TooltipContent from "../tooltip/TooltipContent.svelte";
+  import { createEventDispatcher } from "svelte";
 
   export let id = "";
   export let label = "";
-  export let error: string;
   export let placeholder = "";
-  export let options: string[] = [];
-  export let selectedValues: string[] = [];
+  export let options: { value: string; label?: string }[];
+  export let selectValues: { value: string; label?: string }[] = [];
   export let hint = "";
+  export let readonly = true;
 
-  let inputValue = "";
+  const dispatch = createEventDispatcher();
 
-  $: filteredOptions = options.filter((option) =>
-    option.toLowerCase().includes(inputValue.toLowerCase()),
-  );
+  function toggleOption(option: { value: string; label?: string }) {
+    const index = selectValues.findIndex(
+      (selectedOption) => selectedOption.value === option.value,
+    );
 
-  function toggleOption(option: string) {
-    const index = selectedValues.indexOf(option);
     if (index === -1) {
-      selectedValues = [...selectedValues, option];
+      selectValues.push(option);
     } else {
-      selectedValues = [
-        ...selectedValues.slice(0, index),
-        ...selectedValues.slice(index + 1),
-      ];
+      selectValues.splice(index, 1);
     }
   }
-
   let inputEl: HTMLElement;
 </script>
 
@@ -65,12 +61,14 @@
       name={id}
       {placeholder}
       type="text"
-      class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs {error &&
-        'border-red-500'}"
-      bind:value={inputValue}
-      on:input={() => {
-        if (!active) toggleFloatingElement();
+      class="bg-white rounded-sm border border-gray-300 px-3 py-[5px] h-8 cursor-pointer focus:outline-primary-500 w-full text-xs"
+      {readonly}
+      on:click={() => {
+        toggleFloatingElement();
       }}
+      value={selectValues && selectValues.length
+        ? selectValues.map((m) => (m.label ? m.label : m.value)).join(", ")
+        : null}
     />
     <Menu
       slot="floating-element"
@@ -84,26 +82,26 @@
       }}
       on:escape={toggleFloatingElement}
     >
-      {#if filteredOptions.length > 0}
-        {#each filteredOptions as option}
+      {#if options.length > 0}
+        {#each options as option}
           <MenuItem
             icon
             focusOnMount={false}
             animateSelect={false}
             on:select={() => {
               toggleOption(option);
+              dispatch("change", selectValues);
               toggleFloatingElement();
-              inputValue = "";
             }}
           >
             <svelte:fragment slot="icon">
-              {#if selectedValues.includes(option)}
+              {#if selectValues.find((val) => val.value === option.value)}
                 <Check size="20px" color="#15141A" />
               {:else}
                 <Spacer size="20px" />
               {/if}
             </svelte:fragment>
-            {option}
+            {option.label || option.value}
           </MenuItem>
         {/each}
       {:else}
@@ -111,9 +109,4 @@
       {/if}
     </Menu>
   </WithTogglableFloatingElement>
-  {#if error}
-    <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
-      {error}
-    </div>
-  {/if}
 </div>

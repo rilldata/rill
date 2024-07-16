@@ -17,7 +17,7 @@ import * as yup from "yup";
 
 export type AlertFormValues = {
   name: string;
-  measure: string;
+  measures: { label?: string, value: string }[];
   splitByDimension: string;
   criteria: MeasureFilterEntry[];
   criteriaOperation: V1Operation;
@@ -42,23 +42,23 @@ export function getAlertQueryArgsFromFormValues(
 ): V1MetricsViewAggregationRequest {
   return {
     metricsView: formValues.metricsViewName,
-    measures: [
-      {
-        name: formValues.measure,
-      },
-      ...(formValues.comparisonTimeRange
-        ? [
-            {
-              name: formValues.measure + ComparisonDeltaAbsoluteSuffix,
-              comparisonDelta: { measure: formValues.measure },
-            },
-            {
-              name: formValues.measure + ComparisonDeltaRelativeSuffix,
-              comparisonRatio: { measure: formValues.measure },
-            },
-          ]
-        : []),
-    ],
+    measures: formValues.measures.map(m => {
+      if (formValues.comparisonTimeRange) {
+        return [
+          { name: m.value },
+          {
+            name: m.value + ComparisonDeltaAbsoluteSuffix,
+            comparisonDelta: { measure: m.value }
+          },
+          {
+            name: m.value + ComparisonDeltaRelativeSuffix,
+            comparisonRatio: { measure: m.value }
+          },
+        ];
+      } else {
+        return { name: m.value };
+      }
+    }).flat(),
     dimensions: formValues.splitByDimension
       ? [{ name: formValues.splitByDimension }]
       : [],
@@ -82,26 +82,31 @@ export function getAlertQueryArgsFromFormValues(
       timeZone: formValues.timeRange.timeZone,
       roundToGrain: formValues.timeRange.roundToGrain,
     },
-    sort: [
-      {
-        name: formValues.measure,
-        desc: false,
-      },
-    ],
+    sort: formValues.measures.map(m => {
+      return {
+        name: m.value,
+        desc: false
+      }
+    }),
     ...(formValues.comparisonTimeRange
       ? {
-          comparisonTimeRange: {
-            isoDuration: formValues.comparisonTimeRange.isoDuration,
-            isoOffset: formValues.comparisonTimeRange.isoOffset,
-          },
-        }
+        comparisonTimeRange: {
+          isoDuration: formValues.comparisonTimeRange.isoDuration,
+          isoOffset: formValues.comparisonTimeRange.isoOffset,
+        },
+      }
       : {}),
   };
 }
 
 export const alertFormValidationSchema = yup.object({
   name: yup.string().required("Required"),
-  measure: yup.string().required("Required"),
+  measures: yup.array().of(
+    yup.object().shape({
+      value: yup.string().required("Required"),
+      label: yup.string().optional()
+    })
+  ).required("Required"),
   criteria: yup.array().of(
     yup.object().shape({
       measure: yup.string().required("Required"),
@@ -123,7 +128,7 @@ export const alertFormValidationSchema = yup.object({
   ),
 });
 export const FieldsByTab: (keyof AlertFormValues)[][] = [
-  ["measure"],
+  ["measures"],
   ["criteria", "criteriaOperation"],
   ["name", "snooze", "slackUsers", "emailRecipients"],
 ];
@@ -137,7 +142,7 @@ export function checkIsTabValid(
   let hasErrors: boolean;
 
   if (tabIndex === 0) {
-    hasRequiredFields = formValues.measure !== "";
+    hasRequiredFields = formValues.measures.length > 0;
     hasErrors = !!errors.measure;
   } else if (tabIndex === 1) {
     hasRequiredFields = true;
@@ -154,11 +159,11 @@ export function checkIsTabValid(
       typeof errors.criteria === "string"
         ? !!errors.criteria
         : (errors.criteria as Array<MeasureFilterEntry>).some(
-            (c) =>
-              c.measure !== "" ||
-              (c.operation as string) !== "" ||
-              c.measure !== "",
-          );
+          (c) =>
+            c.measure !== "" ||
+            (c.operation as string) !== "" ||
+            c.measure !== "",
+        );
   } else if (tabIndex === 2) {
     // TODO: do better for >1 recipients
     hasRequiredFields =

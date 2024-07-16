@@ -11,17 +11,18 @@
 
   const queryClient = useQueryClient();
 
+  $: atLeastOneMeasure = formValues.measures.length > 0;
   $: alertPreviewQuery = getAlertPreviewData(queryClient, {
     ...formValues,
     criteria: [],
   });
 </script>
 
-{#if $alertPreviewQuery.isFetching}
+{#if $alertPreviewQuery?.isFetching}
   <div class="p-2 flex flex-col justify-center">
     <Spinner status={EntityStatus.Running} />
   </div>
-{:else if !$alertPreviewQuery.data}
+{:else if !atLeastOneMeasure || !$alertPreviewQuery?.data}
   <PreviewEmpty
     topLine="No data to preview"
     bottomLine="To see a preview, select measures above."

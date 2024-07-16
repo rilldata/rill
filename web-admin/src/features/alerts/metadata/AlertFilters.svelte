@@ -60,13 +60,11 @@
       {#each currentDimensionFilters as { name, label, selectedValues, isInclude } (name)}
         {@const dimension = dimensionIdMap.get(name)}
         <div animate:flip={{ duration: 200 }}>
-          {#if dimension?.column}
-            <DimensionFilterReadOnlyChip
-              label={label ?? name}
-              values={selectedValues}
-              {isInclude}
-            />
-          {/if}
+          <DimensionFilterReadOnlyChip
+            label={label ?? name}
+            values={selectedValues}
+            {isInclude}
+          />
         </div>
       {/each}
       {#if currentMeasureFilters.length > 0}

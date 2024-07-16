@@ -105,9 +105,7 @@
           message: "Alert edited",
           type: "success",
         });
-      } catch (e) {
-        // showing error below
-      }
+      } catch (e) {}
     },
   });
   const { form } = formState;

@@ -89,14 +89,14 @@ export function createBetweenExpression(
 }
 
 const conditionOperationComplement: Partial<Record<V1Operation, V1Operation>> =
-  {
-    [V1Operation.OPERATION_EQ]: V1Operation.OPERATION_NEQ,
-    [V1Operation.OPERATION_LT]: V1Operation.OPERATION_GTE,
-    [V1Operation.OPERATION_LTE]: V1Operation.OPERATION_GT,
-    [V1Operation.OPERATION_IN]: V1Operation.OPERATION_NIN,
-    [V1Operation.OPERATION_LIKE]: V1Operation.OPERATION_NLIKE,
-    [V1Operation.OPERATION_AND]: V1Operation.OPERATION_OR,
-  };
+{
+  [V1Operation.OPERATION_EQ]: V1Operation.OPERATION_NEQ,
+  [V1Operation.OPERATION_LT]: V1Operation.OPERATION_GTE,
+  [V1Operation.OPERATION_LTE]: V1Operation.OPERATION_GT,
+  [V1Operation.OPERATION_IN]: V1Operation.OPERATION_NIN,
+  [V1Operation.OPERATION_LIKE]: V1Operation.OPERATION_NLIKE,
+  [V1Operation.OPERATION_AND]: V1Operation.OPERATION_OR,
+};
 // add inverse of existing values above
 for (const c in conditionOperationComplement) {
   conditionOperationComplement[conditionOperationComplement[c]] = c;

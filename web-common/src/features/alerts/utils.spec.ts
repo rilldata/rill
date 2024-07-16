@@ -22,61 +22,61 @@ describe("generateAlertName", () => {
     formValues: Partial<AlertFormValues>;
     expected: string;
   }[] = [
-    {
-      title: "value criteria without comparison",
-      formValues: {
-        measure: "total_records",
-        criteria: [
-          {
-            measure: "total_records",
-            type: MeasureFilterType.Value,
-            operation: MeasureFilterOperation.LessThan,
-            value1: "10",
-            value2: "",
-          },
-        ],
-      },
-      expected: "Total records value alert",
-    },
-    {
-      title: "absolute change criteria with comparison",
-      formValues: {
-        measure: "total_records",
-        criteria: [
-          {
-            measure: "total_records",
-            type: MeasureFilterType.AbsoluteChange,
-            operation: MeasureFilterOperation.GreaterThanOrEquals,
-            value1: "10",
-            value2: "",
-          },
-        ],
-        comparisonTimeRange: {
-          isoOffset: "rill-PW",
+      {
+        title: "value criteria without comparison",
+        formValues: {
+          measures: [{ value: "total_records" }],
+          criteria: [
+            {
+              measure: "total_records",
+              type: MeasureFilterType.Value,
+              operation: MeasureFilterOperation.LessThan,
+              value1: "10",
+              value2: "",
+            },
+          ],
         },
+        expected: "Total records value alert",
       },
-      expected: "Total records change vs previous week alert",
-    },
-    {
-      title: "percent change criteria with comparison",
-      formValues: {
-        measure: "total_records",
-        criteria: [
-          {
-            measure: "total_records",
-            type: MeasureFilterType.PercentChange,
-            operation: MeasureFilterOperation.GreaterThan,
-            value1: "-10",
-            value2: "",
+      {
+        title: "absolute change criteria with comparison",
+        formValues: {
+          measures: [{ value: "total_records" }],
+          criteria: [
+            {
+              measure: "total_records",
+              type: MeasureFilterType.AbsoluteChange,
+              operation: MeasureFilterOperation.GreaterThanOrEquals,
+              value1: "10",
+              value2: "",
+            },
+          ],
+          comparisonTimeRange: {
+            isoOffset: "rill-PW",
           },
-        ],
-        comparisonTimeRange: {
-          isoOffset: "rill-PM",
         },
+        expected: "Total records change vs previous week alert",
       },
-      expected: "Total records % change vs previous month alert",
-    },
-  ];
+      {
+        title: "percent change criteria with comparison",
+        formValues: {
+          measures: [{ value: "total_records" }],
+          criteria: [
+            {
+              measure: "total_records",
+              type: MeasureFilterType.PercentChange,
+              operation: MeasureFilterOperation.GreaterThan,
+              value1: "-10",
+              value2: "",
+            },
+          ],
+          comparisonTimeRange: {
+            isoOffset: "rill-PM",
+          },
+        },
+        expected: "Total records % change vs previous month alert",
+      },
+    ];
 
   for (const { title, formValues, expected } of TestCases) {
     it(title, () => {

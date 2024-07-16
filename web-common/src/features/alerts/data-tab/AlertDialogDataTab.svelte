@@ -5,6 +5,7 @@
   import { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
+  import MultiSelectCombobox from "../../../components/forms/MultiSelectComboBox.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
   import { useMetricsView } from "../../dashboards/selectors";
@@ -37,6 +38,10 @@
       label: d.label?.length ? d.label : d.expression,
     })) ?? []),
   ];
+
+  function handleMeasureChange(event) {
+    $form["measures"] = event.detail;
+  }
 </script>
 
 <div class="flex flex-col gap-y-3">
@@ -56,12 +61,13 @@
     description="Select the measures you want to monitor."
     title="Alert data"
   >
-    <Select
-      bind:value={$form["measure"]}
-      id="measure"
+    <MultiSelectCombobox
+      id="measures"
       label="Measure"
       options={measureOptions}
+      selectValues={$form["measures"]}
       placeholder="Select a measure"
+      on:change={handleMeasureChange}
     />
     <Select
       bind:value={$form["splitByDimension"]}

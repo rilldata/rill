@@ -9,32 +9,17 @@
     MeasureFilterComparisonTypeOptions,
     MeasureFilterType,
   } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-options";
-  import { useMetricsView } from "@rilldata/web-common/features/dashboards/selectors";
   import { debounce } from "@rilldata/web-common/lib/create-debouncer";
   import { getComparisonLabel } from "@rilldata/web-common/lib/time/comparisons";
   import { createForm } from "svelte-forms-lib";
   import { slide } from "svelte/transition";
-  import { runtime } from "../../../runtime-client/runtime-store";
 
   export let formState: ReturnType<typeof createForm<AlertFormValues>>;
   export let index: number;
 
   const { form, errors, validateField } = formState;
 
-  $: metricsView = useMetricsView(
-    $runtime.instanceId,
-    $form["metricsViewName"],
-  );
-
-  $: measure = $metricsView.data?.measures?.find(
-    (m) => m.name === $form["measure"],
-  );
-  $: measureOptions = [
-    {
-      value: $form["measure"],
-      label: measure?.label?.length ? measure.label : measure?.expression,
-    },
-  ];
+  $: measureOptions = $form["measures"] || [];
 
   $: hasComparison =
     $form.comparisonTimeRange?.isoDuration ||
