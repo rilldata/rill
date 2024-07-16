@@ -72,7 +72,7 @@ export function getDimensionTableAggregationRequestForTime(
   if (comparisonTimeRange) {
     // insert beside the correct measure
     measures.splice(
-      measures.findIndex((m) => m.name === apiSortName),
+      measures.findIndex((m) => m.name === apiSortName) + 1,
       0,
       ...getComparisonRequestMeasures(apiSortName),
     );
