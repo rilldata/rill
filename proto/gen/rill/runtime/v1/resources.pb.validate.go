@@ -8889,6 +8889,71 @@ func (m *APISpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for OpenapiSummary
+
+	for idx, item := range m.GetOpenapiParameters() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, APISpecValidationError{
+						field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, APISpecValidationError{
+						field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return APISpecValidationError{
+					field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetOpenapiResponseSchema()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, APISpecValidationError{
+					field:  "OpenapiResponseSchema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, APISpecValidationError{
+					field:  "OpenapiResponseSchema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOpenapiResponseSchema()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return APISpecValidationError{
+				field:  "OpenapiResponseSchema",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return APISpecMultiError(errors)
 	}
