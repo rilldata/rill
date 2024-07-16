@@ -14,6 +14,8 @@
   import Calendar from "@rilldata/web-common/components/icons/Calendar.svelte";
   import { fly } from "svelte/transition";
   import ComparisonPill from "../time-controls/comparison-pill/ComparisonPill.svelte";
+  import { useModelHasTimeSeries } from "../selectors";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   export let readOnly = false;
 
@@ -22,6 +24,7 @@
 
   const StateManagers = getStateManagers();
   const {
+    metricsViewName,
     actions: {
       dimensionsFilter: {
         toggleDimensionValueSelection,
@@ -37,6 +40,8 @@
   } = StateManagers;
 
   const timeControlsStore = useTimeControlStore(StateManagers);
+  const metricsView = useMetricsView(StateManagers);
+
   $: ({
     selectedTimeRange,
     allTimeRange,
@@ -44,7 +49,7 @@
     selectedComparisonTimeRange,
   } = $timeControlsStore);
 
-  const metricsView = useMetricsView(StateManagers);
+  $: ({ instanceId } = $runtime);
 
   $: dimensions = $metricsView.data?.dimensions ?? [];
   $: dimensionIdMap = getMapFromArray(
@@ -70,6 +75,8 @@
   // hasFilter only checks for complete filters and excludes temporary ones
   $: hasFilters =
     currentDimensionFilters.length > 0 || currentMeasureFilters.length > 0;
+  $: metricTimeSeries = useModelHasTimeSeries(instanceId, $metricsViewName);
+  $: hasTimeSeries = $metricTimeSeries.data;
 
   function handleMeasureFilterApply(
     dimension: string,
@@ -85,18 +92,20 @@
 </script>
 
 <div class="flex flex-col gap-y-2 size-full">
-  <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
-    <Calendar size="16px" />
-    {#if allTimeRange?.start && allTimeRange?.end}
-      <SuperPill {allTimeRange} {selectedTimeRange} />
-      <ComparisonPill
-        {allTimeRange}
-        {selectedTimeRange}
-        showTimeComparison={!!showTimeComparison}
-        {selectedComparisonTimeRange}
-      />
-    {/if}
-  </div>
+  {#if hasTimeSeries}
+    <div class="flex flex-row flex-wrap gap-x-2 gap-y-1.5 items-center">
+      <Calendar size="16px" />
+      {#if allTimeRange?.start && allTimeRange?.end}
+        <SuperPill {allTimeRange} {selectedTimeRange} />
+        <ComparisonPill
+          {allTimeRange}
+          {selectedTimeRange}
+          showTimeComparison={!!showTimeComparison}
+          {selectedComparisonTimeRange}
+        />
+      {/if}
+    </div>
+  {/if}
 
   <div class="relative flex flex-row gap-x-2 gap-y-2 items-start">
     {#if !readOnly}
