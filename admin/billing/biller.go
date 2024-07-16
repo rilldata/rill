@@ -27,7 +27,9 @@ type Biller interface {
 	GetPlanByName(ctx context.Context, name string) (*Plan, error)
 
 	// CreateCustomer creates a customer for the given organization in the billing system and returns the external customer ID.
-	CreateCustomer(ctx context.Context, organization *database.Organization) (string, error)
+	CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error)
+	FindCustomer(ctx context.Context, customerID string) (*Customer, error)
+	UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error
 
 	// CreateSubscription creates a subscription for the given organization.
 	// The subscription starts immediately.
@@ -81,7 +83,7 @@ type planMetadata struct {
 
 type Subscription struct {
 	ID                           string
-	CustomerID                   string
+	Customer                     *Customer
 	Plan                         *Plan
 	StartDate                    time.Time
 	EndDate                      time.Time
@@ -89,6 +91,14 @@ type Subscription struct {
 	CurrentBillingCycleEndDate   time.Time
 	TrialEndDate                 time.Time
 	Metadata                     map[string]string
+}
+
+type Customer struct {
+	ID                string
+	Email             string
+	Name              string
+	PaymentProviderID string
+	PortalURL         string
 }
 
 type Usage struct {
@@ -113,4 +123,10 @@ type SubscriptionCancellationOption int
 const (
 	SubscriptionCancellationOptionEndOfSubscriptionTerm SubscriptionCancellationOption = iota
 	SubscriptionCancellationOptionImmediate
+)
+
+type PaymentProvider string
+
+const (
+	PaymentProviderStripe PaymentProvider = "stripe"
 )

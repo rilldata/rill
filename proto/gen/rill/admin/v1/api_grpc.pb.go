@@ -25,8 +25,6 @@ const (
 	AdminService_CreateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/CreateOrganization"
 	AdminService_DeleteOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/DeleteOrganization"
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
-	AdminService_UpdateOrganizationBillingSubscription_FullMethodName = "/rill.admin.v1.AdminService/UpdateOrganizationBillingSubscription"
-	AdminService_GetOrganizationBillingSubscription_FullMethodName    = "/rill.admin.v1.AdminService/GetOrganizationBillingSubscription"
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_GetProjectByID_FullMethodName                        = "/rill.admin.v1.AdminService/GetProjectByID"
@@ -125,6 +123,9 @@ const (
 	AdminService_DeleteAlert_FullMethodName                           = "/rill.admin.v1.AdminService/DeleteAlert"
 	AdminService_GenerateAlertYAML_FullMethodName                     = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                          = "/rill.admin.v1.AdminService/GetAlertYAML"
+	AdminService_GetBillingSubscription_FullMethodName                = "/rill.admin.v1.AdminService/GetBillingSubscription"
+	AdminService_UpdateBillingSubscription_FullMethodName             = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
+	AdminService_GetPaymentsPortalURL_FullMethodName                  = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
 	AdminService_ListPublicBillingPlans_FullMethodName                = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
 	AdminService_RequestProjectAccess_FullMethodName                  = "/rill.admin.v1.AdminService/RequestProjectAccess"
 	AdminService_GetProjectAccessRequest_FullMethodName               = "/rill.admin.v1.AdminService/GetProjectAccessRequest"
@@ -148,10 +149,6 @@ type AdminServiceClient interface {
 	DeleteOrganization(ctx context.Context, in *DeleteOrganizationRequest, opts ...grpc.CallOption) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
-	// UpdateOrganizationBillingSubscription updates the billing plan for the organization
-	UpdateOrganizationBillingSubscription(ctx context.Context, in *UpdateOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateOrganizationBillingSubscriptionResponse, error)
-	// GetOrganizationBillingSubscription lists the subscription for the organization
-	GetOrganizationBillingSubscription(ctx context.Context, in *GetOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSubscriptionResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -349,6 +346,12 @@ type AdminServiceClient interface {
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
+	// GetBillingSubscription lists the subscription for the organization
+	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
+	// UpdateBillingSubscription updates the billing plan for the organization
+	UpdateBillingSubscription(ctx context.Context, in *UpdateBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateBillingSubscriptionResponse, error)
+	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
+	GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
 	RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error)
@@ -419,26 +422,6 @@ func (c *adminServiceClient) UpdateOrganization(ctx context.Context, in *UpdateO
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateOrganizationResponse)
 	err := c.cc.Invoke(ctx, AdminService_UpdateOrganization_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) UpdateOrganizationBillingSubscription(ctx context.Context, in *UpdateOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateOrganizationBillingSubscriptionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UpdateOrganizationBillingSubscriptionResponse)
-	err := c.cc.Invoke(ctx, AdminService_UpdateOrganizationBillingSubscription_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) GetOrganizationBillingSubscription(ctx context.Context, in *GetOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSubscriptionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetOrganizationBillingSubscriptionResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetOrganizationBillingSubscription_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1425,6 +1408,36 @@ func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLR
 	return out, nil
 }
 
+func (c *adminServiceClient) GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBillingSubscriptionResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetBillingSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateBillingSubscription(ctx context.Context, in *UpdateBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateBillingSubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateBillingSubscriptionResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateBillingSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPaymentsPortalURLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetPaymentsPortalURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPublicBillingPlansResponse)
@@ -1491,10 +1504,6 @@ type AdminServiceServer interface {
 	DeleteOrganization(context.Context, *DeleteOrganizationRequest) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
-	// UpdateOrganizationBillingSubscription updates the billing plan for the organization
-	UpdateOrganizationBillingSubscription(context.Context, *UpdateOrganizationBillingSubscriptionRequest) (*UpdateOrganizationBillingSubscriptionResponse, error)
-	// GetOrganizationBillingSubscription lists the subscription for the organization
-	GetOrganizationBillingSubscription(context.Context, *GetOrganizationBillingSubscriptionRequest) (*GetOrganizationBillingSubscriptionResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -1692,6 +1701,12 @@ type AdminServiceServer interface {
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
+	// GetBillingSubscription lists the subscription for the organization
+	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
+	// UpdateBillingSubscription updates the billing plan for the organization
+	UpdateBillingSubscription(context.Context, *UpdateBillingSubscriptionRequest) (*UpdateBillingSubscriptionResponse, error)
+	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
+	GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
 	RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error)
@@ -1722,12 +1737,6 @@ func (UnimplementedAdminServiceServer) DeleteOrganization(context.Context, *Dele
 }
 func (UnimplementedAdminServiceServer) UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganization not implemented")
-}
-func (UnimplementedAdminServiceServer) UpdateOrganizationBillingSubscription(context.Context, *UpdateOrganizationBillingSubscriptionRequest) (*UpdateOrganizationBillingSubscriptionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganizationBillingSubscription not implemented")
-}
-func (UnimplementedAdminServiceServer) GetOrganizationBillingSubscription(context.Context, *GetOrganizationBillingSubscriptionRequest) (*GetOrganizationBillingSubscriptionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationBillingSubscription not implemented")
 }
 func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganization not implemented")
@@ -2023,6 +2032,15 @@ func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *Gener
 func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
 }
+func (UnimplementedAdminServiceServer) GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBillingSubscription not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateBillingSubscription(context.Context, *UpdateBillingSubscriptionRequest) (*UpdateBillingSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBillingSubscription not implemented")
+}
+func (UnimplementedAdminServiceServer) GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPaymentsPortalURL not implemented")
+}
 func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPublicBillingPlans not implemented")
 }
@@ -2155,42 +2173,6 @@ func _AdminService_UpdateOrganization_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateOrganization(ctx, req.(*UpdateOrganizationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_UpdateOrganizationBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateOrganizationBillingSubscriptionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).UpdateOrganizationBillingSubscription(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_UpdateOrganizationBillingSubscription_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).UpdateOrganizationBillingSubscription(ctx, req.(*UpdateOrganizationBillingSubscriptionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_GetOrganizationBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetOrganizationBillingSubscriptionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetOrganizationBillingSubscription(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetOrganizationBillingSubscription_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetOrganizationBillingSubscription(ctx, req.(*GetOrganizationBillingSubscriptionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3959,6 +3941,60 @@ func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBillingSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetBillingSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetBillingSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetBillingSubscription(ctx, req.(*GetBillingSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBillingSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateBillingSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateBillingSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateBillingSubscription(ctx, req.(*UpdateBillingSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetPaymentsPortalURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPaymentsPortalURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetPaymentsPortalURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetPaymentsPortalURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetPaymentsPortalURL(ctx, req.(*GetPaymentsPortalURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListPublicBillingPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPublicBillingPlansRequest)
 	if err := dec(in); err != nil {
@@ -4079,14 +4115,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "UpdateOrganization",
 			Handler:    _AdminService_UpdateOrganization_Handler,
-		},
-		{
-			MethodName: "UpdateOrganizationBillingSubscription",
-			Handler:    _AdminService_UpdateOrganizationBillingSubscription_Handler,
-		},
-		{
-			MethodName: "GetOrganizationBillingSubscription",
-			Handler:    _AdminService_GetOrganizationBillingSubscription_Handler,
 		},
 		{
 			MethodName: "ListProjectsForOrganization",
@@ -4479,6 +4507,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAlertYAML",
 			Handler:    _AdminService_GetAlertYAML_Handler,
+		},
+		{
+			MethodName: "GetBillingSubscription",
+			Handler:    _AdminService_GetBillingSubscription_Handler,
+		},
+		{
+			MethodName: "UpdateBillingSubscription",
+			Handler:    _AdminService_UpdateBillingSubscription_Handler,
+		},
+		{
+			MethodName: "GetPaymentsPortalURL",
+			Handler:    _AdminService_GetPaymentsPortalURL_Handler,
 		},
 		{
 			MethodName: "ListPublicBillingPlans",

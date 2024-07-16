@@ -122,9 +122,9 @@ func (c *connection) InsertOrganization(ctx context.Context, opts *database.Inse
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, `INSERT INTO orgs(name, description, quota_projects, quota_deployments, quota_slots_total, quota_slots_per_deployment, quota_outstanding_invites, quota_storage_limit_bytes_per_deployment, billing_customer_id, payment_customer_id)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10) RETURNING *`,
+		opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -142,7 +142,7 @@ func (c *connection) UpdateOrganization(ctx context.Context, id string, opts *da
 	}
 
 	res := &database.Organization{}
-	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, updated_on=now() WHERE id=$10 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, id).StructScan(res)
+	err := c.getDB(ctx).QueryRowxContext(ctx, "UPDATE orgs SET name=$1, description=$2, quota_projects=$3, quota_deployments=$4, quota_slots_total=$5, quota_slots_per_deployment=$6, quota_outstanding_invites=$7, quota_storage_limit_bytes_per_deployment=$8, billing_customer_id=$9, payment_customer_id=$10, updated_on=now() WHERE id=$11 RETURNING *", opts.Name, opts.Description, opts.QuotaProjects, opts.QuotaDeployments, opts.QuotaSlotsTotal, opts.QuotaSlotsPerDeployment, opts.QuotaOutstandingInvites, opts.QuotaStorageLimitBytesPerDeployment, opts.BillingCustomerID, opts.PaymentCustomerID, id).StructScan(res)
 	if err != nil {
 		return nil, parseErr("org", err)
 	}
@@ -1857,6 +1857,15 @@ func (c *connection) FindBillingUsageReportedOn(ctx context.Context) (time.Time,
 func (c *connection) UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error {
 	res, err := c.getDB(ctx).ExecContext(ctx, `UPDATE billing_reporting_time SET usage_reported_on=$1`, usageReportedOn)
 	return checkUpdateRow("billing usage", res, err)
+}
+
+func (c *connection) FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*database.Organization, error) {
+	var res []*database.Organization
+	err := c.getDB(ctx).SelectContext(ctx, &res, `SELECT * FROM orgs WHERE billing_customer_id = ''`)
+	if err != nil {
+		return nil, parseErr("billing orgs without payment id", err)
+	}
+	return res, nil
 }
 
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
