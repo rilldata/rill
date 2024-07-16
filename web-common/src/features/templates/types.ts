@@ -51,10 +51,20 @@ export interface MarkdownTemplateT {
   markdown: MarkdownProperties;
 }
 
+export interface ImageProperties {
+  url: string;
+  css?: { [key: string]: any };
+}
+
+export interface ImageTemplateT {
+  image: ImageProperties;
+}
+
 type ChartTemplates = LineChart | BarChart | StackedBarChart;
 
 export type TemplateSpec =
   | ChartTemplates
   | KPITemplateT
   | TableTemplateT
-  | MarkdownTemplateT;
+  | MarkdownTemplateT
+  | ImageTemplateT;

@@ -23,7 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultModelTimeout = 15 * time.Minute
+const _defaultModelTimeout = 60 * time.Minute
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)

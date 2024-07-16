@@ -2952,6 +2952,14 @@ definitions:
         type: string
       resolverProperties:
         type: object
+      openapiSummary:
+        type: string
+      openapiParameters:
+        type: array
+        items:
+          type: object
+      openapiResponseSchema:
+        type: object
   v1APIState:
     type: object
   v1Alert:

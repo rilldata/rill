@@ -1,5 +1,6 @@
 <script lang="ts">
   import ChartTemplate from "@rilldata/web-common/features/templates/charts/ChartTemplate.svelte";
+  import Image from "@rilldata/web-common/features/templates/image/Image.svelte";
   import KPITemplate from "@rilldata/web-common/features/templates/kpi/KPITemplate.svelte";
   import Markdown from "@rilldata/web-common/features/templates/markdown/Markdown.svelte";
   import TableTemplate from "@rilldata/web-common/features/templates/table/TableTemplate.svelte";
@@ -22,6 +23,8 @@
   <TableTemplate {rendererProperties} />
 {:else if renderer === "markdown"}
   <Markdown {rendererProperties} />
+{:else if renderer === "image"}
+  <Image {rendererProperties} />
 {:else if resolverProperties}
   <ChartTemplate
     {chartView}
