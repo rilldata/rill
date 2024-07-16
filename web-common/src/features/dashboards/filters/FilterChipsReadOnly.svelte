@@ -33,6 +33,7 @@ The main feature-set component for dashboard filters
     (dimension) => dimension.name as string,
   );
   $: dimensionFilters = getDimensionFilters(dimensionIdMap, filters);
+  $: console.log(dimensionFilters);
 
   // Get measure filters
   $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
@@ -52,15 +53,12 @@ The main feature-set component for dashboard filters
   {/if}
   {#if dimensionFilters.length > 0}
     {#each dimensionFilters as { name, label, selectedValues, isInclude } (name)}
-      {@const dimension = dimensions.find((d) => d.name === name)}
       <div animate:flip={{ duration: 200 }}>
-        {#if dimension?.column}
-          <DimensionFilterReadOnlyChip
-            label={label ?? name}
-            values={selectedValues}
-            {isInclude}
-          />
-        {/if}
+        <DimensionFilterReadOnlyChip
+          label={label ?? name}
+          values={selectedValues}
+          {isInclude}
+        />
       </div>
     {/each}
   {/if}
