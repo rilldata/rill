@@ -276,46 +276,9 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 	client := github.NewTokenClient(ctx, token)
 
 	// use a client with user's token to get installations
-	installations, _, err := client.Apps.ListUserInstallations(ctx, nil)
+	repos, err := s.fetchReposForUser(ctx, client)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
-	}
-
-	repos := make([]*adminv1.ListGithubUserReposResponse_Repo, 0)
-	for _, installation := range installations {
-		instToken, _, err := s.admin.Github.AppClient().Apps.CreateInstallationToken(ctx, *installation.ID, nil)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		// use the installation token to fetch the repos accessible to it
-		instClient := github.NewTokenClient(ctx, *instToken.Token)
-
-		req, err := instClient.NewRequest("GET", *installation.RepositoriesURL, nil)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		var reposResp struct {
-			Repositories []*github.Repository `json:"repositories"`
-		}
-		_, err = instClient.Do(ctx, req, &reposResp)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-
-		for _, repo := range reposResp.Repositories {
-			var owner string
-			if repo.Owner != nil {
-				owner = fromStringPtr(repo.Owner.Login)
-			}
-			repos = append(repos, &adminv1.ListGithubUserReposResponse_Repo{
-				Name:        fromStringPtr(repo.Name),
-				Owner:       owner,
-				Description: fromStringPtr(repo.Description),
-				Url:         fromStringPtr(repo.HTMLURL),
-			})
-		}
 	}
 
 	return &adminv1.ListGithubUserReposResponse{
@@ -829,6 +792,65 @@ func (s *Server) userAccessToken(ctx context.Context, refreshToken string) (stri
 	}
 
 	return oauthToken.AccessToken, oauthToken.RefreshToken, nil
+}
+
+func (s *Server) fetchReposForUser(ctx context.Context, client *github.Client) ([]*adminv1.ListGithubUserReposResponse_Repo, error) {
+	repos := make([]*adminv1.ListGithubUserReposResponse_Repo, 0)
+	page := 1
+
+	for {
+		installations, httpResp, err := client.Apps.ListUserInstallations(ctx, &github.ListOptions{Page: page, PerPage: 100})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, installation := range installations {
+			reposForInst, err := s.fetchReposForInstallation(ctx, client, *installation.ID)
+			if err != nil {
+				return nil, err
+			}
+			repos = append(repos, reposForInst...)
+		}
+
+		if httpResp.NextPage == 0 {
+			break
+		}
+		page = httpResp.NextPage
+	}
+
+	return repos, nil
+}
+
+func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.Client, instID int64) ([]*adminv1.ListGithubUserReposResponse_Repo, error) {
+	repos := make([]*adminv1.ListGithubUserReposResponse_Repo, 0)
+	page := 1
+
+	for {
+		reposResp, httpResp, err := client.Apps.ListUserRepos(ctx, instID, &github.ListOptions{Page: page, PerPage: 100})
+		if err != nil {
+			return nil, err
+		}
+
+		for _, repo := range reposResp.Repositories {
+			var owner string
+			if repo.Owner != nil {
+				owner = fromStringPtr(repo.Owner.Login)
+			}
+			repos = append(repos, &adminv1.ListGithubUserReposResponse_Repo{
+				Name:        fromStringPtr(repo.Name),
+				Owner:       owner,
+				Description: fromStringPtr(repo.Description),
+				Url:         fromStringPtr(repo.HTMLURL),
+			})
+		}
+
+		if httpResp.NextPage == 0 {
+			break
+		}
+		page = httpResp.NextPage
+	}
+
+	return repos, nil
 }
 
 func fromStringPtr(s *string) string {
