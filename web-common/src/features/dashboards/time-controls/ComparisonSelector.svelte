@@ -66,6 +66,8 @@ This component needs to do the following:
     if (type === "time") {
       metricsExplorerStore.displayTimeComparison(metricViewName, true);
     } else {
+      // Temporary until these are not mutually exclusive
+      metricsExplorerStore.displayTimeComparison(metricViewName, false);
       metricsExplorerStore.setComparisonDimension(metricViewName, name);
     }
   }

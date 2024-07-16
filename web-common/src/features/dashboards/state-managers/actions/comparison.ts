@@ -4,6 +4,8 @@ export const setComparisonDimension = (
   { dashboard }: DashboardMutables,
   dimensionName: string | undefined,
 ) => {
+  // Temporary until we make these not mutually exclusive
+  dashboard.showTimeComparison = false;
   dashboard.selectedComparisonDimension = dimensionName;
 };
 

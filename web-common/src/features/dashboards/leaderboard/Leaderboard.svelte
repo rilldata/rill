@@ -50,7 +50,6 @@
         getDimensionDescription,
         getDimensionByName,
       },
-
       activeMeasure: { activeMeasureName, isValidPercentOfTotal },
       dimensionFilters: { selectedDimensionValues },
       dashboardQueries: {
