@@ -46,6 +46,14 @@
   }
 </script>
 
+<svelte:window
+  on:keydown|capture={(e) => {
+    if (e.key === "Tab") {
+      e.stopImmediatePropagation();
+    }
+  }}
+/>
+
 <Calendar
   interval={calendarInterval}
   {selectingStart}

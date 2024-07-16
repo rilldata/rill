@@ -84,6 +84,7 @@
 </script>
 
 <input
+  tabindex="0"
   id="{boundary}-date"
   aria-label="{boundary} date"
   type="text"
