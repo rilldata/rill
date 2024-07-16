@@ -33,7 +33,6 @@ The main feature-set component for dashboard filters
     (dimension) => dimension.name as string,
   );
   $: dimensionFilters = getDimensionFilters(dimensionIdMap, filters);
-  $: console.log(dimensionFilters);
 
   // Get measure filters
   $: measures = $dashboard.data?.metricsView?.state?.validSpec?.measures ?? [];
