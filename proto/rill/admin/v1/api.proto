@@ -2103,7 +2103,11 @@ message ReportOptions {
 message AlertOptions {
   string title = 1;
   string interval_duration = 2;
+  string resolver = 13;
+  google.protobuf.Struct resolver_properties = 14;
+  // DEPRECATED: Use resolver and resolver_properties instead.
   string query_name = 3;
+  // DEPRECATED: Use resolver and resolver_properties instead.
   string query_args_json = 4;
   string metrics_view_name = 5;
   bool renotify = 6;
