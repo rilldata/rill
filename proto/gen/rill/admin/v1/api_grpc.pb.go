@@ -37,6 +37,7 @@ const (
 	AdminService_UpdateProject_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateProject"
 	AdminService_UpdateProjectVariables_FullMethodName                = "/rill.admin.v1.AdminService/UpdateProjectVariables"
 	AdminService_CreateAsset_FullMethodName                           = "/rill.admin.v1.AdminService/CreateAsset"
+	AdminService_HibernateProject_FullMethodName                      = "/rill.admin.v1.AdminService/HibernateProject"
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                       = "/rill.admin.v1.AdminService/TriggerRedeploy"
@@ -170,6 +171,8 @@ type AdminServiceClient interface {
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error)
+	// HibernateProject hibernates a project by tearing down its deployments.
+	HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
 	// TriggerRefreshSources refresh the source for production deployment
@@ -534,6 +537,16 @@ func (c *adminServiceClient) CreateAsset(ctx context.Context, in *CreateAssetReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateAssetResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateAsset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HibernateProjectResponse)
+	err := c.cc.Invoke(ctx, AdminService_HibernateProject_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1490,6 +1503,8 @@ type AdminServiceServer interface {
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error)
+	// HibernateProject hibernates a project by tearing down its deployments.
+	HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
 	// TriggerRefreshSources refresh the source for production deployment
@@ -1730,6 +1745,9 @@ func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *
 }
 func (UnimplementedAdminServiceServer) CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAsset not implemented")
+}
+func (UnimplementedAdminServiceServer) HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HibernateProject not implemented")
 }
 func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
@@ -2337,6 +2355,24 @@ func _AdminService_CreateAsset_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).CreateAsset(ctx, req.(*CreateAssetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_HibernateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HibernateProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).HibernateProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_HibernateProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).HibernateProject(ctx, req.(*HibernateProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4057,6 +4093,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateAsset",
 			Handler:    _AdminService_CreateAsset_Handler,
+		},
+		{
+			MethodName: "HibernateProject",
+			Handler:    _AdminService_HibernateProject_Handler,
 		},
 		{
 			MethodName: "TriggerReconcile",
