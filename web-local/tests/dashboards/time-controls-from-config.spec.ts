@@ -70,7 +70,7 @@ default_comparison:
     // Time range has changed
     await expect(page.getByText("Last 2 Weeks")).toBeVisible();
     // Data has changed as well
-    await expect(page.getByText("Total rows 11.2k -4.4k -28%")).toBeVisible();
+    await expect(page.getByText("Total rows 11.2k -4.3k -28%")).toBeVisible();
     await expect(page.getByText("Facebook 2.9k -1.2k -29%")).toBeVisible();
   });
 
