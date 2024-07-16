@@ -1,24 +1,10 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user add
+title: rill billing plan
 ---
-## rill user add
+## rill billing plan
 
-Add
-
-```
-rill user add [flags]
-```
-
-### Flags
-
-```
-      --email string     Email of the user
-      --group string     User group
-      --org string       Organization
-      --project string   Project
-      --role string      Role of the user (options: admin, viewer)
-```
+Get billing plans
 
 ### Global flags
 
@@ -31,5 +17,6 @@ rill user add [flags]
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill billing](../billing.md)	 - Billing related commands for org
+* [rill billing plan list](list.md)	 - List plans
 

@@ -124,20 +124,6 @@ paths:
           type: string
       tags:
         - AdminService
-  /v1/github/repositories/list:
-    get:
-      operationId: AdminService_ListGithubUserRepos
-      responses:
-        "200":
-          description: A successful response.
-          schema:
-            $ref: '#/definitions/v1ListGithubUserReposResponse'
-        default:
-          description: An unexpected error response.
-          schema:
-            $ref: '#/definitions/rpcStatus'
-      tags:
-        - AdminService
   /v1/github/user:
     get:
       summary: |-
@@ -149,6 +135,20 @@ paths:
           description: A successful response.
           schema:
             $ref: '#/definitions/v1GetGithubUserStatusResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
+  /v1/github/user/repositories:
+    get:
+      operationId: AdminService_ListGithubUserRepos
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ListGithubUserReposResponse'
         default:
           description: An unexpected error response.
           schema:

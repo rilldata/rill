@@ -350,7 +350,7 @@ service AdminService {
   }
 
   rpc ListGithubUserRepos(ListGithubUserReposRequest) returns (ListGithubUserReposResponse) {
-    option (google.api.http) = {get: "/v1/github/repositories/list"};
+    option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.

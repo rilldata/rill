@@ -1,23 +1,19 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user list
+title: rill billing subscription list
 ---
-## rill user list
+## rill billing subscription list
 
-List
+List subscription for an organization
 
 ```
-rill user list [flags]
+rill billing subscription list [flags]
 ```
 
 ### Flags
 
 ```
-      --group string        User group
-      --org string          Organization
-      --page-size uint32    Number of users to return per page (default 50)
-      --page-token string   Pagination token
-      --project string      Project
+      --org string   Organization Name
 ```
 
 ### Global flags
@@ -31,5 +27,5 @@ rill user list [flags]
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill billing subscription](subscription.md)	 - Manage organisation subscription
 

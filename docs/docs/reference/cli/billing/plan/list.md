@@ -1,23 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill user list
+title: rill billing plan list
 ---
-## rill user list
+## rill billing plan list
 
-List
-
-```
-rill user list [flags]
-```
-
-### Flags
+List plans
 
 ```
-      --group string        User group
-      --org string          Organization
-      --page-size uint32    Number of users to return per page (default 50)
-      --page-token string   Pagination token
-      --project string      Project
+rill billing plan list [flags]
 ```
 
 ### Global flags
@@ -31,5 +21,5 @@ rill user list [flags]
 
 ### SEE ALSO
 
-* [rill user](user.md)	 - Manage users
+* [rill billing plan](plan.md)	 - Get billing plans
 
