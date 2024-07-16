@@ -52,7 +52,6 @@ The main feature-set component for dashboard filters
   {/if}
   {#if dimensionFilters.length > 0}
     {#each dimensionFilters as { name, label, selectedValues, isInclude } (name)}
-      {@const dimension = dimensions.find((d) => d.name === name)}
       <div animate:flip={{ duration: 200 }}>
         <DimensionFilterReadOnlyChip
           label={label ?? name}

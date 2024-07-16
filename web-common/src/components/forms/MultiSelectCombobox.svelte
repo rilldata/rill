@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { slide } from "svelte/transition";
   import { WithTogglableFloatingElement } from "../floating-element";
   import Check from "../icons/Check.svelte";
   import InfoCircle from "../icons/InfoCircle.svelte";
