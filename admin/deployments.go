@@ -66,7 +66,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		ProvisionID:    provisionID,
 		RuntimeVersion: runtimeVersion,
 		Slots:          opts.ProdSlots,
-		Annotations:    opts.Annotations.toMap(),
+		Annotations:    opts.Annotations.ToMap(),
 	})
 	if err != nil {
 		s.Logger.Error("provisioner: failed provisioning", zap.String("project_id", opts.ProjectID), zap.String("provisioner", opts.Provisioner), zap.String("provision_id", provisionID), zap.Error(err), observability.ZapCtx(ctx))
@@ -177,7 +177,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		AiConnector:    "admin",
 		Connectors:     connectors,
 		Variables:      opts.ProdVariables,
-		Annotations:    opts.Annotations.toMap(),
+		Annotations:    opts.Annotations.ToMap(),
 		EmbedCatalog:   false,
 	})
 	if err != nil {
@@ -272,7 +272,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId:  depl.RuntimeInstanceID,
 		Connectors:  connectors,
-		Annotations: opts.Annotations.toMap(),
+		Annotations: opts.Annotations.ToMap(),
 		Variables:   opts.Variables,
 	})
 	if err != nil {
@@ -405,24 +405,6 @@ func (s *Service) openRuntimeClientForDeployment(d *database.Deployment) (*clien
 	return s.OpenRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
 }
 
-type DeploymentAnnotations struct {
-	orgID           string
-	orgName         string
-	projID          string
-	projName        string
-	projAnnotations map[string]string
-}
-
-func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
-	return DeploymentAnnotations{
-		orgID:           org.ID,
-		orgName:         org.Name,
-		projID:          proj.ID,
-		projName:        proj.Name,
-		projAnnotations: proj.Annotations,
-	}
-}
-
 func (s *Service) ResolveLatestRuntimeVersion() string {
 	if s.VersionNumber != "" {
 		return s.VersionNumber
@@ -452,7 +434,25 @@ func (s *Service) ValidateRuntimeVersion(ver string) error {
 	return nil
 }
 
-func (da *DeploymentAnnotations) toMap() map[string]string {
+func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+	return DeploymentAnnotations{
+		orgID:           org.ID,
+		orgName:         org.Name,
+		projID:          proj.ID,
+		projName:        proj.Name,
+		projAnnotations: proj.Annotations,
+	}
+}
+
+type DeploymentAnnotations struct {
+	orgID           string
+	orgName         string
+	projID          string
+	projName        string
+	projAnnotations map[string]string
+}
+
+func (da *DeploymentAnnotations) ToMap() map[string]string {
 	res := make(map[string]string, len(da.projAnnotations)+4)
 	for k, v := range da.projAnnotations {
 		res[k] = v

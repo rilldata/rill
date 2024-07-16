@@ -70,6 +70,7 @@ const (
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubUserStatus"
+	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
@@ -125,6 +126,10 @@ const (
 	AdminService_UpdateBillingSubscription_FullMethodName             = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
 	AdminService_GetPaymentsPortalURL_FullMethodName                  = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
 	AdminService_ListPublicBillingPlans_FullMethodName                = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
+	AdminService_RequestProjectAccess_FullMethodName                  = "/rill.admin.v1.AdminService/RequestProjectAccess"
+	AdminService_GetProjectAccessRequest_FullMethodName               = "/rill.admin.v1.AdminService/GetProjectAccessRequest"
+	AdminService_ApproveProjectAccess_FullMethodName                  = "/rill.admin.v1.AdminService/ApproveProjectAccess"
+	AdminService_DenyProjectAccess_FullMethodName                     = "/rill.admin.v1.AdminService/DenyProjectAccess"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -235,6 +240,7 @@ type AdminServiceClient interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
+	ListGithubUserRepos(ctx context.Context, in *ListGithubUserReposRequest, opts ...grpc.CallOption) (*ListGithubUserReposResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -345,6 +351,10 @@ type AdminServiceClient interface {
 	GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
+	RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error)
+	GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error)
+	ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error)
+	DenyProjectAccess(ctx context.Context, in *DenyProjectAccessRequest, opts ...grpc.CallOption) (*DenyProjectAccessResponse, error)
 }
 
 type adminServiceClient struct {
@@ -859,6 +869,16 @@ func (c *adminServiceClient) GetGithubUserStatus(ctx context.Context, in *GetGit
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetGithubUserStatusResponse)
 	err := c.cc.Invoke(ctx, AdminService_GetGithubUserStatus_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ListGithubUserRepos(ctx context.Context, in *ListGithubUserReposRequest, opts ...grpc.CallOption) (*ListGithubUserReposResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGithubUserReposResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListGithubUserRepos_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1415,6 +1435,46 @@ func (c *adminServiceClient) ListPublicBillingPlans(ctx context.Context, in *Lis
 	return out, nil
 }
 
+func (c *adminServiceClient) RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RequestProjectAccessResponse)
+	err := c.cc.Invoke(ctx, AdminService_RequestProjectAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetProjectAccessRequest(ctx context.Context, in *GetProjectAccessRequestRequest, opts ...grpc.CallOption) (*GetProjectAccessRequestResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetProjectAccessRequestResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetProjectAccessRequest_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) ApproveProjectAccess(ctx context.Context, in *ApproveProjectAccessRequest, opts ...grpc.CallOption) (*ApproveProjectAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ApproveProjectAccessResponse)
+	err := c.cc.Invoke(ctx, AdminService_ApproveProjectAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) DenyProjectAccess(ctx context.Context, in *DenyProjectAccessRequest, opts ...grpc.CallOption) (*DenyProjectAccessResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(DenyProjectAccessResponse)
+	err := c.cc.Invoke(ctx, AdminService_DenyProjectAccess_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // AdminServiceServer is the server API for AdminService service.
 // All implementations must embed UnimplementedAdminServiceServer
 // for forward compatibility
@@ -1523,6 +1583,7 @@ type AdminServiceServer interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
+	ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -1633,6 +1694,10 @@ type AdminServiceServer interface {
 	GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
+	RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error)
+	GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error)
+	ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error)
+	DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -1792,6 +1857,9 @@ func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *Get
 }
 func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubUserStatus not implemented")
+}
+func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGithubUserRepos not implemented")
 }
 func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
@@ -1957,6 +2025,18 @@ func (UnimplementedAdminServiceServer) GetPaymentsPortalURL(context.Context, *Ge
 }
 func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPublicBillingPlans not implemented")
+}
+func (UnimplementedAdminServiceServer) RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RequestProjectAccess not implemented")
+}
+func (UnimplementedAdminServiceServer) GetProjectAccessRequest(context.Context, *GetProjectAccessRequestRequest) (*GetProjectAccessRequestResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetProjectAccessRequest not implemented")
+}
+func (UnimplementedAdminServiceServer) ApproveProjectAccess(context.Context, *ApproveProjectAccessRequest) (*ApproveProjectAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ApproveProjectAccess not implemented")
+}
+func (UnimplementedAdminServiceServer) DenyProjectAccess(context.Context, *DenyProjectAccessRequest) (*DenyProjectAccessResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DenyProjectAccess not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -2885,6 +2965,24 @@ func _AdminService_GetGithubUserStatus_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).GetGithubUserStatus(ctx, req.(*GetGithubUserStatusRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ListGithubUserRepos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGithubUserReposRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListGithubUserRepos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListGithubUserRepos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListGithubUserRepos(ctx, req.(*ListGithubUserReposRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3879,6 +3977,78 @@ func _AdminService_ListPublicBillingPlans_Handler(srv interface{}, ctx context.C
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_RequestProjectAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RequestProjectAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).RequestProjectAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_RequestProjectAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).RequestProjectAccess(ctx, req.(*RequestProjectAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetProjectAccessRequest_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetProjectAccessRequestRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetProjectAccessRequest(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetProjectAccessRequest_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetProjectAccessRequest(ctx, req.(*GetProjectAccessRequestRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_ApproveProjectAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ApproveProjectAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ApproveProjectAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ApproveProjectAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ApproveProjectAccess(ctx, req.(*ApproveProjectAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_DenyProjectAccess_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DenyProjectAccessRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).DenyProjectAccess(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_DenyProjectAccess_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).DenyProjectAccess(ctx, req.(*DenyProjectAccessRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // AdminService_ServiceDesc is the grpc.ServiceDesc for AdminService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -4089,6 +4259,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetGithubUserStatus",
 			Handler:    _AdminService_GetGithubUserStatus_Handler,
+		},
+		{
+			MethodName: "ListGithubUserRepos",
+			Handler:    _AdminService_ListGithubUserRepos_Handler,
 		},
 		{
 			MethodName: "GetCloneCredentials",
@@ -4309,6 +4483,22 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListPublicBillingPlans",
 			Handler:    _AdminService_ListPublicBillingPlans_Handler,
+		},
+		{
+			MethodName: "RequestProjectAccess",
+			Handler:    _AdminService_RequestProjectAccess_Handler,
+		},
+		{
+			MethodName: "GetProjectAccessRequest",
+			Handler:    _AdminService_GetProjectAccessRequest_Handler,
+		},
+		{
+			MethodName: "ApproveProjectAccess",
+			Handler:    _AdminService_ApproveProjectAccess_Handler,
+		},
+		{
+			MethodName: "DenyProjectAccess",
+			Handler:    _AdminService_DenyProjectAccess_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

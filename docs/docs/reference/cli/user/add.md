@@ -14,6 +14,7 @@ rill user add [flags]
 
 ```
       --email string     Email of the user
+      --group string     User group
       --org string       Organization
       --project string   Project
       --role string      Role of the user (options: admin, viewer)

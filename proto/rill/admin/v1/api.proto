@@ -336,6 +336,10 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user"};
   }
 
+  rpc ListGithubUserRepos(ListGithubUserReposRequest) returns (ListGithubUserReposResponse) {
+    option (google.api.http) = {get: "/v1/github/user/repositories"};
+  }
+
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -694,6 +698,31 @@ service AdminService {
   // ListPublicBillingPlans lists all public billing plans
   rpc ListPublicBillingPlans(ListPublicBillingPlansRequest) returns (ListPublicBillingPlansResponse) {
     option (google.api.http) = {get: "/v1/billing/plans"};
+  }
+
+  rpc RequestProjectAccess(RequestProjectAccessRequest) returns (RequestProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/request-access",
+      body: "*"
+    };
+  }
+
+  rpc GetProjectAccessRequest(GetProjectAccessRequestRequest) returns (GetProjectAccessRequestResponse) {
+    option (google.api.http) = {get: "/v1/project-access-request/{id}"};
+  }
+
+  rpc ApproveProjectAccess(ApproveProjectAccessRequest) returns (ApproveProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/project-access-request/{id}/approve",
+      body: "*"
+    };
+  }
+
+  rpc DenyProjectAccess(DenyProjectAccessRequest) returns (DenyProjectAccessResponse) {
+    option (google.api.http) = {
+      post: "/v1/project-access-request/{id}/deny",
+      body: "*"
+    };
   }
 }
 
@@ -1522,6 +1551,18 @@ message GetGithubUserStatusResponse {
   repeated string organizations = 5 [deprecated = true];
 }
 
+message ListGithubUserReposRequest {}
+
+message ListGithubUserReposResponse {
+  message Repo {
+    string name = 1;
+    string owner = 2;
+    string description = 3;
+    string url = 4;
+  }
+  repeated Repo repos = 1;
+}
+
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;
   GITHUB_PERMISSION_READ = 1;
@@ -1807,6 +1848,34 @@ message TelemetryRequest {
 }
 
 message TelemetryResponse {}
+
+message RequestProjectAccessRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message RequestProjectAccessResponse {}
+
+message GetProjectAccessRequestRequest {
+  string id = 1;
+}
+
+message GetProjectAccessRequestResponse {
+  string email = 1;
+}
+
+message ApproveProjectAccessRequest {
+  string id = 1;
+  string role = 2;
+}
+
+message ApproveProjectAccessResponse {}
+
+message DenyProjectAccessRequest {
+  string id = 1;
+}
+
+message DenyProjectAccessResponse {}
 
 message User {
   string id = 1;
