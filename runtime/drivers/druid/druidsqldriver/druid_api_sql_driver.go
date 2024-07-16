@@ -167,28 +167,23 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 			// nolint:errorlint // there's no wrapping
 			if v, ok := err.(*url.Error); ok {
 				if errTooManyRedirects.MatchString(v.Error()) {
-					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 
 				if errInvalidProtocol.MatchString(v.Error()) {
-					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 
 				if errTLSCert.MatchString(v.Error()) {
-					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 
 				// nolint:errorlint // there's no wrapping
 				if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
-					resp.Body.Close()
 					return nil, retrier.Fail, v
 				}
 			}
 
-			resp.Body.Close()
 			return nil, retrier.Retry, err
 		}
 
