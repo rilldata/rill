@@ -371,7 +371,7 @@ function getComparisonTimeRange(
       comparisonOption ??
         metricsView.availableTimeRanges?.find(
           (tr) => tr.range === timeRange.name,
-        )?.comparisonOffsets?.[0].offset,
+        )?.comparisonOffsets?.[0]?.offset,
       allTimeRange.start,
       allTimeRange.end,
       timeRange.start,

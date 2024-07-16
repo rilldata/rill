@@ -114,7 +114,7 @@ export const LATEST_WINDOW_TIME_RANGES: TimeRangeMetaSet = {
   [TimeRangePreset.LAST_14_DAYS]: {
     label: "Last 14 Days",
     rangePreset: RangePresetType.OFFSET_ANCHORED,
-    defaultComparison: TimeComparisonOption.WEEK,
+    defaultComparison: TimeComparisonOption.CONTIGUOUS,
     start: {
       reference: ReferencePoint.LATEST_DATA,
       transformation: [

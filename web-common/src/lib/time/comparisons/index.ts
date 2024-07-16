@@ -110,6 +110,12 @@ export function isRangeLargerThanDuration(
   if (duration === TimeComparisonOption.CONTIGUOUS) {
     return false;
   }
+
+  // To account for possible leap years
+  if (duration === "P1Y") {
+    return end.getFullYear() - start.getFullYear() > 1;
+  }
+
   return (
     Interval.fromDateTimes(start, end).toDuration().toMillis() >
     Duration.fromISO(duration).toMillis()
@@ -161,9 +167,6 @@ export function getAvailableComparisonsForTimeRange(
   start: Date,
   end: Date,
   comparisonOptions: TimeComparisonOption[],
-  // the set of additional comparisons we should keep in mind, but not
-  // necessarily the right widt.
-  acceptedComparisons: TimeComparisonOption[] = [],
 ) {
   let comparisons = comparisonOptions.filter((comparison) => {
     if (comparison === TimeComparisonOption.CUSTOM) {
@@ -171,8 +174,7 @@ export function getAvailableComparisonsForTimeRange(
     }
 
     return (
-      acceptedComparisons.includes(comparison) ||
-      (isComparisonInsideBounds(
+      isComparisonInsideBounds(
         boundStart,
         boundEnd,
         start,
@@ -180,11 +182,11 @@ export function getAvailableComparisonsForTimeRange(
         // treat a custom comparison as contiguous.
         comparison,
       ) &&
-        !isRangeLargerThanDuration(
-          start,
-          end,
-          TIME_COMPARISON[comparison].offsetIso,
-        ))
+      !isRangeLargerThanDuration(
+        start,
+        end,
+        TIME_COMPARISON[comparison].offsetIso,
+      )
     );
   });
 
@@ -193,6 +195,7 @@ export function getAvailableComparisonsForTimeRange(
       (comparison) => comparison !== TimeComparisonOption.CONTIGUOUS,
     );
   }
+
   return comparisons;
 }
 
