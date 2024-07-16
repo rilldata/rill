@@ -327,6 +327,9 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	if opts.InputHandle == c && opts.OutputHandle == c {
 		return &selfToSelfExecutor{c, opts}, true
 	}
+	if opts.InputHandle.Driver() == "s3" && opts.OutputHandle == c {
+		return &s3ToSelfExecutor{opts.InputHandle, c, opts}, true
+	}
 	return nil, false
 }
 
@@ -342,6 +345,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 

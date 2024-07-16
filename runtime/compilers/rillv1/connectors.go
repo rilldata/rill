@@ -153,6 +153,26 @@ func (a *connectorAnalyzer) analyzeModel(ctx context.Context, r *Resource) {
 	// Track the input connector
 	a.trackConnector(spec.InputConnector, r, anonAccess)
 
+	// Prep for analyzing StageConnector
+	if spec.StageConnector != "" {
+		props := spec.StageProperties.AsMap()
+		_, stageDriver, driverErr := a.parser.driverForConnector(spec.InputConnector)
+		if driverErr != nil {
+			// Track the errored stage connector and return
+			a.trackConnector(spec.StageConnector, r, false)
+			return
+		}
+
+		// Check if we have anonymous access (unless we already know that we don't)
+		var anonAccess bool
+		if res, ok := a.result[spec.StageConnector]; !ok || res.AnonymousAccess {
+			anonAccess, _ = stageDriver.HasAnonymousSourceAccess(ctx, props, zap.NewNop())
+		}
+
+		// Track the staging connector
+		a.trackConnector(spec.StageConnector, r, anonAccess)
+	}
+
 	// Track any tertiary connectors (like a DuckDB source referencing S3 in its SQL).
 	// NOTE: Not checking anonymous access for these since we don't know what properties to use.
 	// TODO: Can we solve that issue?

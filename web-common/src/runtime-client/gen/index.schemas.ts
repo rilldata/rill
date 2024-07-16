@@ -862,6 +862,28 @@ export const V1ReconcileStatus = {
   RECONCILE_STATUS_RUNNING: "RECONCILE_STATUS_RUNNING",
 } as const;
 
+export interface V1QueryResult {
+  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
+  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
+  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
+  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
+  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
+  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
+  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
+  columnTopKResponse?: V1ColumnTopKResponse;
+  columnNullCountResponse?: V1ColumnNullCountResponse;
+  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
+  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
+  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
+  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
+  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
+  columnCardinalityResponse?: V1ColumnCardinalityResponse;
+  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
+  tableCardinalityResponse?: V1TableCardinalityResponse;
+  tableColumnsResponse?: V1TableColumnsResponse;
+  tableRowsResponse?: V1TableRowsResponse;
+}
+
 export type V1QueryResponseDataItem = { [key: string]: any };
 
 export interface V1QueryResponse {
@@ -1034,6 +1056,8 @@ export interface V1ModelV2 {
 
 export type V1ModelSpecOutputProperties = { [key: string]: any };
 
+export type V1ModelSpecStageProperties = { [key: string]: any };
+
 export type V1ModelSpecInputProperties = { [key: string]: any };
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
@@ -1048,6 +1072,9 @@ export interface V1ModelSpec {
   incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
+  /** stage_connector is optional. */
+  stageConnector?: string;
+  stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
@@ -1909,28 +1936,6 @@ export interface V1ColumnCardinalityResponse {
   categoricalSummary?: V1CategoricalSummary;
 }
 
-export interface V1QueryResult {
-  metricsViewAggregationResponse?: V1MetricsViewAggregationResponse;
-  metricsViewToplistResponse?: V1MetricsViewToplistResponse;
-  metricsViewComparisonResponse?: V1MetricsViewComparisonResponse;
-  metricsViewTimeSeriesResponse?: V1MetricsViewTimeSeriesResponse;
-  metricsViewTotalsResponse?: V1MetricsViewTotalsResponse;
-  metricsViewRowsResponse?: V1MetricsViewRowsResponse;
-  columnRollupIntervalResponse?: V1ColumnRollupIntervalResponse;
-  columnTopKResponse?: V1ColumnTopKResponse;
-  columnNullCountResponse?: V1ColumnNullCountResponse;
-  columnDescriptiveStatisticsResponse?: V1ColumnDescriptiveStatisticsResponse;
-  columnTimeGrainResponse?: V1ColumnTimeGrainResponse;
-  columnNumericHistogramResponse?: V1ColumnNumericHistogramResponse;
-  columnRugHistogramResponse?: V1ColumnRugHistogramResponse;
-  columnTimeRangeResponse?: V1ColumnTimeRangeResponse;
-  columnCardinalityResponse?: V1ColumnCardinalityResponse;
-  columnTimeSeriesResponse?: V1ColumnTimeSeriesResponse;
-  tableCardinalityResponse?: V1TableCardinalityResponse;
-  tableColumnsResponse?: V1TableColumnsResponse;
-  tableRowsResponse?: V1TableRowsResponse;
-}
-
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -2125,7 +2130,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

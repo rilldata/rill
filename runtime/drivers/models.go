@@ -32,6 +32,8 @@ type ModelExecutorOptions struct {
 	InputHandle      Handle
 	InputConnector   string
 	InputProperties  map[string]any
+	StageConnector   string
+	StageProperties  map[string]any
 	OutputHandle     Handle
 	OutputConnector  string
 	OutputProperties map[string]any

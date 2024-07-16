@@ -252,6 +252,11 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
 	return nil, false

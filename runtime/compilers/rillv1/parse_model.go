@@ -19,7 +19,11 @@ type ModelYAML struct {
 	Incremental     bool                                    `yaml:"incremental"`
 	State           *DataYAML                               `yaml:"state"`
 	InputProperties map[string]any                          `yaml:",inline" mapstructure:",remain"`
-	Output          struct {
+	Stage           struct {
+		Connector  string         `yaml:"connector"`
+		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
+	} `yaml:"stage"`
+	Output struct {
 		Connector  string         `yaml:"connector"`
 		Properties map[string]any `yaml:",inline" mapstructure:",remain"`
 	} `yaml:"output"`
@@ -89,6 +93,12 @@ func (p *Parser) parseModel(node *Node) error {
 		return fmt.Errorf(`found invalid input property type: %w`, err)
 	}
 
+	// Validate stage details. Not mandatory for all model definitions.
+	stagePropsPB, err := structpb.NewStruct(tmp.Stage.Properties)
+	if err != nil {
+		return fmt.Errorf(`found invalid input property type: %w`, err)
+	}
+
 	// Build output details
 	outputConnector := tmp.Output.Connector
 	if outputConnector == "" {
@@ -135,6 +145,9 @@ func (p *Parser) parseModel(node *Node) error {
 
 	r.ModelSpec.InputConnector = inputConnector
 	r.ModelSpec.InputProperties = inputPropsPB
+
+	r.ModelSpec.StageConnector = tmp.Stage.Connector
+	r.ModelSpec.StageProperties = stagePropsPB
 
 	r.ModelSpec.OutputConnector = outputConnector
 	r.ModelSpec.OutputProperties = outputPropsPB
