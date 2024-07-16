@@ -2,10 +2,12 @@
   import { page } from "$app/stores";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import NoUser from "@rilldata/web-common/components/icons/NoUser.svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import {
     createLocalServiceDeployValidation,
     createLocalServiceGetCurrentUser,
   } from "@rilldata/web-common/runtime-client/local-service";
+  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
   $: user = createLocalServiceGetCurrentUser();
   $: deployValidation = createLocalServiceDeployValidation();
@@ -15,7 +17,11 @@
   $: loggedIn = $user.isSuccess && $user.data?.user;
 </script>
 
-{#if !$user.isFetching && $deployValidation.data}
+{#if ($user.isFetching || $deployValidation.isFetching) && !$user.error && !$deployValidation.error}
+  <div class="flex flex-row items-center h-7 mx-1.5">
+    <Spinner size="16px" status={EntityStatus.Running} />
+  </div>
+{:else if $user.data && $deployValidation.data}
   <DropdownMenu.Root>
     <DropdownMenu.Trigger class="flex-none">
       {#if loggedIn}
