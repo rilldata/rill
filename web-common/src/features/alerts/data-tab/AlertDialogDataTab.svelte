@@ -5,7 +5,7 @@
   import { createForm } from "svelte-forms-lib";
   import FormSection from "../../../components/forms/FormSection.svelte";
   import Select from "../../../components/forms/Select.svelte";
-  import MultiSelectCombobox from "../../../components/forms/MultiSelectComboBox.svelte";
+  import Multiselectcombobox from "../../../components/forms/Multiselectcombobox.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import FilterChipsReadOnly from "../../dashboards/filters/FilterChipsReadOnly.svelte";
   import { useMetricsView } from "../../dashboards/selectors";
@@ -61,7 +61,7 @@
     description="Select the measures you want to monitor."
     title="Alert data"
   >
-    <MultiSelectCombobox
+    <Multiselectcombobox
       id="measures"
       label="Measure"
       options={measureOptions}
