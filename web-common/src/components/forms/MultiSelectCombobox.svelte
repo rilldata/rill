@@ -49,7 +49,6 @@
     {/if}
   </div>
   <WithTogglableFloatingElement
-    let:active
     let:toggleFloatingElement
     distance={8}
     alignment="start"
