@@ -120,6 +120,11 @@ service AdminService {
     };
   }
 
+  // HibernateProject hibernates a project by tearing down its deployments.
+  rpc HibernateProject(HibernateProjectRequest) returns (HibernateProjectResponse) {
+    option (google.api.http) = {post: "/v1/organizations/{organization}/projects/{project}/hibernate"};
+  }
+
   // TriggerReconcile triggers reconcile for the project's prod deployment
   rpc TriggerReconcile(TriggerReconcileRequest) returns (TriggerReconcileResponse) {
     option (google.api.http) = {
@@ -1027,6 +1032,13 @@ message CreateAssetResponse {
   string signed_url = 2;
   map<string, string> signing_headers = 3;
 }
+
+message HibernateProjectRequest {
+  string organization = 1;
+  string project = 2;
+}
+
+message HibernateProjectResponse {}
 
 message TriggerReconcileRequest {
   string deployment_id = 1;

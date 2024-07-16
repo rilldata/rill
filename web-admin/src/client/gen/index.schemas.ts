@@ -871,6 +871,10 @@ export interface V1IssueMagicAuthTokenResponse {
   url?: string;
 }
 
+export interface V1HibernateProjectResponse {
+  [key: string]: any;
+}
+
 export type V1GithubPermission =
   (typeof V1GithubPermission)[keyof typeof V1GithubPermission];
 

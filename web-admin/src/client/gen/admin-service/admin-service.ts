@@ -59,6 +59,7 @@ import type {
   V1GetCloneCredentialsResponse,
   V1GetDeploymentCredentialsResponse,
   AdminServiceGetDeploymentCredentialsBody,
+  V1HibernateProjectResponse,
   V1GetIFrameResponse,
   AdminServiceGetIFrameBody,
   V1ListProjectInvitesResponse,
@@ -1943,6 +1944,54 @@ export const createAdminServiceGetDeploymentCredentials = <
   return query;
 };
 
+/**
+ * @summary HibernateProject hibernates a project by tearing down its deployments.
+ */
+export const adminServiceHibernateProject = (
+  organization: string,
+  project: string,
+) => {
+  return httpClient<V1HibernateProjectResponse>({
+    url: `/v1/organizations/${organization}/projects/${project}/hibernate`,
+    method: "post",
+  });
+};
+
+export type AdminServiceHibernateProjectMutationResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceHibernateProject>>
+>;
+
+export type AdminServiceHibernateProjectMutationError = RpcStatus;
+
+export const createAdminServiceHibernateProject = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceHibernateProject>>,
+    TError,
+    { organization: string; project: string },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceHibernateProject>>,
+    { organization: string; project: string }
+  > = (props) => {
+    const { organization, project } = props ?? {};
+
+    return adminServiceHibernateProject(organization, project);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceHibernateProject>>,
+    TError,
+    { organization: string; project: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary GetIFrame returns the iframe URL for the given project
  */
