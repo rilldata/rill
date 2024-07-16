@@ -1261,13 +1261,6 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1293,6 +1286,13 @@ export const V1MetricsViewComparisonMeasureType = {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
+
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
 
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
@@ -1709,14 +1709,6 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
-export interface V1ConnectorSpec {
-  driver?: string;
-  properties?: V1ConnectorSpecProperties;
-  /** properties_from_variables stores properties whose value is a variable.
-NOTE : properties_from_variables and properties both should be used to get all properties. */
-  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
-}
-
 export interface V1ConnectorV2 {
   spec?: V1ConnectorSpec;
   state?: V1ConnectorState;
@@ -1729,6 +1721,14 @@ NOTE : properties_from_variables and properties both should be used to get all p
 export type V1ConnectorSpecPropertiesFromVariables = { [key: string]: string };
 
 export type V1ConnectorSpecProperties = { [key: string]: string };
+
+export interface V1ConnectorSpec {
+  driver?: string;
+  properties?: V1ConnectorSpecProperties;
+  /** properties_from_variables stores properties whose value is a variable.
+NOTE : properties_from_variables and properties both should be used to get all properties. */
+  propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
+}
 
 /**
  * ConnectorDriver represents a connector driver available in the runtime.
@@ -1927,10 +1927,6 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -1957,6 +1953,10 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -1971,10 +1971,6 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
-}
-
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1985,6 +1981,10 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
+}
+
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2134,7 +2134,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
