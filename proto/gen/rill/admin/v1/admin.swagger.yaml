@@ -811,6 +811,30 @@ paths:
                 type: object
       tags:
         - AdminService
+  /v1/organizations/{organization}/projects/{project}/hibernate:
+    post:
+      summary: HibernateProject hibernates a project by tearing down its deployments.
+      operationId: AdminService_HibernateProject
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1HibernateProjectResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+      tags:
+        - AdminService
   /v1/organizations/{organization}/projects/{project}/iframe:
     post:
       summary: GetIFrame returns the iframe URL for the given project
@@ -3671,6 +3695,8 @@ definitions:
       - GITHUB_PERMISSION_READ
       - GITHUB_PERMISSION_WRITE
     default: GITHUB_PERMISSION_UNSPECIFIED
+  v1HibernateProjectResponse:
+    type: object
   v1IssueMagicAuthTokenResponse:
     type: object
     properties:

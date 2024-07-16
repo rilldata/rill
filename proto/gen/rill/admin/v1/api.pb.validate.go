@@ -6005,6 +6005,214 @@ var _ interface {
 	ErrorName() string
 } = CreateAssetResponseValidationError{}
 
+// Validate checks the field values on HibernateProjectRequest with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *HibernateProjectRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on HibernateProjectRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// HibernateProjectRequestMultiError, or nil if none found.
+func (m *HibernateProjectRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *HibernateProjectRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Organization
+
+	// no validation rules for Project
+
+	if len(errors) > 0 {
+		return HibernateProjectRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// HibernateProjectRequestMultiError is an error wrapping multiple validation
+// errors returned by HibernateProjectRequest.ValidateAll() if the designated
+// constraints aren't met.
+type HibernateProjectRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m HibernateProjectRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m HibernateProjectRequestMultiError) AllErrors() []error { return m }
+
+// HibernateProjectRequestValidationError is the validation error returned by
+// HibernateProjectRequest.Validate if the designated constraints aren't met.
+type HibernateProjectRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e HibernateProjectRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e HibernateProjectRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e HibernateProjectRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e HibernateProjectRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e HibernateProjectRequestValidationError) ErrorName() string {
+	return "HibernateProjectRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e HibernateProjectRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sHibernateProjectRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = HibernateProjectRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = HibernateProjectRequestValidationError{}
+
+// Validate checks the field values on HibernateProjectResponse with the rules
+// defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *HibernateProjectResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on HibernateProjectResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// HibernateProjectResponseMultiError, or nil if none found.
+func (m *HibernateProjectResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *HibernateProjectResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return HibernateProjectResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// HibernateProjectResponseMultiError is an error wrapping multiple validation
+// errors returned by HibernateProjectResponse.ValidateAll() if the designated
+// constraints aren't met.
+type HibernateProjectResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m HibernateProjectResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m HibernateProjectResponseMultiError) AllErrors() []error { return m }
+
+// HibernateProjectResponseValidationError is the validation error returned by
+// HibernateProjectResponse.Validate if the designated constraints aren't met.
+type HibernateProjectResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e HibernateProjectResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e HibernateProjectResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e HibernateProjectResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e HibernateProjectResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e HibernateProjectResponseValidationError) ErrorName() string {
+	return "HibernateProjectResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e HibernateProjectResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sHibernateProjectResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = HibernateProjectResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = HibernateProjectResponseValidationError{}
+
 // Validate checks the field values on TriggerReconcileRequest with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

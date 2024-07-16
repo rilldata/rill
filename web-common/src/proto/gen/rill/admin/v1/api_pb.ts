@@ -2328,6 +2328,80 @@ export class CreateAssetResponse extends Message<CreateAssetResponse> {
 }
 
 /**
+ * @generated from message rill.admin.v1.HibernateProjectRequest
+ */
+export class HibernateProjectRequest extends Message<HibernateProjectRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  constructor(data?: PartialMessage<HibernateProjectRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.HibernateProjectRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HibernateProjectRequest {
+    return new HibernateProjectRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HibernateProjectRequest {
+    return new HibernateProjectRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HibernateProjectRequest {
+    return new HibernateProjectRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: HibernateProjectRequest | PlainMessage<HibernateProjectRequest> | undefined, b: HibernateProjectRequest | PlainMessage<HibernateProjectRequest> | undefined): boolean {
+    return proto3.util.equals(HibernateProjectRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.HibernateProjectResponse
+ */
+export class HibernateProjectResponse extends Message<HibernateProjectResponse> {
+  constructor(data?: PartialMessage<HibernateProjectResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.HibernateProjectResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HibernateProjectResponse {
+    return new HibernateProjectResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HibernateProjectResponse {
+    return new HibernateProjectResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HibernateProjectResponse {
+    return new HibernateProjectResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: HibernateProjectResponse | PlainMessage<HibernateProjectResponse> | undefined, b: HibernateProjectResponse | PlainMessage<HibernateProjectResponse> | undefined): boolean {
+    return proto3.util.equals(HibernateProjectResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.TriggerReconcileRequest
  */
 export class TriggerReconcileRequest extends Message<TriggerReconcileRequest> {
