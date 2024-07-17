@@ -38,7 +38,6 @@ type Spec struct {
 type PropertySpec struct {
 	Key         string
 	Type        PropertyType
-	Prompt      bool
 	Required    bool
 	DisplayName string
 	Description string

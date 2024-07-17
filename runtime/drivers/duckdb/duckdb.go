@@ -48,7 +48,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "path",
 			Type:        drivers.StringPropertyType,
-			Prompt:      true,
 			Required:    true,
 			DisplayName: "Path",
 			Description: "Path to external DuckDB database.",

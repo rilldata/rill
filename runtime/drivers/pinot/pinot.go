@@ -26,7 +26,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Prompt:      false,
 			Required:    true,
 			DisplayName: "Connection string",
 			Placeholder: "http(s)://username:password@localhost:9000",
@@ -36,7 +35,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
-			Prompt:      true,
 			Required:    true,
 			DisplayName: "Host",
 			Description: "Hostname or IP address of the Pinot server",
@@ -45,7 +43,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "port",
 			Type:        drivers.NumberPropertyType,
-			Prompt:      true,
 			Required:    true,
 			DisplayName: "Port",
 			Description: "Port number of the Pinot server",
@@ -54,7 +51,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
-			Prompt:      true,
 			Required:    false,
 			DisplayName: "Username",
 			Description: "Username to connect to the Pinot server",
@@ -63,7 +59,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Prompt:      true,
 			Required:    false,
 			DisplayName: "Password",
 			Description: "Password to connect to the Pinot server",
@@ -73,7 +68,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
-			Prompt:      true,
 			Required:    true,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the Pinot server",

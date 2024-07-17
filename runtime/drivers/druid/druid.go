@@ -30,7 +30,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
-			Prompt:      false,
 			Required:    true,
 			DisplayName: "Connection string",
 			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
@@ -40,7 +39,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
-			Prompt:      true,
 			Required:    true,
 			DisplayName: "Host",
 			Description: "Hostname or IP address of the Druid server",
@@ -49,7 +47,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "port",
 			Type:        drivers.NumberPropertyType,
-			Prompt:      true,
 			Required:    true,
 			DisplayName: "Port",
 			Description: "Port number of the Druid server",
@@ -58,7 +55,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "username",
 			Type:        drivers.StringPropertyType,
-			Prompt:      true,
 			Required:    false,
 			DisplayName: "Username",
 			Description: "Username to connect to the Druid server",
@@ -67,7 +63,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "password",
 			Type:        drivers.StringPropertyType,
-			Prompt:      true,
 			Required:    false,
 			DisplayName: "Password",
 			Description: "Password to connect to the Druid server",
@@ -77,7 +72,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "ssl",
 			Type:        drivers.BooleanPropertyType,
-			Prompt:      true,
 			Required:    true,
 			DisplayName: "SSL",
 			Description: "Use SSL to connect to the Druid server",
