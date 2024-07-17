@@ -267,7 +267,9 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	instanceID string
-	db         *sqlx.DB
+	// do not use directly it can be also nil or closed
+	// use acquireOLAPConn/acquireMetaConn
+	db *sqlx.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
@@ -313,7 +315,12 @@ var _ drivers.OLAPStore = &connection{}
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	err := c.db.PingContext(ctx)
+	conn, rel, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	err = conn.PingContext(ctx)
+	rel()
 	c.connTimesMu.Lock()
 	defer c.connTimesMu.Unlock()
 	return errors.Join(err, c.hangingConnErr)
