@@ -1,3 +1,7 @@
+<script lang="ts" context="module">
+  export type FormType = "source" | "connector";
+</script>
+
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
@@ -22,11 +26,12 @@
   const dispatch = createEventDispatcher();
 
   export let connector: V1ConnectorDriver;
+  export let formType: FormType;
 
   $: formId = `add-data-${connector.name}-form`;
 
-  $: isSourceForm = !connector.implementsOlap;
-  $: isConnectorForm = connector.implementsOlap;
+  $: isSourceForm = formType === "source";
+  $: isConnectorForm = formType === "connector";
   $: properties = isConnectorForm
     ? connector.configProperties ?? []
     : connector.sourceProperties ?? [];
@@ -42,7 +47,7 @@
         if (isSourceForm) {
           overlay.set({ title: `Importing ${values.name}` });
           try {
-            await submitAddDataForm(queryClient, connector, values);
+            await submitAddDataForm(queryClient, formType, connector, values);
             await goto(`/files/sources/${values.name}.yaml`);
             dispatch("close");
           } catch (e) {
@@ -54,7 +59,7 @@
 
         // Connectors
         try {
-          await submitAddDataForm(queryClient, connector, values);
+          await submitAddDataForm(queryClient, formType, connector, values);
           await goto(`/files/connectors/${connector.name}.yaml`);
           dispatch("close");
         } catch (e) {

@@ -30,6 +30,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileCreateSourceYAML } from "../sourceUtils";
+import { FormType } from "./AddDataForm.svelte";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
 interface AddDataFormValues {
@@ -39,6 +40,7 @@ interface AddDataFormValues {
 
 export async function submitAddDataForm(
   queryClient: QueryClient,
+  formType: FormType,
   connector: V1ConnectorDriver,
   values: AddDataFormValues,
 ): Promise<void> {
@@ -81,7 +83,7 @@ export async function submitAddDataForm(
    * Sources
    */
 
-  if (!connector.implementsOlap) {
+  if (formType === "source") {
     // Make a new <source>.yaml file
     await runtimeServicePutFile(instanceId, {
       path: getFileAPIPathFromNameAndType(values.name, EntityType.Table),

@@ -54,6 +54,32 @@ var spec = drivers.Spec{
 			Placeholder: "/path/to/main.db",
 		},
 	},
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "db",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "DB",
+			Description: "Path to DuckDB database",
+			Placeholder: "/path/to/duckdb.db",
+		},
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from DuckDB.",
+			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+	},
 	ImplementsCatalog: true,
 	ImplementsOLAP:    true,
 }

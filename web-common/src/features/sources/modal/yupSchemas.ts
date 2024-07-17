@@ -44,6 +44,16 @@ export function getYupSchema(connector: V1ConnectorDriver) {
           .required("Source name is required"),
       });
 
+    case "duckdb":
+      return yup.object().shape({
+        db: yup.string().required("db is required"),
+        sql: yup.string().required("sql is required"),
+        name: yup
+          .string()
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+          .required("Source name is required"),
+      });
+
     case "sqlite":
       return yup.object().shape({
         db: yup.string().required("db is required"),
@@ -174,16 +184,6 @@ export function getYupSchema(connector: V1ConnectorDriver) {
         username: yup.string(),
         password: yup.string(),
         ssl: yup.boolean(),
-        // User-provided connector names requires a little refactor. Commenting out for now.
-        // name: yup
-        //   .string()
-        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-        //   .required("Connector name is required"),
-      });
-
-    case "duckdb":
-      return yup.object().shape({
-        path: yup.string().required("Path is required"),
         // User-provided connector names requires a little refactor. Commenting out for now.
         // name: yup
         //   .string()

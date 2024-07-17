@@ -39,13 +39,14 @@
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
 
-  const TAB_ORDER = [
+  const SOURCES = [
     "gcs",
     "s3",
     "azure",
     "bigquery",
     "athena",
     "redshift",
+    "duckdb",
     "postgres",
     "mysql",
     "sqlite",
@@ -53,12 +54,12 @@
     "salesforce",
     "local_file",
     "https",
-    "clickhouse",
-    "druid",
-    "duckdb",
     // "motherduck",
-    "pinot",
   ];
+
+  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
+
+  const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
 
   const ICONS = {
     gcs: GoogleCloudStorage,
@@ -88,15 +89,17 @@
           data.connectors &&
           data.connectors
             .filter(
-              // Only show connectors in TAB_ORDER
-              (a) => a.name && TAB_ORDER.indexOf(a.name) >= 0,
+              // Only show connectors in SOURCES or OLAP_CONNECTORS
+              (a) =>
+                a.name &&
+                (SOURCES.includes(a.name) || OLAP_CONNECTORS.includes(a.name)),
             )
             .sort(
               // CAST SAFETY: we have filtered out any connectors that
               // don't have a `name` in the previous filter
               (a, b) =>
-                TAB_ORDER.indexOf(a.name as string) -
-                TAB_ORDER.indexOf(b.name as string),
+                SORT_ORDER.indexOf(a.name as string) -
+                SORT_ORDER.indexOf(b.name as string),
             );
         return data;
       },
@@ -186,7 +189,7 @@
           <section>
             <h2>Add a source</h2>
             <div class="connector-grid">
-              {#each $connectors.data.connectors.filter((c) => !c.implementsOlap) as connector (connector.name)}
+              {#each $connectors.data.connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
@@ -204,7 +207,7 @@
           <section>
             <h2>Connect an OLAP engine</h2>
             <div class="connector-grid">
-              {#each $connectors.data.connectors.filter((c) => c.implementsOlap) as connector (connector.name)}
+              {#each $connectors.data.connectors.filter((c) => c.name && OLAP_CONNECTORS.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
@@ -232,9 +235,12 @@
         {#if selectedConnector}
           {#if selectedConnector.name === "local_file"}
             <LocalSourceUpload on:close={resetModal} on:back={back} />
-          {:else if selectedConnector}
+          {:else if selectedConnector && selectedConnector.name}
             <AddDataForm
               connector={selectedConnector}
+              formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+                ? "connector"
+                : "source"}
               on:close={resetModal}
               on:back={back}
             />
