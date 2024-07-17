@@ -238,8 +238,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
 	var err error
-	b64 := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
-	dsn, err := base64.StdEncoding.DecodeString(b64)
+	dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 	if err != nil {
 		return nil, "", err
 	}
