@@ -267,7 +267,7 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	instanceID string
-	// do not use directly it can be also nil or closed
+	// do not use directly it can also be nil or closed
 	// use acquireOLAPConn/acquireMetaConn
 	db *sqlx.DB
 	// driverConfig is input config passed during Open
