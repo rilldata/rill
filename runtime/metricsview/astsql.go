@@ -74,6 +74,19 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {
+	if len(n.CTEs) > 0 {
+		b.out.WriteString("WITH ")
+		for _, cte := range n.CTEs {
+			b.out.WriteString(cte.Alias)
+			b.out.WriteString(" AS (")
+			err := b.writeSelect(cte)
+			if err != nil {
+				return err
+			}
+			b.out.WriteString(") ")
+		}
+	}
+
 	b.out.WriteString("SELECT ")
 
 	for i, f := range n.DimFields {
@@ -104,8 +117,21 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		// Add unnest joins. We only and always apply these against FromPlain (ensuring they are already unnested when referenced in outer SELECTs).
 		for _, u := range n.Unnests {
-			b.out.WriteString(", ")
-			b.out.WriteString(u)
+			if n.JoinComparisonSelect != nil {
+				b.out.WriteString("JOIN ")
+				b.out.WriteString(u)
+				b.out.WriteString(" ON TRUE")
+			} else {
+				b.out.WriteString(", ")
+				b.out.WriteString(u)
+			}
+		}
+
+		if n.JoinComparisonSelect != nil {
+			err := b.writeJoin(n.JoinComparisonType, n.CTEs[0], n.JoinComparisonSelect, nil)
+			if err != nil {
+				return err
+			}
 		}
 	} else if n.FromSelect != nil {
 		b.out.WriteByte('(')
@@ -117,21 +143,28 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteString(n.FromSelect.Alias)
 
 		for _, ljs := range n.LeftJoinSelects {
-			err := b.writeJoin("LEFT", n.FromSelect, ljs)
+			err := b.writeJoin("LEFT", n.FromSelect, ljs, nil)
 			if err != nil {
 				return err
 			}
 		}
 
 		if n.SpineSelect != nil {
-			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
+			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect, nil)
 			if err != nil {
 				return err
 			}
 		}
 
 		if n.JoinComparisonSelect != nil {
-			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
+			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect, nil)
+			if err != nil {
+				return err
+			}
+		}
+
+		if n.JoinComparisonTable != nil {
+			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, nil, n.JoinComparisonTable)
 			if err != nil {
 				return err
 			}
@@ -198,16 +231,26 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	return nil
 }
 
-func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
+func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode, joinTable *string) error {
 	b.out.WriteByte(' ')
 	b.out.WriteString(string(joinType))
-	b.out.WriteString(" JOIN (")
-	err := b.writeSelect(joinSelect)
-	if err != nil {
-		return err
+	var joinSelectAlias string
+	if joinSelect != nil {
+		joinSelectAlias = joinSelect.Alias
+		b.out.WriteString(" JOIN (")
+		err := b.writeSelect(joinSelect)
+		if err != nil {
+			return err
+		}
+		b.out.WriteString(") ")
+		b.out.WriteString(joinSelectAlias)
+	} else if joinTable != nil {
+		joinSelectAlias = *joinTable
+		b.out.WriteString(" JOIN ")
+		b.out.WriteString(joinSelectAlias)
+	} else {
+		panic("internal: joinSelect and joinTable are both nil")
 	}
-	b.out.WriteString(") ")
-	b.out.WriteString(joinSelect.Alias)
 
 	if len(baseSelect.DimFields) == 0 {
 		b.out.WriteString(" ON TRUE")
@@ -220,7 +263,7 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 			b.out.WriteString(" AND ")
 		}
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
-		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
+		rhs := b.ast.sqlForMember(joinSelectAlias, f.Name)
 		b.out.WriteByte('(')
 		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')

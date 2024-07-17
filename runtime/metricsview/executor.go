@@ -185,6 +185,8 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 
 	e.rewriteApproxComparisons(ast)
 
+	e.rewriteComparisonsCTE(ast)
+
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return nil, false, err
 	}
