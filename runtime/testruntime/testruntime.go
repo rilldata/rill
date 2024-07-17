@@ -2,7 +2,6 @@ package testruntime
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"maps"
 	"os"
