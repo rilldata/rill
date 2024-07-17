@@ -25,7 +25,7 @@ Files that are *nested at any level* under your native `dashboards` directory wi
 
 **`timeseries`** — Refers to the timestamp column from your model that will underlie x-axis data in the line charts. If not specified, the line charts will not appear _(optional)_.
 
-**`connector`** — Refers to the OLAP engine, if using [mulitple OLAP engines](../olap-engines/multiple-olap.md).
+**`connector`** — Refers to the OLAP engine, if using [multiple OLAP engines](../olap-engines/multiple-olap.md).
 
 **`default_time_range`** — Refers to the default time range shown when a user initially loads the dashboard. The value must be either a valid [ISO 8601 duration](https://en.wikipedia.org/wiki/ISO_8601#Durations) (for example, `PT12H` for 12 hours, `P1M` for 1 month, or `P26W` for 26 weeks) or one of the [Rill ISO 8601 extensions](../rill-iso-extensions.md#extensions) (default). If not specified, defaults to the full time range of the `timeseries` column _(optional)_.
 
