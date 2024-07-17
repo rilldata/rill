@@ -143,7 +143,6 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 			return fmt.Errorf("failed to attach db %q: %w", srcProps.Database, err)
 		}
 
-		// make sure that dbName is not updated in any code below
 		cleanupFunc = func() {
 			// we don't want to run any detach db without `tx` lock
 			// tx=true will reopen duckdb handle which will detach the attached external db as well
