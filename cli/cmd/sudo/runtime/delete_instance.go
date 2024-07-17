@@ -21,7 +21,7 @@ func DeleteInstanceCmd(ch *cmdutil.Helper) *cobra.Command {
 			host := args[0]
 			instanceID := args[1]
 
-			// Obtain a manager token for the hosst
+			// Obtain a manager token for the host
 			client, err := ch.Client()
 			if err != nil {
 				return err
