@@ -2644,6 +2644,9 @@ definitions:
       secret:
         type: boolean
         title: If true, the property is a secret and should not be displayed in UIs
+      noPrompt:
+        type: boolean
+        title: If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
     title: Property represents the spec of one of the driver's config properties
   ConnectorDriverPropertyType:
     type: string
@@ -2902,7 +2905,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
