@@ -1754,6 +1754,7 @@ export interface V1ConnectorDriver {
   implementsObjectStore?: boolean;
   implementsFileStore?: boolean;
   implementsNotifier?: boolean;
+  implementsWarehouse?: boolean;
 }
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };

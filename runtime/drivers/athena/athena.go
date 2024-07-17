@@ -65,6 +65,7 @@ var spec = drivers.Spec{
 			Secret: true,
 		},
 	},
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}

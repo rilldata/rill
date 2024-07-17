@@ -58,7 +58,7 @@ var spec = drivers.Spec{
 			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
 		},
 	},
-	ImplementsSQLStore: true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}

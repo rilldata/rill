@@ -44,7 +44,7 @@ var spec = drivers.Spec{
 			Hint:        "Either set this or pass --var connector.snowflake.dsn=... to rill start",
 		},
 	},
-	ImplementsSQLStore: true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}

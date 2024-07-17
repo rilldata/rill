@@ -89,7 +89,7 @@ var spec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsSQLStore: true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}
