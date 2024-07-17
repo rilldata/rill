@@ -28,7 +28,7 @@ Select + Add -> Data -> Connect an OLAP engine
 
 :::tip A note on OLAP engines
 
-You can have multiple OLAP engines in a single project and have each dashboard run on a different engine using the `connector` parameter directly on a dashboard.
+By defining the `connector` parameter in a [dashboard's YAML](dashboards.md) file, you can have multiple OLAP engines in a single project.
 
 :::
 
