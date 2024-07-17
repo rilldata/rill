@@ -28,19 +28,7 @@ Select + Add -> Data -> Connect an OLAP engine
 
 :::tip A note on OLAP engines
 
-You can have multiple OLAP engines in a single project and have each dashboard run on a different engine using the connector parameter directly on a dashboard.
-
-```
-title: "Customer Unit Economics Dashboard"
-model: "metrics_margin_model"
-type: metrics_view
-default_time_range: "P4W"
-smallest_time_grain: "day"
-connector: duckdb
-timeseries: "__time"
-measures:
-    ...
-```
+You can have multiple OLAP engines in a single project and have each dashboard run on a different engine using the `connector` parameter directly on a dashboard.
 
 :::
 
@@ -60,7 +48,7 @@ You can also connect using a dsn parameter. You cannot use the above parameters 
 **`dsn`** - connection string containing all the details above, in a single string. Note that each engine's syntax is slightly different. Please refer to [our documentation](https://docs.rilldata.com/reference/olap-engines/) for further details.
 
 ---
-
+ 
 _Example #1: Connecting to a local running Clickhouse server (no security enabled)_
 ```yaml
 type: connector
