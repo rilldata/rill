@@ -14,6 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
+const defaultPageSize = 20
+
 func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBucketsRequest) ([]string, string, error) {
 	credentials, err := gcputil.Credentials(ctx, c.config.SecretJSON, c.config.AllowHostAccess)
 	if err != nil {
@@ -49,8 +51,8 @@ func (c *Connection) ListBuckets(ctx context.Context, req *runtimev1.GCSListBuck
 	return names, next, nil
 }
 
-func (c *Connection) ListObjects(ctx context.Context, req *runtimev1.GCSListObjectsRequest) ([]*runtimev1.GCSObject, string, error) {
-	client, err := c.createClient(ctx)
+func (c *Connection) ListObjectsRaw(ctx context.Context, req *runtimev1.GCSListObjectsRequest) ([]*runtimev1.GCSObject, string, error) {
+	client, err := c.newClient(ctx)
 	if err != nil {
 		return nil, "", err
 	}

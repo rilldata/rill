@@ -34,7 +34,7 @@ func (s *Server) S3ListObjects(ctx context.Context, req *runtimev1.S3ListObjects
 	}
 	defer release()
 
-	objects, nextToken, err := s3Conn.ListObjects(ctx, req)
+	objects, nextToken, err := s3Conn.ListObjectsRaw(ctx, req)
 	if err != nil {
 		return nil, err
 	}
@@ -105,7 +105,7 @@ func (s *Server) GCSListObjects(ctx context.Context, req *runtimev1.GCSListObjec
 	}
 	defer release()
 
-	objects, nextToken, err := gcsConn.ListObjects(ctx, req)
+	objects, nextToken, err := gcsConn.ListObjectsRaw(ctx, req)
 	if err != nil {
 		return nil, err
 	}

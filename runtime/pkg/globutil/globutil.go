@@ -11,9 +11,8 @@ type URL struct {
 	Path   string
 }
 
-// ParseBucketURL splits urls with globs into scheme, hostname and rest of the url(as glob)
-// url.Parse removes `?` considering it is query param
-// `?` is valid meta in glob patterns
+// ParseBucketURL parses a URL while preserving glob patterns in the URL's path.
+// For example, url.Parse removes `?` as a query string, which is problematic because `?` is a valid character in glob patterns.
 func ParseBucketURL(path string) (*URL, error) {
 	scheme, path, ok := strings.Cut(path, "://")
 	if !ok {
