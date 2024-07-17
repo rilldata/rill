@@ -56,37 +56,25 @@
   );
 </script>
 
-<div class="flex flex-col">
-  <form
-    on:submit|preventDefault={submit}
-    id="request-connector-form"
-    use:enhance
-  >
-    <span class="text-slate-500 pb-4 text-sm">
-      Don’t see the connector you’re looking for? Let us know what we’re
-      missing!
-    </span>
-
-    <div class="pt-4 pb-5 text-slate-800">
-      <Input
-        id="request"
-        label="Connector"
-        placeholder="Your data source"
-        errors={$errors.request}
-        bind:value={$form.request}
-        alwaysShowError
-      />
-    </div>
-    <div class="pt-4 pb-5 text-slate-800">
-      <Input
-        id="email"
-        label="Optionally, we can let you know when the connector is available."
-        placeholder="Your email address"
-        errors={$errors.email}
-        bind:value={$form.email}
-      />
-    </div>
-  </form>
+<form on:submit|preventDefault={submit} id="request-connector-form" use:enhance>
+  <span class="text-slate-500 text-sm">
+    Don't see the connector you're looking for? Let us know what we're missing!
+  </span>
+  <Input
+    id="request"
+    label="Connector"
+    placeholder="Your data source"
+    errors={$errors.request}
+    bind:value={$form.request}
+    alwaysShowError
+  />
+  <Input
+    id="email"
+    label="Optionally, we can let you know when the connector is available."
+    placeholder="Your email address"
+    errors={$errors.email}
+    bind:value={$form.email}
+  />
   <div class="flex gap-x-2">
     <div class="grow" />
     <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
@@ -99,7 +87,7 @@
       Request connector
     </Button>
   </div>
-</div>
+</form>
 
 <style lang="postcss">
   form {
