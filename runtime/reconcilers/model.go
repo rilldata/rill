@@ -23,7 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultModelTimeout = 60 * time.Minute
+const _defaultModelTimeout = 15 * time.Minute
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -607,93 +607,6 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 	return state, res.Schema, nil
 }
 
-func (r *ModelReconciler) acquireExecutorWithStage(ctx context.Context, opts *drivers.ModelExecutorOptions) (string, drivers.ModelExecutor, func(), error) {
-	// Build model options for stage 1
-	// set stage props as outputprops
-	stage1Opts := &drivers.ModelExecutorOptions{
-		Env:              opts.Env,
-		ModelName:        opts.ModelName,
-		InputConnector:   opts.InputConnector,
-		InputProperties:  opts.InputProperties,
-		OutputConnector:  opts.StageConnector,
-		OutputProperties: opts.StageProperties,
-	}
-	_, executor, rel, err := r.acquireExecutor(ctx, stage1Opts)
-	if err != nil {
-		return "", nil, nil, err
-	}
-
-	// we want to determine whether stage connector and output connector are compatible
-	// so we get executor but do not execute it since we need to use result of stage 1
-	// Build model option for stage 2
-	// Use resuls connector and result properties as input connector
-	stage2Opts := &drivers.ModelExecutorOptions{
-		InputConnector:   opts.StageConnector,
-		InputProperties:  opts.StageProperties,
-		OutputConnector:  opts.OutputConnector,
-		OutputProperties: opts.OutputProperties,
-	}
-	_, _, tempRel, err := r.acquireExecutor(ctx, stage2Opts)
-	if err != nil {
-		rel()
-		return "", nil, nil, err
-	}
-	tempRel()
-
-	// execute stage 1
-	res, err := executor.Execute(ctx)
-	if err != nil {
-		rel()
-		return "", nil, nil, err
-	}
-	rel()
-
-	rc, rr, err := r.C.AcquireConn(ctx, res.Connector)
-	if err != nil {
-		return "", nil, nil, err
-	}
-	defer rr()
-
-	// Build model option for stage 2
-	// Use result's connector and result properties as input connector
-	stage2Opts = &drivers.ModelExecutorOptions{
-		Env:              opts.Env,
-		ModelName:        opts.ModelName,
-		InputConnector:   res.Connector,
-		InputProperties:  res.Properties,
-		OutputConnector:  opts.OutputConnector,
-		OutputProperties: opts.OutputProperties,
-		Incremental:      opts.Incremental,
-		IncrementalRun:   opts.IncrementalRun,
-		PreviousResult:   opts.PreviousResult,
-	}
-	name, executor, rel, err := r.acquireExecutor(ctx, stage2Opts)
-	if err != nil {
-		// cleanup stage1 result data
-		if mm, ok := rc.AsModelManager(r.C.InstanceID); ok {
-			return "", nil, nil, errors.Join(err, mm.Delete(ctx, res))
-		}
-		return "", nil, nil, err
-	}
-	// the final cleanup should also cleanup stage1 result data
-	releaseWithCleanUp := func() {
-		rel()
-		rc, rr, err := r.C.AcquireConn(context.Background(), res.Connector)
-		if err != nil {
-			return
-		}
-		defer rr()
-		if mm, ok := rc.AsModelManager(r.C.InstanceID); ok {
-			// May block reconcile. May be add a timeout and run in background ?
-			err = mm.Delete(context.Background(), res)
-			if err != nil {
-				r.C.Logger.Warn("failed to clean up stage output", zap.Error(err))
-			}
-		}
-	}
-	return name, executor, releaseWithCleanUp, nil
-}
-
 // acquireExecutor acquires a ModelExecutor capable of executing a model with the given execution options.
 // It handles acquiring and setting opts.InputHandle and opts.OutputHandle.
 func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.ModelExecutorOptions) (string, drivers.ModelExecutor, func(), error) {
@@ -744,6 +657,94 @@ func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.Mod
 	}
 
 	return executorName, e, release, nil
+}
+
+func (r *ModelReconciler) acquireExecutorWithStage(ctx context.Context, opts *drivers.ModelExecutorOptions) (string, drivers.ModelExecutor, func(), error) {
+	// we want to determine whether stage connector and output connector are compatible
+	// so we get executor but do not execute it since we need to use result of stage 1
+	//
+	// Build model option for stage 2
+	stage2Opts := &drivers.ModelExecutorOptions{
+		InputConnector:   opts.StageConnector,
+		InputProperties:  opts.StageProperties,
+		OutputConnector:  opts.OutputConnector,
+		OutputProperties: opts.OutputProperties,
+	}
+	_, _, tempRel, err := r.acquireExecutor(ctx, stage2Opts)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	tempRel()
+
+	// Build model options for stage 1
+	// set stage props as outputprops
+	stage1Opts := &drivers.ModelExecutorOptions{
+		Env:              opts.Env,
+		ModelName:        opts.ModelName,
+		InputConnector:   opts.InputConnector,
+		InputProperties:  opts.InputProperties,
+		OutputConnector:  opts.StageConnector,
+		OutputProperties: opts.StageProperties,
+	}
+	_, executor, rel, err := r.acquireExecutor(ctx, stage1Opts)
+	if err != nil {
+		return "", nil, nil, err
+	}
+
+	// execute stage 1
+	res, err := executor.Execute(ctx)
+	if err != nil {
+		rel()
+		return "", nil, nil, err
+	}
+	rel()
+
+	rc, rr, err := r.C.AcquireConn(ctx, res.Connector)
+	if err != nil {
+		return "", nil, nil, err
+	}
+	defer rr()
+
+	// Build model option for stage 2
+	// Use result's connector and result properties as input connector
+	// Typically the result connector will be same as stage connector
+	// but the properties can change
+	stage2Opts = &drivers.ModelExecutorOptions{
+		Env:              opts.Env,
+		ModelName:        opts.ModelName,
+		InputConnector:   res.Connector,
+		InputProperties:  res.Properties,
+		OutputConnector:  opts.OutputConnector,
+		OutputProperties: opts.OutputProperties,
+		Incremental:      opts.Incremental,
+		IncrementalRun:   opts.IncrementalRun,
+		PreviousResult:   opts.PreviousResult,
+	}
+	name, executor, rel, err := r.acquireExecutor(ctx, stage2Opts)
+	if err != nil {
+		// cleanup stage1 result data
+		if mm, ok := rc.AsModelManager(r.C.InstanceID); ok {
+			return "", nil, nil, errors.Join(err, mm.Delete(ctx, res))
+		}
+		return "", nil, nil, err
+	}
+	// the final cleanup should also cleanup stage1 result data
+	releaseWithCleanUp := func() {
+		rel()
+		rc, rr, err := r.C.AcquireConn(context.Background(), res.Connector)
+		if err != nil {
+			return
+		}
+		defer rr()
+		if mm, ok := rc.AsModelManager(r.C.InstanceID); ok {
+			// May block reconcile. May be add a timeout and run in background ?
+			err = mm.Delete(context.Background(), res)
+			if err != nil {
+				r.C.Logger.Warn("failed to clean up stage output", zap.Error(err))
+			}
+		}
+	}
+	return name, executor, releaseWithCleanUp, nil
 }
 
 // newModelEnv makes a ModelEnv configured using the current instance.

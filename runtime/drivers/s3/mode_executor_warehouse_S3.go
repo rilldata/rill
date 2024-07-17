@@ -5,7 +5,6 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.uber.org/zap"
 )
 
 type warehouseToSelfExecutor struct {
@@ -35,7 +34,6 @@ func (e *warehouseToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelRe
 	if err != nil {
 		return nil, err
 	}
-	e.c.logger.Info("result of warehouseToSelfExecutor", zap.Any("res", res))
 
 	return &drivers.ModelResult{
 		Connector:  e.opts.OutputConnector,

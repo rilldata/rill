@@ -36,7 +36,7 @@ var _ drivers.Warehouse = &Connection{}
 
 // Export implements drivers.Warehouse.
 func (c *Connection) Export(ctx context.Context, props map[string]any, store drivers.ObjectStore, outputLocation string) (*drivers.ExportResult, error) {
-	return nil, fmt.Errorf("bigquery connector can not export result to cloud storage yet")
+	return nil, drivers.ErrNotImplemented
 }
 
 // QueryAsFiles implements drivers.SQLStore

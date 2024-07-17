@@ -7,7 +7,6 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	"github.com/rilldata/rill/runtime/drivers/s3"
 )
 
 type s3ToSelfExecutor struct {
@@ -53,7 +52,7 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, e
 }
 
 func (e *s3ToSelfExecutor) genSQL(path string) (string, error) {
-	props := &s3.ConfigProperties{}
+	props := &s3ConfigProperties{}
 	if err := mapstructure.Decode(e.s3.Config(), props); err != nil {
 		return "", err
 	}
@@ -61,7 +60,7 @@ func (e *s3ToSelfExecutor) genSQL(path string) (string, error) {
 	// SELECT * FROM S3(path, [id, secret], format)
 	var sb strings.Builder
 	sb.WriteString("SELECT * FROM s3(")
-	sb.WriteString(fmt.Sprintf("%q", path))
+	sb.WriteString(fmt.Sprintf("'%s'", path))
 	if props.AccessKeyID != "" {
 		sb.WriteString(", ")
 		sb.WriteString(props.AccessKeyID)
@@ -70,4 +69,10 @@ func (e *s3ToSelfExecutor) genSQL(path string) (string, error) {
 	}
 	sb.WriteString(")")
 	return sb.String(), nil
+}
+
+type s3ConfigProperties struct {
+	AccessKeyID     string `mapstructure:"aws_access_key_id"`
+	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
+	SessionToken    string `mapstructure:"aws_access_token"`
 }

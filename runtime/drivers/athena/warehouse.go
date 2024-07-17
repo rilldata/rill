@@ -27,7 +27,7 @@ import (
 var _ drivers.Warehouse = &Connection{}
 
 func (c *Connection) Export(ctx context.Context, props map[string]any, store drivers.ObjectStore, _ string) (*drivers.ExportResult, error) {
-	return nil, fmt.Errorf("unimplemented")
+	return nil, drivers.ErrNotImplemented
 }
 
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *drivers.QueryOption) (outIt drivers.FileIterator, outErr error) {

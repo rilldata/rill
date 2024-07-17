@@ -9,7 +9,6 @@ import (
 	"github.com/google/uuid"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
-	"go.uber.org/zap"
 )
 
 var _ drivers.Warehouse = &connection{}
@@ -48,14 +47,14 @@ func (c *connection) Export(ctx context.Context, props map[string]any, store dri
 		return nil, err
 	}
 
-	sql := fmt.Sprintf(`
+	query := fmt.Sprintf(`
 	COPY INTO '%s'
 		FROM (%s) 
 		CREDENTIALS = %s
 		HEADER = TRUE
+		MAX_FILE_SIZE = 536870912 
 		FILE_FORMAT = (TYPE='PARQUET' COMPRESSION = 'SNAPPY')`, outputLocation, conf.SQL, creds)
-	c.logger.Info("generated sql", zap.String("sql", sql))
-	_, err = db.ExecContext(ctx, sql)
+	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
@@ -73,9 +72,9 @@ func creds(store drivers.ObjectStore) (string, error) {
 		}
 		return fmt.Sprintf("(AWS_KEY_ID='%s' AWS_SECRET_KEY='%s' AWS_TOKEN='%s')", conf.AccessKeyID, conf.SecretAccessKey, conf.SessionToken), nil
 	case "gcs":
-		return "", fmt.Errorf("snowflake can't export to connector 'gcs'. Use s3 compatibility.")
+		return "", fmt.Errorf("snowflake connector can't export to connector 'gcs'. Use s3 compatibility.")
 	default:
-		return "", fmt.Errorf("snowflake can't export to connector %q", h.Driver())
+		return "", fmt.Errorf("snowflake connector can't export to connector %q", h.Driver())
 	}
 }
 

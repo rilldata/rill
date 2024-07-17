@@ -92,7 +92,7 @@ type driver struct{}
 
 var _ drivers.Driver = driver{}
 
-type ConfigProperties struct {
+type configProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
@@ -106,7 +106,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, errors.New("s3 driver can't be shared")
 	}
 
-	cfg := &ConfigProperties{}
+	cfg := &configProperties{}
 	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
 		return nil, err
@@ -130,7 +130,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 	}
 
 	conn := &Connection{
-		config: &ConfigProperties{},
+		config: &configProperties{},
 		logger: logger,
 	}
 
@@ -149,7 +149,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type Connection struct {
 	// config is input configs passed to driver.Open
-	config *ConfigProperties
+	config *configProperties
 	logger *zap.Logger
 }
 

@@ -384,7 +384,7 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 	}
 	if opts.OutputHandle == c {
 		if w, ok := opts.InputHandle.AsWarehouse(); ok {
-			return &sqlStoreToSelfExecutor{c, w, opts}, true
+			return &warehouseToSelfExecutor{c, w, opts}, true
 		}
 	}
 	if opts.InputHandle == c {

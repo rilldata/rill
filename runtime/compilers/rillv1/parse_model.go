@@ -93,10 +93,13 @@ func (p *Parser) parseModel(node *Node) error {
 		return fmt.Errorf(`found invalid input property type: %w`, err)
 	}
 
-	// Validate stage details. Not mandatory for all model definitions.
-	stagePropsPB, err := structpb.NewStruct(tmp.Stage.Properties)
-	if err != nil {
-		return fmt.Errorf(`found invalid input property type: %w`, err)
+	var stagePropsPB *structpb.Struct
+	// stage details not mandatory for all model definitions.
+	if len(tmp.Stage.Properties) > 0 {
+		stagePropsPB, err = structpb.NewStruct(tmp.Stage.Properties)
+		if err != nil {
+			return fmt.Errorf(`found invalid input property type: %w`, err)
+		}
 	}
 
 	// Build output details
