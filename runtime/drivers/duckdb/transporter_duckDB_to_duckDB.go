@@ -145,11 +145,13 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 
 		// make sure that dbName is not updated in any code below
 		cleanupFunc = func() {
+			// we don't want to run any detach db without `tx` lock
+			// tx=true will reopen duckdb handle which will detach the attached external db as well
 			err := t.to.WithConnection(context.Background(), 100, false, true, func(wrappedCtx, ensuredCtx context.Context, conn *sql.Conn) error {
-				return t.to.Exec(ensuredCtx, &drivers.Statement{Query: fmt.Sprintf("DETACH %s;", safeSQLName(dbName))})
+				return nil
 			})
 			if err != nil {
-				t.logger.Error("failed to detach db", zap.Error(err))
+				t.logger.Debug("failed to detach db", zap.Error(err))
 			}
 		}
 
