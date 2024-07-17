@@ -460,6 +460,14 @@ export interface V1SudoUpdateAnnotationsRequest {
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
 }
 
+export interface V1SudoIssueRuntimeManagerTokenResponse {
+  token?: string;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenRequest {
+  host?: string;
+}
+
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;
@@ -1261,7 +1269,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
