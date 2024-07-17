@@ -15,10 +15,10 @@
     .getResource(queryClient, $runtime.instanceId);
   $: ({ isLoading: isResourceLoading, error: resourceError } = $resource);
 
-  $: connector = $resource.data?.metricsView?.spec?.connector;
+  $: connector = $resource.data?.metricsView?.spec?.connector ?? "";
   $: database = $resource.data?.metricsView?.spec?.database ?? "";
   $: databaseSchema = $resource.data?.metricsView?.spec?.databaseSchema ?? "";
-  $: table = $resource.data?.metricsView?.spec?.table;
+  $: table = $resource.data?.metricsView?.spec?.table ?? "";
 
   $: tableQuery = createConnectorServiceOLAPGetTable(
     {
