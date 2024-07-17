@@ -23,7 +23,7 @@ func ListInstancesCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Parse args
 			host := args[0]
 
-			// Obtain a manager token for the hosst
+			// Obtain a manager token for the host
 			client, err := ch.Client()
 			if err != nil {
 				return err
