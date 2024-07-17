@@ -37,7 +37,7 @@ export function useAlertDashboardName(instanceId: string, name: string) {
       query: {
         select: (data) => {
           const queryArgsJson = JSON.parse(
-            data.resource.alert.spec.queryArgsJson,
+            data.resource.alert.spec.resolverProperties.query_arg_json,
           );
 
           return (

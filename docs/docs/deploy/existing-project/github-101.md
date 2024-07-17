@@ -2,7 +2,7 @@
 title: "GitHub Basics"
 description: GitHub Basics for Deployment
 sidebar_label: "GitHub Basics"
-sidebar_position: 10
+sidebar_position: 20
 ---
 
 ## Overview
