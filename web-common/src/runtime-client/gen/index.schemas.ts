@@ -534,12 +534,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -567,6 +561,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -665,11 +665,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -681,6 +676,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -1266,13 +1266,6 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1298,6 +1291,13 @@ export const V1MetricsViewComparisonMeasureType = {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
+
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
 
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
@@ -1932,10 +1932,6 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -1962,6 +1958,10 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -1976,10 +1976,6 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
-}
-
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1990,6 +1986,10 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
+}
+
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2048,18 +2048,11 @@ export interface V1AnalyzeConnectorsResponse {
   connectors?: V1AnalyzedConnector[];
 }
 
-export interface V1AlertState {
-  specHash?: string;
-  refsHash?: string;
-  nextRunOn?: string;
-  currentExecution?: V1AlertExecution;
-  executionHistory?: V1AlertExecution[];
-  executionCount?: number;
-}
-
 export type V1AlertSpecAnnotations = { [key: string]: string };
 
 export type V1AlertSpecQueryForAttributes = { [key: string]: any };
+
+export type V1AlertSpecResolverProperties = { [key: string]: any };
 
 export interface V1AlertSpec {
   trigger?: boolean;
@@ -2071,8 +2064,8 @@ export interface V1AlertSpec {
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
-  queryName?: string;
-  queryArgsJson?: string;
+  resolver?: string;
+  resolverProperties?: V1AlertSpecResolverProperties;
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
@@ -2092,6 +2085,15 @@ export interface V1AlertExecution {
   executionTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1AlertState {
+  specHash?: string;
+  refsHash?: string;
+  nextRunOn?: string;
+  currentExecution?: V1AlertExecution;
+  executionHistory?: V1AlertExecution[];
+  executionCount?: number;
 }
 
 export interface V1Alert {

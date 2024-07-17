@@ -3009,10 +3009,10 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      queryName:
+      resolver:
         type: string
-      queryArgsJson:
-        type: string
+      resolverProperties:
+        type: object
       queryForUserId:
         type: string
       queryForUserEmail:

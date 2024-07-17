@@ -115,7 +115,7 @@
 {#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog && $scheduledReportsQueryArgs}
   <svelte:component
     this={CreateScheduledReportDialog}
-    queryName="MetricsViewComparison"
+    queryName="MetricsViewAggregation"
     queryArgs={$scheduledReportsQueryArgs}
     {metricsViewProto}
     open={showScheduledReportDialog}

@@ -3229,10 +3229,16 @@ definitions:
         type: string
       intervalDuration:
         type: string
+      resolver:
+        type: string
+      resolverProperties:
+        type: object
       queryName:
         type: string
+        description: 'DEPRECATED: Use resolver and resolver_properties instead.'
       queryArgsJson:
         type: string
+        description: 'DEPRECATED: Use resolver and resolver_properties instead.'
       metricsViewName:
         type: string
       renotify:

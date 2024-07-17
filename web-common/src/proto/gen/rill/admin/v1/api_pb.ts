@@ -11533,11 +11533,25 @@ export class AlertOptions extends Message<AlertOptions> {
   intervalDuration = "";
 
   /**
+   * @generated from field: string resolver = 13;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 14;
+   */
+  resolverProperties?: Struct;
+
+  /**
+   * DEPRECATED: Use resolver and resolver_properties instead.
+   *
    * @generated from field: string query_name = 3;
    */
   queryName = "";
 
   /**
+   * DEPRECATED: Use resolver and resolver_properties instead.
+   *
    * @generated from field: string query_args_json = 4;
    */
   queryArgsJson = "";
@@ -11594,6 +11608,8 @@ export class AlertOptions extends Message<AlertOptions> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
