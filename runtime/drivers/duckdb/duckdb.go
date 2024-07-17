@@ -320,7 +320,7 @@ func (c *connection) Ping(ctx context.Context) error {
 		return err
 	}
 	err = conn.PingContext(ctx)
-	rel()
+	_ = rel()
 	c.connTimesMu.Lock()
 	defer c.connTimesMu.Unlock()
 	return errors.Join(err, c.hangingConnErr)
