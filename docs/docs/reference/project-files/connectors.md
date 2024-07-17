@@ -58,7 +58,7 @@ host: "localhost"
 port: "9000"
 ```
 
-_Example #2: Connecting to a ClickHouse Cloud _
+_Example #2: Connecting to a ClickHouse Cloud_
 ```yaml
 type: connector
 driver: clickhouse

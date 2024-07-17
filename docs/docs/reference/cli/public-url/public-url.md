@@ -1,10 +1,10 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill share-url
+title: rill public-url
 ---
-## rill share-url
+## rill public-url
 
-Manage shareable URLs
+Manage public URLs
 
 ### Flags
 
@@ -24,7 +24,7 @@ Manage shareable URLs
 ### SEE ALSO
 
 * [rill](../cli.md)	 - Rill CLI
-* [rill share-url create](create.md)	 - Create a shareable URL
-* [rill share-url delete](delete.md)	 - Delete a shareable URL
-* [rill share-url list](list.md)	 - List all shareable URLs
+* [rill public-url create](create.md)	 - Create a public URL
+* [rill public-url delete](delete.md)	 - Delete a public URL
+* [rill public-url list](list.md)	 - List all public URLs
 

@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill share-url create
+title: rill public-url create
 ---
-## rill share-url create
+## rill public-url create
 
-Create a shareable URL
+Create a public URL
 
 ```
-rill share-url create [<project-name>] <metrics view> [flags]
+rill public-url create [<project-name>] <metrics view> [flags]
 ```
 
 ### Flags
@@ -32,5 +32,5 @@ rill share-url create [<project-name>] <metrics view> [flags]
 
 ### SEE ALSO
 
-* [rill share-url](share-url.md)	 - Manage shareable URLs
+* [rill public-url](public-url.md)	 - Manage public URLs
 

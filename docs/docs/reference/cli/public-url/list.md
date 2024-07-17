@@ -1,13 +1,13 @@
 ---
 note: GENERATED. DO NOT EDIT.
-title: rill share-url list
+title: rill public-url list
 ---
-## rill share-url list
+## rill public-url list
 
-List all shareable URLs
+List all public URLs
 
 ```
-rill share-url list [<project-name>] [flags]
+rill public-url list [<project-name>] [flags]
 ```
 
 ### Flags
@@ -31,5 +31,5 @@ rill share-url list [<project-name>] [flags]
 
 ### SEE ALSO
 
-* [rill share-url](share-url.md)	 - Manage shareable URLs
+* [rill public-url](public-url.md)	 - Manage public URLs
 

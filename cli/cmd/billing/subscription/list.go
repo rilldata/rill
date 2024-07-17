@@ -34,7 +34,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			resp, err := client.GetOrganizationBillingSubscription(cmd.Context(), &adminv1.GetOrganizationBillingSubscriptionRequest{
+			resp, err := client.GetBillingSubscription(cmd.Context(), &adminv1.GetBillingSubscriptionRequest{
 				OrgName: orgName,
 			})
 			if err != nil {

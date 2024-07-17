@@ -1,4 +1,4 @@
-package shareurl
+package publicurl
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -13,7 +13,7 @@ func ListCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	listCmd := &cobra.Command{
 		Use:   "list [<project-name>]",
-		Short: "List all shareable URLs",
+		Short: "List all public URLs",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()
 			if err != nil {

@@ -115,11 +115,11 @@ func (r *rowIterator) Next(ctx context.Context) ([]sqldriver.Value, error) {
 	}
 
 	for i := range r.schema.Fields {
-		mapper := r.fieldMappers[i]
 		if vals[i] == nil {
 			r.row[i] = nil
 			continue
 		}
+		mapper := r.fieldMappers[i]
 		r.row[i], err = mapper.value(vals[i])
 		if err != nil {
 			return nil, err
