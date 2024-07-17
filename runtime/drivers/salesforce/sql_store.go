@@ -12,13 +12,15 @@ import (
 
 const defaultClientID = "3MVG9KsVczVNcM8y6w3Kjszy.DW9gMzcYDHT97WIX3NYNYA35UvITypEhtYc6FDY8qqcDEIQc_qJgZErv6Q_d"
 
-// Query implements drivers.SQLStore
-func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
+var _ drivers.Warehouse = &connection{}
+
+// Export implements drivers.Warehouse.
+func (c *connection) Export(ctx context.Context, props map[string]any, store drivers.ObjectStore, outputLocation string) (*drivers.ExportResult, error) {
 	return nil, drivers.ErrNotImplemented
 }
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err

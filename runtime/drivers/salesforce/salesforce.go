@@ -115,7 +115,7 @@ var spec = drivers.Spec{
 			Hint:        "Either set this or pass --var connector.salesforce.client_id=... to rill start",
 		},
 	},
-	ImplementsSQLStore: true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}
@@ -235,12 +235,12 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 
 // AsWarehouse implements drivers.Handle.
 func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.
