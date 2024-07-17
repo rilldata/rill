@@ -26,7 +26,7 @@ func ManagerTokenCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.Printf("Token: %s\n", res.Token)
+			ch.Printf("%s\n", res.Token)
 			return nil
 		},
 	}
