@@ -47,6 +47,7 @@ func (c *connection) Export(ctx context.Context, props map[string]any, store dri
 		return nil, err
 	}
 
+	//nolint:g201
 	query := fmt.Sprintf(`
 	COPY INTO '%s'
 		FROM (%s) 
