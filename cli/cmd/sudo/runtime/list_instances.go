@@ -48,7 +48,7 @@ func ListInstancesCmd(ch *cmdutil.Helper) *cobra.Command {
 				PageToken: pageToken,
 			})
 			if err != nil {
-				return fmt.Errorf("failed to delete instance: %w", err)
+				return fmt.Errorf("failed to list instances: %w", err)
 			}
 
 			// Pretty print as JSON
