@@ -58,7 +58,7 @@ func (w *Worker) deploymentsHealthCheck(ctx context.Context) error {
 }
 
 func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployment) error {
-	client, err := w.admin.OpenRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
+	client, err := w.admin.OpenRuntimeClient(d)
 	if err != nil {
 		w.logger.Error("deployment health check: failed to open runtime client", zap.String("host", d.RuntimeHost), zap.Error(err))
 		return nil
