@@ -18,7 +18,6 @@ import (
 	"github.com/rilldata/rill/runtime/server/auth"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 type createDeploymentOptions struct {
@@ -67,7 +66,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		ProvisionID:    provisionID,
 		RuntimeVersion: runtimeVersion,
 		Slots:          opts.ProdSlots,
-		Annotations:    opts.Annotations.toMap(),
+		Annotations:    opts.Annotations.ToMap(),
 	})
 	if err != nil {
 		s.Logger.Error("provisioner: failed provisioning", zap.String("project_id", opts.ProjectID), zap.String("provisioner", opts.Provisioner), zap.String("provision_id", provisionID), zap.Error(err), observability.ZapCtx(ctx))
@@ -138,7 +137,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	}
 
 	// Open a runtime client
-	rt, err := s.OpenRuntimeClient(alloc.Host, alloc.Audience)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		err2 := p.Deprovision(ctx, provisionID)
 		err3 := s.DB.DeleteDeployment(ctx, depl.ID)
@@ -178,7 +177,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 		AiConnector:    "admin",
 		Connectors:     connectors,
 		Variables:      opts.ProdVariables,
-		Annotations:    opts.Annotations.toMap(),
+		Annotations:    opts.Annotations.ToMap(),
 		EmbedCatalog:   false,
 	})
 	if err != nil {
@@ -241,7 +240,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 		}
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return err
 	}
@@ -273,7 +272,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 	_, err = rt.EditInstance(ctx, &runtimev1.EditInstanceRequest{
 		InstanceId:  depl.RuntimeInstanceID,
 		Connectors:  connectors,
-		Annotations: opts.Annotations.toMap(),
+		Annotations: opts.Annotations.ToMap(),
 		Variables:   opts.Variables,
 	})
 	if err != nil {
@@ -322,6 +321,10 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			continue
 		}
 
+		if proj.ProdDeploymentID != nil && *proj.ProdDeploymentID != depl.ID {
+			continue
+		}
+
 		// Update prod deployment on project
 		_, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
 			Name:                 proj.Name,
@@ -349,24 +352,6 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) OpenRuntimeClient(host, audience string) (*client.Client, error) {
-	jwt, err := s.issuer.NewToken(auth.TokenOptions{
-		AudienceURL:       audience,
-		TTL:               time.Hour,
-		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	rt, err := client.New(host, jwt)
-	if err != nil {
-		return nil, err
-	}
-
-	return rt, nil
-}
-
 func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deployment) error {
 	// Delete the deployment
 	err := s.DB.DeleteDeployment(ctx, depl.ID)
@@ -375,7 +360,7 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 	}
 
 	// Connect to the deployment's runtime and delete the instance
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 	} else {
@@ -400,29 +385,6 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 	}
 
 	return nil
-}
-
-func (s *Service) openRuntimeClientForDeployment(d *database.Deployment) (*client.Client, error) {
-	return s.OpenRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
-}
-
-type DeploymentAnnotations struct {
-	orgID           string
-	orgName         string
-	projID          string
-	projName        string
-	projAnnotations map[string]string
-	// Also update MarshalLogObject when adding new fields
-}
-
-func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
-	return DeploymentAnnotations{
-		orgID:           org.ID,
-		orgName:         org.Name,
-		projID:          proj.ID,
-		projName:        proj.Name,
-		projAnnotations: proj.Annotations,
-	}
 }
 
 func (s *Service) ResolveLatestRuntimeVersion() string {
@@ -454,7 +416,53 @@ func (s *Service) ValidateRuntimeVersion(ver string) error {
 	return nil
 }
 
-func (da *DeploymentAnnotations) toMap() map[string]string {
+func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
+	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)
+	if err != nil {
+		return nil, err
+	}
+
+	rt, err := client.New(depl.RuntimeHost, jwt)
+	if err != nil {
+		return nil, err
+	}
+
+	return rt, nil
+}
+
+func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
+	jwt, err := s.issuer.NewToken(auth.TokenOptions{
+		AudienceURL:       aud,
+		Subject:           "admin-service",
+		TTL:               time.Hour,
+		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return jwt, nil
+}
+
+func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
+	return DeploymentAnnotations{
+		orgID:           org.ID,
+		orgName:         org.Name,
+		projID:          proj.ID,
+		projName:        proj.Name,
+		projAnnotations: proj.Annotations,
+	}
+}
+
+type DeploymentAnnotations struct {
+	orgID           string
+	orgName         string
+	projID          string
+	projName        string
+	projAnnotations map[string]string
+}
+
+func (da *DeploymentAnnotations) ToMap() map[string]string {
 	res := make(map[string]string, len(da.projAnnotations)+4)
 	for k, v := range da.projAnnotations {
 		res[k] = v
@@ -464,15 +472,4 @@ func (da *DeploymentAnnotations) toMap() map[string]string {
 	res["project_id"] = da.projID
 	res["project_name"] = da.projName
 	return res
-}
-
-func (da *DeploymentAnnotations) MarshalLogObject(enc zapcore.ObjectEncoder) error {
-	enc.AddString("org_id", da.orgID)
-	enc.AddString("org_name", da.orgName)
-	enc.AddString("project_id", da.projID)
-	enc.AddString("project_name", da.projName)
-	for k, v := range da.projAnnotations {
-		enc.AddString(k, v)
-	}
-	return nil
 }

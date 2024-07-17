@@ -1,4 +1,4 @@
-package shareurl
+package publicurl
 
 import (
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -9,7 +9,7 @@ import (
 func DeleteCmd(ch *cmdutil.Helper) *cobra.Command {
 	deleteCmd := &cobra.Command{
 		Use:   "delete <id>",
-		Short: "Delete a shareable URL",
+		Short: "Delete a public URL",
 		Args:  cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
 			client, err := ch.Client()

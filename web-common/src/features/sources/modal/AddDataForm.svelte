@@ -100,7 +100,7 @@
     {/if}
 
     {#each properties as property (property.key)}
-      {#if property.key !== undefined && (isSourceForm || property.prompt)}
+      {#if property.key !== undefined && !property.noPrompt}
         {@const label =
           property.displayName + (property.required ? "" : " (optional)")}
         <div class="py-1.5">

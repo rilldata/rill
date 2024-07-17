@@ -2620,9 +2620,6 @@ definitions:
       type:
         $ref: '#/definitions/ConnectorDriverPropertyType'
         title: The type expected for this property
-      prompt:
-        type: boolean
-        title: If true, the property should be displayed in the UI
       required:
         type: boolean
         title: Required is true if the field must be set
@@ -2647,6 +2644,9 @@ definitions:
       secret:
         type: boolean
         title: If true, the property is a secret and should not be displayed in UIs
+      noPrompt:
+        type: boolean
+        title: If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
     title: Property represents the spec of one of the driver's config properties
   ConnectorDriverPropertyType:
     type: string
@@ -2955,6 +2955,14 @@ definitions:
         type: string
       resolverProperties:
         type: object
+      openapiSummary:
+        type: string
+      openapiParameters:
+        type: array
+        items:
+          type: object
+      openapiResponseSchema:
+        type: object
   v1APIState:
     type: object
   v1Alert:
@@ -3004,10 +3012,10 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      queryName:
+      resolver:
         type: string
-      queryArgsJson:
-        type: string
+      resolverProperties:
+        type: object
       queryForUserId:
         type: string
       queryForUserEmail:

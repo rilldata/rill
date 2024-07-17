@@ -661,24 +661,24 @@ message ConnectorDriver {
     string key = 1;
     // The type expected for this property
     Type type = 2;
-    // If true, the property should be displayed in the UI
-    bool prompt = 3;
     // Required is true if the field must be set
-    bool required = 4;
+    bool required = 3;
     // Pretty name for the property
-    string display_name = 5;
+    string display_name = 4;
     // Human readable description of the field
-    string description = 6;
+    string description = 5;
     // Link to documentation for this property
-    string docs_url = 7;
+    string docs_url = 6;
     // Additional textual explanation for use in UIs
-    string hint = 8;
+    string hint = 7;
     // Default value for the property
-    string default = 9;
+    string default = 8;
     // Placeholder value for use in UIs
-    string placeholder = 10;
+    string placeholder = 9;
     // If true, the property is a secret and should not be displayed in UIs
-    bool secret = 11;
+    bool secret = 10;
+    // If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+    bool no_prompt = 11;
   }
   // Name is the name of the connector
   string name = 1;

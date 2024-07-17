@@ -28,7 +28,7 @@ Select + Add -> Data -> Connect an OLAP engine
 
 :::tip A note on OLAP engines
 
-You can have multiple OLAP engines in a single project and have each dashboard run on a different engine using the olap_connector parameter directly on a dashboard.
+You can have multiple OLAP engines in a single project and have each dashboard run on a different engine using the `connector` parameter directly on a dashboard.
 
 :::
 
@@ -48,7 +48,7 @@ You can also connect using a dsn parameter. You cannot use the above parameters 
 **`dsn`** - connection string containing all the details above, in a single string. Note that each engine's syntax is slightly different. Please refer to [our documentation](https://docs.rilldata.com/reference/olap-engines/) for further details.
 
 ---
-
+ 
 _Example #1: Connecting to a local running Clickhouse server (no security enabled)_
 ```yaml
 type: connector
@@ -58,7 +58,7 @@ host: "localhost"
 port: "9000"
 ```
 
-_Example #2: Connecting to a ClickHouse Cloud _
+_Example #2: Connecting to a ClickHouse Cloud_
 ```yaml
 type: connector
 driver: clickhouse
