@@ -55,12 +55,12 @@
       >Github</span
     >
     <div class="flex items-start gap-x-1">
-      <div class="py-0.5">
+      <div class="py-0.5 mt-1">
         <Github className="w-4 h-4" />
       </div>
       <div class="flex flex-col">
         {#if isGithubConnected}
-          <div class="flex flex-row items-center">
+          <div class="flex flex-row gap-x-1 items-center">
             <a
               href={$proj.data?.project?.githubUrl}
               class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"

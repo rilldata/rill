@@ -1,5 +1,9 @@
 <script lang="ts">
-  import { createAdminServiceUpdateProject } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceGetProject,
+    createAdminServiceUpdateProject,
+    getAdminServiceGetGithubUserStatusQueryKey,
+  } from "@rilldata/web-admin/client";
   import { GithubRepoUpdater } from "@rilldata/web-admin/features/projects/github/GithubRepoUpdater";
   import {
     AlertDialog,
@@ -15,6 +19,9 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { invalidateRuntimeQueries } from "@rilldata/web-common/runtime-client/invalidation";
   import type { AxiosError } from "axios";
 
   export let open = false;
@@ -25,6 +32,7 @@
   const githubRepoUpdater = new GithubRepoUpdater();
   const githubRepos = githubRepoUpdater.userRepos;
   const status = githubRepoUpdater.status;
+  const projectQuery = createAdminServiceGetProject(organization, project);
 
   $: repoSelections =
     $githubRepos.data?.repos?.map((r) => ({
@@ -41,6 +49,17 @@
         githubUrl,
       },
     });
+    eventBus.emit("notification", {
+      message: `Set github repo to ${githubUrl}`,
+      type: "success",
+    });
+    void queryClient.refetchQueries(
+      getAdminServiceGetGithubUserStatusQueryKey(),
+    );
+    void invalidateRuntimeQueries(
+      queryClient,
+      $projectQuery.data.prodDeployment.runtimeInstanceId,
+    );
     open = false;
   }
 
