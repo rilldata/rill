@@ -22,27 +22,29 @@
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
 
-  let editingInput = "";
+  // used to add temporary data on submit
+  export let input = "";
+
   let focused = false;
   function handleKeyDown(event: KeyboardEvent) {
     if (
       (event.key !== "Enter" && (!useTab || event.key !== "Tab")) ||
-      editingInput === ""
+      input === ""
     ) {
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
-    values = values.concat(...editingInput.split(","));
-    editingInput = "";
+    values = values.concat(...input.split(",").map((v) => v.trim()));
+    input = "";
   }
 
   function handleRemove(index: number) {
     values = values.filter((_, i) => i !== index);
   }
 
-  $: hasSomeValue = editingInput.length > 0 || values.length > 0;
+  $: hasSomeValue = input.length > 0 || values.length > 0;
   $: errorIndex = values.findIndex((_, i) => !!errors?.[i]?.length);
   $: hasSomeErrors = errorIndex >= 0;
 </script>
@@ -92,7 +94,7 @@
           </div>
         {/each}
         <input
-          bind:value={editingInput}
+          bind:value={input}
           on:keydown={handleKeyDown}
           autocomplete="off"
           id="{id}.{values.length}"
