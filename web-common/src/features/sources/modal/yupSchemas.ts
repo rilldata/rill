@@ -165,7 +165,13 @@ export function getYupSchema(connector: V1ConnectorDriver) {
 
     case "clickhouse":
       return yup.object().shape({
-        host: yup.string().required("Host is required"),
+        host: yup
+          .string()
+          .required("Host is required")
+          .matches(
+            /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+            "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+          ),
         port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
@@ -179,7 +185,13 @@ export function getYupSchema(connector: V1ConnectorDriver) {
 
     case "druid":
       return yup.object().shape({
-        host: yup.string().required("Host is required"),
+        host: yup
+          .string()
+          .required("Host is required")
+          .matches(
+            /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+            "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+          ),
         port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
@@ -193,7 +205,13 @@ export function getYupSchema(connector: V1ConnectorDriver) {
 
     case "pinot":
       return yup.object().shape({
-        host: yup.string().required("Host is required"),
+        host: yup
+          .string()
+          .required("Host is required")
+          .matches(
+            /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+            "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+          ),
         port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
