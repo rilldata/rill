@@ -12,7 +12,8 @@ func RuntimeCmd(ch *cmdutil.Helper) *cobra.Command {
 	}
 
 	cmd.AddCommand(ManagerTokenCmd(ch))
-	cmd.AddCommand(InstanceDeleteCmd(ch))
+	cmd.AddCommand(ListInstancesCmd(ch))
+	cmd.AddCommand(DeleteInstanceCmd(ch))
 
 	return cmd
 }

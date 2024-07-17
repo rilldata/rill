@@ -8,18 +8,20 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	runtimeclient "github.com/rilldata/rill/runtime/client"
 	"github.com/spf13/cobra"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
-func DeleteInstanceCmd(ch *cmdutil.Helper) *cobra.Command {
+func ListInstancesCmd(ch *cmdutil.Helper) *cobra.Command {
+	var pageSize uint32
+	var pageToken string
+
 	cmd := &cobra.Command{
-		Use:   "delete-instance <host> <instance_id>",
-		Args:  cobra.ExactArgs(2),
-		Short: "Forcefully deletes an instance on a runtime",
-		Long:  "Forcefully deletes an instance on a runtime. Should only be used to clean up orphaned instances. Use `sudo project hibernate` or `project delete` to tear down healthy deployments.",
+		Use:   "list-instances <host>",
+		Args:  cobra.ExactArgs(1),
+		Short: "Lists full details about the instances on a runtime",
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Parse args
 			host := args[0]
-			instanceID := args[1]
 
 			// Obtain a manager token for the hosst
 			client, err := ch.Client()
@@ -40,15 +42,32 @@ func DeleteInstanceCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("failed to connect to runtime: %w", err)
 			}
 
-			// Delete the instance
-			_, err = rt.DeleteInstance(cmd.Context(), &runtimev1.DeleteInstanceRequest{InstanceId: instanceID})
+			// List instances
+			res, err := rt.ListInstances(cmd.Context(), &runtimev1.ListInstancesRequest{
+				PageSize:  pageSize,
+				PageToken: pageToken,
+			})
 			if err != nil {
 				return fmt.Errorf("failed to delete instance: %w", err)
 			}
 
+			// Pretty print as JSON
+			enc := protojson.MarshalOptions{
+				Multiline:       true,
+				EmitUnpopulated: true,
+			}
+			data, err := enc.Marshal(res)
+			if err != nil {
+				return fmt.Errorf("failed to marshal as JSON: %w", err)
+			}
+			fmt.Println(string(data))
+
 			return nil
 		},
 	}
+
+	cmd.Flags().Uint32Var(&pageSize, "page-size", 100, "Number of instances per page")
+	cmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
 	return cmd
 }
