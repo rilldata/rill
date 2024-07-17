@@ -3937,6 +3937,80 @@ export class SudoUpdateAnnotationsResponse extends Message<SudoUpdateAnnotations
 }
 
 /**
+ * @generated from message rill.admin.v1.SudoIssueRuntimeManagerTokenRequest
+ */
+export class SudoIssueRuntimeManagerTokenRequest extends Message<SudoIssueRuntimeManagerTokenRequest> {
+  /**
+   * @generated from field: string host = 1;
+   */
+  host = "";
+
+  constructor(data?: PartialMessage<SudoIssueRuntimeManagerTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoIssueRuntimeManagerTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoIssueRuntimeManagerTokenRequest {
+    return new SudoIssueRuntimeManagerTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoIssueRuntimeManagerTokenRequest {
+    return new SudoIssueRuntimeManagerTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoIssueRuntimeManagerTokenRequest {
+    return new SudoIssueRuntimeManagerTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoIssueRuntimeManagerTokenRequest | PlainMessage<SudoIssueRuntimeManagerTokenRequest> | undefined, b: SudoIssueRuntimeManagerTokenRequest | PlainMessage<SudoIssueRuntimeManagerTokenRequest> | undefined): boolean {
+    return proto3.util.equals(SudoIssueRuntimeManagerTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoIssueRuntimeManagerTokenResponse
+ */
+export class SudoIssueRuntimeManagerTokenResponse extends Message<SudoIssueRuntimeManagerTokenResponse> {
+  /**
+   * @generated from field: string token = 1;
+   */
+  token = "";
+
+  constructor(data?: PartialMessage<SudoIssueRuntimeManagerTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoIssueRuntimeManagerTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoIssueRuntimeManagerTokenResponse {
+    return new SudoIssueRuntimeManagerTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoIssueRuntimeManagerTokenResponse {
+    return new SudoIssueRuntimeManagerTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoIssueRuntimeManagerTokenResponse {
+    return new SudoIssueRuntimeManagerTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoIssueRuntimeManagerTokenResponse | PlainMessage<SudoIssueRuntimeManagerTokenResponse> | undefined, b: SudoIssueRuntimeManagerTokenResponse | PlainMessage<SudoIssueRuntimeManagerTokenResponse> | undefined): boolean {
+    return proto3.util.equals(SudoIssueRuntimeManagerTokenResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.ListProjectMemberUsersRequest
  */
 export class ListProjectMemberUsersRequest extends Message<ListProjectMemberUsersRequest> {

@@ -89,6 +89,7 @@ const (
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName          = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
 	AdminService_SudoUpdateAnnotations_FullMethodName                 = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
+	AdminService_SudoIssueRuntimeManagerToken_FullMethodName          = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
 	AdminService_ListProjectWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
@@ -273,6 +274,8 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
+	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+	SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error)
 	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -1055,6 +1058,16 @@ func (c *adminServiceClient) SudoUpdateAnnotations(ctx context.Context, in *Sudo
 	return out, nil
 }
 
+func (c *adminServiceClient) SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoIssueRuntimeManagerTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoIssueRuntimeManagerToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateProjectWhitelistedDomainResponse)
@@ -1561,6 +1574,8 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
+	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+	SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error)
 	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -1849,6 +1864,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(con
 }
 func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateAnnotations not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoIssueRuntimeManagerToken not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProjectWhitelistedDomain not implemented")
@@ -3231,6 +3249,24 @@ func _AdminService_SudoUpdateAnnotations_Handler(srv interface{}, ctx context.Co
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_SudoIssueRuntimeManagerToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoIssueRuntimeManagerTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoIssueRuntimeManagerToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoIssueRuntimeManagerToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoIssueRuntimeManagerToken(ctx, req.(*SudoIssueRuntimeManagerTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_CreateProjectWhitelistedDomain_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateProjectWhitelistedDomainRequest)
 	if err := dec(in); err != nil {
@@ -4165,6 +4201,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateAnnotations",
 			Handler:    _AdminService_SudoUpdateAnnotations_Handler,
+		},
+		{
+			MethodName: "SudoIssueRuntimeManagerToken",
+			Handler:    _AdminService_SudoIssueRuntimeManagerToken_Handler,
 		},
 		{
 			MethodName: "CreateProjectWhitelistedDomain",

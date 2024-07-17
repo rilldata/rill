@@ -434,11 +434,6 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -456,6 +451,14 @@ export interface V1SudoUpdateAnnotationsRequest {
   organization?: string;
   project?: string;
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenResponse {
+  token?: string;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenRequest {
+  host?: string;
 }
 
 export interface V1SudoGetResourceResponse {
@@ -476,6 +479,11 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
