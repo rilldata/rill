@@ -6,7 +6,6 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime"
-	"github.com/rilldata/rill/runtime/server/auth"
 )
 
 func init() {
@@ -62,10 +61,11 @@ func newAPI(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, fmt.Errorf("no resolver found of type %q", api.Spec.Resolver)
 	}
 	return initializer(ctx, &runtime.ResolverOptions{
-		Runtime:        opts.Runtime,
-		InstanceID:     opts.InstanceID,
-		Properties:     api.Spec.ResolverProperties.AsMap(),
-		Args:           opts.Args,
-		UserAttributes: auth.GetClaims(ctx).Attributes(),
+		Runtime:    opts.Runtime,
+		InstanceID: opts.InstanceID,
+		Properties: api.Spec.ResolverProperties.AsMap(),
+		Args:       opts.Args,
+		Claims:     opts.Claims,
+		ForExport:  opts.ForExport,
 	})
 }

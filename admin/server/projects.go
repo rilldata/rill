@@ -15,6 +15,7 @@ import (
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
+	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/pkg/duckdbsql"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -146,12 +147,14 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 	}
 
 	var attr map[string]any
-	var security *runtimev1.MetricsViewSpec_SecurityV2
+	var rules []*runtimev1.SecurityRule
 	if claims.OwnerType() == auth.OwnerTypeUser {
 		attr, err = s.jwtAttributesForUser(ctx, claims.OwnerID(), proj.OrganizationID, permissions)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	} else if claims.OwnerType() == auth.OwnerTypeService {
+		attr = map[string]any{"admin": true}
 	} else if claims.OwnerType() == auth.OwnerTypeMagicAuthToken {
 		mdl, ok := claims.AuthTokenModel().(*database.MagicAuthToken)
 		if !ok {
@@ -160,21 +163,45 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 
 		attr = mdl.Attributes
 
-		security = &runtimev1.MetricsViewSpec_SecurityV2{
-			Access: fmt.Sprintf("'{{ .self.name }}'=%s", duckdbsql.EscapeStringValue(mdl.MetricsView)),
-		}
+		// Deny access to all resources except themes and mdl.MetricsView
+		rules = append(rules, &runtimev1.SecurityRule{
+			Rule: &runtimev1.SecurityRule_Access{
+				Access: &runtimev1.SecurityRuleAccess{
+					Condition: fmt.Sprintf(
+						"NOT ('{{.self.kind}}'='%s' OR '{{.self.kind}}'='%s' AND '{{ lower .self.name }}'=%s)",
+						runtime.ResourceKindTheme,
+						runtime.ResourceKindMetricsView,
+						duckdbsql.EscapeStringValue(strings.ToLower(mdl.MetricsView)),
+					),
+					Allow: false,
+				},
+			},
+		})
+
 		if mdl.MetricsViewFilterJSON != "" {
 			expr := &runtimev1.Expression{}
 			err := protojson.Unmarshal([]byte(mdl.MetricsViewFilterJSON), expr)
 			if err != nil {
 				return nil, status.Errorf(codes.Internal, "could not unmarshal metrics view filter: %s", err.Error())
 			}
-			security.QueryFilter = expr
+
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_RowFilter{
+					RowFilter: &runtimev1.SecurityRuleRowFilter{
+						Expression: expr,
+					},
+				},
+			})
 		}
+
 		if len(mdl.MetricsViewFields) > 0 {
-			security.Include = append(security.Include, &runtimev1.MetricsViewSpec_SecurityV2_FieldConditionV2{
-				Condition: "true",
-				Names:     mdl.MetricsViewFields,
+			rules = append(rules, &runtimev1.SecurityRule{
+				Rule: &runtimev1.SecurityRule_FieldAccess{
+					FieldAccess: &runtimev1.SecurityRuleFieldAccess{
+						Fields: mdl.MetricsViewFields,
+						Allow:  true,
+					},
+				},
 			})
 		}
 	}
@@ -198,8 +225,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 				runtimeauth.ReadAPI,
 			},
 		},
-		Attributes: attr,
-		Security:   security,
+		Attributes:    attr,
+		SecurityRules: rules,
 	})
 	if err != nil {
 		return nil, status.Errorf(codes.Internal, "could not issue jwt: %s", err.Error())
@@ -212,6 +239,32 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		ProdDeployment:     deploymentToDTO(depl),
 		Jwt:                jwt,
 		ProjectPermissions: permissions,
+	}, nil
+}
+
+func (s *Server) GetProjectByID(ctx context.Context, req *adminv1.GetProjectByIDRequest) (*adminv1.GetProjectByIDResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.project_id", req.Id),
+	)
+
+	proj, err := s.admin.DB.FindProject(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	permissions := claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID)
+	if !permissions.ReadProject && !proj.Public && !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to read project")
+	}
+
+	return &adminv1.GetProjectByIDResponse{
+		Project: s.projToDTO(proj, org.Name),
 	}, nil
 }
 
@@ -275,14 +328,8 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		attribute.String("args.sub_path", req.Subpath),
 		attribute.String("args.prod_branch", req.ProdBranch),
 		attribute.String("args.github_url", req.GithubUrl),
+		attribute.String("args.archive_asset_id", req.ArchiveAssetId),
 	)
-
-	// Check the request is made by a user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
-	}
-	userID := claims.OwnerID()
 
 	// Find parent org
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
@@ -291,6 +338,7 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 	}
 
 	// Check permissions
+	claims := auth.GetClaims(ctx)
 	if !claims.OrganizationPermissions(ctx, org.ID).CreateProjects {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to create projects")
 	}
@@ -321,12 +369,6 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: org %q is limited to %d total slots", org.Name, org.QuotaSlotsTotal)
 	}
 
-	// Check Github app is installed and caller has access on the repo
-	installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, userID)
-	if err != nil {
-		return nil, err
-	}
-
 	// Add prod TTL as 7 days if not a public project else infinite
 	var prodTTL *int64
 	if !req.Public {
@@ -339,25 +381,55 @@ func (s *Server) CreateProject(ctx context.Context, req *adminv1.CreateProjectRe
 		req.ProdVersion = "latest"
 	}
 
+	// Capture creating user (can be nil if created with a service token)
+	var userID *string
+	if claims.OwnerType() == auth.OwnerTypeUser {
+		tmp := claims.OwnerID()
+		userID = &tmp
+	}
+
+	opts := &database.InsertProjectOptions{
+		OrganizationID:  org.ID,
+		Name:            req.Name,
+		Description:     req.Description,
+		Public:          req.Public,
+		CreatedByUserID: userID,
+		Provisioner:     req.Provisioner,
+		ProdVersion:     req.ProdVersion,
+		ProdOLAPDriver:  req.ProdOlapDriver,
+		ProdOLAPDSN:     req.ProdOlapDsn,
+		ProdSlots:       int(req.ProdSlots),
+		ProdVariables:   req.Variables,
+		ProdTTLSeconds:  prodTTL,
+	}
+
+	if req.GithubUrl != "" {
+		// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
+		if userID == nil {
+			return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+		}
+
+		// Check Github app is installed and caller has access on the repo
+		installationID, err := s.getAndCheckGithubInstallationID(ctx, req.GithubUrl, *userID)
+		if err != nil {
+			return nil, err
+		}
+		opts.GithubInstallationID = &installationID
+		opts.GithubURL = &req.GithubUrl
+		opts.ProdBranch = req.ProdBranch
+		opts.Subpath = req.Subpath
+	} else {
+		if req.ArchiveAssetId == "" {
+			return nil, status.Error(codes.InvalidArgument, "either github_url or archive_asset_id must be set")
+		}
+		if !s.hasAssetUsagePermission(ctx, req.ArchiveAssetId, org.ID, claims.OwnerID()) {
+			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
+		}
+		opts.ArchiveAssetID = &req.ArchiveAssetId
+	}
+
 	// Create the project
-	proj, err := s.admin.CreateProject(ctx, org, &database.InsertProjectOptions{
-		OrganizationID:       org.ID,
-		Name:                 req.Name,
-		Description:          req.Description,
-		Public:               req.Public,
-		CreatedByUserID:      &userID,
-		Provisioner:          req.Provisioner,
-		ProdVersion:          req.ProdVersion,
-		ProdOLAPDriver:       req.ProdOlapDriver,
-		ProdOLAPDSN:          req.ProdOlapDsn,
-		ProdSlots:            int(req.ProdSlots),
-		Subpath:              req.Subpath,
-		ProdBranch:           req.ProdBranch,
-		GithubURL:            &req.GithubUrl,
-		GithubInstallationID: &installationID,
-		ProdVariables:        req.Variables,
-		ProdTTLSeconds:       prodTTL,
-	})
+	proj, err := s.admin.CreateProject(ctx, org, opts)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -388,7 +460,9 @@ func (s *Server) DeleteProject(ctx context.Context, req *adminv1.DeleteProjectRe
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	return &adminv1.DeleteProjectResponse{}, nil
+	return &adminv1.DeleteProjectResponse{
+		Id: proj.ID,
+	}, nil
 }
 
 func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRequest) (*adminv1.UpdateProjectResponse, error) {
@@ -411,6 +485,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.GithubUrl != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
 	}
+	if req.ArchiveAssetId != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.archive_asset_id", *req.ArchiveAssetId))
+	}
 	if req.Public != nil {
 		observability.AddRequestAttributes(ctx, attribute.Bool("args.public", *req.Public))
 	}
@@ -424,31 +501,46 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
 	}
 
-	// Check the request is made by a user
-	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
-	}
-
 	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.OrganizationName, req.Name)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
+	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
+	if req.GithubUrl != nil && req.ArchiveAssetId != nil {
+		return nil, fmt.Errorf("cannot set both github_url and archive_asset_id")
+	}
 	githubURL := proj.GithubURL
+	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
 		if safeStr(proj.GithubURL) != *req.GithubUrl {
+			// Github projects must be configured by a user so we can ensure that they're allowed to access the repo.
+			if claims.OwnerType() != auth.OwnerTypeUser {
+				return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
+			}
+
 			_, err = s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
 			if err != nil {
 				return nil, err
 			}
 			githubURL = req.GithubUrl
+		}
+		archiveAssetID = nil
+	}
+	if req.ArchiveAssetId != nil {
+		archiveAssetID = req.ArchiveAssetId
+		org, err := s.admin.DB.FindOrganizationByName(ctx, req.OrganizationName)
+		if err != nil {
+			return nil, err
+		}
+		if !s.hasAssetUsagePermission(ctx, *archiveAssetID, org.ID, claims.OwnerID()) {
+			return nil, status.Error(codes.PermissionDenied, "archive_asset_id is not accessible to this org")
 		}
 	}
 
@@ -465,6 +557,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Name:                 valOrDefault(req.NewName, proj.Name),
 		Description:          valOrDefault(req.Description, proj.Description),
 		Public:               valOrDefault(req.Public, proj.Public),
+		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
@@ -511,12 +604,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
-	// Check the request is made by a user
 	claims := auth.GetClaims(ctx)
-	if claims.OwnerType() != auth.OwnerTypeUser {
-		return nil, status.Error(codes.Unauthenticated, "not authenticated")
-	}
-
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project variables")
 	}
@@ -525,6 +613,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
@@ -543,7 +632,7 @@ func (s *Server) UpdateProjectVariables(ctx context.Context, req *adminv1.Update
 	return &adminv1.UpdateProjectVariablesResponse{Variables: proj.ProdVariables}, nil
 }
 
-func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjectMembersRequest) (*adminv1.ListProjectMembersResponse, error) {
+func (s *Server) ListProjectMemberUsers(ctx context.Context, req *adminv1.ListProjectMemberUsersRequest) (*adminv1.ListProjectMemberUsersResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -575,12 +664,12 @@ func (s *Server) ListProjectMembers(ctx context.Context, req *adminv1.ListProjec
 		nextToken = marshalPageToken(members[len(members)-1].Email)
 	}
 
-	dtos := make([]*adminv1.Member, len(members))
+	dtos := make([]*adminv1.MemberUser, len(members))
 	for i, member := range members {
-		dtos[i] = memberToPB(member)
+		dtos[i] = memberUserToPB(member)
 	}
 
-	return &adminv1.ListProjectMembersResponse{
+	return &adminv1.ListProjectMemberUsersResponse{
 		Members:       dtos,
 		NextPageToken: nextToken,
 	}, nil
@@ -630,7 +719,7 @@ func (s *Server) ListProjectInvites(ctx context.Context, req *adminv1.ListProjec
 	}, nil
 }
 
-func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMemberRequest) (*adminv1.AddProjectMemberResponse, error) {
+func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProjectMemberUserRequest) (*adminv1.AddProjectMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -707,7 +796,7 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
-		return &adminv1.AddProjectMemberResponse{
+		return &adminv1.AddProjectMemberUserResponse{
 			PendingSignup: true,
 		}, nil
 	}
@@ -730,12 +819,12 @@ func (s *Server) AddProjectMember(ctx context.Context, req *adminv1.AddProjectMe
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.AddProjectMemberResponse{
+	return &adminv1.AddProjectMemberUserResponse{
 		PendingSignup: false,
 	}, nil
 }
 
-func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemoveProjectMemberRequest) (*adminv1.RemoveProjectMemberResponse, error) {
+func (s *Server) RemoveProjectMemberUser(ctx context.Context, req *adminv1.RemoveProjectMemberUserRequest) (*adminv1.RemoveProjectMemberUserResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -772,7 +861,7 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return &adminv1.RemoveProjectMemberResponse{}, nil
+		return &adminv1.RemoveProjectMemberUserResponse{}, nil
 	}
 
 	// The caller must either have ManageProjectMembers permission or be the user being removed.
@@ -788,10 +877,10 @@ func (s *Server) RemoveProjectMember(ctx context.Context, req *adminv1.RemovePro
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.RemoveProjectMemberResponse{}, nil
+	return &adminv1.RemoveProjectMemberUserResponse{}, nil
 }
 
-func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProjectMemberRoleRequest) (*adminv1.SetProjectMemberRoleResponse, error) {
+func (s *Server) SetProjectMemberUserRole(ctx context.Context, req *adminv1.SetProjectMemberUserRoleRequest) (*adminv1.SetProjectMemberUserRoleResponse, error) {
 	observability.AddRequestAttributes(ctx,
 		attribute.String("args.org", req.Organization),
 		attribute.String("args.project", req.Project),
@@ -830,7 +919,7 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		return &adminv1.SetProjectMemberRoleResponse{}, nil
+		return &adminv1.SetProjectMemberUserRoleResponse{}, nil
 	}
 
 	err = s.admin.DB.UpdateProjectMemberUserRole(ctx, proj.ID, user.ID, role.ID)
@@ -838,7 +927,259 @@ func (s *Server) SetProjectMemberRole(ctx context.Context, req *adminv1.SetProje
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	return &adminv1.SetProjectMemberRoleResponse{}, nil
+	return &adminv1.SetProjectMemberUserRoleResponse{}, nil
+}
+
+func (s *Server) GetCloneCredentials(ctx context.Context, req *adminv1.GetCloneCredentialsRequest) (*adminv1.GetCloneCredentialsResponse, error) {
+	claims := auth.GetClaims(ctx)
+	if !claims.Superuser(ctx) {
+		return nil, status.Error(codes.PermissionDenied, "superuser permission required to get clone credentials")
+	}
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	if proj.ArchiveAssetID != nil {
+		asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		return &adminv1.GetCloneCredentialsResponse{ArchiveDownloadUrl: downloadURL}, nil
+	}
+
+	if proj.GithubURL == nil || proj.GithubInstallationID == nil {
+		return nil, status.Error(codes.FailedPrecondition, "project's repository is not managed by Rill, and it does not have a GitHub integration")
+	}
+
+	token, err := s.admin.Github.InstallationToken(ctx, *proj.GithubInstallationID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	return &adminv1.GetCloneCredentialsResponse{
+		GitRepoUrl:    *proj.GithubURL + ".git", // TODO: Can the clone URL be different from the HTTP URL of a Github repo?
+		GitUsername:   "x-access-token",
+		GitPassword:   token,
+		GitSubpath:    proj.Subpath,
+		GitProdBranch: proj.ProdBranch,
+	}, nil
+}
+
+func (s *Server) RequestProjectAccess(ctx context.Context, req *adminv1.RequestProjectAccessRequest) (*adminv1.RequestProjectAccessResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.org", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ReadProject {
+		return nil, status.Error(codes.InvalidArgument, "already have access to project")
+	}
+
+	if claims.OwnerType() != auth.OwnerTypeUser {
+		return nil, status.Error(codes.InvalidArgument, "only users can request access")
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	existing, err := s.admin.DB.FindProjectAccessRequest(ctx, proj.ID, user.ID)
+	if err != nil && !errors.Is(err, database.ErrNotFound) {
+		return nil, err
+	}
+	if existing != nil {
+		return nil, status.Error(codes.AlreadyExists, "have already requested access to project")
+	}
+
+	accessReq, err := s.admin.DB.InsertProjectAccessRequest(ctx, &database.InsertProjectAccessRequestOptions{
+		UserID:    user.ID,
+		ProjectID: proj.ID,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	admins, err := s.admin.DB.FindOrganizationMembersWithManageUsersRole(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	for _, u := range admins {
+		err = s.admin.Email.SendProjectAccessRequest(&email.ProjectAccessRequest{
+			ToEmail:     u.Email,
+			ToName:      u.DisplayName,
+			Email:       user.Email,
+			OrgName:     org.Name,
+			ProjectName: proj.Name,
+			ApproveLink: s.urls.approveProjectAccess(org.Name, proj.Name, accessReq.ID),
+			DenyLink:    s.urls.denyProjectAccess(org.Name, proj.Name, accessReq.ID),
+		})
+		if err != nil {
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+	}
+
+	return &adminv1.RequestProjectAccessResponse{}, nil
+}
+
+func (s *Server) GetProjectAccessRequest(ctx context.Context, req *adminv1.GetProjectAccessRequestRequest) (*adminv1.GetProjectAccessRequestResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.id", req.Id),
+	)
+
+	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	// for now only admins can view these.
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to view project access request")
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, accessReq.UserID)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	return &adminv1.GetProjectAccessRequestResponse{Email: user.Email}, nil
+}
+
+func (s *Server) ApproveProjectAccess(ctx context.Context, req *adminv1.ApproveProjectAccessRequest) (*adminv1.ApproveProjectAccessResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.id", req.Id),
+	)
+
+	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, accessReq.UserID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	role, err := s.admin.DB.FindProjectRole(ctx, req.Role)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// add the user
+	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// remove the invitation
+	err = s.admin.DB.DeleteProjectAccessRequest(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.Email.SendProjectAccessGranted(&email.ProjectAccessGranted{
+		ToEmail:     user.Email,
+		ToName:      user.DisplayName,
+		FrontendURL: s.opts.FrontendURL,
+		OrgName:     org.Name,
+		ProjectName: proj.Name,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.ApproveProjectAccessResponse{}, nil
+}
+
+func (s *Server) DenyProjectAccess(ctx context.Context, req *adminv1.DenyProjectAccessRequest) (*adminv1.DenyProjectAccessResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.id", req.Id),
+	)
+
+	accessReq, err := s.admin.DB.FindProjectAccessRequestByID(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	proj, err := s.admin.DB.FindProject(ctx, accessReq.ProjectID)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProjectMembers {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to set project member roles")
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, accessReq.UserID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// remove the invitation
+	err = s.admin.DB.DeleteProjectAccessRequest(ctx, req.Id)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	err = s.admin.Email.SendProjectAccessRejected(&email.ProjectAccessRejected{
+		ToEmail:     user.Email,
+		ToName:      user.DisplayName,
+		OrgName:     org.Name,
+		ProjectName: proj.Name,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.DenyProjectAccessResponse{}, nil
 }
 
 // getAndCheckGithubInstallationID returns a valid installation ID iff app is installed and user is a collaborator of the repo
@@ -901,6 +1242,7 @@ func (s *Server) SudoUpdateAnnotations(ctx context.Context, req *adminv1.SudoUpd
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
@@ -1089,6 +1431,33 @@ func (s *Server) ListProjectWhitelistedDomains(ctx context.Context, req *adminv1
 	return &adminv1.ListProjectWhitelistedDomainsResponse{Domains: dtos}, nil
 }
 
+func (s *Server) HibernateProject(ctx context.Context, req *adminv1.HibernateProjectRequest) (*adminv1.HibernateProjectResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+	)
+
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		if errors.Is(err, database.ErrNotFound) {
+			return nil, status.Error(codes.NotFound, "project not found")
+		}
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !(claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject || claims.Superuser(ctx)) {
+		return nil, status.Error(codes.PermissionDenied, "not allowed to manage project")
+	}
+
+	_, err = s.admin.HibernateProject(ctx, proj)
+	if err != nil {
+		return nil, status.Error(codes.Internal, fmt.Errorf("failed to hibernate project: %w", err).Error())
+	}
+
+	return &adminv1.HibernateProjectResponse{}, nil
+}
+
 func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project {
 	frontendURL, _ := url.JoinPath(s.opts.FrontendURL, orgName, p.Name)
 
@@ -1108,6 +1477,7 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		ProdBranch:       p.ProdBranch,
 		Subpath:          p.Subpath,
 		GithubUrl:        safeStr(p.GithubURL),
+		ArchiveAssetId:   safeStr(p.ArchiveAssetID),
 		ProdDeploymentId: safeStr(p.ProdDeploymentID),
 		ProdTtlSeconds:   safeInt64(p.ProdTTLSeconds),
 		FrontendUrl:      frontendURL,
@@ -1115,6 +1485,14 @@ func (s *Server) projToDTO(p *database.Project, orgName string) *adminv1.Project
 		CreatedOn:        timestamppb.New(p.CreatedOn),
 		UpdatedOn:        timestamppb.New(p.UpdatedOn),
 	}
+}
+
+func (s *Server) hasAssetUsagePermission(ctx context.Context, id, orgID, ownerID string) bool {
+	asset, err := s.admin.DB.FindAsset(ctx, id)
+	if err != nil {
+		return false
+	}
+	return asset.OrganizationID != nil && *asset.OrganizationID == orgID && asset.OwnerID == ownerID
 }
 
 func deploymentToDTO(d *database.Deployment) *adminv1.Deployment {

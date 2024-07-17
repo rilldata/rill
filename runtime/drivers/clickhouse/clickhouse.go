@@ -32,6 +32,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			NoPrompt:    true,
 		},
 		{
 			Key:         "host",
@@ -254,6 +255,11 @@ type connection struct {
 	opts *clickhouse.Options
 }
 
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return c.db.PingContext(ctx)
+}
+
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
 	return "clickhouse"
@@ -262,7 +268,7 @@ func (c *connection) Driver() string {
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 
@@ -332,15 +338,6 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.(*connection)
-	if c == to {
-		switch from.Driver() {
-		case "s3":
-			return NewS3Transporter(from, olap, c.logger), true
-		case "https":
-			return NewHTTPTransporter(from, olap, c.logger), true
-		}
-	}
 	return nil, false
 }
 

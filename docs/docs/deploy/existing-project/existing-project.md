@@ -28,6 +28,12 @@ graph LR;
 
 Rill Cloud connects to a repository on Github containing a Rill project, and continuously deploys that project on every push. Rill Cloud has the ability to auto-create a Git repository on your behalf when first deploying your project or you have the option to manually create the Git repository yourself before deploying the project to Rill Cloud.
 
+:::tip Interested in using Gitlab?
+
+Check out our documentation on deploying a [Rill project using Gitlab](deploy-from-ci.md)!
+
+:::
+
 ### Automated repository creation
 
 If you'd like Rill Cloud to automaticaly create the Git repository for a Rill project that you deploy, you can skip to the [next step](#deploy-to-rill-cloud).

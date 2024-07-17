@@ -34,6 +34,7 @@ var spec = drivers.Spec{
 			DisplayName: "Connection string",
 			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
 			Secret:      true,
+			NoPrompt:    true,
 		},
 		{
 			Key:         "host",
@@ -187,6 +188,11 @@ type connection struct {
 	logger *zap.Logger
 }
 
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return c.db.PingContext(ctx)
+}
+
 // Driver implements drivers.Connection.
 func (c *connection) Driver() string {
 	return "druid"
@@ -195,7 +201,7 @@ func (c *connection) Driver() string {
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 

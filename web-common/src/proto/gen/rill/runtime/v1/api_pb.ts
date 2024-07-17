@@ -188,6 +188,221 @@ export class PingResponse extends Message<PingResponse> {
 }
 
 /**
+ * @generated from message rill.runtime.v1.HealthRequest
+ */
+export class HealthRequest extends Message<HealthRequest> {
+  constructor(data?: PartialMessage<HealthRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.HealthRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HealthRequest {
+    return new HealthRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HealthRequest {
+    return new HealthRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HealthRequest {
+    return new HealthRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: HealthRequest | PlainMessage<HealthRequest> | undefined, b: HealthRequest | PlainMessage<HealthRequest> | undefined): boolean {
+    return proto3.util.equals(HealthRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.HealthResponse
+ */
+export class HealthResponse extends Message<HealthResponse> {
+  /**
+   * @generated from field: string limiter_error = 1;
+   */
+  limiterError = "";
+
+  /**
+   * @generated from field: string conn_cache_error = 2;
+   */
+  connCacheError = "";
+
+  /**
+   * @generated from field: string metastore_error = 3;
+   */
+  metastoreError = "";
+
+  /**
+   * @generated from field: string network_error = 4;
+   */
+  networkError = "";
+
+  /**
+   * @generated from field: map<string, rill.runtime.v1.InstanceHealth> instances_health = 5;
+   */
+  instancesHealth: { [key: string]: InstanceHealth } = {};
+
+  constructor(data?: PartialMessage<HealthResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.HealthResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "limiter_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "conn_cache_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "metastore_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "network_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "instances_health", kind: "map", K: 9 /* ScalarType.STRING */, V: {kind: "message", T: InstanceHealth} },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): HealthResponse {
+    return new HealthResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): HealthResponse {
+    return new HealthResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): HealthResponse {
+    return new HealthResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: HealthResponse | PlainMessage<HealthResponse> | undefined, b: HealthResponse | PlainMessage<HealthResponse> | undefined): boolean {
+    return proto3.util.equals(HealthResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.InstanceHealthRequest
+ */
+export class InstanceHealthRequest extends Message<InstanceHealthRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  constructor(data?: PartialMessage<InstanceHealthRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InstanceHealthRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealthRequest {
+    return new InstanceHealthRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceHealthRequest {
+    return new InstanceHealthRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceHealthRequest {
+    return new InstanceHealthRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InstanceHealthRequest | PlainMessage<InstanceHealthRequest> | undefined, b: InstanceHealthRequest | PlainMessage<InstanceHealthRequest> | undefined): boolean {
+    return proto3.util.equals(InstanceHealthRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.InstanceHealthResponse
+ */
+export class InstanceHealthResponse extends Message<InstanceHealthResponse> {
+  /**
+   * @generated from field: rill.runtime.v1.InstanceHealth instance_health = 1;
+   */
+  instanceHealth?: InstanceHealth;
+
+  constructor(data?: PartialMessage<InstanceHealthResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InstanceHealthResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_health", kind: "message", T: InstanceHealth },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealthResponse {
+    return new InstanceHealthResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceHealthResponse {
+    return new InstanceHealthResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceHealthResponse {
+    return new InstanceHealthResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InstanceHealthResponse | PlainMessage<InstanceHealthResponse> | undefined, b: InstanceHealthResponse | PlainMessage<InstanceHealthResponse> | undefined): boolean {
+    return proto3.util.equals(InstanceHealthResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.InstanceHealth
+ */
+export class InstanceHealth extends Message<InstanceHealth> {
+  /**
+   * @generated from field: string controller_error = 1;
+   */
+  controllerError = "";
+
+  /**
+   * @generated from field: string olap_error = 2;
+   */
+  olapError = "";
+
+  /**
+   * @generated from field: string repo_error = 3;
+   */
+  repoError = "";
+
+  constructor(data?: PartialMessage<InstanceHealth>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.InstanceHealth";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "controller_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "olap_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "repo_error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): InstanceHealth {
+    return new InstanceHealth().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: InstanceHealth | PlainMessage<InstanceHealth> | undefined, b: InstanceHealth | PlainMessage<InstanceHealth> | undefined): boolean {
+    return proto3.util.equals(InstanceHealth, a, b);
+  }
+}
+
+/**
  * Instance represents a single data project, meaning one set of code artifacts,
  * one connection to an OLAP datastore (DuckDB, Druid), and one catalog of related
  * metadata (such as reconciliation state). Instances are the unit of isolation within
@@ -3000,6 +3215,13 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
    */
   secret = false;
 
+  /**
+   * If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+   *
+   * @generated from field: bool no_prompt = 11;
+   */
+  noPrompt = false;
+
   constructor(data?: PartialMessage<ConnectorDriver_Property>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3018,6 +3240,7 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
     { no: 8, name: "default", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "placeholder", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "secret", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "no_prompt", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver_Property {

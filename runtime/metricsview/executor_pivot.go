@@ -100,22 +100,11 @@ func (e *Executor) rewriteQueryForPivot(qry *Query) (*pivotAST, bool, error) {
 	qry.Offset = nil
 	qry.Label = false
 
-	// If we have a cell limit, apply a row limit just above it to the underlying query.
-	// This prevents the DB from scanning too much data before we can detect that the query will exceed the cell limit.
-	if e.instanceCfg.PivotCellLimit != 0 {
-		cols := int64(len(qry.Dimensions) + len(qry.Measures))
-		ast.underlyingCellCap = e.instanceCfg.PivotCellLimit
-		ast.underlyingRowCap = e.instanceCfg.PivotCellLimit / cols
-
-		tmp := ast.underlyingRowCap + 1
-		qry.Limit = &tmp
-	}
-
 	return ast, true, nil
 }
 
 // executePivotExport executes a PIVOT query prepared using rewriteQueryForPivot, and exports the result to a file in the given format.
-func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivotAST, format string) (string, error) {
+func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivotAST, format drivers.FileFormat) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, defaultPivotExportTimeout)
 	defer cancel()
 
@@ -185,7 +174,7 @@ func (e *Executor) executePivotExport(ctx context.Context, ast *AST, pivot *pivo
 		}()
 
 		// Build the PIVOT query
-		pivotSQL, err := pivot.SQL(ast, alias, true)
+		pivotSQL, err := pivot.SQL(ast, alias)
 		if err != nil {
 			return err
 		}
@@ -215,49 +204,18 @@ type pivotAST struct {
 	limit   *int64
 	offset  *int64
 
-	label             bool
-	dialect           drivers.Dialect
-	underlyingCellCap int64
-	underlyingRowCap  int64
+	label   bool
+	dialect drivers.Dialect
 }
 
 // SQL generates a query that outputs a pivoted table based on the pivot config and data in the underlying query.
 // The underlyingAlias must be an alias for a table that holds the data produced by underlyingAST.SQL().
-func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string, checkCap bool) (string, error) {
+func (a *pivotAST) SQL(underlyingAST *AST, underlyingAlias string) (string, error) {
 	if !a.dialect.CanPivot() {
 		return "", fmt.Errorf("pivot queries not supported for dialect %q", a.dialect.String())
 	}
 
 	b := &strings.Builder{}
-
-	// Circumstances make it easiest to enforce the pivot cell limit in the PIVOT query itself. To do that, we need to be creative.
-	// We leverage CTEs and DuckDB's ERROR() function to enforce the limit.
-	// This is pretty DuckDB-specific, but that's also currently the only OLAP we use that supports pivoting.
-	// The query looks something like:
-	//
-	//   WITH t AS (SELECT * FROM <underlyingAlias> WHERE IF(EXISTS (SELECT COUNT(*) AS count FROM <underlyingAlias> HAVING count > <limit>), ERROR('pivot query exceeds limit'), TRUE))
-	//   PIVOT t2 ON ...
-	//
-	if checkCap {
-		tmpAlias, err := randomString("t", 8)
-		if err != nil {
-			return "", fmt.Errorf("failed to generate random alias: %w", err)
-		}
-
-		b.WriteString("WITH ")
-		b.WriteString(tmpAlias)
-		b.WriteString(" AS (SELECT * FROM ")
-		b.WriteString(underlyingAlias)
-		b.WriteString(" WHERE IF(EXISTS (SELECT COUNT(*) AS count FROM ")
-		b.WriteString(underlyingAlias)
-		b.WriteString(" HAVING count > ")
-		b.WriteString(strconv.FormatInt(a.underlyingRowCap, 10))
-		b.WriteString("), ERROR('pivot query exceeds limit of ")
-		b.WriteString(strconv.FormatInt(a.underlyingCellCap, 10))
-		b.WriteString(" cells'), TRUE)) ")
-
-		underlyingAlias = tmpAlias
-	}
 
 	// If we need to label some fields (in practice, this will be non-pivoted dims during exports),
 	// we emit a query like: SELECT d1 AS "L1", d2 AS "L2", * EXCLUDE (d1, d2) FROM (PIVOT ...)

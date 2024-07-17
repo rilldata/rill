@@ -1,6 +1,7 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { builderActions, getAttrs } from "bits-ui";
+  import { onMount } from "svelte";
   import CaretDownIcon from "../../../components/icons/CaretDownIcon.svelte";
   import {
     V1ExportFormat,
@@ -8,12 +9,16 @@
   } from "../../../runtime-client";
   import { useDashboard } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
-  import exportPivot from "./pivot-export";
+  import exportPivot, { getPivotExportArgs } from "./pivot-export";
+
+  export let includeScheduledReport: boolean;
 
   let active = false;
+  let showScheduledReportDialog = false;
 
   const ctx = getStateManagers();
-  const { runtime, metricsViewName } = ctx;
+  const { runtime, metricsViewName, dashboardStore } = ctx;
+  $: metricsViewProto = $dashboardStore.proto;
   const exportDash = createQueryServiceExport();
 
   $: metricsView = useDashboard($runtime.instanceId, $metricsViewName);
@@ -26,6 +31,21 @@
       timeDimension: $metricsView.data?.metricsView?.spec?.timeDimension,
     });
   }
+
+  // Only import the Scheduled Report dialog if in the Cloud context.
+  // This ensures Rill Developer doesn't try and fail to import the admin-client.
+  let CreateScheduledReportDialog;
+  onMount(async () => {
+    if (includeScheduledReport) {
+      CreateScheduledReportDialog = (
+        await import(
+          "../../scheduled-reports/CreateScheduledReportDialog.svelte"
+        )
+      ).default;
+    }
+  });
+
+  $: scheduledReportsQueryArgs = getPivotExportArgs(ctx);
 </script>
 
 <DropdownMenu.Root bind:open={active}>
@@ -60,5 +80,23 @@
     >
       Export as XLSX
     </DropdownMenu.Item>
+    {#if includeScheduledReport}
+      <DropdownMenu.Item on:click={() => (showScheduledReportDialog = true)}>
+        Create scheduled report...
+      </DropdownMenu.Item>
+    {/if}
   </DropdownMenu.Content>
 </DropdownMenu.Root>
+
+<!-- Including `showScheduledReportDialog` in the conditional ensures we tear
+  down the form state when the dialog closes -->
+{#if includeScheduledReport && CreateScheduledReportDialog && showScheduledReportDialog}
+  <svelte:component
+    this={CreateScheduledReportDialog}
+    queryName="MetricsViewAggregation"
+    queryArgs={$scheduledReportsQueryArgs}
+    {metricsViewProto}
+    open={showScheduledReportDialog}
+    on:close={() => (showScheduledReportDialog = false)}
+  />
+{/if}

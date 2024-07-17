@@ -145,10 +145,15 @@ type connection struct {
 	ignorePaths []string
 }
 
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return drivers.ErrNotImplemented
+}
+
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.driverConfig, m)
+	_ = mapstructure.Decode(c.driverConfig, &m)
 	return m
 }
 

@@ -339,9 +339,9 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		b.writeString(")")
 
 		if not {
-			b.writeString(" NOT ILIKE ")
+			b.writeString(" NOT LIKE ")
 		} else {
-			b.writeString(" ILIKE ")
+			b.writeString(" LIKE ")
 		}
 
 		b.writeString("LOWER(")
@@ -408,10 +408,14 @@ func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride 
 }
 
 func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverride string, vals []any, not bool) error {
-	var hasNull bool
+	var hasNull, hasNonNull bool
 	for _, v := range vals {
 		if v == nil {
 			hasNull = true
+		} else {
+			hasNonNull = true
+		}
+		if hasNull && hasNonNull {
 			break
 		}
 	}
@@ -425,42 +429,51 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		return nil
 	}
 
-	wrapParens := not || hasNull
+	wrapParens := not || (hasNull && hasNonNull)
 	if wrapParens {
 		b.writeByte('(')
 	}
 
-	if leftOverride != "" {
-		b.writeParenthesizedString(leftOverride)
-	} else {
-		err := b.writeExpression(left)
-		if err != nil {
-			return err
-		}
-	}
-
-	if not {
-		b.writeString(" NOT IN ")
-	} else {
-		b.writeString(" IN ")
-	}
-
-	b.writeByte('(')
-	for i := 0; i < len(vals); i++ {
-		if i == 0 {
-			b.writeString("?")
+	if hasNonNull {
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
 		} else {
-			b.writeString(",?")
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
 		}
+
+		if not {
+			b.writeString(" NOT IN ")
+		} else {
+			b.writeString(" IN ")
+		}
+
+		b.writeByte('(')
+		var comma bool
+		for _, val := range vals {
+			if val == nil {
+				continue
+			}
+			if comma {
+				b.writeString(",?")
+			} else {
+				comma = true
+				b.writeString("?")
+			}
+			b.args = append(b.args, val)
+		}
+		b.writeByte(')')
 	}
-	b.writeByte(')')
-	b.args = append(b.args, vals...)
 
 	if hasNull {
-		if not {
-			b.writeString(" AND ")
-		} else {
-			b.writeString(" OR ")
+		if hasNonNull {
+			if not {
+				b.writeString(" AND ")
+			} else {
+				b.writeString(" OR ")
+			}
 		}
 
 		if leftOverride != "" {
@@ -521,12 +534,8 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err 
 		// First, search for the dimension in the ASTs dimension fields (this also covers any computed dimension)
 		for _, f := range b.ast.dimFields {
 			if f.Name == name {
-				if f.Unnest {
-					// Since it's unnested, we need to reference the unnested alias.
-					// Note that we return "false" for "unnest" because it will already have been unnested since it's one of the dimensions included in the query,
-					// so we can filter against it as if it's a normal dimension.
-					return b.ast.sqlForMember(f.UnnestAlias, f.Name), false, nil
-				}
+				// Note that we return "false" even though it may be an unnest dimension because it will already have been unnested since it's one of the dimensions included in the query.
+				// So we can filter against it as if it's a normal dimension.
 				return f.Expr, false, nil
 			}
 		}

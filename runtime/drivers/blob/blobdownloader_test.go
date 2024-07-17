@@ -21,7 +21,7 @@ var filesData = map[string][]byte{
 	"2020/02/04/data.txt": []byte("test"),
 }
 
-const TenGB = 10 * 1024 * 1024
+const TenGB = 10 * 1024 * 1024 * 1024
 
 func TestFetchFileNames(t *testing.T) {
 	type args struct {

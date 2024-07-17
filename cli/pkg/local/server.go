@@ -21,7 +21,9 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/pkce"
 	"github.com/rilldata/rill/cli/pkg/update"
@@ -60,6 +62,7 @@ func (s *Server) RegisterHandlers(mux *http.ServeMux, httpPort int, secure, enab
 	// Register auth endpoints (starts and OAuth flow that leads to a token being set in ~/.rill)
 	mux.Handle("/auth", s.authHandler(httpPort, secure))
 	mux.Handle("/auth/callback", s.authCallbackHandler())
+	mux.Handle("/auth/logout", s.logoutHandler())
 
 	// Register telemetry proxy endpoint
 	mux.Handle("/local/track", s.trackingHandler())
@@ -136,6 +139,15 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return nil, err
 	}
 
+	rc, err := dotrillcloud.GetAll(s.app.ProjectPath, s.app.adminURL)
+	if err != nil {
+		return nil, err
+	}
+	var deployedProjectID string
+	if rc != nil {
+		deployedProjectID = rc.ProjectID
+	}
+
 	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
 	if err != nil {
 		return nil, err
@@ -159,6 +171,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			RillOrgExistsAsGithubUserName: false,
 			RillUserOrgs:                  nil,
 			LocalProjectName:              localProjectName,
+			DeployedProjectId:             deployedProjectID,
 		}), nil
 	}
 
@@ -215,6 +228,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				RillOrgExistsAsGithubUserName: false,
 				RillUserOrgs:                  nil,
 				LocalProjectName:              localProjectName,
+				DeployedProjectId:             deployedProjectID,
 			}), nil
 		}
 	}
@@ -262,6 +276,7 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
 		RillUserOrgs:                  userOrgs,
 		LocalProjectName:              localProjectName,
+		DeployedProjectId:             deployedProjectID,
 	}), nil
 }
 
@@ -409,7 +424,7 @@ func (s *Server) PushToGithub(ctx context.Context, r *connect.Request[localv1.Pu
 	}), nil
 }
 
-func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRequest]) (*connect.Response[localv1.DeployResponse], error) {
+func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.DeployProjectRequest]) (*connect.Response[localv1.DeployProjectResponse], error) {
 	if !s.app.ch.IsAuthenticated() {
 		return nil, errors.New("user should be authenticated before deploying")
 	}
@@ -419,41 +434,83 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 		return nil, err
 	}
 
-	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
-	if err != nil {
-		return nil, err
-	}
-	if !userStatus.HasAccess {
-		// generally this should not happen as IsGithubConnected should be true before deploying
-		return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
-	}
-
-	// check if project is a git repo
-	remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-	if err != nil {
-		if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
-			return nil, errors.New("project is not a valid git repository or not connected to a remote")
+	var projRequest *adminv1.CreateProjectRequest
+	if r.Msg.Upload { // upload repo to rill managed storage instead of github
+		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+		if err != nil {
+			return nil, err
 		}
-		return nil, err
-	}
+		defer release()
 
-	// check if there are uncommitted changes
-	// ignore errors since check is best effort and can fail in multiple cases
-	syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
-	if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
-		return nil, errors.New("project has uncommitted changes")
-	}
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, r.Msg.Org, r.Msg.ProjectName)
+		if err != nil {
+			return nil, err
+		}
 
-	// Get github repo status
-	repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
-		GithubUrl: ghURL,
-	})
-	if err != nil {
-		return nil, err
-	}
-	if !repoStatus.HasAccess {
-		// generally this should not happen as IsRepoAccessGranted should be true before deploying
-		return nil, fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
+		// create project request
+		projRequest = &adminv1.CreateProjectRequest{
+			OrganizationName: r.Msg.Org,
+			Name:             r.Msg.ProjectName,
+			Description:      "Auto created by Rill",
+			Provisioner:      "",
+			ProdVersion:      "",
+			ProdOlapDriver:   "duckdb",
+			ProdOlapDsn:      "",
+			ProdSlots:        2,
+			Public:           false,
+			ArchiveAssetId:   assetID,
+		}
+	} else {
+		userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
+		if err != nil {
+			return nil, err
+		}
+		if !userStatus.HasAccess {
+			// generally this should not happen as IsGithubConnected should be true before deploying
+			return nil, fmt.Errorf("rill git app should be installed/authorized by user before deploying, please visit %s", userStatus.GrantAccessUrl)
+		}
+
+		// check if project is a git repo
+		remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+		if err != nil {
+			if errors.Is(err, gitutil.ErrGitRemoteNotFound) || errors.Is(err, git.ErrRepositoryNotExists) {
+				return nil, errors.New("project is not a valid git repository or not connected to a remote")
+			}
+			return nil, err
+		}
+
+		// check if there are uncommitted changes
+		// ignore errors since check is best effort and can fail in multiple cases
+		syncStatus, _ := gitutil.GetSyncStatus(s.app.ProjectPath, "", remote.Name)
+		if syncStatus == gitutil.SyncStatusModified || syncStatus == gitutil.SyncStatusAhead {
+			return nil, errors.New("project has uncommitted changes")
+		}
+
+		// Get github repo status
+		repoStatus, err := c.GetGithubRepoStatus(ctx, &adminv1.GetGithubRepoStatusRequest{
+			GithubUrl: ghURL,
+		})
+		if err != nil {
+			return nil, err
+		}
+		if !repoStatus.HasAccess {
+			// generally this should not happen as IsRepoAccessGranted should be true before deploying
+			return nil, fmt.Errorf("need access to the repository before deploying, please visit %s to grant access", repoStatus.GrantAccessUrl)
+		}
+		projRequest = &adminv1.CreateProjectRequest{
+			OrganizationName: r.Msg.Org,
+			Name:             r.Msg.ProjectName,
+			Description:      "Auto created by Rill",
+			Provisioner:      "",
+			ProdVersion:      "",
+			ProdOlapDriver:   "duckdb",
+			ProdOlapDsn:      "",
+			ProdSlots:        2,
+			Public:           false,
+			GithubUrl:        ghURL,
+			Subpath:          "",
+			ProdBranch:       repoStatus.DefaultBranch,
+		}
 	}
 
 	// check if rill org exists
@@ -484,20 +541,8 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 		if suffix > 0 {
 			name = fmt.Sprintf("%s-%d", r.Msg.ProjectName, suffix)
 		}
-		projResp, err = c.CreateProject(ctx, &adminv1.CreateProjectRequest{
-			OrganizationName: r.Msg.Org,
-			Name:             name,
-			Description:      "Auto created by Rill",
-			Provisioner:      "",
-			ProdVersion:      "",
-			ProdOlapDriver:   "",
-			ProdOlapDsn:      "",
-			ProdSlots:        2,
-			Subpath:          "",
-			ProdBranch:       repoStatus.DefaultBranch,
-			Public:           false,
-			GithubUrl:        ghURL,
-		})
+		projRequest.Name = name
+		projResp, err = c.CreateProject(ctx, projRequest)
 		suffix++
 		return err
 	})
@@ -505,11 +550,84 @@ func (s *Server) Deploy(ctx context.Context, r *connect.Request[localv1.DeployRe
 		return nil, err
 	}
 
-	return connect.NewResponse(&localv1.DeployResponse{
+	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.adminURL, &dotrillcloud.Config{
+		ProjectID: projResp.Project.Id,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return connect.NewResponse(&localv1.DeployProjectResponse{
 		DeployId:    projResp.Project.ProdDeploymentId,
 		Org:         projResp.Project.OrgName,
 		Project:     projResp.Project.Name,
 		FrontendUrl: projResp.Project.FrontendUrl,
+	}), nil
+}
+
+func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1.RedeployProjectRequest]) (*connect.Response[localv1.RedeployProjectResponse], error) {
+	if !s.app.ch.IsAuthenticated() {
+		return nil, errors.New("user should be authenticated")
+	}
+	// Get admin client
+	c, err := client.New(s.app.adminURL, s.app.ch.AdminTokenDefault, "Rill Localhost")
+	if err != nil {
+		return nil, err
+	}
+
+	if r.Msg.Reupload {
+		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
+		if err != nil {
+			return nil, err
+		}
+		defer release()
+
+		projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+			Id: r.Msg.ProjectId,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, projResp.Project.OrgName, projResp.Project.Name)
+		if err != nil {
+			return nil, err
+		}
+		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{ArchiveAssetId: &assetID})
+		if err != nil {
+			return nil, err
+		}
+	}
+	// TODO : Add other update project fields
+	return connect.NewResponse(&localv1.RedeployProjectResponse{}), nil
+}
+
+func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.GetCurrentUserRequest]) (*connect.Response[localv1.GetCurrentUserResponse], error) {
+	if !s.app.ch.IsAuthenticated() {
+		return connect.NewResponse(&localv1.GetCurrentUserResponse{
+			User: nil,
+		}), nil
+	}
+
+	c, err := s.app.ch.Client()
+	if err != nil {
+		return nil, err
+	}
+	userResp, err := c.GetCurrentUser(ctx, &adminv1.GetCurrentUserRequest{})
+	if err != nil {
+		return nil, err
+	}
+	if userResp.User == nil {
+		return nil, errors.New("failed to get current user")
+	}
+
+	return connect.NewResponse(&localv1.GetCurrentUserResponse{
+		User: &adminv1.User{
+			Id:          userResp.User.Id,
+			Email:       userResp.User.Email,
+			DisplayName: userResp.User.DisplayName,
+			PhotoUrl:    userResp.User.PhotoUrl,
+		},
 	}), nil
 }
 
@@ -590,6 +708,49 @@ func (s *Server) authCallbackHandler() http.Handler {
 		}
 		s.app.ch.AdminTokenDefault = token
 		http.Redirect(w, r, authenticator.OriginURL, http.StatusFound)
+	})
+}
+
+// logoutHandler logs out the user and unsets the token stored
+func (s *Server) logoutHandler() http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !s.app.ch.IsAuthenticated() {
+			return
+		}
+		c, err := s.app.ch.Client()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to start admin client: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		ctx := r.Context()
+
+		_, err = c.RevokeCurrentAuthToken(ctx, &adminv1.RevokeCurrentAuthTokenRequest{})
+		if err != nil {
+			http.Error(w, fmt.Sprintf("failed to logout: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		// reset stored access token
+		err = dotrill.SetAccessToken("")
+		if err != nil {
+			http.Error(w, "failed to save access token", http.StatusInternalServerError)
+			return
+		}
+		s.app.ch.AdminTokenDefault = ""
+
+		// logout from cloud UI as well
+		redirect := r.URL.Query().Get("redirect")
+		if redirect == "" {
+			redirect = "/"
+		}
+		baseURL := s.app.adminURL
+		if strings.Contains(baseURL, "http://localhost:9090") {
+			baseURL = "http://localhost:8080"
+		}
+		logoutURL := fmt.Sprintf("%s/auth/logout?redirect=%s", baseURL, redirect)
+
+		http.Redirect(w, r, logoutURL, http.StatusFound)
 	})
 }
 

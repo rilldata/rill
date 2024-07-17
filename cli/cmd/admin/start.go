@@ -9,11 +9,14 @@ import (
 	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/joho/godotenv"
 	"github.com/kelseyhightower/envconfig"
 	"github.com/redis/go-redis/v9"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
+	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/server"
 	"github.com/rilldata/rill/admin/worker"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
@@ -28,6 +31,7 @@ import (
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"golang.org/x/sync/errgroup"
+	"google.golang.org/api/option"
 
 	// Load database drivers for admin
 	_ "github.com/rilldata/rill/admin/database/postgres"
@@ -37,47 +41,53 @@ import (
 // Env var keys must be prefixed with RILL_ADMIN_ and are converted from snake_case to CamelCase.
 // For example RILL_ADMIN_HTTP_PORT is mapped to Config.HTTPPort.
 type Config struct {
-	DatabaseDriver           string                 `default:"postgres" split_words:"true"`
-	DatabaseURL              string                 `split_words:"true"`
-	RedisURL                 string                 `default:"" split_words:"true"`
-	ProvisionerSetJSON       string                 `split_words:"true"`
-	DefaultProvisioner       string                 `split_words:"true"`
-	Jobs                     []string               `split_words:"true"`
-	LogLevel                 zapcore.Level          `default:"info" split_words:"true"`
-	MetricsExporter          observability.Exporter `default:"prometheus" split_words:"true"`
-	TracesExporter           observability.Exporter `default:"" split_words:"true"`
-	HTTPPort                 int                    `default:"8080" split_words:"true"`
-	GRPCPort                 int                    `default:"9090" split_words:"true"`
-	DebugPort                int                    `split_words:"true"`
-	ExternalURL              string                 `default:"http://localhost:8080" split_words:"true"`
-	ExternalGRPCURL          string                 `envconfig:"external_grpc_url"`
-	FrontendURL              string                 `default:"http://localhost:3000" split_words:"true"`
-	AllowedOrigins           []string               `default:"*" split_words:"true"`
-	SessionKeyPairs          []string               `split_words:"true"`
-	SigningJWKS              string                 `split_words:"true"`
-	SigningKeyID             string                 `split_words:"true"`
-	AuthDomain               string                 `split_words:"true"`
-	AuthClientID             string                 `split_words:"true"`
-	AuthClientSecret         string                 `split_words:"true"`
-	GithubAppID              int64                  `split_words:"true"`
-	GithubAppName            string                 `split_words:"true"`
-	GithubAppPrivateKey      string                 `split_words:"true"`
-	GithubAppWebhookSecret   string                 `split_words:"true"`
-	GithubClientID           string                 `split_words:"true"`
-	GithubClientSecret       string                 `split_words:"true"`
-	EmailSMTPHost            string                 `split_words:"true"`
-	EmailSMTPPort            int                    `split_words:"true"`
-	EmailSMTPUsername        string                 `split_words:"true"`
-	EmailSMTPPassword        string                 `split_words:"true"`
-	EmailSenderEmail         string                 `split_words:"true"`
-	EmailSenderName          string                 `split_words:"true"`
-	EmailBCC                 string                 `split_words:"true"`
-	OpenAIAPIKey             string                 `envconfig:"openai_api_key"`
-	ActivitySinkType         string                 `default:"" split_words:"true"`
-	ActivitySinkKafkaBrokers string                 `default:"" split_words:"true"`
-	ActivityUISinkKafkaTopic string                 `default:"" split_words:"true"`
-	MetricsProject           string                 `default:"" split_words:"true"`
-	AutoscalerCron           string                 `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
+	DatabaseDriver         string                 `default:"postgres" split_words:"true"`
+	DatabaseURL            string                 `split_words:"true"`
+	RedisURL               string                 `default:"" split_words:"true"`
+	ProvisionerSetJSON     string                 `split_words:"true"`
+	DefaultProvisioner     string                 `split_words:"true"`
+	Jobs                   []string               `split_words:"true"`
+	LogLevel               zapcore.Level          `default:"info" split_words:"true"`
+	MetricsExporter        observability.Exporter `default:"prometheus" split_words:"true"`
+	TracesExporter         observability.Exporter `default:"" split_words:"true"`
+	HTTPPort               int                    `default:"8080" split_words:"true"`
+	GRPCPort               int                    `default:"9090" split_words:"true"`
+	DebugPort              int                    `split_words:"true"`
+	ExternalURL            string                 `default:"http://localhost:8080" split_words:"true"`
+	ExternalGRPCURL        string                 `envconfig:"external_grpc_url"`
+	FrontendURL            string                 `default:"http://localhost:3000" split_words:"true"`
+	AllowedOrigins         []string               `default:"*" split_words:"true"`
+	SessionKeyPairs        []string               `split_words:"true"`
+	SigningJWKS            string                 `split_words:"true"`
+	SigningKeyID           string                 `split_words:"true"`
+	AuthDomain             string                 `split_words:"true"`
+	AuthClientID           string                 `split_words:"true"`
+	AuthClientSecret       string                 `split_words:"true"`
+	GithubAppID            int64                  `split_words:"true"`
+	GithubAppName          string                 `split_words:"true"`
+	GithubAppPrivateKey    string                 `split_words:"true"`
+	GithubAppWebhookSecret string                 `split_words:"true"`
+	GithubClientID         string                 `split_words:"true"`
+	GithubClientSecret     string                 `split_words:"true"`
+	AssetsBucket           string                 `split_words:"true"`
+	// AssetsBucketGoogleCredentialsJSON is only required to be set for local development.
+	// For production use cases the service account will be directly attached to pods which is the recommended way of setting credentials.
+	AssetsBucketGoogleCredentialsJSON string `split_words:"true"`
+	EmailSMTPHost                     string `split_words:"true"`
+	EmailSMTPPort                     int    `split_words:"true"`
+	EmailSMTPUsername                 string `split_words:"true"`
+	EmailSMTPPassword                 string `split_words:"true"`
+	EmailSenderEmail                  string `split_words:"true"`
+	EmailSenderName                   string `split_words:"true"`
+	EmailBCC                          string `split_words:"true"`
+	OpenAIAPIKey                      string `envconfig:"openai_api_key"`
+	ActivitySinkType                  string `default:"" split_words:"true"`
+	ActivitySinkKafkaBrokers          string `default:"" split_words:"true"`
+	ActivityUISinkKafkaTopic          string `default:"" split_words:"true"`
+	MetricsProject                    string `default:"" split_words:"true"`
+	AutoscalerCron                    string `default:"CRON_TZ=America/Los_Angeles 0 0 * * 1" split_words:"true"`
+	OrbAPIKey                         string `split_words:"true"`
+	StripeAPIKey                      string `split_words:"true"`
 }
 
 // StartCmd starts an admin server. It only allows configuration using environment variables.
@@ -223,6 +233,17 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				aiClient = ai.NewNoop()
 			}
 
+			// Init AssetsBucket handle
+			var clientOpts []option.ClientOption
+			if conf.AssetsBucketGoogleCredentialsJSON != "" {
+				clientOpts = append(clientOpts, option.WithCredentialsJSON([]byte(conf.AssetsBucketGoogleCredentialsJSON)))
+			}
+			storageClient, err := storage.NewClient(cmd.Context(), clientOpts...)
+			if err != nil {
+				logger.Fatal("failed to create assets bucket handle", zap.Error(err))
+			}
+			assetsBucket := storageClient.Bucket(conf.AssetsBucket)
+
 			// Parse metrics project name
 			var metricsProjectOrg, metricsProjectName string
 			if conf.MetricsProject != "" {
@@ -232,6 +253,20 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 				metricsProjectOrg = parts[0]
 				metricsProjectName = parts[1]
+			}
+
+			var biller billing.Biller
+			if conf.OrbAPIKey != "" {
+				biller = billing.NewOrb(conf.OrbAPIKey)
+			} else {
+				biller = billing.NewNoop()
+			}
+
+			var p payment.Provider
+			if conf.StripeAPIKey != "" {
+				p = payment.NewStripe(conf.StripeAPIKey)
+			} else {
+				p = payment.NewNoop()
 			}
 
 			// Init admin service
@@ -247,7 +282,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 				MetricsProjectName: metricsProjectName,
 				AutoscalerCron:     conf.AutoscalerCron,
 			}
-			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient)
+			adm, err := admin.New(cmd.Context(), admOpts, logger, issuer, emailClient, gh, aiClient, assetsBucket, biller, p)
 			if err != nil {
 				logger.Fatal("error creating service", zap.Error(err))
 			}
@@ -285,6 +320,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					}
 					limiter = ratelimit.NewRedis(redis.NewClient(opts))
 				}
+
 				srv, err := server.New(logger, adm, issuer, limiter, activityClient, &server.Options{
 					HTTPPort:               conf.HTTPPort,
 					GRPCPort:               conf.GRPCPort,
@@ -300,6 +336,7 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 					GithubAppWebhookSecret: conf.GithubAppWebhookSecret,
 					GithubClientID:         conf.GithubClientID,
 					GithubClientSecret:     conf.GithubClientSecret,
+					AssetsBucket:           conf.AssetsBucket,
 				})
 				if err != nil {
 					logger.Fatal("error creating server", zap.Error(err))

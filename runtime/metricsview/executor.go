@@ -22,7 +22,7 @@ type Executor struct {
 	rt          *runtime.Runtime
 	instanceID  string
 	metricsView *runtimev1.MetricsViewSpec
-	security    *runtime.ResolvedMetricsViewSecurity
+	security    *runtime.ResolvedSecurity
 	priority    int
 
 	olap        drivers.OLAPStore
@@ -33,7 +33,7 @@ type Executor struct {
 }
 
 // NewExecutor creates a new Executor for the provided metrics view.
-func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedMetricsViewSecurity, priority int) (*Executor, error) {
+func NewExecutor(ctx context.Context, rt *runtime.Runtime, instanceID string, mv *runtimev1.MetricsViewSpec, sec *runtime.ResolvedSecurity, priority int) (*Executor, error) {
 	olap, release, err := rt.OLAP(ctx, instanceID, mv.Connector)
 	if err != nil {
 		return nil, fmt.Errorf("failed to acquire connector for metrics view: %w", err)
@@ -81,6 +81,10 @@ func (e *Executor) Watermark(ctx context.Context) (time.Time, error) {
 
 // Schema returns a schema for the metrics view's dimensions and measures.
 func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
+	if !e.security.CanAccess() {
+		return nil, runtime.ErrForbidden
+	}
+
 	// Build a query that selects all dimensions and measures
 	qry := &Query{}
 
@@ -97,11 +101,15 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	}
 
 	for _, d := range e.metricsView.Dimensions {
-		qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
+		if e.security.CanAccessField(d.Name) {
+			qry.Dimensions = append(qry.Dimensions, Dimension{Name: d.Name})
+		}
 	}
 
 	for _, m := range e.metricsView.Measures {
-		qry.Measures = append(qry.Measures, Measure{Name: m.Name})
+		if e.security.CanAccessField(m.Name) {
+			qry.Measures = append(qry.Measures, Measure{Name: m.Name})
+		}
 	}
 
 	// Setting both base and comparison time ranges in case there are time_comparison measures.
@@ -122,7 +130,7 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 	qry.Limit = &zero
 
 	// Execute the query to get the schema
-	ast, err := NewAST(e.metricsView, nil, qry, e.olap.Dialect())
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
 		return nil, err
 	}
@@ -148,12 +156,12 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 
 // Query executes the provided query against the metrics view.
 func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Time) (*drivers.Result, bool, error) {
-	if e.security != nil && !e.security.Access {
+	if !e.security.CanAccess() {
 		return nil, false, runtime.ErrForbidden
 	}
 
-	export := qry.Label // TODO: Always set to false once all upstream code uses Export() for exports
-	if err := e.rewriteQueryLimit(qry, export); err != nil {
+	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
+	if err != nil {
 		return nil, false, err
 	}
 
@@ -175,11 +183,13 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		return nil, false, err
 	}
 
-	if err := e.rewriteApproximateComparisons(ast); err != nil {
+	e.rewriteApproxComparisons(ast)
+
+	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return nil, false, err
 	}
 
-	if err := e.rewriteDruidJoins(ast); err != nil {
+	if err := e.rewriteDruidGroups(ast); err != nil {
 		return nil, false, err
 	}
 
@@ -248,9 +258,8 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		})
 	}
 
-	limitCap := e.queryLimitCap(export)
-	if limitCap > 0 {
-		res.SetCap(limitCap)
+	if rowsCap > 0 {
+		res.SetCap(rowsCap)
 	}
 
 	// TODO: Get from OLAP instead of hardcoding
@@ -261,13 +270,9 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 
 // Export executes and exports the provided query against the metrics view.
 // It returns a path to a temporary file containing the export. The caller is responsible for cleaning up the file.
-func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format string) (string, error) {
-	if e.security != nil && !e.security.Access {
+func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.Time, format drivers.FileFormat) (string, error) {
+	if !e.security.CanAccess() {
 		return "", runtime.ErrForbidden
-	}
-
-	if err := e.rewriteQueryLimit(qry, true); err != nil {
-		return "", err
 	}
 
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
@@ -288,11 +293,13 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		return "", err
 	}
 
-	if err := e.rewriteApproximateComparisons(ast); err != nil {
+	e.rewriteApproxComparisons(ast)
+
+	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
 		return "", err
 	}
 
-	if err := e.rewriteDruidJoins(ast); err != nil {
+	if err := e.rewriteDruidGroups(ast); err != nil {
 		return "", err
 	}
 

@@ -13,6 +13,7 @@ func ProjectCmd(ch *cmdutil.Helper) *cobra.Command {
 
 	projectCmd.AddCommand(GetCmd(ch))
 	projectCmd.AddCommand(SearchCmd(ch))
+	projectCmd.AddCommand(HibernateCmd(ch))
 
 	return projectCmd
 }

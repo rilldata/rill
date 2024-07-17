@@ -34,7 +34,7 @@ type Options struct {
 type Runtime struct {
 	Email          *email.Client
 	opts           *Options
-	logger         *zap.Logger
+	Logger         *zap.Logger
 	activity       *activity.Client
 	metastore      drivers.Handle
 	registryCache  *registryCache
@@ -51,7 +51,7 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, ac *activity.Cl
 	rt := &Runtime{
 		Email:          emailClient,
 		opts:           opts,
-		logger:         logger,
+		Logger:         logger,
 		activity:       ac,
 		queryCache:     newQueryCache(opts.QueryCacheSizeBytes),
 		securityEngine: newSecurityEngine(opts.SecurityEngineCacheSize, logger),
@@ -91,12 +91,12 @@ func (r *Runtime) Close() error {
 	return errors.Join(err1, err2)
 }
 
-func (r *Runtime) ResolveMetricsViewSecurity(instanceID string, attributes map[string]any, mv *runtimev1.Resource, policies ...*runtimev1.MetricsViewSpec_SecurityV2) (*ResolvedMetricsViewSecurity, error) {
+func (r *Runtime) ResolveSecurity(instanceID string, claims *SecurityClaims, res *runtimev1.Resource) (*ResolvedSecurity, error) {
 	inst, err := r.Instance(context.Background(), instanceID)
 	if err != nil {
 		return nil, err
 	}
-	return r.securityEngine.resolveMetricsViewSecurity(instanceID, inst.Environment, attributes, mv, policies...)
+	return r.securityEngine.resolveSecurity(instanceID, inst.Environment, claims, res)
 }
 
 // GetInstanceAttributes fetches an instance and converts its annotations to attributes
@@ -164,6 +164,7 @@ func (r *Runtime) UpdateInstanceWithRillYAML(ctx context.Context, instanceID str
 	}
 	inst.ProjectVariables = vars
 	inst.FeatureFlags = rillYAML.FeatureFlags
+	inst.PublicPaths = rillYAML.PublicPaths
 	return r.EditInstance(ctx, inst, restartController)
 }
 

@@ -38,8 +38,8 @@
 {#if comparisonTimeRange}
   <Chip {...timeChipColors} outline readOnly>
     <svelte:fragment slot="body">
-      <div class="font-bold text-xs text-slate-800 px-2">
-        Comparing with {getComparisonLabel(comparisonTimeRange)}
+      <div class=" text-xs text-slate-800 px-2">
+        vs <b>{getComparisonLabel(comparisonTimeRange)}</b>
       </div>
     </svelte:fragment>
   </Chip>

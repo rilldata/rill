@@ -72,7 +72,7 @@ func (p *StaticProvisioner) Provision(ctx context.Context, opts *ProvisionOption
 		Host:         target.Host,
 		Audience:     target.Audience,
 		CPU:          1 * opts.Slots,
-		MemoryGB:     2 * opts.Slots,
+		MemoryGB:     4 * opts.Slots,
 		StorageBytes: int64(opts.Slots) * 40 * int64(datasize.GB),
 	}, nil
 }
@@ -128,4 +128,13 @@ func (p *StaticProvisioner) AwaitReady(ctx context.Context, provisionID string) 
 func (p *StaticProvisioner) Update(ctx context.Context, provisionID, newVersion string) error {
 	// No-op
 	return nil
+}
+
+func (p *StaticProvisioner) ValidateConfig(ctx context.Context, provisionID string) (bool, error) {
+	// No-op
+	return true, nil
+}
+
+func (p *StaticProvisioner) Type() string {
+	return "static"
 }

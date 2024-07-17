@@ -15,6 +15,16 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/ping"};
   }
 
+  // Health runs a health check on the runtime.
+  rpc Health(HealthRequest) returns (HealthResponse) {
+    option (google.api.http) = {get: "/v1/health"};
+  }
+
+  // InstanceHealth runs a health check on a specific instance.
+  rpc InstanceHealth(InstanceHealthRequest) returns (InstanceHealthResponse) {
+    option (google.api.http) = {get: "/v1/health/instances/{instance_id}"};
+  }
+
   // Instances
 
   // ListInstances lists all the instances currently managed by the runtime
@@ -198,8 +208,14 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
   }
 
+  // Access management
+
+  // IssueDevJWT issues a JWT for mimicking a user in local development.
   rpc IssueDevJWT(IssueDevJWTRequest) returns (IssueDevJWTResponse) {
-    option (google.api.http) = {get: "/v1/dev-jwt"};
+    option (google.api.http) = {
+      post: "/v1/dev-jwt",
+      body: "*"
+    };
   }
 }
 
@@ -213,6 +229,30 @@ message PingResponse {
 
   // Runtime server time
   google.protobuf.Timestamp time = 2;
+}
+
+message HealthRequest {}
+
+message HealthResponse {
+  string limiter_error = 1;
+  string conn_cache_error = 2;
+  string metastore_error = 3;
+  string network_error = 4;
+  map<string, InstanceHealth> instances_health = 5;
+}
+
+message InstanceHealthRequest {
+  string instance_id = 1 [(validate.rules).string = {pattern: "^[_\\-a-zA-Z0-9]+$"}];
+}
+
+message InstanceHealthResponse {
+  InstanceHealth instance_health = 1;
+}
+
+message InstanceHealth {
+  string controller_error = 1;
+  string olap_error = 2;
+  string repo_error = 3;
 }
 
 // **********
@@ -637,6 +677,8 @@ message ConnectorDriver {
     string placeholder = 9;
     // If true, the property is a secret and should not be displayed in UIs
     bool secret = 10;
+    // If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+    bool no_prompt = 11;
   }
   // Name is the name of the connector
   string name = 1;

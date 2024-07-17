@@ -2,8 +2,10 @@ import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
 import {
+  isMagicLinkPage,
   isMetricsExplorerPage,
   isProjectPage,
+  isProjectRequestAccessPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
 import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
@@ -15,14 +17,37 @@ import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
 import {
   adminServiceGetCurrentUser,
   getAdminServiceGetCurrentUserQueryKey,
+  getAdminServiceGetProjectQueryKey,
 } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
-import { getProjectRuntimeQueryKey } from "../projects/selectors";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
+
+    // Let the magic link page handle all errors
+    const onMagicLinkPage = isMagicLinkPage(get(page));
+    if (onMagicLinkPage) {
+      // When a token is expired, show a specific error page
+      if (
+        error.response?.status === 401 &&
+        (error.response.data as RpcStatus)?.message === "auth token is expired"
+      ) {
+        errorStore.set({
+          statusCode: 401,
+          header: "Oops! This link has expired",
+          body: "It looks like this link is no longer active. Please reach out to the sender to request a new link.",
+          fatal: true,
+        });
+        return;
+      }
+
+      // Let the magic link page handle all other errors
+      return;
+    }
+
+    const onProjectPage = isProjectPage(get(page));
 
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
@@ -39,6 +64,13 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
           `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
         );
         return;
+      } else if (onProjectPage) {
+        if (!isProjectRequestAccessPage(get(page))) {
+          await goto(
+            `/-/request-project-access/?organization=${get(page).params.organization}&project=${get(page).params.project}`,
+          );
+        }
+        return;
       }
     }
 
@@ -51,7 +83,6 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
     }
 
     // Special handling for some errors on the Project page
-    const onProjectPage = isProjectPage(get(page));
     if (onProjectPage) {
       if (error.response?.status === 400) {
         // If "repository not found", ignore the error and show the page
@@ -66,7 +97,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
           (error.response.data as RpcStatus).message === "driver: not found"
         ) {
           const [, org, proj] = get(page).url.pathname.split("/");
-          void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
+          void queryClient.resetQueries(
+            getAdminServiceGetProjectQueryKey(org, proj),
+          );
           return;
         }
       }
@@ -104,6 +137,14 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       if (error.response?.status === 401) {
         return;
       }
+    }
+
+    // do not block on request access failures
+    if (
+      isProjectRequestAccessPage(get(page)) &&
+      error.response?.status !== 403
+    ) {
+      return;
     }
 
     // Create a pretty message for the error page
@@ -160,11 +201,13 @@ function createErrorStoreStateFromAxiosError(
     statusCode: error.response?.status,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+    detail: (error.response?.data as RpcStatus)?.message,
   };
 }
 
 export function createErrorPagePropsFromRoutingError(
   statusCode: number,
+  errorMessage: string,
 ): ErrorStoreState {
   if (statusCode === 404) {
     return {
@@ -179,5 +222,6 @@ export function createErrorPagePropsFromRoutingError(
     statusCode: statusCode,
     header: "Sorry, unexpected error!",
     body: "Try refreshing the page, and reach out to us if that doesn't fix the error.",
+    detail: errorMessage,
   };
 }

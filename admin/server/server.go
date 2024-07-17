@@ -60,6 +60,8 @@ type Options struct {
 	GithubAppWebhookSecret string
 	GithubClientID         string
 	GithubClientSecret     string
+	// AssetsBucket is the path on gcs where rill managed project artifacts are stored.
+	AssetsBucket string
 }
 
 type Server struct {
@@ -493,4 +495,12 @@ func (u *externalURLs) alertEdit(org, project, alert string) string {
 
 func (u *externalURLs) magicAuthTokenOpen(org, project, token string) string {
 	return urlutil.MustJoinURL(u.frontend, org, project, "-", "share", token)
+}
+
+func (u *externalURLs) approveProjectAccess(org, project, id string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "request-access", id, "approve")
+}
+
+func (u *externalURLs) denyProjectAccess(org, project, id string) string {
+	return urlutil.MustJoinURL(u.frontend, org, project, "-", "request-access", id, "deny")
 }
