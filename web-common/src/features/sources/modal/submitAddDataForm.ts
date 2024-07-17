@@ -30,7 +30,7 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileCreateSourceYAML } from "../sourceUtils";
-import { FormType } from "./AddDataForm.svelte";
+import { AddDataFormType } from "./types";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
 interface AddDataFormValues {
@@ -40,7 +40,7 @@ interface AddDataFormValues {
 
 export async function submitAddDataForm(
   queryClient: QueryClient,
-  formType: FormType,
+  formType: AddDataFormType,
   connector: V1ConnectorDriver,
   values: AddDataFormValues,
 ): Promise<void> {

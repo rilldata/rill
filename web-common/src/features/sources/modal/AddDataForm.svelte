@@ -1,7 +1,3 @@
-<script lang="ts" context="module">
-  export type FormType = "source" | "connector";
-</script>
-
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { Button } from "@rilldata/web-common/components/button";
@@ -20,13 +16,14 @@
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
   import { submitAddDataForm } from "./submitAddDataForm";
+  import { AddDataFormType } from "./types";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
 
   export let connector: V1ConnectorDriver;
-  export let formType: FormType;
+  export let formType: AddDataFormType;
 
   $: formId = `add-data-${connector.name}-form`;
 
