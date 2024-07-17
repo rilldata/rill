@@ -10,10 +10,12 @@ import (
 )
 
 type RollupInterval struct {
-	Connector  string
-	TableName  string
-	ColumnName string
-	Result     *runtimev1.ColumnRollupIntervalResponse
+	Connector      string
+	Database       string
+	DatabaseSchema string
+	TableName      string
+	ColumnName     string
+	Result         *runtimev1.ColumnRollupIntervalResponse
 }
 
 var _ runtime.Query = &RollupInterval{}
@@ -47,9 +49,11 @@ func (q *RollupInterval) UnmarshalResult(v any) error {
 
 func (q *RollupInterval) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
 	ctr := &ColumnTimeRange{
-		Connector:  q.Connector,
-		TableName:  q.TableName,
-		ColumnName: q.ColumnName,
+		Connector:      q.Connector,
+		Database:       q.Database,
+		DatabaseSchema: q.DatabaseSchema,
+		TableName:      q.TableName,
+		ColumnName:     q.ColumnName,
 	}
 	err := rt.Query(ctx, instanceID, ctr, priority)
 	if err != nil {

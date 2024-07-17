@@ -1,4 +1,4 @@
-import { measureFilterResolutionsStore } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
+import { mergeMeasureFilters } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-utils";
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import {
   createAndExpression,
@@ -9,59 +9,43 @@ import {
 import { useTimeControlStore } from "@rilldata/web-common/features/dashboards/time-controls/time-control-store";
 import {
   createQueryServiceMetricsViewAggregation,
-  MetricsViewSpecDimensionSelector,
   type V1MetricsViewAggregationResponse,
 } from "@rilldata/web-common/runtime-client";
+import { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
 import type { CreateQueryResult } from "@tanstack/svelte-query";
 import { derived } from "svelte/store";
 
 export function createTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
-  dimensions: MetricsViewSpecDimensionSelector[],
   isComparison = false,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
     [
       ctx.runtime,
       ctx.metricsViewName,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
-      measureFilterResolutionsStore(ctx),
     ],
-    (
-      [
-        runtime,
-        metricsViewName,
-        timeControls,
-        dashboard,
-        measureFilterResolution,
-      ],
-      set,
-    ) =>
+    ([runtime, metricsViewName, timeControls, dashboard], set) =>
       createQueryServiceMetricsViewAggregation(
         runtime.instanceId,
         metricsViewName,
         {
           measures: measures.map((measure) => ({ name: measure })),
-          dimensions,
-          where: sanitiseExpression(
-            dashboard.whereFilter,
-            measureFilterResolution.filter,
-          ),
-          timeStart: isComparison
-            ? timeControls?.comparisonTimeStart
-            : timeControls.timeStart,
-          timeEnd: isComparison
-            ? timeControls?.comparisonTimeEnd
-            : timeControls.timeEnd,
+          where: sanitiseExpression(mergeMeasureFilters(dashboard), undefined),
+          timeRange: {
+            start: isComparison
+              ? timeControls?.comparisonTimeStart
+              : timeControls.timeStart,
+            end: isComparison
+              ? timeControls?.comparisonTimeEnd
+              : timeControls.timeEnd,
+          },
         },
         {
           query: {
-            enabled:
-              !!timeControls.ready &&
-              !!ctx.dashboardStore &&
-              measureFilterResolution.ready,
+            enabled: !!timeControls.ready && !!ctx.dashboardStore,
             queryClient: ctx.queryClient,
           },
         },
@@ -73,28 +57,18 @@ export function createUnfilteredTotalsForMeasure(
   ctx: StateManagers,
   measures: string[],
   dimensionName: string,
-): CreateQueryResult<V1MetricsViewAggregationResponse> {
+): CreateQueryResult<V1MetricsViewAggregationResponse, HTTPError> {
   return derived(
     [
       ctx.runtime,
       ctx.metricsViewName,
       useTimeControlStore(ctx),
       ctx.dashboardStore,
-      measureFilterResolutionsStore(ctx),
     ],
-    (
-      [
-        runtime,
-        metricsViewName,
-        timeControls,
-        dashboard,
-        measureFilterResolution,
-      ],
-      set,
-    ) => {
+    ([runtime, metricsViewName, timeControls, dashboard], set) => {
       const filter = sanitiseExpression(
-        dashboard.whereFilter,
-        measureFilterResolution.filter,
+        mergeMeasureFilters(dashboard),
+        undefined,
       );
 
       const updatedFilter = filterExpressions(
@@ -113,10 +87,7 @@ export function createUnfilteredTotalsForMeasure(
         },
         {
           query: {
-            enabled:
-              !!timeControls.ready &&
-              !!ctx.dashboardStore &&
-              measureFilterResolution.ready,
+            enabled: !!timeControls.ready && !!ctx.dashboardStore,
             queryClient: ctx.queryClient,
           },
         },

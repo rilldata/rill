@@ -3,14 +3,18 @@ package provisioner
 import (
 	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
 	"path/filepath"
 	"strings"
 	"text/template"
 	"time"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/c2h5oh/datasize"
 	retryablehttp "github.com/hashicorp/go-retryablehttp"
 	"go.uber.org/multierr"
@@ -43,9 +47,10 @@ type KubernetesTemplatePaths struct {
 }
 
 type KubernetesProvisioner struct {
-	Spec      *KubernetesSpec
-	clientset *kubernetes.Clientset
-	templates *template.Template
+	Spec              *KubernetesSpec
+	clientset         *kubernetes.Clientset
+	templates         *template.Template
+	templatesChecksum string
 }
 
 type TemplateData struct {
@@ -87,18 +92,39 @@ func NewKubernetes(spec json.RawMessage) (*KubernetesProvisioner, error) {
 		return nil, err
 	}
 
-	// Parse the template definitions
-	templates := template.Must(template.New("").ParseFiles(
+	// Add Sprig template functions (removing functions that leak host info)
+	// Derived from Helm: https://github.com/helm/helm/blob/main/pkg/engine/funcs.go
+	funcMap := sprig.TxtFuncMap()
+	delete(funcMap, "env")
+	delete(funcMap, "expandenv")
+
+	// Define template files
+	templateFiles := []string{
 		ksp.TemplatePaths.HTTPIngress,
 		ksp.TemplatePaths.GRPCIngress,
 		ksp.TemplatePaths.Service,
 		ksp.TemplatePaths.StatefulSet,
-	))
+	}
+
+	// Parse the template definitions
+	templates := template.Must(template.New("").Funcs(funcMap).ParseFiles(templateFiles...))
+
+	// Calculate the combined sha256 sum of all the template files
+	h := sha256.New()
+	for _, f := range templateFiles {
+		d, err := os.ReadFile(f)
+		if err != nil {
+			return nil, err
+		}
+		h.Write(d)
+	}
+	templatesChecksum := hex.EncodeToString(h.Sum(nil))
 
 	return &KubernetesProvisioner{
-		Spec:      ksp,
-		clientset: clientset,
-		templates: templates,
+		Spec:              ksp,
+		clientset:         clientset,
+		templates:         templates,
+		templatesChecksum: templatesChecksum,
 	}, nil
 }
 
@@ -116,7 +142,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 		Names:        names,
 		Host:         strings.Split(host, "//")[1], // Remove protocol
 		CPU:          1 * opts.Slots,
-		MemoryGB:     2 * opts.Slots,
+		MemoryGB:     4 * opts.Slots,
 		StorageBytes: 40 * int64(opts.Slots) * int64(datasize.GB),
 		Slots:        opts.Slots,
 		Annotations:  opts.Annotations,
@@ -158,6 +184,7 @@ func (p *KubernetesProvisioner) Provision(ctx context.Context, opts *ProvisionOp
 
 	// Create statefulset
 	sts.ObjectMeta.Name = names.StatefulSet
+	sts.ObjectMeta.Annotations["checksum/templates"] = p.templatesChecksum
 	p.addCommonLabels(opts.ProvisionID, sts.ObjectMeta.Labels)
 	_, err = p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Create(ctx, sts, metav1.CreateOptions{})
 	if err != nil {
@@ -299,6 +326,28 @@ func (p *KubernetesProvisioner) Update(ctx context.Context, provisionID, newVers
 func (p *KubernetesProvisioner) CheckCapacity(ctx context.Context) error {
 	// No-op
 	return nil
+}
+
+func (p *KubernetesProvisioner) ValidateConfig(ctx context.Context, provisionID string) (bool, error) {
+	// Get Kubernetes resource names
+	names := p.getResourceNames(provisionID)
+
+	// Get the statefulset
+	sts, err := p.clientset.AppsV1().StatefulSets(p.Spec.Namespace).Get(ctx, names.StatefulSet, metav1.GetOptions{})
+	if err != nil {
+		return false, err
+	}
+
+	// Compare the provisioned templates checksum with the current one
+	if sts.ObjectMeta.Annotations["checksum/templates"] != p.templatesChecksum {
+		return false, nil
+	}
+
+	return true, nil
+}
+
+func (p *KubernetesProvisioner) Type() string {
+	return "kubernetes"
 }
 
 func (p *KubernetesProvisioner) getResourceNames(provisionID string) ResourceNames {

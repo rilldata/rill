@@ -17,9 +17,9 @@ import (
 
 // CreateProject creates a new project and provisions and reconciles a prod deployment for it.
 func (s *Service) CreateProject(ctx context.Context, org *database.Organization, opts *database.InsertProjectOptions) (*database.Project, error) {
-	// Check Github info is set (presently required for deployments)
-	if opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == "" {
-		return nil, fmt.Errorf("cannot create project without github info")
+	isGitInfoEmpty := opts.GithubURL == nil || opts.GithubInstallationID == nil || opts.ProdBranch == ""
+	if (opts.ArchiveAssetID == nil) == isGitInfoEmpty {
+		return nil, fmt.Errorf("either github info or archive_asset_id must be set")
 	}
 
 	// Get roles for initial setup
@@ -87,6 +87,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Name:                 proj.Name,
 		Description:          proj.Description,
 		Public:               proj.Public,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		Provisioner:          proj.Provisioner,
@@ -99,7 +100,7 @@ func (s *Service) CreateProject(ctx context.Context, org *database.Organization,
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
-		err2 := s.teardownDeployment(ctx, depl)
+		err2 := s.TeardownDeployment(ctx, depl)
 		err3 := s.DB.DeleteProject(ctx, proj.ID)
 		return nil, multierr.Combine(err, err2, err3)
 	}
@@ -118,7 +119,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 	}
 
 	for _, d := range ds {
-		err := s.teardownDeployment(ctx, d)
+		err := s.TeardownDeployment(ctx, d)
 		if err != nil {
 			return err
 		}
@@ -143,7 +144,8 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
-		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID))
+		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
+		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID))
 
 	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
@@ -185,7 +187,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 	// It needs to be refactored when implementing preview deploys.
 	for _, d := range ds {
 		err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
-			Version:         opts.ProdVersion,
+			Version:         d.RuntimeVersion,
 			Branch:          opts.ProdBranch,
 			Variables:       opts.ProdVariables,
 			Annotations:     annotations,
@@ -220,6 +222,7 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 
 			for _, d := range ds {
 				err := s.UpdateDeployment(ctx, d, &UpdateDeploymentOptions{
+					Version:         d.RuntimeVersion,
 					Branch:          proj.ProdBranch,
 					Variables:       proj.ProdVariables,
 					Annotations:     s.NewDeploymentAnnotations(org, proj),
@@ -239,6 +242,43 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 	}
 
 	return nil
+}
+
+// HibernateProject hibernates a project by tearing down its prod deployment.
+func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
+	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, depl := range depls {
+		err = s.TeardownDeployment(ctx, depl)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	proj, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		Provisioner:          proj.Provisioner,
+		ArchiveAssetID:       proj.ArchiveAssetID,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          proj.ProdVersion,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdDeploymentID:     nil,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Annotations:          proj.Annotations,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return proj, nil
 }
 
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
@@ -270,6 +310,7 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		Description:          proj.Description,
 		Public:               proj.Public,
 		Provisioner:          proj.Provisioner,
+		ArchiveAssetID:       proj.ArchiveAssetID,
 		GithubURL:            proj.GithubURL,
 		GithubInstallationID: proj.GithubInstallationID,
 		ProdVersion:          proj.ProdVersion,
@@ -281,13 +322,13 @@ func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, p
 		Annotations:          proj.Annotations,
 	})
 	if err != nil {
-		err2 := s.teardownDeployment(ctx, newDepl)
+		err2 := s.TeardownDeployment(ctx, newDepl)
 		return nil, multierr.Combine(err, err2)
 	}
 
 	// Delete old prod deployment if exists
 	if prevDepl != nil {
-		err = s.teardownDeployment(ctx, prevDepl)
+		err = s.TeardownDeployment(ctx, prevDepl)
 		if err != nil {
 			s.Logger.Error("trigger redeploy: could not teardown old deployment", zap.String("deployment_id", prevDepl.ID), zap.Error(err), observability.ZapCtx(ctx))
 		}

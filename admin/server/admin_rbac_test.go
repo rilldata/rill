@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
+	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -59,6 +61,9 @@ func TestAdmin_RBAC(t *testing.T) {
 		emailClient,
 		github,
 		ai.NewNoop(),
+		nil,
+		billing.NewNoop(),
+		payment.NewNoop(),
 	)
 	require.NoError(t, err)
 
@@ -169,7 +174,7 @@ func TestAdmin_RBAC(t *testing.T) {
 	require.Equal(t, adminOrg.Organization.Name, "foo")
 
 	// add a viewer to the organization
-	res, err := adminClient.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+	res, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 		Organization: adminOrg.Organization.Name,
 		Email:        viewerUser.Email,
 		Role:         "viewer",
@@ -237,7 +242,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	for _, tt := range membersTests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+			resp, err := tt.client.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
 				Organization: adminOrg.Organization.Name,
 			})
 
@@ -313,7 +318,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	for _, tt := range listOrgMemberTests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+			resp, err := tt.client.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
 				Organization: adminOrg.Organization.Name,
 			})
 
@@ -352,7 +357,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			e := strconv.Itoa(i) + "@test.io"
 			r := "viewer"
-			resp, err := tt.client.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+			resp, err := tt.client.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        e,
 				Role:         r,
@@ -378,7 +383,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.Equal(t, adminUser.Email, invitesResp.Invites[0].InvitedBy)
 
 			// clean up invite
-			_, err = tt.client.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+			_, err = tt.client.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        e,
 			})
@@ -395,7 +400,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	// test add duplicate member
 	t.Run("test add duplicate member", func(t *testing.T) {
-		_, err := adminClient.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+		_, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        viewerUser.Email,
 			Role:         "viewer",
@@ -431,7 +436,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// add random user using admin client
 			randomEmail := "random@test.io"
-			_, err := adminClient.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+			_, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        randomEmail,
 				Role:         "viewer",
@@ -439,7 +444,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.NoError(t, err)
 
 			// remove the user using the client under test
-			resp, err := tt.client.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+			resp, err := tt.client.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        randomEmail,
 			})
@@ -448,7 +453,7 @@ func TestAdmin_RBAC(t *testing.T) {
 				require.Error(t, err)
 				require.Equal(t, tt.errCode, status.Code(err))
 				// clean up
-				_, err = adminClient.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+				_, err = adminClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
 					Organization: adminOrg.Organization.Name,
 					Email:        randomEmail,
 				})
@@ -462,14 +467,14 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	// The viewer should be able to remove themselves from the org
 	t.Run("remove yourself from org", func(t *testing.T) {
-		_, err := viewerClient.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+		_, err := viewerClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        viewerUser.Email,
 		})
 		require.NoError(t, err)
 
 		// Reverse the change
-		_, err = adminClient.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+		_, err = adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        viewerUser.Email,
 			Role:         "viewer",
@@ -479,7 +484,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	// remove last admin tests
 	t.Run("test remove last admin", func(t *testing.T) {
-		_, err := adminClient.RemoveOrganizationMember(ctx, &adminv1.RemoveOrganizationMemberRequest{
+		_, err := adminClient.RemoveOrganizationMemberUser(ctx, &adminv1.RemoveOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        adminUser.Email,
 		})
@@ -496,6 +501,76 @@ func TestAdmin_RBAC(t *testing.T) {
 		require.Error(t, err)
 		require.Equal(t, codes.InvalidArgument, status.Code(err))
 		require.ErrorContains(t, err, "cannot remove the last owner")
+	})
+
+	// Create, fetch, and delete a user group
+	t.Run("test delete user group", func(t *testing.T) {
+		// create
+		_, err := adminClient.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Name:         "group1",
+		})
+		require.NoError(t, err)
+
+		// fetch
+		resp, err := adminClient.GetUsergroup(ctx, &adminv1.GetUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group1",
+		})
+		require.NoError(t, err)
+		require.NotNil(t, resp)
+		require.NotNil(t, resp.Usergroup)
+		require.Equal(t, "group1", resp.Usergroup.GroupName)
+
+		// delete
+		_, err = adminClient.DeleteUsergroup(ctx, &adminv1.DeleteUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group1",
+		})
+		require.NoError(t, err)
+
+		// fetch again
+		_, err = adminClient.GetUsergroup(ctx, &adminv1.GetUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group1",
+		})
+		require.Error(t, err)
+		require.Equal(t, codes.InvalidArgument, status.Code(err))
+	})
+
+	// Create a user group, assign an org-level role and check
+	t.Run("test assign user group roles", func(t *testing.T) {
+		// create
+		_, err := adminClient.CreateUsergroup(ctx, &adminv1.CreateUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Name:         "group2",
+		})
+		require.NoError(t, err)
+
+		// assign org-level role
+		_, err = adminClient.AddOrganizationMemberUsergroup(ctx, &adminv1.AddOrganizationMemberUsergroupRequest{
+			Organization: adminOrg.Organization.Name,
+			Usergroup:    "group2",
+			Role:         "viewer",
+		})
+		require.NoError(t, err)
+
+		// check
+		resp, err := adminClient.ListOrganizationMemberUsergroups(ctx, &adminv1.ListOrganizationMemberUsergroupsRequest{
+			Organization: adminOrg.Organization.Name,
+		})
+		require.NoError(t, err)
+		require.Equal(t, 2, len(resp.Members))
+
+		var group *adminv1.MemberUsergroup
+		for _, m := range resp.Members {
+			if m.GroupName == "group2" {
+				group = m
+				break
+			}
+		}
+		require.NotNil(t, group)
+		require.Equal(t, "viewer", group.RoleName)
 	})
 
 	// test change roles
@@ -521,7 +596,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	for _, tt := range setRoleMemberTests {
 		t.Run(tt.name, func(t *testing.T) {
-			resp, err := tt.client.SetOrganizationMemberRole(ctx, &adminv1.SetOrganizationMemberRoleRequest{
+			resp, err := tt.client.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        viewerUser.Email,
 				Role:         "admin",
@@ -536,7 +611,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.NotNil(t, resp)
 
 			// check role
-			membersResp, err := tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+			membersResp, err := tt.client.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
 				Organization: adminOrg.Organization.Name,
 			})
 			require.NoError(t, err)
@@ -545,7 +620,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.Equal(t, "admin", membersResp.Members[1].RoleName)
 
 			// change the role back to viewer
-			resp, err = tt.client.SetOrganizationMemberRole(ctx, &adminv1.SetOrganizationMemberRoleRequest{
+			resp, err = tt.client.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        viewerUser.Email,
 				Role:         "viewer",
@@ -560,7 +635,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			require.NotNil(t, resp)
 
 			// check role
-			membersResp, err = tt.client.ListOrganizationMembers(ctx, &adminv1.ListOrganizationMembersRequest{
+			membersResp, err = tt.client.ListOrganizationMemberUsers(ctx, &adminv1.ListOrganizationMemberUsersRequest{
 				Organization: adminOrg.Organization.Name,
 			})
 			require.NoError(t, err)
@@ -572,7 +647,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			}
 
 			// check changing role of last admin
-			_, err = tt.client.SetOrganizationMemberRole(ctx, &adminv1.SetOrganizationMemberRoleRequest{
+			_, err = tt.client.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        adminUser.Email,
 				Role:         "viewer",
@@ -584,7 +659,7 @@ func TestAdmin_RBAC(t *testing.T) {
 			// check changing role of invited user
 			e := "1@test.io"
 			r := "viewer"
-			addResp, err := tt.client.AddOrganizationMember(ctx, &adminv1.AddOrganizationMemberRequest{
+			addResp, err := tt.client.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        e,
 				Role:         r,
@@ -606,7 +681,7 @@ func TestAdmin_RBAC(t *testing.T) {
 
 			r = "admin"
 			// change the role of the invited user
-			_, err = tt.client.SetOrganizationMemberRole(ctx, &adminv1.SetOrganizationMemberRoleRequest{
+			_, err = tt.client.SetOrganizationMemberUserRole(ctx, &adminv1.SetOrganizationMemberUserRoleRequest{
 				Organization: adminOrg.Organization.Name,
 				Email:        e,
 				Role:         r,

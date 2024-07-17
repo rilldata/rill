@@ -6,6 +6,7 @@
   import { useValidDashboards } from "@rilldata/web-common/features/dashboards/selectors.js";
   import StateManagersProvider from "@rilldata/web-common/features/dashboards/state-managers/StateManagersProvider.svelte";
   import DashboardCtAs from "@rilldata/web-common/features/dashboards/workspace/DashboardCTAs.svelte";
+  import { useProjectTitle } from "@rilldata/web-common/features/project/selectors";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 
   $: ({ instanceId } = $runtime);
@@ -16,6 +17,9 @@
   } = $page);
 
   $: dashboardsQuery = useValidDashboards(instanceId);
+  $: projectTitleQuery = useProjectTitle(instanceId);
+
+  $: projectTitle = $projectTitleQuery.data ?? "Untitled Rill Project";
 
   $: dashboards = $dashboardsQuery.data ?? [];
 
@@ -29,9 +33,25 @@
     return map;
   }, new Map<string, PathOption>());
 
-  $: pathParts = [dashboardOptions];
+  $: projectPath = <PathOption>{
+    label: projectTitle,
+    section: "project",
+    depth: -1,
+    href: "/",
+  };
 
-  $: currentPath = [dashboardName];
+  $: pathParts = [
+    new Map([[projectTitle.toLowerCase(), projectPath]]),
+    dashboardOptions,
+  ];
+
+  $: currentPath = [projectTitle, dashboardName.toLowerCase()];
+
+  $: currentDashboard = dashboards.find(
+    (d) => d.meta?.name?.name?.toLowerCase() === dashboardName.toLowerCase(),
+  );
+
+  $: metricsViewName = currentDashboard?.meta?.name?.name;
 </script>
 
 <div class="flex flex-col size-full">
@@ -46,9 +66,9 @@
     <span class="rounded-full px-2 border text-gray-800 bg-gray-50">
       PREVIEW
     </span>
-    {#if route.id?.includes("dashboard")}
-      <StateManagersProvider metricsViewName={dashboardName}>
-        <DashboardCtAs metricViewName={dashboardName} />
+    {#if route.id?.includes("dashboard") && metricsViewName}
+      <StateManagersProvider {metricsViewName}>
+        <DashboardCtAs metricViewName={metricsViewName} />
       </StateManagersProvider>
     {/if}
   </header>

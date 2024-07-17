@@ -15,7 +15,9 @@ import (
 	"github.com/MicahParks/keyfunc"
 	"github.com/go-jose/go-jose/v3"
 	"github.com/golang-jwt/jwt/v4"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"go.uber.org/zap"
+	"google.golang.org/protobuf/encoding/protojson"
 )
 
 // Issuer creates JWTs with claims for an Audience.
@@ -112,10 +114,25 @@ type TokenOptions struct {
 	SystemPermissions   []Permission
 	InstancePermissions map[string][]Permission
 	Attributes          map[string]any
+	SecurityRules       []*runtimev1.SecurityRule
 }
 
 // NewToken issues a new JWT based on the provided options.
 func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
+	// Since the security policy is a proto message, we need to serialize it using protojson instead of json.Marshal.
+	var sec []json.RawMessage
+	if len(opts.SecurityRules) > 0 {
+		sec = make([]json.RawMessage, len(opts.SecurityRules))
+		for i, rule := range opts.SecurityRules {
+			data, err := protojson.Marshal(rule)
+			if err != nil {
+				return "", err
+			}
+			sec[i] = data
+		}
+	}
+
+	// Create claims
 	now := time.Now()
 	claims := &jwtClaims{
 		RegisteredClaims: jwt.RegisteredClaims{
@@ -129,8 +146,10 @@ func (i *Issuer) NewToken(opts TokenOptions) (string, error) {
 		System:    opts.SystemPermissions,
 		Instances: opts.InstancePermissions,
 		Attrs:     opts.Attributes,
+		Security:  sec,
 	}
 
+	// Create token
 	token := jwt.NewWithClaims(jwt.GetSigningMethod(i.signingKey.Algorithm), claims)
 	token.Header["kid"] = i.signingKey.KeyID
 	res, err := token.SignedString(i.signingKey.Key)
@@ -182,7 +201,7 @@ func OpenAudience(ctx context.Context, logger *zap.Logger, issuerURL, audienceUR
 	// Setup keyfunc that refreshes the JWKS in the background.
 	// It returns an error if the initial fetch fails. So we wrap it with a retry in case the admin server is not ready.
 	var jwks *keyfunc.JWKS
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 20; i++ {
 		jwks, err = keyfunc.Get(jwksURL, keyfunc.Options{
 			Ctx: ctx,
 			RefreshErrorHandler: func(err error) {

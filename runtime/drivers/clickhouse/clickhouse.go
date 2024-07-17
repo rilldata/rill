@@ -2,10 +2,11 @@ package clickhouse
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"fmt"
-	"net/url"
 
+	"github.com/ClickHouse/clickhouse-go/v2"
 	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -13,9 +14,6 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/priorityqueue"
 	"go.uber.org/zap"
 	"golang.org/x/sync/semaphore"
-
-	// import clickhouse driver
-	_ "github.com/ClickHouse/clickhouse-go/v2"
 )
 
 func init() {
@@ -81,7 +79,7 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "port",
-			Type:        drivers.StringPropertyType,
+			Type:        drivers.NumberPropertyType,
 			Required:    true,
 			DisplayName: "Port",
 			Description: "Port number of the ClickHouse server",
@@ -149,38 +147,44 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, err
 	}
 
-	var dsn string
+	// build clickhouse options
+	var opts *clickhouse.Options
 	if conf.DSN != "" {
-		dsn = conf.DSN
+		opts, err = clickhouse.ParseDSN(conf.DSN)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse DSN: %w", err)
+		}
 	} else if conf.Host != "" {
-		var dsnURL url.URL
-		dsnURL.Host = conf.Host
+		opts = &clickhouse.Options{}
+
+		// address
+		host := conf.Host
 		if conf.Port != 0 {
-			dsnURL.Host = fmt.Sprintf("%v:%v", dsnURL.Host, conf.Port)
+			host = fmt.Sprintf("%s:%d", conf.Host, conf.Port)
 		}
+		opts.Addr = []string{host}
 		if conf.SSL {
-			dsnURL.Scheme = "https"
-			dsnURL.RawQuery = "secure=true&skip_verify=true"
+			opts.Protocol = clickhouse.HTTP
+			opts.TLS = &tls.Config{
+				MinVersion:         tls.VersionTLS12,
+				InsecureSkipVerify: false,
+			}
 		} else {
-			dsnURL.Scheme = "clickhouse"
+			opts.Protocol = clickhouse.Native
 		}
 
+		// username password
 		if conf.Password != "" {
-			dsnURL.User = url.UserPassword(conf.Username, conf.Password)
+			opts.Auth.Username = conf.Username
+			opts.Auth.Password = conf.Password
 		} else if conf.Username != "" {
-			dsnURL.User = url.User(conf.Username)
+			opts.Auth.Username = conf.Username
 		}
-
-		dsn = dsnURL.String()
 	} else {
 		return nil, fmt.Errorf("clickhouse connection parameters not set. Set `dsn` or individual properties")
 	}
 
-	db, err := sqlx.Open("clickhouse", dsn)
-	if err != nil {
-		return nil, err
-	}
-
+	db := sqlx.NewDb(clickhouse.OpenDB(opts), "clickhouse")
 	// very roughly approximating num queries required for a typical page load
 	// TODO: copied from druid reevaluate
 	db.SetMaxOpenConns(maxOpenConnections)
@@ -212,6 +216,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		logger:  logger,
 		metaSem: semaphore.NewWeighted(1),
 		olapSem: priorityqueue.NewSemaphore(maxOpenConnections - 1),
+		opts:    opts,
 	}
 	return conn, nil
 }
@@ -244,6 +249,14 @@ type connection struct {
 	// This creates contention for the same connection in database/sql's pool, but its locks will handle that.
 	metaSem *semaphore.Weighted
 	olapSem *priorityqueue.Semaphore
+
+	// options used to open clickhouse connections
+	opts *clickhouse.Options
+}
+
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return c.db.PingContext(ctx)
 }
 
 // Driver implements drivers.Connection.
@@ -254,7 +267,7 @@ func (c *connection) Driver() string {
 // Config used to open the Connection
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, m)
+	_ = mapstructure.Decode(c.config, &m)
 	return m
 }
 
@@ -324,15 +337,6 @@ func (c *connection) AsModelManager(instanceID string) (drivers.ModelManager, bo
 
 // AsTransporter implements drivers.Connection.
 func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter, bool) {
-	olap, _ := to.(*connection)
-	if c == to {
-		switch from.Driver() {
-		case "s3":
-			return NewS3Transporter(from, olap, c.logger), true
-		case "https":
-			return NewHTTPTransporter(from, olap, c.logger), true
-		}
-	}
 	return nil, false
 }
 

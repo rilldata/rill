@@ -8,16 +8,12 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
-  import {
-    createQueryServiceMetricsViewComparison,
-    createQueryServiceMetricsViewTotals,
-  } from "@rilldata/web-common/runtime-client";
+  import { createQueryServiceMetricsViewAggregation } from "@rilldata/web-common/runtime-client";
 
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LeaderboardListItem from "./LeaderboardListItem.svelte";
   import {
     LeaderboardItemData,
-    getLabeledComparisonFromComparisonRow,
     prepareLeaderboardItemData,
   } from "./leaderboard-utils";
   import { onMount } from "svelte";
@@ -52,9 +48,9 @@
 
   const {
     selectors: {
+      dimensions: { getDimensionByName },
       activeMeasure: { activeMeasureName },
       dimensionFilters: { selectedDimensionValues },
-      measureFilters: { getResolvedFilterForMeasureFilters },
       dashboardQueries: {
         leaderboardSortedQueryBody,
         leaderboardSortedQueryOptions,
@@ -69,13 +65,13 @@
     runtime,
   } = getStateManagers();
 
-  $: resolvedFilter = $getResolvedFilterForMeasureFilters;
+  $: dimension = $getDimensionByName(dimensionName);
 
-  $: sortedQuery = createQueryServiceMetricsViewComparison(
+  $: sortedQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
     $metricsViewName,
-    $leaderboardSortedQueryBody(dimensionName, $resolvedFilter),
-    $leaderboardSortedQueryOptions(dimensionName, $resolvedFilter, visible),
+    $leaderboardSortedQueryBody(dimensionName),
+    $leaderboardSortedQueryOptions(dimensionName, visible),
   );
 
   $: ({
@@ -86,14 +82,14 @@
     isFetching,
   } = $sortedQuery);
 
-  $: totalsQuery = createQueryServiceMetricsViewTotals(
+  $: totalsQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
     $metricsViewName,
-    $leaderboardDimensionTotalQueryBody(dimensionName, $resolvedFilter),
-    $leaderboardDimensionTotalQueryOptions(dimensionName, $resolvedFilter),
+    $leaderboardDimensionTotalQueryBody(dimensionName),
+    $leaderboardDimensionTotalQueryOptions(dimensionName),
   );
 
-  $: leaderboardTotal = $totalsQuery?.data?.data?.[$activeMeasureName];
+  $: leaderboardTotal = $totalsQuery?.data?.data?.[0]?.[$activeMeasureName];
 
   let aboveTheFold: LeaderboardItemData[] = [];
   let selectedBelowTheFold: LeaderboardItemData[] = [];
@@ -101,9 +97,9 @@
   let showExpandTable = false;
   $: if (sortedData && !isFetching) {
     const leaderboardData = prepareLeaderboardItemData(
-      sortedData?.rows?.map((r) =>
-        getLabeledComparisonFromComparisonRow(r, $activeMeasureName),
-      ) ?? [],
+      sortedData?.data ?? [],
+      dimensionName,
+      $activeMeasureName,
       slice,
       $selectedDimensionValues(dimensionName),
       leaderboardTotal,
@@ -151,13 +147,25 @@
     <div class="rounded-b border-gray-200 surface text-gray-800">
       <!-- place the leaderboard entries that are above the fold here -->
       {#each aboveTheFold as itemData (itemData.dimensionValue)}
-        <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
+        <LeaderboardListItem
+          {dimensionName}
+          {itemData}
+          uri={dimension?.uri}
+          on:click
+          on:keydown
+        />
       {/each}
       <!-- place the selected values that are not above the fold here -->
       {#if selectedBelowTheFold?.length}
         <hr />
         {#each selectedBelowTheFold as itemData (itemData.dimensionValue)}
-          <LeaderboardListItem {dimensionName} {itemData} on:click on:keydown />
+          <LeaderboardListItem
+            {dimensionName}
+            {itemData}
+            uri={dimension?.uri}
+            on:click
+            on:keydown
+          />
         {/each}
         <hr />
       {/if}

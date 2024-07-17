@@ -32,6 +32,7 @@ export function mapQueryToDashboard(
   queryName: string | undefined,
   queryArgsJson: string | undefined,
   executionTime: string | undefined,
+  annotations: Record<string, string>,
 ): CompoundQueryResult<DashboardStateForQuery> {
   if (!queryName || !queryArgsJson || !executionTime)
     return readable({
@@ -121,7 +122,8 @@ export function mapQueryToDashboard(
         req,
         metricsView: metricsViewResource.data,
         timeRangeSummary: timeRangeSummary.data.timeRangeSummary,
-        executionTime: executionTime,
+        executionTime,
+        annotations,
       })
         .then((newDashboard) => {
           set({

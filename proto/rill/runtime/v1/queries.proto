@@ -137,6 +137,14 @@ service QueryService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/schema"};
   }
 
+  // MetricsViewSearch Get the data types of measures and dimensions
+  rpc MetricsViewSearch(MetricsViewSearchRequest) returns (MetricsViewSearchResponse) {
+    option (google.api.http) = {
+      post: "/v1/instances/{instance_id}/queries/metrics-views/{metrics_view_name}/search",
+      body: "*"
+    };
+  }
+
   // Profiling APIs
 
   // ColumnRollupInterval returns the minimum time granularity (as well as the time range) for a specified timestamp column
@@ -421,7 +429,6 @@ message MetricsViewToplistRequest {
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
   string dimension_name = 3 [(validate.rules).string.min_len = 1];
   repeated string measure_names = 4;
-  repeated InlineMeasure inline_measures = 12;
   google.protobuf.Timestamp time_start = 5;
   google.protobuf.Timestamp time_end = 6;
   int64 limit = 7 [(validate.rules).int64.gte = 0];
@@ -551,9 +558,7 @@ message MetricsViewComparisonMeasureAlias {
 message MetricsViewTimeSeriesRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  // Required either measure_names or inline_measures
   repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
-  repeated InlineMeasure inline_measures = 9;
   // Optional. Defaults to min
   google.protobuf.Timestamp time_start = 4;
   // Optional. Defaults to max
@@ -582,9 +587,7 @@ message MetricsViewTimeSeriesResponse {
 message MetricsViewTotalsRequest {
   string instance_id = 1;
   string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
-  // Required either measure_names or inline_measures
   repeated string measure_names = 3 [(validate.rules).repeated.min_items = 1];
-  repeated InlineMeasure inline_measures = 9;
   // Optional. Defaults to min
   google.protobuf.Timestamp time_start = 4;
   // Optional. Defaults to max
@@ -684,6 +687,31 @@ message MetricsViewSchemaRequest {
 
 message MetricsViewSchemaResponse {
   StructType schema = 1;
+}
+
+message MetricsViewSearchRequest {
+  string instance_id = 1;
+  string metrics_view_name = 2 [(validate.rules).string.min_len = 1];
+  repeated string dimensions = 3;
+  string search = 4;
+  // Optional
+  TimeRange time_range = 5;
+  // Optional
+  Expression where = 6;
+  // Optional
+  Expression having = 7;
+  // Optional
+  int32 limit = 8 [(validate.rules).int32.gte = 0];
+  int32 priority = 9;
+}
+
+message MetricsViewSearchResponse {
+  message SearchResult {
+    string dimension = 1;
+    google.protobuf.Value value = 2;
+  }
+
+  repeated SearchResult results = 1;
 }
 
 // **********

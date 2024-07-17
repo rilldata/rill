@@ -8,7 +8,7 @@
 
   export let chartName: string;
   export let chartView: boolean;
-  export let vegaSpec: string;
+  export let vegaSpec: VisualizationSpec | string | undefined;
   export let resolverProperties: V1ComponentSpecResolverProperties;
 
   let viewVL: View;
@@ -16,10 +16,11 @@
   let parsedVegaSpec: VisualizationSpec | null = null;
 
   $: try {
-    parsedVegaSpec = vegaSpec
-      ? (JSON.parse(vegaSpec) as VisualizationSpec)
-      : null;
-    error = null;
+    if (typeof vegaSpec === "string") {
+      parsedVegaSpec = JSON.parse(vegaSpec) as VisualizationSpec;
+    } else {
+      parsedVegaSpec = vegaSpec ?? null;
+    }
   } catch (e: unknown) {
     error = JSON.stringify(e);
   }

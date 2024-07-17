@@ -39,7 +39,7 @@
 
   {#if expanded}
     {#if directory?.directories}
-      {#each directory.directories as dir}
+      {#each directory.directories as dir (dir.path)}
         <!-- Recursive call to display subdirectories -->
         <svelte:self
           directory={dir}
@@ -51,7 +51,7 @@
       {/each}
     {/if}
 
-    {#each directory.files as file}
+    {#each directory.files as file (file)}
       {@const filePath =
         directory.path === "/" ? `/${file}` : `${directory.path}/${file}`}
       <NavFile

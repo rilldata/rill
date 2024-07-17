@@ -63,9 +63,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Apply a limited subset of rewrites to the inner query.
-	if err := e.rewriteApproximateComparisons(ast); err != nil {
-		return fmt.Errorf("druid exactify: %w", err)
-	}
+	e.rewriteApproxComparisons(ast)
 
 	// Generate the SQL for and execute the inner query.
 	sql, args, err := ast.SQL()
@@ -76,7 +74,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 		Query:            sql,
 		Args:             args,
 		Priority:         e.priority,
-		ExecutionTimeout: defaultExecutionTimeout,
+		ExecutionTimeout: defaultInteractiveTimeout,
 	})
 	if err != nil {
 		return err
@@ -102,15 +100,23 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 	}
 
 	// Add the dimensions values as a "<dim> IN (<vals...>)" expression in the outer query's WHERE clause.
-	inExpr := &Expression{
-		Condition: &Condition{
-			Operator: OperatorIn,
-			Expressions: []*Expression{
-				{Name: qry.Dimensions[0].Name},
-				{Value: vals},
+	var inExpr *Expression
+	if len(vals) == 0 {
+		inExpr = &Expression{
+			Value: false,
+		}
+	} else {
+		inExpr = &Expression{
+			Condition: &Condition{
+				Operator: OperatorIn,
+				Expressions: []*Expression{
+					{Name: qry.Dimensions[0].Name},
+					{Value: vals},
+				},
 			},
-		},
+		}
 	}
+
 	if qry.Where == nil {
 		qry.Where = inExpr
 	} else {
@@ -127,6 +133,7 @@ func (e *Executor) rewriteQueryDruidExactify(ctx context.Context, qry *Query) er
 
 	// Remove the limit from the outer query (the IN filter automatically limits the result size).
 	qry.Limit = nil
+	qry.Offset = nil
 
 	return nil
 }

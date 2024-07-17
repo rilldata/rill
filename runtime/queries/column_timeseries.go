@@ -49,9 +49,9 @@ type ColumnTimeseries struct {
 	FirstMonthOfYear    uint32
 
 	// MetricsView-related fields. These can be removed when MetricsViewTimeSeries is refactored to a standalone implementation.
-	MetricsView       *runtimev1.MetricsViewSpec           `json:"-"`
-	MetricsViewFilter *runtimev1.MetricsViewFilter         `json:"filters"`
-	MetricsViewPolicy *runtime.ResolvedMetricsViewSecurity `json:"security"`
+	MetricsView       *runtimev1.MetricsViewSpec   `json:"-"`
+	MetricsViewFilter *runtimev1.MetricsViewFilter `json:"filters"`
+	MetricsViewPolicy *runtime.ResolvedSecurity    `json:"security"`
 }
 
 var _ runtime.Query = &ColumnTimeseries{}
@@ -375,8 +375,11 @@ func (q *ColumnTimeseries) ResolveNormaliseTimeRange(ctx context.Context, rt *ru
 	var result runtimev1.TimeSeriesTimeRange
 	if rtr.Interval == runtimev1.TimeGrain_TIME_GRAIN_UNSPECIFIED {
 		q := &RollupInterval{
-			TableName:  q.TableName,
-			ColumnName: q.TimestampColumnName,
+			Connector:      q.Connector,
+			Database:       q.Database,
+			DatabaseSchema: q.DatabaseSchema,
+			TableName:      q.TableName,
+			ColumnName:     q.TimestampColumnName,
 		}
 		err := rt.Query(ctx, instanceID, q, priority)
 		if err != nil {
@@ -395,8 +398,11 @@ func (q *ColumnTimeseries) ResolveNormaliseTimeRange(ctx context.Context, rt *ru
 		}
 	} else if rtr.Start == nil || rtr.End == nil {
 		q := &ColumnTimeRange{
-			TableName:  q.TableName,
-			ColumnName: q.TimestampColumnName,
+			Connector:      q.Connector,
+			Database:       q.Database,
+			DatabaseSchema: q.DatabaseSchema,
+			TableName:      q.TableName,
+			ColumnName:     q.TimestampColumnName,
 		}
 		err := rt.Query(ctx, instanceID, q, priority)
 		if err != nil {
@@ -643,7 +649,14 @@ func getCoalesceStatementsMeasures(measures []*runtimev1.ColumnTimeSeriesRequest
 func getCoalesceStatementsMeasuresLast(dialect drivers.Dialect, measures []*runtimev1.ColumnTimeSeriesRequest_BasicMeasure) string {
 	var result string
 	for i, measure := range measures {
-		result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, safeName(measure.SqlName))
+		switch dialect {
+		case drivers.DialectDuckDB:
+			// "last" function of DuckDB returns non-deterministic results by default so requires an ORDER BY clause
+			// https://duckdb.org/docs/sql/functions/aggregates.html#order-by-clause-in-aggregate-functions
+			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s ORDER BY %[1]s NULLS FIRST) as %[1]s`, safeName(measure.SqlName))
+		default:
+			result += fmt.Sprintf(` `+lastValue(dialect)+`(%[1]s) as %[1]s`, safeName(measure.SqlName))
+		}
 		if i < len(measures)-1 {
 			result += ", "
 		}

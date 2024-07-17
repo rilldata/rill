@@ -10,18 +10,17 @@
     MetricsEventScreenName,
     MetricsEventSpace,
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
+  import { useQueryClient } from "@tanstack/svelte-query";
   import { WandIcon } from "lucide-svelte";
-  import TableIcon from "../../../components/icons/TableIcon.svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
   import { featureFlags } from "../../feature-flags";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromSource } from "../../sources/createModel";
-  import { makeTablePreviewHref } from "./olap-config";
+  import { createModelFromTable } from "./createModel";
   import { useIsModelingSupportedForCurrentOlapDriver } from "./selectors";
 
   const { ai } = featureFlags;
+  const queryClient = useQueryClient();
 
-  export let driver: string;
   export let connector: string;
   export let database: string = "";
   export let databaseSchema: string = "";
@@ -29,13 +28,6 @@
 
   $: isModelingSupportedForCurrentOlapDriver =
     useIsModelingSupportedForCurrentOlapDriver($runtime.instanceId);
-  $: href = makeTablePreviewHref(
-    driver,
-    connector,
-    database,
-    databaseSchema,
-    table,
-  );
   $: createDashboardFromTable = useCreateDashboardFromTableUIAction(
     $runtime.instanceId,
     connector,
@@ -50,10 +42,12 @@
   async function handleCreateModel() {
     try {
       const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createModelFromSource(
+      const [newModelPath, newModelName] = await createModelFromTable(
+        queryClient,
+        connector,
+        database,
+        databaseSchema,
         table,
-        table,
-        "models",
       );
       await goto(`/files${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(
@@ -69,10 +63,6 @@
   }
 </script>
 
-<NavigationMenuItem {href}>
-  <TableIcon slot="icon" />
-  Preview table
-</NavigationMenuItem>
 {#if $isModelingSupportedForCurrentOlapDriver}
   <NavigationMenuItem on:click={handleCreateModel}>
     <Model slot="icon" />

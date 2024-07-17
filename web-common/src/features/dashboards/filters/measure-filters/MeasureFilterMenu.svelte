@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { getDimensionDisplayName } from "@rilldata/web-common/features/dashboards/filters/getDisplayName";
   import { MeasureFilterEntry } from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
@@ -122,24 +122,20 @@
       on:change={handleSubmit}
       options={MeasureFilterOperationOptions}
     />
-    <InputV2
+    <Input
       bind:value={$form["value1"]}
-      error={$errors["value1"]}
+      errors={$errors["value1"]}
       id="value1"
-      on:change={(e) => {
-        handleSubmit(e);
-      }}
-      on:enter-pressed={handleSubmit}
+      onChange={handleSubmit}
       placeholder={isBetweenExpression ? "Lower Value" : "Enter a Number"}
     />
     {#if isBetweenExpression}
-      <InputV2
+      <Input
         bind:value={$form["value2"]}
-        error={$errors["value2"]}
+        errors={$errors["value2"]}
         id="value2"
         placeholder="Higher Value"
-        on:change={handleSubmit}
-        on:enter-pressed={handleSubmit}
+        onChange={handleSubmit}
       />
     {/if}
   </form>

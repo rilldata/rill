@@ -18,9 +18,13 @@ function valueIntersection(
 }
 
 export function mergeFilters(
-  filter1: V1Expression,
-  filter2: V1Expression,
-): V1Expression {
+  filter1: V1Expression | undefined,
+  filter2: V1Expression | undefined,
+): V1Expression | undefined {
+  if (!filter1 && !filter2) return undefined;
+  if (!filter1) return filter2;
+  if (!filter2) return filter1;
+
   const inExprMap = new Map<string, V1Expression>();
   const likeExprMap = new Map<string, V1Expression>();
 
@@ -33,7 +37,7 @@ export function mergeFilters(
       if (likeExprMap.has(ident)) return;
       likeExprMap.set(ident, e);
     } else {
-      if (inExprMap.has(ident)) return;
+      if (inExprMap.has(ident) || !!e.cond?.exprs?.[1].subquery) return;
       inExprMap.set(ident, e);
     }
   });
@@ -47,7 +51,7 @@ export function mergeFilters(
       e.cond?.op === V1Operation.OPERATION_NLIKE
     )
       return;
-    if (!inExprMap.has(ident)) return;
+    if (!inExprMap.has(ident) || !!e.cond?.exprs?.[1].subquery) return;
 
     /**
      * We take an intersection of the values in the IN expressions.

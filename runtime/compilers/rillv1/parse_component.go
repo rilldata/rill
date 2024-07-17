@@ -1,6 +1,7 @@
 package rillv1
 
 import (
+	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -8,8 +9,6 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"google.golang.org/protobuf/types/known/structpb"
-
-	_ "embed"
 )
 
 //go:embed data/vega-lite-v5.json
@@ -20,19 +19,17 @@ var vegaLiteSchema = jsonschema.MustCompileString("https://vega.github.io/schema
 //go:embed data/component-template-v1.json
 var componentTemplateSpec string
 
-var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
+var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
 
 type ComponentYAML struct {
 	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string           `yaml:"title"`
-	Subtitle   string           `yaml:"subtitle"`
-	Data       *DataYAML        `yaml:"data"`
-	VegaLite   *string          `yaml:"vega_lite"`
-	Markdown   *string          `yaml:"markdown"`
-	Image      *string          `yaml:"image"`
-	Template   map[string]any   `yaml:"template"`
-	Input      []string         `yaml:"input,omitempty"`
-	Output     string           `yaml:"output,omitempty"`
+	Title      string                    `yaml:"title"`
+	Subtitle   string                    `yaml:"subtitle"`
+	Data       *DataYAML                 `yaml:"data"`
+	VegaLite   *string                   `yaml:"vega_lite"`
+	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
+	Input      []string                  `yaml:"input,omitempty"`
+	Output     string                    `yaml:"output,omitempty"`
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -103,33 +100,33 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		renderer = "vega_lite"
 		rendererProps = must(structpb.NewStruct(map[string]any{"spec": *tmp.VegaLite}))
 	}
-	if tmp.Markdown != nil {
+	if len(tmp.Other) == 1 {
 		n++
-		renderer = "markdown"
-		rendererProps = must(structpb.NewStruct(map[string]any{"content": *tmp.Markdown}))
-	}
-	if tmp.Image != nil {
-		n++
-		renderer = "image"
-		rendererProps = must(structpb.NewStruct(map[string]any{"url": *tmp.Image}))
-	}
-	if len(tmp.Template) > 0 {
-		n++
-
-		if err := componentTemplateSchema.Validate(tmp.Template); err != nil {
-			return nil, nil, fmt.Errorf(`failed to validate "template": %w`, err)
+		var props map[string]any
+		for renderer, props = range tmp.Other {
+			break
 		}
 
-		renderer = "template"
-		rendererProps = must(structpb.NewStruct(tmp.Template))
+		if err := componentTemplateSchema.Validate(map[string]any{renderer: props}); err != nil {
+			return nil, nil, fmt.Errorf(`failed to validate renderer %q: %w`, renderer, err)
+		}
+
+		propsPB, err := structpb.NewStruct(props)
+		if err != nil {
+			return nil, nil, fmt.Errorf(`failed to convert property %q to struct: %w`, renderer, err)
+		}
+
+		rendererProps = propsPB
+	} else {
+		n += len(tmp.Other)
 	}
 
 	// Check there is exactly one renderer
 	if n == 0 {
-		return nil, nil, errors.New(`missing renderer configuration (set one of vega_lite, markdown, image)`)
+		return nil, nil, errors.New(`missing renderer configuration`)
 	}
 	if n > 1 {
-		return nil, nil, errors.New(`multiple renderers are not allowed (set only one of vega_lite, markdown, image)`)
+		return nil, nil, errors.New(`multiple renderers are not allowed`)
 	}
 
 	// Create the component spec
@@ -141,6 +138,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		Renderer:           renderer,
 		RendererProperties: rendererProps,
 		Input:              tmp.Input,
+		Output:             tmp.Output,
 	}
 
 	return spec, refs, nil

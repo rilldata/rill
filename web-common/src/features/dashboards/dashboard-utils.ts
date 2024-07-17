@@ -1,13 +1,18 @@
+import {
+  ComparisonDeltaAbsoluteSuffix,
+  ComparisonDeltaPreviousSuffix,
+  ComparisonDeltaRelativeSuffix,
+} from "@rilldata/web-common/features/dashboards/filters/measure-filters/measure-filter-entry";
 import { sanitiseExpression } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
+import { DashboardState_LeaderboardSortType } from "@rilldata/web-common/proto/gen/rill/ui/v1/dashboard_pb";
 import type {
-  QueryServiceMetricsViewComparisonBody,
   MetricsViewSpecDimensionV2,
   MetricsViewSpecMeasureV2,
   V1MetricsViewAggregationMeasure,
   V1Expression,
+  QueryServiceMetricsViewAggregationBody,
 } from "@rilldata/web-common/runtime-client";
 import type { TimeControlState } from "./time-controls/time-control-store";
-import { getQuerySortType } from "./leaderboard/leaderboard-utils";
 import { SortType } from "./proto-state/derived-types";
 
 const countRegex = /count(?=[^(]*\()/i;
@@ -28,7 +33,7 @@ export function isSummableMeasure(measure: MetricsViewSpecMeasureV2): boolean {
 export function getDimensionColumn(
   dimension: MetricsViewSpecDimensionV2,
 ): string {
-  return dimension?.column || dimension?.name;
+  return (dimension?.column || dimension?.name) as string;
 }
 
 export function prepareSortedQueryBody(
@@ -40,64 +45,97 @@ export function prepareSortedQueryBody(
   sortType: SortType,
   sortAscending: boolean,
   whereFilterForDimension: V1Expression,
-  havingFilterForDimension: V1Expression | undefined,
   limit: number,
-): QueryServiceMetricsViewComparisonBody {
-  let comparisonTimeRange = {
-    start: timeControls.comparisonTimeStart,
-    end: timeControls.comparisonTimeEnd,
-  };
+): QueryServiceMetricsViewAggregationBody {
+  const measures = measureNames.map(
+    (n) =>
+      <V1MetricsViewAggregationMeasure>{
+        name: n,
+      },
+  );
 
-  // api now expects measure names for which comparison are calculated
-  // to keep current behaviour add sort measure name to comparison measures
-  let comparisonMeasures: string[] = [];
-  if (comparisonTimeRange.start && comparisonTimeRange.end && sortMeasureName) {
-    comparisonMeasures = [sortMeasureName];
-  }
-
-  // FIXME: As a temporary way of enabling sorting by dimension values,
-  // Benjamin and Egor put in a patch that will allow us to use the
-  // dimension name as the measure name. This will need to be updated
-  // once they have stabilized the API.
+  let apiSortName = sortMeasureName;
   if (sortType === SortType.DIMENSION || sortMeasureName === null) {
-    sortMeasureName = dimensionName;
-    // note also that we need to remove the comparison time range
-    // when sorting by dimension values, or the query errors
-    comparisonTimeRange = undefined;
-    // and we need to remove the comparison measures
-    comparisonMeasures = [];
+    apiSortName = dimensionName;
   }
 
-  const querySortType = getQuerySortType(sortType);
+  if (!!timeControls.selectedComparisonTimeRange && sortMeasureName) {
+    // insert beside the correct measure
+    measures.splice(
+      measures.findIndex((m) => m.name === sortMeasureName),
+      0,
+      ...getComparisonRequestMeasures(sortMeasureName),
+    );
+    if (apiSortName === sortMeasureName) {
+      // only update if the sort was on measure
+      switch (sortType) {
+        case DashboardState_LeaderboardSortType.DELTA_ABSOLUTE:
+          apiSortName += ComparisonDeltaAbsoluteSuffix;
+          break;
+        case DashboardState_LeaderboardSortType.DELTA_PERCENT:
+          apiSortName += ComparisonDeltaRelativeSuffix;
+          break;
+      }
+    }
+  }
 
   return {
-    dimension: {
-      name: dimensionName,
-    },
-    measures: measureNames.map(
-      (n) =>
-        <V1MetricsViewAggregationMeasure>{
-          name: n,
-        },
-    ),
-    comparisonMeasures: comparisonMeasures,
+    dimensions: [
+      {
+        name: dimensionName,
+      },
+    ],
+    measures,
     timeRange: {
       start: timeControls.timeStart,
       end: timeControls.timeEnd,
     },
-    comparisonTimeRange,
-    sort: [
-      {
-        desc: !sortAscending,
-        name: sortMeasureName,
-        sortType: querySortType,
-      },
-    ],
-    where: sanitiseExpression(
-      whereFilterForDimension,
-      havingFilterForDimension,
-    ),
+    ...(timeControls.selectedComparisonTimeRange
+      ? {
+          comparisonTimeRange: {
+            start: timeControls.comparisonTimeStart,
+            end: timeControls.comparisonTimeEnd,
+          },
+        }
+      : {}),
+    sort: apiSortName
+      ? [
+          {
+            desc: !sortAscending,
+            name: apiSortName,
+          },
+        ]
+      : [],
+    where: sanitiseExpression(whereFilterForDimension, undefined),
     limit: limit.toString(),
     offset: "0",
   };
+}
+
+/**
+ * Gets comparison based measures used in MetricsViewAggregationRequest
+ */
+export function getComparisonRequestMeasures(
+  measureName: string,
+): V1MetricsViewAggregationMeasure[] {
+  return [
+    {
+      name: measureName + ComparisonDeltaPreviousSuffix,
+      comparisonValue: {
+        measure: measureName,
+      },
+    },
+    {
+      name: measureName + ComparisonDeltaAbsoluteSuffix,
+      comparisonDelta: {
+        measure: measureName,
+      },
+    },
+    {
+      name: measureName + ComparisonDeltaRelativeSuffix,
+      comparisonRatio: {
+        measure: measureName,
+      },
+    },
+  ];
 }

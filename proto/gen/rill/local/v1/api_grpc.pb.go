@@ -24,7 +24,9 @@ const (
 	LocalService_GetVersion_FullMethodName       = "/rill.local.v1.LocalService/GetVersion"
 	LocalService_DeployValidation_FullMethodName = "/rill.local.v1.LocalService/DeployValidation"
 	LocalService_PushToGithub_FullMethodName     = "/rill.local.v1.LocalService/PushToGithub"
-	LocalService_Deploy_FullMethodName           = "/rill.local.v1.LocalService/Deploy"
+	LocalService_DeployProject_FullMethodName    = "/rill.local.v1.LocalService/DeployProject"
+	LocalService_RedeployProject_FullMethodName  = "/rill.local.v1.LocalService/RedeployProject"
+	LocalService_GetCurrentUser_FullMethodName   = "/rill.local.v1.LocalService/GetCurrentUser"
 )
 
 // LocalServiceClient is the client API for LocalService service.
@@ -41,8 +43,12 @@ type LocalServiceClient interface {
 	DeployValidation(ctx context.Context, in *DeployValidationRequest, opts ...grpc.CallOption) (*DeployValidationResponse, error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(ctx context.Context, in *PushToGithubRequest, opts ...grpc.CallOption) (*PushToGithubResponse, error)
-	// Deploy deploys the local project to the Rill cloud.
-	Deploy(ctx context.Context, in *DeployRequest, opts ...grpc.CallOption) (*DeployResponse, error)
+	// DeployProject deploys the local project to the Rill cloud.
+	DeployProject(ctx context.Context, in *DeployProjectRequest, opts ...grpc.CallOption) (*DeployProjectResponse, error)
+	// RedeployProject updates a deployed project.
+	RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error)
+	// User returns the locally logged in user
+	GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error)
 }
 
 type localServiceClient struct {
@@ -103,10 +109,30 @@ func (c *localServiceClient) PushToGithub(ctx context.Context, in *PushToGithubR
 	return out, nil
 }
 
-func (c *localServiceClient) Deploy(ctx context.Context, in *DeployRequest, opts ...grpc.CallOption) (*DeployResponse, error) {
+func (c *localServiceClient) DeployProject(ctx context.Context, in *DeployProjectRequest, opts ...grpc.CallOption) (*DeployProjectResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(DeployResponse)
-	err := c.cc.Invoke(ctx, LocalService_Deploy_FullMethodName, in, out, cOpts...)
+	out := new(DeployProjectResponse)
+	err := c.cc.Invoke(ctx, LocalService_DeployProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) RedeployProject(ctx context.Context, in *RedeployProjectRequest, opts ...grpc.CallOption) (*RedeployProjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(RedeployProjectResponse)
+	err := c.cc.Invoke(ctx, LocalService_RedeployProject_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *localServiceClient) GetCurrentUser(ctx context.Context, in *GetCurrentUserRequest, opts ...grpc.CallOption) (*GetCurrentUserResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCurrentUserResponse)
+	err := c.cc.Invoke(ctx, LocalService_GetCurrentUser_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -127,8 +153,12 @@ type LocalServiceServer interface {
 	DeployValidation(context.Context, *DeployValidationRequest) (*DeployValidationResponse, error)
 	// PushToGithub create a Git repo from local project and pushed to users git account.
 	PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error)
-	// Deploy deploys the local project to the Rill cloud.
-	Deploy(context.Context, *DeployRequest) (*DeployResponse, error)
+	// DeployProject deploys the local project to the Rill cloud.
+	DeployProject(context.Context, *DeployProjectRequest) (*DeployProjectResponse, error)
+	// RedeployProject updates a deployed project.
+	RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error)
+	// User returns the locally logged in user
+	GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error)
 	mustEmbedUnimplementedLocalServiceServer()
 }
 
@@ -151,8 +181,14 @@ func (UnimplementedLocalServiceServer) DeployValidation(context.Context, *Deploy
 func (UnimplementedLocalServiceServer) PushToGithub(context.Context, *PushToGithubRequest) (*PushToGithubResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method PushToGithub not implemented")
 }
-func (UnimplementedLocalServiceServer) Deploy(context.Context, *DeployRequest) (*DeployResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Deploy not implemented")
+func (UnimplementedLocalServiceServer) DeployProject(context.Context, *DeployProjectRequest) (*DeployProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method DeployProject not implemented")
+}
+func (UnimplementedLocalServiceServer) RedeployProject(context.Context, *RedeployProjectRequest) (*RedeployProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method RedeployProject not implemented")
+}
+func (UnimplementedLocalServiceServer) GetCurrentUser(context.Context, *GetCurrentUserRequest) (*GetCurrentUserResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentUser not implemented")
 }
 func (UnimplementedLocalServiceServer) mustEmbedUnimplementedLocalServiceServer() {}
 
@@ -257,20 +293,56 @@ func _LocalService_PushToGithub_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
-func _LocalService_Deploy_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(DeployRequest)
+func _LocalService_DeployProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(DeployProjectRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(LocalServiceServer).Deploy(ctx, in)
+		return srv.(LocalServiceServer).DeployProject(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: LocalService_Deploy_FullMethodName,
+		FullMethod: LocalService_DeployProject_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(LocalServiceServer).Deploy(ctx, req.(*DeployRequest))
+		return srv.(LocalServiceServer).DeployProject(ctx, req.(*DeployProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_RedeployProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(RedeployProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).RedeployProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_RedeployProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).RedeployProject(ctx, req.(*RedeployProjectRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _LocalService_GetCurrentUser_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentUserRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(LocalServiceServer).GetCurrentUser(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: LocalService_GetCurrentUser_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(LocalServiceServer).GetCurrentUser(ctx, req.(*GetCurrentUserRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -303,8 +375,16 @@ var LocalService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _LocalService_PushToGithub_Handler,
 		},
 		{
-			MethodName: "Deploy",
-			Handler:    _LocalService_Deploy_Handler,
+			MethodName: "DeployProject",
+			Handler:    _LocalService_DeployProject_Handler,
+		},
+		{
+			MethodName: "RedeployProject",
+			Handler:    _LocalService_RedeployProject_Handler,
+		},
+		{
+			MethodName: "GetCurrentUser",
+			Handler:    _LocalService_GetCurrentUser_Handler,
 		},
 	},
 	Streams:  []grpc.StreamDesc{},

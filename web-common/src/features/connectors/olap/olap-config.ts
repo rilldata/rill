@@ -20,6 +20,37 @@ export function makeFullyQualifiedTableName(
   }
 }
 
+/**
+ * Returns a sufficiently qualified table name for the given OLAP connector.
+ * Notably, the table name is *not* qualified with the database and databaseSchema when they are the default values for the given connector.
+ */
+export function makeSufficientlyQualifiedTableName(
+  driver: string,
+  database: string,
+  databaseSchema: string,
+  table: string,
+) {
+  switch (driver) {
+    case "clickhouse":
+      if (databaseSchema === "default") return table;
+      return `${databaseSchema}.${table}`;
+    case "druid":
+      // TODO
+      return table;
+    case "duckdb":
+      if (database === "main_db") {
+        if (databaseSchema === "main") return table;
+        return `${databaseSchema}.${table}`;
+      }
+      return `${database}.${databaseSchema}.${table}`;
+    case "pinot":
+      // TODO
+      return table;
+    default:
+      throw new Error(`Unsupported OLAP connector: ${driver}`);
+  }
+}
+
 export function makeTablePreviewHref(
   driver: string,
   connectorName: string,

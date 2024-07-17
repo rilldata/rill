@@ -1,5 +1,5 @@
 <script lang="ts">
-  import InputV2 from "@rilldata/web-common/components/forms/InputV2.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import { CriteriaOperationOptions } from "@rilldata/web-common/features/alerts/criteria-tab/operations";
   import { parseCriteriaError } from "@rilldata/web-common/features/alerts/criteria-tab/parseCriteriaError";
@@ -59,7 +59,7 @@
   // Debounce the update of value. This avoid constant refetches
   let value: string = $form["criteria"][index].value1;
   const valueUpdater = debounce(() => {
-    $form["criteria"][index].value1 = value;
+    if ($form["criteria"][index]) $form["criteria"][index].value1 = value;
     void validateField("criteria");
   }, 500);
 
@@ -92,14 +92,12 @@
     className="w-[70px]"
   />
   <!-- Error is not returned as an object for criteria[index]. We instead have parsed groupErr -->
-  <InputV2
+  <Input
     alwaysShowError
     bind:value
-    error=""
     id="value"
-    on:input={valueUpdater}
+    onInput={valueUpdater}
     placeholder={"0"}
-    className="w-[256px]"
   />
 </div>
 {#if groupErr}

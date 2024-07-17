@@ -3,16 +3,19 @@ package metricsview
 import (
 	"errors"
 	"fmt"
+	"reflect"
 	"strings"
 )
 
 // sqlForExpression generates a SQL expression for a query expression.
 // pseudoHaving is true if the expression is allowed to reference measure expressions.
-func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, pseudoHaving bool) (string, []any, error) {
+// visible is true if the expression is only allowed to reference dimensions and measures that are exposed by the security policy.
+func (ast *AST) sqlForExpression(e *Expression, n *SelectNode, pseudoHaving, visible bool) (string, []any, error) {
 	b := &sqlExprBuilder{
 		ast:          ast,
 		node:         n,
 		pseudoHaving: pseudoHaving,
+		visible:      visible,
 		out:          &strings.Builder{},
 	}
 
@@ -28,6 +31,7 @@ type sqlExprBuilder struct {
 	ast          *AST
 	node         *SelectNode
 	pseudoHaving bool
+	visible      bool
 	out          *strings.Builder
 	args         []any
 }
@@ -152,7 +156,8 @@ func (b *sqlExprBuilder) writeBinaryCondition(exprs []*Expression, op Operator) 
 	if op == OperatorIn || op == OperatorNin {
 		if len(exprs) == 2 {
 			rhs := exprs[1]
-			_, isListVal := rhs.Value.([]any)
+			typ := reflect.TypeOf(rhs.Value)
+			isListVal := typ != nil && typ.Kind() == reflect.Slice
 			if rhs.Name == "" && !isListVal && rhs.Condition == nil && rhs.Subquery == nil {
 				// Convert the right hand side to a list
 				exprs[1] = &Expression{Value: []any{rhs.Value}}
@@ -334,9 +339,9 @@ func (b *sqlExprBuilder) writeILikeCondition(left, right *Expression, leftOverri
 		b.writeString(")")
 
 		if not {
-			b.writeString(" NOT ILIKE ")
+			b.writeString(" NOT LIKE ")
 		} else {
-			b.writeString(" ILIKE ")
+			b.writeString(" LIKE ")
 		}
 
 		b.writeString("LOWER(")
@@ -403,10 +408,14 @@ func (b *sqlExprBuilder) writeInCondition(left, right *Expression, leftOverride 
 }
 
 func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverride string, vals []any, not bool) error {
-	var hasNull bool
+	var hasNull, hasNonNull bool
 	for _, v := range vals {
 		if v == nil {
 			hasNull = true
+		} else {
+			hasNonNull = true
+		}
+		if hasNull && hasNonNull {
 			break
 		}
 	}
@@ -420,42 +429,51 @@ func (b *sqlExprBuilder) writeInConditionForValues(left *Expression, leftOverrid
 		return nil
 	}
 
-	wrapParens := not || hasNull
+	wrapParens := not || (hasNull && hasNonNull)
 	if wrapParens {
 		b.writeByte('(')
 	}
 
-	if leftOverride != "" {
-		b.writeParenthesizedString(leftOverride)
-	} else {
-		err := b.writeExpression(left)
-		if err != nil {
-			return err
-		}
-	}
-
-	if not {
-		b.writeString(" NOT IN ")
-	} else {
-		b.writeString(" IN ")
-	}
-
-	b.writeByte('(')
-	for i := 0; i < len(vals); i++ {
-		if i == 0 {
-			b.writeString("?")
+	if hasNonNull {
+		if leftOverride != "" {
+			b.writeParenthesizedString(leftOverride)
 		} else {
-			b.writeString(",?")
+			err := b.writeExpression(left)
+			if err != nil {
+				return err
+			}
 		}
+
+		if not {
+			b.writeString(" NOT IN ")
+		} else {
+			b.writeString(" IN ")
+		}
+
+		b.writeByte('(')
+		var comma bool
+		for _, val := range vals {
+			if val == nil {
+				continue
+			}
+			if comma {
+				b.writeString(",?")
+			} else {
+				comma = true
+				b.writeString("?")
+			}
+			b.args = append(b.args, val)
+		}
+		b.writeByte(')')
 	}
-	b.writeByte(')')
-	b.args = append(b.args, vals...)
 
 	if hasNull {
-		if not {
-			b.writeString(" AND ")
-		} else {
-			b.writeString(" OR ")
+		if hasNonNull {
+			if not {
+				b.writeString(" AND ")
+			} else {
+				b.writeString(" OR ")
+			}
 		}
 
 		if leftOverride != "" {
@@ -516,18 +534,14 @@ func (b *sqlExprBuilder) sqlForName(name string) (expr string, unnest bool, err 
 		// First, search for the dimension in the ASTs dimension fields (this also covers any computed dimension)
 		for _, f := range b.ast.dimFields {
 			if f.Name == name {
-				if f.Unnest {
-					// Since it's unnested, we need to reference the unnested alias.
-					// Note that we return "false" for "unnest" because it will already have been unnested since it's one of the dimensions included in the query,
-					// so we can filter against it as if it's a normal dimension.
-					return b.ast.sqlForMember(f.UnnestAlias, f.Name), false, nil
-				}
+				// Note that we return "false" even though it may be an unnest dimension because it will already have been unnested since it's one of the dimensions included in the query.
+				// So we can filter against it as if it's a normal dimension.
 				return f.Expr, false, nil
 			}
 		}
 
 		// Second, search for the dimension in the metrics view's dimensions (since expressions are allowed to reference dimensions not included in the query)
-		dim, err := b.ast.lookupDimension(name, true)
+		dim, err := b.ast.lookupDimension(name, b.visible)
 		if err != nil {
 			return "", false, fmt.Errorf("invalid dimension reference %q: %w", name, err)
 		}

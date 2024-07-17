@@ -1,15 +1,12 @@
 package metricsview
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
 
 // SQL builds a SQL query from the AST.
 // It returns the query and query arguments to be passed to the database driver.
-//
-// It does not produce a PIVOT query when PivotOn is set. See astpivot.go for functions to build PIVOT queries from an AST.
 func (a *AST) SQL() (string, []any, error) {
 	b := &sqlBuilder{
 		ast: a,
@@ -48,7 +45,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
-		b.out.WriteString(" as ")
+		b.out.WriteString(" AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
 	}
 
@@ -62,7 +59,7 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
-		b.out.WriteString(" as ")
+		b.out.WriteString(" AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(label))
 	}
 
@@ -84,14 +81,9 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(", ")
 		}
 
-		expr := f.Expr
-		if f.Unnest {
-			expr = b.ast.sqlForMember(f.UnnestAlias, f.Name)
-		}
-
 		b.out.WriteByte('(')
-		b.out.WriteString(expr)
-		b.out.WriteString(") as ")
+		b.out.WriteString(f.Expr)
+		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
@@ -102,7 +94,7 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		b.out.WriteByte('(')
 		b.out.WriteString(f.Expr)
-		b.out.WriteString(") as ")
+		b.out.WriteString(") AS ")
 		b.out.WriteString(b.ast.dialect.EscapeIdentifier(f.Name))
 	}
 
@@ -111,22 +103,9 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 		b.out.WriteString(*n.FromTable)
 
 		// Add unnest joins. We only and always apply these against FromPlain (ensuring they are already unnested when referenced in outer SELECTs).
-		for _, f := range n.DimFields {
-			if !f.Unnest {
-				continue
-			}
-
-			tblWithAlias, auto, err := b.ast.dialect.LateralUnnest(f.Expr, f.UnnestAlias, f.Name)
-			if err != nil {
-				return fmt.Errorf("failed to unnest field %q: %w", f.Name, err)
-			}
-
-			if auto {
-				continue
-			}
-
+		for _, u := range n.Unnests {
 			b.out.WriteString(", ")
-			b.out.WriteString(tblWithAlias)
+			b.out.WriteString(u)
 		}
 	} else if n.FromSelect != nil {
 		b.out.WriteByte('(')
@@ -139,6 +118,13 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 
 		for _, ljs := range n.LeftJoinSelects {
 			err := b.writeJoin("LEFT", n.FromSelect, ljs)
+			if err != nil {
+				return err
+			}
+		}
+
+		if n.SpineSelect != nil {
+			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
 			if err != nil {
 				return err
 			}
@@ -212,9 +198,9 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	return nil
 }
 
-func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNode) error {
+func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
 	b.out.WriteByte(' ')
-	b.out.WriteString(joinType)
+	b.out.WriteString(string(joinType))
 	b.out.WriteString(" JOIN (")
 	err := b.writeSelect(joinSelect)
 	if err != nil {

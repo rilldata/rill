@@ -29,26 +29,26 @@ var supportedFuncs = map[string]any{
 }
 
 type Compiler struct {
-	p              *parser.Parser
-	controller     *runtime.Controller
-	instanceID     string
-	userAttributes map[string]any
-	priority       int
+	p          *parser.Parser
+	controller *runtime.Controller
+	instanceID string
+	claims     *runtime.SecurityClaims
+	priority   int
 }
 
 // New returns a compiler and created a tidb parser object.
 // The instantiated parser object and thus compiler is not goroutine safe and not lightweight.
 // It is better to keep it in a single goroutine, and reuse it if possible.
-func New(ctrl *runtime.Controller, instanceID string, userAttributes map[string]any, priority int) *Compiler {
+func New(ctrl *runtime.Controller, instanceID string, claims *runtime.SecurityClaims, priority int) *Compiler {
 	p := parser.New()
 	// Weirdly setting just ModeANSI which is a combination having ModeANSIQuotes doesn't ensure double quotes are used to identify SQL identifiers
 	p.SetSQLMode(mysql.ModeANSI | mysql.ModeANSIQuotes)
 	return &Compiler{
-		p:              p,
-		controller:     ctrl,
-		instanceID:     instanceID,
-		userAttributes: userAttributes,
-		priority:       priority,
+		p:          p,
+		controller: ctrl,
+		instanceID: instanceID,
+		claims:     claims,
+		priority:   priority,
 	}
 }
 
@@ -73,10 +73,10 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 	}
 
 	t := &transformer{
-		controller:     c.controller,
-		instanceID:     c.instanceID,
-		userAttributes: c.userAttributes,
-		priority:       c.priority,
+		controller: c.controller,
+		instanceID: c.instanceID,
+		claims:     c.claims,
+		priority:   c.priority,
 	}
 	compiledSQL, err := t.transformSelectStmt(ctx, stmt)
 	if err != nil {
@@ -87,9 +87,9 @@ func (c *Compiler) Compile(ctx context.Context, sql string) (string, string, []*
 }
 
 type transformer struct {
-	controller     *runtime.Controller
-	instanceID     string
-	userAttributes map[string]any
+	controller *runtime.Controller
+	instanceID string
+	claims     *runtime.SecurityClaims
 
 	metricsView *runtimev1.MetricsViewV2
 	refs        []*runtimev1.ResourceName
@@ -689,7 +689,7 @@ func (t *transformer) transformValueExpr(_ context.Context, node ast.ValueExpr) 
 func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1.Resource) (string, error) {
 	spec := mv.GetMetricsView().State.ValidSpec
 	if spec == nil {
-		return "", fmt.Errorf("metrics view %q is not ready for querying, reconcile status: %q", mv.Meta.GetName(), mv.Meta.ReconcileStatus)
+		return "", fmt.Errorf("metrics view %q is not valid: (status: %q, error: %q)", mv.Meta.GetName(), mv.Meta.ReconcileStatus, mv.Meta.ReconcileError)
 	}
 
 	olap, release, err := t.controller.Runtime.OLAP(ctx, t.instanceID, spec.Connector)
@@ -699,7 +699,7 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 	defer release()
 	dialect := olap.Dialect()
 
-	security, err := t.controller.Runtime.ResolveMetricsViewSecurity(t.userAttributes, t.instanceID, spec, mv.Meta.StateUpdatedOn.AsTime())
+	security, err := t.controller.Runtime.ResolveSecurity(t.instanceID, t.claims, mv)
 	if err != nil {
 		return "", err
 	}
@@ -718,40 +718,31 @@ func (t *transformer) fromQueryForMetricsView(ctx context.Context, mv *runtimev1
 		}
 	}
 
-	if security == nil {
-		return dialect.EscapeIdentifier(spec.Table), nil
-	}
-
-	if !security.Access || security.ExcludeAll {
+	if !security.CanAccess() {
 		return "", fmt.Errorf("access to metrics view %q forbidden", mv.Meta.Name.Name)
 	}
 
-	if len(security.Include) != 0 {
-		for measure := range t.measureToExpr {
-			if !slices.Contains(security.Include, measure) { // measures not part of include clause should not be accessible
-				t.measureToExpr[measure] = "null"
-			}
-		}
+	if security.CanAccessAllFields() && security.RowFilter() == "" && security.QueryFilter() == nil {
+		return dialect.EscapeIdentifier(spec.Table), nil
+	}
 
-		for dimension := range t.dimsToExpr {
-			if !slices.Contains(security.Include, dimension) { // dimensions not part of include clause should not be accessible
-				t.dimsToExpr[dimension] = "null"
-			}
+	for dimension := range t.dimsToExpr {
+		if !security.CanAccessField(dimension) {
+			t.dimsToExpr[dimension] = "null"
 		}
 	}
 
-	for _, exclude := range security.Exclude {
-		if _, ok := t.dimsToExpr[exclude]; ok {
-			t.dimsToExpr[exclude] = "null"
-		} else {
-			t.measureToExpr[exclude] = "null"
+	for measure := range t.measureToExpr {
+		if !security.CanAccessField(measure) {
+			t.measureToExpr[measure] = "null"
 		}
 	}
 
 	sql := "SELECT * FROM " + dialect.EscapeIdentifier(spec.Table)
-	if security.RowFilter != "" {
-		sql += " WHERE " + security.RowFilter
+	if rf := security.RowFilter(); rf != "" {
+		sql += " WHERE " + rf
 	}
+	// TODO: Incorporate security.QueryFilter
 	return fmt.Sprintf("(%s)", sql), nil
 }
 

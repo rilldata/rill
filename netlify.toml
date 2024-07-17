@@ -11,7 +11,7 @@
       frame-ancestors *; \
       object-src 'none'; \
       connect-src https: *.usepylon.com *.posthog.com wss://*.pusher.com; \
-      font-src 'self' https://fonts.gstatic.com;
+      font-src 'self' https://fonts.gstatic.com *.usepylon.com;
       """
     Permissions-Policy = "geolocation=(),midi=(),sync-xhr=(self),microphone=(),camera=(),magnetometer=(),gyroscope=(),fullscreen=(self),payment=()"
     Referrer-Policy = "no-referrer"

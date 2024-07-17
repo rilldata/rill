@@ -77,7 +77,7 @@ var spec = drivers.Spec{
 		},
 		{
 			Key:         "port",
-			Type:        drivers.StringPropertyType,
+			Type:        drivers.NumberPropertyType,
 			Required:    true,
 			DisplayName: "Port",
 			Description: "Port number of the Pinot server",
@@ -212,6 +212,11 @@ type connection struct {
 	config  map[string]any
 	baseURL string
 	headers map[string]string
+}
+
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return c.db.PingContext(ctx)
 }
 
 // Driver implements drivers.Connection.

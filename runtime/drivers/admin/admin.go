@@ -1,16 +1,22 @@
 package admin
 
 import (
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"crypto/rand"
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/bradleyfalzon/ghinstallation/v2"
+	"github.com/c2h5oh/datasize"
 	"github.com/eapache/go-resiliency/retrier"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -108,13 +114,20 @@ type Handle struct {
 	repoMu               ctxsync.RWMutex
 	repoSF               *singleflight.Group
 	cloned               bool
+	syncErr              error
 	repoPath             string
 	projPath             string
-	gitURL               string
-	gitURLExpiresOn      time.Time
 	virtualNextPageToken string
 	virtualStashPath     string
 	ignorePaths          []string
+
+	// git related fields
+	// These will not be set if downloadURL is set
+	gitURL          string
+	gitURLExpiresOn time.Time
+
+	// downloadURL is set when using one-time uploads
+	downloadURL string
 }
 
 var _ drivers.Handle = &Handle{}
@@ -122,6 +135,19 @@ var _ drivers.Handle = &Handle{}
 // a smaller subset of relevant parts of rill.yaml
 type rillYAML struct {
 	IgnorePaths []string `yaml:"ignore_paths"`
+	PublicPaths []string `yaml:"public_paths"`
+}
+
+// Ping implements drivers.Handle.
+func (h *Handle) Ping(ctx context.Context) error {
+	// check connectivity with admin service
+	_, err := h.admin.Ping(ctx, &adminv1.PingRequest{})
+
+	if lockErr := h.repoMu.RLock(ctx); lockErr != nil {
+		return lockErr
+	}
+	defer h.repoMu.RUnlock()
+	return errors.Join(err, h.syncErr)
 }
 
 // Driver implements drivers.Handle.
@@ -267,9 +293,9 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 		defer cancel()
 
 		r := retrier.New(retrier.ExponentialBackoff(pullRetryN, pullRetryWait), retryErrClassifier{})
-		err = r.Run(func() error { return h.cloneOrPullInner(ctx) })
-		if err != nil {
-			return nil, err
+		h.syncErr = r.Run(func() error { return h.cloneOrPullInner(ctx) })
+		if h.syncErr != nil {
+			return nil, h.syncErr
 		}
 
 		// Read rill.yaml and fill in `ignore_paths`
@@ -297,6 +323,11 @@ func (h *Handle) cloneOrPull(ctx context.Context) error {
 // Unsafe for concurrent use.
 func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	if h.cloned {
+		if h.downloadURL != "" {
+			// in case of one-time uploads we edit instance and close handle when artifacts are updated
+			// so we just pull virtual files and return early.
+			return h.pullVirtual(ctx)
+		}
 		// Move the virtual directory out of the Git repository, and put it back after the pull.
 		// See stashVirtual for details on why this is needed.
 		err := h.stashVirtual()
@@ -311,6 +342,14 @@ func (h *Handle) cloneOrPullInner(ctx context.Context) (err error) {
 	err = h.checkHandshake(ctx)
 	if err != nil {
 		return fmt.Errorf("repo handshake failed: %w", err)
+	}
+
+	if h.downloadURL != "" {
+		// download repo
+		if err := h.download(); err != nil {
+			return err
+		}
+		return h.pullVirtual(ctx)
 	}
 
 	if !h.cloned {
@@ -343,7 +382,6 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 	if h.gitURLExpiresOn.After(time.Now()) {
 		return nil
 	}
-
 	meta, err := h.admin.GetRepoMeta(ctx, &adminv1.GetRepoMetaRequest{
 		ProjectId: h.config.ProjectID,
 		Branch:    h.config.Branch,
@@ -368,6 +406,11 @@ func (h *Handle) checkHandshake(ctx context.Context) error {
 		h.projPath = h.repoPath
 	} else {
 		h.projPath = filepath.Join(h.repoPath, meta.GitSubpath)
+	}
+
+	if meta.ArchiveDownloadUrl != "" {
+		h.downloadURL = meta.ArchiveDownloadUrl
+		return nil
 	}
 
 	h.gitURL = meta.GitUrl
@@ -572,6 +615,58 @@ func (h *Handle) unstashVirtual() error {
 	return nil
 }
 
+// download repo when downloadURL is set.
+// Unsafe for concurrent use.
+func (h *Handle) download() error {
+	ctx, cancel := context.WithTimeout(context.Background(), pullTimeout)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, h.downloadURL, http.NoBody)
+	if err != nil {
+		return err
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return err
+	}
+	if resp.StatusCode != http.StatusOK {
+		// return ghinstallation.HTTPError for outer retry to not retry on 404
+		return &ghinstallation.HTTPError{Response: resp}
+	}
+	defer resp.Body.Close()
+
+	// generate a temporary file to copy repo tar directory
+	downloadDst, err := generateTmpPath(h.config.TempDir, "admin_driver_zipped_repo", ".tar.gz")
+	if err != nil {
+		return fmt.Errorf("download: %w", err)
+	}
+	defer os.Remove(downloadDst)
+	out, err := os.Create(downloadDst)
+	if err != nil {
+		return err
+	}
+
+	// Writer the body to file
+	_, err = io.Copy(out, resp.Body)
+	if err != nil {
+		out.Close()
+		return err
+	}
+	out.Close()
+
+	// clean the projPath first to remove any files from previous download
+	_ = os.RemoveAll(h.projPath)
+
+	// untar to the project path
+	err = untar(downloadDst, filepath.Clean(h.projPath))
+	if err != nil {
+		return err
+	}
+	h.cloned = true
+	return nil
+}
+
 // generateVirtualPath generates a virtual path inside the project path.
 func generateVirtualPath(projPath string) string {
 	return filepath.Join(projPath, "__virtual__")
@@ -599,6 +694,63 @@ func generateTmpPath(dir, base, ext string) (string, error) {
 	return p, nil
 }
 
+func untar(src, dest string) error {
+	file, err := os.Open(src)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	gz, err := gzip.NewReader(file)
+	if err != nil {
+		return err
+	}
+	defer gz.Close()
+	tarReader := tar.NewReader(gz)
+	for {
+		header, err := tarReader.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break // End of tar archive
+			}
+			return err
+		}
+
+		// Determine the proper path for the item
+		target, err := sanitizeArchivePath(dest, header.Name)
+		if err != nil {
+			return err
+		}
+		switch header.Typeflag {
+		case tar.TypeDir:
+			// Handle directory
+			if err := os.MkdirAll(target, header.FileInfo().Mode()); err != nil {
+				return err
+			}
+		case tar.TypeReg:
+			// Handle regular file
+			if err := os.MkdirAll(filepath.Dir(target), header.FileInfo().Mode()); err != nil {
+				return err
+			}
+			outFile, err := os.Create(target)
+			if err != nil {
+				return err
+			}
+			// Setting a limit of 1GB to avoid G110: Potential DoS vulnerability via decompression bomb
+			// The max file size allowed via upload path is 100MB. Assume that 100MB tar file can't be decompressed to more than 1GB.
+			_, err = io.CopyN(outFile, tarReader, int64(datasize.GB))
+			if err != nil && !errors.Is(err, io.EOF) {
+				outFile.Close()
+				return err
+			}
+			outFile.Close()
+		default:
+			return fmt.Errorf("unsupported header type: %c", header.Typeflag)
+		}
+	}
+	return nil
+}
+
 // retryErrClassifier classifies Github request errors as retryable or not.
 type retryErrClassifier struct{}
 
@@ -621,4 +773,13 @@ func (retryErrClassifier) Classify(err error) retrier.Action {
 	}
 
 	return retrier.Retry
+}
+
+func sanitizeArchivePath(dest, tarPath string) (v string, err error) {
+	v = filepath.Join(dest, tarPath)
+	if strings.HasPrefix(v, dest) {
+		return v, nil
+	}
+
+	return "", fmt.Errorf("%s: %s", "content filepath is tainted", tarPath)
 }

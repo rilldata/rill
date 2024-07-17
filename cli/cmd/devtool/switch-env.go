@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/rilldata/rill/cli/cmd/auth"
+	"github.com/rilldata/rill/cli/pkg/adminenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -28,7 +29,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 				return fmt.Errorf("can't switch environment when assuming another user (run `rill sudo user unassume` and try again)")
 			}
 
-			fromEnv, err := inferEnv(ch)
+			fromEnv, err := adminenv.Infer(ch.AdminURL)
 			if err != nil {
 				return err
 			}
@@ -37,7 +38,7 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 			if len(args) > 0 {
 				toEnv = args[0]
 			} else {
-				toEnv, err = cmdutil.SelectPrompt("Select environment", maps.Keys(envURLs), fromEnv)
+				toEnv, err = cmdutil.SelectPrompt("Select environment", maps.Keys(adminenv.EnvURLs), fromEnv)
 				if err != nil {
 					return err
 				}
@@ -48,37 +49,13 @@ func SwitchEnvCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 
-			ch.PrintfSuccess("Set default env to %q (%q)\n", toEnv, adminURLForEnv(toEnv))
+			ch.PrintfSuccess("Set default env to %q (%q)\n", toEnv, adminenv.AdminURL(toEnv))
 
 			return auth.SelectOrgFlow(cmd.Context(), ch, true)
 		},
 	}
 
 	return cmd
-}
-
-var envURLs = map[string]string{
-	"prod":  "https://admin.rilldata.com",
-	"stage": "https://admin.rilldata.io",
-	"test":  "https://admin.rilldata.in",
-	"dev":   "http://localhost:9090",
-}
-
-func inferEnv(ch *cmdutil.Helper) (string, error) {
-	for env, url := range envURLs {
-		if url == ch.AdminURL {
-			return env, nil
-		}
-	}
-	return "", fmt.Errorf("could not infer env from admin URL %q", ch.AdminURL)
-}
-
-func adminURLForEnv(env string) string {
-	u, ok := envURLs[env]
-	if !ok {
-		panic(fmt.Errorf("invalid environment %q", env))
-	}
-	return u
 }
 
 func switchEnv(ch *cmdutil.Helper, fromEnv, toEnv string) error {
@@ -103,7 +80,7 @@ func switchEnv(ch *cmdutil.Helper, fromEnv, toEnv string) error {
 	}
 	ch.AdminTokenDefault = toToken // Also set the cfg's token to the one we just got
 
-	toURL := adminURLForEnv(toEnv)
+	toURL := adminenv.AdminURL(toEnv)
 	err = dotrill.SetDefaultAdminURL(toURL)
 	if err != nil {
 		return err
@@ -116,7 +93,7 @@ func switchEnv(ch *cmdutil.Helper, fromEnv, toEnv string) error {
 // switchEnvToDevTemporarily switches the CLI to the "dev" environment (if not already there),
 // and then switches it back and returns when the context is cancelled.
 func switchEnvToDevTemporarily(ctx context.Context, ch *cmdutil.Helper) {
-	env, err := inferEnv(ch)
+	env, err := adminenv.Infer(ch.AdminURL)
 	if err != nil {
 		logWarn.Printf("Did not switch CLI to dev environment: failed to infer environment (error: %v)\n", err)
 		return

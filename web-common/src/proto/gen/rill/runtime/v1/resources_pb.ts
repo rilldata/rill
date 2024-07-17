@@ -7,6 +7,7 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3, protoInt64, Struct, Timestamp } from "@bufbuild/protobuf";
 import { StructType } from "./schema_pb.js";
 import { TimeGrain } from "./time_grain_pb.js";
+import { Expression } from "./expression_pb.js";
 import { ExportFormat } from "./export_format_pb.js";
 import { Color } from "./colors_pb.js";
 
@@ -1069,9 +1070,9 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
   /**
    * Security for the dashboard
    *
-   * @generated from field: rill.runtime.v1.MetricsViewSpec.SecurityV2 security = 11;
+   * @generated from field: repeated rill.runtime.v1.SecurityRule security_rules = 23;
    */
-  security?: MetricsViewSpec_SecurityV2;
+  securityRules: SecurityRule[] = [];
 
   /**
    * ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
@@ -1138,7 +1139,7 @@ export class MetricsViewSpec extends Message<MetricsViewSpec> {
     { no: 8, name: "smallest_time_grain", kind: "enum", T: proto3.getEnumType(TimeGrain) },
     { no: 9, name: "default_time_range", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "available_time_zones", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-    { no: 11, name: "security", kind: "message", T: MetricsViewSpec_SecurityV2 },
+    { no: 23, name: "security_rules", kind: "message", T: SecurityRule, repeated: true },
     { no: 12, name: "first_day_of_week", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 13, name: "first_month_of_year", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 14, name: "default_comparison_mode", kind: "enum", T: proto3.getEnumType(MetricsViewSpec_ComparisonMode) },
@@ -1266,6 +1267,11 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
    */
   unnest = false;
 
+  /**
+   * @generated from field: string uri = 7;
+   */
+  uri = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_DimensionV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1280,6 +1286,7 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
     { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionV2 {
@@ -1517,114 +1524,6 @@ export class MetricsViewSpec_MeasureV2 extends Message<MetricsViewSpec_MeasureV2
 }
 
 /**
- * Security for the dashboard
- *
- * @generated from message rill.runtime.v1.MetricsViewSpec.SecurityV2
- */
-export class MetricsViewSpec_SecurityV2 extends Message<MetricsViewSpec_SecurityV2> {
-  /**
-   * Dashboard level access condition
-   *
-   * @generated from field: string access = 1;
-   */
-  access = "";
-
-  /**
-   * row level access condition
-   *
-   * @generated from field: string row_filter = 2;
-   */
-  rowFilter = "";
-
-  /**
-   * either one of include or exclude will be specified
-   *
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2 include = 3;
-   */
-  include: MetricsViewSpec_SecurityV2_FieldConditionV2[] = [];
-
-  /**
-   * @generated from field: repeated rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2 exclude = 4;
-   */
-  exclude: MetricsViewSpec_SecurityV2_FieldConditionV2[] = [];
-
-  constructor(data?: PartialMessage<MetricsViewSpec_SecurityV2>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.SecurityV2";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "access", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "row_filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "include", kind: "message", T: MetricsViewSpec_SecurityV2_FieldConditionV2, repeated: true },
-    { no: 4, name: "exclude", kind: "message", T: MetricsViewSpec_SecurityV2_FieldConditionV2, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2 {
-    return new MetricsViewSpec_SecurityV2().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewSpec_SecurityV2 | PlainMessage<MetricsViewSpec_SecurityV2> | undefined, b: MetricsViewSpec_SecurityV2 | PlainMessage<MetricsViewSpec_SecurityV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_SecurityV2, a, b);
-  }
-}
-
-/**
- * Dimension/measure level access condition
- *
- * @generated from message rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2
- */
-export class MetricsViewSpec_SecurityV2_FieldConditionV2 extends Message<MetricsViewSpec_SecurityV2_FieldConditionV2> {
-  /**
-   * @generated from field: string condition = 1;
-   */
-  condition = "";
-
-  /**
-   * @generated from field: repeated string names = 2;
-   */
-  names: string[] = [];
-
-  constructor(data?: PartialMessage<MetricsViewSpec_SecurityV2_FieldConditionV2>) {
-    super();
-    proto3.util.initPartial(data, this);
-  }
-
-  static readonly runtime: typeof proto3 = proto3;
-  static readonly typeName = "rill.runtime.v1.MetricsViewSpec.SecurityV2.FieldConditionV2";
-  static readonly fields: FieldList = proto3.util.newFieldList(() => [
-    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "names", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
-  ]);
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromBinary(bytes, options);
-  }
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromJson(jsonValue, options);
-  }
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): MetricsViewSpec_SecurityV2_FieldConditionV2 {
-    return new MetricsViewSpec_SecurityV2_FieldConditionV2().fromJsonString(jsonString, options);
-  }
-
-  static equals(a: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined, b: MetricsViewSpec_SecurityV2_FieldConditionV2 | PlainMessage<MetricsViewSpec_SecurityV2_FieldConditionV2> | undefined): boolean {
-    return proto3.util.equals(MetricsViewSpec_SecurityV2_FieldConditionV2, a, b);
-  }
-}
-
-/**
  * @generated from message rill.runtime.v1.MetricsViewSpec.AvailableComparisonOffset
  */
 export class MetricsViewSpec_AvailableComparisonOffset extends Message<MetricsViewSpec_AvailableComparisonOffset> {
@@ -1711,6 +1610,214 @@ export class MetricsViewSpec_AvailableTimeRange extends Message<MetricsViewSpec_
 
   static equals(a: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined, b: MetricsViewSpec_AvailableTimeRange | PlainMessage<MetricsViewSpec_AvailableTimeRange> | undefined): boolean {
     return proto3.util.equals(MetricsViewSpec_AvailableTimeRange, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRule
+ */
+export class SecurityRule extends Message<SecurityRule> {
+  /**
+   * @generated from oneof rill.runtime.v1.SecurityRule.rule
+   */
+  rule: {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleAccess access = 1;
+     */
+    value: SecurityRuleAccess;
+    case: "access";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleFieldAccess field_access = 2;
+     */
+    value: SecurityRuleFieldAccess;
+    case: "fieldAccess";
+  } | {
+    /**
+     * @generated from field: rill.runtime.v1.SecurityRuleRowFilter row_filter = 3;
+     */
+    value: SecurityRuleRowFilter;
+    case: "rowFilter";
+  } | { case: undefined; value?: undefined } = { case: undefined };
+
+  constructor(data?: PartialMessage<SecurityRule>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRule";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "access", kind: "message", T: SecurityRuleAccess, oneof: "rule" },
+    { no: 2, name: "field_access", kind: "message", T: SecurityRuleFieldAccess, oneof: "rule" },
+    { no: 3, name: "row_filter", kind: "message", T: SecurityRuleRowFilter, oneof: "rule" },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRule {
+    return new SecurityRule().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRule {
+    return new SecurityRule().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRule {
+    return new SecurityRule().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRule | PlainMessage<SecurityRule> | undefined, b: SecurityRule | PlainMessage<SecurityRule> | undefined): boolean {
+    return proto3.util.equals(SecurityRule, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleAccess
+ */
+export class SecurityRuleAccess extends Message<SecurityRuleAccess> {
+  /**
+   * @generated from field: string condition = 1;
+   */
+  condition = "";
+
+  /**
+   * @generated from field: bool allow = 2;
+   */
+  allow = false;
+
+  constructor(data?: PartialMessage<SecurityRuleAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleAccess {
+    return new SecurityRuleAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleAccess | PlainMessage<SecurityRuleAccess> | undefined, b: SecurityRuleAccess | PlainMessage<SecurityRuleAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleAccess, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleFieldAccess
+ */
+export class SecurityRuleFieldAccess extends Message<SecurityRuleFieldAccess> {
+  /**
+   * @generated from field: string condition = 1;
+   */
+  condition = "";
+
+  /**
+   * @generated from field: bool allow = 2;
+   */
+  allow = false;
+
+  /**
+   * @generated from field: repeated string fields = 3;
+   */
+  fields: string[] = [];
+
+  /**
+   * @generated from field: bool all_fields = 4;
+   */
+  allFields = false;
+
+  constructor(data?: PartialMessage<SecurityRuleFieldAccess>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleFieldAccess";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "allow", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 3, name: "fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 4, name: "all_fields", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleFieldAccess {
+    return new SecurityRuleFieldAccess().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleFieldAccess | PlainMessage<SecurityRuleFieldAccess> | undefined, b: SecurityRuleFieldAccess | PlainMessage<SecurityRuleFieldAccess> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleFieldAccess, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.SecurityRuleRowFilter
+ */
+export class SecurityRuleRowFilter extends Message<SecurityRuleRowFilter> {
+  /**
+   * @generated from field: string condition = 1;
+   */
+  condition = "";
+
+  /**
+   * Raw SQL expression to apply to the underlying table
+   *
+   * @generated from field: string sql = 2;
+   */
+  sql = "";
+
+  /**
+   * Regular query expression referencing dimension names
+   *
+   * @generated from field: rill.runtime.v1.Expression expression = 3;
+   */
+  expression?: Expression;
+
+  constructor(data?: PartialMessage<SecurityRuleRowFilter>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.SecurityRuleRowFilter";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "condition", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "sql", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "expression", kind: "message", T: Expression },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SecurityRuleRowFilter {
+    return new SecurityRuleRowFilter().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined, b: SecurityRuleRowFilter | PlainMessage<SecurityRuleRowFilter> | undefined): boolean {
+    return proto3.util.equals(SecurityRuleRowFilter, a, b);
   }
 }
 
@@ -2257,14 +2364,14 @@ export class AlertSpec extends Message<AlertSpec> {
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: string query_name = 9;
+   * @generated from field: string resolver = 22;
    */
-  queryName = "";
+  resolver = "";
 
   /**
-   * @generated from field: string query_args_json = 10;
+   * @generated from field: google.protobuf.Struct resolver_properties = 23;
    */
-  queryArgsJson = "";
+  resolverProperties?: Struct;
 
   /**
    * @generated from oneof rill.runtime.v1.AlertSpec.query_for
@@ -2340,8 +2447,8 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 6, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 7, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 9, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 22, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "resolver_properties", kind: "message", T: Struct },
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
@@ -3456,11 +3563,6 @@ export class DashboardItem extends Message<DashboardItem> {
    */
   height?: number;
 
-  /**
-   * @generated from field: uint32 font_size = 7;
-   */
-  fontSize = 0;
-
   constructor(data?: PartialMessage<DashboardItem>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3475,7 +3577,6 @@ export class DashboardItem extends Message<DashboardItem> {
     { no: 3, name: "y", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 4, name: "width", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
     { no: 5, name: "height", kind: "scalar", T: 13 /* ScalarType.UINT32 */, opt: true },
-    { no: 7, name: "font_size", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardItem {
@@ -3603,6 +3704,21 @@ export class APISpec extends Message<APISpec> {
    */
   resolverProperties?: Struct;
 
+  /**
+   * @generated from field: string openapi_summary = 3;
+   */
+  openapiSummary = "";
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   */
+  openapiParameters: Struct[] = [];
+
+  /**
+   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   */
+  openapiResponseSchema?: Struct;
+
   constructor(data?: PartialMessage<APISpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3613,6 +3729,9 @@ export class APISpec extends Message<APISpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
+    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {

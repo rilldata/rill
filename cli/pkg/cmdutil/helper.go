@@ -10,6 +10,7 @@ import (
 
 	"github.com/rilldata/rill/admin/client"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
+	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/printer"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
@@ -231,7 +232,7 @@ func (h *Helper) CurrentUserID(ctx context.Context) (string, error) {
 	return userID, nil
 }
 
-func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL string) ([]string, error) {
+func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL, subPath string) ([]string, error) {
 	c, err := h.Client()
 	if err != nil {
 		return nil, err
@@ -246,7 +247,7 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL str
 
 	names := make([]string, 0)
 	for _, p := range resp.Projects {
-		if strings.EqualFold(p.GithubUrl, githubURL) {
+		if strings.EqualFold(p.GithubUrl, githubURL) && (subPath == "" || strings.EqualFold(p.Subpath, subPath)) {
 			names = append(names, p.Name)
 		}
 	}
@@ -259,6 +260,25 @@ func (h *Helper) ProjectNamesByGithubURL(ctx context.Context, org, githubURL str
 }
 
 func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string, error) {
+	rc, err := dotrillcloud.GetAll(path, h.AdminURL)
+	if err != nil {
+		return "", err
+	}
+	if rc != nil {
+		c, err := h.Client()
+		if err != nil {
+			return "", err
+		}
+
+		proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+			Id: rc.ProjectID,
+		})
+		if err != nil {
+			return "", err
+		}
+		return proj.Project.Name, nil
+	}
+
 	// Verify projectPath is a Git repo with remote on Github
 	_, githubURL, err := gitutil.ExtractGitRemote(path, "", true)
 	if err != nil {
@@ -266,7 +286,7 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 	}
 
 	// Fetch project names matching the Github URL
-	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL)
+	names, err := h.ProjectNamesByGithubURL(ctx, org, githubURL, "")
 	if err != nil {
 		return "", err
 	}

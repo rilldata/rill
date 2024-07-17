@@ -113,7 +113,7 @@ func (s *Server) componentDataHandler(w http.ResponseWriter, req *http.Request) 
 		Resolver:           componentSpec.Resolver,
 		ResolverProperties: componentSpec.ResolverProperties.AsMap(),
 		Args:               args,
-		UserAttributes:     auth.GetClaims(ctx).Attributes(),
+		Claims:             auth.GetClaims(ctx).SecurityClaims(),
 	})
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
