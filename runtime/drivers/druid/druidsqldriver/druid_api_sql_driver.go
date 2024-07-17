@@ -55,76 +55,19 @@ type sqlConnection struct {
 
 var _ driver.QueryerContext = &sqlConnection{}
 
-type coordinatorHTTPCheck struct {
-	c *sqlConnection
+func (c *sqlConnection) Prepare(query string) (driver.Stmt, error) {
+	return &stmt{
+		query: query,
+		conn:  c,
+	}, nil
 }
 
-var _ retrier.AdditionalTest = &coordinatorHTTPCheck{}
+func (c *sqlConnection) Close() error {
+	return nil
+}
 
-// isHardFailure is called when the previous error doesn't say explicitly if the issue with a datasource or the coordinator.
-// If Coordinator is down for a transient reason it's not a hard failure.
-// For example, the previous request can return `no such table 'A'`, then isHardFailure checks
-// a) if the coordinator is OK -> hard-failure - the table 'A' definitely doesn't exist
-// b) if the coordinator has a transient error -> not a hard-failure - the table 'A' still can exist
-// c) if the coordinator returns not a transient error (ie access-denied) -> hard-failure - we shouldn't wait until the configuration is changed by someone
-func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error) {
-	dr := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil)
-	b, err := json.Marshal(dr)
-	if err != nil {
-		return false, err
-	}
-
-	bodyReader := bytes.NewReader(b)
-
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, chc.c.dsn, bodyReader)
-	if err != nil {
-		return false, err
-	}
-
-	req.Header.Add("Content-Type", "application/json")
-	resp, err := chc.c.client.Do(req)
-	if err != nil {
-		return false, err
-	}
-	defer resp.Body.Close()
-
-	switch resp.StatusCode {
-	case http.StatusTooManyRequests:
-		return false, nil
-	case http.StatusUnauthorized, http.StatusForbidden:
-		return true, fmt.Errorf("Unauthorized request")
-	}
-
-	if resp.StatusCode == http.StatusTooManyRequests {
-		resp.Body.Close()
-		return false, nil
-	}
-
-	// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
-	// ref - https://druid.apache.org/docs/latest/api-reference/sql-api/#responses
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusBadRequest && resp.StatusCode != http.StatusInternalServerError {
-		resp.Body.Close()
-		return true, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
-	}
-
-	dec := json.NewDecoder(resp.Body)
-
-	var obj any
-	err = dec.Decode(&obj)
-	if err != nil {
-		return false, err
-	}
-	switch v := obj.(type) {
-	case map[string]any:
-		if em, ok := v["errorMessage"].(string); ok && errCoordinatorDown.MatchString(em) {
-			return false, nil
-		}
-		return true, nil
-	case []any:
-		return true, nil
-	default:
-		return true, fmt.Errorf("unexpected response: %v", obj)
-	}
+func (c *sqlConnection) Begin() (driver.Tx, error) {
+	return nil, fmt.Errorf("unsupported")
 }
 
 func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []driver.NamedValue) (driver.Rows, error) {
@@ -415,27 +358,84 @@ type stmt struct {
 	query string
 }
 
-func (c *sqlConnection) Prepare(query string) (driver.Stmt, error) {
-	return &stmt{
-		query: query,
-		conn:  c,
-	}, nil
-}
-
-func (c *sqlConnection) Close() error {
-	return nil
-}
-
-func (c *sqlConnection) Begin() (driver.Tx, error) {
-	return nil, fmt.Errorf("unsupported")
-}
-
 func (s *stmt) Close() error {
 	return nil
 }
 
 func (s *stmt) NumInput() int {
 	return 0
+}
+
+type coordinatorHTTPCheck struct {
+	c *sqlConnection
+}
+
+var _ retrier.AdditionalTest = &coordinatorHTTPCheck{}
+
+// isHardFailure is called when the previous error doesn't say explicitly if the issue with a datasource or the coordinator.
+// If Coordinator is down for a transient reason it's not a hard failure.
+// For example, the previous request can return `no such table 'A'`, then isHardFailure checks
+// a) if the coordinator is OK -> hard-failure - the table 'A' definitely doesn't exist
+// b) if the coordinator has a transient error -> not a hard-failure - the table 'A' still can exist
+// c) if the coordinator returns not a transient error (ie access-denied) -> hard-failure - we shouldn't wait until the configuration is changed by someone
+func (chc *coordinatorHTTPCheck) IsHardFailure(ctx context.Context) (bool, error) {
+	dr := newDruidRequest("SELECT * FROM sys.segments LIMIT 1", nil)
+	b, err := json.Marshal(dr)
+	if err != nil {
+		return false, err
+	}
+
+	bodyReader := bytes.NewReader(b)
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, chc.c.dsn, bodyReader)
+	if err != nil {
+		return false, err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	resp, err := chc.c.client.Do(req)
+	if err != nil {
+		return false, err
+	}
+	defer resp.Body.Close()
+
+	switch resp.StatusCode {
+	case http.StatusTooManyRequests:
+		return false, nil
+	case http.StatusUnauthorized, http.StatusForbidden:
+		return true, fmt.Errorf("Unauthorized request")
+	}
+
+	if resp.StatusCode == http.StatusTooManyRequests {
+		resp.Body.Close()
+		return false, nil
+	}
+
+	// Druid sends well-formed response for 200, 400 and 500 status codes, for others use this
+	// ref - https://druid.apache.org/docs/latest/api-reference/sql-api/#responses
+	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusBadRequest && resp.StatusCode != http.StatusInternalServerError {
+		resp.Body.Close()
+		return true, fmt.Errorf("unexpected status code: %d, status: %s", resp.StatusCode, resp.Status)
+	}
+
+	dec := json.NewDecoder(resp.Body)
+
+	var obj any
+	err = dec.Decode(&obj)
+	if err != nil {
+		return false, err
+	}
+	switch v := obj.(type) {
+	case map[string]any:
+		if em, ok := v["errorMessage"].(string); ok && errCoordinatorDown.MatchString(em) {
+			return false, nil
+		}
+		return true, nil
+	case []any:
+		return true, nil
+	default:
+		return true, fmt.Errorf("unexpected response: %v", obj)
+	}
 }
 
 type DruidQueryContext struct {
