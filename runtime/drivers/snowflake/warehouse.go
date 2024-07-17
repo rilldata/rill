@@ -67,7 +67,6 @@ func creds(store drivers.ObjectStore) (string, error) {
 	switch h.Driver() {
 	case "s3":
 		conf := &s3ConfigProperties{}
-		fmt.Println(h.Config())
 		if err := mapstructure.Decode(h.Config(), conf); err != nil {
 			return "", err
 		}
