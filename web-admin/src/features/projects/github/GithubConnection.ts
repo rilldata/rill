@@ -1,13 +1,13 @@
-import { createAdminServiceGetGithubUserStatus } from "@rilldata/web-admin/client";
+import {
+  createAdminServiceGetGithubUserStatus,
+  getAdminServiceGetGithubUserStatusQueryKey,
+} from "@rilldata/web-admin/client";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { get } from "svelte/store";
 
 export class GithubConnection {
-  public readonly userStatus = createAdminServiceGetGithubUserStatus({
-    query: {
-      refetchOnWindowFocus: true,
-    },
-  });
+  public readonly userStatus = createAdminServiceGetGithubUserStatus();
 
   private connecting: boolean;
 
@@ -18,15 +18,18 @@ export class GithubConnection {
     await waitUntil(() => !get(this.userStatus).isLoading);
     const userStatus = get(this.userStatus).data;
     if (userStatus.hasAccess) {
-      this.onReconnect();
-      return;
+      return this.onReconnect();
     }
 
     this.connecting = true;
     window.open(userStatus.grantAccessUrl, "_blank");
   }
 
-  public focused() {
+  public async focused() {
+    if (!this.connecting) return;
+    await queryClient.refetchQueries(
+      getAdminServiceGetGithubUserStatusQueryKey(),
+    );
     if (this.connecting) this.onReconnect();
     this.connecting = false;
   }

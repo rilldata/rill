@@ -6,10 +6,7 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import {
-    createAdminServiceGetProject,
-    createAdminServiceUpdateProject,
-  } from "web-admin/src/client";
+  import { createAdminServiceGetProject } from "web-admin/src/client";
   import { useDashboardsLastUpdated } from "web-admin/src/features/dashboards/listing/selectors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
 
@@ -44,21 +41,9 @@
     void githubConnection.check();
   }
 
-  const updateProject = createAdminServiceUpdateProject();
-  async function updateGithubUrl(url: string) {
-    await $updateProject.mutateAsync({
-      name: project,
-      organizationName: organization,
-      data: {
-        githubUrl: url,
-        archiveAssetId: "",
-      },
-    });
-  }
-
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
-    githubConnection.focused();
+    void githubConnection.focused();
   }
 </script>
 
@@ -139,5 +124,6 @@
 
 <GithubRepoSelectionDialog
   bind:open={githubSelectionOpen}
-  onConnect={updateGithubUrl}
+  {organization}
+  {project}
 />

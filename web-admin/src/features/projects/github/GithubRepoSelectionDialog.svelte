@@ -1,8 +1,6 @@
 <script lang="ts">
-  import {
-    createAdminServiceGetGithubUserStatus,
-    createAdminServiceListGithubUserRepos,
-  } from "@rilldata/web-admin/client";
+  import { createAdminServiceUpdateProject } from "@rilldata/web-admin/client";
+  import { GithubRepoUpdater } from "@rilldata/web-admin/features/projects/github/GithubRepoUpdater";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -17,23 +15,44 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import type { AxiosError } from "axios";
 
   export let open = false;
-  export let onConnect: (url: string) => void;
+  export let project: string;
+  export let organization: string;
 
-  let repo = "";
-  const githubUserStatus = createAdminServiceGetGithubUserStatus();
-  $: githubUserRepos = createAdminServiceListGithubUserRepos({
-    query: {
-      enabled: !!$githubUserStatus.data?.hasAccess,
-    },
-  });
+  let githubUrl = "";
+  const githubRepoUpdater = new GithubRepoUpdater();
+  const githubRepos = githubRepoUpdater.userRepos;
+  const status = githubRepoUpdater.status;
+
   $: repoSelections =
-    $githubUserRepos.data?.repos?.map((r) => ({
+    $githubRepos.data?.repos?.map((r) => ({
       value: r.url,
       label: `${r.owner}/${r.name}`,
     })) ?? [];
+
+  const updateProject = createAdminServiceUpdateProject();
+  async function updateGithubUrl() {
+    await $updateProject.mutateAsync({
+      name: project,
+      organizationName: organization,
+      data: {
+        githubUrl,
+      },
+    });
+    open = false;
+  }
+
+  function handleVisibilityChange() {
+    if (document.visibilityState !== "visible") return;
+    void githubRepoUpdater.focused();
+  }
+
+  $: error = ($status.error ?? $updateProject.error) as unknown as AxiosError;
 </script>
+
+<svelte:window on:visibilitychange={handleVisibilityChange} />
 
 <AlertDialog bind:open>
   <AlertDialogTrigger asChild>
@@ -49,14 +68,14 @@
             <span>
               Which Github repo would you like to connect to this Rill project?
             </span>
-            {#if $githubUserStatus.isLoading || $githubUserRepos.isLoading}
+            {#if $status.isLoading}
               <div class="flex flex-row items-center ml-5 h-8">
                 <Spinner status={EntityStatus.Running} />
               </div>
             {:else}
               <Select
                 id="repo-selector"
-                bind:value={repo}
+                bind:value={githubUrl}
                 label=""
                 options={repoSelections}
               />
@@ -65,21 +84,29 @@
               Note: Contents of this repo will replace your current Rill
               project.
             </span>
+            {#if error}
+              <div class="text-red-500 text-sm py-px">
+                {error.response?.data?.message ?? error.message}
+              </div>
+            {/if}
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
           <Button
             outline={false}
             type="link"
-            href={$githubUserStatus.data?.grantAccessUrl}
-            target="_blank"
+            on:click={() => githubRepoUpdater.check()}
           >
             Choose other repos
           </Button>
           <Button type="secondary" on:click={() => (open = false)}>
             Cancel
           </Button>
-          <Button type="primary" on:click={() => onConnect(repo)}>
+          <Button
+            type="primary"
+            on:click={() => updateGithubUrl()}
+            loading={$updateProject.isLoading}
+          >
             Continue
           </Button>
         </AlertDialogFooter>
