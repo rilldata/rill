@@ -130,7 +130,7 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		StageChanges:                      true,
 		ModelDefaultMaterialize:           false,
 		ModelMaterializeDelaySeconds:      0,
-		MetricsApproximateComparisons:     false,
+		MetricsApproximateComparisons:     true,
 		MetricsExactifyDruidTopN:          false,
 		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
 		MetricsComparisonsCTE:             true,
