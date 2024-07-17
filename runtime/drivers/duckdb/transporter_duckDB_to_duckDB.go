@@ -145,7 +145,7 @@ func (t *duckDBToDuckDB) transferFromExternalDB(ctx context.Context, srcProps *d
 
 		cleanupFunc = func() {
 			// we don't want to run any detach db without `tx` lock
-			// tx=true will reopen duckdb handle which will detach the attached external db as well
+			// tx=true will reopen duckdb handle(except in case of in-memory duckdb handle) which will detach the attached external db as well
 			err := t.to.WithConnection(context.Background(), 100, false, true, func(wrappedCtx, ensuredCtx context.Context, conn *sql.Conn) error {
 				return nil
 			})
