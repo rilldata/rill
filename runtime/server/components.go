@@ -19,7 +19,6 @@ import (
 )
 
 func (s *Server) parseTemplate(w http.ResponseWriter, req *http.Request) error {
-
 	// Parse path parameters
 	ctx := req.Context()
 	instanceID := req.PathValue("instance_id")
@@ -53,16 +52,14 @@ func (s *Server) parseTemplate(w http.ResponseWriter, req *http.Request) error {
 	}
 
 	parsedComponent := s.getParsedComponent(ctx, instanceID, component, args)
-	response := map[string]string{"content": *parsedComponent}
-
-	if parsedComponent != nil {
-		w.Header().Set("Content-Type", "application/json")
-		json.NewEncoder(w).Encode(response)
-	} else {
+	if parsedComponent == nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}
 
-	return nil
+	response := map[string]string{"content": *parsedComponent}
+
+	w.Header().Set("Content-Type", "application/json")
+	return json.NewEncoder(w).Encode(response)
 }
 
 func (s *Server) componentDataHandler(w http.ResponseWriter, req *http.Request) error {
@@ -181,5 +178,4 @@ func (s *Server) getParsedComponent(ctx context.Context, instanceID, name string
 	fmt.Println(resolved)
 
 	return &resolved
-
 }

@@ -1,7 +1,6 @@
 package rillv1
 
 import (
-	_ "embed"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -9,6 +8,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/santhosh-tekuri/jsonschema/v5"
 	"google.golang.org/protobuf/types/known/structpb"
+
+	_ "embed"
 )
 
 //go:embed data/vega-lite-v5.json
@@ -22,7 +23,7 @@ var componentTemplateSpec string
 var componentTemplateSchema = jsonschema.MustCompileString("https://github.com/rilldata/rill/tree/main/runtime/compilers/rillv1/data/component-template-v1.json", componentTemplateSpec)
 
 type ComponentYAML struct {
-	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	commonYAML `yaml:",inline"`          // Not accessed here, only setting it so we can use KnownFields for YAML parsing
 	Title      string                    `yaml:"title"`
 	Subtitle   string                    `yaml:"subtitle"`
 	Data       *DataYAML                 `yaml:"data"`
