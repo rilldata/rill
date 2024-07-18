@@ -71,6 +71,7 @@ type configProperties struct {
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
 	ConnectionString string `mapstructure:"azure_storage_connection_string"`
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
+	TempDir          string `mapstructure:"temp_dir"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {

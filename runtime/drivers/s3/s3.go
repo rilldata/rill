@@ -85,6 +85,7 @@ type configProperties struct {
 	SessionToken    string `mapstructure:"aws_access_token"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 	RetainFiles     bool   `mapstructure:"retain_files"`
+	TempDir         string `mapstructure:"temp_dir"`
 }
 
 // Open implements drivers.Driver

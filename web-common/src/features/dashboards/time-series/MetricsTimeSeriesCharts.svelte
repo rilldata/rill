@@ -36,6 +36,7 @@
   import TimeSeriesChartContainer from "./TimeSeriesChartContainer.svelte";
   import type { DimensionDataItem } from "./multiple-dimension-queries";
   import { getOrderedStartEnd, updateChartInteractionStore } from "./utils";
+  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
 
   export let metricViewName: string;
   export let workspaceWidth: number;
@@ -78,7 +79,7 @@
   $: isInTimeDimensionView = Boolean(expandedMeasureName);
   $: comparisonDimension = $dashboardStore?.selectedComparisonDimension;
   $: showComparison = Boolean(
-    !comparisonDimension && $timeControlsStore.showComparison,
+    !comparisonDimension && $timeControlsStore.showTimeComparison,
   );
   $: tddChartType = $dashboardStore?.tdd?.chartType;
   $: interval =
@@ -222,6 +223,8 @@
     $timeSeriesDataStore?.error,
     "timeseries",
   );
+
+  $: minTimeGrain = $timeControlsStore.minTimeGrain;
 </script>
 
 <TimeSeriesChartContainer
@@ -230,7 +233,7 @@
   start={startValue}
   {workspaceWidth}
 >
-  <div class:mb-6={isAlternateChart} class="flex pl-1">
+  <div class:mb-6={isAlternateChart} class="flex items-center gap-x-1 px-2.5">
     {#if isInTimeDimensionView}
       <BackToOverview {metricViewName} />
       <ChartTypeSelector
@@ -250,6 +253,9 @@
         selectedItems={$showHideMeasures.selectedItems}
         tooltipText="Choose measures to display"
       />
+      {#if minTimeGrain}
+        <TimeGrainSelector {metricViewName} />
+      {/if}
     {/if}
   </div>
 

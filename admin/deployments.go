@@ -137,7 +137,7 @@ func (s *Service) createDeployment(ctx context.Context, opts *createDeploymentOp
 	}
 
 	// Open a runtime client
-	rt, err := s.OpenRuntimeClient(alloc.Host, alloc.Audience)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		err2 := p.Deprovision(ctx, provisionID)
 		err3 := s.DB.DeleteDeployment(ctx, depl.ID)
@@ -240,7 +240,7 @@ func (s *Service) UpdateDeployment(ctx context.Context, depl *database.Deploymen
 		}
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return err
 	}
@@ -352,24 +352,6 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 	return nil
 }
 
-func (s *Service) OpenRuntimeClient(host, audience string) (*client.Client, error) {
-	jwt, err := s.issuer.NewToken(auth.TokenOptions{
-		AudienceURL:       audience,
-		TTL:               time.Hour,
-		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
-	})
-	if err != nil {
-		return nil, err
-	}
-
-	rt, err := client.New(host, jwt)
-	if err != nil {
-		return nil, err
-	}
-
-	return rt, nil
-}
-
 func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deployment) error {
 	// Delete the deployment
 	err := s.DB.DeleteDeployment(ctx, depl.ID)
@@ -378,7 +360,7 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 	}
 
 	// Connect to the deployment's runtime and delete the instance
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		s.Logger.Error("failed to open runtime client", zap.String("deployment_id", depl.ID), zap.String("runtime_instance_id", depl.RuntimeInstanceID), zap.Error(err), observability.ZapCtx(ctx))
 	} else {
@@ -403,10 +385,6 @@ func (s *Service) TeardownDeployment(ctx context.Context, depl *database.Deploym
 	}
 
 	return nil
-}
-
-func (s *Service) openRuntimeClientForDeployment(d *database.Deployment) (*client.Client, error) {
-	return s.OpenRuntimeClient(d.RuntimeHost, d.RuntimeAudience)
 }
 
 func (s *Service) ResolveLatestRuntimeVersion() string {
@@ -436,6 +414,34 @@ func (s *Service) ValidateRuntimeVersion(ver string) error {
 	}
 
 	return nil
+}
+
+func (s *Service) OpenRuntimeClient(depl *database.Deployment) (*client.Client, error) {
+	jwt, err := s.IssueRuntimeManagementToken(depl.RuntimeAudience)
+	if err != nil {
+		return nil, err
+	}
+
+	rt, err := client.New(depl.RuntimeHost, jwt)
+	if err != nil {
+		return nil, err
+	}
+
+	return rt, nil
+}
+
+func (s *Service) IssueRuntimeManagementToken(aud string) (string, error) {
+	jwt, err := s.issuer.NewToken(auth.TokenOptions{
+		AudienceURL:       aud,
+		Subject:           "admin-service",
+		TTL:               time.Hour,
+		SystemPermissions: []auth.Permission{auth.ManageInstances, auth.ReadInstance, auth.EditInstance, auth.ReadObjects},
+	})
+	if err != nil {
+		return "", err
+	}
+
+	return jwt, nil
 }
 
 func (s *Service) NewDeploymentAnnotations(org *database.Organization, proj *database.Project) DeploymentAnnotations {
