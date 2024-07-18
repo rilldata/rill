@@ -5,6 +5,7 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/url"
@@ -14,7 +15,6 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/duration"
-	"github.com/rilldata/rill/runtime/pkg/formatter"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"github.com/rilldata/rill/runtime/queries"
 	"go.opentelemetry.io/otel/attribute"
@@ -251,14 +251,17 @@ func (r *AlertReconciler) executionSpecHash(spec *runtimev1.AlertSpec, refs []*r
 		return "", err
 	}
 
-	_, err = hash.Write([]byte(spec.QueryName))
+	_, err = hash.Write([]byte(spec.Resolver))
 	if err != nil {
 		return "", err
 	}
 
-	_, err = hash.Write([]byte(spec.QueryArgsJson))
-	if err != nil {
-		return "", err
+	if spec.ResolverProperties != nil {
+		v := structpb.NewStructValue(spec.ResolverProperties)
+		err = pbutil.WriteHash(v, hash)
+		if err != nil {
+			return "", err
+		}
 	}
 
 	_, err = hash.Write([]byte(spec.GetQueryForUserId()))
@@ -542,18 +545,8 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	// Log
 	r.C.Logger.Info("Checking alert", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
-	// Build query proto
-	qpb, err := queries.ProtoFromJSON(a.Spec.QueryName, a.Spec.QueryArgsJson, &executionTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse query: %w", err)
-	}
-	metricsViewName, err := queries.MetricsViewFromQuery(a.Spec.QueryName, a.Spec.QueryArgsJson)
-	if err != nil {
-		return nil, fmt.Errorf("failed extract metrics view name from query: %w", err)
-	}
-	metricsView, err := r.C.Get(ctx, &runtimev1.ResourceName{Kind: runtime.ResourceKindMetricsView, Name: metricsViewName}, false)
-	if err != nil {
-		return nil, err
+	if a.Spec.Resolver == "" {
+		return nil, fmt.Errorf("alert has no resolver")
 	}
 
 	// Evaluate query attributes
@@ -565,23 +558,29 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 		queryForAttrs = a.Spec.GetQueryForAttributes().AsMap()
 	}
 
-	// Create and execute query
-	claims := &runtime.SecurityClaims{UserAttributes: queryForAttrs}
-	q, err := queries.ProtoToQuery(qpb, claims)
+	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           a.Spec.Resolver,
+		ResolverProperties: a.Spec.ResolverProperties.AsMap(),
+		Args: map[string]any{
+			"priority":       alertQueryPriority,
+			"execution_time": executionTime,
+			"format":         true,
+			"limit":          1,
+		},
+		Claims: &runtime.SecurityClaims{UserAttributes: queryForAttrs},
+	})
 	if err != nil {
-		return nil, fmt.Errorf("failed to build query: %w", err)
-	}
-	err = r.C.Runtime.Query(ctx, r.C.InstanceID, q, alertQueryPriority)
-	if err != nil {
-		return nil, fmt.Errorf("failed to execute query: %w", err)
+		return nil, fmt.Errorf("failed to resolve alert: %w", err)
 	}
 
-	// Extract result row
-	row, ok, err := extractQueryResultFirstRow(q, metricsView.GetMetricsView().Spec.Measures, r.C.Logger)
+	var tmp []map[string]any
+	err = json.Unmarshal(res.Data, &tmp)
 	if err != nil {
-		return nil, fmt.Errorf("failed to extract query result: %w", err)
+		return nil, fmt.Errorf("alert state resolver produced invalid JSON: %w", err)
 	}
-	if !ok {
+
+	if len(tmp) == 0 {
 		r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
 	}
@@ -589,7 +588,7 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Return fail row
-	failRow, err := structpb.NewStruct(row)
+	failRow, err := structpb.NewStruct(tmp[0])
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}
@@ -900,181 +899,6 @@ func calculateAlertExecutionTimes(a *runtimev1.Alert, watermark, previousWaterma
 	return ts, nil
 }
 
-// skipError is a special error type that indicates that an action should be skipped with a reason why.
-type skipError struct {
-	reason string
-}
-
-// Error implements the error interface.
-func (s skipError) Error() string {
-	return fmt.Sprintf("skipped: %s", s.reason)
-}
-
-// extractQueryResultFirstRow extracts the first row from a query result.
-// TODO: This should function more like an export, i.e. use dimension/measure labels instead of names.
-func extractQueryResultFirstRow(q runtime.Query, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (map[string]any, bool, error) {
-	switch q := q.(type) {
-	case *queries.MetricsViewAggregation:
-		if q.Result != nil && len(q.Result.Data) > 0 {
-			return formatMetricsViewAggregationResult(q, measures, logger), true, nil
-		}
-		return nil, false, nil
-	case *queries.MetricsViewComparison:
-		if q.Result != nil && len(q.Result.Rows) > 0 {
-			return formatMetricsViewComparisonResult(q, measures, logger), true, nil
-		}
-		return nil, false, nil
-	default:
-		return nil, false, fmt.Errorf("query type %T not supported for alerts", q)
-	}
-}
-
-func formatMetricsViewAggregationResult(q *queries.MetricsViewAggregation, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) map[string]any {
-	row := q.Result.Data[0]
-	res := make(map[string]any)
-	for k, v := range row.AsMap() {
-		measureLabel, f := getComparisonMeasureLabelAndFormatter(k, q.Measures, measures, logger)
-		res[measureLabel] = formatValue(f, v, logger)
-	}
-	return res
-}
-
-func formatMetricsViewComparisonResult(q *queries.MetricsViewComparison, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) map[string]any {
-	row := q.Result.Rows[0]
-	res := make(map[string]any)
-	res[q.DimensionName] = row.DimensionValue
-	for _, v := range row.MeasureValues {
-		measureLabel, f := getMeasureLabelAndFormatter(v.MeasureName, measures, logger)
-		res[measureLabel] = formatValue(f, v.BaseValue.AsInterface(), logger)
-		if v.ComparisonValue != nil {
-			res[measureLabel+" (prev)"] = formatValue(f, v.ComparisonValue.AsInterface(), logger)
-		}
-		if v.DeltaAbs != nil {
-			res[measureLabel+" (Δ)"] = formatValue(f, v.DeltaAbs.AsInterface(), logger)
-		}
-		if v.DeltaRel != nil {
-			fp, err := formatter.NewPresetFormatter("percentage", false)
-			if err != nil {
-				logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
-				fp = nil
-			}
-			res[measureLabel+" (Δ%)"] = formatValue(fp, v.DeltaRel.AsInterface(), logger)
-		}
-	}
-	return res
-}
-
-// getComparisonMeasureLabelAndFormatter gets the measure label and formatter by a measure name and adds a suffix if it was compared measure.
-// for relative change comparison it uses percent formatter, uses defined preset for everything else
-// if a measure is not found in the request list, it returns the measure name as the label and no formatter.
-// if the measure is not found in the metrics view measures, it returns the measure name as the label and no formatter.
-// if the formatter fails to load, it logs the error and returns the measure name as the label and no formatter.
-func getComparisonMeasureLabelAndFormatter(measureName string, reqMeasures []*runtimev1.MetricsViewAggregationMeasure, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (string, formatter.Formatter) {
-	var reqMeasure *runtimev1.MetricsViewAggregationMeasure
-	effectiveMeasure := measureName
-	for _, m := range reqMeasures {
-		if measureName == m.Name {
-			reqMeasure = m
-			// get the actual measure comparison is based on
-			switch v := m.Compute.(type) {
-			case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
-				effectiveMeasure = v.ComparisonValue.Measure
-			case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
-				effectiveMeasure = v.ComparisonDelta.Measure
-			case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
-				effectiveMeasure = v.ComparisonRatio.Measure
-			}
-			break
-		}
-	}
-	if reqMeasure == nil {
-		return measureName, nil
-	}
-
-	var measure *runtimev1.MetricsViewSpec_MeasureV2
-	for _, m := range measures {
-		if effectiveMeasure == m.Name {
-			measure = m
-			break
-		}
-	}
-
-	if measure == nil {
-		return effectiveMeasure, nil
-	}
-
-	measureLabel := measure.Label
-	if measureLabel == "" {
-		measureLabel = measureName
-	}
-	formatPreset := measure.FormatPreset
-	if effectiveMeasure != measureName {
-		// comparison measure, add a suffix based on type
-		switch reqMeasure.Compute.(type) {
-		case *runtimev1.MetricsViewAggregationMeasure_ComparisonValue:
-			measureLabel += " (prev)"
-		case *runtimev1.MetricsViewAggregationMeasure_ComparisonDelta:
-			measureLabel += " (Δ)"
-		case *runtimev1.MetricsViewAggregationMeasure_ComparisonRatio:
-			measureLabel += " (Δ%)"
-			formatPreset = "percentage"
-		}
-	}
-
-	// D3 formatting isn't implemented yet so using the format preset only for now
-	f, err := formatter.NewPresetFormatter(formatPreset, false)
-	if err != nil {
-		logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
-		return measureLabel, nil
-	}
-
-	return measureLabel, f
-}
-
-// getMeasureLabelAndFormatter gets the measure label and formatter by a measure name.
-// if the measure is not found, it returns the measure name as the label and no formatter.
-// if the formatter fails to load, it logs the error and returns the measure name as the label and no formatter.
-func getMeasureLabelAndFormatter(measureName string, measures []*runtimev1.MetricsViewSpec_MeasureV2, logger *zap.Logger) (string, formatter.Formatter) {
-	var measure *runtimev1.MetricsViewSpec_MeasureV2
-	for _, m := range measures {
-		if measureName == m.Name {
-			measure = m
-			break
-		}
-	}
-
-	if measure == nil {
-		return measureName, nil
-	}
-
-	measureLabel := measure.Label
-	if measureLabel == "" {
-		measureLabel = measureName
-	}
-
-	// D3 formatting isn't implemented yet so using the format preset only for now
-	f, err := formatter.NewPresetFormatter(measure.FormatPreset, false)
-	if err != nil {
-		logger.Warn("Failed to get formatter, using no formatter", zap.Error(err))
-		return measureLabel, nil
-	}
-
-	return measureLabel, f
-}
-
-// formatValue formats a measure value using the provided formatter.
-// If the formatter is nil, or value is nil, or an error occurred, it will log a warning and return the value as is.
-func formatValue(f formatter.Formatter, v any, logger *zap.Logger) any {
-	if f == nil || v == nil {
-		return v
-	}
-	if s, err := f.StringFormat(v); err == nil {
-		return s
-	}
-	logger.Warn("Failed to format measure value", zap.Any("value", v))
-	return fmt.Sprintf("%v", v)
-}
-
 func addExecutionTime(openURL string, executionTime time.Time) (string, error) {
 	u, err := url.Parse(openURL)
 	if err != nil {
@@ -1087,4 +911,14 @@ func addExecutionTime(openURL string, executionTime time.Time) (string, error) {
 	q.Set("execution_time", executionTime.UTC().Format(time.RFC3339))
 	u.RawQuery = q.Encode()
 	return u.String(), nil
+}
+
+// skipError is a special error type that indicates that an action should be skipped with a reason why.
+type skipError struct {
+	reason string
+}
+
+// Error implements the error interface.
+func (s skipError) Error() string {
+	return fmt.Sprintf("skipped: %s", s.reason)
 }

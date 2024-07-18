@@ -243,9 +243,11 @@ export type AdminServiceListOrganizationInvitesParams = {
   pageToken?: string;
 };
 
-export type AdminServiceUpdateOrganizationBillingSubscriptionBody = {
+export type AdminServiceUpdateBillingSubscriptionBody = {
   planName?: string;
 };
+
+export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
@@ -363,11 +365,6 @@ export interface V1UpdateOrganizationResponse {
   organization?: V1Organization;
 }
 
-export interface V1UpdateOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
 export interface V1UpdateBookmarkResponse {
   [key: string]: any;
 }
@@ -379,6 +376,11 @@ export interface V1UpdateBookmarkRequest {
   data?: string;
   default?: boolean;
   shared?: boolean;
+}
+
+export interface V1UpdateBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1UnsubscribeReportResponse {
@@ -456,6 +458,14 @@ export interface V1SudoUpdateAnnotationsRequest {
   organization?: string;
   project?: string;
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenResponse {
+  token?: string;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenRequest {
+  host?: string;
 }
 
 export interface V1SudoGetResourceResponse {
@@ -711,6 +721,7 @@ export interface V1Organization {
   description?: string;
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
+  paymentCustomerId?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -841,6 +852,10 @@ export interface V1ListMagicAuthTokensResponse {
   nextPageToken?: string;
 }
 
+export interface V1ListGithubUserReposResponse {
+  repos?: ListGithubUserReposResponseRepo[];
+}
+
 export interface V1ListBookmarksResponse {
   bookmarks?: V1Bookmark[];
 }
@@ -865,6 +880,10 @@ export interface V1IssueRepresentativeAuthTokenRequest {
 export interface V1IssueMagicAuthTokenResponse {
   token?: string;
   url?: string;
+}
+
+export interface V1HibernateProjectResponse {
+  [key: string]: any;
 }
 
 export type V1GithubPermission =
@@ -920,14 +939,13 @@ export interface V1GetProjectAccessRequestResponse {
   email?: string;
 }
 
+export interface V1GetPaymentsPortalURLResponse {
+  url?: string;
+}
+
 export interface V1GetOrganizationResponse {
   organization?: V1Organization;
   permissions?: V1OrganizationPermissions;
-}
-
-export interface V1GetOrganizationBillingSubscriptionResponse {
-  organization?: V1Organization;
-  subscription?: V1Subscription;
 }
 
 export interface V1GetIFrameResponse {
@@ -982,6 +1000,13 @@ export interface V1GetCloneCredentialsResponse {
 
 export interface V1GetBookmarkResponse {
   bookmark?: V1Bookmark;
+}
+
+export interface V1GetBillingSubscriptionResponse {
+  organization?: V1Organization;
+  subscription?: V1Subscription;
+  billingPortalUrl?: string;
+  hasPaymentMethod?: boolean;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -1193,10 +1218,16 @@ export interface V1ApproveProjectAccessResponse {
   [key: string]: any;
 }
 
+export type V1AlertOptionsResolverProperties = { [key: string]: any };
+
 export interface V1AlertOptions {
   title?: string;
   intervalDuration?: string;
+  resolver?: string;
+  resolverProperties?: V1AlertOptionsResolverProperties;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryName?: string;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
   metricsViewName?: string;
   renotify?: boolean;
@@ -1253,4 +1284,11 @@ export const ProtobufNullValue = {
 export interface ProtobufAny {
   "@type"?: string;
   [key: string]: unknown;
+}
+
+export interface ListGithubUserReposResponseRepo {
+  name?: string;
+  owner?: string;
+  description?: string;
+  url?: string;
 }

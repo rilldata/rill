@@ -32,6 +32,7 @@
   export let builders: Builder[] = [];
   export let loading = false;
   export let target: string | undefined = undefined;
+  export let fit = false;
   // needed to set certain style that could be overridden by the style block in this component
   export let forcedStyle = "";
 
@@ -60,6 +61,7 @@
   class:wide
   class:compact
   class:rounded
+  class:!w-fit={fit}
   class:danger={status === "error"}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
@@ -254,7 +256,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-slate-600;
+    @apply text-slate-600 p-0;
   }
 
   .text:hover {

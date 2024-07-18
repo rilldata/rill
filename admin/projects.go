@@ -244,6 +244,43 @@ func (s *Service) UpdateOrgDeploymentAnnotations(ctx context.Context, org *datab
 	return nil
 }
 
+// HibernateProject hibernates a project by tearing down its prod deployment.
+func (s *Service) HibernateProject(ctx context.Context, proj *database.Project) (*database.Project, error) {
+	depls, err := s.DB.FindDeploymentsForProject(ctx, proj.ID)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, depl := range depls {
+		err = s.TeardownDeployment(ctx, depl)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	proj, err = s.DB.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
+		Name:                 proj.Name,
+		Description:          proj.Description,
+		Public:               proj.Public,
+		Provisioner:          proj.Provisioner,
+		ArchiveAssetID:       proj.ArchiveAssetID,
+		GithubURL:            proj.GithubURL,
+		GithubInstallationID: proj.GithubInstallationID,
+		ProdVersion:          proj.ProdVersion,
+		ProdBranch:           proj.ProdBranch,
+		ProdVariables:        proj.ProdVariables,
+		ProdDeploymentID:     nil,
+		ProdSlots:            proj.ProdSlots,
+		ProdTTLSeconds:       proj.ProdTTLSeconds,
+		Annotations:          proj.Annotations,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return proj, nil
+}
+
 // TriggerRedeploy de-provisions and re-provisions a project's prod deployment.
 func (s *Service) TriggerRedeploy(ctx context.Context, proj *database.Project, prevDepl *database.Deployment) (*database.Project, error) {
 	org, err := s.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -311,7 +348,7 @@ func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deploymen
 		}
 	}()
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return err
 	}
@@ -343,7 +380,7 @@ func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Depl
 		names = append(names, &runtimev1.ResourceName{Name: source})
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return err
 	}

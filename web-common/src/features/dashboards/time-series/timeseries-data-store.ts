@@ -115,7 +115,7 @@ export function createTimeSeriesDataStore(
         return;
       }
 
-      const showComparison = timeControls.showComparison;
+      const showComparison = timeControls.showTimeComparison;
       const interval =
         timeControls.selectedTimeRange?.interval ?? timeControls.minTimeGrain;
 

@@ -15,9 +15,9 @@ import (
 	"github.com/rilldata/rill/cli/cmd/env"
 	"github.com/rilldata/rill/cli/cmd/org"
 	"github.com/rilldata/rill/cli/cmd/project"
+	"github.com/rilldata/rill/cli/cmd/publicurl"
 	"github.com/rilldata/rill/cli/cmd/runtime"
 	"github.com/rilldata/rill/cli/cmd/service"
-	"github.com/rilldata/rill/cli/cmd/shareurl"
 	"github.com/rilldata/rill/cli/cmd/start"
 	"github.com/rilldata/rill/cli/cmd/sudo"
 	"github.com/rilldata/rill/cli/cmd/uninstall"
@@ -150,7 +150,7 @@ func runCmd(ctx context.Context, ver cmdutil.Version) error {
 		usergroup.UsergroupCmd(ch),
 		org.OrgCmd(ch),
 		project.ProjectCmd(ch),
-		shareurl.ShareURLCmd(ch),
+		publicurl.PublicURLCmd(ch),
 		service.ServiceCmd(ch),
 		auth.LoginCmd(ch),
 		auth.LogoutCmd(ch),

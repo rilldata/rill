@@ -25,8 +25,6 @@ const (
 	AdminService_CreateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/CreateOrganization"
 	AdminService_DeleteOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/DeleteOrganization"
 	AdminService_UpdateOrganization_FullMethodName                    = "/rill.admin.v1.AdminService/UpdateOrganization"
-	AdminService_UpdateOrganizationBillingSubscription_FullMethodName = "/rill.admin.v1.AdminService/UpdateOrganizationBillingSubscription"
-	AdminService_GetOrganizationBillingSubscription_FullMethodName    = "/rill.admin.v1.AdminService/GetOrganizationBillingSubscription"
 	AdminService_ListProjectsForOrganization_FullMethodName           = "/rill.admin.v1.AdminService/ListProjectsForOrganization"
 	AdminService_GetProject_FullMethodName                            = "/rill.admin.v1.AdminService/GetProject"
 	AdminService_GetProjectByID_FullMethodName                        = "/rill.admin.v1.AdminService/GetProjectByID"
@@ -37,6 +35,7 @@ const (
 	AdminService_UpdateProject_FullMethodName                         = "/rill.admin.v1.AdminService/UpdateProject"
 	AdminService_UpdateProjectVariables_FullMethodName                = "/rill.admin.v1.AdminService/UpdateProjectVariables"
 	AdminService_CreateAsset_FullMethodName                           = "/rill.admin.v1.AdminService/CreateAsset"
+	AdminService_HibernateProject_FullMethodName                      = "/rill.admin.v1.AdminService/HibernateProject"
 	AdminService_TriggerReconcile_FullMethodName                      = "/rill.admin.v1.AdminService/TriggerReconcile"
 	AdminService_TriggerRefreshSources_FullMethodName                 = "/rill.admin.v1.AdminService/TriggerRefreshSources"
 	AdminService_TriggerRedeploy_FullMethodName                       = "/rill.admin.v1.AdminService/TriggerRedeploy"
@@ -72,6 +71,7 @@ const (
 	AdminService_RevokeCurrentAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeCurrentAuthToken"
 	AdminService_GetGithubRepoStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubUserStatus"
+	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
@@ -88,6 +88,7 @@ const (
 	AdminService_SudoUpdateOrganizationQuotas_FullMethodName          = "/rill.admin.v1.AdminService/SudoUpdateOrganizationQuotas"
 	AdminService_SudoUpdateOrganizationBillingCustomer_FullMethodName = "/rill.admin.v1.AdminService/SudoUpdateOrganizationBillingCustomer"
 	AdminService_SudoUpdateAnnotations_FullMethodName                 = "/rill.admin.v1.AdminService/SudoUpdateAnnotations"
+	AdminService_SudoIssueRuntimeManagerToken_FullMethodName          = "/rill.admin.v1.AdminService/SudoIssueRuntimeManagerToken"
 	AdminService_CreateProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/CreateProjectWhitelistedDomain"
 	AdminService_RemoveProjectWhitelistedDomain_FullMethodName        = "/rill.admin.v1.AdminService/RemoveProjectWhitelistedDomain"
 	AdminService_ListProjectWhitelistedDomains_FullMethodName         = "/rill.admin.v1.AdminService/ListProjectWhitelistedDomains"
@@ -123,6 +124,9 @@ const (
 	AdminService_DeleteAlert_FullMethodName                           = "/rill.admin.v1.AdminService/DeleteAlert"
 	AdminService_GenerateAlertYAML_FullMethodName                     = "/rill.admin.v1.AdminService/GenerateAlertYAML"
 	AdminService_GetAlertYAML_FullMethodName                          = "/rill.admin.v1.AdminService/GetAlertYAML"
+	AdminService_GetBillingSubscription_FullMethodName                = "/rill.admin.v1.AdminService/GetBillingSubscription"
+	AdminService_UpdateBillingSubscription_FullMethodName             = "/rill.admin.v1.AdminService/UpdateBillingSubscription"
+	AdminService_GetPaymentsPortalURL_FullMethodName                  = "/rill.admin.v1.AdminService/GetPaymentsPortalURL"
 	AdminService_ListPublicBillingPlans_FullMethodName                = "/rill.admin.v1.AdminService/ListPublicBillingPlans"
 	AdminService_RequestProjectAccess_FullMethodName                  = "/rill.admin.v1.AdminService/RequestProjectAccess"
 	AdminService_GetProjectAccessRequest_FullMethodName               = "/rill.admin.v1.AdminService/GetProjectAccessRequest"
@@ -146,10 +150,6 @@ type AdminServiceClient interface {
 	DeleteOrganization(ctx context.Context, in *DeleteOrganizationRequest, opts ...grpc.CallOption) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(ctx context.Context, in *UpdateOrganizationRequest, opts ...grpc.CallOption) (*UpdateOrganizationResponse, error)
-	// UpdateOrganizationBillingSubscription updates the billing plan for the organization
-	UpdateOrganizationBillingSubscription(ctx context.Context, in *UpdateOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateOrganizationBillingSubscriptionResponse, error)
-	// GetOrganizationBillingSubscription lists the subscription for the organization
-	GetOrganizationBillingSubscription(ctx context.Context, in *GetOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSubscriptionResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(ctx context.Context, in *ListProjectsForOrganizationRequest, opts ...grpc.CallOption) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -170,6 +170,8 @@ type AdminServiceClient interface {
 	UpdateProjectVariables(ctx context.Context, in *UpdateProjectVariablesRequest, opts ...grpc.CallOption) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(ctx context.Context, in *CreateAssetRequest, opts ...grpc.CallOption) (*CreateAssetResponse, error)
+	// HibernateProject hibernates a project by tearing down its deployments.
+	HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment
 	TriggerReconcile(ctx context.Context, in *TriggerReconcileRequest, opts ...grpc.CallOption) (*TriggerReconcileResponse, error)
 	// TriggerRefreshSources refresh the source for production deployment
@@ -242,6 +244,7 @@ type AdminServiceClient interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
+	ListGithubUserRepos(ctx context.Context, in *ListGithubUserReposRequest, opts ...grpc.CallOption) (*ListGithubUserReposResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -274,6 +277,8 @@ type AdminServiceClient interface {
 	SudoUpdateOrganizationBillingCustomer(ctx context.Context, in *SudoUpdateOrganizationBillingCustomerRequest, opts ...grpc.CallOption) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(ctx context.Context, in *SudoUpdateAnnotationsRequest, opts ...grpc.CallOption) (*SudoUpdateAnnotationsResponse, error)
+	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+	SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(ctx context.Context, in *CreateProjectWhitelistedDomainRequest, opts ...grpc.CallOption) (*CreateProjectWhitelistedDomainResponse, error)
 	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -344,6 +349,12 @@ type AdminServiceClient interface {
 	GenerateAlertYAML(ctx context.Context, in *GenerateAlertYAMLRequest, opts ...grpc.CallOption) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(ctx context.Context, in *GetAlertYAMLRequest, opts ...grpc.CallOption) (*GetAlertYAMLResponse, error)
+	// GetBillingSubscription lists the subscription for the organization
+	GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error)
+	// UpdateBillingSubscription updates the billing plan for the organization
+	UpdateBillingSubscription(ctx context.Context, in *UpdateBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateBillingSubscriptionResponse, error)
+	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
+	GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error)
 	RequestProjectAccess(ctx context.Context, in *RequestProjectAccessRequest, opts ...grpc.CallOption) (*RequestProjectAccessResponse, error)
@@ -414,26 +425,6 @@ func (c *adminServiceClient) UpdateOrganization(ctx context.Context, in *UpdateO
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(UpdateOrganizationResponse)
 	err := c.cc.Invoke(ctx, AdminService_UpdateOrganization_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) UpdateOrganizationBillingSubscription(ctx context.Context, in *UpdateOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateOrganizationBillingSubscriptionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(UpdateOrganizationBillingSubscriptionResponse)
-	err := c.cc.Invoke(ctx, AdminService_UpdateOrganizationBillingSubscription_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *adminServiceClient) GetOrganizationBillingSubscription(ctx context.Context, in *GetOrganizationBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetOrganizationBillingSubscriptionResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetOrganizationBillingSubscriptionResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetOrganizationBillingSubscription_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -534,6 +525,16 @@ func (c *adminServiceClient) CreateAsset(ctx context.Context, in *CreateAssetReq
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateAssetResponse)
 	err := c.cc.Invoke(ctx, AdminService_CreateAsset_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) HibernateProject(ctx context.Context, in *HibernateProjectRequest, opts ...grpc.CallOption) (*HibernateProjectResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(HibernateProjectResponse)
+	err := c.cc.Invoke(ctx, AdminService_HibernateProject_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -890,6 +891,16 @@ func (c *adminServiceClient) GetGithubUserStatus(ctx context.Context, in *GetGit
 	return out, nil
 }
 
+func (c *adminServiceClient) ListGithubUserRepos(ctx context.Context, in *ListGithubUserReposRequest, opts ...grpc.CallOption) (*ListGithubUserReposResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListGithubUserReposResponse)
+	err := c.cc.Invoke(ctx, AdminService_ListGithubUserRepos_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCloneCredentialsResponse)
@@ -1044,6 +1055,16 @@ func (c *adminServiceClient) SudoUpdateAnnotations(ctx context.Context, in *Sudo
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(SudoUpdateAnnotationsResponse)
 	err := c.cc.Invoke(ctx, AdminService_SudoUpdateAnnotations_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) SudoIssueRuntimeManagerToken(ctx context.Context, in *SudoIssueRuntimeManagerTokenRequest, opts ...grpc.CallOption) (*SudoIssueRuntimeManagerTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SudoIssueRuntimeManagerTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_SudoIssueRuntimeManagerToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1400,6 +1421,36 @@ func (c *adminServiceClient) GetAlertYAML(ctx context.Context, in *GetAlertYAMLR
 	return out, nil
 }
 
+func (c *adminServiceClient) GetBillingSubscription(ctx context.Context, in *GetBillingSubscriptionRequest, opts ...grpc.CallOption) (*GetBillingSubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetBillingSubscriptionResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetBillingSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) UpdateBillingSubscription(ctx context.Context, in *UpdateBillingSubscriptionRequest, opts ...grpc.CallOption) (*UpdateBillingSubscriptionResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(UpdateBillingSubscriptionResponse)
+	err := c.cc.Invoke(ctx, AdminService_UpdateBillingSubscription_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetPaymentsPortalURL(ctx context.Context, in *GetPaymentsPortalURLRequest, opts ...grpc.CallOption) (*GetPaymentsPortalURLResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetPaymentsPortalURLResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetPaymentsPortalURL_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) ListPublicBillingPlans(ctx context.Context, in *ListPublicBillingPlansRequest, opts ...grpc.CallOption) (*ListPublicBillingPlansResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListPublicBillingPlansResponse)
@@ -1466,10 +1517,6 @@ type AdminServiceServer interface {
 	DeleteOrganization(context.Context, *DeleteOrganizationRequest) (*DeleteOrganizationResponse, error)
 	// UpdateOrganization deletes an organizations
 	UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error)
-	// UpdateOrganizationBillingSubscription updates the billing plan for the organization
-	UpdateOrganizationBillingSubscription(context.Context, *UpdateOrganizationBillingSubscriptionRequest) (*UpdateOrganizationBillingSubscriptionResponse, error)
-	// GetOrganizationBillingSubscription lists the subscription for the organization
-	GetOrganizationBillingSubscription(context.Context, *GetOrganizationBillingSubscriptionRequest) (*GetOrganizationBillingSubscriptionResponse, error)
 	// ListProjectsForOrganization lists all the projects currently available for given organizations
 	ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error)
 	// GetProject returns information about a specific project
@@ -1490,6 +1537,8 @@ type AdminServiceServer interface {
 	UpdateProjectVariables(context.Context, *UpdateProjectVariablesRequest) (*UpdateProjectVariablesResponse, error)
 	// CreateAsset returns a one time signed URL using which any asset can be uploaded.
 	CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error)
+	// HibernateProject hibernates a project by tearing down its deployments.
+	HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error)
 	// TriggerReconcile triggers reconcile for the project's prod deployment
 	TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error)
 	// TriggerRefreshSources refresh the source for production deployment
@@ -1562,6 +1611,7 @@ type AdminServiceServer interface {
 	// GetGithubUserStatus returns info about a Github user account based on the caller's installations.
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
+	ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -1594,6 +1644,8 @@ type AdminServiceServer interface {
 	SudoUpdateOrganizationBillingCustomer(context.Context, *SudoUpdateOrganizationBillingCustomerRequest) (*SudoUpdateOrganizationBillingCustomerResponse, error)
 	// SudoUpdateAnnotations endpoint for superusers to update project annotations
 	SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error)
+	// SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+	SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error)
 	// CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
 	CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error)
 	// RemoveProjectWhitelistedDomain removes a domain from the project's whitelisted
@@ -1664,6 +1716,12 @@ type AdminServiceServer interface {
 	GenerateAlertYAML(context.Context, *GenerateAlertYAMLRequest) (*GenerateAlertYAMLResponse, error)
 	// GenerateAlertYAML generates YAML for an alert to be copied into a project's Git repository
 	GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error)
+	// GetBillingSubscription lists the subscription for the organization
+	GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error)
+	// UpdateBillingSubscription updates the billing plan for the organization
+	UpdateBillingSubscription(context.Context, *UpdateBillingSubscriptionRequest) (*UpdateBillingSubscriptionResponse, error)
+	// GetPaymentsPortalURL returns the URL for the billing session to collect payment method
+	GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error)
 	// ListPublicBillingPlans lists all public billing plans
 	ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error)
 	RequestProjectAccess(context.Context, *RequestProjectAccessRequest) (*RequestProjectAccessResponse, error)
@@ -1695,12 +1753,6 @@ func (UnimplementedAdminServiceServer) DeleteOrganization(context.Context, *Dele
 func (UnimplementedAdminServiceServer) UpdateOrganization(context.Context, *UpdateOrganizationRequest) (*UpdateOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganization not implemented")
 }
-func (UnimplementedAdminServiceServer) UpdateOrganizationBillingSubscription(context.Context, *UpdateOrganizationBillingSubscriptionRequest) (*UpdateOrganizationBillingSubscriptionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method UpdateOrganizationBillingSubscription not implemented")
-}
-func (UnimplementedAdminServiceServer) GetOrganizationBillingSubscription(context.Context, *GetOrganizationBillingSubscriptionRequest) (*GetOrganizationBillingSubscriptionResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetOrganizationBillingSubscription not implemented")
-}
 func (UnimplementedAdminServiceServer) ListProjectsForOrganization(context.Context, *ListProjectsForOrganizationRequest) (*ListProjectsForOrganizationResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListProjectsForOrganization not implemented")
 }
@@ -1730,6 +1782,9 @@ func (UnimplementedAdminServiceServer) UpdateProjectVariables(context.Context, *
 }
 func (UnimplementedAdminServiceServer) CreateAsset(context.Context, *CreateAssetRequest) (*CreateAssetResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateAsset not implemented")
+}
+func (UnimplementedAdminServiceServer) HibernateProject(context.Context, *HibernateProjectRequest) (*HibernateProjectResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method HibernateProject not implemented")
 }
 func (UnimplementedAdminServiceServer) TriggerReconcile(context.Context, *TriggerReconcileRequest) (*TriggerReconcileResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method TriggerReconcile not implemented")
@@ -1836,6 +1891,9 @@ func (UnimplementedAdminServiceServer) GetGithubRepoStatus(context.Context, *Get
 func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetGithubUserStatus not implemented")
 }
+func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ListGithubUserRepos not implemented")
+}
 func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
 }
@@ -1883,6 +1941,9 @@ func (UnimplementedAdminServiceServer) SudoUpdateOrganizationBillingCustomer(con
 }
 func (UnimplementedAdminServiceServer) SudoUpdateAnnotations(context.Context, *SudoUpdateAnnotationsRequest) (*SudoUpdateAnnotationsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method SudoUpdateAnnotations not implemented")
+}
+func (UnimplementedAdminServiceServer) SudoIssueRuntimeManagerToken(context.Context, *SudoIssueRuntimeManagerTokenRequest) (*SudoIssueRuntimeManagerTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method SudoIssueRuntimeManagerToken not implemented")
 }
 func (UnimplementedAdminServiceServer) CreateProjectWhitelistedDomain(context.Context, *CreateProjectWhitelistedDomainRequest) (*CreateProjectWhitelistedDomainResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateProjectWhitelistedDomain not implemented")
@@ -1988,6 +2049,15 @@ func (UnimplementedAdminServiceServer) GenerateAlertYAML(context.Context, *Gener
 }
 func (UnimplementedAdminServiceServer) GetAlertYAML(context.Context, *GetAlertYAMLRequest) (*GetAlertYAMLResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetAlertYAML not implemented")
+}
+func (UnimplementedAdminServiceServer) GetBillingSubscription(context.Context, *GetBillingSubscriptionRequest) (*GetBillingSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBillingSubscription not implemented")
+}
+func (UnimplementedAdminServiceServer) UpdateBillingSubscription(context.Context, *UpdateBillingSubscriptionRequest) (*UpdateBillingSubscriptionResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method UpdateBillingSubscription not implemented")
+}
+func (UnimplementedAdminServiceServer) GetPaymentsPortalURL(context.Context, *GetPaymentsPortalURLRequest) (*GetPaymentsPortalURLResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetPaymentsPortalURL not implemented")
 }
 func (UnimplementedAdminServiceServer) ListPublicBillingPlans(context.Context, *ListPublicBillingPlansRequest) (*ListPublicBillingPlansResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListPublicBillingPlans not implemented")
@@ -2121,42 +2191,6 @@ func _AdminService_UpdateOrganization_Handler(srv interface{}, ctx context.Conte
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).UpdateOrganization(ctx, req.(*UpdateOrganizationRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_UpdateOrganizationBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(UpdateOrganizationBillingSubscriptionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).UpdateOrganizationBillingSubscription(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_UpdateOrganizationBillingSubscription_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).UpdateOrganizationBillingSubscription(ctx, req.(*UpdateOrganizationBillingSubscriptionRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _AdminService_GetOrganizationBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetOrganizationBillingSubscriptionRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(AdminServiceServer).GetOrganizationBillingSubscription(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: AdminService_GetOrganizationBillingSubscription_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetOrganizationBillingSubscription(ctx, req.(*GetOrganizationBillingSubscriptionRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2337,6 +2371,24 @@ func _AdminService_CreateAsset_Handler(srv interface{}, ctx context.Context, dec
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).CreateAsset(ctx, req.(*CreateAssetRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_HibernateProject_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(HibernateProjectRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).HibernateProject(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_HibernateProject_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).HibernateProject(ctx, req.(*HibernateProjectRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -2971,6 +3023,24 @@ func _AdminService_GetGithubUserStatus_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ListGithubUserRepos_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListGithubUserReposRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ListGithubUserRepos(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ListGithubUserRepos_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ListGithubUserRepos(ctx, req.(*ListGithubUserReposRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetCloneCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetCloneCredentialsRequest)
 	if err := dec(in); err != nil {
@@ -3255,6 +3325,24 @@ func _AdminService_SudoUpdateAnnotations_Handler(srv interface{}, ctx context.Co
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).SudoUpdateAnnotations(ctx, req.(*SudoUpdateAnnotationsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_SudoIssueRuntimeManagerToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SudoIssueRuntimeManagerTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).SudoIssueRuntimeManagerToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_SudoIssueRuntimeManagerToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).SudoIssueRuntimeManagerToken(ctx, req.(*SudoIssueRuntimeManagerTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -3889,6 +3977,60 @@ func _AdminService_GetAlertYAML_Handler(srv interface{}, ctx context.Context, de
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBillingSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetBillingSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetBillingSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetBillingSubscription(ctx, req.(*GetBillingSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_UpdateBillingSubscription_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(UpdateBillingSubscriptionRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).UpdateBillingSubscription(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_UpdateBillingSubscription_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).UpdateBillingSubscription(ctx, req.(*UpdateBillingSubscriptionRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetPaymentsPortalURL_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetPaymentsPortalURLRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetPaymentsPortalURL(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetPaymentsPortalURL_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetPaymentsPortalURL(ctx, req.(*GetPaymentsPortalURLRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_ListPublicBillingPlans_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(ListPublicBillingPlansRequest)
 	if err := dec(in); err != nil {
@@ -4011,14 +4153,6 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_UpdateOrganization_Handler,
 		},
 		{
-			MethodName: "UpdateOrganizationBillingSubscription",
-			Handler:    _AdminService_UpdateOrganizationBillingSubscription_Handler,
-		},
-		{
-			MethodName: "GetOrganizationBillingSubscription",
-			Handler:    _AdminService_GetOrganizationBillingSubscription_Handler,
-		},
-		{
 			MethodName: "ListProjectsForOrganization",
 			Handler:    _AdminService_ListProjectsForOrganization_Handler,
 		},
@@ -4057,6 +4191,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "CreateAsset",
 			Handler:    _AdminService_CreateAsset_Handler,
+		},
+		{
+			MethodName: "HibernateProject",
+			Handler:    _AdminService_HibernateProject_Handler,
 		},
 		{
 			MethodName: "TriggerReconcile",
@@ -4199,6 +4337,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetGithubUserStatus_Handler,
 		},
 		{
+			MethodName: "ListGithubUserRepos",
+			Handler:    _AdminService_ListGithubUserRepos_Handler,
+		},
+		{
 			MethodName: "GetCloneCredentials",
 			Handler:    _AdminService_GetCloneCredentials_Handler,
 		},
@@ -4261,6 +4403,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "SudoUpdateAnnotations",
 			Handler:    _AdminService_SudoUpdateAnnotations_Handler,
+		},
+		{
+			MethodName: "SudoIssueRuntimeManagerToken",
+			Handler:    _AdminService_SudoIssueRuntimeManagerToken_Handler,
 		},
 		{
 			MethodName: "CreateProjectWhitelistedDomain",
@@ -4401,6 +4547,18 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetAlertYAML",
 			Handler:    _AdminService_GetAlertYAML_Handler,
+		},
+		{
+			MethodName: "GetBillingSubscription",
+			Handler:    _AdminService_GetBillingSubscription_Handler,
+		},
+		{
+			MethodName: "UpdateBillingSubscription",
+			Handler:    _AdminService_UpdateBillingSubscription_Handler,
+		},
+		{
+			MethodName: "GetPaymentsPortalURL",
+			Handler:    _AdminService_GetPaymentsPortalURL_Handler,
 		},
 		{
 			MethodName: "ListPublicBillingPlans",

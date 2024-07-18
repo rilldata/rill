@@ -247,6 +247,8 @@ type DB interface {
 	CountBillingProjectsForOrganization(ctx context.Context, orgID string, createdBefore time.Time) (int, error)
 	FindBillingUsageReportedOn(ctx context.Context) (time.Time, error)
 	UpdateBillingUsageReportedOn(ctx context.Context, usageReportedOn time.Time) error
+
+	FindOrganizationsWithoutPaymentCustomerID(ctx context.Context) ([]*Organization, error)
 }
 
 // Tx represents a database transaction. It can only be used to commit and rollback transactions.
@@ -281,6 +283,7 @@ type Organization struct {
 	QuotaOutstandingInvites             int       `db:"quota_outstanding_invites"`
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
+	PaymentCustomerID                   string    `db:"payment_customer_id"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -294,6 +297,7 @@ type InsertOrganizationOptions struct {
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
+	PaymentCustomerID                   string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -307,6 +311,7 @@ type UpdateOrganizationOptions struct {
 	QuotaOutstandingInvites             int
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
+	PaymentCustomerID                   string
 }
 
 // Project represents one Git connection.

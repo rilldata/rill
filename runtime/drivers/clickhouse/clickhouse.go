@@ -32,6 +32,7 @@ var spec = drivers.Spec{
 			Required:    false,
 			DisplayName: "Connection string",
 			Placeholder: "clickhouse://localhost:9000?username=default&password=",
+			NoPrompt:    true,
 		},
 		{
 			Key:         "host",
