@@ -8958,6 +8958,8 @@ func (m *ConnectorDriver_Property) validate(all bool) error {
 
 	// no validation rules for Secret
 
+	// no validation rules for NoPrompt
+
 	if len(errors) > 0 {
 		return ConnectorDriver_PropertyMultiError(errors)
 	}

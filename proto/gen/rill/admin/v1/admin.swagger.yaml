@@ -2725,6 +2725,27 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/superuser/deployments/manager-token:
+    post:
+      summary: SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+      operationId: AdminService_SudoIssueRuntimeManagerToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1SudoIssueRuntimeManagerTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1SudoIssueRuntimeManagerTokenRequest'
+      tags:
+        - AdminService
   /v1/superuser/members:
     get:
       summary: ListSuperusers lists all the superusers
@@ -4377,6 +4398,16 @@ definitions:
         $ref: '#/definitions/v1Deployment'
       instance:
         $ref: '#/definitions/v1Deployment'
+  v1SudoIssueRuntimeManagerTokenRequest:
+    type: object
+    properties:
+      host:
+        type: string
+  v1SudoIssueRuntimeManagerTokenResponse:
+    type: object
+    properties:
+      token:
+        type: string
   v1SudoUpdateAnnotationsRequest:
     type: object
     properties:

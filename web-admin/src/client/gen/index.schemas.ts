@@ -461,6 +461,14 @@ export interface V1SudoUpdateAnnotationsRequest {
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
 }
 
+export interface V1SudoIssueRuntimeManagerTokenResponse {
+  token?: string;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenRequest {
+  host?: string;
+}
+
 export interface V1SudoGetResourceResponse {
   user?: V1User;
   org?: V1Organization;

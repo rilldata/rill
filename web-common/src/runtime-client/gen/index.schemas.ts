@@ -2329,6 +2329,7 @@ export interface ConnectorDriverProperty {
   default?: string;
   placeholder?: string;
   secret?: boolean;
+  noPrompt?: boolean;
 }
 
 export interface ColumnTimeSeriesRequestBasicMeasure {
