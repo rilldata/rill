@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -107,8 +108,8 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 		req.Header.Add("Content-Type", "application/json")
 		resp, err := c.client.Do(req)
 		if err != nil {
-			// nolint:errorlint // there's no wrapping
-			if v, ok := err.(*url.Error); ok {
+			var v *url.Error
+			if errors.As(err, &v) {
 				if errTooManyRedirects.MatchString(v.Error()) {
 					return nil, retrier.Fail, v
 				}
@@ -121,8 +122,8 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 					return nil, retrier.Fail, v
 				}
 
-				// nolint:errorlint // there's no wrapping
-				if _, ok := v.Err.(x509.UnknownAuthorityError); ok {
+				var x509err *x509.UnknownAuthorityError
+				if errors.As(v.Err, x509err) {
 					return nil, retrier.Fail, v
 				}
 			}
