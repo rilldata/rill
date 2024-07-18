@@ -165,6 +165,10 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, err
 	}
 
+	// TODO: Add "s3://bucket" prefix to the path and files
+	// TODO: Add tests
+	// TODO: Experience pass using APIs
+
 	var rows []map[string]any
 	switch r.props.Partition {
 	case globPartitionTypeUnspecified, globPartitionTypeFile:
@@ -209,7 +213,7 @@ func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []ma
 }
 
 // hivePartitionRegex is a regex that matches Hive-style partition values in a path.
-var hivePartitionRegex = regexp.MustCompile(`\/([^\/\?]+)=([^\/\n\?]*)`)
+var hivePartitionRegex = regexp.MustCompile(`/([^/\?]+)=([^/\n\?]*)`)
 
 // buildPartitioned builds a result consisting of one row per partition.
 // It groups the files by directory.
@@ -339,8 +343,8 @@ func (r *globResolver) writeTempNDJSONFile(rows []map[string]any) (string, error
 	return f.Name(), nil
 }
 
-func readNDJSONFile(path string) ([]map[string]any, error) {
-	f, err := os.Open(path)
+func readNDJSONFile(filePath string) ([]map[string]any, error) {
+	f, err := os.Open(filePath)
 	if err != nil {
 		return nil, err
 	}
