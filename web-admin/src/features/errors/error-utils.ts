@@ -1,6 +1,7 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
+import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
   isMagicLinkPage,
   isMetricsExplorerPage,
@@ -47,29 +48,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       return;
     }
 
-    const onProjectPage = isProjectPage(get(page));
-
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
-      // Check for a logged-in user
-      const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
-        queryKey: getAdminServiceGetCurrentUserQueryKey(),
-        queryFn: () => adminServiceGetCurrentUser(),
-      });
-      const isLoggedIn = !!userQuery.user;
-
-      // If not logged in, redirect to the login page
-      if (!isLoggedIn) {
-        await goto(
-          `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-        );
-        return;
-      } else if (onProjectPage) {
-        if (!isProjectRequestAccessPage(get(page))) {
-          await goto(
-            `/-/request-project-access/?organization=${get(page).params.organization}&project=${get(page).params.project}`,
-          );
-        }
+      if (await checkUserAccess()) {
         return;
       }
     }
@@ -81,6 +62,8 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       );
       return;
     }
+
+    const onProjectPage = isProjectPage(get(page));
 
     // Special handling for some errors on the Project page
     if (onProjectPage) {
