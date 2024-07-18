@@ -18,8 +18,9 @@ type Provider interface {
 }
 
 type Customer struct {
-	ID                 string
-	Name               string
-	Email              string
-	ValidPaymentMethod bool
+	ID               string
+	Name             string
+	Email            string
+	HasPaymentMethod bool
+	IsCardValid      *bool
 }

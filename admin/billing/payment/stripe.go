@@ -24,7 +24,7 @@ func NewStripe(stripeKey string) *Stripe {
 func (s *Stripe) CreateCustomer(ctx context.Context, organization *database.Organization) (*Customer, error) {
 	// Create a new customer
 	params := &stripe.CustomerParams{
-		Email: stripe.String(billing.SupportEmail), // TODO capture email for the org or use admin's email
+		Email: stripe.String(billing.Email(organization)),
 		Name:  stripe.String(organization.ID),
 	}
 
@@ -54,19 +54,31 @@ func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer
 		Customer: stripe.String(c.ID),
 	})
 
+	hasPaymentMethod := false
+	isCardValid := new(bool)
+	// very basic check if the customer has a payment method and if it's a card then is not expired
+	for i.Next() {
+		hasPaymentMethod = true
+		pm := i.PaymentMethod()
+		if pm.Type == stripe.PaymentMethodTypeCard {
+			*isCardValid = int(pm.Card.ExpYear) > time.Now().Year() || (int(pm.Card.ExpYear) == time.Now().Year() && int(pm.Card.ExpMonth) >= int(time.Now().Month()))
+		}
+	}
+
 	return &Customer{
-		ID:                 c.ID,
-		Name:               c.Name,
-		Email:              c.Email,
-		ValidPaymentMethod: i.Next(), // very basic check if the customer has a payment method // TODO improve this
+		ID:               c.ID,
+		Name:             c.Name,
+		Email:            c.Email,
+		HasPaymentMethod: hasPaymentMethod,
+		IsCardValid:      isCardValid,
 	}, nil
 }
 
 func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.Organization) (*Customer, error) {
-	// TODO once we capture billing email then we can use that to list customers
 	searchStart := organization.CreatedOn.Add(-5 * time.Minute) // search 5 minutes before the org creation time
 	searchEnd := organization.CreatedOn.Add(5 * time.Minute)    // search 5 minutes after the org creation time
 	params := &stripe.CustomerListParams{
+		Email: stripe.String(billing.Email(organization)),
 		CreatedRange: &stripe.RangeQueryParams{
 			GreaterThanOrEqual: searchStart.Unix(),
 			LesserThanOrEqual:  searchEnd.Unix(),
@@ -80,11 +92,23 @@ func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.
 			it := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
 				Customer: stripe.String(c.ID),
 			})
+			hasPaymentMethod := false
+			isCardValid := new(bool)
+			// very basic check if the customer has a payment method and if it's a card then is not expired
+			for it.Next() {
+				hasPaymentMethod = true
+				pm := it.PaymentMethod()
+				if pm.Type == stripe.PaymentMethodTypeCard {
+					*isCardValid = int(pm.Card.ExpYear) > time.Now().Year() || (int(pm.Card.ExpYear) == time.Now().Year() && int(pm.Card.ExpMonth) >= int(time.Now().Month()))
+				}
+			}
+
 			return &Customer{
-				ID:                 c.ID,
-				Name:               c.Name,
-				Email:              c.Email,
-				ValidPaymentMethod: it.Next(), // very basic check if the customer has a payment method // TODO improve this
+				ID:               c.ID,
+				Name:             c.Name,
+				Email:            c.Email,
+				HasPaymentMethod: hasPaymentMethod,
+				IsCardValid:      isCardValid,
 			}, nil
 		}
 	}

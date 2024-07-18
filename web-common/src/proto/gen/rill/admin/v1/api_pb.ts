@@ -35,6 +35,32 @@ proto3.util.setEnumType(GithubPermission, "rill.admin.v1.GithubPermission", [
 ]);
 
 /**
+ * @generated from enum rill.admin.v1.PaymentCardStatus
+ */
+export enum PaymentCardStatus {
+  /**
+   * @generated from enum value: PAYMENT_CARD_STATUS_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * @generated from enum value: PAYMENT_CARD_STATUS_OK = 1;
+   */
+  OK = 1,
+
+  /**
+   * @generated from enum value: PAYMENT_CARD_STATUS_EXPIRED = 2;
+   */
+  EXPIRED = 2,
+}
+// Retrieve enum metadata with: proto3.getEnumType(PaymentCardStatus)
+proto3.util.setEnumType(PaymentCardStatus, "rill.admin.v1.PaymentCardStatus", [
+  { no: 0, name: "PAYMENT_CARD_STATUS_UNSPECIFIED" },
+  { no: 1, name: "PAYMENT_CARD_STATUS_OK" },
+  { no: 2, name: "PAYMENT_CARD_STATUS_EXPIRED" },
+]);
+
+/**
  * @generated from enum rill.admin.v1.DeploymentStatus
  */
 export enum DeploymentStatus {
@@ -473,6 +499,11 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
    */
   newName?: string;
 
+  /**
+   * @generated from field: optional string billing_email = 4;
+   */
+  billingEmail?: string;
+
   constructor(data?: PartialMessage<UpdateOrganizationRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -484,6 +515,7 @@ export class UpdateOrganizationRequest extends Message<UpdateOrganizationRequest
     { no: 1, name: "name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 3, name: "new_name", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 4, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): UpdateOrganizationRequest {
@@ -9419,6 +9451,11 @@ export class GetBillingSubscriptionResponse extends Message<GetBillingSubscripti
    */
   hasPaymentMethod = false;
 
+  /**
+   * @generated from field: rill.admin.v1.PaymentCardStatus payment_card_status = 5;
+   */
+  paymentCardStatus = PaymentCardStatus.UNSPECIFIED;
+
   constructor(data?: PartialMessage<GetBillingSubscriptionResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9431,6 +9468,7 @@ export class GetBillingSubscriptionResponse extends Message<GetBillingSubscripti
     { no: 2, name: "subscription", kind: "message", T: Subscription },
     { no: 3, name: "billing_portal_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "has_payment_method", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 5, name: "payment_card_status", kind: "enum", T: proto3.getEnumType(PaymentCardStatus) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingSubscriptionResponse {
@@ -10237,6 +10275,11 @@ export class Organization extends Message<Organization> {
   paymentCustomerId = "";
 
   /**
+   * @generated from field: string billing_email = 9;
+   */
+  billingEmail = "";
+
+  /**
    * @generated from field: google.protobuf.Timestamp created_on = 5;
    */
   createdOn?: Timestamp;
@@ -10260,6 +10303,7 @@ export class Organization extends Message<Organization> {
     { no: 4, name: "quotas", kind: "message", T: OrganizationQuotas },
     { no: 7, name: "billing_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "payment_customer_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 9, name: "billing_email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "created_on", kind: "message", T: Timestamp },
     { no: 6, name: "updated_on", kind: "message", T: Timestamp },
   ]);

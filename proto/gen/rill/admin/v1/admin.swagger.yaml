@@ -286,6 +286,8 @@ paths:
                 type: string
               newName:
                 type: string
+              billingEmail:
+                type: string
       tags:
         - AdminService
   /v1/organizations/{orgName}/billing/payments/portal-url:
@@ -3190,7 +3192,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3533,6 +3535,8 @@ definitions:
         type: string
       hasPaymentMethod:
         type: boolean
+      paymentCardStatus:
+        $ref: '#/definitions/v1PaymentCardStatus'
   v1GetBookmarkResponse:
     type: object
     properties:
@@ -3989,6 +3993,8 @@ definitions:
         type: string
       paymentCustomerId:
         type: string
+      billingEmail:
+        type: string
       createdOn:
         type: string
         format: date-time
@@ -4033,6 +4039,13 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: uint64
+  v1PaymentCardStatus:
+    type: string
+    enum:
+      - PAYMENT_CARD_STATUS_UNSPECIFIED
+      - PAYMENT_CARD_STATUS_OK
+      - PAYMENT_CARD_STATUS_EXPIRED
+    default: PAYMENT_CARD_STATUS_UNSPECIFIED
   v1PingResponse:
     type: object
     properties:

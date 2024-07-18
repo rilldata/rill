@@ -130,3 +130,10 @@ type PaymentProvider string
 const (
 	PaymentProviderStripe PaymentProvider = "stripe"
 )
+
+func Email(organization *database.Organization) string {
+	if organization.BillingEmail != "" {
+		return organization.BillingEmail
+	}
+	return SupportEmail
+}

@@ -284,6 +284,7 @@ type Organization struct {
 	QuotaStorageLimitBytesPerDeployment int64     `db:"quota_storage_limit_bytes_per_deployment"`
 	BillingCustomerID                   string    `db:"billing_customer_id"`
 	PaymentCustomerID                   string    `db:"payment_customer_id"`
+	BillingEmail                        string    `db:"billing_email"`
 }
 
 // InsertOrganizationOptions defines options for inserting a new org
@@ -298,6 +299,7 @@ type InsertOrganizationOptions struct {
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
+	BillingEmail                        string
 }
 
 // UpdateOrganizationOptions defines options for updating an existing org
@@ -312,6 +314,7 @@ type UpdateOrganizationOptions struct {
 	QuotaStorageLimitBytesPerDeployment int64
 	BillingCustomerID                   string
 	PaymentCustomerID                   string
+	BillingEmail                        string
 }
 
 // Project represents one Git connection.

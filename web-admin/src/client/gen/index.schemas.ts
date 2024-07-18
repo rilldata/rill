@@ -252,6 +252,7 @@ export type AdminServiceGetPaymentsPortalURLParams = { returnUrl?: string };
 export type AdminServiceUpdateOrganizationBody = {
   description?: string;
   newName?: string;
+  billingEmail?: string;
 };
 
 export type AdminServiceListOrganizationsParams = {
@@ -688,6 +689,16 @@ export interface V1PingResponse {
   time?: string;
 }
 
+export type V1PaymentCardStatus =
+  (typeof V1PaymentCardStatus)[keyof typeof V1PaymentCardStatus];
+
+// eslint-disable-next-line @typescript-eslint/no-redeclare
+export const V1PaymentCardStatus = {
+  PAYMENT_CARD_STATUS_UNSPECIFIED: "PAYMENT_CARD_STATUS_UNSPECIFIED",
+  PAYMENT_CARD_STATUS_OK: "PAYMENT_CARD_STATUS_OK",
+  PAYMENT_CARD_STATUS_EXPIRED: "PAYMENT_CARD_STATUS_EXPIRED",
+} as const;
+
 export interface V1OrganizationQuotas {
   projects?: number;
   deployments?: number;
@@ -714,6 +725,7 @@ export interface V1Organization {
   quotas?: V1OrganizationQuotas;
   billingCustomerId?: string;
   paymentCustomerId?: string;
+  billingEmail?: string;
   createdOn?: string;
   updatedOn?: string;
 }
@@ -999,6 +1011,7 @@ export interface V1GetBillingSubscriptionResponse {
   subscription?: V1Subscription;
   billingPortalUrl?: string;
   hasPaymentMethod?: boolean;
+  paymentCardStatus?: V1PaymentCardStatus;
 }
 
 export interface V1GetAlertYAMLResponse {
@@ -1261,7 +1274,7 @@ export interface RpcStatus {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

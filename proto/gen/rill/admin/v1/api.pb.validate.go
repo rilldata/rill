@@ -1282,11 +1282,77 @@ func (m *UpdateOrganizationRequest) validate(all bool) error {
 		// no validation rules for NewName
 	}
 
+	if m.BillingEmail != nil {
+
+		if err := m._validateEmail(m.GetBillingEmail()); err != nil {
+			err = UpdateOrganizationRequestValidationError{
+				field:  "BillingEmail",
+				reason: "value must be a valid email address",
+				cause:  err,
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+	}
+
 	if len(errors) > 0 {
 		return UpdateOrganizationRequestMultiError(errors)
 	}
 
 	return nil
+}
+
+func (m *UpdateOrganizationRequest) _validateHostname(host string) error {
+	s := strings.ToLower(strings.TrimSuffix(host, "."))
+
+	if len(host) > 253 {
+		return errors.New("hostname cannot exceed 253 characters")
+	}
+
+	for _, part := range strings.Split(s, ".") {
+		if l := len(part); l == 0 || l > 63 {
+			return errors.New("hostname part must be non-empty and cannot exceed 63 characters")
+		}
+
+		if part[0] == '-' {
+			return errors.New("hostname parts cannot begin with hyphens")
+		}
+
+		if part[len(part)-1] == '-' {
+			return errors.New("hostname parts cannot end with hyphens")
+		}
+
+		for _, r := range part {
+			if (r < 'a' || r > 'z') && (r < '0' || r > '9') && r != '-' {
+				return fmt.Errorf("hostname parts can only contain alphanumeric characters or hyphens, got %q", string(r))
+			}
+		}
+	}
+
+	return nil
+}
+
+func (m *UpdateOrganizationRequest) _validateEmail(addr string) error {
+	a, err := mail.ParseAddress(addr)
+	if err != nil {
+		return err
+	}
+	addr = a.Address
+
+	if len(addr) > 254 {
+		return errors.New("email addresses cannot exceed 254 characters")
+	}
+
+	parts := strings.SplitN(addr, "@", 2)
+
+	if len(parts[0]) > 64 {
+		return errors.New("email address local phrase cannot exceed 64 characters")
+	}
+
+	return m._validateHostname(parts[1])
 }
 
 // UpdateOrganizationRequestMultiError is an error wrapping multiple validation
@@ -26648,6 +26714,8 @@ func (m *GetBillingSubscriptionResponse) validate(all bool) error {
 
 	// no validation rules for HasPaymentMethod
 
+	// no validation rules for PaymentCardStatus
+
 	if len(errors) > 0 {
 		return GetBillingSubscriptionResponseMultiError(errors)
 	}
@@ -28946,6 +29014,8 @@ func (m *Organization) validate(all bool) error {
 	// no validation rules for BillingCustomerId
 
 	// no validation rules for PaymentCustomerId
+
+	// no validation rules for BillingEmail
 
 	if all {
 		switch v := interface{}(m.GetCreatedOn()).(type) {

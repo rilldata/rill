@@ -104,7 +104,7 @@ func (o *Orb) CreateCustomer(ctx context.Context, organization *database.Organiz
 	}
 
 	customer, err := o.client.Customers.New(ctx, orb.CustomerNewParams{
-		Email:              orb.String(SupportEmail), // TODO use creators email or capture organization billing email
+		Email:              orb.String(Email(organization)),
 		Name:               orb.String(organization.Name),
 		ExternalCustomerID: orb.String(organization.ID),
 		Timezone:           orb.String(DefaultTimeZone),

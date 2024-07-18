@@ -126,7 +126,7 @@ func (s *Server) CreateOrganization(ctx context.Context, req *adminv1.CreateOrga
 		return nil, status.Errorf(codes.FailedPrecondition, "quota exceeded: you can only create %d single-user orgs", user.QuotaSingleuserOrgs)
 	}
 
-	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, req.Name, req.Description)
+	org, err := s.admin.CreateOrganizationForUser(ctx, user.ID, user.Email, req.Name, req.Description)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -181,6 +181,9 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	if req.NewName != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.new_name", *req.NewName))
 	}
+	if req.BillingEmail != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.billing_email", *req.BillingEmail))
+	}
 
 	org, err := s.admin.DB.FindOrganizationByName(ctx, req.Name)
 	if err != nil {
@@ -204,6 +207,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		QuotaStorageLimitBytesPerDeployment: org.QuotaStorageLimitBytesPerDeployment,
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        valOrDefault(req.BillingEmail, org.BillingEmail),
 	})
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
@@ -252,19 +256,28 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}
 
 	hasPaymentMethod := false
+	paymentCardStatus := adminv1.PaymentCardStatus_PAYMENT_CARD_STATUS_UNSPECIFIED
 	if org.PaymentCustomerID != "" {
 		paymentCust, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		hasPaymentMethod = paymentCust.ValidPaymentMethod
+		hasPaymentMethod = paymentCust.HasPaymentMethod
+		if paymentCust.IsCardValid != nil {
+			if *paymentCust.IsCardValid {
+				paymentCardStatus = adminv1.PaymentCardStatus_PAYMENT_CARD_STATUS_OK
+			} else {
+				paymentCardStatus = adminv1.PaymentCardStatus_PAYMENT_CARD_STATUS_EXPIRED
+			}
+		}
 	}
 
 	return &adminv1.GetBillingSubscriptionResponse{
-		Organization:     organizationToDTO(org),
-		Subscription:     subscriptionToDTO(subs[0]),
-		BillingPortalUrl: subs[0].Customer.PortalURL,
-		HasPaymentMethod: hasPaymentMethod,
+		Organization:      organizationToDTO(org),
+		Subscription:      subscriptionToDTO(subs[0]),
+		BillingPortalUrl:  subs[0].Customer.PortalURL,
+		HasPaymentMethod:  hasPaymentMethod,
+		PaymentCardStatus: paymentCardStatus,
 	}, nil
 }
 
@@ -301,61 +314,64 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 
-	planChange := true
 	for _, sub := range subs {
 		if sub.Plan.ID == plan.ID {
-			planChange = false
-			break
+			return nil, status.Errorf(codes.FailedPrecondition, "organization already subscribed to the plan %s", plan.Name)
 		}
 	}
 
-	if planChange {
-		c, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
+	// plan change needed
+	// check for valid payment method
+	c, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+	if !c.HasPaymentMethod {
+		return nil, status.Errorf(codes.FailedPrecondition, "no valid payment method found for the organization")
+	}
+
+	// don't allow plan downgrades
+	if planDowngrade(plan, org) {
+		return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not allowed")
+	}
+
+	if len(subs) == 1 {
+		// schedule plan change
+		_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		if !c.ValidPaymentMethod {
-			return nil, status.Errorf(codes.FailedPrecondition, "no valid payment method found for the organization")
-		}
-
-		if len(subs) == 1 {
-			// schedule plan change
-			_, err = s.admin.Biller.ChangeSubscriptionPlan(ctx, subs[0].ID, plan)
-			if err != nil {
-				return nil, status.Error(codes.Internal, err.Error())
-			}
-		} else {
-			// multiple subscriptions, cancel them first immediately and assign new plan should not happen unless externally assigned multiple subscriptions to the same org in the billing system.
-			// RepairOrgBilling does not fix multiple subscription issue, we are not sure which subscription to cancel and which to keep. However, in case of plan change we can safely cancel all older subscriptions and create a new one with new plan.
-			for _, sub := range subs {
-				err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
-				if err != nil {
-					return nil, status.Error(codes.Internal, err.Error())
-				}
-			}
-
-			// create new subscription
-			_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
+	} else {
+		// multiple subscriptions, cancel them first immediately and assign new plan should not happen unless externally assigned multiple subscriptions to the same org in the billing system.
+		// RepairOrgBilling does not fix multiple subscription issue, we are not sure which subscription to cancel and which to keep. However, in case of plan change we can safely cancel all older subscriptions and create a new one with new plan.
+		for _, sub := range subs {
+			err = s.admin.Biller.CancelSubscription(ctx, sub.ID, billing.SubscriptionCancellationOptionImmediate)
 			if err != nil {
 				return nil, status.Error(codes.Internal, err.Error())
 			}
 		}
 
-		org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
-			Name:                                org.Name,
-			Description:                         org.Description,
-			QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
-			QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
-			QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-			QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-			QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-			QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
-			BillingCustomerID:                   org.BillingCustomerID,
-			PaymentCustomerID:                   org.PaymentCustomerID,
-		})
+		// create new subscription
+		_, err = s.admin.Biller.CreateSubscription(ctx, org.BillingCustomerID, plan)
 		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
+	}
+
+	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
+		Name:                                org.Name,
+		Description:                         org.Description,
+		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		BillingCustomerID:                   org.BillingCustomerID,
+		PaymentCustomerID:                   org.PaymentCustomerID,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	subs, err = s.admin.Biller.GetSubscriptionsForCustomer(ctx, org.BillingCustomerID)
@@ -1136,6 +1152,7 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 		},
 		BillingCustomerId: o.BillingCustomerID,
 		PaymentCustomerId: o.PaymentCustomerID,
+		BillingEmail:      o.BillingEmail,
 		CreatedOn:         timestamppb.New(o.CreatedOn),
 		UpdatedOn:         timestamppb.New(o.UpdatedOn),
 	}
@@ -1193,4 +1210,41 @@ func whitelistedDomainToPB(a *database.OrganizationWhitelistedDomainWithJoinedRo
 		Domain: a.Domain,
 		Role:   a.RoleName,
 	}
+}
+
+func planDowngrade(newPan *billing.Plan, org *database.Organization) bool {
+	// nil or negative values are considered as unlimited
+	if comparableInt(newPan.Quotas.NumProjects) < comparableInt(&org.QuotaProjects) {
+		return true
+	}
+	if comparableInt(newPan.Quotas.NumDeployments) < comparableInt(&org.QuotaDeployments) {
+		return true
+	}
+	if comparableInt(newPan.Quotas.NumSlotsTotal) < comparableInt(&org.QuotaSlotsTotal) {
+		return true
+	}
+	if comparableInt(newPan.Quotas.NumSlotsPerDeployment) < comparableInt(&org.QuotaSlotsPerDeployment) {
+		return true
+	}
+	if comparableInt(newPan.Quotas.NumOutstandingInvites) < comparableInt(&org.QuotaOutstandingInvites) {
+		return true
+	}
+	if comparableInt64(newPan.Quotas.StorageLimitBytesPerDeployment) < comparableInt64(&org.QuotaStorageLimitBytesPerDeployment) {
+		return true
+	}
+	return false
+}
+
+func comparableInt(v *int) int {
+	if v == nil || *v < 0 {
+		return math.MaxInt
+	}
+	return *v
+}
+
+func comparableInt64(v *int64) int64 {
+	if v == nil || *v < 0 {
+		return math.MaxInt64
+	}
+	return *v
 }

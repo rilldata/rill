@@ -776,6 +776,7 @@ message UpdateOrganizationRequest {
   string name = 1 [(validate.rules).string.min_len = 1];
   optional string description = 2;
   optional string new_name = 3;
+  optional string billing_email = 4 [(validate.rules).string.email = true];
 }
 
 message UpdateOrganizationResponse {
@@ -1823,6 +1824,14 @@ message GetBillingSubscriptionResponse {
   Subscription subscription = 2;
   string billing_portal_url = 3;
   bool has_payment_method = 4;
+  PaymentCardStatus payment_card_status = 5;
+
+}
+
+enum PaymentCardStatus {
+  PAYMENT_CARD_STATUS_UNSPECIFIED = 0;
+  PAYMENT_CARD_STATUS_OK = 1;
+  PAYMENT_CARD_STATUS_EXPIRED = 2;
 }
 
 message UpdateBillingSubscriptionRequest {
@@ -1915,6 +1924,7 @@ message Organization {
   OrganizationQuotas quotas = 4;
   string billing_customer_id = 7;
   string payment_customer_id = 8;
+  string billing_email = 9;
   google.protobuf.Timestamp created_on = 5;
   google.protobuf.Timestamp updated_on = 6;
 }

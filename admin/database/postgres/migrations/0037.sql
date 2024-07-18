@@ -1,0 +1,1 @@
+ALTER TABLE orgs ADD COLUMN billing_email TEXT NOT NULL DEFAULT '';
