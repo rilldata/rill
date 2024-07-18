@@ -327,6 +327,13 @@ func (r *legacyMetricsResolver) formatValue(f formatter.Formatter, v any) any {
 type legacyResolverResult struct {
 	data   []byte
 	schema *runtimev1.StructType
+
+	parsed []map[string]any
+	idx    int
+}
+
+func (r *legacyResolverResult) Close() error {
+	return nil
 }
 
 func (r *legacyResolverResult) Schema() *runtimev1.StructType {
@@ -337,10 +344,20 @@ func (r *legacyResolverResult) Cache() bool {
 	return true
 }
 
-func (r *legacyResolverResult) MarshalJSON() ([]byte, error) {
-	return r.data, nil
+func (r *legacyResolverResult) Next() (map[string]any, error) {
+	if r.parsed == nil {
+		if err := json.Unmarshal(r.data, &r.parsed); err != nil {
+			return nil, err
+		}
+	}
+	if r.idx >= len(r.parsed) {
+		return nil, io.EOF
+	}
+	row := r.parsed[r.idx]
+	r.idx++
+	return row, nil
 }
 
-func (r *legacyResolverResult) Close() error {
-	return nil
+func (r *legacyResolverResult) MarshalJSON() ([]byte, error) {
+	return r.data, nil
 }

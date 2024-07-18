@@ -161,7 +161,7 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	if r.interactiveRowLimit != 0 {
 		res.SetCap(r.interactiveRowLimit)
 	}
-	return runtime.NewResolverResult(res, cache), nil
+	return runtime.NewDriverResolverResult(res, cache), nil
 }
 
 func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {

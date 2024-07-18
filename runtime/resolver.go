@@ -41,42 +41,63 @@ type Resolver interface {
 
 // ResolverResult is the result of a resolver's execution.
 type ResolverResult interface {
+	// Close should be called to release resources
+	Close() error
 	// Schema is the schema for the Data
 	Schema() *runtimev1.StructType
 	// Cache indicates whether the result can be cached
 	Cache() bool
+	// Next returns the next row of data. It returns io.EOF when there are no more rows.
+	Next() (map[string]any, error)
 	// MarshalJSON is a convenience method to serialize the result to JSON.
 	MarshalJSON() ([]byte, error)
-	// Close should be called to release resources
-	Close() error
 }
 
-func NewResolverResult(result *drivers.Result, cache bool) ResolverResult {
-	return &resolverResult{
+// NewDriverResolverResult creates a ResolverResult from a drivers.Result.
+func NewDriverResolverResult(result *drivers.Result, cache bool) ResolverResult {
+	return &driverResolverResult{
 		rows:  result,
 		cache: cache,
 	}
 }
 
-type resolverResult struct {
+type driverResolverResult struct {
 	rows  *drivers.Result
 	cache bool
 }
 
-var _ ResolverResult = &resolverResult{}
-
-// Cache implements ResolverResult.
-func (r *resolverResult) Cache() bool {
-	return r.cache
-}
+var _ ResolverResult = &driverResolverResult{}
 
 // Close implements ResolverResult.
-func (r *resolverResult) Close() error {
+func (r *driverResolverResult) Close() error {
 	return r.rows.Close()
 }
 
+// Schema implements ResolverResult.
+func (r *driverResolverResult) Schema() *runtimev1.StructType {
+	return r.rows.Schema
+}
+
+// Cache implements ResolverResult.
+func (r *driverResolverResult) Cache() bool {
+	return r.cache
+}
+
+// Next implements ResolverResult.
+func (r *driverResolverResult) Next() (map[string]any, error) {
+	if !r.rows.Next() {
+		return nil, io.EOF
+	}
+	row := make(map[string]any)
+	err := r.rows.MapScan(row)
+	if err != nil {
+		return nil, err
+	}
+	return row, nil
+}
+
 // MarshalJSON implements ResolverResult.
-func (r *resolverResult) MarshalJSON() ([]byte, error) {
+func (r *driverResolverResult) MarshalJSON() ([]byte, error) {
 	var out []map[string]any
 	for r.rows.Next() {
 		row := make(map[string]any)
@@ -102,9 +123,52 @@ func (r *resolverResult) MarshalJSON() ([]byte, error) {
 	return json.Marshal(out)
 }
 
+// NewMapsResolverResult creates a ResolverResult from a slice of maps.
+func NewMapsResolverResult(result []map[string]any, schema *runtimev1.StructType, cache bool) ResolverResult {
+	return &mapsResolverResult{
+		rows:   result,
+		schema: schema,
+		cache:  cache,
+	}
+}
+
+type mapsResolverResult struct {
+	rows   []map[string]any
+	schema *runtimev1.StructType
+	cache  bool
+	idx    int
+}
+
+var _ ResolverResult = &mapsResolverResult{}
+
+// Close implements ResolverResult.
+func (r *mapsResolverResult) Close() error {
+	return nil
+}
+
 // Schema implements ResolverResult.
-func (r *resolverResult) Schema() *runtimev1.StructType {
-	return r.rows.Schema
+func (r *mapsResolverResult) Schema() *runtimev1.StructType {
+	return r.schema
+}
+
+// Cache implements ResolverResult.
+func (r *mapsResolverResult) Cache() bool {
+	return r.cache
+}
+
+// Next implements ResolverResult.
+func (r *mapsResolverResult) Next() (map[string]any, error) {
+	if r.idx >= len(r.rows) {
+		return nil, io.EOF
+	}
+	row := r.rows[r.idx]
+	r.idx++
+	return row, nil
+}
+
+// MarshalJSON implements ResolverResult.
+func (r *mapsResolverResult) MarshalJSON() ([]byte, error) {
+	return json.Marshal(r.rows)
 }
 
 // ResolverExportOptions are the options passed to a resolver's ResolveExport method.

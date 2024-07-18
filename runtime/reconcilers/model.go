@@ -702,7 +702,7 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		},
 	}
 
-	val, err := resolveTemplatedValue(td, props)
+	val, err := compilerv1.ResolveTemplateRecursively(props, td)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve template: %w", err)
 	}
@@ -734,34 +734,6 @@ func (r *ModelReconciler) analyzeTemplatedVariables(ctx context.Context, props m
 	}
 
 	return res, nil
-}
-
-// resolveTemplatedValue resolves template tags nested in strings in the provided value.
-func resolveTemplatedValue(td compilerv1.TemplateData, val any) (any, error) {
-	switch val := val.(type) {
-	case string:
-		return compilerv1.ResolveTemplate(val, td)
-	case map[string]any:
-		for k, v := range val {
-			v, err := resolveTemplatedValue(td, v)
-			if err != nil {
-				return nil, err
-			}
-			val[k] = v
-		}
-		return val, nil
-	case []any:
-		for i, v := range val {
-			v, err := resolveTemplatedValue(td, v)
-			if err != nil {
-				return nil, err
-			}
-			val[i] = v
-		}
-		return val, nil
-	default:
-		return val, nil
-	}
 }
 
 // analyzeTemplatedVariables analyzes strings nested in the provided value for template tags that reference variables.

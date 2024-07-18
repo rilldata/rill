@@ -109,7 +109,7 @@ func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.Resol
 		return nil, err
 	}
 
-	return runtime.NewResolverResult(res, cache), nil
+	return runtime.NewDriverResolverResult(res, cache), nil
 }
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {
