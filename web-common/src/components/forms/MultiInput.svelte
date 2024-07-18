@@ -18,8 +18,9 @@
   export let placeholder = "";
   export let hint = "";
   export let contentClassName = "";
-  export let showError = true;
-  export let useTab = false;
+
+  export let singular: string;
+  export let plural: string;
 
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
@@ -32,17 +33,17 @@
   let focused = false;
   function handleKeyDown(event: KeyboardEvent) {
     if (
-      // supports enter
+      // support enter
       (event.key !== "Enter" &&
-        // supports tab
-        (!useTab || event.key !== "Tab") &&
-        // supports comma
+        // support tab
+        event.key !== "Tab" &&
+        // support comma
         event.key !== ",") ||
       lastValue === ""
     ) {
       if (event.key === "v" && (isMac ? event.metaKey : event.ctrlKey)) {
         void (async function () {
-          // create a scope and wait for input to change on a paste
+          // create a scope and wait for input to change when something is pasted
           const prevInput = lastValue;
           await waitUntil(() => prevInput !== lastValue);
           consumeInput();
@@ -70,9 +71,23 @@
     values = values.filter((_, i) => i !== index);
   }
 
+  let error: string;
+  $: {
+    const errorCount = values.filter((_, i) => !!errors?.[i]?.length).length;
+    if (errorCount === 0) {
+      error = "";
+    } else {
+      const errorIndex = values.findIndex((_, i) => !!errors?.[i]?.length);
+      const firstValue = values[errorIndex];
+      if (errorCount === 1) {
+        error = `"${firstValue}" is not a valid ${singular}`;
+      } else {
+        error = `"${firstValue}" and ${errorCount - 1} other${errorCount > 2 ? "s" : ""} are not valid ${plural}`;
+      }
+    }
+  }
   $: hasSomeValue = values[lastIdx].length > 0 || values.length > 1;
-  $: errorIndex = values.findIndex((_, i) => !!errors?.[i]?.length);
-  $: hasSomeErrors = errorIndex >= 0;
+  $: hasSomeErrors = !!error;
 </script>
 
 <div class="flex flex-col w-full">
@@ -106,7 +121,7 @@
           {@const hasError = errors?.[i]?.length}
           <div
             class="flex items-center text-gray-600 text-sm rounded-2xl border border-gray-300 bg-gray-100 pl-2 pr-1 max-w-full"
-            class:border-gray-300={hasError}
+            class:border-red-500={hasError}
           >
             <div
               class="w-fit h-5 overflow-hidden text-ellipsis"
@@ -115,7 +130,12 @@
               {values[i]}
             </div>
             <IconButton disableHover compact on:click={() => handleRemove(i)}>
-              <XIcon size="12px" className="text-gray-500 cursor-pointer" />
+              <XIcon
+                size="12px"
+                class="{hasError
+                  ? 'text-red-500'
+                  : 'text-gray-500'} cursor-pointer"
+              />
             </IconButton>
           </div>
         {/each}
@@ -136,9 +156,9 @@
     </div>
     <slot name="beside-input" {hasSomeValue} />
   </div>
-  {#if showError && hasSomeErrors}
+  {#if hasSomeErrors}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
-      {errors?.[errorIndex]?.[0]}
+      {error}
     </div>
   {/if}
 </div>

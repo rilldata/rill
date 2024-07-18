@@ -91,8 +91,8 @@
     contentClassName="relative"
     bind:values={$form.emails}
     errors={$errors.emails}
-    useTab
-    showError={false}
+    singular="email"
+    plural="emails"
   >
     <div slot="within-input" class="h-full items-center flex">
       <UserRoleSelect bind:value={$form.role} />
