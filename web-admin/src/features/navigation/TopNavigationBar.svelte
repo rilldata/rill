@@ -169,7 +169,7 @@
       <ViewAsUserChip />
     {/if}
     {#if onProjectPage && manageProjectMembers}
-      <UserInviteButton />
+      <UserInviteButton {organization} {project} />
     {/if}
     {#if onMetricsExplorerPage || onMagicLinkPage}
       <StateManagersProvider metricsViewName={dashboard}>

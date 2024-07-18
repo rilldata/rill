@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-invite/CopyInviteLinkButton.svelte";
   import UserInviteAllowlist from "@rilldata/web-admin/features/projects/user-invite/UserInviteAllowlist.svelte";
   import UserInviteForm from "@rilldata/web-admin/features/projects/user-invite/UserInviteForm.svelte";
   import { Button } from "@rilldata/web-common/components/button";
@@ -9,9 +10,11 @@
     DropdownMenuContent,
   } from "@rilldata/web-common/components/dropdown-menu";
 
-  $: organization = $page.params.organization;
-  $: project = $page.params.project;
+  export let organization: string;
+  export let project: string;
   let open = false;
+
+  $: copyLink = `${$page.url.protocol}//${$page.url.host}/${organization}/${project}`;
 </script>
 
 <DropdownMenu bind:open>
@@ -19,8 +22,12 @@
     <Button builders={[builder]} type="secondary">Share</Button>
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[520px] p-4" side="bottom" align="end">
-    <div class="flex flex-col gap-1.5">
-      <div class="text-base font-medium">Share this project</div>
+    <div class="flex flex-col gap-2">
+      <div class="flex flex-row items-center">
+        <div class="text-base font-medium">Share this project</div>
+        <div class="grow"></div>
+        <CopyInviteLinkButton {copyLink} />
+      </div>
       <UserInviteForm
         {organization}
         {project}
