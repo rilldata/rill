@@ -27,6 +27,33 @@
       ],
       "type": "object"
     },
+    "ImageProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "css": {
+          "type": "object"
+        },
+        "url": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "url"
+      ],
+      "type": "object"
+    },
+    "ImageTemplateT": {
+      "additionalProperties": false,
+      "properties": {
+        "image": {
+          "$ref": "#/definitions/ImageProperties"
+        }
+      },
+      "required": [
+        "image"
+      ],
+      "type": "object"
+    },
     "KPIProperties": {
       "additionalProperties": false,
       "properties": {
@@ -184,6 +211,9 @@
         },
         {
           "$ref": "#/definitions/MarkdownTemplateT"
+        },
+        {
+          "$ref": "#/definitions/ImageTemplateT"
         }
       ]
     }

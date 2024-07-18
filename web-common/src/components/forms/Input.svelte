@@ -12,7 +12,7 @@
 
   const voidFunction = () => {};
 
-  export let value: string;
+  export let value: string | undefined | null;
   export let id = "";
   export let label = "";
   export let errors: string | string[] | null | undefined = null;

@@ -1267,6 +1267,11 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
    */
   unnest = false;
 
+  /**
+   * @generated from field: string uri = 7;
+   */
+  uri = "";
+
   constructor(data?: PartialMessage<MetricsViewSpec_DimensionV2>) {
     super();
     proto3.util.initPartial(data, this);
@@ -1281,6 +1286,7 @@ export class MetricsViewSpec_DimensionV2 extends Message<MetricsViewSpec_Dimensi
     { no: 3, name: "label", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "unnest", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 7, name: "uri", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MetricsViewSpec_DimensionV2 {
@@ -2358,14 +2364,14 @@ export class AlertSpec extends Message<AlertSpec> {
   timeoutSeconds = 0;
 
   /**
-   * @generated from field: string query_name = 9;
+   * @generated from field: string resolver = 22;
    */
-  queryName = "";
+  resolver = "";
 
   /**
-   * @generated from field: string query_args_json = 10;
+   * @generated from field: google.protobuf.Struct resolver_properties = 23;
    */
-  queryArgsJson = "";
+  resolverProperties?: Struct;
 
   /**
    * @generated from oneof rill.runtime.v1.AlertSpec.query_for
@@ -2441,8 +2447,8 @@ export class AlertSpec extends Message<AlertSpec> {
     { no: 6, name: "intervals_limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 7, name: "intervals_check_unclosed", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 8, name: "timeout_seconds", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 9, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 10, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 22, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 23, name: "resolver_properties", kind: "message", T: Struct },
     { no: 11, name: "query_for_user_id", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 12, name: "query_for_user_email", kind: "scalar", T: 9 /* ScalarType.STRING */, oneof: "query_for" },
     { no: 13, name: "query_for_attributes", kind: "message", T: Struct, oneof: "query_for" },
@@ -3631,6 +3637,21 @@ export class APISpec extends Message<APISpec> {
    */
   resolverProperties?: Struct;
 
+  /**
+   * @generated from field: string openapi_summary = 3;
+   */
+  openapiSummary = "";
+
+  /**
+   * @generated from field: repeated google.protobuf.Struct openapi_parameters = 4;
+   */
+  openapiParameters: Struct[] = [];
+
+  /**
+   * @generated from field: google.protobuf.Struct openapi_response_schema = 5;
+   */
+  openapiResponseSchema?: Struct;
+
   constructor(data?: PartialMessage<APISpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3641,6 +3662,9 @@ export class APISpec extends Message<APISpec> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "resolver_properties", kind: "message", T: Struct },
+    { no: 3, name: "openapi_summary", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "openapi_parameters", kind: "message", T: Struct, repeated: true },
+    { no: 5, name: "openapi_response_schema", kind: "message", T: Struct },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): APISpec {

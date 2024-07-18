@@ -431,7 +431,7 @@ export function createTimeDimensionDataStore(
           pinIndex,
         );
       } else {
-        comparing = timeControls.showComparison ? "time" : "none";
+        comparing = timeControls.showTimeComparison ? "time" : "none";
         const currentRange = timeControls?.selectedTimeRange?.name;
 
         let currentLabel = "Custom Range";
