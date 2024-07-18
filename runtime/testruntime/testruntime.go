@@ -236,11 +236,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", "ad_bids_druid")
-	var err error
 	dsn := os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
-	if err != nil {
-		return nil, "", err
-	}
 
 	inst := &drivers.Instance{
 		Environment:      "test",
@@ -270,7 +266,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 		// EmbedCatalog: true,
 	}
 
-	err = rt.CreateInstance(context.Background(), inst)
+	err := rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
