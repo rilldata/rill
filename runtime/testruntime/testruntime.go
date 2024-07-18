@@ -253,7 +253,7 @@ func NewInstanceForDruidProject(t *testing.T) (*runtime.Runtime, string, error) 
 			{
 				Type:   "druid",
 				Name:   "druid",
-				Config: map[string]string{"dsn": string(dsn)},
+				Config: map[string]string{"dsn": dsn},
 			},
 			{
 				Type: "sqlite",
