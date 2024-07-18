@@ -14,12 +14,8 @@ import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
-import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
-import {
-  adminServiceGetCurrentUser,
-  getAdminServiceGetCurrentUserQueryKey,
-  getAdminServiceGetProjectQueryKey,
-} from "../../client";
+import type { RpcStatus } from "../../client";
+import { getAdminServiceGetProjectQueryKey } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
 import { errorStore, type ErrorStoreState } from "./error-store";
 

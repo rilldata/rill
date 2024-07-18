@@ -1,6 +1,5 @@
 <script lang="ts">
   import { createAdminServiceAddProjectMemberUser } from "@rilldata/web-admin/client";
-  import { parseError } from "@rilldata/web-admin/features/projects/user-invite/errors";
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-invite/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
@@ -8,7 +7,6 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { array, object, string } from "yup";
-  import { slide } from "svelte/transition";
 
   export let organization: string;
   export let project: string;
@@ -18,93 +16,72 @@
 
   const initialValues: {
     emails: string[];
-    // emails not yet converted to pills
-    emailsInput: string;
     role: string;
   } = {
-    emails: [],
-    emailsInput: "",
+    emails: [""],
     role: "viewer",
   };
   const schema = yup(
     object({
       emails: array(string().email("Invalid email")),
-      emailsInput: string(),
       role: string().required(),
     }),
   );
-
-  let submitErrors: string[] = [];
 
   const { form, errors, enhance, submit, submitting } = superForm(
     defaults(initialValues, schema),
     {
       SPA: true,
       validators: schema,
-      async onUpdate({ form, cancel }) {
+      async onUpdate({ form }) {
         if (!form.valid) return;
         const values = form.data;
 
-        if (await inviteUsers(values.emails, values.role)) {
-          onInvite();
-        } else {
-          cancel();
+        const succeeded = [];
+        let errored = false;
+        await Promise.all(
+          values.emails
+            .map((e) => e.trim())
+            .filter(Boolean)
+            .map(async (email) => {
+              try {
+                await $userInvite.mutateAsync({
+                  organization,
+                  project,
+                  data: {
+                    email,
+                    role: values.role,
+                  },
+                });
+                succeeded.push(email);
+              } catch (e) {
+                errored = true;
+              }
+            }),
+        );
+
+        eventBus.emit("notification", {
+          type: "success",
+          message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${values.role}`,
+        });
+        onInvite();
+        if (errored) {
+          // TODO: there no mocks for this yet, but will be added in future.
+          //       the challenge here is how to show it for all the emails that fail
         }
       },
       validationMethod: "oninput",
     },
   );
 
-  function handleSubmit() {
-    if ($form.emailsInput !== "") {
-      $form.emails = $form.emails.concat(
-        ...$form.emailsInput.split(",").map((v) => v.trim()),
-      );
-      $form.emailsInput = "";
-    }
-    submit();
-  }
-
-  async function inviteUsers(emails: string[], role: string) {
-    const succeeded = [];
-    const newSubmitErrors: string[] = [];
-    await Promise.all(
-      emails.map(async (email) => {
-        try {
-          await $userInvite.mutateAsync({
-            organization,
-            project,
-            data: {
-              email,
-              role,
-            },
-          });
-          succeeded.push(email);
-        } catch (e) {
-          newSubmitErrors.push(parseError(e, email));
-        }
-      }),
-    );
-
-    if (succeeded.length) {
-      eventBus.emit("notification", {
-        type: "success",
-        message: `Invited ${succeeded.length} ${succeeded.length === 1 ? "person" : "people"} as ${role}`,
-      });
-    }
-    submitErrors = newSubmitErrors;
-    if (newSubmitErrors.length === 0) {
-      return true;
-    } else {
-      $form.emails = $form.emails.filter((e) => !succeeded.includes(e));
-      return false;
-    }
-  }
+  $: hasInvalidEmails = $form.emails.some(
+    (_, i) => $errors.emails?.[i] !== undefined,
+  );
 </script>
 
 <form
   id="user-invite-form"
-  on:submit|preventDefault={handleSubmit}
+  on:submit|preventDefault={submit}
   class="w-full"
   use:enhance
 >
@@ -113,33 +90,24 @@
     placeholder="Invite by email, separated by commas"
     contentClassName="relative"
     bind:values={$form.emails}
-    bind:input={$form.emailsInput}
     errors={$errors.emails}
     useTab
+    showError={false}
   >
     <div slot="within-input" class="h-full items-center flex">
       <UserRoleSelect bind:value={$form.role} />
     </div>
-    <Button
-      submitForm
-      type="primary"
-      form="user-invite-form"
-      slot="beside-input"
-      loading={$submitting}
-      disabled={$form.emailsInput === "" && $form.emails.length === 0}
-      forcedStyle="height: 32px !important;"
-    >
-      Invite
-    </Button>
+    <svelte:fragment slot="beside-input" let:hasSomeValue>
+      <Button
+        submitForm
+        type="primary"
+        form="user-invite-form"
+        loading={$submitting}
+        disabled={hasInvalidEmails || !hasSomeValue}
+        forcedStyle="height: 32px !important;"
+      >
+        Invite
+      </Button>
+    </svelte:fragment>
   </MultiInput>
-  {#if submitErrors.length}
-    <div
-      in:slide={{ duration: 200 }}
-      class="text-red-500 text-sm py-px flex flex-col"
-    >
-      {#each submitErrors as error}
-        <div>{error}</div>
-      {/each}
-    </div>
-  {/if}
 </form>

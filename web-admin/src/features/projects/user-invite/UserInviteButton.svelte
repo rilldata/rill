@@ -22,7 +22,7 @@
     <Button builders={[builder]} type="secondary">Share</Button>
   </DropdownMenuTrigger>
   <DropdownMenuContent class="w-[520px] p-4" side="bottom" align="end">
-    <div class="flex flex-col gap-2">
+    <div class="flex flex-col gap-y-3">
       <div class="flex flex-row items-center">
         <div class="text-base font-medium">Share this project</div>
         <div class="grow"></div>

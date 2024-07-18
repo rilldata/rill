@@ -1,6 +1,7 @@
 <script lang="ts">
   import { IconButton } from "@rilldata/web-common/components/button";
   import InfoCircle from "@rilldata/web-common/components/icons/InfoCircle.svelte";
+  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
   import { slide } from "svelte/transition";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
@@ -17,34 +18,59 @@
   export let placeholder = "";
   export let hint = "";
   export let contentClassName = "";
+  export let showError = true;
   export let useTab = false;
 
   export let values: string[];
   export let errors: Record<string | number, string[]> | undefined;
 
-  // used to add temporary data on submit
-  export let input = "";
+  $: lastIdx = values.length - 1;
+  $: lastValue = values[lastIdx] ?? "";
+
+  const isMac = window.navigator.userAgent.includes("Macintosh");
 
   let focused = false;
   function handleKeyDown(event: KeyboardEvent) {
     if (
-      (event.key !== "Enter" && (!useTab || event.key !== "Tab")) ||
-      input === ""
+      // supports enter
+      (event.key !== "Enter" &&
+        // supports tab
+        (!useTab || event.key !== "Tab") &&
+        // supports comma
+        event.key !== ",") ||
+      lastValue === ""
     ) {
+      if (event.key === "v" && (isMac ? event.metaKey : event.ctrlKey)) {
+        void (async function () {
+          // create a scope and wait for input to change on a paste
+          const prevInput = lastValue;
+          await waitUntil(() => prevInput !== lastValue);
+          consumeInput();
+        })();
+      }
       return;
     }
 
     event.preventDefault();
     event.stopPropagation();
-    values = values.concat(...input.split(",").map((v) => v.trim()));
-    input = "";
+    consumeInput();
+  }
+
+  function consumeInput() {
+    values = values.slice(0, lastIdx).concat(
+      ...lastValue
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean),
+      "",
+    );
   }
 
   function handleRemove(index: number) {
     values = values.filter((_, i) => i !== index);
   }
 
-  $: hasSomeValue = input.length > 0 || values.length > 0;
+  $: hasSomeValue = values[lastIdx].length > 0 || values.length > 1;
   $: errorIndex = values.findIndex((_, i) => !!errors?.[i]?.length);
   $: hasSomeErrors = errorIndex >= 0;
 </script>
@@ -76,7 +102,7 @@
       class:outline-primary-500={focused && !hasSomeErrors}
     >
       <div class="flex flex-wrap gap-1 w-full min-h-[24px]">
-        {#each values as _, i}
+        {#each values.slice(0, lastIdx) as _, i}
           {@const hasError = errors?.[i]?.length}
           <div
             class="flex items-center text-gray-600 text-sm rounded-2xl border border-gray-300 bg-gray-100 pl-2 pr-1 max-w-full"
@@ -94,10 +120,10 @@
           </div>
         {/each}
         <input
-          bind:value={input}
+          bind:value={values[lastIdx]}
           on:keydown={handleKeyDown}
           autocomplete="off"
-          id="{id}.{values.length}"
+          id="{id}.{lastIdx}"
           class="focus:outline-white group-hover:text-red-500 text-sm grow px-1"
           on:focusin={() => (focused = true)}
           on:focusout={() => (focused = false)}
@@ -108,9 +134,9 @@
         <slot name="within-input" />
       {/if}
     </div>
-    <slot name="beside-input" />
+    <slot name="beside-input" {hasSomeValue} />
   </div>
-  {#if hasSomeErrors}
+  {#if showError && hasSomeErrors}
     <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
       {errors?.[errorIndex]?.[0]}
     </div>

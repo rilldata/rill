@@ -17,7 +17,7 @@
   {#if copied}
     <div class="flex flex-row gap-x-1 items-center">
       <Check size="12px" />
-      <span class="font-medium text-xs">Link copied</span>
+      <span class="font-medium text-xs text-slate-600">Link copied</span>
     </div>
   {:else}
     <Button
