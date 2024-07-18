@@ -81,6 +81,7 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  subpath?: string;
   archiveAssetId?: string;
   prodSlots?: string;
   provisioner?: string;

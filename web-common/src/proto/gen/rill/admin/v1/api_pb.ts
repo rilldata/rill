@@ -2028,6 +2028,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   githubUrl?: string;
 
   /**
+   * @generated from field: optional string subpath = 13;
+   */
+  subpath?: string;
+
+  /**
    * @generated from field: optional string archive_asset_id = 12;
    */
   archiveAssetId?: string;
@@ -2071,6 +2076,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 13, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 8, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },

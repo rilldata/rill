@@ -485,6 +485,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.GithubUrl != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
 	}
+	if req.Subpath != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.subpath", *req.Subpath))
+	}
 	if req.ArchiveAssetId != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.archive_asset_id", *req.ArchiveAssetId))
 	}
@@ -560,6 +563,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
 		GithubInstallationID: proj.GithubInstallationID,
+		Subpath:              valOrDefault(req.Subpath, proj.Subpath),
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
 		ProdVariables:        proj.ProdVariables,
