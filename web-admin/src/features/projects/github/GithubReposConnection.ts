@@ -9,7 +9,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { derived, get } from "svelte/store";
 
-export class GithubRepoUpdater {
+export class GithubReposConnection {
   public readonly userStatus = createAdminServiceGetGithubUserStatus();
   public readonly userRepos = derived([this.userStatus], ([userStatus], set) =>
     createAdminServiceListGithubUserRepos({
@@ -30,13 +30,13 @@ export class GithubRepoUpdater {
     ([userStatus, userRepos]) => {
       if (userStatus.isFetching || userRepos.isFetching) {
         return {
-          isLoading: true,
+          isFetching: true,
           error: undefined,
         };
       }
 
       return {
-        isLoading: false,
+        isFetching: false,
         error: userStatus.error ?? userRepos.error,
       };
     },

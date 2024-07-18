@@ -3,8 +3,10 @@
     createAdminServiceGetProject,
     createAdminServiceUpdateProject,
     getAdminServiceGetGithubUserStatusQueryKey,
+    getAdminServiceGetProjectQueryKey,
+    type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import { GithubRepoUpdater } from "@rilldata/web-admin/features/projects/github/GithubRepoUpdater";
+  import { GithubReposConnection } from "@rilldata/web-admin/features/projects/github/GithubReposConnection";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -25,13 +27,14 @@
   import type { AxiosError } from "axios";
 
   export let open = false;
+  export let currentUrl: string;
   export let project: string;
   export let organization: string;
 
-  let githubUrl = "";
-  const githubRepoUpdater = new GithubRepoUpdater();
-  const githubRepos = githubRepoUpdater.userRepos;
-  const status = githubRepoUpdater.status;
+  let githubUrl = currentUrl;
+  const githubReposConnection = new GithubReposConnection();
+  const githubRepos = githubReposConnection.userRepos;
+  const status = githubReposConnection.status;
   const projectQuery = createAdminServiceGetProject(organization, project);
 
   $: repoSelections =
@@ -53,9 +56,10 @@
       message: `Set github repo to ${githubUrl}`,
       type: "success",
     });
-    void queryClient.refetchQueries(
+    void queryClient.refetchQueries([
       getAdminServiceGetGithubUserStatusQueryKey(),
-    );
+      getAdminServiceGetProjectQueryKey(organization, project),
+    ]);
     void invalidateRuntimeQueries(
       queryClient,
       $projectQuery.data.prodDeployment.runtimeInstanceId,
@@ -65,10 +69,11 @@
 
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
-    void githubRepoUpdater.focused();
+    void githubReposConnection.focused();
   }
 
-  $: error = ($status.error ?? $updateProject.error) as unknown as AxiosError;
+  $: error = ($status.error ??
+    $updateProject.error) as unknown as AxiosError<RpcStatus>;
 </script>
 
 <svelte:window on:visibilitychange={handleVisibilityChange} />
@@ -83,11 +88,11 @@
       <div class="flex flex-col">
         <AlertDialogHeader>
           <AlertDialogTitle>Select Github repository</AlertDialogTitle>
-          <AlertDialogDescription class="flex flex-col gap-y-1">
+          <AlertDialogDescription class="flex flex-col gap-y-2">
             <span>
               Which Github repo would you like to connect to this Rill project?
             </span>
-            {#if $status.isLoading}
+            {#if $status.isFetching}
               <div class="flex flex-row items-center ml-5 h-8">
                 <Spinner status={EntityStatus.Running} />
               </div>
@@ -114,7 +119,7 @@
           <Button
             outline={false}
             type="link"
-            on:click={() => githubRepoUpdater.check()}
+            on:click={() => githubReposConnection.check()}
           >
             Choose other repos
           </Button>

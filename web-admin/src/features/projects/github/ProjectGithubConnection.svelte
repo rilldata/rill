@@ -6,8 +6,8 @@
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createAdminServiceGetProject } from "web-admin/src/client";
-  import { useDashboardsLastUpdated } from "web-admin/src/features/dashboards/listing/selectors";
+  import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
+  import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
 
   export let organization: string;
@@ -29,15 +29,16 @@
   let githubSelectionOpen = false;
 
   const githubConnection = new GithubConnection(() => {
-    if (isGithubConnected) {
-      githubSelectionOpen = true;
-    } else {
-      confirmDialogOpen = true;
-    }
+    githubSelectionOpen = true;
   });
   const userStatus = githubConnection.userStatus;
 
   function connectToGithub() {
+    confirmDialogOpen = true;
+  }
+
+  function confirmConnectToGithub() {
+    confirmDialogOpen = false;
     void githubConnection.check();
   }
 
@@ -116,14 +117,12 @@
 
 <ConnectToGithubConfirmDialog
   bind:open={confirmDialogOpen}
-  onContinue={() => {
-    confirmDialogOpen = false;
-    githubSelectionOpen = true;
-  }}
+  onContinue={confirmConnectToGithub}
 />
 
 <GithubRepoSelectionDialog
   bind:open={githubSelectionOpen}
+  currentUrl={$proj.data?.project?.githubUrl}
   {organization}
   {project}
 />

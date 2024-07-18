@@ -17,7 +17,7 @@ export class GithubConnection {
     this.connecting = false;
     await waitUntil(() => !get(this.userStatus).isLoading);
     const userStatus = get(this.userStatus).data;
-    if (userStatus.hasAccess) {
+    if (userStatus?.hasAccess) {
       return this.onReconnect();
     }
 
