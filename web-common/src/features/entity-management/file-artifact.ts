@@ -33,6 +33,7 @@ import {
   FILES_WITHOUT_AUTOSAVE,
 } from "../editor/config";
 import { fileArtifacts } from "./file-artifacts";
+import { parseKindAndNameFromFile } from "./file-content-utils";
 
 const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
@@ -113,6 +114,10 @@ export class FileArtifact {
     if (blob === undefined) {
       throw new Error("Content undefined");
     }
+
+    const newName = parseKindAndNameFromFile(this.path, blob);
+
+    if (newName) this.name.set(newName);
 
     this.updateRemoteContent(blob, true);
   }
