@@ -105,27 +105,37 @@ func (w *Worker) deploymentHealthCheck(ctx context.Context, d *database.Deployme
 		w.logger.Error("deployment health check: runtime is unhealthy", f...)
 		return nil
 	}
-	for id, i := range resp.InstancesHealth {
-		if !instanceUnhealthy(i) {
+	for instanceID, health := range resp.InstancesHealth {
+		if !instanceUnhealthy(health) {
 			continue
+		}
+		// In case of multiple instances on same host the runtime API will return health of all instances
+		// But the deployment for instances except one will be different from the deployment passed as argument
+		d := d
+		if d.RuntimeInstanceID != instanceID {
+			d, err = w.admin.DB.FindDeploymentByInstanceID(ctx, instanceID)
+			if err != nil {
+				w.logger.Error("deployment health check: failed to find deployment", zap.String("instance_id", instanceID), zap.Error(err))
+				return nil
+			}
 		}
 		annotations, err := w.annotationsForDeployment(ctx, d)
 		if err != nil {
 			w.logger.Error("deployment health check: failed to find deployment_annotations", zap.String("project", d.ProjectID), zap.String("deployment", d.ID), zap.Error(err))
 			return nil
 		}
-		f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", id)}
+		f := []zap.Field{zap.String("host", d.RuntimeHost), zap.String("instance_id", instanceID)}
 		for k, v := range annotations.ToMap() {
 			f = append(f, zap.String(k, v))
 		}
-		if i.OlapError != "" {
-			f = append(f, zap.String("olap_error", i.OlapError))
+		if health.OlapError != "" {
+			f = append(f, zap.String("olap_error", health.OlapError))
 		}
-		if i.ControllerError != "" {
-			f = append(f, zap.String("controller_error", i.ControllerError))
+		if health.ControllerError != "" {
+			f = append(f, zap.String("controller_error", health.ControllerError))
 		}
-		if i.RepoError != "" {
-			f = append(f, zap.String("repo_error", i.RepoError))
+		if health.RepoError != "" {
+			f = append(f, zap.String("repo_error", health.RepoError))
 		}
 		w.logger.Error("deployment health check: runtime instance is unhealthy", f...)
 	}
