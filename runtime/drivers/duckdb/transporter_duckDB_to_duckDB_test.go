@@ -31,7 +31,7 @@ func TestDuckDBToDuckDBTransfer(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, conn.Close())
 
-	to, err := Driver{}.Open("default", map[string]any{"dsn": ":memory:"}, activity.NewNoopClient(), zap.NewNop())
+	to, err := Driver{}.Open("default", map[string]any{"path": filepath.Join(tempDir, "main.db")}, activity.NewNoopClient(), zap.NewNop())
 	require.NoError(t, err)
 
 	olap, _ = to.AsOLAP("")
