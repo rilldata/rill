@@ -12,6 +12,7 @@ import (
 )
 
 func ListInstancesCmd(ch *cmdutil.Helper) *cobra.Command {
+	var audience string
 	var pageSize uint32
 	var pageToken string
 
@@ -22,6 +23,9 @@ func ListInstancesCmd(ch *cmdutil.Helper) *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// Parse args
 			host := args[0]
+			if audience == "" {
+				audience = host
+			}
 
 			// Obtain a manager token for the host
 			client, err := ch.Client()
@@ -29,7 +33,7 @@ func ListInstancesCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			tokenRes, err := client.SudoIssueRuntimeManagerToken(cmd.Context(), &adminv1.SudoIssueRuntimeManagerTokenRequest{
-				Host: host,
+				Host: audience,
 			})
 			if err != nil {
 				return err
@@ -66,6 +70,7 @@ func ListInstancesCmd(ch *cmdutil.Helper) *cobra.Command {
 		},
 	}
 
+	cmd.Flags().StringVar(&audience, "audience", "", "Override JWT audience if it differs from the host")
 	cmd.Flags().Uint32Var(&pageSize, "page-size", 100, "Number of instances per page")
 	cmd.Flags().StringVar(&pageToken, "page-token", "", "Pagination token")
 
