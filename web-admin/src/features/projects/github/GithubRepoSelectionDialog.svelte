@@ -56,10 +56,12 @@
       message: `Set github repo to ${githubUrl}`,
       type: "success",
     });
-    void queryClient.refetchQueries([
-      getAdminServiceGetGithubUserStatusQueryKey(),
+    void queryClient.refetchQueries(
       getAdminServiceGetProjectQueryKey(organization, project),
-    ]);
+    );
+    void queryClient.refetchQueries(
+      getAdminServiceGetGithubUserStatusQueryKey(),
+    );
     void invalidateRuntimeQueries(
       queryClient,
       $projectQuery.data.prodDeployment.runtimeInstanceId,
@@ -69,7 +71,7 @@
 
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
-    void githubReposConnection.focused();
+    void githubReposConnection.refetch();
   }
 
   $: error = ($status.error ??
@@ -98,9 +100,9 @@
               </div>
             {:else}
               <Select
-                id="repo-selector"
-                bind:value={githubUrl}
+                id="emails"
                 label=""
+                bind:value={githubUrl}
                 options={repoSelections}
               />
             {/if}

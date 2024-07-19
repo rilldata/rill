@@ -25,12 +25,12 @@ export class GithubConnection {
     window.open(userStatus.grantAccessUrl, "_blank");
   }
 
-  public async focused() {
+  public async refetch() {
     if (!this.connecting) return;
     await queryClient.refetchQueries(
       getAdminServiceGetGithubUserStatusQueryKey(),
     );
-    if (this.connecting) this.onReconnect();
+    this.onReconnect();
     this.connecting = false;
   }
 }

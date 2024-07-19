@@ -42,9 +42,15 @@
     void githubConnection.check();
   }
 
+  function editGithubConnection() {
+    // keep the github selection open while checking for user access
+    githubSelectionOpen = true;
+    void githubConnection.check();
+  }
+
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
-    void githubConnection.focused();
+    void githubConnection.refetch();
   }
 </script>
 
@@ -70,11 +76,7 @@
             >
               {repoName}
             </a>
-            <Button
-              on:click={() => (githubSelectionOpen = true)}
-              type="ghost"
-              compact
-            >
+            <Button on:click={editGithubConnection} type="ghost" compact>
               <EditIcon size="16px" />
             </Button>
           </div>

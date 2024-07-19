@@ -55,7 +55,7 @@ export class GithubReposConnection {
     window.open(userStatus.grantAccessUrl, "_blank");
   }
 
-  public async focused() {
+  public async refetch() {
     if (!this.connecting) return;
     await queryClient.refetchQueries(
       getAdminServiceListGithubUserReposQueryKey(),
