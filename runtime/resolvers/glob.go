@@ -169,10 +169,6 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		return nil, err
 	}
 
-	// TODO: Add "s3://bucket" prefix to the path and files
-	// TODO: Add tests
-	// TODO: Experience pass using APIs
-
 	var rows []map[string]any
 	switch r.props.Partition {
 	case globPartitionTypeUnspecified, globPartitionTypeFile:
