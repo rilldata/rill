@@ -103,7 +103,7 @@ export function inferSourceName(connector: V1ConnectorDriver, path: string) {
   return sanitizeEntityName(fileName);
 }
 
-export function getFileTypeFromPath(fileName) {
+export function getFileTypeFromPath(fileName: string) {
   if (!fileName.includes(".")) return "";
   const fileType = fileName.split(/[#?]/)[0].split(".").pop();
 

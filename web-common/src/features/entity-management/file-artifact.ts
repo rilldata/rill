@@ -33,13 +33,16 @@ import {
   FILES_WITHOUT_AUTOSAVE,
 } from "../editor/config";
 import { fileArtifacts } from "./file-artifacts";
-import { parseKindAndNameFromFile } from "./file-content-utils";
+import { inferResourceKind } from "./infer-resource-kind";
 
 const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
   readonly path: string;
   readonly name = writable<V1ResourceName | undefined>(undefined);
+  readonly inferredResourceKind = writable<ResourceKind | null | undefined>(
+    undefined,
+  );
   readonly reconciling = writable(false);
   readonly localContent: Writable<string | null> = writable(null);
   readonly remoteContent: Writable<string | null> = writable(null);
@@ -81,6 +84,12 @@ export class FileArtifact {
     this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
       this.fileExtension,
     );
+
+    this.onRemoteContentChange((content) => {
+      if (!get(this.name)) {
+        this.inferredResourceKind.set(inferResourceKind(this.path, content));
+      }
+    });
   }
 
   updateRemoteContent = (content: string, alert = true) => {
@@ -114,10 +123,6 @@ export class FileArtifact {
     if (blob === undefined) {
       throw new Error("Content undefined");
     }
-
-    const newName = parseKindAndNameFromFile(this.path, blob);
-
-    if (newName) this.name.set(newName);
 
     this.updateRemoteContent(blob, true);
   }
@@ -217,6 +222,11 @@ export class FileArtifact {
   }
 
   hardDeleteResource() {
+    // To avoid a workspace flicker, first infer the *intended* resource kind
+    this.inferredResourceKind.set(
+      inferResourceKind(this.path, get(this.remoteContent) ?? ""),
+    );
+
     this.name.set(undefined);
     this.reconciling.set(false);
     this.lastStateUpdatedOn = undefined;
@@ -234,28 +244,32 @@ export class FileArtifact {
     ) as ReturnType<typeof useResource<V1Resource>>;
   };
 
+  getParseError = (queryClient: QueryClient, instanceId: string) => {
+    return derived(
+      useProjectParser(queryClient, instanceId),
+      (projectParser) => {
+        return projectParser.data?.projectParser?.state?.parseErrors?.find(
+          (e) => e.filePath === this.path,
+        );
+      },
+    );
+  };
+
   getAllErrors = (
     queryClient: QueryClient,
     instanceId: string,
   ): Readable<V1ParseError[]> => {
     const store = derived(
       [
-        this.name,
         useProjectParser(queryClient, instanceId),
         this.getResource(queryClient, instanceId),
       ],
-      ([name, projectParser, resource]) => {
+      ([projectParser, resource]) => {
         if (projectParser.isFetching || resource.isFetching) {
           // to avoid flicker during a re-fetch, retain the previous value
           return get(store);
         }
-        if (
-          // not having a name will signify a non-entity file
-          !name?.kind ||
-          projectParser.isError
-        ) {
-          return [];
-        }
+
         return [
           ...(
             projectParser.data?.projectParser?.state?.parseErrors ?? []

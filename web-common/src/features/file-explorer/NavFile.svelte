@@ -20,6 +20,7 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { Save } from "lucide-svelte";
   import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
@@ -31,7 +32,6 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
-  import { Save } from "lucide-svelte";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -67,7 +67,7 @@
     const previousScreenName = getScreenNameFromPage();
     behaviourEvent
       .fireNavigationEvent(
-        $name?.name ?? "",
+        filePath,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
         previousScreenName,
