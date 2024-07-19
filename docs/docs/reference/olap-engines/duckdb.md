@@ -26,5 +26,4 @@ Well now you can! For more details, see our page on [Using Multiple OLAP Engines
 ## Additional Notes
 
 - For dashboards powered by DuckDB, [measure definitions](/build/dashboards/dashboards.md#measures) are required to follow standard [DuckDB SQL](https://duckdb.org/docs/sql/introduction) syntax.
-- Known issue around creating a DuckDB via the UI, you will need to create the YAML file manually.
-- Note that local running instances of DuckDB (outside of the default one) is mainly for development and local use. When uploading to Rill Cloud, it is recommended to use a `source` type instead
+- Known issue around creating a DuckDB source via the UI, you will need to create the YAML file manually.
