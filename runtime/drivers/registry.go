@@ -92,8 +92,6 @@ type InstanceConfig struct {
 	// AlertStreamingRefDefaultRefreshCron sets a default cron expression for refreshing alerts with streaming refs.
 	// Namely, this is used to check alerts against external tables (e.g. in Druid) where new data may be added at any time (i.e. is considered "streaming").
 	AlertsDefaultStreamingRefreshCron string `mapstructure:"rill.alerts.default_streaming_refresh_cron"`
-	// MetricsComparisonsCTE indicates whether to rewrite metrics comparison queries to use CTEs.
-	MetricsComparisonsCTE bool `mapstructure:"rill.metrics.comparisons_cte"`
 }
 
 // ResolveOLAPConnector resolves the OLAP connector to default to for the instance.
@@ -133,7 +131,6 @@ func (i *Instance) Config() (InstanceConfig, error) {
 		MetricsApproximateComparisons:     true,
 		MetricsExactifyDruidTopN:          false,
 		AlertsDefaultStreamingRefreshCron: "*/10 * * * *", // Every 10 minutes
-		MetricsComparisonsCTE:             true,
 	}
 
 	// Resolve variables

@@ -34,12 +34,10 @@ type AST struct {
 // The from/join clauses are not all compatible. The allowed combinations are:
 //   - FromTable
 //   - FromSelect and optionally SpineSelect and/or LeftJoinSelects
-//   - FromSelect and optionally JoinComparisonSelect
-//     Following two combinations are used when either FromSelect or JoinComparisonSelect is moved to CTE:
-//   - FromTable and JoinComparisonSelect
-//   - FromSelect and JoinComparisonTable
+//   - FromSelect and optionally JoinComparisonSelect (for comparison CTE based optimization, this combination is used, both should be set and one of them will be used as CTE)
 type SelectNode struct {
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
+	IsCTE                bool             // Whether this node is a Common Table Expression
 	CTEs                 []*SelectNode    // Common Table Expressions to add to the query
 	DimFields            []FieldNode      // Dimensions fields to select
 	MeasureFields        []FieldNode      // Measure fields to select
@@ -47,7 +45,6 @@ type SelectNode struct {
 	FromSelect           *SelectNode      // Sub-select to select from (if set, FromTable must not be set)
 	SpineSelect          *SelectNode      // Sub-select that returns a spine of dimensions. Currently it will be right-joined onto FromSelect.
 	LeftJoinSelects      []*SelectNode    // Sub-selects to left join onto FromSelect, to enable "per-dimension" measures
-	JoinComparisonTable  *string          // Table to join onto FromTable for comparison measures, this is used when JoinComparisonSelect is moved to CTE
 	JoinComparisonSelect *SelectNode      // Sub-select to join onto FromSelect for comparison measures
 	JoinComparisonType   JoinType         // Type of join to use for JoinComparisonSelect
 	Unnests              []string         // Unnest expressions to add in the FROM clause

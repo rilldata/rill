@@ -1,6 +1,7 @@
 package metricsview
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -115,62 +116,60 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	if n.FromTable != nil {
 		b.out.WriteString(*n.FromTable)
 
-		// Add unnest joins. We only and always apply these against FromPlain (ensuring they are already unnested when referenced in outer SELECTs).
+		// Add unnest joins. We only and always apply these against FromTable (ensuring they are already unnested when referenced in outer SELECTs).
 		for _, u := range n.Unnests {
-			if n.JoinComparisonSelect != nil {
-				b.out.WriteString("JOIN ")
-				b.out.WriteString(u)
-				b.out.WriteString(" ON TRUE")
-			} else {
-				b.out.WriteString(", ")
-				b.out.WriteString(u)
-			}
-		}
-
-		if n.JoinComparisonSelect != nil {
-			err := b.writeJoin(n.JoinComparisonType, n.CTEs[0], n.JoinComparisonSelect, nil)
-			if err != nil {
-				return err
-			}
+			b.out.WriteString(", ")
+			b.out.WriteString(u)
 		}
 	} else if n.FromSelect != nil {
-		b.out.WriteByte('(')
-		err := b.writeSelect(n.FromSelect)
-		if err != nil {
-			return err
-		}
-		b.out.WriteString(") ")
-		b.out.WriteString(n.FromSelect.Alias)
-
-		for _, ljs := range n.LeftJoinSelects {
-			err := b.writeJoin("LEFT", n.FromSelect, ljs, nil)
+		if n.FromSelect.IsCTE {
+			b.out.WriteString(n.FromSelect.Alias)
+			if n.JoinComparisonSelect == nil {
+				return fmt.Errorf("internal: FromSelect is a CTE but JoinComparisonSelect is nil, this is used only for comparison queries")
+			}
+			// find the CTE for FromSelect
+			var cte *SelectNode
+			for _, c := range n.CTEs {
+				if c.Alias == n.FromSelect.Alias {
+					cte = c
+					break
+				}
+			}
+			err := b.writeJoin(n.JoinComparisonType, cte, n.JoinComparisonSelect)
 			if err != nil {
 				return err
 			}
-		}
-
-		if n.SpineSelect != nil {
-			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect, nil)
+		} else {
+			b.out.WriteByte('(')
+			err := b.writeSelect(n.FromSelect)
 			if err != nil {
 				return err
 			}
-		}
+			b.out.WriteString(") ")
+			b.out.WriteString(n.FromSelect.Alias)
 
-		if n.JoinComparisonSelect != nil {
-			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect, nil)
-			if err != nil {
-				return err
+			for _, ljs := range n.LeftJoinSelects {
+				err := b.writeJoin("LEFT", n.FromSelect, ljs)
+				if err != nil {
+					return err
+				}
 			}
-		}
 
-		if n.JoinComparisonTable != nil {
-			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, nil, n.JoinComparisonTable)
-			if err != nil {
-				return err
+			if n.SpineSelect != nil {
+				err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
+				if err != nil {
+					return err
+				}
+			}
+			if n.JoinComparisonSelect != nil {
+				err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	} else {
-		panic("internal: FromPlain and FromSelect are both nil")
+		panic("internal: FromTable and FromSelect are both nil")
 	}
 
 	var wroteWhere bool
@@ -231,26 +230,20 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	return nil
 }
 
-func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode, joinTable *string) error {
+func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
 	b.out.WriteByte(' ')
 	b.out.WriteString(string(joinType))
-	var joinSelectAlias string
-	if joinSelect != nil {
-		joinSelectAlias = joinSelect.Alias
-		b.out.WriteString(" JOIN (")
+	b.out.WriteString(" JOIN ")
+	// If the join select is a CTE, then just add the CTE alias otherwise add the full select query
+	if !joinSelect.IsCTE {
+		b.out.WriteByte('(')
 		err := b.writeSelect(joinSelect)
 		if err != nil {
 			return err
 		}
 		b.out.WriteString(") ")
-		b.out.WriteString(joinSelectAlias)
-	} else if joinTable != nil {
-		joinSelectAlias = *joinTable
-		b.out.WriteString(" JOIN ")
-		b.out.WriteString(joinSelectAlias)
-	} else {
-		panic("internal: joinSelect and joinTable are both nil")
 	}
+	b.out.WriteString(joinSelect.Alias)
 
 	if len(baseSelect.DimFields) == 0 {
 		b.out.WriteString(" ON TRUE")
@@ -263,7 +256,7 @@ func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *Select
 			b.out.WriteString(" AND ")
 		}
 		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
-		rhs := b.ast.sqlForMember(joinSelectAlias, f.Name)
+		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
 		b.out.WriteByte('(')
 		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
 		b.out.WriteByte(')')
