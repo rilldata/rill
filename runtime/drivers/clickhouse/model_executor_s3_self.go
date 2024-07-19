@@ -63,9 +63,9 @@ func (e *s3ToSelfExecutor) genSQL(path string) (string, error) {
 	sb.WriteString(fmt.Sprintf("'%s'", path))
 	if props.AccessKeyID != "" {
 		sb.WriteString(", ")
-		sb.WriteString(props.AccessKeyID)
+		sb.WriteString(fmt.Sprintf("'%s'", props.AccessKeyID))
 		sb.WriteString(", ")
-		sb.WriteString(props.SecretAccessKey)
+		sb.WriteString(fmt.Sprintf("'%s'", props.SecretAccessKey))
 	}
 	sb.WriteString(")")
 	return sb.String(), nil
