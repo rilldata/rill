@@ -10,9 +10,10 @@
 
   export let filePath: string;
 
-  $: resource = fileArtifacts
-    .getFileArtifact(filePath)
-    .getResource(queryClient, $runtime.instanceId);
+  $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
+  $: ({ remoteContent } = fileArtifact);
+  $: parseError = fileArtifact.getParseError(queryClient, $runtime.instanceId);
+  $: resource = fileArtifact.getResource(queryClient, $runtime.instanceId);
   $: ({ isLoading: isResourceLoading, error: resourceError } = $resource);
 
   $: connector = $resource.data?.metricsView?.spec?.connector ?? "";
@@ -44,7 +45,21 @@
   }
 </script>
 
-{#if isResourceLoading}
+{#if !$remoteContent}
+  <div class="custom-instructions-wrapper" style:text-wrap="balance">
+    <p>
+      For help building dashboards, see:<br /><a
+        href="https://docs.rilldata.com/build/dashboards"
+        target="_blank"
+        rel="noopener noreferrer">https://docs.rilldata.com/build/dashboards</a
+      >
+    </p>
+  </div>
+{:else if $parseError}
+  <div class="custom-instructions-wrapper" style:text-wrap="balance">
+    <p>Fix the errors in the file to continue.</p>
+  </div>
+{:else if isResourceLoading}
   <div class="spinner-wrapper">
     <ReconcilingSpinner />
   </div>
