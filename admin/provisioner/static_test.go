@@ -35,6 +35,7 @@ func Test_staticProvisioner_Provision(t *testing.T) {
 		Name:           "p-q",
 		ProdBranch:     "main",
 		ProdSlots:      1,
+		ProdVariables:  map[string]string{},
 	})
 	require.NoError(t, err)
 

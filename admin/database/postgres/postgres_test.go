@@ -147,6 +147,7 @@ func testProjects(t *testing.T, db database.DB) {
 		OrganizationID: org.ID,
 		Name:           "bar",
 		Description:    "hello world",
+		ProdVariables:  map[string]string{},
 	})
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
@@ -163,8 +164,9 @@ func testProjects(t *testing.T, db database.DB) {
 
 	proj.Description = ""
 	proj, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name:        proj.Name,
-		Description: proj.Description,
+		Name:          proj.Name,
+		Description:   proj.Description,
+		ProdVariables: proj.ProdVariables,
 	})
 	require.NoError(t, err)
 	require.Equal(t, org.ID, proj.OrganizationID)
@@ -227,6 +229,7 @@ func testProjectsWithAnnotations(t *testing.T, db database.DB) {
 	opts := &database.InsertProjectOptions{
 		OrganizationID: org.ID,
 		Name:           "bar",
+		ProdVariables:  map[string]string{},
 	}
 	proj, err := db.InsertProject(ctx, opts)
 	require.NoError(t, err)
@@ -234,8 +237,9 @@ func testProjectsWithAnnotations(t *testing.T, db database.DB) {
 
 	annotations := map[string]string{"foo": "bar", "bar": "baz"}
 	_, err = db.UpdateProject(ctx, proj.ID, &database.UpdateProjectOptions{
-		Name:        proj.Name,
-		Annotations: annotations,
+		Name:          proj.Name,
+		ProdVariables: proj.ProdVariables,
+		Annotations:   annotations,
 	})
 	require.NoError(t, err)
 
@@ -277,19 +281,19 @@ func testProjectsWithPagination(t *testing.T, db database.DB) {
 	require.Equal(t, "test2", org2.Name)
 
 	// add projects
-	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "alpha"})
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "alpha", ProdVariables: map[string]string{}})
 	require.NoError(t, err)
 	require.Equal(t, "alpha", proj.Name)
 
-	proj1, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "beta"})
+	proj1, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "beta", ProdVariables: map[string]string{}})
 	require.NoError(t, err)
 	require.Equal(t, "beta", proj1.Name)
 
-	proj2, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "gamma"})
+	proj2, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "gamma", ProdVariables: map[string]string{}})
 	require.NoError(t, err)
 	require.Equal(t, "gamma", proj2.Name)
 
-	proj3, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org2.ID, Name: "other"})
+	proj3, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org2.ID, Name: "other", ProdVariables: map[string]string{}})
 	require.NoError(t, err)
 	require.Equal(t, "other", proj3.Name)
 
@@ -333,23 +337,23 @@ func testProjectsForUserWithPagination(t *testing.T, db database.DB) {
 
 	// add projects
 	// public project
-	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "alpha", Public: true})
+	proj, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "alpha", Public: true, ProdVariables: map[string]string{}})
 	require.NoError(t, err)
 
 	// user added as collaborator
-	proj1, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "beta"})
+	proj1, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "beta", ProdVariables: map[string]string{}})
 	require.NoError(t, err)
 	require.Equal(t, "beta", proj1.Name)
 	require.NoError(t, db.InsertProjectMemberUser(ctx, proj1.ID, user.ID, role.ID))
 
 	// public project and user added as collaborator
-	proj2, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "gamma", Public: true})
+	proj2, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "gamma", Public: true, ProdVariables: map[string]string{}})
 	require.NoError(t, err)
 	require.Equal(t, "gamma", proj2.Name)
 	require.NoError(t, db.InsertProjectMemberUser(ctx, proj2.ID, user.ID, role.ID))
 
 	// internal project
-	proj3, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "internal"})
+	proj3, err := db.InsertProject(ctx, &database.InsertProjectOptions{OrganizationID: org.ID, Name: "internal", ProdVariables: map[string]string{}})
 	require.NoError(t, err)
 	require.Equal(t, "internal", proj3.Name)
 

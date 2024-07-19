@@ -3,20 +3,20 @@ package postgres
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/XSAM/otelsql"
-	"github.com/jackc/pgconn"
-	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jmoiron/sqlx"
 	"github.com/rilldata/rill/admin/database"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	// Load postgres driver
-	_ "github.com/jackc/pgx/v4/stdlib"
+	_ "github.com/jackc/pgx/v5/stdlib"
 )
 
 func init() {
@@ -1807,9 +1807,9 @@ func (c *connection) FindUnusedAssets(ctx context.Context, limit int) ([]*databa
 	// We skip unused assets created in last 6 hours to prevent race condition
 	// where somebody just created an asset but is yet to use it
 	err := c.getDB(ctx).SelectContext(ctx, &res, `
-		SELECT a.* FROM assets a 
+		SELECT a.* FROM assets a
 		WHERE a.created_on < now() - INTERVAL '6 hours'
-		AND NOT EXISTS 
+		AND NOT EXISTS
 		(SELECT 1 FROM projects p WHERE p.archive_asset_id = a.id)
 		ORDER BY a.created_on DESC LIMIT $1
 	`, limit)
@@ -1871,17 +1871,17 @@ func (c *connection) FindOrganizationsWithoutPaymentCustomerID(ctx context.Conte
 // projectDTO wraps database.Project, using the pgtype package to handle types that pgx can't read directly into their native Go types.
 type projectDTO struct {
 	*database.Project
-	ProdVariables pgtype.JSON `db:"prod_variables"`
-	Annotations   pgtype.JSON `db:"annotations"`
+	ProdVariables []byte `db:"prod_variables"`
+	Annotations   []byte `db:"annotations"`
 }
 
 func (p *projectDTO) AsModel() (*database.Project, error) {
-	err := p.ProdVariables.AssignTo(&p.Project.ProdVariables)
+	err := json.Unmarshal(p.ProdVariables, &p.Project.ProdVariables)
 	if err != nil {
 		return nil, err
 	}
 
-	err = p.Annotations.AssignTo(&p.Project.Annotations)
+	err = json.Unmarshal(p.Annotations, &p.Project.Annotations)
 	if err != nil {
 		return nil, err
 	}
@@ -1904,16 +1904,16 @@ func projectsFromDTOs(dtos []*projectDTO) ([]*database.Project, error) {
 // magicAuthTokenDTO wraps database.MagicAuthToken, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenDTO struct {
 	*database.MagicAuthToken
-	Attributes        pgtype.JSON      `db:"attributes"`
-	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+	Attributes        []byte `db:"attributes"`
+	MetricsViewFields []byte `db:"metrics_view_fields"`
 }
 
 func (m *magicAuthTokenDTO) AsModel() (*database.MagicAuthToken, error) {
-	err := m.Attributes.AssignTo(&m.MagicAuthToken.Attributes)
+	err := json.Unmarshal(m.Attributes, &m.MagicAuthToken.Attributes)
 	if err != nil {
 		return nil, err
 	}
-	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	err = json.Unmarshal(m.MetricsViewFields, &m.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
@@ -1924,16 +1924,16 @@ func (m *magicAuthTokenDTO) AsModel() (*database.MagicAuthToken, error) {
 // magicAuthTokenWithUserDTO wraps database.MagicAuthTokenWithUser, using the pgtype package to handly types that pgx can't read directly into their native Go types.
 type magicAuthTokenWithUserDTO struct {
 	*database.MagicAuthTokenWithUser
-	Attributes        pgtype.JSON      `db:"attributes"`
-	MetricsViewFields pgtype.TextArray `db:"metrics_view_fields"`
+	Attributes        []byte `db:"attributes"`
+	MetricsViewFields []byte `db:"metrics_view_fields"`
 }
 
 func (m *magicAuthTokenWithUserDTO) AsModel() (*database.MagicAuthTokenWithUser, error) {
-	err := m.Attributes.AssignTo(&m.MagicAuthTokenWithUser.Attributes)
+	err := json.Unmarshal(m.Attributes, &m.MagicAuthTokenWithUser.Attributes)
 	if err != nil {
 		return nil, err
 	}
-	err = m.MetricsViewFields.AssignTo(&m.MagicAuthToken.MetricsViewFields)
+	err = json.Unmarshal(m.MetricsViewFields, &m.MagicAuthToken.MetricsViewFields)
 	if err != nil {
 		return nil, err
 	}
