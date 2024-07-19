@@ -322,7 +322,18 @@ func (c *connection) DropTable(ctx context.Context, name string, view bool) erro
 // RenameTable implements drivers.OLAPStore.
 func (c *connection) RenameTable(ctx context.Context, name, newName string, view bool) error {
 	if !view {
-		err := c.Exec(ctx, &drivers.Statement{
+		var exists bool
+		err := c.db.QueryRowContext(ctx, fmt.Sprintf("EXISTS %s", safeSQLName(newName))).Scan(&exists)
+		if err != nil {
+			return err
+		}
+		if !exists {
+			return c.Exec(ctx, &drivers.Statement{
+				Query:    fmt.Sprintf("RENAME TABLE %s TO %s", safeSQLName(name), safeSQLName(newName)),
+				Priority: 100,
+			})
+		}
+		err = c.Exec(ctx, &drivers.Statement{
 			Query:    fmt.Sprintf("EXCHANGE TABLES %s AND %s", safeSQLName(name), safeSQLName(newName)),
 			Priority: 100,
 		})
