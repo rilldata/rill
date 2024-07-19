@@ -2222,6 +2222,8 @@ paths:
                 type: string
               githubUrl:
                 type: string
+              subpath:
+                type: string
               archiveAssetId:
                 type: string
               prodSlots:
