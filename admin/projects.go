@@ -140,6 +140,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	impactsDeployments := (requiresReset ||
 		(proj.Name != opts.Name) ||
+		(proj.Subpath != opts.Subpath) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
 		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
