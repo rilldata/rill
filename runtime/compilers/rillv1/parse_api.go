@@ -99,6 +99,7 @@ type DataYAML struct {
 	MetricsSQL string         `yaml:"metrics_sql"`
 	API        string         `yaml:"api"`
 	Args       map[string]any `yaml:"args"`
+	Glob       map[string]any `yaml:"glob"`
 }
 
 // parseDataYAML parses a data resolver and its properties from a DataYAML.
@@ -134,6 +135,13 @@ func (p *Parser) parseDataYAML(raw *DataYAML) (string, *structpb.Struct, []Resou
 		if raw.Args != nil {
 			resolverProps["args"] = raw.Args
 		}
+	}
+
+	// Handle glob resolver
+	if raw.Glob != nil {
+		count++
+		resolver = "glob"
+		resolverProps = raw.Glob
 	}
 
 	// Validate there was exactly one resolver
