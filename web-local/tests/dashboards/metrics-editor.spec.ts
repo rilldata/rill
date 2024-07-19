@@ -10,7 +10,7 @@ test.describe("Metrics editor", () => {
     await updateCodeEditor(page, "");
 
     // the inspector should be empty.
-    await expect(page.getByText("Let's get started.")).toBeVisible();
+    await expect(page.getByText("For help building dashboards")).toBeVisible();
 
     // skeleton should result in an empty skeleton YAML file
     await page.getByText("start with a skeleton").click();
@@ -25,7 +25,11 @@ test.describe("Metrics editor", () => {
     await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
 
     // the inspector should be empty.
-    await expect(page.getByText("Table not defined.")).toBeVisible();
+    await expect(
+      page.getByText(
+        'must set a value for either the "model" field or the "table" field',
+      ),
+    ).toBeVisible();
 
     // now let's scaffold things in
     await updateCodeEditor(page, "");
@@ -47,10 +51,7 @@ test.describe("Metrics editor", () => {
     ).not.toBeVisible();
 
     // let's check the inspector.
-    await expect(page.getByText("Model summary")).toBeVisible({
-      timeout: 20000,
-    });
-    await expect(page.getByText("Model columns")).toBeVisible();
+    await expect(page.getByText("Table columns")).toBeVisible();
 
     // go to the dashboard and make sure the metrics and dimensions are there.
 
