@@ -48,6 +48,13 @@
           await waitUntil(() => prevInput !== lastValue);
           consumeInput();
         })();
+      } else if (
+        (event.key === "Delete" || event.key === "Backspace") &&
+        lastValue === "" &&
+        values.length > 1
+      ) {
+        // remove the last pill when delete/backspace was pressed with empty input
+        handleRemove(lastIdx - 1);
       }
       return;
     }
@@ -73,7 +80,10 @@
 
   let error: string;
   $: {
-    const errorCount = values.filter((_, i) => !!errors?.[i]?.length).length;
+    const errorCount = values
+      // ignore the last value which would be being actively edited
+      .slice(0, lastIdx)
+      .filter((s, i) => s.trim().length > 0 && !!errors?.[i]?.length).length;
     if (errorCount === 0) {
       error = "";
     } else {
@@ -157,7 +167,7 @@
     <slot name="beside-input" {hasSomeValue} />
   </div>
   {#if hasSomeErrors}
-    <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px">
+    <div in:slide={{ duration: 200 }} class="text-red-500 text-sm py-px mt-0.5">
       {error}
     </div>
   {/if}

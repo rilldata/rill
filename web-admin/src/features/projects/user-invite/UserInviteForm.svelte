@@ -3,6 +3,7 @@
   import UserRoleSelect from "@rilldata/web-admin/features/projects/user-invite/UserRoleSelect.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import MultiInput from "@rilldata/web-common/components/forms/MultiInput.svelte";
+  import { RFC5322EmailRegex } from "@rilldata/web-common/components/forms/validation";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
@@ -23,7 +24,11 @@
   };
   const schema = yup(
     object({
-      emails: array(string().email("Invalid email")),
+      emails: array(
+        string().matches(RFC5322EmailRegex, {
+          message: "Invalid email",
+        }),
+      ), // yup's email regex is too simple
       role: string().required(),
     }),
   );
