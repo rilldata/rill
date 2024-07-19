@@ -127,6 +127,10 @@ func (r *globResolver) Close() error {
 	return nil
 }
 
+func (r *globResolver) Cacheable() bool {
+	return false
+}
+
 func (r *globResolver) Key() string {
 	hash, err := hashstructure.Hash(r.props, hashstructure.FormatV2, nil)
 	if err != nil {
@@ -188,7 +192,7 @@ func (r *globResolver) ResolveInteractive(ctx context.Context) (runtime.Resolver
 		}
 	}
 
-	return runtime.NewMapsResolverResult(rows, r.makeResultSchema(rows), false), nil
+	return runtime.NewMapsResolverResult(rows, r.makeResultSchema(rows)), nil
 }
 
 func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {

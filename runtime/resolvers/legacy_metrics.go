@@ -84,6 +84,10 @@ func (r *legacyMetricsResolver) Close() error {
 	return nil
 }
 
+func (r *legacyMetricsResolver) Cacheable() bool {
+	return false
+}
+
 func (r *legacyMetricsResolver) Key() string {
 	hash, err := hashstructure.Hash(r.query, hashstructure.FormatV2, nil)
 	if err != nil {
@@ -338,10 +342,6 @@ func (r *legacyResolverResult) Close() error {
 
 func (r *legacyResolverResult) Schema() *runtimev1.StructType {
 	return r.schema
-}
-
-func (r *legacyResolverResult) Cache() bool {
-	return true
 }
 
 func (r *legacyResolverResult) Next() (map[string]any, error) {

@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -571,28 +570,23 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 	if err != nil {
 		return nil, nil, err
 	}
+	defer res.Close()
 
-	var tmp []map[string]any
-	err = json.Unmarshal(res.Data, &tmp)
+	row, err := res.Next()
 	if err != nil {
-		return nil, nil, fmt.Errorf("state resolver produced invalid JSON: %w", err)
+		if errors.Is(err, io.EOF) {
+			// Not returning any rows will clear the state
+			return nil, nil, nil
+		}
+		return nil, nil, fmt.Errorf("failed to read state resolver output: %w", err)
 	}
 
-	if len(tmp) == 0 {
-		// Not returning any rows will clear the state
-		return nil, nil, nil
-	}
-
-	if len(tmp) > 1 {
-		return nil, nil, fmt.Errorf("state resolver produced more than one row")
-	}
-
-	state, err := structpb.NewStruct(tmp[0])
+	state, err := structpb.NewStruct(row)
 	if err != nil {
 		return nil, nil, fmt.Errorf("state resolver produced invalid output: %w", err)
 	}
 
-	return state, res.Schema, nil
+	return state, res.Schema(), nil
 }
 
 // acquireExecutor acquires a ModelExecutor capable of executing a model with the given execution options.
