@@ -330,8 +330,8 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 		return nil, status.Errorf(codes.FailedPrecondition, "no valid payment method found for the organization")
 	}
 
-	// don't allow plan downgrades
-	if planDowngrade(plan, org) {
+	// don't allow plan downgrades, only superuser can downgrade
+	if planDowngrade(plan, org) && !claims.Superuser(ctx) {
 		return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not allowed")
 	}
 
