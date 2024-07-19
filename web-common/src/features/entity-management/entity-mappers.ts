@@ -128,3 +128,16 @@ export const FolderToResourceKind: Record<string, ResourceKind> = {
   charts: ResourceKind.Component,
   "custom-dashboards": ResourceKind.Dashboard,
 };
+
+export const ResourceShortNameToKind: Record<string, ResourceKind> = {
+  alert: ResourceKind.Alert,
+  api: ResourceKind.API,
+  component: ResourceKind.Component,
+  dashboard: ResourceKind.Dashboard,
+  metrics_view: ResourceKind.MetricsView,
+  metricsview: ResourceKind.MetricsView,
+  model: ResourceKind.Model,
+  report: ResourceKind.Report,
+  source: ResourceKind.Source,
+  theme: ResourceKind.Theme,
+};
