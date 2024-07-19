@@ -50,6 +50,7 @@ func (s *Service) InitOrganizationBilling(ctx context.Context, org *database.Org
 		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
+		BillingEmail:                        org.BillingEmail,
 	})
 	if err != nil {
 		return nil, nil, err
