@@ -1,15 +1,19 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import type { EditorView } from "@codemirror/view";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
+  import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
+  import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
+  import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
-  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
+  import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import { ResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
@@ -24,10 +28,6 @@
   import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
-  import ChartsEditorContainer from "@rilldata/web-common/features/charts/editor/ChartsEditorContainer.svelte";
-  import Editor from "@rilldata/web-common/features/editor/Editor.svelte";
-  import { FileExtensionToEditorExtension } from "@rilldata/web-common/features/editor/getExtensionsForFile";
-  import type { EditorView } from "@codemirror/view";
 
   export let fileArtifact: FileArtifact;
 
@@ -71,7 +71,7 @@
 
   $: spec = structuredClone($resourceQuery.data?.dashboard?.spec ?? spec);
 
-  $: ({ items = [], columns = 20, gap = 4 } = spec);
+  $: ({ items = [], columns = 20, gap = 4, variables = [] } = spec);
   $: if (
     items.filter(
       (item) =>
@@ -298,10 +298,12 @@
 
     {#if selectedView == "viz" || selectedView == "split"}
       <CustomDashboardPreview
+        {customDashboardName}
         {gap}
         {items}
         {columns}
         {showGrid}
+        {variables}
         bind:selectedChartName
         bind:selectedIndex
         on:update={handlePreviewUpdate}

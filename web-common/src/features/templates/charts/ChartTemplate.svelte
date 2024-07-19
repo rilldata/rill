@@ -10,6 +10,7 @@
   export let chartView: boolean;
   export let renderer: string;
   export let componentName: string;
+  export let input: string[] | undefined;
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let resolverProperties: V1ComponentSpecResolverProperties;
 
@@ -17,4 +18,10 @@
   $: vegaSpec = getSpecFromTemplateProperties(renderer, chartProperties);
 </script>
 
-<Chart {chartView} {vegaSpec} chartName={componentName} {resolverProperties} />
+<Chart
+  {chartView}
+  {vegaSpec}
+  {input}
+  chartName={componentName}
+  {resolverProperties}
+/>

@@ -1647,7 +1647,7 @@ export interface V1DeleteFileResponse {
 }
 
 export interface V1DashboardVariable {
-  name?: string;
+  name: string;
   type?: string;
   value?: string;
 }

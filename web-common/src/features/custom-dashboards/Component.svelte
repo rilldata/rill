@@ -3,7 +3,7 @@
   import { builderActions, getAttrs, type Builder } from "bits-ui";
   import { load } from "js-yaml";
   import type { ComponentType } from "svelte";
-  import { onMount } from "svelte";
+  import { getContext, onMount } from "svelte";
   import {
     ResourceKind,
     useResource,
@@ -18,8 +18,10 @@
 </script>
 
 <script lang="ts">
+  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetParsedComponent } from "@rilldata/web-common/runtime-client/manual-clients";
+  import { readable, Readable } from "svelte/store";
 
   export let i: number;
   export let builders: Builder[] = [];
@@ -38,27 +40,41 @@
   export let componentName: string;
   export let instanceId: string;
 
+  const dashboardName = getContext("rill::custom-dashboard:name") as string;
+
   $: resourceQuery = useResource(
     instanceId,
     componentName,
     ResourceKind.Component,
   );
+  $: ({ data: componentResource } = $resourceQuery);
+
+  $: ({
+    renderer,
+    rendererProperties,
+    resolverProperties,
+    input,
+    title,
+    subtitle,
+  } = componentResource?.component?.spec ?? {});
+
+  let inputVariableParams: Readable<Record<string, any>> = readable({
+    selection: "Facebook",
+  });
+  $: if (dashboardName) {
+    inputVariableParams = useVariableInputParams(dashboardName, input);
+  }
 
   $: parsedResourceQuery = createRuntimeServiceGetParsedComponent(
     queryClient,
     instanceId,
     componentName,
-    {
-      test: "test",
-    },
+    $inputVariableParams,
   );
   $: data = $parsedResourceQuery?.data;
-  $: parsedComponent = load(data.content);
-  $: data, console.log(parsedComponent);
-  $: ({ data: componentResource } = $resourceQuery);
+  $: parsedComponent = load(data?.content);
 
-  $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
-    componentResource?.component?.spec ?? {});
+  $: console.log(data);
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -119,6 +135,7 @@
         {/if}
         <Chart
           {chartView}
+          {input}
           vegaSpec={parsedComponent?.vega_lite}
           chartName={componentName}
           {resolverProperties}
@@ -127,6 +144,7 @@
         <TemplateRenderer
           {chartView}
           {renderer}
+          {input}
           {rendererProperties}
           {resolverProperties}
           {componentName}

@@ -1,8 +1,9 @@
 <script lang="ts">
   import ChartTemplate from "@rilldata/web-common/features/templates/charts/ChartTemplate.svelte";
+  import Image from "@rilldata/web-common/features/templates/image/Image.svelte";
   import KPITemplate from "@rilldata/web-common/features/templates/kpi/KPITemplate.svelte";
   import Markdown from "@rilldata/web-common/features/templates/markdown/Markdown.svelte";
-  import Image from "@rilldata/web-common/features/templates/image/Image.svelte";
+  import Select from "@rilldata/web-common/features/templates/select/Select.svelte";
 
   import {
     V1ComponentSpecRendererProperties,
@@ -12,6 +13,7 @@
   export let chartView: boolean;
   export let renderer: string;
   export let componentName: string;
+  export let input: string[] | undefined;
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let resolverProperties: V1ComponentSpecResolverProperties | undefined;
 </script>
@@ -22,9 +24,12 @@
   <Markdown {rendererProperties} />
 {:else if renderer === "image"}
   <Image {rendererProperties} />
+{:else if renderer === "select"}
+  <Select {componentName} {resolverProperties} {rendererProperties} />
 {:else if resolverProperties}
   <ChartTemplate
     {chartView}
+    {input}
     {renderer}
     {componentName}
     {rendererProperties}

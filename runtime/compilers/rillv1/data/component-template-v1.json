@@ -116,6 +116,42 @@
       ],
       "type": "object"
     },
+    "SelectProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "labelField": {
+          "type": "string"
+        },
+        "placeholder": {
+          "type": "string"
+        },
+        "tooltip": {
+          "type": "string"
+        },
+        "valueField": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "valueField"
+      ],
+      "type": "object"
+    },
+    "SelectPropertiesT": {
+      "additionalProperties": false,
+      "properties": {
+        "select": {
+          "$ref": "#/definitions/SelectProperties"
+        }
+      },
+      "required": [
+        "select"
+      ],
+      "type": "object"
+    },
     "TableProperties": {
       "additionalProperties": false,
       "properties": {
@@ -182,36 +218,6 @@
         {
           "additionalProperties": false,
           "properties": {
-            "name": {
-              "const": "bar_chart"
-            },
-            "x": {
-              "type": "string"
-            },
-            "y": {
-              "type": "string"
-            }
-          },
-          "required": [
-            "name",
-            "x",
-            "y"
-          ]
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
-            "name": {
-              "const": "input"
-            }
-          },
-          "required": [
-            "name"
-          ]
-        },
-        {
-          "additionalProperties": false,
-          "properties": {
             "bar_chart": {
               "$ref": "#/definitions/ChartProperties"
             }
@@ -244,6 +250,9 @@
         },
         {
           "$ref": "#/definitions/ImageTemplateT"
+        },
+        {
+          "$ref": "#/definitions/SelectPropertiesT"
         }
       ]
     }
