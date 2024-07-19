@@ -268,7 +268,6 @@ func NewMapsResolverResult(result []map[string]any, schema *runtimev1.StructType
 type mapsResolverResult struct {
 	rows   []map[string]any
 	schema *runtimev1.StructType
-	cache  bool
 	idx    int
 }
 

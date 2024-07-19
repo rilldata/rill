@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"strings"
 
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
@@ -13,9 +12,10 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"go.uber.org/zap"
-
 	"gocloud.dev/blob"
-	_ "gocloud.dev/blob/memblob"
+
+	// Use the file-backed bucket driver for mocked buckets
+	_ "gocloud.dev/blob/fileblob"
 )
 
 func init() {
@@ -24,7 +24,8 @@ func init() {
 }
 
 type configProperties struct {
-	Files map[string]string `mapstructure:"files"`
+	// Path to a directory on the local file system containing files to serve as objects.
+	Path string `mapstructure:"path"`
 }
 
 type driver struct{}
@@ -44,16 +45,9 @@ func (driver) Open(instanceID string, config map[string]any, client *activity.Cl
 		return nil, err
 	}
 
-	bucket, err := blob.OpenBucket(context.Background(), "mem://")
+	bucket, err := blob.OpenBucket(context.Background(), "file://"+cfg.Path)
 	if err != nil {
 		return nil, err
-	}
-
-	for path, data := range cfg.Files {
-		err := bucket.Upload(context.Background(), path, strings.NewReader(data), nil)
-		if err != nil {
-			return nil, err
-		}
 	}
 
 	return &handle{

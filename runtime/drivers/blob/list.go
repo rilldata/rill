@@ -55,6 +55,9 @@ func (b *Bucket) ListObjects(ctx context.Context, glob string) ([]drivers.Object
 
 	// Extract the prefix (if any) that we can push down to the storage provider.
 	prefix, _ := doublestar.SplitPattern(glob)
+	if prefix == "." {
+		prefix = ""
+	}
 
 	// Build iterator
 	it := b.bucket.List(&blob.ListOptions{

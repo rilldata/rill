@@ -44,25 +44,28 @@ func TestGlob(t *testing.T) {
 }
 
 func prepareGlobTest(t *testing.T, connector string, files map[string]string) (*runtime.Runtime, string) {
-	dir := t.TempDir()
+	// Write the provided file contents into a temporary directory.
+	tempDir := t.TempDir()
 	for k, v := range files {
 		subdir := filepath.Dir(k)
 		if subdir != "" {
-			err := os.MkdirAll(filepath.Join(dir, subdir), 0755)
+			err := os.MkdirAll(filepath.Join(tempDir, subdir), 0755)
 			require.NoError(t, err)
 		}
 
-		err := os.WriteFile(filepath.Join(dir, k), []byte(v), 0644)
+		err := os.WriteFile(filepath.Join(tempDir, k), []byte(v), 0644)
 		require.NoError(t, err)
 	}
 
+	// Prepare a mock_object_store connector that serves files from the temporary directory.
 	connectorYAML := fmt.Sprintf(`
 type: connector
 name: %s
 driver: mock_object_store
-directory: %s
-`, connector, dir)
+path: %s
+`, connector, tempDir)
 
+	// Initialize the test runtime
 	rt, instanceID := testruntime.NewInstanceWithOptions(t, testruntime.InstanceOptions{
 		Files: map[string]string{
 			"rill.yaml":      ``,

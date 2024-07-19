@@ -1,3 +1,6 @@
 package mock
 
-import _ "github.com/rilldata/rill/runtime/drivers/mock/object_store"
+import (
+	// Import mock drivers
+	_ "github.com/rilldata/rill/runtime/drivers/mock/object_store"
+)
