@@ -540,10 +540,8 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			OrgID:     org.ID,
 			RoleID:    role.ID,
 		})
-		if err != nil {
-			if errors.Is(err, database.ErrNotUnique) {
-				return nil, status.Error(codes.AlreadyExists, err.Error())
-			}
+		// continue sending an email if the user already exists
+		if err != nil && !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
@@ -573,7 +571,8 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	defer func() { _ = tx.Rollback() }()
 
 	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
-	if err != nil {
+	// continue sending an email if the user already exists
+	if err != nil && !errors.Is(err, database.ErrNotUnique) {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
