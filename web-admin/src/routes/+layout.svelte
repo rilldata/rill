@@ -55,6 +55,7 @@
       {#if !isEmbed}
         <TopNavigationBar
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
+          manageProjectMembers={projectPermissions?.manageProjectMembers}
         />
       {/if}
       <ErrorBoundary>

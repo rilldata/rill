@@ -11,8 +11,12 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
     page.route.id === "/[organization]/[project]/-/status" ||
-    !!page.route.id?.startsWith("/[organization]/[project]/-/request-access")
+    !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
+}
+
+export function withinProject(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]/[project]");
 }
 
 export function isMetricsExplorerPage(page: Page): boolean {
