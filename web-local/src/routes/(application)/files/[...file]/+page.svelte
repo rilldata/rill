@@ -31,10 +31,15 @@
   let editor: EditorView;
 
   $: ({ filePath, fileArtifact } = data);
-  $: ({ autoSave, hasUnsavedChanges, fileName, name, inferredResourceKind } =
-    fileArtifact);
+  $: ({
+    autoSave,
+    hasUnsavedChanges,
+    fileName,
+    resourceName,
+    inferredResourceKind,
+  } = fileArtifact);
 
-  $: resourceKind = <ResourceKind | undefined>$name?.kind;
+  $: resourceKind = <ResourceKind | undefined>$resourceName?.kind;
 
   $: workspace = workspaces.get(resourceKind ?? $inferredResourceKind);
 

@@ -39,7 +39,7 @@ const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
   readonly path: string;
-  readonly name = writable<V1ResourceName | undefined>(undefined);
+  readonly resourceName = writable<V1ResourceName | undefined>(undefined);
   readonly inferredResourceKind = writable<ResourceKind | null | undefined>(
     undefined,
   );
@@ -86,7 +86,7 @@ export class FileArtifact {
     );
 
     this.onRemoteContentChange((content) => {
-      if (!get(this.name)) {
+      if (!get(this.resourceName)) {
         this.inferredResourceKind.set(inferResourceKind(this.path, content));
       }
     });
@@ -196,7 +196,7 @@ export class FileArtifact {
   };
 
   updateAll(resource: V1Resource) {
-    this.updateNameIfChanged(resource);
+    this.updateResourceNameIfChanged(resource);
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
     this.reconciling.set(
       resource.meta?.reconcileStatus ===
@@ -205,7 +205,7 @@ export class FileArtifact {
   }
 
   updateReconciling(resource: V1Resource) {
-    this.updateNameIfChanged(resource);
+    this.updateResourceNameIfChanged(resource);
     this.reconciling.set(
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
@@ -213,7 +213,7 @@ export class FileArtifact {
   }
 
   updateLastUpdated(resource: V1Resource) {
-    this.updateNameIfChanged(resource);
+    this.updateResourceNameIfChanged(resource);
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
@@ -227,13 +227,13 @@ export class FileArtifact {
       inferResourceKind(this.path, get(this.remoteContent) ?? ""),
     );
 
-    this.name.set(undefined);
+    this.resourceName.set(undefined);
     this.reconciling.set(false);
     this.lastStateUpdatedOn = undefined;
   }
 
   getResource = (queryClient: QueryClient, instanceId: string) => {
-    return derived(this.name, (name, set) =>
+    return derived(this.resourceName, (name, set) =>
       useResource(
         instanceId,
         name?.name as string,
@@ -297,18 +297,18 @@ export class FileArtifact {
   }
 
   getEntityName() {
-    return get(this.name)?.name ?? extractFileName(this.path);
+    return get(this.resourceName)?.name ?? extractFileName(this.path);
   }
 
-  private updateNameIfChanged(resource: V1Resource) {
+  private updateResourceNameIfChanged(resource: V1Resource) {
     const isSubResource = !!resource.component?.spec?.definedInDashboard;
     if (isSubResource) return;
-    const curName = get(this.name);
+    const curName = get(this.resourceName);
     if (
       curName?.name !== resource.meta?.name?.name ||
       curName?.kind !== resource.meta?.name?.kind
     ) {
-      this.name.set({
+      this.resourceName.set({
         kind: resource.meta?.name?.kind,
         name: resource.meta?.name?.name,
       });

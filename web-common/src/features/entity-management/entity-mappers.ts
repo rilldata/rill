@@ -121,7 +121,7 @@ export function addLeadingSlash(path: string): string {
   return "/" + path;
 }
 
-export const FolderToResourceKind: Record<string, ResourceKind> = {
+export const FolderNameToResourceKind: Record<string, ResourceKind> = {
   sources: ResourceKind.Source,
   models: ResourceKind.Model,
   dashboards: ResourceKind.MetricsView,
@@ -129,7 +129,7 @@ export const FolderToResourceKind: Record<string, ResourceKind> = {
   "custom-dashboards": ResourceKind.Dashboard,
 };
 
-export const ResourceShortNameToKind: Record<string, ResourceKind> = {
+export const ResourceShortNameToResourceKind: Record<string, ResourceKind> = {
   alert: ResourceKind.Alert,
   api: ResourceKind.API,
   component: ResourceKind.Component,

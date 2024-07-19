@@ -44,7 +44,7 @@
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
-  let name: Readable<V1ResourceName | undefined>;
+  let resourceName: Readable<V1ResourceName | undefined>;
 
   $: id = `${filePath}-nav-link`;
   $: fileName = filePath.split("/").pop();
@@ -53,8 +53,8 @@
     removeLeadingSlash($page.params.file ?? "");
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: ({ name, hasUnsavedChanges, saveLocalContent } = fileArtifact);
-  $: resourceKind = $name?.kind as ResourceKind;
+  $: ({ resourceName, hasUnsavedChanges, saveLocalContent } = fileArtifact);
+  $: resourceKind = $resourceName?.kind as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);

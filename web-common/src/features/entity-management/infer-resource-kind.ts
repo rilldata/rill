@@ -1,9 +1,9 @@
-import { getFileTypeFromPath } from "../sources/sourceUtils";
 import {
-  FolderToResourceKind,
-  ResourceShortNameToKind,
+  FolderNameToResourceKind,
+  ResourceShortNameToResourceKind,
   removeLeadingSlash,
 } from "./entity-mappers";
+import { extractFileExtension } from "./file-path-utils";
 import { ResourceKind } from "./resource-selectors";
 
 /**
@@ -14,15 +14,15 @@ export function inferResourceKind(
   path: string,
   blob: string,
 ): ResourceKind | null {
-  const fileType = getFileTypeFromPath(path);
+  const fileExtension = extractFileExtension(path);
 
   // If it's not a YAML or SQL file, we don't know what it is
-  if (fileType !== "yaml" && fileType !== "sql") {
+  if (fileExtension !== ".yaml" && fileExtension !== ".sql") {
     return null;
   }
 
   // If it's a SQL file, it's a model
-  if (fileType === "sql") {
+  if (fileExtension === ".sql") {
     return ResourceKind.Model;
   }
 
@@ -45,7 +45,7 @@ function findResourceKindInYAML(text: string): ResourceKind | null {
 
   if (match) {
     const shortName = match[1].toLowerCase();
-    return ResourceShortNameToKind[shortName] ?? null;
+    return ResourceShortNameToResourceKind[shortName] ?? null;
   }
 
   return null;
@@ -53,5 +53,5 @@ function findResourceKindInYAML(text: string): ResourceKind | null {
 
 function findResourceKindInFilePath(filePath: string): ResourceKind | null {
   const dirName = removeLeadingSlash(filePath).split("/")[0];
-  return FolderToResourceKind[dirName] ?? null;
+  return FolderNameToResourceKind[dirName] ?? null;
 }
