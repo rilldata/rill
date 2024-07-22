@@ -15,12 +15,12 @@ export async function getOrgName() {
 
   let orgName = userName;
   let found = false;
-  let i = 2;
+  let i = 0;
 
   while (!found) {
     const resp = await localServiceCheckOrgName(orgName);
     found = resp.available;
-    orgName = `${userName}-${i}`;
+    orgName = `${userName}${i === 0 ? "" : "-" + i}`;
     i++;
   }
 

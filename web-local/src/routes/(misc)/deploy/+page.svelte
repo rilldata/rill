@@ -21,11 +21,6 @@
     return deployer.deploy(org);
   }
 
-  function handleVisibilityChange() {
-    if (document.visibilityState !== "visible") return;
-    void deployer.checkDeployStatus();
-  }
-
   function onContactUs() {
     // TODO
   }
@@ -34,8 +29,6 @@
     void deployer.deploy();
   });
 </script>
-
-<svelte:window on:visibilitychange={handleVisibilityChange} />
 
 <CTALayoutContainer>
   <CTAContentContainer>

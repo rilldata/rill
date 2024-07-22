@@ -1,3 +1,4 @@
+import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
 import { getOrgName } from "@rilldata/web-common/features/project/getOrgName";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
@@ -15,26 +16,31 @@ export class ProjectDeployer {
       refetchOnWindowFocus: true,
     },
   });
-  public readonly validating = writable(false);
   public readonly promptOrgSelection = writable(false);
 
+  private readonly deploying = writable(false);
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
+
+  public get isDeployed() {
+    const validation = get(this.validation).data as DeployValidationResponse;
+    return !!validation?.deployedProjectId;
+  }
 
   public getStatus() {
     return derived(
       [
         this.validation,
-        this.validating,
         this.deployMutation,
         this.redeployMutation,
+        this.deploying,
       ],
-      ([validation, validating, deployMutation, redeployMutation]) => {
+      ([validation, deployMutation, redeployMutation, deploying]) => {
         if (
           validation.isFetching ||
-          validating ||
           deployMutation.isLoading ||
-          redeployMutation.isLoading
+          redeployMutation.isLoading ||
+          deploying
         ) {
           return {
             isLoading: true,
@@ -53,13 +59,7 @@ export class ProjectDeployer {
     );
   }
 
-  public get isDeployed() {
-    const validation = get(this.validation).data as DeployValidationResponse;
-    return !!validation?.deployedProjectId;
-  }
-
   public async validate() {
-    this.validating.set(false);
     let validation = get(this.validation).data as DeployValidationResponse;
     if (validation?.deployedProjectId) {
       return true;
@@ -69,8 +69,10 @@ export class ProjectDeployer {
     validation = get(this.validation).data as DeployValidationResponse;
 
     if (!validation.isAuthenticated) {
-      window.open(`${validation.loginUrl}`, "__target");
-      this.validating.set(true);
+      window.open(
+        `${validation.loginUrl}/?redirect=${get(page).url.toString()}`,
+        "_self",
+      );
       return false;
     }
 
@@ -80,48 +82,48 @@ export class ProjectDeployer {
     //   (!validation.isGithubConnected || !validation.isGithubRepoAccessGranted)
     // ) {
     //   // if the project is a github repo and not connected to github then redirect to grant access
-    //   window.open(`${validation.githubGrantAccessUrl}`, "__target");
-    //   this.deploying.set(true);
+    //   window.open(`${validation.githubGrantAccessUrl}`, "_self");
     //   return false;
     // }
 
     return true;
   }
 
-  public async checkDeployStatus() {
-    if (!get(this.validating)) return;
-    return this.deploy();
-  }
-
   public async deploy(org?: string) {
     // safeguard around deploy
     if (!(await this.validate())) return;
 
-    const validation = get(this.validation).data as DeployValidationResponse;
-    if (validation.deployedProjectId) {
-      const resp = await get(this.redeployMutation).mutateAsync({
-        projectId: validation.deployedProjectId,
-        reupload: !validation.isGithubRepo,
-      });
-      window.open(resp.frontendUrl, "_self");
-    } else {
-      if (!org) {
-        if (validation.rillUserOrgs.length === 1) {
-          org = validation.rillUserOrgs[0];
-        } else if (validation.rillUserOrgs.length > 1) {
-          this.promptOrgSelection.set(true);
-          return;
-        } else {
-          org = await getOrgName();
+    this.deploying.set(true);
+    try {
+      const validation = get(this.validation).data as DeployValidationResponse;
+      if (validation.deployedProjectId) {
+        const resp = await get(this.redeployMutation).mutateAsync({
+          projectId: validation.deployedProjectId,
+          reupload: !validation.isGithubRepo,
+        });
+        window.open(resp.frontendUrl, "_self");
+      } else {
+        if (!org) {
+          if (validation.rillUserOrgs.length === 1) {
+            org = validation.rillUserOrgs[0];
+          } else if (validation.rillUserOrgs.length > 1) {
+            this.promptOrgSelection.set(true);
+            return;
+          } else {
+            org = await getOrgName();
+          }
         }
-      }
 
-      const resp = await get(this.deployMutation).mutateAsync({
-        projectName: validation.localProjectName,
-        org,
-        upload: true, // hardcoded to upload for now
-      });
-      window.open(resp.frontendUrl + "/-/invite", "_self");
+        const resp = await get(this.deployMutation).mutateAsync({
+          projectName: validation.localProjectName,
+          org,
+          upload: true, // hardcoded to upload for now
+        });
+        window.open(resp.frontendUrl + "/-/invite", "_self");
+      }
+    } catch (err) {
+      // no-op
     }
+    this.deploying.set(false);
   }
 }

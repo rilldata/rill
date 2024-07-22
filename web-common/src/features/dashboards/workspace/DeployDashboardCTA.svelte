@@ -16,8 +16,6 @@
   import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
   import { Button } from "../../../components/button";
 
-  export let type: "primary" | "secondary" = "primary";
-
   $: deployValidation = createLocalServiceDeployValidation({
     query: {
       refetchOnWindowFocus: true,
@@ -42,8 +40,12 @@
 </script>
 
 <Tooltip distance={8}>
-  <Button on:click={onShowDeploy} {type} loading={$deployValidation.isFetching}>
-    {isDeployed ? "Redeploy" : "Deploy"}
+  <Button
+    loading={$deployValidation.isFetching}
+    on:click={onShowDeploy}
+    type="primary"
+  >
+    {isDeployed ? "Redeploy" : "Deploy to share"}
   </Button>
   <TooltipContent slot="tooltip-content">
     Deploy this dashboard to Rill Cloud
@@ -66,8 +68,8 @@
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
-          <Button type="secondary" on:click={() => (open = false)}>Back</Button>
-          <Button type="primary" on:click={onDeploy}>Continue</Button>
+          <Button on:click={() => (open = false)} type="secondary">Back</Button>
+          <Button on:click={onDeploy} type="primary">Continue</Button>
         </AlertDialogFooter>
       </div>
     </div>

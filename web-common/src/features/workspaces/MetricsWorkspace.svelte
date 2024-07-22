@@ -82,30 +82,30 @@
 
 <WorkspaceContainer inspector={isModelingSupported}>
   <WorkspaceHeader
-    slot="header"
-    showInspectorToggle={isModelingSupported}
-    titleInput={fileName}
     hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
+    showInspectorToggle={isModelingSupported}
+    slot="header"
+    titleInput={fileName}
   >
-    <div slot="cta" class="flex gap-x-2">
-      <DeployDashboardCta type="secondary" />
+    <div class="flex gap-x-2" slot="cta">
       <PreviewButton
         dashboardName={metricViewName}
-        status={previewStatus}
         disabled={previewDisabled}
+        status={previewStatus}
       />
+      <DeployDashboardCta />
     </div>
   </WorkspaceHeader>
 
   <MetricsEditor
-    slot="body"
+    {allErrors}
     bind:autoSave={$autoSave}
     {fileArtifact}
     {filePath}
-    {allErrors}
     {metricViewName}
+    slot="body"
   />
 
-  <MetricsInspector yaml={$remoteContent ?? ""} slot="inspector" />
+  <MetricsInspector slot="inspector" yaml={$remoteContent ?? ""} />
 </WorkspaceContainer>
