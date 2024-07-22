@@ -6,7 +6,7 @@
     getAdminServiceGetProjectQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import { GithubReposFetcher } from "@rilldata/web-admin/features/projects/github/GithubReposFetcher";
+  import { getGithubData } from "@rilldata/web-admin/features/projects/github/GithubData";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -32,20 +32,20 @@
   export let organization: string;
 
   let githubUrl = currentUrl;
-  const githubReposFetcher = new GithubReposFetcher();
-  const githubRepos = githubReposFetcher.userRepos;
-  const status = githubReposFetcher.status;
+  const githubData = getGithubData();
+  const userRepos = githubData.userRepos;
+  const status = githubData.status;
   const projectQuery = createAdminServiceGetProject(organization, project);
 
   $: repoSelections =
-    $githubRepos.data?.repos?.map((r) => ({
+    $userRepos.data?.repos?.map((r) => ({
       value: r.url,
       label: `${r.owner}/${r.name}`,
     })) ?? [];
 
   const updateProject = createAdminServiceUpdateProject();
   async function updateGithubUrl() {
-    const repo = $githubRepos.data?.repos?.find((r) => r.url === githubUrl);
+    const repo = $userRepos.data?.repos?.find((r) => r.url === githubUrl);
     if (!repo) return; // shouldnt happen
 
     await $updateProject.mutateAsync({
@@ -75,7 +75,7 @@
 
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
-    void githubReposFetcher.handlePageFocus();
+    void githubData.refetch();
   }
 
   $: error = ($status.error ??
@@ -125,7 +125,7 @@
           <Button
             outline={false}
             type="link"
-            on:click={() => githubReposFetcher.promptUser()}
+            on:click={() => githubData.reselectRepos()}
           >
             Choose other repos
           </Button>

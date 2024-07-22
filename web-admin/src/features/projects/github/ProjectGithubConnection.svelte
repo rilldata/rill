@@ -1,6 +1,9 @@
 <script lang="ts">
   import ConnectToGithubConfirmDialog from "@rilldata/web-admin/features/projects/github/ConnectToGithubConfirmDialog.svelte";
-  import { GithubConnector } from "@rilldata/web-admin/features/projects/github/GithubConnector";
+  import {
+    GithubData,
+    setGithubData,
+  } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
@@ -25,20 +28,12 @@
     project,
   );
 
-  let confirmDialogOpen = false;
-  let githubRepoSelectionOpen = false;
-  let connectionFailureAlertOpen = false;
+  const githubData = new GithubData();
+  setGithubData(githubData);
+  const userStatus = githubData.userStatus;
+  const repoSelectionOpen = githubData.repoSelectionOpen;
 
-  const githubConnector = new GithubConnector(
-    () => {
-      githubRepoSelectionOpen = true;
-    },
-    () => {
-      githubRepoSelectionOpen = false;
-      connectionFailureAlertOpen = true;
-    },
-  );
-  const userStatus = githubConnector.userStatus;
+  let confirmDialogOpen = false;
 
   function connectToGithub() {
     confirmDialogOpen = true;
@@ -46,18 +41,16 @@
 
   function confirmConnectToGithub() {
     confirmDialogOpen = false;
-    void githubConnector.checkConnection();
+    void githubData.startRepoSelection();
   }
 
   function editGithubConnection() {
-    // keep the github selection open while checking for user access
-    githubRepoSelectionOpen = true;
-    void githubConnector.checkConnection();
+    void githubData.startRepoSelection();
   }
 
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
-    void githubConnector.refetchStatus();
+    void githubData.refetch();
   }
 </script>
 
@@ -106,7 +99,7 @@
             </span>
           {/if}
         {:else}
-          <span>
+          <span class="mt-1">
             Unlock the power of BI-as-code with Github-backed collaboration,
             version control, and approval workflows.
           </span>
@@ -130,7 +123,7 @@
 />
 
 <GithubRepoSelectionDialog
-  bind:open={githubRepoSelectionOpen}
+  bind:open={$repoSelectionOpen}
   currentUrl={$proj.data?.project?.githubUrl}
   {organization}
   {project}
