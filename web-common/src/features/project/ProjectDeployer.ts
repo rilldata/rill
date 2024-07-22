@@ -1,7 +1,7 @@
-import { ConnectError } from "@connectrpc/connect";
+import type { ConnectError } from "@connectrpc/connect";
 import { getOrgName } from "@rilldata/web-common/features/project/getOrgName";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-import { DeployValidationResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
+import type { DeployValidationResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import {
   createLocalServiceDeploy,
   createLocalServiceDeployValidation,
@@ -10,14 +10,13 @@ import {
 import { derived, get, writable } from "svelte/store";
 
 export class ProjectDeployer {
-  public readonly validation: ReturnType<
-    typeof createLocalServiceDeployValidation
-  > = createLocalServiceDeployValidation({
+  public readonly validation = createLocalServiceDeployValidation({
     query: {
       refetchOnWindowFocus: true,
     },
   });
   public readonly validating = writable(false);
+  public readonly promptOrgSelection = writable(false);
 
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
@@ -89,6 +88,11 @@ export class ProjectDeployer {
     return true;
   }
 
+  public async checkDeployStatus() {
+    if (!get(this.validating)) return;
+    return this.deploy();
+  }
+
   public async deploy(org?: string) {
     // safeguard around deploy
     if (!(await this.validate())) return;
@@ -99,18 +103,25 @@ export class ProjectDeployer {
         projectId: validation.deployedProjectId,
         reupload: !validation.isGithubRepo,
       });
-      window.open(resp.frontendUrl + "/-/invite", "__target");
+      window.open(resp.frontendUrl + "/-/invite", "_self");
     } else {
-      org ??= validation.rillUserOrgs[0];
       if (!org) {
-        org = await getOrgName();
+        if (validation.rillUserOrgs.length === 1) {
+          org = validation.rillUserOrgs[0];
+        } else if (validation.rillUserOrgs.length > 1) {
+          this.promptOrgSelection.set(true);
+          return;
+        } else {
+          org = await getOrgName();
+        }
       }
+
       const resp = await get(this.deployMutation).mutateAsync({
         projectName: validation.localProjectName,
-        org: org ?? validation.rillUserOrgs[0],
+        org,
         upload: !validation.isGithubRepo,
       });
-      window.open(resp.frontendUrl + "/-/invite", "__target");
+      window.open(resp.frontendUrl + "/-/invite", "_self");
     }
   }
 }

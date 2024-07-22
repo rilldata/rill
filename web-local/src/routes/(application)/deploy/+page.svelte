@@ -2,10 +2,7 @@
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import OrgSelectorDialog from "@rilldata/web-common/features/project/OrgSelectorDialog.svelte";
   import { ProjectDeployer } from "@rilldata/web-common/features/project/ProjectDeployer";
-  import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
-  import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
   import { onMount } from "svelte";
-  import { get } from "svelte/store";
   import CTAContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
   import CTALayoutContainer from "@rilldata/web-common/components/calls-to-action/CTALayoutContainer.svelte";
   import CTAHeader from "@rilldata/web-common/components/calls-to-action/CTAHeader.svelte";
@@ -14,35 +11,14 @@
   import CTAButton from "@rilldata/web-common/components/calls-to-action/CTAButton.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
 
-  $: deployValidation = createLocalServiceDeployValidation({
-    query: {
-      refetchOnWindowFocus: true,
-    },
-  });
   const deployer = new ProjectDeployer();
+  const deployValidation = deployer.validation;
   const deployerStatus = deployer.getStatus();
-
-  let orgSelectorOpen = false;
-
-  async function onDeploy() {
-    await waitUntil(() => !get(deployValidation).isLoading);
-    if (!(await deployer.validate())) return;
-    if (
-      $deployValidation.data?.rillUserOrgs?.length &&
-      $deployValidation.data?.rillUserOrgs?.length > 1
-    ) {
-      orgSelectorOpen = true;
-      return;
-    }
-
-    await deployer.deploy();
-  }
+  const promptOrgSelection = deployer.promptOrgSelection;
 
   function handleVisibilityChange() {
-    if (document.visibilityState !== "visible" || !get(deployer.validating))
-      return;
-    // wait for deployValidation's refetchOnWindowFocus to trigger
-    setTimeout(() => onDeploy(), 0);
+    if (document.visibilityState !== "visible") return;
+    void deployer.checkDeployStatus();
   }
 
   function onContactUs() {
@@ -50,7 +26,7 @@
   }
 
   onMount(() => {
-    void onDeploy();
+    void deployer.deploy();
   });
 </script>
 
@@ -80,7 +56,7 @@
 </CTAContentContainer>
 
 <OrgSelectorDialog
-  bind:open={orgSelectorOpen}
+  bind:open={$promptOrgSelection}
   orgs={$deployValidation.data?.rillUserOrgs ?? []}
   onSelect={(org) => deployer.deploy(org)}
 />

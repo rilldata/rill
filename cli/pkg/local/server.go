@@ -31,6 +31,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -566,6 +567,27 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 
 	err = dotrillcloud.SetAll(s.app.ProjectPath, s.app.adminURL, &dotrillcloud.Config{
 		ProjectID: projResp.Project.Id,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	// Parse .env and push it as variables
+	repo, instanceID, err := cmdutil.RepoForProjectPath(s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project: %w", err)
+	}
+	if parser.RillYAML == nil {
+		return nil, fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
+	}
+	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		OrganizationName: r.Msg.Org,
+		Name:             r.Msg.ProjectName,
+		Variables:        parser.DotEnv,
 	})
 	if err != nil {
 		return nil, err
