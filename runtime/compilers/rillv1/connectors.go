@@ -153,7 +153,6 @@ func (a *connectorAnalyzer) analyzeModel(ctx context.Context, r *Resource) {
 	// Track the input connector
 	a.trackConnector(spec.InputConnector, r, anonAccess)
 
-	// Prep for analyzing StageConnector
 	if spec.StageConnector != "" {
 		// Track the staging connector
 		// We need write access to the stage connector so tracking without analysis

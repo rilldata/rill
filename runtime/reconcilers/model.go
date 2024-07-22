@@ -23,7 +23,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultModelTimeout = 15 * time.Minute
+const _defaultModelTimeout = 60 * time.Minute
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -702,7 +702,7 @@ func (r *ModelReconciler) executeWithStage(ctx context.Context, stageConnector s
 		}
 		defer rr()
 		if mm, ok := rc.AsModelManager(r.C.InstanceID); ok {
-			// May block reconcile. May be add a timeout and run in background ?
+			// This is done in same context. Can leak stage data in case of ctx cancellations.
 			err = mm.Delete(ctx, res)
 			if err != nil {
 				r.C.Logger.Warn("failed to clean up stage output", zap.Error(err))
