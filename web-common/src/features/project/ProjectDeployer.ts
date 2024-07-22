@@ -99,7 +99,7 @@ export class ProjectDeployer {
         projectId: validation.deployedProjectId,
         reupload: !validation.isGithubRepo,
       });
-      window.open(resp.frontendUrl, "__target");
+      window.open(resp.frontendUrl + "/-/invite", "__target");
     } else {
       org ??= validation.rillUserOrgs[0];
       if (!org) {
@@ -110,7 +110,7 @@ export class ProjectDeployer {
         org: org ?? validation.rillUserOrgs[0],
         upload: !validation.isGithubRepo,
       });
-      window.open(resp.frontendUrl, "__target");
+      window.open(resp.frontendUrl + "/-/invite", "__target");
     }
   }
 }
