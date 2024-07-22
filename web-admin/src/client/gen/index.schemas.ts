@@ -1283,4 +1283,5 @@ export interface ListGithubUserReposResponseRepo {
   owner?: string;
   description?: string;
   url?: string;
+  defaultBranch?: string;
 }

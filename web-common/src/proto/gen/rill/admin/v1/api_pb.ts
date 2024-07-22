@@ -7307,6 +7307,11 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
    */
   url = "";
 
+  /**
+   * @generated from field: string default_branch = 5;
+   */
+  defaultBranch = "";
+
   constructor(data?: PartialMessage<ListGithubUserReposResponse_Repo>) {
     super();
     proto3.util.initPartial(data, this);
@@ -7319,6 +7324,7 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
     { no: 2, name: "owner", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "description", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "default_branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ListGithubUserReposResponse_Repo {

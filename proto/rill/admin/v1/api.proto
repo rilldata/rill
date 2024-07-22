@@ -1571,6 +1571,7 @@ message ListGithubUserReposResponse {
     string owner = 2;
     string description = 3;
     string url = 4;
+    string default_branch = 5;
   }
   repeated Repo repos = 1;
 }

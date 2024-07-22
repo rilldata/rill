@@ -836,11 +836,18 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 			if repo.Owner != nil {
 				owner = fromStringPtr(repo.Owner.Login)
 			}
+			var branch string
+			if repo.DefaultBranch != nil {
+				branch = fromStringPtr(repo.DefaultBranch)
+			} else {
+				branch = fromStringPtr(repo.MasterBranch)
+			}
 			repos = append(repos, &adminv1.ListGithubUserReposResponse_Repo{
-				Name:        fromStringPtr(repo.Name),
-				Owner:       owner,
-				Description: fromStringPtr(repo.Description),
-				Url:         fromStringPtr(repo.HTMLURL),
+				Name:          fromStringPtr(repo.Name),
+				Owner:         owner,
+				Description:   fromStringPtr(repo.Description),
+				Url:           fromStringPtr(repo.HTMLURL),
+				DefaultBranch: branch,
 			})
 		}
 

@@ -6,7 +6,7 @@
     getAdminServiceGetProjectQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
-  import { GithubReposConnection } from "@rilldata/web-admin/features/projects/github/GithubReposConnection";
+  import { GithubReposFetcher } from "@rilldata/web-admin/features/projects/github/GithubReposFetcher";
   import {
     AlertDialog,
     AlertDialogContent,
@@ -32,9 +32,9 @@
   export let organization: string;
 
   let githubUrl = currentUrl;
-  const githubReposConnection = new GithubReposConnection();
-  const githubRepos = githubReposConnection.userRepos;
-  const status = githubReposConnection.status;
+  const githubReposFetcher = new GithubReposFetcher();
+  const githubRepos = githubReposFetcher.userRepos;
+  const status = githubReposFetcher.status;
   const projectQuery = createAdminServiceGetProject(organization, project);
 
   $: repoSelections =
@@ -45,11 +45,15 @@
 
   const updateProject = createAdminServiceUpdateProject();
   async function updateGithubUrl() {
+    const repo = $githubRepos.data?.repos?.find((r) => r.url === githubUrl);
+    if (!repo) return; // shouldnt happen
+
     await $updateProject.mutateAsync({
       name: project,
       organizationName: organization,
       data: {
         githubUrl,
+        prodBranch: repo.defaultBranch,
       },
     });
     eventBus.emit("notification", {
@@ -71,7 +75,7 @@
 
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
-    void githubReposConnection.refetch();
+    void githubReposFetcher.handlePageFocus();
   }
 
   $: error = ($status.error ??
@@ -121,7 +125,7 @@
           <Button
             outline={false}
             type="link"
-            on:click={() => githubReposConnection.check()}
+            on:click={() => githubReposFetcher.promptUser()}
           >
             Choose other repos
           </Button>

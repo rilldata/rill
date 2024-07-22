@@ -9,7 +9,7 @@ import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryCl
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { derived, get } from "svelte/store";
 
-export class GithubReposConnection {
+export class GithubReposFetcher {
   public readonly userStatus = createAdminServiceGetGithubUserStatus();
   public readonly userRepos = derived([this.userStatus], ([userStatus], set) =>
     createAdminServiceListGithubUserRepos({
@@ -42,24 +42,28 @@ export class GithubReposConnection {
     },
   );
 
-  private connecting: boolean;
+  private promptingUser: boolean;
 
   public constructor() {}
 
-  public async check() {
-    this.connecting = false;
+  public async promptUser() {
     await waitUntil(() => !get(this.userStatus).isLoading);
     const userStatus = get(this.userStatus).data;
 
-    this.connecting = true;
+    this.promptingUser = true;
     window.open(userStatus.grantAccessUrl, "_blank");
   }
 
-  public async refetch() {
-    if (!this.connecting) return;
+  /**
+   * Called when page is back in focus.
+   * If it happens just after selecting new list of repos (triggered in {@link promptUser}),
+   * then we refetch the repos query to get the latest list.
+   */
+  public async handlePageFocus() {
+    if (!this.promptingUser) return;
+    this.promptingUser = false;
     await queryClient.refetchQueries(
       getAdminServiceListGithubUserReposQueryKey(),
     );
-    this.connecting = false;
   }
 }

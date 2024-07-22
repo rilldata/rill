@@ -32147,6 +32147,8 @@ func (m *ListGithubUserReposResponse_Repo) validate(all bool) error {
 
 	// no validation rules for Url
 
+	// no validation rules for DefaultBranch
+
 	if len(errors) > 0 {
 		return ListGithubUserReposResponse_RepoMultiError(errors)
 	}

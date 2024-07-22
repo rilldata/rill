@@ -1,6 +1,6 @@
 <script lang="ts">
   import ConnectToGithubConfirmDialog from "@rilldata/web-admin/features/projects/github/ConnectToGithubConfirmDialog.svelte";
-  import { GithubConnection } from "@rilldata/web-admin/features/projects/github/GithubConnection";
+  import { GithubConnector } from "@rilldata/web-admin/features/projects/github/GithubConnector";
   import GithubRepoSelectionDialog from "@rilldata/web-admin/features/projects/github/GithubRepoSelectionDialog.svelte";
   import { Button } from "@rilldata/web-common/components/button";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
@@ -26,12 +26,19 @@
   );
 
   let confirmDialogOpen = false;
-  let githubSelectionOpen = false;
+  let githubRepoSelectionOpen = false;
+  let connectionFailureAlertOpen = false;
 
-  const githubConnection = new GithubConnection(() => {
-    githubSelectionOpen = true;
-  });
-  const userStatus = githubConnection.userStatus;
+  const githubConnector = new GithubConnector(
+    () => {
+      githubRepoSelectionOpen = true;
+    },
+    () => {
+      githubRepoSelectionOpen = false;
+      connectionFailureAlertOpen = true;
+    },
+  );
+  const userStatus = githubConnector.userStatus;
 
   function connectToGithub() {
     confirmDialogOpen = true;
@@ -39,18 +46,18 @@
 
   function confirmConnectToGithub() {
     confirmDialogOpen = false;
-    void githubConnection.check();
+    void githubConnector.checkConnection();
   }
 
   function editGithubConnection() {
     // keep the github selection open while checking for user access
-    githubSelectionOpen = true;
-    void githubConnection.check();
+    githubRepoSelectionOpen = true;
+    void githubConnector.checkConnection();
   }
 
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
-    void githubConnection.refetch();
+    void githubConnector.refetchStatus();
   }
 </script>
 
@@ -123,7 +130,7 @@
 />
 
 <GithubRepoSelectionDialog
-  bind:open={githubSelectionOpen}
+  bind:open={githubRepoSelectionOpen}
   currentUrl={$proj.data?.project?.githubUrl}
   {organization}
   {project}

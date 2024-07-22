@@ -3175,6 +3175,8 @@ definitions:
         type: string
       url:
         type: string
+      defaultBranch:
+        type: string
   protobufAny:
     type: object
     properties:
