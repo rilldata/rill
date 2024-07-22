@@ -769,6 +769,21 @@ export class ModelSpec extends Message<ModelSpec> {
   incrementalStateResolverProperties?: Struct;
 
   /**
+   * @generated from field: string splits_resolver = 18;
+   */
+  splitsResolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct splits_resolver_properties = 19;
+   */
+  splitsResolverProperties?: Struct;
+
+  /**
+   * @generated from field: uint32 splits_concurrency_limit = 20;
+   */
+  splitsConcurrencyLimit = 0;
+
+  /**
    * @generated from field: string input_connector = 10;
    */
   inputConnector = "";
@@ -806,6 +821,9 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 13, name: "incremental", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 14, name: "incremental_state_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 15, name: "incremental_state_resolver_properties", kind: "message", T: Struct },
+    { no: 18, name: "splits_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 19, name: "splits_resolver_properties", kind: "message", T: Struct },
+    { no: 20, name: "splits_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
@@ -879,6 +897,16 @@ export class ModelState extends Message<ModelState> {
    */
   incrementalStateSchema?: StructType;
 
+  /**
+   * @generated from field: string model_id = 10;
+   */
+  modelId = "";
+
+  /**
+   * @generated from field: uint32 splits_count = 11;
+   */
+  splitsCount = 0;
+
   constructor(data?: PartialMessage<ModelState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -896,6 +924,8 @@ export class ModelState extends Message<ModelState> {
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
+    { no: 10, name: "model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 11, name: "splits_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {

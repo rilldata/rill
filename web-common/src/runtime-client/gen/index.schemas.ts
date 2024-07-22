@@ -534,12 +534,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -567,6 +561,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -665,11 +665,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -681,6 +676,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -1047,6 +1047,8 @@ export interface V1ModelState {
   refreshedOn?: string;
   incrementalState?: V1ModelStateIncrementalState;
   incrementalStateSchema?: V1StructType;
+  modelId?: string;
+  splitsCount?: number;
 }
 
 export interface V1ModelV2 {
@@ -1058,6 +1060,8 @@ export type V1ModelSpecOutputProperties = { [key: string]: any };
 
 export type V1ModelSpecInputProperties = { [key: string]: any };
 
+export type V1ModelSpecSplitsResolverProperties = { [key: string]: any };
+
 export type V1ModelSpecIncrementalStateResolverProperties = {
   [key: string]: any;
 };
@@ -1068,6 +1072,9 @@ export interface V1ModelSpec {
   incremental?: boolean;
   incrementalStateResolver?: string;
   incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
+  splitsResolver?: string;
+  splitsResolverProperties?: V1ModelSpecSplitsResolverProperties;
+  splitsConcurrencyLimit?: number;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
   outputConnector?: string;

@@ -110,6 +110,9 @@ message ModelSpec {
   bool incremental = 13;
   string incremental_state_resolver = 14;
   google.protobuf.Struct incremental_state_resolver_properties = 15;
+  string splits_resolver = 18;
+  google.protobuf.Struct splits_resolver_properties = 19;
+  uint32 splits_concurrency_limit = 20;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
   string output_connector = 1;
@@ -128,6 +131,8 @@ message ModelState {
   google.protobuf.Timestamp refreshed_on = 4;
   google.protobuf.Struct incremental_state = 7;
   StructType incremental_state_schema = 8;
+  string model_id = 10;
+  uint32 splits_count = 11;
 }
 
 message MetricsViewV2 {

@@ -4768,6 +4768,13 @@ definitions:
         type: string
       incrementalStateResolverProperties:
         type: object
+      splitsResolver:
+        type: string
+      splitsResolverProperties:
+        type: object
+      splitsConcurrencyLimit:
+        type: integer
+        format: int64
       inputConnector:
         type: string
       inputProperties:
@@ -4800,6 +4807,11 @@ definitions:
         type: object
       incrementalStateSchema:
         $ref: '#/definitions/v1StructType'
+      modelId:
+        type: string
+      splitsCount:
+        type: integer
+        format: int64
   v1ModelV2:
     type: object
     properties:
