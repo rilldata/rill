@@ -88,6 +88,7 @@
       comparisonOption === TimeComparisonOption.CUSTOM && showComparison
     );
   }}
+  typeahead={!showSelector}
 >
   <DropdownMenu.Trigger asChild let:builder>
     <button
