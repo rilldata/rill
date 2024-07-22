@@ -784,7 +784,8 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 			ProjectID: proj.ID,
 			RoleID:    role.ID,
 		})
-		if err != nil {
+		// continue sending an email if an invitation entry already exists
+		if err != nil && !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
@@ -809,7 +810,8 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	}
 
 	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
-	if err != nil {
+	// continue sending an email if the user already exists
+	if err != nil && !errors.Is(err, database.ErrNotUnique) {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
