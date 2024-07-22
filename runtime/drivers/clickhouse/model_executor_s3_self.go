@@ -44,10 +44,17 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, e
 	if err := mapstructure.Decode(props, &propsMap); err != nil {
 		return nil, err
 	}
-	// May be its not safe to update input props ?
-	e.opts.InputProperties = propsMap
-
-	executor := &selfToSelfExecutor{c: e.c, opts: e.opts}
+	// Build the model executor options with updated input properties
+	opts := &drivers.ModelExecutorOptions{
+		Env:              e.opts.Env,
+		ModelName:        e.opts.ModelName,
+		InputConnector:   e.opts.InputConnector,
+		InputProperties:  propsMap,
+		OutputConnector:  e.opts.OutputConnector,
+		OutputProperties: e.opts.OutputProperties,
+		Priority:         e.opts.Priority,
+	}
+	executor := &selfToSelfExecutor{c: e.c, opts: opts}
 	return executor.Execute(ctx)
 }
 
