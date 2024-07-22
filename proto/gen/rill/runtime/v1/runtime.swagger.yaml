@@ -3524,11 +3524,20 @@ definitions:
       input:
         type: array
         items:
-          type: string
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
       output:
-        type: string
+        $ref: '#/definitions/v1ComponentVariable'
   v1ComponentState:
     type: object
+  v1ComponentVariable:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      defaultValue: {}
   v1Condition:
     type: object
     properties:
@@ -3724,18 +3733,9 @@ definitions:
         type: array
         items:
           type: object
-          $ref: '#/definitions/v1DashboardVariable'
+          $ref: '#/definitions/v1ComponentVariable'
   v1DashboardState:
     type: object
-  v1DashboardVariable:
-    type: object
-    properties:
-      name:
-        type: string
-      type:
-        type: string
-      value:
-        type: string
   v1DeleteFileResponse:
     type: object
     title: Response message for RuntimeService.DeleteFile

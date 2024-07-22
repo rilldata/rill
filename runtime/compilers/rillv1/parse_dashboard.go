@@ -10,16 +10,12 @@ import (
 )
 
 type DashboardYAML struct {
-	commonYAML `yaml:",inline"` // Not accessed here, only setting it so we can use KnownFields for YAML parsing
-	Title      string           `yaml:"title"`
-	Columns    uint32           `yaml:"columns"`
-	Gap        uint32           `yaml:"gap"`
-	Variables  []*struct {
-		Name  string `yaml:"name"`
-		Type  string `yaml:"type"`
-		Value string `yaml:"value"`
-	} `yaml:"variables"`
-	Items []*struct {
+	commonYAML `yaml:",inline"`         // Not accessed here, only setting it so we can use KnownFields for YAML parsing
+	Title      string                   `yaml:"title"`
+	Columns    uint32                   `yaml:"columns"`
+	Gap        uint32                   `yaml:"gap"`
+	Variables  []*ComponentVariableYAML `yaml:"variables"`
+	Items      []*struct {
 		Component yaml.Node `yaml:"component"` // Can be a name (string) or inline component definition (map)
 		X         *uint32   `yaml:"x"`
 		Y         *uint32   `yaml:"y"`
@@ -42,6 +38,15 @@ func (p *Parser) parseDashboard(node *Node) error {
 	}
 	if !node.ConnectorInferred && node.Connector != "" {
 		return fmt.Errorf("dashboards cannot have a connector")
+	}
+
+	// Parse variable definitions.
+	variables := make([]*runtimev1.ComponentVariable, len(tmp.Variables))
+	for i, v := range tmp.Variables {
+		variables[i], err = v.Proto()
+		if err != nil {
+			return fmt.Errorf("invalid variable at index %d: %w", i, err)
+		}
 	}
 
 	// Parse items.
@@ -75,18 +80,6 @@ func (p *Parser) parseDashboard(node *Node) error {
 		node.Refs = append(node.Refs, ResourceName{Kind: ResourceKindComponent, Name: component})
 	}
 
-	variables := make([]*runtimev1.DashboardVariable, len(tmp.Variables))
-	for i, v := range tmp.Variables {
-		if v == nil {
-			return fmt.Errorf("item at index %d is nil", i)
-		}
-		variables[i] = &runtimev1.DashboardVariable{
-			Name:  v.Name,
-			Type:  v.Type,
-			Value: v.Value,
-		}
-	}
-
 	// Track dashboard
 	r, err := p.insertResource(ResourceKindDashboard, node.Name, node.Paths, node.Refs...)
 	if err != nil {
@@ -97,8 +90,8 @@ func (p *Parser) parseDashboard(node *Node) error {
 	r.DashboardSpec.Title = tmp.Title
 	r.DashboardSpec.Columns = tmp.Columns
 	r.DashboardSpec.Gap = tmp.Gap
-	r.DashboardSpec.Items = items
 	r.DashboardSpec.Variables = variables
+	r.DashboardSpec.Items = items
 
 	// Track inline components
 	for _, def := range inlineComponentDefs {

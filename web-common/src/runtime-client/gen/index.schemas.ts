@@ -1646,12 +1646,6 @@ export interface V1DeleteFileResponse {
   [key: string]: any;
 }
 
-export interface V1DashboardVariable {
-  name: string;
-  type?: string;
-  value?: string;
-}
-
 export interface V1DashboardState {
   [key: string]: any;
 }
@@ -1670,7 +1664,7 @@ export interface V1DashboardSpec {
   columns?: number;
   gap?: number;
   items?: V1DashboardItem[];
-  variables?: V1DashboardVariable[];
+  variables?: V1ComponentVariable[];
 }
 
 export interface V1Dashboard {
@@ -1775,6 +1769,12 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
+export interface V1ComponentVariable {
+  name?: string;
+  type?: string;
+  defaultValue?: unknown;
+}
+
 export interface V1ComponentState {
   [key: string]: any;
 }
@@ -1791,8 +1791,8 @@ export interface V1ComponentSpec {
   rendererProperties?: V1ComponentSpecRendererProperties;
   definedInDashboard?: boolean;
   subtitle?: string;
-  input?: string[];
-  output?: string;
+  input?: V1ComponentVariable[];
+  output?: V1ComponentVariable;
 }
 
 export interface V1Component {

@@ -467,11 +467,17 @@ message ComponentSpec {
   google.protobuf.Struct renderer_properties = 5;
   bool defined_in_dashboard = 6;
   string subtitle = 7;
-  repeated string input = 8;
-  string output = 9;
+  repeated ComponentVariable input = 8;
+  ComponentVariable output = 9;
 }
 
 message ComponentState {}
+
+message ComponentVariable {
+  string name = 1;
+  string type = 2;
+  google.protobuf.Value default_value = 3;
+}
 
 message Dashboard {
   DashboardSpec spec = 1;
@@ -482,8 +488,8 @@ message DashboardSpec {
   string title = 1;
   uint32 columns = 2;
   uint32 gap = 3;
+  repeated ComponentVariable variables = 5;
   repeated DashboardItem items = 4;
-  repeated DashboardVariable variables = 5;
 }
 
 message DashboardState {}
@@ -495,12 +501,6 @@ message DashboardItem {
   optional uint32 y = 3;
   optional uint32 width = 4;
   optional uint32 height = 5;
-}
-
-message DashboardVariable {
-  string name = 1;
-  string type = 2;
-  string value = 3;
 }
 
 // API defines a custom operation for querying data stored in Rill.
