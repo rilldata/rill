@@ -21,6 +21,7 @@
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -38,9 +39,9 @@
     fileName,
   } = fileArtifact);
 
-  $: metricViewName = getNameFromFile(filePath);
+  $: metricsViewName = getNameFromFile(filePath);
 
-  $: initLocalUserPreferenceStore(metricViewName);
+  $: initLocalUserPreferenceStore(metricsViewName);
   $: isModelingSupportedQuery = canModel(instanceId);
   $: isModelingSupported = $isModelingSupportedQuery;
 
@@ -84,7 +85,9 @@
   }
 </script>
 
-<WorkspaceContainer inspector={isModelingSupported}>
+<MetricsTable {metricsViewName} />
+
+<!-- <WorkspaceContainer inspector={isModelingSupported}>
   <WorkspaceHeader
     slot="header"
     showInspectorToggle={isModelingSupported}
@@ -119,7 +122,7 @@
   />
 
   <MetricsInspector yaml={$remoteContent ?? ""} slot="inspector" />
-</WorkspaceContainer>
+</WorkspaceContainer> -->
 
 <DeployDashboardCta
   on:close={() => (showDeployModal = false)}
