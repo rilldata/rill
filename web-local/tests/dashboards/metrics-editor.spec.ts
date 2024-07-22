@@ -61,7 +61,7 @@ test.describe("Metrics editor", () => {
 
     // double-check that leaderboards make sense.
     await expect(
-      page.getByRole("button", { name: "google.com 15.1k" }),
+      page.getByRole("row", { name: "google.com 15.1k" }),
     ).toBeVisible();
 
     // go back to the metrics page.

@@ -86,7 +86,7 @@ export function mapComparisonTimeRange(
   if (
     !timeRange ||
     dashboardState.selectedComparisonDimension ||
-    !timeControlState.showComparison ||
+    !timeControlState.showTimeComparison ||
     !timeControlState.selectedComparisonTimeRange?.name
   ) {
     return undefined;

@@ -5289,6 +5289,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for GithubUrl
 	}
 
+	if m.Subpath != nil {
+		// no validation rules for Subpath
+	}
+
 	if m.ArchiveAssetId != nil {
 		// no validation rules for ArchiveAssetId
 	}
@@ -10476,6 +10480,220 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = SudoUpdateAnnotationsResponseValidationError{}
+
+// Validate checks the field values on SudoIssueRuntimeManagerTokenRequest with
+// the rules defined in the proto definition for this message. If any rules
+// are violated, the first error encountered is returned, or nil if there are
+// no violations.
+func (m *SudoIssueRuntimeManagerTokenRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoIssueRuntimeManagerTokenRequest
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// SudoIssueRuntimeManagerTokenRequestMultiError, or nil if none found.
+func (m *SudoIssueRuntimeManagerTokenRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoIssueRuntimeManagerTokenRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Host
+
+	if len(errors) > 0 {
+		return SudoIssueRuntimeManagerTokenRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoIssueRuntimeManagerTokenRequestMultiError is an error wrapping multiple
+// validation errors returned by
+// SudoIssueRuntimeManagerTokenRequest.ValidateAll() if the designated
+// constraints aren't met.
+type SudoIssueRuntimeManagerTokenRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoIssueRuntimeManagerTokenRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoIssueRuntimeManagerTokenRequestMultiError) AllErrors() []error { return m }
+
+// SudoIssueRuntimeManagerTokenRequestValidationError is the validation error
+// returned by SudoIssueRuntimeManagerTokenRequest.Validate if the designated
+// constraints aren't met.
+type SudoIssueRuntimeManagerTokenRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoIssueRuntimeManagerTokenRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoIssueRuntimeManagerTokenRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoIssueRuntimeManagerTokenRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoIssueRuntimeManagerTokenRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoIssueRuntimeManagerTokenRequestValidationError) ErrorName() string {
+	return "SudoIssueRuntimeManagerTokenRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoIssueRuntimeManagerTokenRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoIssueRuntimeManagerTokenRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoIssueRuntimeManagerTokenRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoIssueRuntimeManagerTokenRequestValidationError{}
+
+// Validate checks the field values on SudoIssueRuntimeManagerTokenResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the first error encountered is returned, or nil if
+// there are no violations.
+func (m *SudoIssueRuntimeManagerTokenResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on SudoIssueRuntimeManagerTokenResponse
+// with the rules defined in the proto definition for this message. If any
+// rules are violated, the result is a list of violation errors wrapped in
+// SudoIssueRuntimeManagerTokenResponseMultiError, or nil if none found.
+func (m *SudoIssueRuntimeManagerTokenResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *SudoIssueRuntimeManagerTokenResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Token
+
+	if len(errors) > 0 {
+		return SudoIssueRuntimeManagerTokenResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// SudoIssueRuntimeManagerTokenResponseMultiError is an error wrapping multiple
+// validation errors returned by
+// SudoIssueRuntimeManagerTokenResponse.ValidateAll() if the designated
+// constraints aren't met.
+type SudoIssueRuntimeManagerTokenResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m SudoIssueRuntimeManagerTokenResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m SudoIssueRuntimeManagerTokenResponseMultiError) AllErrors() []error { return m }
+
+// SudoIssueRuntimeManagerTokenResponseValidationError is the validation error
+// returned by SudoIssueRuntimeManagerTokenResponse.Validate if the designated
+// constraints aren't met.
+type SudoIssueRuntimeManagerTokenResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e SudoIssueRuntimeManagerTokenResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e SudoIssueRuntimeManagerTokenResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e SudoIssueRuntimeManagerTokenResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e SudoIssueRuntimeManagerTokenResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e SudoIssueRuntimeManagerTokenResponseValidationError) ErrorName() string {
+	return "SudoIssueRuntimeManagerTokenResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e SudoIssueRuntimeManagerTokenResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sSudoIssueRuntimeManagerTokenResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = SudoIssueRuntimeManagerTokenResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = SudoIssueRuntimeManagerTokenResponseValidationError{}
 
 // Validate checks the field values on ListProjectMemberUsersRequest with the
 // rules defined in the proto definition for this message. If any rules are

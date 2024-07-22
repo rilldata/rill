@@ -72,10 +72,6 @@ web-common/src/features/dashboards/stores/dashboard-stores.ts: error TS2345
 web-common/src/features/dashboards/time-controls/time-control-store.spec.ts: error TS18048
 web-common/src/features/dashboards/time-controls/time-control-store.spec.ts: error TS2322
 web-common/src/features/dashboards/time-controls/time-control-store.spec.ts: error TS2345
-web-common/src/features/dashboards/time-controls/time-control-store.ts: error TS18048
-web-common/src/features/dashboards/time-controls/time-control-store.ts: error TS2322
-web-common/src/features/dashboards/time-controls/time-control-store.ts: error TS2345
-web-common/src/features/dashboards/time-controls/time-control-store.ts: error TS2769
 web-common/src/features/dashboards/time-controls/time-range-store.ts: error TS18048
 web-common/src/features/dashboards/time-controls/time-range-utils.ts: error TS2322
 web-common/src/features/dashboards/time-series/multiple-dimension-queries.ts: error TS18048

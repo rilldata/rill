@@ -449,6 +449,14 @@ service AdminService {
     };
   }
 
+  // SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+  rpc SudoIssueRuntimeManagerToken(SudoIssueRuntimeManagerTokenRequest) returns (SudoIssueRuntimeManagerTokenResponse) {
+    option (google.api.http) = {
+      post: "/v1/superuser/deployments/manager-token",
+      body: "*"
+    };
+  }
+
   // CreateProjectWhitelistedDomain adds a domain to the project's whitelisted
   rpc CreateProjectWhitelistedDomain(CreateProjectWhitelistedDomainRequest) returns (CreateProjectWhitelistedDomainResponse) {
     option (google.api.http) = {
@@ -984,6 +992,7 @@ message UpdateProjectRequest {
   optional bool public = 4;
   optional string prod_branch = 5;
   optional string github_url = 6;
+  optional string subpath = 13;
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
   optional string provisioner = 8;
@@ -1177,6 +1186,14 @@ message SudoUpdateAnnotationsRequest {
 
 message SudoUpdateAnnotationsResponse {
   Project project = 1;
+}
+
+message SudoIssueRuntimeManagerTokenRequest {
+  string host = 1;
+}
+
+message SudoIssueRuntimeManagerTokenResponse {
+  string token = 1;
 }
 
 message ListProjectMemberUsersRequest {
