@@ -140,6 +140,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 
 	impactsDeployments := (requiresReset ||
 		(proj.Name != opts.Name) ||
+		(proj.Subpath != opts.Subpath) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
 		!reflect.DeepEqual(proj.Annotations, opts.Annotations) ||
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
@@ -348,7 +349,7 @@ func (s *Service) TriggerReconcile(ctx context.Context, depl *database.Deploymen
 		}
 	}()
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return err
 	}
@@ -380,7 +381,7 @@ func (s *Service) TriggerRefreshSources(ctx context.Context, depl *database.Depl
 		names = append(names, &runtimev1.ResourceName{Name: source})
 	}
 
-	rt, err := s.openRuntimeClientForDeployment(depl)
+	rt, err := s.OpenRuntimeClient(depl)
 	if err != nil {
 		return err
 	}

@@ -677,6 +677,8 @@ message ConnectorDriver {
     string placeholder = 9;
     // If true, the property is a secret and should not be displayed in UIs
     bool secret = 10;
+    // If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+    bool no_prompt = 11;
   }
   // Name is the name of the connector
   string name = 1;

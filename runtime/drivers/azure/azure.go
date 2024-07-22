@@ -86,6 +86,7 @@ type configProperties struct {
 	SASToken         string `mapstructure:"azure_storage_sas_token"`
 	ConnectionString string `mapstructure:"azure_storage_connection_string"`
 	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
+	TempDir          string `mapstructure:"temp_dir"`
 }
 
 func (d driver) Open(instanceID string, config map[string]any, client *activity.Client, logger *zap.Logger) (drivers.Handle, error) {
@@ -281,6 +282,7 @@ func (c *Connection) DownloadFiles(ctx context.Context, props map[string]any) (d
 		ExtractPolicy:         conf.extractPolicy,
 		BatchSizeBytes:        int64(batchSize.Bytes()),
 		KeepFilesUntilClose:   conf.BatchSize == "-1",
+		TempDir:               c.config.TempDir,
 	}
 
 	iter, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)

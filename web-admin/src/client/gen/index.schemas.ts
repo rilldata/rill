@@ -81,6 +81,7 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  subpath?: string;
   archiveAssetId?: string;
   prodSlots?: string;
   provisioner?: string;
@@ -458,6 +459,14 @@ export interface V1SudoUpdateAnnotationsRequest {
   organization?: string;
   project?: string;
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenResponse {
+  token?: string;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenRequest {
+  host?: string;
 }
 
 export interface V1SudoGetResourceResponse {

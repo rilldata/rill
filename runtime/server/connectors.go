@@ -201,6 +201,7 @@ func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriv
 		Default:     spec.Default,
 		Placeholder: spec.Placeholder,
 		Secret:      spec.Secret,
+		NoPrompt:    spec.NoPrompt,
 	}
 }
 
