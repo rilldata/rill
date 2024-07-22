@@ -146,7 +146,20 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 	var deployedProjectID string
 	if rc != nil {
 		deployedProjectID = rc.ProjectID
-		// TODO: make sure the project exists
+
+		_, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+			Id: deployedProjectID,
+		})
+		if err != nil {
+			// unset if project doesnt exist
+			if errors.Is(err, database.ErrNotFound) {
+				err = dotrillcloud.Delete(s.app.ProjectPath, s.app.adminURL)
+				if err != nil {
+					return nil, err
+				}
+			}
+			deployedProjectID = ""
+		}
 	}
 
 	// get rill user orgs
