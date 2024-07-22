@@ -141,9 +141,13 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 	}
 
 	// Parse the output variable
-	output, err := tmp.Output.Proto()
-	if err != nil {
-		return nil, nil, fmt.Errorf("invalid output variable: %w", err)
+	var output *runtimev1.ComponentVariable
+	if tmp.Output != nil {
+		var err error
+		output, err = tmp.Output.Proto()
+		if err != nil {
+			return nil, nil, fmt.Errorf("invalid output variable: %w", err)
+		}
 	}
 
 	// Create the component spec
