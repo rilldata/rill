@@ -103,7 +103,7 @@ export class ProjectDeployer {
         projectId: validation.deployedProjectId,
         reupload: !validation.isGithubRepo,
       });
-      window.open(resp.frontendUrl + "/-/invite", "_self");
+      window.open(resp.frontendUrl, "_self");
     } else {
       if (!org) {
         if (validation.rillUserOrgs.length === 1) {
@@ -119,7 +119,7 @@ export class ProjectDeployer {
       const resp = await get(this.deployMutation).mutateAsync({
         projectName: validation.localProjectName,
         org,
-        upload: !validation.isGithubRepo,
+        upload: true, // hardcoded to upload for now
       });
       window.open(resp.frontendUrl + "/-/invite", "_self");
     }

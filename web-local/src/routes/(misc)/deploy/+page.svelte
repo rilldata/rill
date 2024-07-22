@@ -1,6 +1,6 @@
 <script lang="ts">
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
-  import OrgSelectorDialog from "@rilldata/web-common/features/project/OrgSelectorDialog.svelte";
+  import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
   import { ProjectDeployer } from "@rilldata/web-common/features/project/ProjectDeployer";
   import { onMount } from "svelte";
   import CTAContentContainer from "@rilldata/web-common/components/calls-to-action/CTAContentContainer.svelte";
@@ -15,6 +15,11 @@
   const deployValidation = deployer.validation;
   const deployerStatus = deployer.getStatus();
   const promptOrgSelection = deployer.promptOrgSelection;
+
+  function onOrgSelect(org: string) {
+    promptOrgSelection.set(false);
+    return deployer.deploy(org);
+  }
 
   function handleVisibilityChange() {
     if (document.visibilityState !== "visible") return;
@@ -32,9 +37,14 @@
 
 <svelte:window on:visibilitychange={handleVisibilityChange} />
 
-<CTAContentContainer>
-  <CTALayoutContainer>
-    {#if $deployerStatus.isLoading}
+<CTALayoutContainer>
+  <CTAContentContainer>
+    {#if $promptOrgSelection}
+      <OrgSelector
+        orgs={$deployValidation.data?.rillUserOrgs ?? []}
+        onSelect={onOrgSelect}
+      />
+    {:else if $deployerStatus.isLoading}
       <div class="h-36">
         <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
       </div>
@@ -52,11 +62,5 @@
       </CTAButton>
     {/if}
     <CTANeedHelp />
-  </CTALayoutContainer>
-</CTAContentContainer>
-
-<OrgSelectorDialog
-  bind:open={$promptOrgSelection}
-  orgs={$deployValidation.data?.rillUserOrgs ?? []}
-  onSelect={(org) => deployer.deploy(org)}
-/>
+  </CTAContentContainer>
+</CTALayoutContainer>

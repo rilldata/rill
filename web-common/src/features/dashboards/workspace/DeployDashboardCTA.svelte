@@ -29,8 +29,9 @@
   function onShowDeploy() {
     if (isDeployed) {
       onDeploy();
+    } else {
+      open = true;
     }
-    open = true;
     void behaviourEvent?.fireDeployIntentEvent();
   }
 
@@ -41,7 +42,7 @@
 </script>
 
 <Tooltip distance={8}>
-  <Button on:click={onShowDeploy} {type}>
+  <Button on:click={onShowDeploy} {type} loading={$deployValidation.isFetching}>
     {isDeployed ? "Redeploy" : "Deploy"}
   </Button>
   <TooltipContent slot="tooltip-content">
