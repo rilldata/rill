@@ -2,6 +2,7 @@ package sqlite
 
 import (
 	"context"
+	"strings"
 	"time"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -142,13 +143,24 @@ func (c *catalogStore) DeleteResources(ctx context.Context) error {
 }
 
 func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
-	rows, err := c.db.QueryxContext(
-		ctx,
-		"SELECT key, data_json, data_updated_on, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND keys IN ? ORDER BY key",
-		c.instanceID,
-		modelID,
-		keys,
-	)
+	var qry strings.Builder
+	var args []any
+
+	qry.WriteString("SELECT key, data_json, data_updated_on, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND key IN (")
+	args = append(args, c.instanceID, modelID)
+
+	qry.Grow(len(keys) * 2)
+	for i, k := range keys {
+		if i == 0 {
+			qry.WriteString("?")
+		} else {
+			qry.WriteString(",?")
+		}
+		args = append(args, k)
+	}
+	qry.WriteString(") ORDER BY key")
+
+	rows, err := c.db.QueryxContext(ctx, qry.String(), args...)
 	if err != nil {
 		return nil, err
 	}

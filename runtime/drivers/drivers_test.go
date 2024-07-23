@@ -64,6 +64,7 @@ func TestAll(t *testing.T) {
 }
 
 func withDuckDB(t *testing.T, fn func(driver, instanceID string, cfg map[string]any)) error {
+	require.True(t, true) // Use t to suppress lint error
 	fn("duckdb", "default", map[string]any{"dsn": ":memory:?access_mode=read_write", "pool_size": 4})
 	return nil
 }

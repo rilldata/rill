@@ -3,8 +3,8 @@ CREATE TABLE model_splits (
     model_id TEXT NOT NULL,
     key TEXT NOT NULL,
     data_json BLOB NOT NULL,
-    data_updated_on TIMESTAMPTZ NOT NULL,
-    executed_on TIMESTAMPTZ,
+    data_updated_on TIMESTAMP NOT NULL,
+    executed_on TIMESTAMP,
     error TEXT,
     elapsed_ms INTEGER,
     PRIMARY KEY (instance_id, model_id, key)

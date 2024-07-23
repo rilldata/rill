@@ -58,7 +58,7 @@ type ModelSplit struct {
 	Key           string
 	DataJSON      []byte
 	DataUpdatedOn time.Time
-	ExecutedOn    time.Time
+	ExecutedOn    *time.Time
 	Error         string
 	Elapsed       time.Duration
 }
