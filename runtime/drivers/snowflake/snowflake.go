@@ -159,12 +159,14 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	if store, ok := opts.OutputHandle.AsObjectStore(); ok {
-		return &selfToObjectStoreExecutor{
-			c:     c,
-			store: store,
-			opts:  opts,
-		}, true
+	if opts.InputHandle == c {
+		if store, ok := opts.OutputHandle.AsObjectStore(); ok {
+			return &selfToObjectStoreExecutor{
+				c:     c,
+				store: store,
+				opts:  opts,
+			}, true
+		}
 	}
 	return nil, false
 }
