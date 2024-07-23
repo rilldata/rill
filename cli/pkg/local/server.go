@@ -684,34 +684,6 @@ func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.
 	}), nil
 }
 
-func (s *Server) CheckOrgName(ctx context.Context, r *connect.Request[localv1.CheckOrgNameRequest]) (*connect.Response[localv1.CheckOrgNameResponse], error) {
-	if !s.app.ch.IsAuthenticated() {
-		return nil, errors.New("user should be authenticated")
-	}
-
-	c, err := s.app.ch.Client()
-	if err != nil {
-		return nil, err
-	}
-
-	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-		Name: r.Msg.Org,
-	})
-	if err != nil {
-		st, ok := status.FromError(err)
-		if ok && st.Code() == codes.NotFound {
-			return connect.NewResponse(&localv1.CheckOrgNameResponse{
-				Available: true,
-			}), nil
-		}
-		return nil, err
-	}
-
-	return connect.NewResponse(&localv1.CheckOrgNameResponse{
-		Available: false,
-	}), nil
-}
-
 // authHandler starts the OAuth2 PKCE flow to authenticate the user and get a rill access token.
 func (s *Server) authHandler(httpPort int, secure bool) http.Handler {
 	scheme := "http"

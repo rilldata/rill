@@ -1,6 +1,7 @@
 import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
-import { getOrgName } from "@rilldata/web-common/features/project/getOrgName";
+import { extractDeployError } from "@rilldata/web-common/features/project/deploy-errors";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
 import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
 import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
@@ -9,6 +10,8 @@ import {
   createLocalServiceDeploy,
   createLocalServiceDeployValidation,
   createLocalServiceRedeploy,
+  getLocalServiceGetCurrentUserQueryKey,
+  localServiceGetCurrentUser,
 } from "@rilldata/web-common/runtime-client/local-service";
 import { derived, get, writable } from "svelte/store";
 
@@ -52,10 +55,11 @@ export class ProjectDeployer {
 
         return {
           isLoading: false,
-          error:
-            (validation.error as ConnectError)?.message ??
-            (deployMutation.error as ConnectError)?.message ??
-            (redeployMutation.error as ConnectError)?.message,
+          error: extractDeployError(
+            (validation.error as ConnectError) ??
+              (deployMutation.error as ConnectError) ??
+              (redeployMutation.error as ConnectError),
+          ).message,
         };
       },
     );
@@ -108,6 +112,7 @@ export class ProjectDeployer {
         });
         window.open(resp.frontendUrl, "_self");
       } else {
+        let checkNextOrg = false;
         if (!org) {
           if (validation.rillUserOrgs.length === 1) {
             org = validation.rillUserOrgs[0];
@@ -115,23 +120,58 @@ export class ProjectDeployer {
             this.promptOrgSelection.set(true);
             return;
           } else {
-            org = await getOrgName();
+            const userResp = await queryClient.fetchQuery({
+              queryKey: getLocalServiceGetCurrentUserQueryKey(),
+              queryFn: localServiceGetCurrentUser,
+            });
+            org = userResp.user!.displayName.replace(/ /g, "");
+            checkNextOrg = true;
           }
         }
 
-        const resp = await get(this.deployMutation).mutateAsync({
-          projectName: validation.localProjectName,
+        // hardcoded to upload for now
+        const frontendUrl = await this.tryDeployWithOrg(
           org,
-          upload: true, // hardcoded to upload for now
-        });
-        void behaviourEvent?.fireDeployEvent(
-          BehaviourEventAction.DeploySuccess,
+          validation.localProjectName,
+          true,
+          checkNextOrg,
         );
-        window.open(resp.frontendUrl + "/-/invite", "_self");
+        window.open(frontendUrl + "/-/invite", "_self");
       }
     } catch (err) {
       // no-op
     }
     this.deploying.set(false);
+  }
+
+  private async tryDeployWithOrg(
+    org: string,
+    projectName: string,
+    upload: boolean,
+    checkNextOrg: boolean,
+  ) {
+    let i = 0;
+
+    // eslint-disable-next-line no-constant-condition
+    while (true) {
+      try {
+        const resp = await get(this.deployMutation).mutateAsync({
+          projectName,
+          org: `${org}${i === 0 ? "" : "-" + i}`,
+          upload,
+        });
+        void behaviourEvent?.fireDeployEvent(
+          BehaviourEventAction.DeploySuccess,
+        );
+        return resp.frontendUrl;
+      } catch (e) {
+        const err = extractDeployError(e);
+        if (err.noAccess && checkNextOrg) {
+          i++;
+        } else {
+          throw e;
+        }
+      }
+    }
   }
 }

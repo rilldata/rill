@@ -1,4 +1,5 @@
 <script lang="ts">
+  import CancelCircleInverse from "@rilldata/web-common/components/icons/CancelCircleInverse.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import OrgSelector from "@rilldata/web-common/features/project/OrgSelector.svelte";
   import { ProjectDeployer } from "@rilldata/web-common/features/project/ProjectDeployer";
@@ -46,7 +47,7 @@
       </CTAHeader>
     {:else if $deployerStatus.error}
       <div class="h-36">
-        <Spinner status={EntityStatus.Running} size="7rem" duration={725} />
+        <CancelCircleInverse size="7rem" className="text-gray-200" />
       </div>
       <CTAHeader variant="bold">Oops! An error occurred</CTAHeader>
       <CTAMessage>{$deployerStatus.error}</CTAMessage>

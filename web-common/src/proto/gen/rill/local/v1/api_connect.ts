@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { CheckOrgNameRequest, CheckOrgNameResponse, DeployProjectRequest, DeployProjectResponse, DeployValidationRequest, DeployValidationResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
+import { DeployProjectRequest, DeployProjectResponse, DeployValidationRequest, DeployValidationResponse, GetCurrentUserRequest, GetCurrentUserResponse, GetMetadataRequest, GetMetadataResponse, GetVersionRequest, GetVersionResponse, PingRequest, PingResponse, PushToGithubRequest, PushToGithubResponse, RedeployProjectRequest, RedeployProjectResponse } from "./api_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -98,15 +98,6 @@ export const LocalService = {
       name: "GetCurrentUser",
       I: GetCurrentUserRequest,
       O: GetCurrentUserResponse,
-      kind: MethodKind.Unary,
-    },
-    /**
-     * @generated from rpc rill.local.v1.LocalService.CheckOrgName
-     */
-    checkOrgName: {
-      name: "CheckOrgName",
-      I: CheckOrgNameRequest,
-      O: CheckOrgNameResponse,
       kind: MethodKind.Unary,
     },
   }

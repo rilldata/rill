@@ -28,8 +28,6 @@ service LocalService {
 
   // User returns the locally logged in user
   rpc GetCurrentUser(GetCurrentUserRequest) returns (GetCurrentUserResponse) {}
-
-  rpc CheckOrgName(CheckOrgNameRequest) returns (CheckOrgNameResponse) {}
 }
 
 message PingRequest {}
@@ -119,12 +117,4 @@ message GetCurrentUserRequest {}
 
 message GetCurrentUserResponse {
   admin.v1.User user = 1;
-}
-
-message CheckOrgNameRequest {
-  string org = 1;
-}
-
-message CheckOrgNameResponse {
-  bool available = 1;
 }
