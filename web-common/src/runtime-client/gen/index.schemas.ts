@@ -534,12 +534,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -567,6 +561,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -665,11 +665,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -681,6 +676,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -1663,6 +1663,7 @@ export interface V1DashboardSpec {
   title?: string;
   columns?: number;
   gap?: number;
+  variables?: V1ComponentVariable[];
   items?: V1DashboardItem[];
 }
 
@@ -1768,6 +1769,12 @@ export interface V1Condition {
   exprs?: V1Expression[];
 }
 
+export interface V1ComponentVariable {
+  name?: string;
+  type?: string;
+  defaultValue?: unknown;
+}
+
 export interface V1ComponentState {
   [key: string]: any;
 }
@@ -1784,6 +1791,9 @@ export interface V1ComponentSpec {
   rendererProperties?: V1ComponentSpecRendererProperties;
   definedInDashboard?: boolean;
   subtitle?: string;
+  input?: V1ComponentVariable[];
+  output?: V1ComponentVariable;
+  show?: boolean;
 }
 
 export interface V1Component {
@@ -2134,7 +2144,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

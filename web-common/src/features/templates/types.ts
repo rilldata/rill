@@ -50,6 +50,18 @@ export interface MarkdownTemplateT {
   markdown: MarkdownProperties;
 }
 
+export interface SelectProperties {
+  valueField: string;
+  labelField?: string;
+  label?: string;
+  tooltip?: string;
+  placeholder?: string;
+}
+
+export interface SelectPropertiesT {
+  select: SelectProperties;
+}
+
 export interface ImageProperties {
   url: string;
   css?: { [key: string]: any };
@@ -66,4 +78,5 @@ export type TemplateSpec =
   | KPITemplateT
   | TableTemplateT
   | MarkdownTemplateT
-  | ImageTemplateT;
+  | ImageTemplateT
+  | SelectPropertiesT;

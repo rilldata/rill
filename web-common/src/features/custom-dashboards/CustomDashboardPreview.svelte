@@ -1,19 +1,25 @@
 <script lang="ts">
-  import { V1DashboardItem } from "@rilldata/web-common/runtime-client";
-  import PreviewElement from "./PreviewElement.svelte";
-  import type { Vector } from "./types";
-  import { vector } from "./util";
+  import { dashboardVariablesStore } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import {
+    V1ComponentVariable,
+    V1DashboardItem,
+  } from "@rilldata/web-common/runtime-client";
+  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher } from "svelte";
   import * as defaults from "./constants";
   import DashboardWrapper from "./DashboardWrapper.svelte";
-  import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import PreviewElement from "./PreviewElement.svelte";
+  import type { Vector } from "./types";
+  import { vector } from "./util";
 
   const dispatch = createEventDispatcher();
   const zeroVector = [0, 0] as [0, 0];
 
+  export let customDashboardName: string;
   export let columns: number | undefined;
   export let items: V1DashboardItem[];
   export let gap: number | undefined;
+  export let variables: V1ComponentVariable[];
   export let showGrid = false;
   export let snap = true;
   export let selectedChartName: string | null;
@@ -57,6 +63,9 @@
   $: finalDrag = vector.multiply(getCell(dragPosition, snap), gridVector);
 
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
+  $: if (variables.length) {
+    dashboardVariablesStore.init(customDashboardName, variables);
+  }
 
   function handleMouseUp() {
     if (selectedIndex === null || !changing) return;

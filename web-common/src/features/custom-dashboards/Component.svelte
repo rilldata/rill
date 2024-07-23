@@ -1,8 +1,9 @@
 <script lang="ts" context="module">
   import TemplateRenderer from "@rilldata/web-common/features/templates/TemplateRenderer.svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
+  import { load } from "js-yaml";
   import type { ComponentType } from "svelte";
-  import { onMount } from "svelte";
+  import { getContext, onMount } from "svelte";
   import {
     ResourceKind,
     useResource,
@@ -17,6 +18,10 @@
 </script>
 
 <script lang="ts">
+  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
+  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+  import { createRuntimeServiceGetParsedComponent } from "@rilldata/web-common/runtime-client/manual-clients";
+
   export let i: number;
   export let builders: Builder[] = [];
   export let left: number;
@@ -34,16 +39,36 @@
   export let componentName: string;
   export let instanceId: string;
 
+  const dashboardName = getContext("rill::custom-dashboard:name") as string;
+
   $: resourceQuery = useResource(
     instanceId,
     componentName,
     ResourceKind.Component,
   );
-
   $: ({ data: componentResource } = $resourceQuery);
 
-  $: ({ renderer, rendererProperties, resolverProperties, title, subtitle } =
-    componentResource?.component?.spec ?? {});
+  $: ({
+    renderer,
+    rendererProperties,
+    resolverProperties,
+    input,
+    output,
+    title,
+    subtitle,
+    show,
+  } = componentResource?.component?.spec ?? {});
+
+  $: inputVariableParams = useVariableInputParams(dashboardName, input);
+
+  $: parsedResourceQuery = createRuntimeServiceGetParsedComponent(
+    queryClient,
+    instanceId,
+    componentName,
+    $inputVariableParams,
+  );
+  $: data = $parsedResourceQuery?.data;
+  $: parsedComponent = load(data?.content);
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -54,72 +79,77 @@
   });
 </script>
 
-<div
-  {...getAttrs(builders)}
-  use:builderActions={{ builders }}
-  role="presentation"
-  data-index={i}
-  class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
-  class:!cursor-default={embed}
-  style:z-index={localZIndex}
-  style:padding="{padding}px"
-  style:left="{left}px"
-  style:top="{top}px"
-  style:width="{width}px"
-  style:height={chartView ? undefined : `${height}px`}
-  on:contextmenu
-  on:mousedown|capture
->
-  <div class="size-full relative">
-    {#if ResizeHandleComponent && !embed}
-      {#each allSides as side (side)}
-        <svelte:component
-          this={ResizeHandleComponent}
-          {i}
-          {scale}
-          {side}
-          position={[left, top]}
-          dimensions={[width, height]}
-          {selected}
-          on:change
-        />
-      {/each}
-    {/if}
-
-    <div
-      class="size-full overflow-hidden flex flex-col gap-y-1 flex-none bg-white"
-      class:shadow-lg={interacting}
-      style:border-radius="{radius}px"
-    >
-      {#if renderer === "vega_lite" && rendererProperties?.spec && resolverProperties}
-        {#if title || subtitle}
-          <div class="w-full h-fit flex flex-col gap-y-1 px-8 py-4">
-            {#if title}
-              <h1>{title}</h1>
-            {/if}
-            {#if subtitle}
-              <h2>{subtitle}</h2>
-            {/if}
-          </div>
-        {/if}
-        <Chart
-          {chartView}
-          vegaSpec={rendererProperties?.spec}
-          chartName={componentName}
-          {resolverProperties}
-        />
-      {:else if renderer && rendererProperties}
-        <TemplateRenderer
-          {chartView}
-          {renderer}
-          {rendererProperties}
-          {resolverProperties}
-          {componentName}
-        />
+{#if show}
+  <div
+    {...getAttrs(builders)}
+    use:builderActions={{ builders }}
+    role="presentation"
+    data-index={i}
+    class="wrapper hover:cursor-pointer active:cursor-grab pointer-events-auto"
+    class:!cursor-default={embed}
+    style:z-index={localZIndex}
+    style:padding="{padding}px"
+    style:left="{left}px"
+    style:top="{top}px"
+    style:width="{width}px"
+    style:height={chartView ? undefined : `${height}px`}
+    on:contextmenu
+    on:mousedown|capture
+  >
+    <div class="size-full relative">
+      {#if ResizeHandleComponent && !embed}
+        {#each allSides as side (side)}
+          <svelte:component
+            this={ResizeHandleComponent}
+            {i}
+            {scale}
+            {side}
+            position={[left, top]}
+            dimensions={[width, height]}
+            {selected}
+            on:change
+          />
+        {/each}
       {/if}
+
+      <div
+        class="size-full overflow-hidden flex flex-col gap-y-1 flex-none bg-white"
+        class:shadow-lg={interacting}
+        style:border-radius="{radius}px"
+      >
+        {#if renderer === "vega_lite" && rendererProperties?.spec && resolverProperties}
+          {#if title || subtitle}
+            <div class="w-full h-fit flex flex-col gap-y-1 px-8 py-4">
+              {#if title}
+                <h1>{title}</h1>
+              {/if}
+              {#if subtitle}
+                <h2>{subtitle}</h2>
+              {/if}
+            </div>
+          {/if}
+          <Chart
+            {chartView}
+            {input}
+            vegaSpec={parsedComponent?.vega_lite}
+            chartName={componentName}
+            {resolverProperties}
+          />
+        {:else if renderer && rendererProperties}
+          <TemplateRenderer
+            {chartView}
+            {renderer}
+            {input}
+            {output}
+            {rendererProperties}
+            {resolverProperties}
+            {componentName}
+          />
+        {/if}
+      </div>
     </div>
   </div>
-</div>
+{/if}
 
 <style lang="postcss">
   .wrapper {

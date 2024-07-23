@@ -40,7 +40,11 @@ export function useKPIComparisonTotal(
   timeRange: string,
   queryClient: QueryClient,
 ): CreateQueryResult<number | undefined> {
-  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+  const allTimeRangeQuery = useMetricsViewTimeRange(
+    instanceId,
+    metricViewName,
+    { query: { queryClient } },
+  );
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
     const maxTime = allTimeRange?.data?.timeRangeSummary?.max;
@@ -112,7 +116,11 @@ export function useKPISparkline(
   timeRange: string,
   queryClient: QueryClient,
 ): CreateQueryResult<Array<Record<string, unknown>>> {
-  const allTimeRangeQuery = useMetricsViewTimeRange(instanceId, metricViewName);
+  const allTimeRangeQuery = useMetricsViewTimeRange(
+    instanceId,
+    metricViewName,
+    { query: { queryClient } },
+  );
 
   return derived(allTimeRangeQuery, (allTimeRange, set) => {
     const maxTime = allTimeRange?.data?.timeRangeSummary?.max;

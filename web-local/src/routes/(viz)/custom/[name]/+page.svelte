@@ -4,7 +4,13 @@
 
   export let data: PageData;
 
-  $: ({ items = [], columns, gap } = data.dashboard);
+  $: ({ items = [], columns, gap, variables } = data.dashboard);
 </script>
 
-<CustomDashboardEmbed {items} {columns} {gap} />
+<CustomDashboardEmbed
+  dashboardName={data.dashboardName}
+  {items}
+  {columns}
+  {gap}
+  {variables}
+/>

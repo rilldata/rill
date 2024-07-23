@@ -2905,7 +2905,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-       The JSON representation for `NullValue` is JSON `null`.
+      The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -3524,8 +3524,25 @@ definitions:
         type: boolean
       subtitle:
         type: string
+      input:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
+      output:
+        $ref: '#/definitions/v1ComponentVariable'
+      show:
+        type: boolean
   v1ComponentState:
     type: object
+  v1ComponentVariable:
+    type: object
+    properties:
+      name:
+        type: string
+      type:
+        type: string
+      defaultValue: {}
   v1Condition:
     type: object
     properties:
@@ -3712,6 +3729,11 @@ definitions:
       gap:
         type: integer
         format: int64
+      variables:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ComponentVariable'
       items:
         type: array
         items:
