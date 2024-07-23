@@ -98,3 +98,30 @@ variable=xyz
 Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pushing-and-pulling-credentials-to--from-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::
+
+
+
+## Testing access policies 
+
+During development, it is always a good idea to check if your [access policies](/manage/security.md) are behaving the way you designed them to. You can set mock users which enables a drop down in the dashboard preview to view as a specific user. 
+
+```yaml
+mock_users:
+- email: john@yourcompany.com
+  name: John Doe
+  admin: true
+- email: jane@partnercompany.com
+  groups:
+    - partners
+- email: anon@unknown.com
+```
+
+
+![View as User](/img/reference/project-files/View-as.png)
+
+
+:::info The View as selector is not visible in my dashboard, why?
+
+This feature is only enabled when you have set a security policy on the dashboard. By default, the dashboard and it's contents is viewable by all.
+
+:::
