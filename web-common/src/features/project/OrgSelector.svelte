@@ -16,7 +16,10 @@
 
 <div class="text-xl">Select an organization</div>
 <div class="text-base text-gray-500">
-  Choose an organization to deploy this project to. See docs
+  Choose an organization to deploy this project to. <a
+    href="https://docs.rilldata.com/reference/cli/org/"
+    target="_blank">See docs</a
+  >
 </div>
 <Select
   bind:value={selectedOrg}
