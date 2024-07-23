@@ -3327,6 +3327,11 @@ export class ComponentSpec extends Message<ComponentSpec> {
    */
   output?: ComponentVariable;
 
+  /**
+   * @generated from field: bool show = 10;
+   */
+  show = false;
+
   constructor(data?: PartialMessage<ComponentSpec>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3344,6 +3349,7 @@ export class ComponentSpec extends Message<ComponentSpec> {
     { no: 7, name: "subtitle", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 8, name: "input", kind: "message", T: ComponentVariable, repeated: true },
     { no: 9, name: "output", kind: "message", T: ComponentVariable },
+    { no: 10, name: "show", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ComponentSpec {
@@ -3506,14 +3512,14 @@ export class DashboardSpec extends Message<DashboardSpec> {
   gap = 0;
 
   /**
-   * @generated from field: repeated rill.runtime.v1.DashboardItem items = 4;
-   */
-  items: DashboardItem[] = [];
-
-  /**
    * @generated from field: repeated rill.runtime.v1.ComponentVariable variables = 5;
    */
   variables: ComponentVariable[] = [];
+
+  /**
+   * @generated from field: repeated rill.runtime.v1.DashboardItem items = 4;
+   */
+  items: DashboardItem[] = [];
 
   constructor(data?: PartialMessage<DashboardSpec>) {
     super();
@@ -3526,8 +3532,8 @@ export class DashboardSpec extends Message<DashboardSpec> {
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "columns", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 3, name: "gap", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
-    { no: 4, name: "items", kind: "message", T: DashboardItem, repeated: true },
     { no: 5, name: "variables", kind: "message", T: ComponentVariable, repeated: true },
+    { no: 4, name: "items", kind: "message", T: DashboardItem, repeated: true },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): DashboardSpec {

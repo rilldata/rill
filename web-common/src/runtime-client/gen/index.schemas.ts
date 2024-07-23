@@ -1663,8 +1663,8 @@ export interface V1DashboardSpec {
   title?: string;
   columns?: number;
   gap?: number;
-  items?: V1DashboardItem[];
   variables?: V1ComponentVariable[];
+  items?: V1DashboardItem[];
 }
 
 export interface V1Dashboard {
@@ -1793,6 +1793,7 @@ export interface V1ComponentSpec {
   subtitle?: string;
   input?: V1ComponentVariable[];
   output?: V1ComponentVariable;
+  show?: boolean;
 }
 
 export interface V1Component {
@@ -2143,7 +2144,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
- The JSON representation for `NullValue` is JSON `null`.
+The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */

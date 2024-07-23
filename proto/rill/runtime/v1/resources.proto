@@ -469,6 +469,7 @@ message ComponentSpec {
   string subtitle = 7;
   repeated ComponentVariable input = 8;
   ComponentVariable output = 9;
+  bool show = 10;
 }
 
 message ComponentState {}

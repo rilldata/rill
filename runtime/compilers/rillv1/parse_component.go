@@ -31,6 +31,7 @@ type ComponentYAML struct {
 	Other      map[string]map[string]any `yaml:",inline" mapstructure:",remain"` // Generic renderer: can only have one key
 	Input      []*ComponentVariableYAML  `yaml:"input,omitempty"`
 	Output     *ComponentVariableYAML    `yaml:"output,omitempty"`
+	Show       *bool                     `yaml:"show,omitempty"`
 }
 
 func (p *Parser) parseComponent(node *Node) error {
@@ -150,6 +151,11 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		}
 	}
 
+	var show = true
+	if tmp.Show != nil {
+		show = *tmp.Show
+	}
+
 	// Create the component spec
 	spec := &runtimev1.ComponentSpec{
 		Title:              tmp.Title,
@@ -160,6 +166,7 @@ func (p *Parser) parseComponentYAML(tmp *ComponentYAML) (*runtimev1.ComponentSpe
 		RendererProperties: rendererProps,
 		Input:              input,
 		Output:             output,
+		Show:               show,
 	}
 
 	return spec, refs, nil
