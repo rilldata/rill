@@ -75,15 +75,15 @@
 </script>
 
 <div>
-  {#if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
+  {#if !isValidSchema}
+    <div>{$tableSchema.error}</div>
+  {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
     <TableRenderer
       metricsViewName={tableProperties.metric_view + TABLE_PREFIX}
       {pivotDataStore}
       config={$pivotConfig}
       pivotDashboardStore={pivotState}
     />
-  {:else if !isValidSchema}
-    <div>{$tableSchema.error}</div>
   {:else}
     <div>Loading...</div>
   {/if}
