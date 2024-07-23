@@ -4,11 +4,13 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/rilldata/rill/admin/client"
+	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/dotrillcloud"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
@@ -273,9 +275,18 @@ func (h *Helper) InferProjectName(ctx context.Context, org, path string) (string
 		proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
 			Id: rc.ProjectID,
 		})
-		// do not error here.
-		// this could be because the locally saved project id might not be available when project is deleted outside the project path
-		if err == nil {
+		if err != nil {
+			// unset if project doesnt exist
+			if errors.Is(err, database.ErrNotFound) {
+				err = dotrillcloud.Delete(path, h.AdminURL)
+				if err != nil {
+					return "", err
+				}
+			}
+			// do not error here.
+			// this could be because the locally saved project id might not be available when project is deleted outside the project path
+			// or the current user might not have access
+		} else {
 			return proj.Project.Name, nil
 		}
 	}
