@@ -55,7 +55,7 @@ type globResolver struct {
 	runtime      *runtime.Runtime
 	instanceID   string
 	props        *globProps
-	bucketURI    string
+	bucketURI    *globutil.URL
 	tmpTableName string
 }
 
@@ -119,19 +119,17 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, err
 	}
 
-	uri, err := globutil.ParseBucketURL(props.Path)
+	// Parse the bucket URI without the path (e.g. for "s3://bucket/path", it is "s3://bucket")
+	bucketURI, err := globutil.ParseBucketURL(props.Path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse bucket path %q: %w", props.Path, err)
 	}
+	bucketURI.Path = ""
 
 	// If connector is not specified outright, infer it from the path (e.g. for "s3://bucket/path", the connector becomes "s3").
 	if props.Connector == "" {
-		props.Connector = uri.Scheme
+		props.Connector = bucketURI.Scheme
 	}
-
-	// Cache the bucket URI (e.g. for "s3://bucket/path", it is "s3://bucket") for later use
-	uri.Path = ""
-	bucketURI := uri.String()
 
 	return &globResolver{
 		runtime:      opts.Runtime,
@@ -223,8 +221,14 @@ func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []ma
 			continue
 		}
 
+		uri := &globutil.URL{
+			Scheme: r.bucketURI.Scheme,
+			Host:   r.bucketURI.Host,
+			Path:   entry.Path,
+		}
+
 		rows = append(rows, map[string]any{
-			"uri":        path.Join(r.bucketURI, entry.Path),
+			"uri":        uri.String(),
 			"path":       entry.Path,
 			"updated_on": entry.UpdatedOn,
 		})
@@ -251,8 +255,13 @@ func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry
 		row := rows[dir]
 		if row == nil {
 			// Init a new row
+			uri := &globutil.URL{
+				Scheme: r.bucketURI.Scheme,
+				Host:   r.bucketURI.Host,
+				Path:   dir,
+			}
 			row = map[string]any{
-				"uri":        path.Join(r.bucketURI, dir),
+				"uri":        uri.String(),
 				"path":       dir,
 				"updated_on": entry.UpdatedOn,
 			}

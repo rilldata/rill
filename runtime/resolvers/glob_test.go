@@ -55,9 +55,10 @@ func TestGlobDirectoryPartitioned(t *testing.T) {
 		InstanceID: instanceID,
 		Resolver:   "glob",
 		ResolverProperties: map[string]any{
-			"connector": "mock",
-			"path":      "mock://bucket/**/*.csv",
-			"partition": "directory",
+			"connector":    "mock",
+			"path":         "mock://bucket/**/*.csv",
+			"partition":    "directory",
+			"rollup_files": true,
 		},
 		Args:   nil,
 		Claims: &runtime.SecurityClaims{},
@@ -73,8 +74,8 @@ func TestGlobDirectoryPartitioned(t *testing.T) {
 	}
 
 	require.Equal(t, []map[string]interface{}{
-		{"path": "dir", "files": []any{"dir/file1.csv"}},
-		{"path": "dir/subdir", "files": []any{"dir/subdir/file2.csv", "dir/subdir/file3.csv"}},
+		{"uri": "mock://bucket/dir", "path": "dir", "files": []any{"dir/file1.csv"}},
+		{"uri": "mock://bucket/dir/subdir", "path": "dir/subdir", "files": []any{"dir/subdir/file2.csv", "dir/subdir/file3.csv"}},
 	}, rows)
 }
 
@@ -107,8 +108,8 @@ func TestGlobHivePartitioned(t *testing.T) {
 	}
 
 	require.Equal(t, []map[string]interface{}{
-		{"path": "dir/year=2024/month=02", "files": []any{"dir/year=2024/month=02/file1.csv"}, "year": "2024", "month": "02"},
-		{"path": "dir/year=2024/month=03", "files": []any{"dir/year=2024/month=03/file2.csv", "dir/year=2024/month=03/file3.csv"}, "year": "2024", "month": "03"},
+		{"uri": "mock://bucket/dir/year=2024/month=02", "path": "dir/year=2024/month=02", "year": "2024", "month": "02"},
+		{"uri": "mock://bucket/dir/year=2024/month=03", "path": "dir/year=2024/month=03", "year": "2024", "month": "03"},
 	}, rows)
 }
 
@@ -126,6 +127,7 @@ func TestGlobHivePartitionedTransformSQL(t *testing.T) {
 			"connector":     "mock",
 			"path":          "mock://bucket/**/*.csv",
 			"partition":     "hive",
+			"rollup_files":  true,
 			"transform_sql": "SELECT path, LAG(path) OVER (ORDER BY path) AS prev_path, len(files) AS num_files FROM {{ .table }}",
 		},
 		Args:   nil,
