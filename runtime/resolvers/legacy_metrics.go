@@ -332,8 +332,8 @@ type legacyResolverResult struct {
 	data   []byte
 	schema *runtimev1.StructType
 
-	parsed []map[string]any
-	idx    int
+	rows []map[string]any
+	idx  int
 }
 
 func (r *legacyResolverResult) Close() error {
@@ -345,15 +345,15 @@ func (r *legacyResolverResult) Schema() *runtimev1.StructType {
 }
 
 func (r *legacyResolverResult) Next() (map[string]any, error) {
-	if r.parsed == nil {
-		if err := json.Unmarshal(r.data, &r.parsed); err != nil {
+	if r.rows == nil {
+		if err := json.Unmarshal(r.data, &r.rows); err != nil {
 			return nil, err
 		}
 	}
-	if r.idx >= len(r.parsed) {
+	if r.idx >= len(r.rows) {
 		return nil, io.EOF
 	}
-	row := r.parsed[r.idx]
+	row := r.rows[r.idx]
 	r.idx++
 	return row, nil
 }
