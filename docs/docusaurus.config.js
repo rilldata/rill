@@ -107,10 +107,17 @@ const config = {
             position: "left",
             label: "Reference",
           },
+         
           {
             label: "Release Notes",
             to: "notes",
             position: "left",
+          },
+          {
+            type: "docSidebar",
+            sidebarId: "tutorialsSidebar",
+            position: "left",
+            label: "Tutorials",
           },
           {
             to: "contact",

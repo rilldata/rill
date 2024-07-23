@@ -164,8 +164,12 @@ li.theme-doc-sidebar-item-category-level-1 {
 
   /* This is a very hacky way to hide references from the main sidebar */
   &:last-of-type {
-    display: none;
+    display: block;
   }
+}
+
+.hidden-page {
+  display: none;
 }
 
 li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {

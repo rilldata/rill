@@ -1,0 +1,8 @@
+# _category_.yml
+label: " "
+position: 200
+collapsible: false
+collapsed: false
+className: hidden
+customProps:
+  hidden: true
