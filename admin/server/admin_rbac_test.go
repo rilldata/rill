@@ -400,15 +400,15 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	// test add duplicate member
 	t.Run("test add duplicate member", func(t *testing.T) {
-		_, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+		resp, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        viewerUser.Email,
 			Role:         "viewer",
 		})
 
-		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
-		require.ErrorContains(t, err, "user is already a member of the org")
+		// this wont error out, since it re-sends an email
+		require.NoError(t, err)
+		require.NotNil(t, resp)
 	})
 
 	// remove user tests
