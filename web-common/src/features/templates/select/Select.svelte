@@ -2,6 +2,7 @@
   import Select from "@rilldata/web-common/components/forms/Select.svelte";
   import {
     dashboardVariablesStore,
+    useVariable,
     useVariableInputParams,
   } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import { SelectProperties } from "@rilldata/web-common/features/templates/types";
@@ -17,7 +18,7 @@
   import { getContext } from "svelte";
 
   const MAX_OPTIONS = 250;
-  const dashboardName = getContext("rill::custom-dashboard:name") as string;
+  $: dashboardName = getContext("rill::custom-dashboard:name") as string;
 
   export let componentName: string;
   export let rendererProperties: V1ComponentSpecRendererProperties;
@@ -25,11 +26,12 @@
   export let input: V1ComponentVariable[] | undefined;
   export let output: V1ComponentVariable | undefined;
 
-  let value = output?.defaultValue as string;
-
   $: outputVariableName = output?.name || "";
+  $: outputVariableValue = useVariable(dashboardName, outputVariableName);
   $: selectProperties = rendererProperties as SelectProperties;
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
+
+  $: value = ($outputVariableValue || output?.defaultValue) as string;
 
   $: componentDataQuery = createRuntimeServiceGetChartData(
     queryClient,

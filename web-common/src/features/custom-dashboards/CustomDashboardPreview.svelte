@@ -5,7 +5,7 @@
     V1DashboardItem,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
-  import { createEventDispatcher, setContext } from "svelte";
+  import { createEventDispatcher } from "svelte";
   import * as defaults from "./constants";
   import DashboardWrapper from "./DashboardWrapper.svelte";
   import PreviewElement from "./PreviewElement.svelte";
@@ -63,10 +63,8 @@
   $: finalDrag = vector.multiply(getCell(dragPosition, snap), gridVector);
 
   $: finalResize = vector.multiply(getCell(resizeDimenions, snap), gridVector);
-
-  $: if (variables?.length) {
+  $: if (variables.length) {
     dashboardVariablesStore.init(customDashboardName, variables);
-    setContext("rill::custom-dashboard:name", customDashboardName);
   }
 
   function handleMouseUp() {

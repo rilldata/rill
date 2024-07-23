@@ -13,7 +13,7 @@ const { update, subscribe } = writable({
 
 export const updateDashboardByName = (
   name: string,
-  callback: (dashboards: ComponentVariable[]) => void,
+  callback: (variables: ComponentVariable[]) => void,
 ) => {
   update((state) => {
     if (!state.dashboards[name]) {
@@ -40,10 +40,13 @@ const dashboardVariableReducers = {
     });
   },
   updateVariable(name: string, variableName: string, value: unknown) {
+    console.log("updateVariable", name, variableName, value);
     updateDashboardByName(name, (variables) => {
       const variable = variables.find((v) => v.name === variableName);
+
       if (variable) {
         variable.currentValue = value;
+        console.log("updateVariable", variable, value);
       }
     });
   },
@@ -61,21 +64,34 @@ export function useVariableStore(name: string): Readable<ComponentVariable[]> {
   });
 }
 
+export function useVariable(
+  name: string,
+  variableName: string,
+): Readable<unknown> {
+  return derived(dashboardVariablesStore, ($store) => {
+    const variables = $store.dashboards[name] || [];
+    const variable = variables.find((v) => v.name === variableName);
+
+    return variable?.currentValue || variable?.defaultValue;
+  });
+}
+
 export function useVariableInputParams(
   name: string,
   inputParams: V1ComponentVariable[] | undefined,
 ): Readable<Record<string, unknown>> {
   return derived(dashboardVariablesStore, ($store) => {
-    const variables: ComponentVariable[] | undefined = $store.dashboards[name];
     if (!inputParams || !inputParams?.length) return {};
 
     const result: Record<string, unknown> = {};
+    const variables: ComponentVariable[] = $store.dashboards?.[name] || [];
+
     inputParams.forEach((param) => {
       if (!param?.name) return;
 
       const variable = variables?.find((v) => v.name === param.name);
       if (variable) {
-        result[param.name] = variable?.currentValue;
+        result[param.name] = variable?.currentValue || variable?.defaultValue;
       } else {
         result[param.name] = param.defaultValue;
       }

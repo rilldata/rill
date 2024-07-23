@@ -17,8 +17,6 @@
   export let vegaSpec: VisualizationSpec | string | undefined;
   export let resolverProperties: V1ComponentSpecResolverProperties;
 
-  const dashboardName = getContext("rill::custom-dashboard:name") as string;
-
   let viewVL: View;
   let error: string | null = null;
   let parsedVegaSpec: VisualizationSpec | null = null;
@@ -33,8 +31,10 @@
     error = JSON.stringify(e);
   }
 
+  $: dashboardName = getContext("rill::custom-dashboard:name") as string;
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
+  $: console.log($inputVariableParams);
   $: chartDataQuery = createRuntimeServiceGetChartData(
     queryClient,
     $runtime.instanceId,

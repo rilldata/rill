@@ -25,6 +25,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import type { V1DashboardSpec } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { setContext } from "svelte";
   import { slide } from "svelte/transition";
   import Button from "web-common/src/components/button/Button.svelte";
   import { parseDocument } from "yaml";
@@ -50,6 +51,7 @@
   };
 
   $: customDashboardName = getNameFromFile(filePath);
+  $: setContext("rill::custom-dashboard:name", customDashboardName);
 
   $: ({ instanceId } = $runtime);
 
