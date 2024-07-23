@@ -68,7 +68,7 @@ export class GithubData {
 
     await waitUntil(() => !get(this.userStatus).isFetching);
     const userStatus = get(this.userStatus).data;
-    if (userStatus?.hasAccess) {
+    if (!userStatus || userStatus?.hasAccess) {
       return;
     }
 
@@ -83,6 +83,9 @@ export class GithubData {
   public async reselectRepos() {
     await waitUntil(() => !get(this.userStatus).isFetching);
     const userStatus = get(this.userStatus).data;
+    if (!userStatus?.grantAccessUrl) {
+      return;
+    }
 
     this.promptingUser = true;
     window.open(userStatus.grantAccessUrl, "_blank");
@@ -99,14 +102,14 @@ export class GithubData {
     this.promptingUser = false;
 
     const userStatus = get(this.userStatus).data;
-    if (!userStatus.hasAccess) {
+    if (!userStatus?.hasAccess) {
       // refetch status if had no access
       await queryClient.refetchQueries(
         getAdminServiceGetGithubUserStatusQueryKey(),
       );
 
       await waitUntil(() => !get(this.userStatus).isFetching);
-      if (!get(this.userStatus).data.hasAccess) {
+      if (!get(this.userStatus).data?.hasAccess) {
         this.githubConnectionFailed.set(true);
       } else {
         this.githubConnectionFailed.set(false);
