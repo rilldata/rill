@@ -273,12 +273,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Err: ctx.Err()}
 	}
 
+	// Open executor for the new output and build the output
 	var (
 		executorConnector string
 		execRes           *drivers.ModelResult
 		execErr           error
 	)
-	// Open executor for the new output and build the output
 	if model.Spec.StageConnector != "" {
 		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.StageConnector, model.Spec.StageProperties.AsMap())
 		if err != nil {
