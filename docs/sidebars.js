@@ -34,7 +34,50 @@ const sidebars = {
               'tutorials/rill_learn_100/101_0',
               'tutorials/rill_learn_100/101_1',
               'tutorials/rill_learn_100/101_2',
-              'tutorials/rill_learn_100/102_0'
+              {
+                type: 'category',
+                label: 'Rill Developer Components',
+                items: [
+                  'tutorials/rill_learn_100/102_0',
+                  'tutorials/rill_learn_100/components/102_1',
+                  'tutorials/rill_learn_100/components/102_2',
+                  'tutorials/rill_learn_100/components/102_3',
+                  'tutorials/rill_learn_100/components/102_4',
+                  
+                ]
+              },
+              
+              {
+                type: 'category',
+                label: 'Metric-Views explained',
+                items: [
+                  'tutorials/rill_learn_100/dashboard/103_0',
+                  'tutorials/rill_learn_100/dashboard/103_1',
+                  'tutorials/rill_learn_100/dashboard/103_2'
+                ]
+              },
+
+                  'tutorials/rill_learn_100/104_0',
+            
+
+              {
+                type: 'category',
+                label: 'Rill CLI',
+                items: [
+                  'tutorials/rill_learn_100/CLI/105_0',
+                  'tutorials/rill_learn_100/CLI/105_1',
+                  'tutorials/rill_learn_100/CLI/105_2'
+                ]
+              },
+              {
+              type: 'category',
+              label: 'Deploy to Rill Cloud',
+              items: [
+                'tutorials/rill_learn_100/deploy/106_0',
+                'tutorials/rill_learn_100/deploy/106_1'
+              ]
+            },
+           
             ]
         },
         {
