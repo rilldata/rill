@@ -22,6 +22,7 @@ import (
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/globutil"
 	"github.com/rilldata/rill/runtime/pkg/mapstructureutil"
 	"github.com/rilldata/rill/runtime/pkg/typepb"
 	"go.uber.org/zap"
@@ -54,6 +55,7 @@ type globResolver struct {
 	runtime      *runtime.Runtime
 	instanceID   string
 	props        *globProps
+	bucketURI    string
 	tmpTableName string
 }
 
@@ -65,6 +67,8 @@ type globProps struct {
 	Path string `mapstructure:"path"`
 	// Partition defines if and how to group the files that match the glob into partitions.
 	Partition globPartitionType `mapstructure:"partition"`
+	// RollupFiles is a flag to roll up and include the files in each partition in the output.
+	RollupFiles bool `mapstructure:"rollup_files"`
 	// TransformSQL is an optional SQL statement to transform the results.
 	// The SQL statement should be a DuckDB SQL statement that queries a table templated into the query with "{{ .table }}".
 	TransformSQL string `mapstructure:"transform_sql"`
@@ -115,10 +119,25 @@ func newGlob(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolv
 		return nil, err
 	}
 
+	uri, err := globutil.ParseBucketURL(props.Path)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse bucket path %q: %w", props.Path, err)
+	}
+
+	// If connector is not specified outright, infer it from the path (e.g. for "s3://bucket/path", the connector becomes "s3").
+	if props.Connector == "" {
+		props.Connector = uri.Scheme
+	}
+
+	// Cache the bucket URI (e.g. for "s3://bucket/path", it is "s3://bucket") for later use
+	uri.Path = ""
+	bucketURI := uri.String()
+
 	return &globResolver{
 		runtime:      opts.Runtime,
 		instanceID:   opts.InstanceID,
 		props:        props,
+		bucketURI:    bucketURI,
 		tmpTableName: tmpTableName,
 	}, nil
 }
@@ -196,7 +215,7 @@ func (r *globResolver) ResolveExport(ctx context.Context, w io.Writer, opts *run
 }
 
 // buildUnpartitioned builds a result consisting of one row per file.
-// Each row is a map with the keys "path" and "updated_on".
+// Each row is a map with the keys "uri", "path", and "updated_on".
 func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []map[string]any {
 	rows := make([]map[string]any, 0, len(entries))
 	for _, entry := range entries {
@@ -205,6 +224,7 @@ func (r *globResolver) buildFilesResult(entries []drivers.ObjectStoreEntry) []ma
 		}
 
 		rows = append(rows, map[string]any{
+			"uri":        path.Join(r.bucketURI, entry.Path),
 			"path":       entry.Path,
 			"updated_on": entry.UpdatedOn,
 		})
@@ -217,7 +237,7 @@ var hivePartitionRegex = regexp.MustCompile(`/([^/\?]+)=([^/\n\?]*)`)
 
 // buildPartitioned builds a result consisting of one row per partition.
 // It groups the files by directory.
-// Each row is a map with the keys "path", "updated_on", "files", and the Hive partition columns if requested.
+// Each row is a map with the keys "uri", "path", "updated_on", "files" if RollupFiles is true, and the Hive partition columns if requested.
 func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry, parseHivePartitions bool) []map[string]any {
 	// Group the entries by directory
 	rows := make(map[string]map[string]any)
@@ -232,9 +252,12 @@ func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry
 		if row == nil {
 			// Init a new row
 			row = map[string]any{
+				"uri":        path.Join(r.bucketURI, dir),
 				"path":       dir,
 				"updated_on": entry.UpdatedOn,
-				"files":      []string{entry.Path},
+			}
+			if r.props.RollupFiles {
+				row["files"] = []string{entry.Path}
 			}
 			rows[dir] = row
 
@@ -246,8 +269,10 @@ func (r *globResolver) buildPartitionedResult(entries []drivers.ObjectStoreEntry
 			}
 		} else {
 			// Add to files slice of the existing row
-			files := row["files"].([]string)
-			row["files"] = append(files, entry.Path)
+			if r.props.RollupFiles {
+				files := row["files"].([]string)
+				row["files"] = append(files, entry.Path)
+			}
 
 			// Bump updated_on of the existing row if it's newer
 			updatedOn := row["updated_on"].(time.Time)
