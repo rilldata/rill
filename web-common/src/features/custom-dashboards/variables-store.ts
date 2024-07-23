@@ -39,6 +39,14 @@ const dashboardVariableReducers = {
       return state;
     });
   },
+  updateVariable(name: string, variableName: string, value: unknown) {
+    updateDashboardByName(name, (variables) => {
+      const variable = variables.find((v) => v.name === variableName);
+      if (variable) {
+        variable.currentValue = value;
+      }
+    });
+  },
 };
 
 export const dashboardVariablesStore: Readable<DashboardStoreType> &
@@ -58,14 +66,14 @@ export function useVariableInputParams(
   inputParams: V1ComponentVariable[] | undefined,
 ): Readable<Record<string, unknown>> {
   return derived(dashboardVariablesStore, ($store) => {
-    const variables = $store.dashboards[name];
+    const variables: ComponentVariable[] | undefined = $store.dashboards[name];
     if (!inputParams || !inputParams?.length) return {};
 
     const result: Record<string, unknown> = {};
     inputParams.forEach((param) => {
       if (!param?.name) return;
 
-      const variable = variables.find((v) => v.name === param.name);
+      const variable = variables?.find((v) => v.name === param.name);
       if (variable) {
         result[param.name] = variable?.currentValue;
       } else {

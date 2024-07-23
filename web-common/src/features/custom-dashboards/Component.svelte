@@ -21,7 +21,6 @@
   import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { createRuntimeServiceGetParsedComponent } from "@rilldata/web-common/runtime-client/manual-clients";
-  import { readable, Readable } from "svelte/store";
 
   export let i: number;
   export let builders: Builder[] = [];
@@ -54,14 +53,12 @@
     rendererProperties,
     resolverProperties,
     input,
+    output,
     title,
     subtitle,
   } = componentResource?.component?.spec ?? {});
 
-  let inputVariableParams: Readable<Record<string, any>> = readable({});
-  $: if (dashboardName) {
-    inputVariableParams = useVariableInputParams(dashboardName, input);
-  }
+  $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
   $: parsedResourceQuery = createRuntimeServiceGetParsedComponent(
     queryClient,
@@ -71,8 +68,6 @@
   );
   $: data = $parsedResourceQuery?.data;
   $: parsedComponent = load(data?.content);
-
-  $: console.log(data);
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -143,6 +138,7 @@
           {chartView}
           {renderer}
           {input}
+          {output}
           {rendererProperties}
           {resolverProperties}
           {componentName}

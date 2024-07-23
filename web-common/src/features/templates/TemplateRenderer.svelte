@@ -15,6 +15,7 @@
   export let renderer: string;
   export let componentName: string;
   export let input: V1ComponentVariable[] | undefined;
+  export let output: V1ComponentVariable | undefined;
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let resolverProperties: V1ComponentSpecResolverProperties | undefined;
 </script>
@@ -26,7 +27,13 @@
 {:else if renderer === "image"}
   <Image {rendererProperties} />
 {:else if renderer === "select"}
-  <Select {componentName} {resolverProperties} {rendererProperties} />
+  <Select
+    {componentName}
+    {input}
+    {output}
+    {resolverProperties}
+    {rendererProperties}
+  />
 {:else if resolverProperties}
   <ChartTemplate
     {chartView}

@@ -9,7 +9,6 @@
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
   import type { View, VisualizationSpec } from "svelte-vega";
-  import { readable, Readable } from "svelte/store";
   import VegaLiteRenderer from "../charts/render/VegaLiteRenderer.svelte";
 
   export let chartName: string;
@@ -19,6 +18,7 @@
   export let resolverProperties: V1ComponentSpecResolverProperties;
 
   const dashboardName = getContext("rill::custom-dashboard:name") as string;
+
   let viewVL: View;
   let error: string | null = null;
   let parsedVegaSpec: VisualizationSpec | null = null;
@@ -33,10 +33,7 @@
     error = JSON.stringify(e);
   }
 
-  let inputVariableParams: Readable<Record<string, any>> = readable({});
-  $: if (dashboardName) {
-    inputVariableParams = useVariableInputParams(dashboardName, input);
-  }
+  $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
   $: chartDataQuery = createRuntimeServiceGetChartData(
     queryClient,
