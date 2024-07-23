@@ -15,9 +15,9 @@ sidebar_position: 7
 
 ![Connecting to DuckDB/MotherDuck](/img/reference/connectors/motherduck/motherduck.png)
 
-## Connecting to DuckDB
+## Connecting to External DuckDB as a Source
 
-As noted above, if you wish to connect to a persistent DuckDB database to read existing tables, Rill will first need to be able to access the underlying DuckDB database. As DuckDB is an _in-memory_ database that's primarily used for local use cases, credentials are not required (and you will typically use Rill Developer). However, if the database file is <u>included</u> in your Git repository, then Rill Cloud will also be able to serve your DuckDB sourced dashboards.
+As noted above, if you wish to connect to a persistent DuckDB database to read existing tables, Rill will first need to be able to access the underlying DuckDB database. Once access has been established, the data will be read from your external databases into the built-in DuckDB database in Rill.
 
 ### Local credentials
 

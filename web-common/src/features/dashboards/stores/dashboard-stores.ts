@@ -1,7 +1,6 @@
 import { LeaderboardContextColumn } from "@rilldata/web-common/features/dashboards/leaderboard-context-column";
 import { getDashboardStateFromUrl } from "@rilldata/web-common/features/dashboards/proto-state/fromProto";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
-import { setContextColumn } from "@rilldata/web-common/features/dashboards/state-managers/actions/context-columns";
 import { getWhereFilterExpressionIndex } from "@rilldata/web-common/features/dashboards/state-managers/selectors/dimension-filters";
 import { AdvancedMeasureCorrector } from "@rilldata/web-common/features/dashboards/stores/AdvancedMeasureCorrector";
 import {
@@ -14,7 +13,6 @@ import {
   forEachIdentifier,
 } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
-import { getPersistentDashboardStore } from "@rilldata/web-common/features/dashboards/stores/persistent-dashboard-state";
 import { TDDChart } from "@rilldata/web-common/features/dashboards/time-dimension-details/types";
 import { getMapFromArray } from "@rilldata/web-common/lib/arrayUtils";
 import type {
@@ -438,11 +436,6 @@ const metricViewReducers = {
 
   setComparisonDimension(name: string, dimensionName: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      if (dimensionName === undefined) {
-        setDisplayComparison(metricsExplorer, true);
-      } else {
-        setDisplayComparison(metricsExplorer, false);
-      }
       metricsExplorer.selectedComparisonDimension = dimensionName;
       metricsExplorer.tdd.pinIndex = getPinIndexForDimension(
         metricsExplorer,
@@ -454,7 +447,6 @@ const metricViewReducers = {
   disableAllComparisons(name: string) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
       metricsExplorer.selectedComparisonDimension = undefined;
-      setDisplayComparison(metricsExplorer, false);
     });
   },
 
@@ -464,7 +456,6 @@ const metricViewReducers = {
     metricsViewSpec: V1MetricsViewSpec,
   ) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setDisplayComparison(metricsExplorer, true);
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
       AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
@@ -487,7 +478,8 @@ const metricViewReducers = {
 
   displayTimeComparison(name: string, showTimeComparison: boolean) {
     updateMetricsExplorerByName(name, (metricsExplorer) => {
-      setDisplayComparison(metricsExplorer, showTimeComparison);
+      metricsExplorer.showTimeComparison = showTimeComparison;
+      metricsExplorer.selectedComparisonDimension = undefined;
     });
   },
 
@@ -510,12 +502,6 @@ const metricViewReducers = {
       };
 
       metricsExplorer.selectedComparisonTimeRange = comparisonTimeRange;
-
-      setDisplayComparison(
-        metricsExplorer,
-        metricsExplorer.selectedComparisonTimeRange !== undefined &&
-          metricsExplorer.selectedComparisonDimension === undefined,
-      );
 
       AdvancedMeasureCorrector.correct(metricsExplorer, metricsViewSpec);
     });
@@ -541,51 +527,6 @@ export function useDashboardStore(
   return derived(metricsExplorerStore, ($store) => {
     return $store.entities[name];
   });
-}
-
-export function setDisplayComparison(
-  metricsExplorer: MetricsExplorerEntity,
-  showTimeComparison: boolean,
-) {
-  metricsExplorer.showTimeComparison = showTimeComparison;
-  if (showTimeComparison && !metricsExplorer.selectedComparisonTimeRange) {
-    metricsExplorer.selectedComparisonTimeRange = {} as any;
-  }
-
-  if (showTimeComparison) {
-    metricsExplorer.selectedComparisonDimension = undefined;
-  }
-
-  // if setting showTimeComparison===true and not currently
-  //  showing any context column, then show DELTA_PERCENT
-  if (
-    showTimeComparison &&
-    metricsExplorer.leaderboardContextColumn === LeaderboardContextColumn.HIDDEN
-  ) {
-    setContextColumn(
-      {
-        dashboard: metricsExplorer,
-        persistentDashboardStore: getPersistentDashboardStore(),
-      },
-      LeaderboardContextColumn.DELTA_PERCENT,
-    );
-  }
-
-  // if setting showTimeComparison===false and currently
-  //  showing DELTA_PERCENT, then hide context column
-  if (
-    !showTimeComparison &&
-    metricsExplorer.leaderboardContextColumn ===
-      LeaderboardContextColumn.DELTA_PERCENT
-  ) {
-    setContextColumn(
-      {
-        dashboard: metricsExplorer,
-        persistentDashboardStore: getPersistentDashboardStore(),
-      },
-      LeaderboardContextColumn.HIDDEN,
-    );
-  }
 }
 
 export function sortTypeForContextColumnType(

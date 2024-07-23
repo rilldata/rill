@@ -164,7 +164,7 @@
           </div>
         {:else if sorted === SortDirection.ASCENDING}
           <div in:fly|global={{ duration: 200, y: 8 }} style:opacity={1}>
-            <ArrowDown transform="scale(1 -1)" size="12px" />
+            <ArrowDown flip size="12px" />
           </div>
         {/if}
       </div>

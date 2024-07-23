@@ -150,6 +150,8 @@ import type {
   V1GetReportMetaResponse,
   AdminServiceGetReportMetaBody,
   V1RevokeServiceAuthTokenResponse,
+  V1SudoIssueRuntimeManagerTokenResponse,
+  V1SudoIssueRuntimeManagerTokenRequest,
   V1ListSuperusersResponse,
   V1SetSuperuserResponse,
   V1SetSuperuserRequest,
@@ -5856,6 +5858,57 @@ export const createAdminServiceRevokeServiceAuthToken = <
     Awaited<ReturnType<typeof adminServiceRevokeServiceAuthToken>>,
     TError,
     { tokenId: string },
+    TContext
+  >(mutationFn, mutationOptions);
+};
+/**
+ * @summary SudoIssueRuntimeManagerToken returns a runtime JWT with full manager permissions for a runtime.
+ */
+export const adminServiceSudoIssueRuntimeManagerToken = (
+  v1SudoIssueRuntimeManagerTokenRequest: V1SudoIssueRuntimeManagerTokenRequest,
+) => {
+  return httpClient<V1SudoIssueRuntimeManagerTokenResponse>({
+    url: `/v1/superuser/deployments/manager-token`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: v1SudoIssueRuntimeManagerTokenRequest,
+  });
+};
+
+export type AdminServiceSudoIssueRuntimeManagerTokenMutationResult =
+  NonNullable<
+    Awaited<ReturnType<typeof adminServiceSudoIssueRuntimeManagerToken>>
+  >;
+export type AdminServiceSudoIssueRuntimeManagerTokenMutationBody =
+  V1SudoIssueRuntimeManagerTokenRequest;
+export type AdminServiceSudoIssueRuntimeManagerTokenMutationError = RpcStatus;
+
+export const createAdminServiceSudoIssueRuntimeManagerToken = <
+  TError = RpcStatus,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof adminServiceSudoIssueRuntimeManagerToken>>,
+    TError,
+    { data: V1SudoIssueRuntimeManagerTokenRequest },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof adminServiceSudoIssueRuntimeManagerToken>>,
+    { data: V1SudoIssueRuntimeManagerTokenRequest }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return adminServiceSudoIssueRuntimeManagerToken(data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof adminServiceSudoIssueRuntimeManagerToken>>,
+    TError,
+    { data: V1SudoIssueRuntimeManagerTokenRequest },
     TContext
   >(mutationFn, mutationOptions);
 };

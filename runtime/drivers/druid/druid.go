@@ -34,6 +34,7 @@ var spec = drivers.Spec{
 			DisplayName: "Connection string",
 			Placeholder: "https://example.com/druid/v2/sql/avatica-protobuf?authentication=BASIC&avaticaUser=username&avaticaPassword=password",
 			Secret:      true,
+			NoPrompt:    true,
 		},
 		{
 			Key:         "host",
