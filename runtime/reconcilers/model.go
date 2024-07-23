@@ -687,6 +687,7 @@ func (r *ModelReconciler) executeWithStage(ctx context.Context, stageConnector s
 	name, executor, rel, err := r.acquireExecutor(ctx, stage2Opts)
 	if err != nil {
 		// cleanup stage1 result data
+		// This is done in same context. Can leak stage data in case of ctx cancellations.
 		if mm, ok := sc.AsModelManager(r.C.InstanceID); ok {
 			return "", nil, errors.Join(err, mm.Delete(ctx, res1))
 		}

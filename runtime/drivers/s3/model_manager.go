@@ -16,29 +16,6 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-type ModelInputProperties struct {
-	SQL  string `mapstructure:"sql"`
-	Args []any  `mapstructure:"args"`
-}
-
-func (p *ModelInputProperties) Validate() error {
-	if p.SQL == "" {
-		return fmt.Errorf("missing property 'sql'")
-	}
-	return nil
-}
-
-type ModelOutputProperties struct {
-	Path string `mapstructure:"path"`
-}
-
-func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecutorOptions) error {
-	if p.Path == "" {
-		return fmt.Errorf("missing property 'path'")
-	}
-	return nil
-}
-
 type ModelResultProperties struct {
 	Path string `mapstructure:"path"`
 }

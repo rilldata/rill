@@ -7,6 +7,7 @@ import (
 
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/drivers/s3"
 )
 
 type s3ToSelfExecutor struct {
@@ -53,13 +54,15 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, e
 		OutputConnector:  e.opts.OutputConnector,
 		OutputProperties: e.opts.OutputProperties,
 		Priority:         e.opts.Priority,
+		Incremental:      e.opts.Incremental,
+		IncrementalRun:   e.opts.IncrementalRun,
 	}
 	executor := &selfToSelfExecutor{c: e.c, opts: opts}
 	return executor.Execute(ctx)
 }
 
 func (e *s3ToSelfExecutor) genSQL(path string) (string, error) {
-	props := &s3ConfigProperties{}
+	props := &s3.ConfigProperties{}
 	if err := mapstructure.Decode(e.s3.Config(), props); err != nil {
 		return "", err
 	}
@@ -76,10 +79,4 @@ func (e *s3ToSelfExecutor) genSQL(path string) (string, error) {
 	}
 	sb.WriteString(")")
 	return sb.String(), nil
-}
-
-type s3ConfigProperties struct {
-	AccessKeyID     string `mapstructure:"aws_access_key_id"`
-	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
-	SessionToken    string `mapstructure:"aws_access_token"`
 }

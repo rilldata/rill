@@ -92,7 +92,7 @@ type driver struct{}
 
 var _ drivers.Driver = driver{}
 
-type configProperties struct {
+type ConfigProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
@@ -107,7 +107,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, errors.New("s3 driver can't be shared")
 	}
 
-	cfg := &configProperties{}
+	cfg := &ConfigProperties{}
 	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
 		return nil, err
@@ -131,7 +131,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 	}
 
 	conn := &Connection{
-		config: &configProperties{},
+		config: &ConfigProperties{},
 		logger: logger,
 	}
 
@@ -150,7 +150,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type Connection struct {
 	// config is input configs passed to driver.Open
-	config *configProperties
+	config *ConfigProperties
 	logger *zap.Logger
 }
 
@@ -228,13 +228,6 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
-	if w, ok := opts.InputHandle.AsWarehouse(); ok {
-		return &warehouseToSelfExecutor{
-			w:    w,
-			c:    c,
-			opts: opts,
-		}, true
-	}
 	return nil, false
 }
 

@@ -34,11 +34,6 @@ var selectQueryRegex = regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?
 
 var _ drivers.Warehouse = &Connection{}
 
-// Export implements drivers.Warehouse.
-func (c *Connection) Export(ctx context.Context, props map[string]any, store drivers.ObjectStore, outputLocation string) (*drivers.ExportResult, error) {
-	return nil, drivers.ErrNotImplemented
-}
-
 // QueryAsFiles implements drivers.SQLStore
 func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)

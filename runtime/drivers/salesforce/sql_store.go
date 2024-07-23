@@ -14,11 +14,6 @@ const defaultClientID = "3MVG9KsVczVNcM8y6w3Kjszy.DW9gMzcYDHT97WIX3NYNYA35UvITyp
 
 var _ drivers.Warehouse = &connection{}
 
-// Export implements drivers.Warehouse.
-func (c *connection) Export(ctx context.Context, props map[string]any, store drivers.ObjectStore, outputLocation string) (*drivers.ExportResult, error) {
-	return nil, drivers.ErrNotImplemented
-}
-
 // QueryAsFiles implements drivers.SQLStore
 func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
