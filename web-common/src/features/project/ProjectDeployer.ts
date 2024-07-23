@@ -2,6 +2,8 @@ import { page } from "$app/stores";
 import type { ConnectError } from "@connectrpc/connect";
 import { getOrgName } from "@rilldata/web-common/features/project/getOrgName";
 import { waitUntil } from "@rilldata/web-common/lib/waitUtils";
+import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
 import type { DeployValidationResponse } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import {
   createLocalServiceDeploy,
@@ -69,11 +71,14 @@ export class ProjectDeployer {
     validation = get(this.validation).data as DeployValidationResponse;
 
     if (!validation.isAuthenticated) {
+      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginStart);
       window.open(
         `${validation.loginUrl}/?redirect=${get(page).url.toString()}`,
         "_self",
       );
       return false;
+    } else {
+      void behaviourEvent?.fireDeployEvent(BehaviourEventAction.LoginSuccess);
     }
 
     // Disabling for now. Will support this though "Connect to github"
@@ -119,6 +124,9 @@ export class ProjectDeployer {
           org,
           upload: true, // hardcoded to upload for now
         });
+        void behaviourEvent?.fireDeployEvent(
+          BehaviourEventAction.DeploySuccess,
+        );
         window.open(resp.frontendUrl + "/-/invite", "_self");
       }
     } catch (err) {

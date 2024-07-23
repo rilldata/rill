@@ -13,6 +13,7 @@
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
   import { Button } from "../../../components/button";
 
@@ -30,7 +31,7 @@
     } else {
       open = true;
     }
-    void behaviourEvent?.fireDeployIntentEvent();
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
   }
 
   function onDeploy() {
@@ -63,8 +64,11 @@
         <AlertDialogHeader>
           <AlertDialogTitle>Deploy this project for free</AlertDialogTitle>
           <AlertDialogDescription>
-            You’re about to start a 30-day FREE trial of Rill Cloud, where you
-            can set alerts, share dashboards, and more.
+            You’re about to deploy to Rill Cloud, where you can set alerts,
+            share dashboards, and more. <a
+              href="https://www.rilldata.com/pricing"
+              target="_blank">See pricing details</a
+            >
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
