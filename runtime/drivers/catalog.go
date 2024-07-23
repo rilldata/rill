@@ -3,6 +3,7 @@ package drivers
 import (
 	"context"
 	"errors"
+	"time"
 )
 
 // Constants representing the kinds of catalog objects.
@@ -31,11 +32,18 @@ var ErrResourceAlreadyExists = errors.New("controller: resource already exists")
 type CatalogStore interface {
 	NextControllerVersion(ctx context.Context) (int64, error)
 	CheckControllerVersion(ctx context.Context, v int64) error
+
 	FindResources(ctx context.Context) ([]Resource, error)
 	CreateResource(ctx context.Context, v int64, r Resource) error
 	UpdateResource(ctx context.Context, v int64, r Resource) error
 	DeleteResource(ctx context.Context, v int64, k, n string) error
 	DeleteResources(ctx context.Context) error
+
+	FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]ModelSplit, error)
+	FindModelSplitsByPending(ctx context.Context, modelID string, limit int) ([]ModelSplit, error)
+	InsertModelSplit(ctx context.Context, modelID string, split ModelSplit) error
+	UpdateModelSplit(ctx context.Context, modelID string, split ModelSplit) error
+	DeleteModelSplits(ctx context.Context, modelID string) error
 }
 
 // Resource is an entry in a catalog store
@@ -43,4 +51,14 @@ type Resource struct {
 	Kind string
 	Name string
 	Data []byte
+}
+
+// ModelSplit is a single executable unit of a model.
+type ModelSplit struct {
+	Key           string
+	DataJSON      []byte
+	DataUpdatedOn time.Time
+	ExecutedOn    time.Time
+	Error         string
+	Elapsed       time.Duration
 }

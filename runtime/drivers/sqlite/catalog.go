@@ -140,3 +140,116 @@ func (c *catalogStore) DeleteResources(ctx context.Context) error {
 
 	return nil
 }
+
+func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
+	rows, err := c.db.QueryxContext(
+		ctx,
+		"SELECT key, data_json, data_updated_on, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND keys IN ? ORDER BY key",
+		c.instanceID,
+		modelID,
+		keys,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []drivers.ModelSplit
+	for rows.Next() {
+		var elapsedMs int64
+		r := drivers.ModelSplit{}
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.DataUpdatedOn, &r.ExecutedOn, &r.Error, &elapsedMs)
+		if err != nil {
+			return nil, err
+		}
+		r.Elapsed = time.Duration(elapsedMs) * time.Millisecond
+		res = append(res, r)
+	}
+
+	if rows.Err() != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *catalogStore) FindModelSplitsByPending(ctx context.Context, modelID string, limit int) ([]drivers.ModelSplit, error) {
+	rows, err := c.db.QueryxContext(
+		ctx,
+		"SELECT key, data_json, data_updated_on, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND executed_on IS NULL ORDER BY data_updated_on LIMIT ?",
+		c.instanceID,
+		modelID,
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []drivers.ModelSplit
+	for rows.Next() {
+		var elapsedMs int64
+		r := drivers.ModelSplit{}
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.DataUpdatedOn, &r.ExecutedOn, &r.Error, &elapsedMs)
+		if err != nil {
+			return nil, err
+		}
+		r.Elapsed = time.Duration(elapsedMs) * time.Millisecond
+		res = append(res, r)
+	}
+
+	if rows.Err() != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
+func (c *catalogStore) InsertModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+	_, err := c.db.ExecContext(
+		ctx,
+		"INSERT INTO model_splits(instance_id, model_id, key, data_json, data_updated_on, executed_on, error, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		c.instanceID,
+		modelID,
+		split.Key,
+		split.DataJSON,
+		split.DataUpdatedOn,
+		split.ExecutedOn,
+		split.Error,
+		split.Elapsed.Milliseconds(),
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *catalogStore) UpdateModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+	_, err := c.db.ExecContext(
+		ctx,
+		"UPDATE model_splits SET data_json=?, data_updated_on=?, executed_on=?, error=?, elapsed_ms=? WHERE instance_id=? AND model_id=? AND key=?",
+		split.DataJSON,
+		split.DataUpdatedOn,
+		split.ExecutedOn,
+		split.Error,
+		split.Elapsed.Milliseconds(),
+		c.instanceID,
+		modelID,
+		split.Key,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *catalogStore) DeleteModelSplits(ctx context.Context, modelID string) error {
+	_, err := c.db.ExecContext(ctx, "DELETE FROM model_splits WHERE instance_id=? AND model_id=?", c.instanceID, modelID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
