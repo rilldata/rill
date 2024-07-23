@@ -62,6 +62,10 @@
     });
     void queryClient.refetchQueries(
       getAdminServiceGetProjectQueryKey(organization, project),
+      {
+        // avoid refetching createAdminServiceGetProjectWithBearerToken
+        exact: true,
+      },
     );
     void queryClient.refetchQueries(
       getAdminServiceGetGithubUserStatusQueryKey(),
