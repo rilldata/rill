@@ -40,13 +40,11 @@ const dashboardVariableReducers = {
     });
   },
   updateVariable(name: string, variableName: string, value: unknown) {
-    console.log("updateVariable", name, variableName, value);
     updateDashboardByName(name, (variables) => {
       const variable = variables.find((v) => v.name === variableName);
 
       if (variable) {
         variable.currentValue = value;
-        console.log("updateVariable", variable, value);
       }
     });
   },

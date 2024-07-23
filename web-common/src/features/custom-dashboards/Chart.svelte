@@ -34,7 +34,6 @@
   $: dashboardName = getContext("rill::custom-dashboard:name") as string;
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
-  $: console.log($inputVariableParams);
   $: chartDataQuery = createRuntimeServiceGetChartData(
     queryClient,
     $runtime.instanceId,

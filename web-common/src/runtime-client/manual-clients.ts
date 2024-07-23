@@ -62,7 +62,7 @@ export function createRuntimeServiceGetChartData(
   props: V1ComponentSpecResolverProperties | undefined,
 ) {
   return createQuery<unknown, unknown, Record<string, unknown>[]>(
-    [`/v1/instances/${instanceId}/components/${chartName}/data`, props],
+    [`/v1/instances/${instanceId}/components/${chartName}/data`, props, args],
     {
       queryFn: ({ signal }) =>
         runtimeServiceGetChartData(instanceId, chartName, args, signal),
@@ -87,7 +87,6 @@ export function runtimeServiceGetParsedComponent(
   });
 }
 
-
 export function createRuntimeServiceGetParsedComponent(
   queryClient: QueryClient,
   instanceId: string,
@@ -95,10 +94,15 @@ export function createRuntimeServiceGetParsedComponent(
   args: any | undefined,
 ) {
   return createQuery<unknown, unknown, Record<string, unknown>[]>(
-    [`/v1/instances/${instanceId}/components/${componentName}/parse`],
+    [`/v1/instances/${instanceId}/components/${componentName}/parse`, args],
     {
       queryFn: ({ signal }) =>
-        runtimeServiceGetParsedComponent(instanceId, componentName, args, signal),
+        runtimeServiceGetParsedComponent(
+          instanceId,
+          componentName,
+          args,
+          signal,
+        ),
       enabled: true,
       queryClient,
     },
