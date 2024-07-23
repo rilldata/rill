@@ -33,7 +33,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				}
 			}
 
-			subResp, err := client.GetOrganizationBillingSubscription(cmd.Context(), &adminv1.GetOrganizationBillingSubscriptionRequest{
+			subResp, err := client.GetBillingSubscription(cmd.Context(), &adminv1.GetBillingSubscriptionRequest{
 				OrgName: orgName,
 			})
 			if err != nil {
@@ -46,7 +46,7 @@ func CreateCmd(ch *cmdutil.Helper) *cobra.Command {
 				return nil
 			}
 
-			resp, err := client.UpdateOrganizationBillingSubscription(cmd.Context(), &adminv1.UpdateOrganizationBillingSubscriptionRequest{
+			resp, err := client.UpdateBillingSubscription(cmd.Context(), &adminv1.UpdateBillingSubscriptionRequest{
 				OrgName:  orgName,
 				PlanName: plan,
 			})

@@ -19,7 +19,7 @@ func (n noop) Name() string {
 }
 
 func (n noop) GetDefaultPlan(ctx context.Context) (*Plan, error) {
-	return nil, nil
+	return &Plan{Quotas: Quotas{}}, nil
 }
 
 func (n noop) GetPlans(ctx context.Context) ([]*Plan, error) {
@@ -38,12 +38,20 @@ func (n noop) GetPublicPlans(ctx context.Context) ([]*Plan, error) {
 	return nil, nil
 }
 
-func (n noop) CreateCustomer(ctx context.Context, organization *database.Organization) (string, error) {
-	return "", nil
+func (n noop) CreateCustomer(ctx context.Context, organization *database.Organization, provider PaymentProvider) (*Customer, error) {
+	return &Customer{}, nil
+}
+
+func (n noop) FindCustomer(ctx context.Context, customerID string) (*Customer, error) {
+	return &Customer{}, nil
+}
+
+func (n noop) UpdateCustomerPaymentID(ctx context.Context, customerID string, provider PaymentProvider, paymentProviderID string) error {
+	return nil
 }
 
 func (n noop) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
-	return nil, nil
+	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
 func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, cancelOption SubscriptionCancellationOption) error {
@@ -51,15 +59,19 @@ func (n noop) CancelSubscription(ctx context.Context, subscriptionID string, can
 }
 
 func (n noop) GetSubscriptionsForCustomer(ctx context.Context, customerID string) ([]*Subscription, error) {
-	return nil, nil
+	return []*Subscription{{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}}, nil
 }
 
 func (n noop) ChangeSubscriptionPlan(ctx context.Context, subscriptionID string, plan *Plan) (*Subscription, error) {
-	return nil, nil
+	return &Subscription{Customer: &Customer{}, Plan: &Plan{Quotas: Quotas{}}}, nil
 }
 
 func (n noop) CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error {
 	return nil
+}
+
+func (n noop) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error) {
+	return []*Subscription{}, nil
 }
 
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {

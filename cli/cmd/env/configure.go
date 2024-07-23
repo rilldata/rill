@@ -181,6 +181,9 @@ func VariablesFlow(ctx context.Context, ch *cmdutil.Helper, projectPath string) 
 
 		for i := range c.Spec.ConfigProperties {
 			prop := c.Spec.ConfigProperties[i] // TODO: Move into range and turn into pointer
+			if prop.NoPrompt {
+				continue
+			}
 
 			key := fmt.Sprintf("connector.%s.%s", c.Name, prop.Key)
 			msg := key

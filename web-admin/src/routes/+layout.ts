@@ -8,6 +8,7 @@ export const ssr = false;
 import type { V1ProjectPermissions } from "@rilldata/web-admin/client";
 import { adminServiceGetProject } from "@rilldata/web-admin/client/index.js";
 import { getAdminServiceGetProjectQueryKey } from "@rilldata/web-admin/client/index.js";
+import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient.js";
 import { error } from "@sveltejs/kit";
 import type { QueryFunction, QueryKey } from "@tanstack/svelte-query";
@@ -65,7 +66,8 @@ export const load = async ({ params }) => {
       projectPermissions,
     };
   } catch (e) {
-    console.error(e);
-    throw error(e.response.status, "Error fetching deployment");
+    if (e.response?.status !== 403 || (await checkUserAccess())) {
+      throw error(e.response.status, "Error fetching deployment");
+    }
   }
 };

@@ -128,7 +128,7 @@ export interface MetricsExplorerEntity {
    * the line charts and bignums.
    * It does NOT affect the leaderboard context column.
    */
-  showTimeComparison?: boolean;
+  showTimeComparison: boolean;
 
   /**
    * state of context column in the leaderboard

@@ -21,14 +21,13 @@ Select + Add -> Data -> Connect an OLAP engine
 **`type`** - refers to the resource type and must be 'connector'
 
 **`driver`** - refers to the [OLAP engine](../olap-engines/multiple-olap.md)
-- _`duckdb`_   link to [ DuckDB Documentation](https://duckdb.org/docs/guides/overview.html)
 - _`clickhouse`_ link to[ Clickhouse documentation](https://clickhouse.com/docs/en/intro)
 - _`druid`_ link to[ Druid documentation](https://druid.apache.org/docs/latest/design/)
 - _`pinot`_ link to[ Pinot documentation](https://docs.pinot.apache.org/)
 
 :::tip A note on OLAP engines
 
-You can have multiple OLAP engines in a single project and have each dashboard run on a different engine using the olap_connector parameter directly on a dashboard.
+By defining the `connector` parameter in a [dashboard's YAML](dashboards.md) file, you can have multiple OLAP engines in a single project.
 
 :::
 
@@ -48,7 +47,7 @@ You can also connect using a dsn parameter. You cannot use the above parameters 
 **`dsn`** - connection string containing all the details above, in a single string. Note that each engine's syntax is slightly different. Please refer to [our documentation](https://docs.rilldata.com/reference/olap-engines/) for further details.
 
 ---
-
+ 
 _Example #1: Connecting to a local running Clickhouse server (no security enabled)_
 ```yaml
 type: connector
@@ -58,7 +57,7 @@ host: "localhost"
 port: "9000"
 ```
 
-_Example #2: Connecting to a ClickHouse Cloud _
+_Example #2: Connecting to a ClickHouse Cloud_
 ```yaml
 type: connector
 driver: clickhouse

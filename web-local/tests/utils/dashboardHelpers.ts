@@ -1,4 +1,4 @@
-import { expect, type Locator } from "@playwright/test";
+import { expect } from "@playwright/test";
 import type { V1Expression } from "@rilldata/web-common/runtime-client";
 import type { Page, Response } from "playwright";
 import {
@@ -29,13 +29,13 @@ export async function assertLeaderboards(
   }>,
 ) {
   for (const { label, values } of leaderboards) {
-    const leaderboardBlock = page.getByRole("grid", {
+    const leaderboardBlock = page.getByRole("table", {
       name: `${label} leaderboard`,
     });
     await expect(leaderboardBlock).toBeVisible();
 
     const actualValues = await leaderboardBlock
-      .locator(".leaderboard-entry > div:first-child")
+      .locator("tr > td:nth-child(2)")
       .allInnerTexts();
     expect(actualValues).toEqual(values);
   }
@@ -171,22 +171,7 @@ export async function interactWithTimeRangeMenu(
   await cb();
   // Wait for menu to close
   await expect(
-    page.getByRole("menu", { name: "Time range selector" }),
-  ).not.toBeVisible();
-}
-
-export async function interactWithComparisonMenu(
-  page: Page,
-  curLabel: string,
-  cb: (l: Locator) => void | Promise<void>,
-) {
-  // Open the menu
-  await page.getByRole("button", { name: curLabel }).click();
-  // Run the defined interactions
-  await cb(page.getByLabel("Comparison selector"));
-  // Wait for menu to close
-  await expect(
-    page.getByRole("menu", { name: "Comparison selector" }),
+    page.getByRole("menu", { name: "Select time range" }),
   ).not.toBeVisible();
 }
 

@@ -27,8 +27,8 @@ test.describe("leaderboard and dimension table sorting", () => {
      * LEADERBOARD
      */
     await assertAAboveB(
-      page.getByRole("button", { name: "null 32.9k" }),
-      page.getByRole("button", { name: "Microsoft 10.4k" }),
+      page.getByRole("row", { name: "null 32.9k" }),
+      page.getByRole("row", { name: "Microsoft 10.4k" }),
     );
 
     await page
@@ -37,53 +37,39 @@ test.describe("leaderboard and dimension table sorting", () => {
       .click();
 
     await assertAAboveB(
-      page.getByRole("button", { name: "Microsoft 10.4k" }),
-      page.getByRole("button", { name: "null 32.9k" }),
+      page.getByRole("row", { name: "Microsoft 10.4k" }),
+      page.getByRole("row", { name: "null 32.9k" }),
     );
 
     const timeRangeMenu = page.getByRole("button", {
       name: "Select time range",
     });
-    const contextColumnMenu = page.getByRole("button", {
-      name: "Select a context column",
-    });
 
     async function openTimeRangeMenu() {
       await timeRangeMenu.click();
       await page
-        .getByRole("menu", { name: "Time range selector" })
+        .getByRole("menu", { name: "Select time range" })
         .waitFor({ state: "visible" });
     }
 
-    async function openContextColumnMenu() {
-      await contextColumnMenu.click();
-      await page.getByRole("menu").waitFor({ state: "visible" });
-    }
-
-    // add pct of total context column
-    await openContextColumnMenu();
-    await page.getByRole("menuitem", { name: "Percent of total" }).click();
-
     await assertAAboveB(
-      page.getByRole("button", { name: "Microsoft 10.4k 10%" }),
-      page.getByRole("button", { name: "null 32.9k 33%" }),
+      page.getByRole("row", { name: "Microsoft 10.4k 10%" }),
+      page.getByRole("row", { name: "null 32.9k 33%" }),
     );
 
     //toggle sort by pct of total
     await page
       .getByLabel("publisher leaderboard")
-      .getByLabel("Toggle sort leaderboards by context column")
+      .getByLabel("Toggle sort leaderboards by percent of total")
       .click();
 
     await assertAAboveB(
-      page.getByRole("button", { name: "facebook.com 15.6k 16%" }),
-      page.getByRole("button", { name: "news.google.com 12.9k 13%" }),
+      page.getByRole("row", { name: "facebook.com 15.6k 16%" }),
+      page.getByRole("row", { name: "news.google.com 12.9k 13%" }),
     );
 
     // add time comparison and select Pct change
-    await page.getByRole("button", { name: "No comparison" }).click();
-    await page.getByRole("menuitem", { name: "Time" }).click();
-    await page.keyboard.press("Escape");
+    await page.getByRole("button", { name: "Comparing" }).click();
 
     await openTimeRangeMenu();
     await page.getByRole("menuitem", { name: "Last 24 Hours" }).click();
@@ -93,8 +79,10 @@ test.describe("leaderboard and dimension table sorting", () => {
     // in the context column dropdown
     await page.waitForTimeout(1000);
 
-    await openContextColumnMenu();
-    await page.getByRole("menuitem", { name: "Percent change" }).click();
+    await page
+      .getByLabel("publisher leaderboard")
+      .getByLabel("Toggle sort leaderboards by percent change")
+      .click();
 
     // need a slight delay for the rankings to update
     await page.waitForTimeout(1000);
@@ -102,35 +90,39 @@ test.describe("leaderboard and dimension table sorting", () => {
     // Broader selectors using RegEx to account for some Playwright runs triggering the display
     // of the starting value on hover
     await assertAAboveB(
-      page.getByRole("button", { name: /^Google/ }),
-      page.getByRole("button", { name: /^Facebook/ }),
+      page.getByRole("row", { name: /^Google/ }),
+      page.getByRole("row", { name: /^Facebook/ }),
     );
 
     await assertAAboveB(
-      page.getByRole("button", { name: "news.yahoo.com 89 16%" }),
-      page.getByRole("button", { name: "sports.yahoo.com 67 -27%" }),
+      page.getByRole("row", { name: "news.yahoo.com 89 12 16%" }),
+      page.getByRole("row", { name: "sports.yahoo.com 67 -25 -27%" }),
     );
 
-    // select absolute change
-    await openContextColumnMenu();
-    await page.getByRole("menuitem", { name: "Absolute change" }).click();
+    // Sort by absolute change
+    await page
+      .getByLabel("publisher leaderboard")
+      .getByRole("button", {
+        name: "Toggle sort leaderboards by absolute change",
+      })
+      .click();
 
     await assertAAboveB(
-      page.getByRole("button", { name: "Google 116 5" }),
-      page.getByRole("button", { name: "Facebook 283 -14" }),
+      page.getByRole("row", { name: "Google 116 5 5%" }),
+      page.getByRole("row", { name: "Facebook 283 -14 -5%" }),
     );
 
     // toggle sort by absolute change
     await page
       .getByLabel("publisher leaderboard")
       .getByRole("button", {
-        name: "Toggle sort leaderboards by context column",
+        name: "Toggle sort leaderboards by absolute change",
       })
       .click();
 
     await assertAAboveB(
-      page.getByRole("button", { name: "Facebook 283 -14" }),
-      page.getByRole("button", { name: "Google 116 5" }),
+      page.getByRole("row", { name: "Facebook 283 -14 -5%" }),
+      page.getByRole("row", { name: "Google 116 5 5%" }),
     );
 
     /**
@@ -140,7 +132,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     await page.locator("#svelte").getByText("Publisher").click();
 
     // click publisher column header to sort by publisher
-    await page.getByRole("button", { name: "Publisher" }).click();
+    await page.getByRole("button", { name: "Publisher", exact: true }).click();
     await assertAAboveB(
       page
         .locator("div")
@@ -183,6 +175,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .filter({ hasText: /^-14$/ })
         .getByRole("button", { name: "Filter dimension value" }),
     );
+
     // sort by absolute change TWICE to sort by absolute change ascending
     await page.locator(".w-full > button:nth-child(2)").click();
     await assertAAboveB(
@@ -198,12 +191,11 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" }),
     );
 
+    // await page.waitForTimeout(60000);
+
     // sort by pct change ONCE to sort by pct change descending
-    await page
-      .getByRole("table", { name: "Dimension table" })
-      .locator("button:nth-child(3)")
-      .first()
-      .click();
+    // await page.locator(".w-full > button:nth-child(3)").first().click();
+    await page.getByRole("button", { name: "%" }).first().click();
     await assertAAboveB(
       page
         .locator("div")
@@ -216,11 +208,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // sort by pct change TWICE to sort by pct change ascending
-    await page
-      .getByRole("table", { name: "Dimension table" })
-      .locator("button:nth-child(3)")
-      .first()
-      .click();
+    await page.getByRole("button", { name: "%" }).first().click();
     await assertAAboveB(
       page
         .locator("div")
@@ -233,11 +221,7 @@ test.describe("leaderboard and dimension table sorting", () => {
     );
 
     // sort by pct of total ONCE to sort by pct of total descending
-    await page
-      .getByRole("table", { name: "Dimension table" })
-      .locator("button:nth-child(4)")
-      .first()
-      .click();
+    await page.getByRole("button", { name: "%" }).nth(1).click();
     await assertAAboveB(
       page
         .locator("div")
@@ -249,11 +233,7 @@ test.describe("leaderboard and dimension table sorting", () => {
         .getByRole("button", { name: "Filter dimension value" }),
     );
     // sort by pct of total TWICE to sort by pct of total ascending
-    await page
-      .getByRole("table", { name: "Dimension table" })
-      .locator("button:nth-child(4)")
-      .first()
-      .click();
+    await page.getByRole("button", { name: "%" }).nth(1).click();
     await assertAAboveB(
       page
         .locator("div")
