@@ -84,6 +84,10 @@ func (r *legacyMetricsResolver) Close() error {
 	return nil
 }
 
+func (r *legacyMetricsResolver) Cacheable() bool {
+	return false
+}
+
 func (r *legacyMetricsResolver) Key() string {
 	hash, err := hashstructure.Hash(r.query, hashstructure.FormatV2, nil)
 	if err != nil {
@@ -327,20 +331,33 @@ func (r *legacyMetricsResolver) formatValue(f formatter.Formatter, v any) any {
 type legacyResolverResult struct {
 	data   []byte
 	schema *runtimev1.StructType
+
+	rows []map[string]any
+	idx  int
+}
+
+func (r *legacyResolverResult) Close() error {
+	return nil
 }
 
 func (r *legacyResolverResult) Schema() *runtimev1.StructType {
 	return r.schema
 }
 
-func (r *legacyResolverResult) Cache() bool {
-	return true
+func (r *legacyResolverResult) Next() (map[string]any, error) {
+	if r.rows == nil {
+		if err := json.Unmarshal(r.data, &r.rows); err != nil {
+			return nil, err
+		}
+	}
+	if r.idx >= len(r.rows) {
+		return nil, io.EOF
+	}
+	row := r.rows[r.idx]
+	r.idx++
+	return row, nil
 }
 
 func (r *legacyResolverResult) MarshalJSON() ([]byte, error) {
 	return r.data, nil
-}
-
-func (r *legacyResolverResult) Close() error {
-	return nil
 }
