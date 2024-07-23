@@ -54,6 +54,19 @@ export function getYupSchema(connector: V1ConnectorDriver) {
           .required("Source name is required"),
       });
 
+    case "motherduck":
+      return yup.object().shape({
+        connection_string: yup
+          .string()
+          .required("Connection string is required"),
+        sql: yup.string().required("SQL is required"),
+        token: yup.string().required("Access token is required"),
+        name: yup
+          .string()
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+          .required("Source name is required"),
+      });
+
     case "sqlite":
       return yup.object().shape({
         db: yup.string().required("db is required"),

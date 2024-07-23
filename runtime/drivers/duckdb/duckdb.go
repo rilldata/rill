@@ -95,6 +95,41 @@ var motherduckSpec = drivers.Spec{
 			Secret: true,
 		},
 	},
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "connection_string",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Connection string",
+			Description: "Connection string",
+			Placeholder: "md:motherduck.db",
+		},
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from MotherDuck.",
+			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "token",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Access token",
+			Description: "MotherDuck access token",
+			Placeholder: "your.access_token.here",
+			Secret:      true,
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+	},
 	ImplementsOLAP: true,
 }
 
