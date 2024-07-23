@@ -30,19 +30,30 @@ const sidebars = {
           type: 'category',
           label: 'Rill Basics',
           description: 'Basic tutorials description',
-          items: ['tutorials/rill_learn_100/101_0', 'tutorials/rill_learn_100/101_1', 'tutorials/rill_learn_100/101_2','tutorials/rill_learn_100/102_0']
+          items: [
+              'tutorials/rill_learn_100/101_0',
+              'tutorials/rill_learn_100/101_1',
+              'tutorials/rill_learn_100/101_2',
+              'tutorials/rill_learn_100/102_0'
+            ]
         },
         {
           type: 'category',
           label: 'Rill Advanced',
           description: 'Advanced tutorials description',
-          items: ['tutorials/rill_learn_200/201_0','tutorials/rill_learn_200/202_0']
+          items: [
+            'tutorials/rill_learn_200/201_0',
+            'tutorials/rill_learn_200/202_0'
+          ]
         },
         {
           type: 'category',
           label: 'Rill Expert',
           description: 'Expert tutorials description',
-          items: ['tutorials/rill_learn_300/301_0','tutorials/rill_learn_300/302_0']
+          items: [
+              'tutorials/rill_learn_300/301_0',
+              'tutorials/rill_learn_300/302_0'
+            ]
         },
       ],
     },
