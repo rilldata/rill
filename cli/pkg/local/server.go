@@ -188,11 +188,10 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		// check if project is a git repo only if there is no project already, or it is connected to github
 		remote, ghURL, err = gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
 		if err != nil {
-			if errors.Is(err, git.ErrRepositoryNotExists) {
-				// no-op. isGithubRepo and githubRemoteFound are already false, but do not return error
-			} else if errors.Is(err, gitutil.ErrGitRemoteNotFound) {
+			if errors.Is(err, gitutil.ErrGitRemoteNotFound) {
 				isGithubRepo = true
-			} else {
+			} else if !errors.Is(err, git.ErrRepositoryNotExists) {
+				// do not return error if repo doesn't exist
 				return nil, err
 			}
 		} else {
