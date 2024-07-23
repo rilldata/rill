@@ -289,9 +289,9 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		executorConnector, execRes, execErr = r.execute(ctx, opts)
 	}
 	if execErr != nil {
-		var err modelBuildError
+		var err *modelBuildError
 		if !errors.As(execErr, &err) {
-			return runtime.ReconcileResult{Err: err}
+			return runtime.ReconcileResult{Err: execErr}
 		}
 		// model build errors are handled later
 	}
@@ -618,7 +618,7 @@ func (r *ModelReconciler) execute(ctx context.Context, opts *drivers.ModelExecut
 
 	res, err := e.Execute(ctx)
 	if err != nil {
-		return "", nil, modelBuildError{err: err}
+		return "", nil, &modelBuildError{err: err}
 	}
 	return executorName, res, nil
 }
@@ -656,14 +656,14 @@ func (r *ModelReconciler) executeWithStage(ctx context.Context, stageConnector s
 	}
 
 	// execute stage 1
-	res, err := executor.Execute(ctx)
+	res1, err := executor.Execute(ctx)
 	if err != nil {
 		rel()
-		return "", nil, modelBuildError{err: err}
+		return "", nil, &modelBuildError{err: err}
 	}
 	rel()
 
-	sc, sr, err := r.C.AcquireConn(ctx, res.Connector)
+	sc, sr, err := r.C.AcquireConn(ctx, res1.Connector)
 	if err != nil {
 		return "", nil, err
 	}
@@ -676,8 +676,8 @@ func (r *ModelReconciler) executeWithStage(ctx context.Context, stageConnector s
 	stage2Opts = &drivers.ModelExecutorOptions{
 		Env:              opts.Env,
 		ModelName:        opts.ModelName,
-		InputConnector:   res.Connector,
-		InputProperties:  res.Properties,
+		InputConnector:   res1.Connector,
+		InputProperties:  res1.Properties,
 		OutputConnector:  opts.OutputConnector,
 		OutputProperties: opts.OutputProperties,
 		Incremental:      opts.Incremental,
@@ -688,7 +688,7 @@ func (r *ModelReconciler) executeWithStage(ctx context.Context, stageConnector s
 	if err != nil {
 		// cleanup stage1 result data
 		if mm, ok := sc.AsModelManager(r.C.InstanceID); ok {
-			return "", nil, errors.Join(err, mm.Delete(ctx, res))
+			return "", nil, errors.Join(err, mm.Delete(ctx, res1))
 		}
 		return "", nil, err
 	}
@@ -696,25 +696,25 @@ func (r *ModelReconciler) executeWithStage(ctx context.Context, stageConnector s
 	// the final cleanup should also cleanup stage1 result data
 	defer func() {
 		rel()
-		rc, rr, err := r.C.AcquireConn(ctx, res.Connector)
+		rc, rr, err := r.C.AcquireConn(ctx, res1.Connector)
 		if err != nil {
 			return
 		}
 		defer rr()
 		if mm, ok := rc.AsModelManager(r.C.InstanceID); ok {
 			// This is done in same context. Can leak stage data in case of ctx cancellations.
-			err = mm.Delete(ctx, res)
+			err = mm.Delete(ctx, res1)
 			if err != nil {
 				r.C.Logger.Warn("failed to clean up stage output", zap.Error(err))
 			}
 		}
 	}()
 
-	res, err = executor.Execute(ctx)
+	res2, err := executor.Execute(ctx)
 	if err != nil {
-		return "", nil, modelBuildError{err: err}
+		return "", nil, &modelBuildError{err: err}
 	}
-	return name, res, nil
+	return name, res2, nil
 }
 
 // acquireExecutor acquires a ModelExecutor capable of executing a model with the given execution options.
@@ -945,7 +945,7 @@ type modelBuildError struct {
 	err error
 }
 
-func (e modelBuildError) Error() string {
+func (e *modelBuildError) Error() string {
 	return e.err.Error()
 }
 
