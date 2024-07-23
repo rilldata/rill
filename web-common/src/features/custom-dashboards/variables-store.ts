@@ -1,8 +1,11 @@
-import { V1DashboardVariable } from "@rilldata/web-common/runtime-client";
+import { V1ComponentVariable } from "@rilldata/web-common/runtime-client";
 import { Readable, derived, writable } from "svelte/store";
 
+interface ComponentVariable extends V1ComponentVariable {
+  currentValue?: unknown;
+}
 export interface DashboardStoreType {
-  dashboards: Record<string, V1DashboardVariable[]>;
+  dashboards: Record<string, ComponentVariable[]>;
 }
 const { update, subscribe } = writable({
   dashboards: {},
@@ -10,7 +13,7 @@ const { update, subscribe } = writable({
 
 export const updateDashboardByName = (
   name: string,
-  callback: (dashboards: V1DashboardVariable[]) => void,
+  callback: (dashboards: ComponentVariable[]) => void,
 ) => {
   update((state) => {
     if (!state.dashboards[name]) {
@@ -23,7 +26,7 @@ export const updateDashboardByName = (
 };
 
 const dashboardVariableReducers = {
-  init(name: string, variables: V1DashboardVariable[]) {
+  init(name: string, variables: ComponentVariable[]) {
     update((state) => {
       if (state.dashboards[name]) return state;
       state.dashboards[name] = variables;
@@ -44,9 +47,7 @@ export const dashboardVariablesStore: Readable<DashboardStoreType> &
   ...dashboardVariableReducers,
 };
 
-export function useVariableStore(
-  name: string,
-): Readable<V1DashboardVariable[]> {
+export function useVariableStore(name: string): Readable<ComponentVariable[]> {
   return derived(dashboardVariablesStore, ($store) => {
     return $store.dashboards[name];
   });
@@ -54,19 +55,24 @@ export function useVariableStore(
 
 export function useVariableInputParams(
   name: string,
-  inputParams: Record<string, any>[] | undefined,
-): Readable<Record<string, any>> {
+  inputParams: V1ComponentVariable[] | undefined,
+): Readable<Record<string, unknown>> {
   return derived(dashboardVariablesStore, ($store) => {
     const variables = $store.dashboards[name];
-    if (!inputParams?.length) return {};
+    if (!inputParams || !inputParams?.length) return {};
 
-    // const params = inputParams;
+    const result: Record<string, unknown> = {};
+    inputParams.forEach((param) => {
+      if (!param?.name) return;
 
-    // return variables.reduce((acc, variable) => {
-    //   if (inputParams.includes(variable.name)) {
-    //     acc[variable.name] = variable.value;
-    //   }
-    //   return acc;
-    // }, {});
+      const variable = variables.find((v) => v.name === param.name);
+      if (variable) {
+        result[param.name] = variable?.currentValue;
+      } else {
+        result[param.name] = param.defaultValue;
+      }
+    });
+
+    return result;
   });
 }

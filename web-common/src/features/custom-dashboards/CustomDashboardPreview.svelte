@@ -1,8 +1,8 @@
 <script lang="ts">
   import { dashboardVariablesStore } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import {
+    V1ComponentVariable,
     V1DashboardItem,
-    V1DashboardVariable,
   } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createEventDispatcher, setContext } from "svelte";
@@ -19,7 +19,7 @@
   export let columns: number | undefined;
   export let items: V1DashboardItem[];
   export let gap: number | undefined;
-  export let variables: V1DashboardVariable[];
+  export let variables: V1ComponentVariable[];
   export let showGrid = false;
   export let snap = true;
   export let selectedChartName: string | null;

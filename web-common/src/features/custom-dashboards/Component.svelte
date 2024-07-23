@@ -58,9 +58,7 @@
     subtitle,
   } = componentResource?.component?.spec ?? {});
 
-  let inputVariableParams: Readable<Record<string, any>> = readable({
-    selection: "Facebook",
-  });
+  let inputVariableParams: Readable<Record<string, any>> = readable({});
   $: if (dashboardName) {
     inputVariableParams = useVariableInputParams(dashboardName, input);
   }

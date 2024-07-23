@@ -1,7 +1,10 @@
 <script lang="ts">
   import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { V1ComponentSpecResolverProperties } from "@rilldata/web-common/runtime-client";
+  import {
+    V1ComponentSpecResolverProperties,
+    V1ComponentVariable,
+  } from "@rilldata/web-common/runtime-client";
   import { createRuntimeServiceGetChartData } from "@rilldata/web-common/runtime-client/manual-clients";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { getContext } from "svelte";
@@ -11,7 +14,7 @@
 
   export let chartName: string;
   export let chartView: boolean;
-  export let input: string[] | undefined;
+  export let input: V1ComponentVariable[] | undefined;
   export let vegaSpec: VisualizationSpec | string | undefined;
   export let resolverProperties: V1ComponentSpecResolverProperties;
 
@@ -30,9 +33,7 @@
     error = JSON.stringify(e);
   }
 
-  let inputVariableParams: Readable<Record<string, any>> = readable({
-    selection: "Facebook",
-  });
+  let inputVariableParams: Readable<Record<string, any>> = readable({});
   $: if (dashboardName) {
     inputVariableParams = useVariableInputParams(dashboardName, input);
   }

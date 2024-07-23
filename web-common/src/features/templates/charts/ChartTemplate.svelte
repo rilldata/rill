@@ -4,13 +4,14 @@
   import {
     V1ComponentSpecRendererProperties,
     V1ComponentSpecResolverProperties,
+    V1ComponentVariable,
   } from "@rilldata/web-common/runtime-client";
   import { getSpecFromTemplateProperties } from "./utils";
 
   export let chartView: boolean;
   export let renderer: string;
   export let componentName: string;
-  export let input: string[] | undefined;
+  export let input: V1ComponentVariable[] | undefined;
   export let rendererProperties: V1ComponentSpecRendererProperties;
   export let resolverProperties: V1ComponentSpecResolverProperties;
 
