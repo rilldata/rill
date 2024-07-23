@@ -143,9 +143,9 @@ func (c *catalogStore) DeleteResources(ctx context.Context) error {
 }
 
 func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
+	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
 	var qry strings.Builder
 	var args []any
-
 	qry.WriteString("SELECT key, data_json, data_updated_on, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND key IN (")
 	args = append(args, c.instanceID, modelID)
 
