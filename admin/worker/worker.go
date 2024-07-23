@@ -76,9 +76,17 @@ func (w *Worker) Run(ctx context.Context) error {
 			return w.scheduleCron(ctx, "run_billing_reporter", w.reportUsage, w.admin.Biller.GetReportingWorkerCron())
 		})
 	}
-	group.Go(func() error {
-		return w.schedule(ctx, "run_billing_repair", w.repairOrgBilling, 10*time.Minute)
-	})
+
+	if w.admin.Biller.Name() != "noop" {
+		group.Go(func() error {
+			return w.schedule(ctx, "run_billing_repair", w.repairOrgBilling, 10*time.Minute)
+		})
+
+		group.Go(func() error {
+			// run every midnight
+			return w.scheduleCron(ctx, "run_trial_end_check", w.trialEndCheck, "0 0 * * *")
+		})
+	}
 	// NOTE: Add new scheduled jobs here
 
 	w.logger.Info("worker started")

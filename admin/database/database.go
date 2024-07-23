@@ -373,6 +373,7 @@ type UpdateProjectOptions struct {
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string

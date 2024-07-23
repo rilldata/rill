@@ -2028,6 +2028,11 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
   githubUrl?: string;
 
   /**
+   * @generated from field: optional string subpath = 13;
+   */
+  subpath?: string;
+
+  /**
    * @generated from field: optional string archive_asset_id = 12;
    */
   archiveAssetId?: string;
@@ -2071,6 +2076,7 @@ export class UpdateProjectRequest extends Message<UpdateProjectRequest> {
     { no: 4, name: "public", kind: "scalar", T: 8 /* ScalarType.BOOL */, opt: true },
     { no: 5, name: "prod_branch", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 6, name: "github_url", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
+    { no: 13, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 12, name: "archive_asset_id", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
     { no: 7, name: "prod_slots", kind: "scalar", T: 3 /* ScalarType.INT64 */, opt: true },
     { no: 8, name: "provisioner", kind: "scalar", T: 9 /* ScalarType.STRING */, opt: true },
@@ -3767,6 +3773,80 @@ export class SudoUpdateAnnotationsResponse extends Message<SudoUpdateAnnotations
 
   static equals(a: SudoUpdateAnnotationsResponse | PlainMessage<SudoUpdateAnnotationsResponse> | undefined, b: SudoUpdateAnnotationsResponse | PlainMessage<SudoUpdateAnnotationsResponse> | undefined): boolean {
     return proto3.util.equals(SudoUpdateAnnotationsResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoIssueRuntimeManagerTokenRequest
+ */
+export class SudoIssueRuntimeManagerTokenRequest extends Message<SudoIssueRuntimeManagerTokenRequest> {
+  /**
+   * @generated from field: string host = 1;
+   */
+  host = "";
+
+  constructor(data?: PartialMessage<SudoIssueRuntimeManagerTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoIssueRuntimeManagerTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "host", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoIssueRuntimeManagerTokenRequest {
+    return new SudoIssueRuntimeManagerTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoIssueRuntimeManagerTokenRequest {
+    return new SudoIssueRuntimeManagerTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoIssueRuntimeManagerTokenRequest {
+    return new SudoIssueRuntimeManagerTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoIssueRuntimeManagerTokenRequest | PlainMessage<SudoIssueRuntimeManagerTokenRequest> | undefined, b: SudoIssueRuntimeManagerTokenRequest | PlainMessage<SudoIssueRuntimeManagerTokenRequest> | undefined): boolean {
+    return proto3.util.equals(SudoIssueRuntimeManagerTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.SudoIssueRuntimeManagerTokenResponse
+ */
+export class SudoIssueRuntimeManagerTokenResponse extends Message<SudoIssueRuntimeManagerTokenResponse> {
+  /**
+   * @generated from field: string token = 1;
+   */
+  token = "";
+
+  constructor(data?: PartialMessage<SudoIssueRuntimeManagerTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.SudoIssueRuntimeManagerTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SudoIssueRuntimeManagerTokenResponse {
+    return new SudoIssueRuntimeManagerTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SudoIssueRuntimeManagerTokenResponse {
+    return new SudoIssueRuntimeManagerTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SudoIssueRuntimeManagerTokenResponse {
+    return new SudoIssueRuntimeManagerTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: SudoIssueRuntimeManagerTokenResponse | PlainMessage<SudoIssueRuntimeManagerTokenResponse> | undefined, b: SudoIssueRuntimeManagerTokenResponse | PlainMessage<SudoIssueRuntimeManagerTokenResponse> | undefined): boolean {
+    return proto3.util.equals(SudoIssueRuntimeManagerTokenResponse, a, b);
   }
 }
 
@@ -11533,11 +11613,25 @@ export class AlertOptions extends Message<AlertOptions> {
   intervalDuration = "";
 
   /**
+   * @generated from field: string resolver = 13;
+   */
+  resolver = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct resolver_properties = 14;
+   */
+  resolverProperties?: Struct;
+
+  /**
+   * DEPRECATED: Use resolver and resolver_properties instead.
+   *
    * @generated from field: string query_name = 3;
    */
   queryName = "";
 
   /**
+   * DEPRECATED: Use resolver and resolver_properties instead.
+   *
    * @generated from field: string query_args_json = 4;
    */
   queryArgsJson = "";
@@ -11594,6 +11688,8 @@ export class AlertOptions extends Message<AlertOptions> {
   static readonly fields: FieldList = proto3.util.newFieldList(() => [
     { no: 1, name: "title", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 2, name: "interval_duration", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 13, name: "resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 14, name: "resolver_properties", kind: "message", T: Struct },
     { no: 3, name: "query_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "query_args_json", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "metrics_view_name", kind: "scalar", T: 9 /* ScalarType.STRING */ },

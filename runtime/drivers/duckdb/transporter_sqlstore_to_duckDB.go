@@ -229,6 +229,9 @@ func CreateTableQuery(schema *runtimev1.StructType, name string) (string, error)
 
 func convert(row []driver.Value, schema *runtimev1.StructType) error {
 	for i, v := range row {
+		if v == nil {
+			continue
+		}
 		if schema.Fields[i].Type.Code == runtimev1.Type_CODE_UUID {
 			val, ok := v.([16]byte)
 			if !ok {

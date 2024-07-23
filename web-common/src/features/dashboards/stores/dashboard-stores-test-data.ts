@@ -364,7 +364,7 @@ export function assertMetricsView(
 export function assertMetricsViewRaw(
   name: string,
   filters: V1Expression,
-  timeRange: DashboardTimeControls,
+  timeRange: DashboardTimeControls | null,
   selectedMeasure: string,
 ) {
   const metricsView = get(metricsExplorerStore).entities[name];

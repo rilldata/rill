@@ -32,6 +32,9 @@
   export let builders: Builder[] = [];
   export let loading = false;
   export let target: string | undefined = undefined;
+  export let fit = false;
+  // needed to set certain style that could be overridden by the style block in this component
+  export let forcedStyle = "";
 
   const dispatch = createEventDispatcher();
 
@@ -58,6 +61,7 @@
   class:wide
   class:compact
   class:rounded
+  class:!w-fit={fit}
   class:danger={status === "error"}
   class:no-stroke={noStroke}
   type={submitForm ? "submit" : "button"}
@@ -68,6 +72,7 @@
   {...getAttrs(builders)}
   use:builderActions={{ builders }}
   on:click={handleClick}
+  style={forcedStyle}
 >
   {#if loading}
     <svg
@@ -251,7 +256,7 @@
   /* TEXT STYLES */
 
   .text {
-    @apply text-slate-600;
+    @apply text-slate-600 p-0;
   }
 
   .text:hover {

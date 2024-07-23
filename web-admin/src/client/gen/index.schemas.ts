@@ -81,6 +81,7 @@ export type AdminServiceUpdateProjectBody = {
   public?: boolean;
   prodBranch?: string;
   githubUrl?: string;
+  subpath?: string;
   archiveAssetId?: string;
   prodSlots?: string;
   provisioner?: string;
@@ -458,6 +459,14 @@ export interface V1SudoUpdateAnnotationsRequest {
   organization?: string;
   project?: string;
   annotations?: V1SudoUpdateAnnotationsRequestAnnotations;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenResponse {
+  token?: string;
+}
+
+export interface V1SudoIssueRuntimeManagerTokenRequest {
+  host?: string;
 }
 
 export interface V1SudoGetResourceResponse {
@@ -1210,10 +1219,16 @@ export interface V1ApproveProjectAccessResponse {
   [key: string]: any;
 }
 
+export type V1AlertOptionsResolverProperties = { [key: string]: any };
+
 export interface V1AlertOptions {
   title?: string;
   intervalDuration?: string;
+  resolver?: string;
+  resolverProperties?: V1AlertOptionsResolverProperties;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryName?: string;
+  /** DEPRECATED: Use resolver and resolver_properties instead. */
   queryArgsJson?: string;
   metricsViewName?: string;
   renotify?: boolean;
