@@ -2,7 +2,8 @@ import React from 'react';
 import DocCardList from '@theme/DocCardList';
 import {useCurrentSidebarCategory} from '@docusaurus/theme-common';
 
-const CustomDocCardList = (props) => {
+//Using the sidebar to dynamically define the buttons
+const CustomDocCardList = (props) => { 
   const category = useCurrentSidebarCategory();
 
   // List of document ids to exclude

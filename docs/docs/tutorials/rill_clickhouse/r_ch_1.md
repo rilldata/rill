@@ -1,7 +1,7 @@
 ---
-title: "Installing Rill Developer"
+title: "Install Rill Developer"
 sidebar_label: "Installing Rill Developer"
-sidebar_position: 2
+sidebar_position: 1
 hide_table_of_contents: false
 ---
 import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
@@ -22,7 +22,7 @@ Once this is open run the following:
 
 ```yaml
 curl https://rill.sh | sh
-rill start my-rill-tutorial
+rill start rill-clickhouse-project
 ```
 
 <details>
@@ -47,7 +47,3 @@ rill start my-rill-tutorial
     ```
 
 </details>
-
-
-
-

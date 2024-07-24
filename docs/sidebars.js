@@ -38,7 +38,7 @@ const sidebars = {
                 type: 'category',
                 label: 'Rill Developer Components',
                 items: [
-                  'tutorials/rill_learn_100/102_0',
+                  'tutorials/rill_learn_100/components/102_0',
                   'tutorials/rill_learn_100/components/102_1',
                   'tutorials/rill_learn_100/components/102_2',
                   'tutorials/rill_learn_100/components/102_3',
@@ -49,7 +49,7 @@ const sidebars = {
               
               {
                 type: 'category',
-                label: 'Metric-Views explained',
+                label: 'Modifying the Metric-Views',
                 items: [
                   'tutorials/rill_learn_100/dashboard/103_0',
                   'tutorials/rill_learn_100/dashboard/103_1',
@@ -96,6 +96,15 @@ const sidebars = {
           items: [
               'tutorials/rill_learn_300/301_0',
               'tutorials/rill_learn_300/302_0'
+            ]
+        },
+        {
+          type: 'category',
+          label: 'Rill and ClickHouse',
+          description: 'For our friends from ClickHouse, a revamped guide.',
+          items: [
+              'tutorials/rill_clickhouse/r_ch_0',
+              'tutorials/rill_clickhouse/r_ch_1'
             ]
         },
       ],
