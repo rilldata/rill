@@ -19,8 +19,10 @@ type motherduckToDuckDB struct {
 }
 
 type mdConfig struct {
-	Token           string `mapstructure:"token"`
-	AllowHostAccess bool   `mapstructure:"allow_host_access"`
+	ConnectionString string `mapstructure:"connection_string"`
+	Token            string `mapstructure:"token"`
+	SQL              string `mapstructure:"sql"`
+	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
 }
 
 var _ drivers.Transporter = &motherduckToDuckDB{}
@@ -35,7 +37,8 @@ func NewMotherduckToDuckDB(from drivers.Handle, to drivers.OLAPStore, logger *za
 
 // TODO: should it run count from user_query to set target in progress ?
 func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) error {
-	srcCfg, err := parseDBSourceProperties(srcProps)
+	srcConfig := mdConfig{}
+	err := mapstructure.WeakDecode(srcProps, &srcConfig)
 	if err != nil {
 		return err
 	}
@@ -63,11 +66,6 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		}
 	}()
 
-	mdConfig := mdConfig{}
-	err = mapstructure.WeakDecode(t.from.Config(), &mdConfig)
-	if err != nil {
-		return err
-	}
 	err = t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
 		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
 		if err != nil {
@@ -84,10 +82,10 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		_ = res.Close()
 
 		// get token
-		if mdConfig.Token == "" && mdConfig.AllowHostAccess {
-			mdConfig.Token = os.Getenv("motherduck_token")
+		if srcConfig.Token == "" && srcConfig.AllowHostAccess {
+			srcConfig.Token = os.Getenv("motherduck_token")
 		}
-		if mdConfig.Token == "" {
+		if srcConfig.Token == "" {
 			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
 		}
 
@@ -97,13 +95,13 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			return fmt.Errorf("failed to load motherduck extension %w", err)
 		}
 
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("SET motherduck_token='%s'", mdConfig.Token)}); err != nil {
+		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("SET motherduck_token='%s'", srcConfig.Token)}); err != nil {
 			if !strings.Contains(err.Error(), "can only be set during initialization") {
 				return fmt.Errorf("failed to set motherduck token %w", err)
 			}
 		}
 
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: "ATTACH 'md:'"}); err != nil {
+		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s'", srcConfig.ConnectionString)}); err != nil {
 			if !strings.Contains(err.Error(), "already attached") {
 				return fmt.Errorf("failed to connect to motherduck %w", err)
 			}
@@ -111,26 +109,24 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 
 		var names []string
 
-		db := srcCfg.Database
-		if db == "" {
-			// get list of all motherduck databases
-			res, err = t.to.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();"})
-			if err != nil {
+		var db string
+		// get list of all motherduck databases
+		res, err = t.to.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();"})
+		if err != nil {
+			return err
+		}
+		defer res.Close()
+
+		for res.Next() {
+			var name string
+			if res.Scan(&name) != nil {
 				return err
 			}
-			defer res.Close()
-
-			for res.Next() {
-				var name string
-				if res.Scan(&name) != nil {
-					return err
-				}
-				names = append(names, name)
-			}
-			// single motherduck db, use db to allow user to run query without specifying db name
-			if len(names) == 1 {
-				db = names[0]
-			}
+			names = append(names, name)
+		}
+		// single motherduck db, use db to allow user to run query without specifying db name
+		if len(names) == 1 {
+			db = names[0]
 		}
 
 		if db != "" {
@@ -147,11 +143,11 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			}(ensuredCtx)
 		}
 
-		if srcCfg.SQL == "" {
+		if srcConfig.SQL == "" {
 			return fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
 		}
 
-		userQuery := strings.TrimSpace(srcCfg.SQL)
+		userQuery := strings.TrimSpace(srcConfig.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
 		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeName(tmpTable), userQuery)
 		return t.to.Exec(ctx, &drivers.Statement{Query: query})
