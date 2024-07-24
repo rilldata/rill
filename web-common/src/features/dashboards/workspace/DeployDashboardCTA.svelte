@@ -24,30 +24,39 @@
   });
   $: isDeployed = !!$deployValidation.data?.deployedProjectId;
 
+  $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
+
   let open = false;
   function onShowDeploy() {
     if (isDeployed) {
-      onDeploy();
+      window.open(deployPageUrl);
     } else {
       open = true;
     }
     void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
   }
-
-  function onDeploy() {
-    open = false;
-    window.open(`${$page.url.protocol}//${$page.url.host}/deploy`);
-  }
 </script>
 
 <Tooltip distance={8}>
-  <Button
-    loading={$deployValidation.isFetching}
-    on:click={onShowDeploy}
-    type="primary"
-  >
-    {isDeployed ? "Redeploy" : "Deploy to share"}
-  </Button>
+  {#if isDeployed}
+    <Button
+      loading={$deployValidation.isLoading}
+      on:click={onShowDeploy}
+      type="primary"
+    >
+      Deploy to share
+    </Button>
+  {:else}
+    <Button
+      loading={$deployValidation.isLoading}
+      on:click={onShowDeploy}
+      type="primary"
+      href={deployPageUrl}
+      target="_blank"
+    >
+      Redeploy
+    </Button>
+  {/if}
   <TooltipContent slot="tooltip-content">
     Deploy this dashboard to Rill Cloud
   </TooltipContent>
@@ -73,7 +82,12 @@
         </AlertDialogHeader>
         <AlertDialogFooter class="mt-5">
           <Button on:click={() => (open = false)} type="secondary">Back</Button>
-          <Button on:click={onDeploy} type="primary">Continue</Button>
+          <Button
+            on:click={() => (open = false)}
+            type="primary"
+            href={deployPageUrl}
+            target="_blank">Continue</Button
+          >
         </AlertDialogFooter>
       </div>
     </div>

@@ -23,7 +23,6 @@ export class ProjectDeployer {
   });
   public readonly promptOrgSelection = writable(false);
 
-  private readonly deploying = writable(false);
   private readonly deployMutation = createLocalServiceDeploy();
   private readonly redeployMutation = createLocalServiceRedeploy();
 
@@ -34,32 +33,29 @@ export class ProjectDeployer {
 
   public getStatus() {
     return derived(
-      [
-        this.validation,
-        this.deployMutation,
-        this.redeployMutation,
-        this.deploying,
-      ],
-      ([validation, deployMutation, redeployMutation, deploying]) => {
+      [this.validation, this.deployMutation, this.redeployMutation],
+      ([validation, deployMutation, redeployMutation]) => {
         if (
-          validation.isFetching ||
-          deployMutation.isLoading ||
-          redeployMutation.isLoading ||
-          deploying
+          validation.error ||
+          deployMutation.error ||
+          redeployMutation.error
         ) {
           return {
-            isLoading: true,
-            error: undefined,
+            isLoading: false,
+            error: extractDeployError(
+              (validation.error as ConnectError) ??
+                (deployMutation.error as ConnectError) ??
+                (redeployMutation.error as ConnectError),
+            ).message,
           };
         }
 
+        // we can have periods where no mutation is firing, so it can flash to non-loading state
+        // to avoid this we always have isLoading to true and only set to false on error
+        // since after successful deploy the same page is redirected to cloud we wont have an issue of the final loaded state
         return {
-          isLoading: false,
-          error: extractDeployError(
-            (validation.error as ConnectError) ??
-              (deployMutation.error as ConnectError) ??
-              (redeployMutation.error as ConnectError),
-          ).message,
+          isLoading: true,
+          error: undefined,
         };
       },
     );
@@ -102,46 +98,52 @@ export class ProjectDeployer {
     // safeguard around deploy
     if (!(await this.validate())) return;
 
-    this.deploying.set(true);
-    try {
-      const validation = get(this.validation).data as DeployValidationResponse;
-      if (validation.deployedProjectId) {
-        const resp = await get(this.redeployMutation).mutateAsync({
-          projectId: validation.deployedProjectId,
-          reupload: !validation.isGithubRepo,
-        });
-        window.open(resp.frontendUrl, "_self");
-      } else {
-        let checkNextOrg = false;
-        if (!org) {
-          if (validation.rillUserOrgs.length === 1) {
-            org = validation.rillUserOrgs[0];
-          } else if (validation.rillUserOrgs.length > 1) {
-            this.promptOrgSelection.set(true);
-            return;
-          } else {
-            const userResp = await queryClient.fetchQuery({
-              queryKey: getLocalServiceGetCurrentUserQueryKey(),
-              queryFn: localServiceGetCurrentUser,
-            });
-            org = userResp.user!.displayName.replace(/ /g, "");
-            checkNextOrg = true;
-          }
-        }
-
-        // hardcoded to upload for now
-        const frontendUrl = await this.tryDeployWithOrg(
-          org,
-          validation.localProjectName,
-          true,
-          checkNextOrg,
-        );
-        window.open(frontendUrl + "/-/invite", "_self");
-      }
-    } catch (err) {
-      // no-op
+    const validation = get(this.validation).data as DeployValidationResponse;
+    if (validation.deployedProjectId) {
+      const resp = await get(this.redeployMutation).mutateAsync({
+        projectId: validation.deployedProjectId,
+        reupload: !validation.isGithubRepo,
+      });
+      window.open(resp.frontendUrl, "_self");
+      return;
     }
-    this.deploying.set(false);
+
+    let checkNextOrg = false;
+    if (!org) {
+      const { org: inferredOrg, checkNextOrg: inferredCheckNextOrg } =
+        await this.inferOrg(validation);
+      // no org was inferred. right now this is because we have prompted the user for an org
+      if (!inferredOrg) return;
+      org = inferredOrg;
+      checkNextOrg = inferredCheckNextOrg;
+    }
+
+    // hardcoded to upload for now
+    const frontendUrl = await this.tryDeployWithOrg(
+      org,
+      validation.localProjectName,
+      true,
+      checkNextOrg,
+    );
+    window.open(frontendUrl + "/-/invite", "_self");
+  }
+
+  private async inferOrg(validation: DeployValidationResponse) {
+    let org: string | undefined;
+    let checkNextOrg = false;
+    if (validation.rillUserOrgs.length === 1) {
+      org = validation.rillUserOrgs[0];
+    } else if (validation.rillUserOrgs.length > 1) {
+      this.promptOrgSelection.set(true);
+    } else {
+      const userResp = await queryClient.fetchQuery({
+        queryKey: getLocalServiceGetCurrentUserQueryKey(),
+        queryFn: localServiceGetCurrentUser,
+      });
+      org = userResp.user!.displayName.replace(/ /g, "");
+      checkNextOrg = true;
+    }
+    return { org, checkNextOrg };
   }
 
   private async tryDeployWithOrg(

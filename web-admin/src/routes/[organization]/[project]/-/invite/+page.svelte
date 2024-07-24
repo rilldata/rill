@@ -1,7 +1,10 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
   import { page } from "$app/stores";
-  import { createAdminServiceCreateProjectWhitelistedDomain } from "@rilldata/web-admin/client";
+  import {
+    createAdminServiceCreateProjectWhitelistedDomain,
+    type RpcStatus,
+  } from "@rilldata/web-admin/client";
   import CopyInviteLinkButton from "@rilldata/web-admin/features/projects/user-invite/CopyInviteLinkButton.svelte";
   import {
     getUserDomain,
@@ -11,6 +14,8 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import type { AxiosError } from "axios";
 
   $: organization = $page.params.organization;
   $: project = $page.params.project;
@@ -21,14 +26,25 @@
   const addToAllowlist = createAdminServiceCreateProjectWhitelistedDomain();
   async function onContinue() {
     if (allowDomain) {
-      await $addToAllowlist.mutateAsync({
-        organization,
-        project,
-        data: {
-          domain: $userDomain.data,
-          role: "viewer",
-        },
-      });
+      try {
+        await $addToAllowlist.mutateAsync({
+          organization,
+          project,
+          data: {
+            domain: $userDomain.data,
+            role: "viewer",
+          },
+        });
+      } catch (e) {
+        eventBus.emit("notification", {
+          type: "error",
+          message:
+            (e as AxiosError<RpcStatus>).response.data.message ?? e.message,
+          options: {
+            persisted: true,
+          },
+        });
+      }
     }
     return goto(`/${organization}/${project}/-/status`);
   }
@@ -61,7 +77,7 @@
           this project as a <b>Viewer</b>.
           <a
             target="_blank"
-            href="https://docs.rilldata.com/reference/cli/user/whitelist/"
+            href="https://docs.rilldata.com/reference/cli/user/whitelist"
           >
             Learn more
           </a>

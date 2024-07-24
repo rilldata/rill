@@ -45,6 +45,7 @@
       <CTAHeader variant="bold">
         Hang tight! We're deploying your project...
       </CTAHeader>
+      <CTANeedHelp />
     {:else if $deployerStatus.error}
       <div class="h-36">
         <CancelCircleInverse size="7rem" className="text-gray-200" />
@@ -54,7 +55,7 @@
       <CTAButton variant="secondary" on:click={onContactUs}>
         Contact us
       </CTAButton>
+      <CTANeedHelp />
     {/if}
-    <CTANeedHelp />
   </CTAContentContainer>
 </CTALayoutContainer>
