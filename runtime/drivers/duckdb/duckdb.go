@@ -130,7 +130,6 @@ var motherduckSpec = drivers.Spec{
 			Required:    true,
 		},
 	},
-	ImplementsOLAP: true,
 }
 
 type Driver struct {
@@ -322,7 +321,9 @@ func (d Driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type connection struct {
 	instanceID string
-	db         *sqlx.DB
+	// do not use directly it can also be nil or closed
+	// use acquireOLAPConn/acquireMetaConn
+	db *sqlx.DB
 	// driverConfig is input config passed during Open
 	driverConfig map[string]any
 	driverName   string
@@ -368,7 +369,12 @@ var _ drivers.OLAPStore = &connection{}
 
 // Ping implements drivers.Handle.
 func (c *connection) Ping(ctx context.Context) error {
-	err := c.db.PingContext(ctx)
+	conn, rel, err := c.acquireMetaConn(ctx)
+	if err != nil {
+		return err
+	}
+	err = conn.PingContext(ctx)
+	_ = rel()
 	c.connTimesMu.Lock()
 	defer c.connTimesMu.Unlock()
 	return errors.Join(err, c.hangingConnErr)
@@ -438,8 +444,8 @@ func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 		return &selfToSelfExecutor{c, opts}, true
 	}
 	if opts.OutputHandle == c {
-		if sqlstore, ok := opts.InputHandle.AsSQLStore(); ok {
-			return &sqlStoreToSelfExecutor{c, sqlstore, opts}, true
+		if w, ok := opts.InputHandle.AsWarehouse(); ok {
+			return &warehouseToSelfExecutor{c, w, opts}, true
 		}
 	}
 	if opts.InputHandle == c {
@@ -474,6 +480,9 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 		if store, ok := from.AsSQLStore(); ok {
 			return NewSQLStoreToDuckDB(store, olap, c.logger), true
 		}
+		if store, ok := from.AsWarehouse(); ok {
+			return NewWarehouseToDuckDB(store, olap, c.logger), true
+		}
 		if store, ok := from.AsObjectStore(); ok { // objectstore to duckdb transfer
 			return NewObjectStoreToDuckDB(store, olap, c.logger), true
 		}
@@ -485,6 +494,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 }
 
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 

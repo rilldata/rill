@@ -73,11 +73,6 @@ func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.R
 	return iter, nil
 }
 
-// QueryAsFiles implements drivers.SQLStore
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
-	return nil, drivers.ErrNotImplemented
-}
-
 type rowIterator struct {
 	conn   *pgxpool.Conn
 	rows   pgx.Rows

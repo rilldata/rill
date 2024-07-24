@@ -992,6 +992,7 @@ message UpdateProjectRequest {
   optional bool public = 4;
   optional string prod_branch = 5;
   optional string github_url = 6;
+  optional string subpath = 13;
   optional string archive_asset_id = 12;
   optional int64 prod_slots = 7;
   optional string provisioner = 8;

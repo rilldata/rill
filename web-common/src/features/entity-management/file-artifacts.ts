@@ -45,14 +45,14 @@ export class FileArtifacts {
     this.artifacts.delete(filePath);
   }
 
-  resourceDeleted(name: V1ResourceName) {
+  deleteResource(name: V1ResourceName) {
     const artifact = this.findFileArtifact(
       (name.kind ?? "") as ResourceKind,
       name.name ?? "",
     );
     if (!artifact) return;
 
-    this.removeFile(artifact.path);
+    this.getFileArtifact(artifact.path)?.hardDeleteResource();
   }
 
   updateArtifacts(resource: V1Resource) {
@@ -94,12 +94,11 @@ export class FileArtifacts {
   };
 
   findFileArtifact(resKind: ResourceKind, resName: string) {
-    for (const filePath in this.artifacts) {
-      const artifact = this.artifacts.get(filePath);
+    for (const [, artifact] of this.artifacts.entries()) {
       if (!artifact) continue;
-      const name = get(artifact.name);
+      const name = get(artifact.resourceName);
       if (name?.kind === resKind && name?.name === resName) {
-        return this.artifacts.get(filePath);
+        return artifact;
       }
     }
     return undefined;
@@ -116,7 +115,9 @@ export class FileArtifacts {
         const currentlyReconciling = new Array<V1ResourceName>();
         reconcilingArtifacts.forEach((reconcilingArtifact, i) => {
           if (reconcilingArtifact) {
-            currentlyReconciling.push(get(artifacts[i].name) as V1ResourceName);
+            currentlyReconciling.push(
+              get(artifacts[i].resourceName) as V1ResourceName,
+            );
           }
         });
         return currentlyReconciling;
@@ -131,8 +132,8 @@ export class FileArtifacts {
    */
   getNamesForKind(kind: ResourceKind): string[] {
     return Array.from(this.artifacts.values())
-      .filter((artifact) => get(artifact.name)?.kind === kind)
-      .map((artifact) => get(artifact.name)?.name ?? "");
+      .filter((artifact) => get(artifact.resourceName)?.kind === kind)
+      .map((artifact) => get(artifact.resourceName)?.name ?? "");
   }
 
   async saveAll() {

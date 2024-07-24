@@ -70,6 +70,10 @@ func (n noop) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 	return nil
 }
 
+func (n noop) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error) {
+	return []*Subscription{}, nil
+}
+
 func (n noop) ReportUsage(ctx context.Context, usage []*Usage) error {
 	return nil
 }

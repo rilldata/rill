@@ -257,6 +257,35 @@ func ResolveTemplate(tmpl string, data TemplateData) (string, error) {
 	return res.String(), nil
 }
 
+// ResolveTemplateRecursively recursively traverses the provided value and applies ResolveTemplate to any string it encounters.
+// It may overwrite the provided value in-place.
+func ResolveTemplateRecursively(val any, data TemplateData) (any, error) {
+	switch val := val.(type) {
+	case string:
+		return ResolveTemplate(val, data)
+	case map[string]any:
+		for k, v := range val {
+			v, err := ResolveTemplateRecursively(v, data)
+			if err != nil {
+				return nil, err
+			}
+			val[k] = v
+		}
+		return val, nil
+	case []any:
+		for i, v := range val {
+			v, err := ResolveTemplateRecursively(v, data)
+			if err != nil {
+				return nil, err
+			}
+			val[i] = v
+		}
+		return val, nil
+	default:
+		return val, nil
+	}
+}
+
 // newFuncMap creates a base func map for templates.
 func newFuncMap(environment string, state map[string]any) template.FuncMap {
 	// Add Sprig template functions (removing functions that leak host info)

@@ -11,6 +11,8 @@ import (
 )
 
 func DeleteInstanceCmd(ch *cmdutil.Helper) *cobra.Command {
+	var audience string
+
 	cmd := &cobra.Command{
 		Use:   "delete-instance <host> <instance_id>",
 		Args:  cobra.ExactArgs(2),
@@ -20,6 +22,9 @@ func DeleteInstanceCmd(ch *cmdutil.Helper) *cobra.Command {
 			// Parse args
 			host := args[0]
 			instanceID := args[1]
+			if audience == "" {
+				audience = host
+			}
 
 			// Obtain a manager token for the host
 			client, err := ch.Client()
@@ -27,7 +32,7 @@ func DeleteInstanceCmd(ch *cmdutil.Helper) *cobra.Command {
 				return err
 			}
 			tokenRes, err := client.SudoIssueRuntimeManagerToken(cmd.Context(), &adminv1.SudoIssueRuntimeManagerTokenRequest{
-				Host: host,
+				Host: audience,
 			})
 			if err != nil {
 				return err
@@ -49,6 +54,8 @@ func DeleteInstanceCmd(ch *cmdutil.Helper) *cobra.Command {
 			return nil
 		},
 	}
+
+	cmd.Flags().StringVar(&audience, "audience", "", "Override JWT audience if it differs from the host")
 
 	return cmd
 }

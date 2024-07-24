@@ -5289,6 +5289,10 @@ func (m *UpdateProjectRequest) validate(all bool) error {
 		// no validation rules for GithubUrl
 	}
 
+	if m.Subpath != nil {
+		// no validation rules for Subpath
+	}
+
 	if m.ArchiveAssetId != nil {
 		// no validation rules for ArchiveAssetId
 	}
