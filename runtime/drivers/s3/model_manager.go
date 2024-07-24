@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	awss3 "github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
 )
+
+var _ drivers.ModelManager = &Connection{}
 
 func (c *Connection) Rename(ctx context.Context, res *drivers.ModelResult, newName string, env *drivers.ModelEnv) (*drivers.ModelResult, error) {
 	return nil, nil
@@ -30,12 +32,12 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 		return err
 	}
 
-	creds, err := c.getCredentials()
+	creds, err := c.newCredentials()
 	if err != nil {
 		return err
 	}
 
-	sess, err := c.getAwsSessionConfig(ctx, &sourceProperties{}, u.Host, creds)
+	sess, err := c.newSessionForBucket(ctx, u.Host, "", "", creds)
 	if err != nil {
 		return err
 	}
@@ -44,11 +46,11 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 }
 
 func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketName, prefix string) error {
-	s3client := awss3.New(sess)
-	deleteBatch := func(objects []*awss3.ObjectIdentifier) error {
-		_, err := s3client.DeleteObjectsWithContext(ctx, &awss3.DeleteObjectsInput{
+	s3client := s3.New(sess)
+	deleteBatch := func(objects []*s3.ObjectIdentifier) error {
+		_, err := s3client.DeleteObjectsWithContext(ctx, &s3.DeleteObjectsInput{
 			Bucket: &bucketName,
-			Delete: &awss3.Delete{
+			Delete: &s3.Delete{
 				Objects: objects,
 			},
 		})
@@ -57,7 +59,7 @@ func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketNam
 
 	var continuationToken *string
 	for {
-		out, err := s3client.ListObjectsV2WithContext(ctx, &awss3.ListObjectsV2Input{
+		out, err := s3client.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
 			Bucket:            &bucketName,
 			Prefix:            &prefix,
 			ContinuationToken: continuationToken,
@@ -66,9 +68,9 @@ func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketNam
 			return err
 		}
 
-		ids := make([]*awss3.ObjectIdentifier, 0, len(out.Contents))
+		ids := make([]*s3.ObjectIdentifier, 0, len(out.Contents))
 		for _, o := range out.Contents {
-			ids = append(ids, &awss3.ObjectIdentifier{
+			ids = append(ids, &s3.ObjectIdentifier{
 				Key: o.Key,
 			})
 		}
