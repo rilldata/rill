@@ -57,6 +57,7 @@
       }
     }}
     {fileArtifact}
+    forceLocalUpdates
     extensions={[
       metricsPlusSQL,
       placeholderElements.extension,

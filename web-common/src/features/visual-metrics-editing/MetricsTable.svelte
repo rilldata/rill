@@ -8,6 +8,7 @@
   const headers = ["Measure", "Definition", "Format", "Description"];
 
   export let metricsViewName: string;
+  export let reorderList: (initIndex: number, newIndex: number) => void;
 
   $: ({ instanceId } = $runtime);
   $: resourceQuery = useResource(
@@ -22,6 +23,8 @@
 
   //   $: console.log($resource.data);
   const gutterWidth = 56;
+
+  let tbody: HTMLTableSectionElement;
 </script>
 
 <div class="wrapper">
@@ -45,9 +48,9 @@
         {/each}
       </tr>
     </thead>
-    <tbody>
-      {#each measures as measure (measure.name)}
-        <MetricsTableRow {measure} />
+    <tbody bind:this={tbody}>
+      {#each measures as measure, i (measure.name)}
+        <MetricsTableRow {measure} {reorderList} {i} />
       {/each}
     </tbody>
   </table>
@@ -67,10 +70,15 @@
     @apply font-normal cursor-pointer select-none;
     /* @apply table-fixed; */
 
-    @apply w-full;
+    @apply z-10;
+    @apply w-full absolute;
   }
 
   .wrapper {
     @apply border w-full rounded-md;
+  }
+
+  tbody {
+    @apply bg-gray-100;
   }
 </style>

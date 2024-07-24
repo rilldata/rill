@@ -22,6 +22,7 @@
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import MetricsTable from "../visual-metrics-editing/MetricsTable.svelte";
+  import { parseDocument, YAMLMap, YAMLSeq } from "yaml";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -36,7 +37,10 @@
     autoSave,
     path: filePath,
     remoteContent,
+    localContent,
     fileName,
+    updateLocalContent,
+    saveLocalContent,
   } = fileArtifact);
 
   $: metricsViewName = getNameFromFile(filePath);
@@ -83,11 +87,33 @@
     );
     if (newRoute) await goto(newRoute);
   }
+
+  async function reorderList(initIndex: number, newIndex: number) {
+    console.log({ initIndex, newIndex });
+    const parsedDocument = parseDocument($localContent ?? $remoteContent ?? "");
+    const measures = parsedDocument.get("measures") as YAMLSeq;
+
+    const items = measures.items as Array<YAMLMap>;
+
+    console.log({ measures });
+
+    console.log({ items });
+
+    items.splice(newIndex, 0, items.splice(initIndex, 1)[0]);
+
+    parsedDocument.set("measures", items);
+
+    updateLocalContent(parsedDocument.toString(), true);
+
+    await saveLocalContent();
+
+    console.log(parsedDocument.toString());
+  }
 </script>
 
-<MetricsTable {metricsViewName} />
+<MetricsTable {metricsViewName} {reorderList} />
 
-<!-- <WorkspaceContainer inspector={isModelingSupported}>
+<WorkspaceContainer inspector={isModelingSupported}>
   <WorkspaceHeader
     slot="header"
     showInspectorToggle={isModelingSupported}
@@ -105,7 +131,7 @@
         </TooltipContent>
       </Tooltip>
       <PreviewButton
-        dashboardName={metricViewName}
+        dashboardName={metricsViewName}
         status={previewStatus}
         disabled={previewDisabled}
       />
@@ -118,11 +144,11 @@
     {fileArtifact}
     {filePath}
     {allErrors}
-    {metricViewName}
+    metricViewName={metricsViewName}
   />
 
   <MetricsInspector yaml={$remoteContent ?? ""} slot="inspector" />
-</WorkspaceContainer> -->
+</WorkspaceContainer>
 
 <DeployDashboardCta
   on:close={() => (showDeployModal = false)}
