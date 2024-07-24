@@ -72,7 +72,6 @@ export async function submitAddDataForm(
         case "output_location":
         case "workgroup":
         case "database_url":
-        case "connection_string":
           return [key, value];
         default:
           return [fromYupFriendlyKey(key), value];

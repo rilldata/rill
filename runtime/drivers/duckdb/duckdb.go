@@ -97,11 +97,10 @@ var motherduckSpec = drivers.Spec{
 	},
 	SourceProperties: []*drivers.PropertySpec{
 		{
-			Key:         "connection_string",
+			Key:         "dsn",
 			Type:        drivers.StringPropertyType,
 			Required:    true,
-			DisplayName: "Connection string",
-			Description: "Connection string",
+			DisplayName: "MotherDuck Connection String",
 			Placeholder: "md:motherduck.db",
 		},
 		{
