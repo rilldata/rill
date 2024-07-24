@@ -115,6 +115,9 @@ message ModelSpec {
   uint32 splits_concurrency_limit = 20;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
+  // stage_connector is optional.
+  string stage_connector = 16;
+  google.protobuf.Struct stage_properties = 17;
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;

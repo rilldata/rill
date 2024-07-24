@@ -10,7 +10,7 @@ export function getScreenNameFromPage() {
   const file = get(page).params.file;
   if (!file) return MetricsEventScreenName.Unknown;
   const fileArtifact = fileArtifacts.getFileArtifact(file);
-  const resName = get(fileArtifact.name);
+  const resName = get(fileArtifact.resourceName);
   if (!resName?.kind) return MetricsEventScreenName.Unknown;
   return (
     (ResourceKindToScreenMap[resName.kind] as MetricsEventScreenName) ??

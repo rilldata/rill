@@ -3600,6 +3600,8 @@ definitions:
         type: boolean
       implementsNotifier:
         type: boolean
+      implementsWarehouse:
+        type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
   v1ConnectorSpec:
     type: object
@@ -4778,6 +4780,11 @@ definitions:
       inputConnector:
         type: string
       inputProperties:
+        type: object
+      stageConnector:
+        type: string
+        description: stage_connector is optional.
+      stageProperties:
         type: object
       outputConnector:
         type: string

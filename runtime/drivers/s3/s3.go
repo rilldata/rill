@@ -79,7 +79,7 @@ type driver struct{}
 
 var _ drivers.Driver = driver{}
 
-type configProperties struct {
+type ConfigProperties struct {
 	AccessKeyID     string `mapstructure:"aws_access_key_id"`
 	SecretAccessKey string `mapstructure:"aws_secret_access_key"`
 	SessionToken    string `mapstructure:"aws_access_token"`
@@ -94,7 +94,7 @@ func (d driver) Open(instanceID string, config map[string]any, client *activity.
 		return nil, errors.New("s3 driver can't be shared")
 	}
 
-	cfg := &configProperties{}
+	cfg := &ConfigProperties{}
 	err := mapstructure.WeakDecode(config, cfg)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func (d driver) HasAnonymousSourceAccess(ctx context.Context, props map[string]a
 	}
 
 	conn := &Connection{
-		config: &configProperties{},
+		config: &ConfigProperties{},
 		logger: logger,
 	}
 
@@ -137,7 +137,7 @@ func (d driver) TertiarySourceConnectors(ctx context.Context, src map[string]any
 
 type Connection struct {
 	// config is input configs passed to driver.Open
-	config *configProperties
+	config *ConfigProperties
 	logger *zap.Logger
 }
 
@@ -155,8 +155,11 @@ func (c *Connection) Driver() string {
 
 // Config implements drivers.Connection.
 func (c *Connection) Config() map[string]any {
-	m := make(map[string]any, 0)
-	_ = mapstructure.Decode(c.config, &m)
+	m := make(map[string]any)
+	err := mapstructure.Decode(c.config, &m)
+	if err != nil {
+		c.logger.Warn("error in generating s3 config", zap.Error(err))
+	}
 	return m
 }
 
@@ -217,7 +220,7 @@ func (c *Connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecu
 
 // AsModelManager implements drivers.Handle.
 func (c *Connection) AsModelManager(instanceID string) (drivers.ModelManager, bool) {
-	return nil, false
+	return c, true
 }
 
 // AsTransporter implements drivers.Connection.
@@ -227,6 +230,11 @@ func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 
 // AsFileStore implements drivers.Connection.
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 

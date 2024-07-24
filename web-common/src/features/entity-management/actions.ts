@@ -12,7 +12,7 @@ import {
 import { httpRequestQueue } from "@rilldata/web-common/runtime-client/http-client";
 import { get } from "svelte/store";
 import {
-  FolderToResourceKind,
+  FolderNameToResourceKind,
   addLeadingSlash,
   removeLeadingSlash,
 } from "./entity-mappers";
@@ -28,7 +28,7 @@ export async function renameFileArtifact(
   const fromFileArtifact = fileArtifacts.getFileArtifact(
     addLeadingSlash(fromPath),
   );
-  const fromResName = get(fromFileArtifact.name);
+  const fromResName = get(fromFileArtifact.resourceName);
 
   if (fileIsMainEntity(fromPath)) {
     // try and copy over kind+name proactively for main entities (.sql,.yml,.yaml)
@@ -36,9 +36,9 @@ export async function renameFileArtifact(
     const toFileArtifact = fileArtifacts.getFileArtifact(
       addLeadingSlash(toPath),
     );
-    if (!get(toFileArtifact.name)) {
+    if (!get(toFileArtifact.resourceName)) {
       // if there is no name set yet copy over from the source
-      toFileArtifact.name.set(fromResName);
+      toFileArtifact.resourceName.set(fromResName);
     }
   }
 
@@ -55,7 +55,7 @@ export async function renameFileArtifact(
     if (
       fromResName?.kind &&
       topLevelFromFolder !== topLevelToFolder &&
-      FolderToResourceKind[removeLeadingSlash(topLevelFromFolder)] ===
+      FolderNameToResourceKind[removeLeadingSlash(topLevelFromFolder)] ===
         fromResName?.kind &&
       !toPath.endsWith(".sql")
     ) {
