@@ -56,9 +56,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
 
     case "motherduck":
       return yup.object().shape({
-        connection_string: yup
-          .string()
-          .required("Connection string is required"),
+        dsn: yup.string().required("Connection string is required"),
         sql: yup.string().required("SQL is required"),
         token: yup.string().required("Access token is required"),
         name: yup
