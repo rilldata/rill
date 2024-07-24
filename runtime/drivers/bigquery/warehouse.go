@@ -32,13 +32,10 @@ const _jsonDownloadLimitBytes = 100 * int64(datasize.MB)
 // Regex to parse BigQuery SELECT ALL statement: SELECT * FROM `project_id.dataset.table`
 var selectQueryRegex = regexp.MustCompile("(?i)^\\s*SELECT\\s+\\*\\s+FROM\\s+(`?[a-zA-Z0-9_.-]+`?)\\s*$")
 
-// Query implements drivers.SQLStore
-func (c *Connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
-	return nil, drivers.ErrNotImplemented
-}
+var _ drivers.Warehouse = &Connection{}
 
 // QueryAsFiles implements drivers.SQLStore
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -154,13 +151,11 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, err
 	}
 
-	p.Target(int64(it.TotalRows), drivers.ProgressUnitRecord)
 	return &fileIterator{
 		client:       client,
 		bqIter:       it,
 		logger:       c.logger,
 		limitInBytes: opt.TotalLimitInBytes,
-		progress:     p,
 		totalRecords: int64(it.TotalRows),
 		ctx:          ctx,
 		tempDir:      tempDir,
@@ -183,7 +178,6 @@ type fileIterator struct {
 	bqIter       *bigquery.RowIterator
 	logger       *zap.Logger
 	limitInBytes int64
-	progress     drivers.Progress
 	tempDir      string
 
 	totalRecords int64
@@ -263,7 +257,6 @@ func (f *fileIterator) Next() ([]string, error) {
 
 		default:
 			rec := rdr.Record()
-			f.progress.Observe(rec.NumRows(), drivers.ProgressUnitRecord)
 			if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 				writer.NewBufferedRowGroup()
 			}
@@ -338,7 +331,6 @@ func (f *fileIterator) downloadAsJSONFile() (string, error) {
 		// schema and total rows is available after first call to next only
 		if !init {
 			init = true
-			f.progress.Target(int64(f.bqIter.TotalRows), drivers.ProgressUnitRecord)
 			for _, f := range f.bqIter.Schema {
 				if f.Type == bigquery.BigNumericFieldType {
 					bigNumericFields = append(bigNumericFields, f.Name)

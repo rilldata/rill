@@ -153,6 +153,12 @@ func (a *connectorAnalyzer) analyzeModel(ctx context.Context, r *Resource) {
 	// Track the input connector
 	a.trackConnector(spec.InputConnector, r, anonAccess)
 
+	if spec.StageConnector != "" {
+		// Track the staging connector
+		// We need write access to the stage connector so tracking without analysis
+		a.trackConnector(spec.StageConnector, r, false)
+	}
+
 	// Track any tertiary connectors (like a DuckDB source referencing S3 in its SQL).
 	// NOTE: Not checking anonymous access for these since we don't know what properties to use.
 	// TODO: Can we solve that issue?
