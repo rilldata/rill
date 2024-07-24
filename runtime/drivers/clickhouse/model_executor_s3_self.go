@@ -44,7 +44,7 @@ func (e *s3ToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, e
 	var glob string
 	if isGlob(inputProps.Path) {
 		glob = inputProps.Path
-	} else if len(filepath.Ext(inputProps.Path)) > 0 {
+	} else if filepath.Ext(inputProps.Path) != "" {
 		glob = inputProps.Path
 	} else {
 		if inputProps.Format == "" {
