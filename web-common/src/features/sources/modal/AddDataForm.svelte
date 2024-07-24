@@ -15,27 +15,37 @@
   import { overlay } from "../../../layout/overlay-store";
   import { inferSourceName } from "../sourceUtils";
   import { humanReadableErrorMessage } from "./errors";
-  import { submitRemoteSourceForm } from "./submitRemoteSourceForm";
+  import { submitAddDataForm } from "./submitAddDataForm";
+  import { AddDataFormType } from "./types";
   import { getYupSchema, toYupFriendlyKey } from "./yupSchemas";
-
-  export let connector: V1ConnectorDriver;
 
   const queryClient = useQueryClient();
   const dispatch = createEventDispatcher();
+
+  export let connector: V1ConnectorDriver;
+  export let formType: AddDataFormType;
+
+  $: formId = `add-data-${connector.name}-form`;
+
+  $: isSourceForm = formType === "source";
+  $: isConnectorForm = formType === "connector";
+  $: properties = isConnectorForm
+    ? connector.configProperties ?? []
+    : connector.sourceProperties ?? [];
 
   let rpcError: RpcStatus | null = null;
 
   const { form, touched, errors, handleChange, handleSubmit, isSubmitting } =
     createForm({
-      initialValues: !connector.implementsOlap ? { sourceName: "" } : {},
+      initialValues: isSourceForm ? { name: "" } : {},
       validationSchema: getYupSchema(connector),
       onSubmit: async (values) => {
         // Sources
-        if (!connector.implementsOlap) {
-          overlay.set({ title: `Importing ${values.sourceName}` });
+        if (isSourceForm) {
+          overlay.set({ title: `Importing ${values.name}` });
           try {
-            await submitRemoteSourceForm(queryClient, connector, values);
-            await goto(`/files/sources/${values.sourceName}.yaml`);
+            await submitAddDataForm(queryClient, formType, connector, values);
+            await goto(`/files/sources/${values.name}.yaml`);
             dispatch("close");
           } catch (e) {
             rpcError = e?.response?.data;
@@ -46,7 +56,7 @@
 
         // Connectors
         try {
-          await submitRemoteSourceForm(queryClient, connector, values);
+          await submitAddDataForm(queryClient, formType, connector, values);
           await goto(`/files/connectors/${connector.name}.yaml`);
           dispatch("close");
         } catch (e) {
@@ -55,33 +65,14 @@
       },
     });
 
-  let connectorProperties = connector.sourceProperties ?? [];
-
-  // Place the "Source name" field directly under the "Path" field, which is the first property for each connector (s3, gcs, https).
-  // Temporary: for OLAP connectors, we enforce that connectorName=driver.
-  if (!connector.implementsOlap) {
-    connectorProperties = [
-      ...(connector.sourceProperties?.slice(0, 1) ?? []),
-      {
-        key: "sourceName",
-        displayName: "Source name",
-        description: "The name of the source",
-        placeholder: "my_new_source",
-        type: ConnectorDriverPropertyType.TYPE_STRING,
-        required: true,
-      },
-      ...(connector.sourceProperties?.slice(1) ?? []),
-    ];
-  }
-
   function onStringInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
     const { name, value } = target;
 
     if (name === "path") {
-      if ($touched.sourceName) return;
-      const sourceName = inferSourceName(connector, value);
-      $form.sourceName = sourceName ? sourceName : $form.sourceName;
+      if ($touched.name) return;
+      const name = inferSourceName(connector, value);
+      $form.name = name ? name : $form.name;
     }
   }
 </script>
@@ -89,7 +80,7 @@
 <div class="h-full w-full flex flex-col">
   <form
     class="pb-5 flex-grow overflow-y-auto"
-    id="remote-source-{connector.name}-form"
+    id={formId}
     on:submit|preventDefault={handleSubmit}
   >
     <div class="pb-2 text-slate-500">
@@ -110,8 +101,8 @@
       />
     {/if}
 
-    {#each connectorProperties as property (property.key)}
-      {#if property.key !== undefined}
+    {#each properties as property (property.key)}
+      {#if property.key !== undefined && !property.noPrompt}
         {@const label =
           property.displayName + (property.required ? "" : " (optional)")}
         <div class="py-1.5">
@@ -127,6 +118,7 @@
               bind:value={$form[toYupFriendlyKey(property.key)]}
               onInput={onStringInputChange}
               onChange={handleChange}
+              alwaysShowError
             />
           {:else if property.type === ConnectorDriverPropertyType.TYPE_BOOLEAN}
             <label for={property.key} class="flex items-center">
@@ -152,12 +144,7 @@
   <div class="flex items-center space-x-2">
     <div class="grow" />
     <Button on:click={() => dispatch("back")} type="secondary">Back</Button>
-    <Button
-      disabled={$isSubmitting}
-      form="remote-source-{connector.name}-form"
-      submitForm
-      type="primary"
-    >
+    <Button disabled={$isSubmitting} form={formId} submitForm type="primary">
       Add data
     </Button>
   </div>

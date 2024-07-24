@@ -13,11 +13,11 @@ export function getYupSchema(connector: V1ConnectorDriver) {
           .string()
           .matches(/^s3:\/\//, "Must be an S3 URI (e.g. s3://bucket/path)")
           .required("S3 URI is required"),
-        sourceName: yup
+        aws_region: yup.string(),
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
-        aws_region: yup.string(),
       });
 
     case "gcs":
@@ -26,7 +26,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
           .string()
           .matches(/^gs:\/\//, "Must be a GS URI (e.g. gs://bucket/path)")
           .required("GS URI is required"),
-        sourceName: yup
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
@@ -38,7 +38,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
           .string()
           .matches(/^https?:\/\//, 'Path must start with "http(s)://"')
           .required("Path is required"),
-        sourceName: yup
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
@@ -47,7 +47,8 @@ export function getYupSchema(connector: V1ConnectorDriver) {
     case "duckdb":
       return yup.object().shape({
         db: yup.string().required("db is required"),
-        sourceName: yup
+        sql: yup.string().required("sql is required"),
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
@@ -57,7 +58,7 @@ export function getYupSchema(connector: V1ConnectorDriver) {
       return yup.object().shape({
         db: yup.string().required("db is required"),
         table: yup.string().required("table is required"),
-        sourceName: yup
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
@@ -66,11 +67,11 @@ export function getYupSchema(connector: V1ConnectorDriver) {
     case "bigquery":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
-        sourceName: yup
+        project_id: yup.string().required("project_id is required"),
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
-        project_id: yup.string().required("project_id is required"),
       });
 
     case "azure":
@@ -83,56 +84,57 @@ export function getYupSchema(connector: V1ConnectorDriver) {
           )
           .required("Path is required"),
         account: yup.string(),
+        name: yup
+          .string()
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+          .required("Source name is required"),
       });
 
     case "postgres":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
-        sourceName: yup
+        database_url: yup.string(),
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
-        database_url: yup.string(),
       });
 
     case "snowflake":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
-        sourceName: yup
+        dsn: yup.string(),
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
-        dsn: yup.string(),
       });
 
     case "salesforce":
       return yup.object().shape({
         soql: yup.string().required("soql is required"),
         sobject: yup.string().required("sobject is required"),
+        name: yup
+          .string()
+          .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+          .required("Source name is required"),
       });
 
     case "athena":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
-        sourceName: yup
+        output_location: yup.string(),
+        workgroup: yup.string(),
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
-        output_location: yup.string(),
-        workgroup: yup.string(),
       });
 
     case "redshift":
       return yup.object().shape({
         sql: yup.string().required("SQL is required"),
         database: yup.string().required("database name is required"),
-        sourceName: yup
-          .string()
-          .matches(
-            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
-            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
-          )
-          .required("Source name is required"),
         output_location: yup
           .string()
           .required("S3 location for temporary files"),
@@ -142,58 +144,83 @@ export function getYupSchema(connector: V1ConnectorDriver) {
           .string()
           .required("Role ARN associated with the Redshift cluster"),
         region: yup.string().optional(),
+        name: yup
+          .string()
+          .matches(
+            /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+            "Source name must start with a letter or underscore and contain only letters, numbers, and underscores",
+          )
+          .required("Source name is required"),
       });
 
     case "mysql":
       return yup.object().shape({
         sql: yup.string().required("sql is required"),
-        sourceName: yup
+        dsn: yup.string(),
+        name: yup
           .string()
           .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
           .required("Source name is required"),
-        dsn: yup.string(),
       });
 
     case "clickhouse":
       return yup.object().shape({
-        // User-provided names requires a little refactor. Commenting out for now.
-        // sourceName: yup
-        //   .string()
-        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-        //   .required("Connector name is required"),
-        host: yup.string().required("Host is required"),
+        host: yup
+          .string()
+          .required("Host is required")
+          .matches(
+            /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+            "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+          ),
         port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
         ssl: yup.boolean(),
+        // User-provided connector names requires a little refactor. Commenting out for now.
+        // name: yup
+        //   .string()
+        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+        //   .required("Connector name is required"),
       });
 
     case "druid":
       return yup.object().shape({
-        // User-provided names requires a little refactor. Commenting out for now.
-        // sourceName: yup
-        //   .string()
-        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-        //   .required("Connector name is required"),
-        host: yup.string().required("Host is required"),
+        host: yup
+          .string()
+          .required("Host is required")
+          .matches(
+            /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+            "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+          ),
         port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
         ssl: yup.boolean(),
+        // User-provided connector names requires a little refactor. Commenting out for now.
+        // name: yup
+        //   .string()
+        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+        //   .required("Connector name is required"),
       });
 
     case "pinot":
       return yup.object().shape({
-        // User-provided names requires a little refactor. Commenting out for now.
-        // sourceName: yup
-        //   .string()
-        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
-        //   .required("Connector name is required"),
-        host: yup.string().required("Host is required"),
+        host: yup
+          .string()
+          .required("Host is required")
+          .matches(
+            /^(?!https?:\/\/)[a-zA-Z0-9.-]+$/,
+            "Do not prefix the host with `http(s)://`", // It will be added by the runtime
+          ),
         port: yup.number().required("Port is required"),
         username: yup.string(),
         password: yup.string(),
         ssl: yup.boolean(),
+        // User-provided connector names requires a little refactor. Commenting out for now.
+        // name: yup
+        //   .string()
+        //   .matches(VALID_NAME_PATTERN, INVALID_NAME_MESSAGE)
+        //   .required("Connector name is required"),
       });
 
     default:

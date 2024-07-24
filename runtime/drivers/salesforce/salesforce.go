@@ -114,6 +114,14 @@ var spec = drivers.Spec{
 			Default:     defaultClientID,
 			Hint:        "Either set this or pass --var connector.salesforce.client_id=... to rill start",
 		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
 	ImplementsWarehouse: true,
 }
