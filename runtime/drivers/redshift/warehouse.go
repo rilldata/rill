@@ -1,10 +1,9 @@
-package athena
+package redshift
 
 import (
 	"context"
 	"errors"
 	"fmt"
-	"math"
 	"net/url"
 	"strings"
 	"time"
@@ -12,8 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/credentials"
-	"github.com/aws/aws-sdk-go-v2/service/athena"
-	types2 "github.com/aws/aws-sdk-go-v2/service/athena/types"
+	"github.com/aws/aws-sdk-go-v2/service/redshiftdata"
+	redshift_types "github.com/aws/aws-sdk-go-v2/service/redshiftdata/types"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	"github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/google/uuid"
@@ -24,11 +23,9 @@ import (
 	"gocloud.dev/blob/s3blob"
 )
 
-func (c *Connection) Query(_ context.Context, _ map[string]any) (drivers.RowIterator, error) {
-	return nil, drivers.ErrNotImplemented
-}
+var _ drivers.Warehouse = &Connection{}
 
-func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *drivers.QueryOption, _ drivers.Progress) (outIt drivers.FileIterator, outErr error) {
+func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *drivers.QueryOption) (outIt drivers.FileIterator, outErr error) {
 	conf, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config: %w", err)
@@ -39,21 +36,17 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 		return nil, err
 	}
 
-	client := athena.NewFromConfig(awsConfig)
-	outputLocation, err := resolveOutputLocation(ctx, client, conf)
-	if err != nil {
-		return nil, err
-	}
+	client := redshiftdata.NewFromConfig(awsConfig)
 
-	outputURL, err := url.Parse(outputLocation)
+	outputURL, err := url.Parse(conf.OutputLocation)
 	if err != nil {
 		return nil, err
 	}
 
 	// outputLocation s3://bucket/path
 	// unloadLocation s3://bucket/path/rill-tmp-<uuid>
-	// unloadPath path/rill-tmp-<uuid>
-	unloadFolderName := "rill-tmp-" + uuid.New().String()
+	// unloadPath path/rill-tmp-redshift-<uuid>
+	unloadFolderName := "rill-tmp-redshift-" + uuid.New().String()
 	bucketName := outputURL.Hostname()
 	unloadURL := outputURL.JoinPath(unloadFolderName)
 	unloadLocation := unloadURL.String()
@@ -90,11 +83,6 @@ func (c *Connection) QueryAsFiles(ctx context.Context, props map[string]any, _ *
 	opts := rillblob.Options{
 		GlobPattern: unloadPath + "/**",
 		Format:      "parquet",
-		// All the glob limits are set to max values since these files are created by Rill.
-		// Limits if any on data imported by connector should be imposed before these files are created.
-		GlobMaxTotalSize:      math.MaxInt64,
-		GlobMaxObjectsMatched: math.MaxInt,
-		GlobMaxObjectsListed:  math.MaxInt64,
 	}
 
 	it, err := rillblob.NewIterator(ctx, bucketObj, opts, c.logger)
@@ -118,7 +106,7 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 
 	// If one of the static properties is specified: access key, secret key, or session token, use static credentials,
 	// Else fallback to the SDK's default credential chain (environment, instance, etc) unless AllowHostAccess is false
-	if c.config.AccessKeyID != "" || c.config.SecretAccessKey != "" || c.config.SessionToken != "" {
+	if c.config.AccessKeyID != "" || c.config.SecretAccessKey != "" {
 		p := credentials.NewStaticCredentialsProvider(c.config.AccessKeyID, c.config.SecretAccessKey, c.config.SessionToken)
 		loadOptions = append(loadOptions, config.WithCredentialsProvider(p))
 	} else if !c.config.AllowHostAccess {
@@ -128,53 +116,56 @@ func (c *Connection) awsConfig(ctx context.Context, awsRegion string) (aws.Confi
 	return config.LoadDefaultConfig(ctx, loadOptions...)
 }
 
-func (c *Connection) unload(ctx context.Context, client *athena.Client, conf *sourceProperties, unloadLocation string) error {
-	finalSQL := fmt.Sprintf("UNLOAD (%s\n) TO '%s' WITH (format = 'PARQUET')", conf.SQL, unloadLocation)
+func (c *Connection) unload(ctx context.Context, client *redshiftdata.Client, conf *sourceProperties, unloadLocation string) error {
+	finalSQL := fmt.Sprintf("UNLOAD ('%s') TO '%s/' IAM_ROLE '%s' FORMAT AS PARQUET", conf.SQL, unloadLocation, conf.RoleARN)
 
-	executeParams := &athena.StartQueryExecutionInput{
-		QueryString: aws.String(finalSQL),
+	executeParams := &redshiftdata.ExecuteStatementInput{
+		Sql:      &finalSQL,
+		Database: &conf.Database,
 	}
 
-	if conf.OutputLocation != "" {
-		executeParams.ResultConfiguration = &types2.ResultConfiguration{
-			OutputLocation: aws.String(conf.OutputLocation),
-		}
+	if conf.ClusterIdentifier != "" { // ClusterIdentifier and Workgroup are interchangeable
+		executeParams.ClusterIdentifier = aws.String(conf.ClusterIdentifier)
 	}
 
-	if conf.Workgroup != "" { // primary is used if nothing is set
-		executeParams.WorkGroup = aws.String(conf.Workgroup)
+	if conf.Workgroup != "" {
+		executeParams.WorkgroupName = &conf.Workgroup
 	}
 
-	queryExecutionOutput, err := client.StartQueryExecution(ctx, executeParams)
+	queryExecutionOutput, err := client.ExecuteStatement(ctx, executeParams)
 	if err != nil {
 		return err
 	}
 
+	ticker := time.NewTicker(time.Second)
+	defer ticker.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			_, err = client.StopQueryExecution(ctx, &athena.StopQueryExecutionInput{
-				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
+			cancelCtx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+			_, err = client.CancelStatement(cancelCtx, &redshiftdata.CancelStatementInput{
+				Id: queryExecutionOutput.Id,
 			})
+			cancel()
 			return errors.Join(ctx.Err(), err)
-		default:
-			status, err := client.GetQueryExecution(ctx, &athena.GetQueryExecutionInput{
-				QueryExecutionId: queryExecutionOutput.QueryExecutionId,
+		case <-ticker.C:
+			status, err := client.DescribeStatement(ctx, &redshiftdata.DescribeStatementInput{
+				Id: queryExecutionOutput.Id,
 			})
 			if err != nil {
 				return err
 			}
 
-			switch status.QueryExecution.Status.State {
-			case types2.QueryExecutionStateSucceeded:
+			state := status.Status
+
+			if status.Error != nil {
+				return fmt.Errorf("Redshift query execution failed %s", *status.Error)
+			}
+
+			if state != redshift_types.StatusStringSubmitted && state != redshift_types.StatusStringStarted && state != redshift_types.StatusStringPicked {
 				return nil
-			case types2.QueryExecutionStateCancelled:
-				return fmt.Errorf("Athena query execution cancelled")
-			case types2.QueryExecutionStateFailed:
-				return fmt.Errorf("Athena query execution failed %s", *status.QueryExecution.Status.AthenaError.ErrorMessage)
 			}
 		}
-		time.Sleep(time.Second)
 	}
 }
 
@@ -186,32 +177,6 @@ func parseSourceProperties(props map[string]any) (*sourceProperties, error) {
 	}
 
 	return conf, nil
-}
-
-func resolveOutputLocation(ctx context.Context, client *athena.Client, conf *sourceProperties) (string, error) {
-	if conf.OutputLocation != "" {
-		return conf.OutputLocation, nil
-	}
-
-	workgroup := conf.Workgroup
-	// fallback to "primary" (default) workgroup if no workgroup is specified
-	if workgroup == "" {
-		workgroup = "primary"
-	}
-
-	wo, err := client.GetWorkGroup(ctx, &athena.GetWorkGroupInput{
-		WorkGroup: aws.String(workgroup),
-	})
-	if err != nil {
-		return "", err
-	}
-
-	resultConfiguration := wo.WorkGroup.Configuration.ResultConfiguration
-	if resultConfiguration != nil && resultConfiguration.OutputLocation != nil && *resultConfiguration.OutputLocation != "" {
-		return *resultConfiguration.OutputLocation, nil
-	}
-
-	return "", fmt.Errorf("either output_location or workgroup with an output location must be set")
 }
 
 func openBucket(ctx context.Context, cfg aws.Config, bucket string) (*blob.Bucket, error) {
@@ -267,10 +232,13 @@ func deleteObjectsInPrefix(ctx context.Context, cfg aws.Config, bucketName, pref
 }
 
 type sourceProperties struct {
-	SQL            string `mapstructure:"sql"`
-	OutputLocation string `mapstructure:"output_location"`
-	Workgroup      string `mapstructure:"workgroup"`
-	AWSRegion      string `mapstructure:"region"`
+	SQL               string `mapstructure:"sql"`
+	OutputLocation    string `mapstructure:"output_location"`
+	Workgroup         string `mapstructure:"workgroup"`
+	Database          string `mapstructure:"database"`
+	ClusterIdentifier string `mapstructure:"cluster.identifier"`
+	RoleARN           string `mapstructure:"role.arn"`
+	AWSRegion         string `mapstructure:"region"`
 }
 
 type autoDeleteFileIterator struct {

@@ -44,7 +44,7 @@ var spec = drivers.Spec{
 			Hint:        "Either set this or pass --var connector.snowflake.dsn=... to rill start",
 		},
 	},
-	ImplementsSQLStore: true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}
@@ -159,6 +159,15 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
+	if opts.InputHandle == c {
+		if store, ok := opts.OutputHandle.AsObjectStore(); ok {
+			return &selfToObjectStoreExecutor{
+				c:     c,
+				store: store,
+				opts:  opts,
+			}, true
+		}
+	}
 	return nil, false
 }
 
@@ -177,9 +186,14 @@ func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return c, true
+}
+
 // AsSQLStore implements drivers.Connection.
 func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsNotifier implements drivers.Connection.

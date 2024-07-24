@@ -5,9 +5,9 @@ import (
 	"crypto/md5"
 	"encoding/binary"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/url"
 	"time"
 
@@ -573,22 +573,21 @@ func (r *AlertReconciler) executeSingleWrapped(ctx context.Context, self *runtim
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve alert: %w", err)
 	}
+	defer res.Close()
 
-	var tmp []map[string]any
-	err = json.Unmarshal(res.Data, &tmp)
+	row, err := res.Next()
 	if err != nil {
-		return nil, fmt.Errorf("alert state resolver produced invalid JSON: %w", err)
-	}
-
-	if len(tmp) == 0 {
-		r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
-		return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
+		if errors.Is(err, io.EOF) {
+			r.C.Logger.Info("Alert passed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
+			return &runtimev1.AssertionResult{Status: runtimev1.AssertionStatus_ASSERTION_STATUS_PASS}, nil
+		}
+		return nil, fmt.Errorf("failed to get row from alert resolver: %w", err)
 	}
 
 	r.C.Logger.Info("Alert failed", zap.String("name", self.Meta.Name.Name), zap.Time("execution_time", executionTime))
 
 	// Return fail row
-	failRow, err := structpb.NewStruct(tmp[0])
+	failRow, err := structpb.NewStruct(row)
 	if err != nil {
 		return nil, fmt.Errorf("failed to convert fail row to proto: %w", err)
 	}

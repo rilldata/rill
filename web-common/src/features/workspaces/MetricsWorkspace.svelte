@@ -11,13 +11,14 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
+  import MetricsInspector from "@rilldata/web-common/features/metrics-views/MetricsInspector.svelte";
   import PreviewButton from "@rilldata/web-common/features/metrics-views/workspace/PreviewButton.svelte";
   import MetricsEditor from "@rilldata/web-common/features/metrics-views/workspace/editor/MetricsEditor.svelte";
-  import MetricsInspector from "@rilldata/web-common/features/metrics-views/workspace/inspector/MetricsInspector.svelte";
   import WorkspaceContainer from "@rilldata/web-common/layout/workspace/WorkspaceContainer.svelte";
   import WorkspaceHeader from "@rilldata/web-common/layout/workspace/WorkspaceHeader.svelte";
   import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import WorkspaceEditorContainer from "../../layout/workspace/WorkspaceEditorContainer.svelte";
 
   const TOOLTIP_CTA = "Fix this error to enable your dashboard.";
 
@@ -98,14 +99,15 @@
     </div>
   </WorkspaceHeader>
 
-  <MetricsEditor
-    {allErrors}
-    bind:autoSave={$autoSave}
-    {fileArtifact}
-    {filePath}
-    {metricViewName}
-    slot="body"
-  />
+  <WorkspaceEditorContainer slot="body">
+    <MetricsEditor
+      bind:autoSave={$autoSave}
+      {fileArtifact}
+      {filePath}
+      {allErrors}
+      {metricViewName}
+    />
+  </WorkspaceEditorContainer>
 
-  <MetricsInspector slot="inspector" yaml={$remoteContent ?? ""} />
+  <MetricsInspector {filePath} slot="inspector" />
 </WorkspaceContainer>

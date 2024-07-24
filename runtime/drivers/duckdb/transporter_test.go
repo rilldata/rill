@@ -19,6 +19,10 @@ type mockObjectStore struct {
 	mockIterator drivers.FileIterator
 }
 
+func (m *mockObjectStore) ListObjects(ctx context.Context, propsMap map[string]any) ([]drivers.ObjectStoreEntry, error) {
+	return nil, nil
+}
+
 func (m *mockObjectStore) DownloadFiles(ctx context.Context, srcProps map[string]any) (drivers.FileIterator, error) {
 	return m.mockIterator, nil
 }

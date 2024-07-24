@@ -15,15 +15,15 @@ import (
 	"go.uber.org/zap"
 )
 
-type sqlStoreToSelfExecutor struct {
-	c        *connection
-	sqlstore drivers.SQLStore
-	opts     *drivers.ModelExecutorOptions
+type warehouseToSelfExecutor struct {
+	c    *connection
+	w    drivers.Warehouse
+	opts *drivers.ModelExecutorOptions
 }
 
-var _ drivers.ModelExecutor = &sqlStoreToSelfExecutor{}
+var _ drivers.ModelExecutor = &warehouseToSelfExecutor{}
 
-func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
+func (e *warehouseToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
 	olap, ok := e.c.AsOLAP(e.c.instanceID)
 	if !ok {
 		return nil, fmt.Errorf("output connector is not OLAP")
@@ -91,11 +91,11 @@ func (e *sqlStoreToSelfExecutor) Execute(ctx context.Context) (*drivers.ModelRes
 	}, nil
 }
 
-func (e *sqlStoreToSelfExecutor) queryAndInsert(ctx context.Context, olap drivers.OLAPStore, outputTable string, outputProps *ModelOutputProperties) (err error) {
+func (e *warehouseToSelfExecutor) queryAndInsert(ctx context.Context, olap drivers.OLAPStore, outputTable string, outputProps *ModelOutputProperties) (err error) {
 	start := time.Now()
-	e.c.logger.Debug("duckdb: sqlstore transfer started", zap.String("model", e.opts.ModelName), observability.ZapCtx(ctx))
+	e.c.logger.Debug("duckdb: warehouse transfer started", zap.String("model", e.opts.ModelName), observability.ZapCtx(ctx))
 	defer func() {
-		e.c.logger.Debug("duckdb: sqlstore transfer finished", zap.Duration("elapsed", time.Since(start)), zap.Bool("success", err == nil), zap.Error(err), observability.ZapCtx(ctx))
+		e.c.logger.Debug("duckdb: warehouse transfer finished", zap.Duration("elapsed", time.Since(start)), zap.Bool("success", err == nil), zap.Error(err), observability.ZapCtx(ctx))
 	}()
 
 	storageLimitBytes := e.c.config.StorageLimitBytes
@@ -103,7 +103,7 @@ func (e *sqlStoreToSelfExecutor) queryAndInsert(ctx context.Context, olap driver
 		storageLimitBytes = math.MaxInt64
 	}
 
-	iter, err := e.sqlstore.QueryAsFiles(ctx, e.opts.InputProperties, &drivers.QueryOption{TotalLimitInBytes: storageLimitBytes}, drivers.NoOpProgress{})
+	iter, err := e.w.QueryAsFiles(ctx, e.opts.InputProperties, &drivers.QueryOption{TotalLimitInBytes: storageLimitBytes})
 	if err != nil {
 		return err
 	}
