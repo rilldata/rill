@@ -1048,7 +1048,6 @@ export interface V1ModelState {
   incrementalState?: V1ModelStateIncrementalState;
   incrementalStateSchema?: V1StructType;
   modelId?: string;
-  splitsCount?: number;
 }
 
 export interface V1ModelV2 {

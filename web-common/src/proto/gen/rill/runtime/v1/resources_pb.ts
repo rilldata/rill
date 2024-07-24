@@ -922,11 +922,6 @@ export class ModelState extends Message<ModelState> {
    */
   modelId = "";
 
-  /**
-   * @generated from field: uint32 splits_count = 11;
-   */
-  splitsCount = 0;
-
   constructor(data?: PartialMessage<ModelState>) {
     super();
     proto3.util.initPartial(data, this);
@@ -945,7 +940,6 @@ export class ModelState extends Message<ModelState> {
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
     { no: 10, name: "model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 11, name: "splits_count", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {

@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	compilerv1 "github.com/rilldata/rill/runtime/compilers/rillv1"
@@ -114,6 +115,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			err = prevManager.Delete(ctx, prevResult)
 			return runtime.ReconcileResult{Err: err}
 		}
+
+		err := r.clearSplits(ctx, model)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+
 		return runtime.ReconcileResult{}
 	}
 
@@ -145,6 +152,11 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 			err2 := prevManager.Delete(ctx, prevResult)
 			if err2 != nil {
 				r.C.Logger.Warn("failed to delete model output", zap.String("model", n.Name), zap.Error(err2))
+			}
+
+			err := r.clearSplits(ctx, model)
+			if err != nil {
+				return runtime.ReconcileResult{Err: err}
 			}
 
 			err2 = r.updateStateClear(ctx, self)
@@ -203,6 +215,14 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
 
+	// On resets, clear all split state from the catalog
+	if triggerReset {
+		err := r.clearSplits(ctx, model)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+	}
+
 	// If the output connector has changed, drop data in the old output connector (if any).
 	// If only the output properties have changed, the executor will handle dropping existing data (to comply with StageChanges).
 	if prevManager != nil && model.State.ResultConnector != model.Spec.OutputConnector {
@@ -212,85 +232,8 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		}
 	}
 
-	// Prepare the incremental state to pass to the executor
-	incrementalRun := false
-	incrementalState := map[string]any{}
-	if !triggerReset && model.Spec.Incremental && prevResult != nil {
-		// This is an incremental run!
-		incrementalRun = true
-		if model.State.IncrementalState != nil {
-			incrementalState = model.State.IncrementalState.AsMap()
-		}
-	}
-	incrementalState["incremental"] = incrementalRun // The incremental flag is hard-coded by convention
-
-	// Build log message
-	args := []zap.Field{zap.String("name", n.Name)}
-	if incrementalRun {
-		args = append(args, zap.String("run_type", "incremental"))
-	} else {
-		args = append(args, zap.String("run_type", "reset"))
-	}
-	if model.Spec.InputConnector == model.Spec.OutputConnector {
-		args = append(args, zap.String("connector", model.Spec.InputConnector))
-	} else {
-		args = append(args, zap.String("input_connector", model.Spec.InputConnector), zap.String("output_connector", model.Spec.OutputConnector))
-	}
-	if model.Spec.StageConnector != "" {
-		args = append(args, zap.String("stage_connector", model.Spec.StageConnector))
-	}
-	r.C.Logger.Debug("Building model output", args...)
-
-	// Prepare the new execution options
-	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.InputConnector, model.Spec.InputProperties.AsMap())
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
-
-	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap())
-	if err != nil {
-		return runtime.ReconcileResult{Err: err}
-	}
-	opts := &drivers.ModelExecutorOptions{
-		Env:              modelEnv,
-		ModelName:        self.Meta.Name.Name,
-		InputConnector:   model.Spec.InputConnector,
-		InputProperties:  inputProps,
-		OutputConnector:  model.Spec.OutputConnector,
-		OutputProperties: outputProps,
-		Incremental:      model.Spec.Incremental,
-		IncrementalRun:   incrementalRun,
-		PreviousResult:   prevResult,
-	}
-
-	// Apply the timeout to the ctx
-	timeout := _defaultModelTimeout
-	if model.Spec.TimeoutSeconds > 0 {
-		timeout = time.Duration(model.Spec.TimeoutSeconds) * time.Second
-	}
-	ctx, cancel := context.WithTimeout(ctx, timeout)
-	defer cancel()
-
-	// For safety, double check the ctx before executing the model (there may be some code paths where it's not checked)
-	if ctx.Err() != nil {
-		return runtime.ReconcileResult{Err: ctx.Err()}
-	}
-
-	// Open executor for the new output and build the output
-	var (
-		executorConnector string
-		execRes           *drivers.ModelResult
-		execErr           error
-	)
-	if model.Spec.StageConnector != "" {
-		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.StageConnector, model.Spec.StageProperties.AsMap())
-		if err != nil {
-			return runtime.ReconcileResult{Err: err}
-		}
-		executorConnector, execRes, execErr = r.executeWithStage(ctx, model.Spec.StageConnector, stageProps, opts)
-	} else {
-		executorConnector, execRes, execErr = r.execute(ctx, opts)
-	}
+	// Build the model
+	executorConnector, execRes, execErr := r.executeAll(ctx, self, model, modelEnv, triggerReset, prevResult)
 	if execErr != nil {
 		var err *modelBuildError
 		if !errors.As(execErr, &err) {
@@ -323,7 +266,12 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	// If the build failed, clear the state only if we're not staging changes
 	if execErr != nil {
 		if !modelEnv.StageChanges {
-			err := r.updateStateClear(ctx, self)
+			err := r.clearSplits(ctx, model)
+			if err != nil {
+				return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
+			}
+
+			err = r.updateStateClear(ctx, self)
 			if err != nil {
 				return runtime.ReconcileResult{Err: errors.Join(err, execErr)}
 			}
@@ -422,6 +370,32 @@ func (r *ModelReconciler) executionSpecHash(ctx context.Context, refs []*runtime
 		if err != nil {
 			return "", err
 		}
+	}
+
+	_, err = hash.Write([]byte(spec.SplitsResolver))
+	if err != nil {
+		return "", err
+	}
+
+	if spec.SplitsResolverProperties != nil {
+		err = pbutil.WriteHash(structpb.NewStructValue(spec.SplitsResolverProperties), hash)
+		if err != nil {
+			return "", err
+		}
+
+		res, err := r.analyzeTemplatedVariables(ctx, spec.SplitsResolverProperties.AsMap())
+		if err != nil {
+			return "", err
+		}
+		err = hashWriteMapOrdered(hash, res)
+		if err != nil {
+			return "", err
+		}
+	}
+
+	_, err = hash.Write([]byte(spec.SplitsWatermarkField))
+	if err != nil {
+		return "", err
 	}
 
 	_, err = hash.Write([]byte(spec.InputConnector))
@@ -542,6 +516,7 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.RefreshedOn = nil
 	mdl.State.IncrementalState = nil
 	mdl.State.IncrementalStateSchema = nil
+	mdl.State.ModelId = ""
 
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }
@@ -608,9 +583,18 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 }
 
 // resolveAndSyncSplits resolves the model's splits using its configured splits resolver and inserts or updates them in the catalog.
-func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
+func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
 	if mdl.Spec.SplitsResolver == "" {
 		return nil
+	}
+
+	// Ensure a model ID is set. We use it to track the model's splits in the catalog.
+	if mdl.State.ModelId == "" {
+		mdl.State.ModelId = uuid.NewString()
+		err := r.C.UpdateState(ctx, self.Meta.Name, self)
+		if err != nil {
+			return err
+		}
 	}
 
 	// Resolve split rows
@@ -758,6 +742,115 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 		}
 	}
 	return nil
+}
+
+// clearSplits drops all splits for a model from the catalog.
+func (r *ModelReconciler) clearSplits(ctx context.Context, mdl *runtimev1.ModelV2) error {
+	if mdl.State.ModelId == "" {
+		return nil
+	}
+
+	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	return catalog.DeleteModelSplits(ctx, mdl.State.ModelId)
+}
+
+// executeAll executes a model with the given execution options.
+func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.ModelV2, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, error) {
+	// Prepare the incremental state to pass to the executor
+	incrementalRun := false
+	incrementalState := map[string]any{}
+	if !triggerReset && model.Spec.Incremental && prevResult != nil {
+		// This is an incremental run!
+		incrementalRun = true
+		if model.State.IncrementalState != nil {
+			incrementalState = model.State.IncrementalState.AsMap()
+		}
+	}
+	incrementalState["incremental"] = incrementalRun // The incremental flag is hard-coded by convention
+
+	// Build log message
+	args := []zap.Field{zap.String("name", self.Meta.Name.Name)}
+	if incrementalRun {
+		args = append(args, zap.String("run_type", "incremental"))
+	} else {
+		args = append(args, zap.String("run_type", "reset"))
+	}
+	if model.Spec.SplitsResolver != "" {
+		args = append(args, zap.Bool("split", true))
+	}
+	if model.Spec.InputConnector == model.Spec.OutputConnector {
+		args = append(args, zap.String("connector", model.Spec.InputConnector))
+	} else {
+		args = append(args, zap.String("input_connector", model.Spec.InputConnector), zap.String("output_connector", model.Spec.OutputConnector))
+	}
+	if model.Spec.StageConnector != "" {
+		args = append(args, zap.String("stage_connector", model.Spec.StageConnector))
+	}
+	r.C.Logger.Debug("Building model", args...)
+
+	// Sync splits
+	err := r.resolveAndSyncSplits(ctx, self, model, incrementalState)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to sync splits: %w", err)
+	}
+
+	// Prepare the new execution options
+	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.InputConnector, model.Spec.InputProperties.AsMap())
+	if err != nil {
+		return "", nil, err
+	}
+
+	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap())
+	if err != nil {
+		return "", nil, err
+	}
+	opts := &drivers.ModelExecutorOptions{
+		Env:              env,
+		ModelName:        self.Meta.Name.Name,
+		InputConnector:   model.Spec.InputConnector,
+		InputProperties:  inputProps,
+		OutputConnector:  model.Spec.OutputConnector,
+		OutputProperties: outputProps,
+		Incremental:      model.Spec.Incremental,
+		IncrementalRun:   incrementalRun,
+		PreviousResult:   prevResult,
+	}
+
+	// Apply the timeout to the ctx
+	timeout := _defaultModelTimeout
+	if model.Spec.TimeoutSeconds > 0 {
+		timeout = time.Duration(model.Spec.TimeoutSeconds) * time.Second
+	}
+	ctx, cancel := context.WithTimeout(ctx, timeout)
+	defer cancel()
+
+	// For safety, double check the ctx before executing the model (there may be some code paths where it's not checked)
+	if ctx.Err() != nil {
+		return "", nil, ctx.Err()
+	}
+
+	// Open executor for the new output and build the output
+	var (
+		executorConnector string
+		execRes           *drivers.ModelResult
+		execErr           error
+	)
+	if model.Spec.StageConnector != "" {
+		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.StageConnector, model.Spec.StageProperties.AsMap())
+		if err != nil {
+			return "", nil, err
+		}
+		executorConnector, execRes, execErr = r.executeWithStage(ctx, model.Spec.StageConnector, stageProps, opts)
+	} else {
+		executorConnector, execRes, execErr = r.execute(ctx, opts)
+	}
+
+	return executorConnector, execRes, execErr
 }
 
 // execute executes a model with the given execution options.

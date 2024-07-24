@@ -4818,9 +4818,6 @@ definitions:
         $ref: '#/definitions/v1StructType'
       modelId:
         type: string
-      splitsCount:
-        type: integer
-        format: int64
   v1ModelV2:
     type: object
     properties:
