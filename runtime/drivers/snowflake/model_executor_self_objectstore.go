@@ -71,6 +71,7 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 	if err != nil {
 		return "", err
 	}
+	defer db.Close()
 
 	outputLocation, err = url.JoinPath(outputLocation, "rill-tmp-"+uuid.New().String(), "/")
 	if err != nil {

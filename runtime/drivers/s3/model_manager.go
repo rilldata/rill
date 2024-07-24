@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
+	awss3 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/mitchellh/mapstructure"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -35,20 +35,20 @@ func (c *Connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 		return err
 	}
 
-	session, err := c.getAwsSessionConfig(ctx, &sourceProperties{}, u.Host, creds)
+	sess, err := c.getAwsSessionConfig(ctx, &sourceProperties{}, u.Host, creds)
 	if err != nil {
 		return err
 	}
 	base, _ := doublestar.SplitPattern(strings.TrimPrefix(u.Path, "/"))
-	return deleteObjectsInPrefix(ctx, session, u.Host, base)
+	return deleteObjectsInPrefix(ctx, sess, u.Host, base)
 }
 
 func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketName, prefix string) error {
-	s3client := s3.New(sess)
-	deleteBatch := func(objects []*s3.ObjectIdentifier) error {
-		_, err := s3client.DeleteObjectsWithContext(ctx, &s3.DeleteObjectsInput{
+	s3client := awss3.New(sess)
+	deleteBatch := func(objects []*awss3.ObjectIdentifier) error {
+		_, err := s3client.DeleteObjectsWithContext(ctx, &awss3.DeleteObjectsInput{
 			Bucket: &bucketName,
-			Delete: &s3.Delete{
+			Delete: &awss3.Delete{
 				Objects: objects,
 			},
 		})
@@ -57,7 +57,7 @@ func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketNam
 
 	var continuationToken *string
 	for {
-		out, err := s3client.ListObjectsV2WithContext(ctx, &s3.ListObjectsV2Input{
+		out, err := s3client.ListObjectsV2WithContext(ctx, &awss3.ListObjectsV2Input{
 			Bucket:            &bucketName,
 			Prefix:            &prefix,
 			ContinuationToken: continuationToken,
@@ -66,9 +66,9 @@ func deleteObjectsInPrefix(ctx context.Context, sess *session.Session, bucketNam
 			return err
 		}
 
-		ids := make([]*s3.ObjectIdentifier, 0, len(out.Contents))
+		ids := make([]*awss3.ObjectIdentifier, 0, len(out.Contents))
 		for _, o := range out.Contents {
-			ids = append(ids, &s3.ObjectIdentifier{
+			ids = append(ids, &awss3.ObjectIdentifier{
 				Key: o.Key,
 			})
 		}
