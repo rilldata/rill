@@ -9,27 +9,29 @@ test.describe("Metrics editor", () => {
   test("Metrics editor", async ({ page }) => {
     await updateCodeEditor(page, "");
 
-    // the inspector should be empty.
-    await expect(page.getByText("Let's get started.")).toBeVisible();
+    // inspector should point to the documentation
+    await expect(page.getByText("For help building dashboards")).toBeVisible();
 
     // skeleton should result in an empty skeleton YAML file
     await page.getByText("start with a skeleton").click();
 
-    // check to see that the placeholder is gone by looking for the button
-    // that was once there.
+    // check to see that the placeholder is gone by looking for the button that was once there
     await wrapRetryAssertion(async () => {
       await expect(page.getByText("start with a skeleton")).toBeHidden();
     });
 
-    // the  button should be disabled.
+    // the Preview button should be disabled
     await expect(page.getByRole("button", { name: "Preview" })).toBeDisabled();
 
-    // the inspector should be empty.
-    await expect(page.getByText("Table not defined.")).toBeVisible();
+    // the editor should show a validation error
+    await expect(
+      page.getByText(
+        'must set a value for either the "model" field or the "table" field',
+      ),
+    ).toBeVisible();
 
-    // now let's scaffold things in
+    // now let's create a working metrics view
     await updateCodeEditor(page, "");
-
     await wrapRetryAssertion(async () => {
       await expect(
         page.getByText("metrics configuration from an existing model"),
@@ -47,13 +49,9 @@ test.describe("Metrics editor", () => {
     ).not.toBeVisible();
 
     // let's check the inspector.
-    await expect(page.getByText("Model summary")).toBeVisible({
-      timeout: 20000,
-    });
-    await expect(page.getByText("Model columns")).toBeVisible();
+    await expect(page.getByText("Table columns")).toBeVisible();
 
     // go to the dashboard and make sure the metrics and dimensions are there.
-
     await page.getByRole("button", { name: "Preview" }).click();
 
     // check to see metrics make sense.
@@ -66,5 +64,28 @@ test.describe("Metrics editor", () => {
 
     // go back to the metrics page.
     await page.getByRole("button", { name: "Edit Metrics" }).click();
+
+    // Create a metrics view from a table (rather than a model)
+    await updateCodeEditor(
+      page,
+      `type: metrics_view
+title: "AdBids table"
+table: "AdBids"
+timeseries: "timestamp"
+measures:
+  - name: "Total Records"
+    expression: count(*)
+dimensions:
+  - name: publisher
+    label: Publisher
+    column: publisher
+  - name: domain
+    label: Domain
+    column: domain
+  `,
+    );
+
+    // Check that the metrics inspector shows the table columns
+    await expect(page.getByText("Table columns")).toBeVisible();
   });
 });
