@@ -21,15 +21,21 @@ type selfToObjectStoreExecutor struct {
 var _ drivers.ModelExecutor = &selfToObjectStoreExecutor{}
 
 func (e *selfToObjectStoreExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
-	props := &modelOutputProperties{}
+	props := &drivers.ObjectStoreModelOutputProperties{}
 	if err := mapstructure.Decode(e.opts.OutputProperties, props); err != nil {
 		return nil, err
 	}
-	outputGlob, err := e.export(ctx, e.opts.InputProperties, props.Path)
+	var format drivers.FileFormat
+	if props.Format != "" {
+		format = props.Format
+	} else {
+		format = drivers.FileFormatParquet
+	}
+	outputLocation, err := e.export(ctx, e.opts.InputProperties, props.Path, format)
 	if err != nil {
 		return nil, err
 	}
-	resProps := &modelResultProperties{Path: outputGlob}
+	resProps := &drivers.ObjectStoreModelResultProperties{Path: outputLocation, Format: drivers.FileFormatParquet}
 	res := make(map[string]any)
 	err = mapstructure.Decode(resProps, &res)
 	if err != nil {
@@ -42,7 +48,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context) (*drivers.Model
 	}, nil
 }
 
-func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string]any, outputLocation string) (string, error) {
+func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string]any, outputLocation string, format drivers.FileFormat) (string, error) {
 	conf := &sourceProperties{}
 	err := mapstructure.Decode(props, conf)
 	if err != nil {
@@ -83,12 +89,12 @@ func (e *selfToObjectStoreExecutor) export(ctx context.Context, props map[string
 		CREDENTIALS = %s
 		HEADER = TRUE
 		MAX_FILE_SIZE = 536870912 
-		FILE_FORMAT = (TYPE='PARQUET' COMPRESSION = 'SNAPPY')`, outputLocation, conf.SQL, creds)
+		FILE_FORMAT = (TYPE='%s' COMPRESSION = 'SNAPPY')`, outputLocation, conf.SQL, creds, string(format))
 	_, err = db.ExecContext(ctx, query)
 	if err != nil {
 		return "", err
 	}
-	return url.JoinPath(outputLocation, "*."+string(drivers.FileFormatParquet))
+	return outputLocation, nil
 }
 
 func creds(store drivers.ObjectStore) (string, error) {
@@ -105,19 +111,4 @@ func creds(store drivers.ObjectStore) (string, error) {
 	default:
 		return "", fmt.Errorf("snowflake connector can't export to connector %q", h.Driver())
 	}
-}
-
-type modelOutputProperties struct {
-	Path string `mapstructure:"path"`
-}
-
-func (p *modelOutputProperties) Validate(opts *drivers.ModelExecutorOptions) error {
-	if p.Path == "" {
-		return fmt.Errorf("missing property 'path'")
-	}
-	return nil
-}
-
-type modelResultProperties struct {
-	Path string `mapstructure:"path"`
 }

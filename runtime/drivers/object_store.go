@@ -22,3 +22,13 @@ type FileIterator interface {
 	// Returns an empty string if there is no general format
 	Format() string
 }
+
+type ObjectStoreModelOutputProperties struct {
+	Path   string     `mapstructure:"path"`
+	Format FileFormat `mapstructure:"format"`
+}
+
+type ObjectStoreModelResultProperties struct {
+	Path   string     `mapstructure:"path"`
+	Format FileFormat `mapstructure:"format"`
+}
