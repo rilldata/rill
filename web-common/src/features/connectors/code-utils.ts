@@ -63,7 +63,7 @@ driver: ${connector.name}`;
 export async function updateDotEnvWithSecrets(
   queryClient: QueryClient,
   connector: V1ConnectorDriver,
-  formValues: Record<string, string>,
+  formValues: Record<string, unknown>,
 ): Promise<string> {
   const instanceId = get(runtime).instanceId;
 
@@ -105,7 +105,11 @@ export async function updateDotEnvWithSecrets(
       key,
     );
 
-    blob = replaceOrAddEnvVariable(blob, connectorSecretKey, formValues[key]);
+    blob = replaceOrAddEnvVariable(
+      blob,
+      connectorSecretKey,
+      formValues[key] as string,
+    );
   });
 
   return blob;
