@@ -62,7 +62,7 @@
   <div class="inner" style:width="{width}px">
     <ProjectTitle {unsavedFileCount} />
 
-    <div class="p-2 w-full">
+    <div class="p-2 pt-1 w-full">
       <AddAssetButton />
     </div>
     <div class="scroll-container">
