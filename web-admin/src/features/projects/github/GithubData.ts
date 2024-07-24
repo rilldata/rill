@@ -40,7 +40,8 @@ export class GithubData {
     >
   >;
 
-  private promptingUser: boolean;
+  private userPromptWindow: Window | undefined;
+  private windowCheckTimer: ReturnType<typeof setInterval>;
 
   public readonly status = derived(
     [this.userStatus, this.userRepos],
@@ -72,8 +73,7 @@ export class GithubData {
       return;
     }
 
-    this.promptingUser = true;
-    window.open(userStatus.grantAccessUrl, "_blank");
+    this.openGithubConnectWindow(userStatus.grantAccessUrl);
   }
 
   /**
@@ -87,20 +87,10 @@ export class GithubData {
       return;
     }
 
-    this.promptingUser = true;
-    window.open(userStatus.grantAccessUrl, "_blank");
+    this.openGithubConnectWindow(userStatus.grantAccessUrl);
   }
 
-  /**
-   * If prompting user to connect to github then check the status of the connection.
-   *
-   * If did not have access before, refetch the user status query. (list of repos is fetched since the enabled will be flipped)
-   * Else refetch the list of queries.
-   */
   public async refetch() {
-    if (!this.promptingUser) return;
-    this.promptingUser = false;
-
     const userStatus = get(this.userStatus).data;
     if (!userStatus?.hasAccess) {
       // refetch status if had no access
@@ -122,6 +112,26 @@ export class GithubData {
         getAdminServiceListGithubUserReposQueryKey(),
       );
     }
+  }
+
+  private openGithubConnectWindow(url: string) {
+    try {
+      // safeguard try catch
+      this.userPromptWindow?.close();
+    } catch (e) {
+      // no-op
+    }
+    if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
+    this.userPromptWindow = window.open(url, "", "width=1024,height=600");
+
+    // periodically check if the new window was closed
+    this.windowCheckTimer = setInterval(() => {
+      if (!this.userPromptWindow.closed) return;
+      clearInterval(this.windowCheckTimer);
+      this.windowCheckTimer = undefined;
+      this.userPromptWindow = undefined;
+      void this.refetch();
+    }, 200);
   }
 }
 

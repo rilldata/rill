@@ -1,5 +1,5 @@
 <script lang="ts">
-  import ConnectToGithubConfirmDialog from "@rilldata/web-admin/features/projects/github/ConnectToGithubConfirmDialog.svelte";
+  import ConnectToGithubButton from "@rilldata/web-admin/features/projects/github/ConnectToGithubButton.svelte";
   import {
     GithubData,
     setGithubData,
@@ -33,34 +33,22 @@
   const userStatus = githubData.userStatus;
   const repoSelectionOpen = githubData.repoSelectionOpen;
 
-  let confirmDialogOpen = false;
-
-  function connectToGithub() {
-    confirmDialogOpen = true;
-  }
-
   function confirmConnectToGithub() {
-    confirmDialogOpen = false;
     void githubData.startRepoSelection();
   }
 
   function editGithubConnection() {
     void githubData.startRepoSelection();
   }
-
-  function handleVisibilityChange() {
-    if (document.visibilityState !== "visible") return;
-    void githubData.refetch();
-  }
 </script>
-
-<svelte:window on:visibilitychange={handleVisibilityChange} />
 
 {#if $proj.data}
   <div class="flex flex-col gap-y-1 max-w-[400px]">
-    <span class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
-      >Github</span
+    <span
+      class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
     >
+      Github
+    </span>
     <div class="flex items-start gap-x-1">
       <div class="py-0.5 mt-1">
         <Github className="w-4 h-4" />
@@ -103,28 +91,21 @@
             Unlock the power of BI-as-code with Github-backed collaboration,
             version control, and approval workflows.
           </span>
-          <Button
-            type="primary"
-            class="w-fit mt-1"
+          <ConnectToGithubButton
+            onContinue={confirmConnectToGithub}
             loading={$userStatus.isFetching}
-            on:click={connectToGithub}
-          >
-            Connect to Github
-          </Button>
+          />
         {/if}
       </div>
     </div>
   </div>
 {/if}
 
-<ConnectToGithubConfirmDialog
-  bind:open={confirmDialogOpen}
-  onContinue={confirmConnectToGithub}
-/>
-
 <GithubRepoSelectionDialog
   bind:open={$repoSelectionOpen}
   currentUrl={$proj.data?.project?.githubUrl}
+  currentSubpath={$proj.data?.project?.subpath}
+  currentBranch={$proj.data?.project?.prodBranch}
   {organization}
   {project}
 />
