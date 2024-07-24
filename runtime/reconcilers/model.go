@@ -3,8 +3,10 @@ package reconcilers
 import (
 	"context"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -23,6 +25,8 @@ import (
 )
 
 const _defaultModelTimeout = 60 * time.Minute
+
+const _modelSyncSplitsBatchSize = 1000
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -603,6 +607,160 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 	return state, res.Schema(), nil
 }
 
+// resolveAndSyncSplits resolves the model's splits using its configured splits resolver and inserts or updates them in the catalog.
+func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
+	if mdl.Spec.SplitsResolver == "" {
+		return nil
+	}
+
+	// Resolve split rows
+	res, err := r.C.Runtime.Resolve(ctx, &runtime.ResolveOptions{
+		InstanceID:         r.C.InstanceID,
+		Resolver:           mdl.Spec.SplitsResolver,
+		ResolverProperties: mdl.Spec.SplitsResolverProperties.AsMap(),
+		Args:               map[string]any{"state": incrementalState},
+		Claims:             &runtime.SecurityClaims{SkipChecks: true},
+	})
+	if err != nil {
+		return err
+	}
+	defer res.Close()
+
+	// Consume the rows and sync them in batches
+	var batch []map[string]any
+	var batchStartIdx int
+	for {
+		// Read a row
+		row, err := res.Next()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return fmt.Errorf("failed to read splits resolver output: %w", err)
+		}
+		batch = append(batch, row)
+
+		// Flush a batch of rows
+		if len(batch) >= _modelSyncSplitsBatchSize {
+			// Sync the splits
+			err = r.syncSplits(ctx, mdl, batchStartIdx, batch)
+			if err != nil {
+				return err
+			}
+
+			// Track the row index of the first row in the batch
+			batchStartIdx += len(batch)
+
+			// Reset the batch without reallocating
+			for i := range batch {
+				batch[i] = nil
+			}
+			batch = batch[:0]
+		}
+	}
+
+	// Flush the remaining rows not handled in the loop
+	return r.syncSplits(ctx, mdl, batchStartIdx, batch)
+}
+
+// syncSplits syncs a batch of split rows to the catalog.
+// If a split doesn't exist, it is inserted and marked for execution.
+// If a split already exists, it will be ignored unless its watermark field has advanced, in which case it will be marked for execution.
+//
+// The startIdx should be the index of the first row in the batch in the full splits dataset.
+// Split indexes only inform the order that splits are executed in, so they don't need to be very consistent across invocations.
+func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2, startIdx int, rows []map[string]any) error {
+	if len(rows) == 0 {
+		return nil
+	}
+
+	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+	if err != nil {
+		return err
+	}
+	defer release()
+
+	// Build ModelSplit objects indexed by their Key
+	splits := make(map[string]drivers.ModelSplit, len(rows))
+	for i, row := range rows {
+		// If a watermark field is configured, we extract and remove it from the map.
+		// It is necessary to remove it to ensure the key is deterministic.
+		var watermark *time.Time
+		if mdl.Spec.SplitsWatermarkField != "" {
+			if v, ok := row[mdl.Spec.SplitsWatermarkField]; ok {
+				t, ok := v.(time.Time)
+				if !ok {
+					return fmt.Errorf(`expected a timestamp for split watermark field %q, got type %T`, mdl.Spec.SplitsWatermarkField, v)
+				}
+
+				watermark = &t
+				delete(row, mdl.Spec.SplitsWatermarkField)
+			}
+		}
+
+		// Marshal the rest of the row
+		rowJSON, err := json.Marshal(row)
+		if err != nil {
+			return fmt.Errorf("failed to marshal split row at index %d: %w", i, err)
+		}
+
+		// JSON serialization is deterministic, so we can hash it to get a key
+		key, err := secureHash(rowJSON)
+		if err != nil {
+			return fmt.Errorf("failed to hash split row at index %d: %w", i, err)
+		}
+
+		splits[key] = drivers.ModelSplit{
+			Key:       key,
+			DataJSON:  rowJSON,
+			Index:     startIdx + i,
+			Watermark: watermark,
+		}
+	}
+
+	// Find those splits that already exist in the catalog
+	keys := make([]string, 0, len(splits))
+	for key := range splits {
+		keys = append(keys, key)
+	}
+	existing, err := catalog.FindModelSplitsByKeys(ctx, mdl.State.ModelId, keys)
+	if err != nil {
+		return fmt.Errorf("failed to find existing splits: %w", err)
+	}
+
+	// Handle the existing skips by skipping or updating them.
+	// We remove the handled splits from the splits map. The ones that remain are new and should be inserted.
+	for _, old := range existing {
+		// Pop the matching split from the map
+		split := splits[old.Key]
+		delete(splits, old.Key)
+
+		// If the watermark hasn't advanced, there's nothing to do
+		if split.Watermark == nil {
+			continue
+		}
+		if old.Watermark != nil && !old.Watermark.Before(*split.Watermark) {
+			continue
+		}
+
+		// Update the split (since the new ExecutedOn will be nil, it will be marked for execution)
+		err = catalog.UpdateModelSplit(ctx, mdl.State.ModelId, split)
+		if err != nil {
+			return fmt.Errorf("failed to update existing split: %w", err)
+		}
+	}
+
+	// The remaining splits are new and should be inserted
+	for _, split := range splits {
+		err = catalog.InsertModelSplit(ctx, mdl.State.ModelId, split)
+		if err != nil {
+			return fmt.Errorf("failed to insert new split: %w", err)
+		}
+	}
+	return nil
+}
+
+// execute executes a model with the given execution options.
 func (r *ModelReconciler) execute(ctx context.Context, opts *drivers.ModelExecutorOptions) (string, *drivers.ModelResult, error) {
 	executorName, e, release, err := r.acquireExecutor(ctx, opts)
 	if err != nil {
@@ -617,6 +775,8 @@ func (r *ModelReconciler) execute(ctx context.Context, opts *drivers.ModelExecut
 	return executorName, res, nil
 }
 
+// executeWithStage executes a model with a stage connector by first running an executor from the input connector to the stage connector,
+// and then running an executor from the stage connector to the output connector.
 func (r *ModelReconciler) executeWithStage(ctx context.Context, stageConnector string, stageProps map[string]any, opts *drivers.ModelExecutorOptions) (string, *drivers.ModelResult, error) {
 	// we want to determine whether stage connector and output connector are compatible
 	// so we get executor but do not execute it since we need to use result of stage 1
@@ -906,6 +1066,16 @@ func hashWriteMapOrdered(w io.Writer, m map[string]string) error {
 	}
 
 	return nil
+}
+
+// secureHash returns a hex-encoded SHA-256 hash of the provided byte slice.
+func secureHash(val []byte) (string, error) {
+	hash := sha256.New()
+	_, err := hash.Write(val)
+	if err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(hash.Sum(nil)), nil
 }
 
 type modelBuildError struct {

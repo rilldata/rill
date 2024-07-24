@@ -112,7 +112,8 @@ message ModelSpec {
   google.protobuf.Struct incremental_state_resolver_properties = 15;
   string splits_resolver = 18;
   google.protobuf.Struct splits_resolver_properties = 19;
-  uint32 splits_concurrency_limit = 20;
+  string splits_watermark_field = 20;
+  uint32 splits_concurrency_limit = 21;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
   // stage_connector is optional.

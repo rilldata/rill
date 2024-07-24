@@ -779,7 +779,12 @@ export class ModelSpec extends Message<ModelSpec> {
   splitsResolverProperties?: Struct;
 
   /**
-   * @generated from field: uint32 splits_concurrency_limit = 20;
+   * @generated from field: string splits_watermark_field = 20;
+   */
+  splitsWatermarkField = "";
+
+  /**
+   * @generated from field: uint32 splits_concurrency_limit = 21;
    */
   splitsConcurrencyLimit = 0;
 
@@ -835,7 +840,8 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 15, name: "incremental_state_resolver_properties", kind: "message", T: Struct },
     { no: 18, name: "splits_resolver", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 19, name: "splits_resolver_properties", kind: "message", T: Struct },
-    { no: 20, name: "splits_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
+    { no: 20, name: "splits_watermark_field", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 21, name: "splits_concurrency_limit", kind: "scalar", T: 13 /* ScalarType.UINT32 */ },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
     { no: 16, name: "stage_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },

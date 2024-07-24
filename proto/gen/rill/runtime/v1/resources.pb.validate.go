@@ -2408,6 +2408,8 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for SplitsWatermarkField
+
 	// no validation rules for SplitsConcurrencyLimit
 
 	// no validation rules for InputConnector

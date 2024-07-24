@@ -146,7 +146,7 @@ func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string
 	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
 	var qry strings.Builder
 	var args []any
-	qry.WriteString("SELECT key, data_json, data_updated_on, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND key IN (")
+	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND key IN (")
 	args = append(args, c.instanceID, modelID)
 
 	qry.Grow(len(keys) * 2)
@@ -170,7 +170,7 @@ func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string
 	for rows.Next() {
 		var elapsedMs int64
 		r := drivers.ModelSplit{}
-		err := rows.Scan(&r.Key, &r.DataJSON, &r.DataUpdatedOn, &r.ExecutedOn, &r.Error, &elapsedMs)
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
 		if err != nil {
 			return nil, err
 		}
@@ -188,7 +188,7 @@ func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string
 func (c *catalogStore) FindModelSplitsByPending(ctx context.Context, modelID string, limit int) ([]drivers.ModelSplit, error) {
 	rows, err := c.db.QueryxContext(
 		ctx,
-		"SELECT key, data_json, data_updated_on, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND executed_on IS NULL ORDER BY data_updated_on LIMIT ?",
+		"SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND executed_on IS NULL ORDER BY idx LIMIT ?",
 		c.instanceID,
 		modelID,
 		limit,
@@ -202,7 +202,7 @@ func (c *catalogStore) FindModelSplitsByPending(ctx context.Context, modelID str
 	for rows.Next() {
 		var elapsedMs int64
 		r := drivers.ModelSplit{}
-		err := rows.Scan(&r.Key, &r.DataJSON, &r.DataUpdatedOn, &r.ExecutedOn, &r.Error, &elapsedMs)
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
 		if err != nil {
 			return nil, err
 		}
@@ -220,12 +220,13 @@ func (c *catalogStore) FindModelSplitsByPending(ctx context.Context, modelID str
 func (c *catalogStore) InsertModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"INSERT INTO model_splits(instance_id, model_id, key, data_json, data_updated_on, executed_on, error, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+		"INSERT INTO model_splits(instance_id, model_id, key, data_json, idx, watermark, executed_on, error, elapsed_ms) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
 		c.instanceID,
 		modelID,
 		split.Key,
 		split.DataJSON,
-		split.DataUpdatedOn,
+		split.Index,
+		split.Watermark,
 		split.ExecutedOn,
 		split.Error,
 		split.Elapsed.Milliseconds(),
@@ -240,9 +241,10 @@ func (c *catalogStore) InsertModelSplit(ctx context.Context, modelID string, spl
 func (c *catalogStore) UpdateModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
 	_, err := c.db.ExecContext(
 		ctx,
-		"UPDATE model_splits SET data_json=?, data_updated_on=?, executed_on=?, error=?, elapsed_ms=? WHERE instance_id=? AND model_id=? AND key=?",
+		"UPDATE model_splits SET data_json=?, idx=?, watermark=?, executed_on=?, error=?, elapsed_ms=? WHERE instance_id=? AND model_id=? AND key=?",
 		split.DataJSON,
-		split.DataUpdatedOn,
+		split.Index,
+		split.Watermark,
 		split.ExecutedOn,
 		split.Error,
 		split.Elapsed.Milliseconds(),

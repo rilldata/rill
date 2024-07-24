@@ -1076,6 +1076,7 @@ export interface V1ModelSpec {
   incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
   splitsResolver?: string;
   splitsResolverProperties?: V1ModelSpecSplitsResolverProperties;
+  splitsWatermarkField?: string;
   splitsConcurrencyLimit?: number;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;

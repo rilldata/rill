@@ -55,10 +55,11 @@ type Resource struct {
 
 // ModelSplit is a single executable unit of a model.
 type ModelSplit struct {
-	Key           string
-	DataJSON      []byte
-	DataUpdatedOn time.Time
-	ExecutedOn    *time.Time
-	Error         string
-	Elapsed       time.Duration
+	Key        string
+	DataJSON   []byte
+	Index      int
+	Watermark  *time.Time
+	ExecutedOn *time.Time
+	Error      string
+	Elapsed    time.Duration
 }

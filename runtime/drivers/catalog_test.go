@@ -30,9 +30,10 @@ func testCatalogSplits(t *testing.T, catalog drivers.CatalogStore) {
 	require.Len(t, splits, 0)
 
 	split := drivers.ModelSplit{
-		Key:           "hello",
-		DataJSON:      []byte(`{"hello": "world"}`),
-		DataUpdatedOn: now,
+		Key:       "hello",
+		DataJSON:  []byte(`{"hello": "world"}`),
+		Watermark: &now,
+		Index:     2,
 	}
 
 	err = catalog.InsertModelSplit(ctx, modelID, split)
@@ -63,13 +64,19 @@ func requireSplitEqual(t *testing.T, expected, actual drivers.ModelSplit) {
 	t.Helper()
 	require.Equal(t, expected.Key, actual.Key)
 	require.Equal(t, expected.DataJSON, actual.DataJSON)
-	require.True(t, expected.DataUpdatedOn.Equal(actual.DataUpdatedOn))
-	if expected.ExecutedOn == nil {
-		require.Nil(t, actual.ExecutedOn)
-	} else {
-		require.NotNil(t, actual.ExecutedOn)
-		require.True(t, expected.ExecutedOn.Equal(*actual.ExecutedOn))
-	}
+	require.Equal(t, expected.Index, actual.Index)
+	requireTimePtrEqual(t, expected.Watermark, actual.Watermark)
+	requireTimePtrEqual(t, expected.ExecutedOn, actual.ExecutedOn)
 	require.Equal(t, expected.Error, actual.Error)
 	require.Equal(t, expected.Elapsed, actual.Elapsed)
+}
+
+func requireTimePtrEqual(t *testing.T, expected, actual *time.Time) {
+	t.Helper()
+	if expected == nil {
+		require.Nil(t, actual)
+	} else {
+		require.NotNil(t, actual)
+		require.True(t, expected.Equal(*actual))
+	}
 }

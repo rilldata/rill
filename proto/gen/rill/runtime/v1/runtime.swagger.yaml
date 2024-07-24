@@ -4774,6 +4774,8 @@ definitions:
         type: string
       splitsResolverProperties:
         type: object
+      splitsWatermarkField:
+        type: string
       splitsConcurrencyLimit:
         type: integer
         format: int64

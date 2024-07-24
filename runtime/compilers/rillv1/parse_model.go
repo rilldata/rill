@@ -19,6 +19,7 @@ type ModelYAML struct {
 	Incremental       bool                                    `yaml:"incremental"`
 	State             *DataYAML                               `yaml:"state"`
 	Splits            *DataYAML                               `yaml:"splits"`
+	SplitsWatermark   string                                  `yaml:"splits_watermark"`
 	SplitsConcurrency uint                                    `yaml:"splits_concurrency"`
 	InputProperties   map[string]any                          `yaml:",inline" mapstructure:",remain"`
 	Stage             struct {
@@ -78,6 +79,13 @@ func (p *Parser) parseModel(node *Node) error {
 			return fmt.Errorf(`failed to parse "splits": %w`, err)
 		}
 		node.Refs = append(node.Refs, refs...)
+
+		// As a small convenience, automatically set the watermark field for resolvers where we know a good default
+		if tmp.SplitsWatermark == "" {
+			if splitsResolver == "glob" {
+				tmp.SplitsWatermark = "updated_on"
+			}
+		}
 	}
 
 	// Build input details
@@ -162,6 +170,7 @@ func (p *Parser) parseModel(node *Node) error {
 
 	r.ModelSpec.SplitsResolver = splitsResolver
 	r.ModelSpec.SplitsResolverProperties = splitsResolverProps
+	r.ModelSpec.SplitsWatermarkField = tmp.SplitsWatermark
 	r.ModelSpec.SplitsConcurrencyLimit = uint32(tmp.SplitsConcurrency)
 
 	r.ModelSpec.InputConnector = inputConnector
