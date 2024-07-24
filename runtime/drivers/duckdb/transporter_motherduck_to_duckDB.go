@@ -19,10 +19,10 @@ type motherduckToDuckDB struct {
 }
 
 type mdConfig struct {
-	ConnectionString string `mapstructure:"connection_string"`
-	Token            string `mapstructure:"token"`
-	SQL              string `mapstructure:"sql"`
-	AllowHostAccess  bool   `mapstructure:"allow_host_access"`
+	DSN             string `mapstructure:"dsn"`
+	Token           string `mapstructure:"token"`
+	SQL             string `mapstructure:"sql"`
+	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
 var _ drivers.Transporter = &motherduckToDuckDB{}
@@ -101,7 +101,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			}
 		}
 
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s'", srcConfig.ConnectionString)}); err != nil {
+		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s'", srcConfig.DSN)}); err != nil {
 			if !strings.Contains(err.Error(), "already attached") {
 				return fmt.Errorf("failed to connect to motherduck %w", err)
 			}
