@@ -43,18 +43,18 @@
       loading={$deployValidation.isLoading}
       on:click={onShowDeploy}
       type="primary"
+      href={deployPageUrl}
+      target="_blank"
     >
-      Deploy to share
+      Redeploy
     </Button>
   {:else}
     <Button
       loading={$deployValidation.isLoading}
       on:click={onShowDeploy}
       type="primary"
-      href={deployPageUrl}
-      target="_blank"
     >
-      Redeploy
+      Deploy to share
     </Button>
   {/if}
   <TooltipContent slot="tooltip-content">
