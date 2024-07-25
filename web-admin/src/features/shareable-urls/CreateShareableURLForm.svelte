@@ -4,7 +4,6 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
@@ -72,6 +71,11 @@
             },
           });
           token = _token;
+
+          copyToClipboard(
+            `${window.location.origin}/${organization}/${project}/-/share/${token}`,
+            "Link copied to clipboard",
+          );
         } catch (error) {
           const typedError = error as HTTPError;
           apiError = typedError.response?.data?.message ?? typedError.message;
@@ -144,7 +148,7 @@
     </div>
 
     <Button type="primary" disabled={$submitting} form={formId} submitForm>
-      Create link
+      Create and copy link
     </Button>
 
     {#if allErrorsLength > 0}
@@ -156,21 +160,9 @@
     {/if}
   </form>
 {:else}
-  <!-- A successful form submission will result in a link to copy -->
+  <!-- A successful form submission will automatically copy the link to the clipboard -->
   <div class="flex flex-col gap-y-2">
-    <h3>Success!</h3>
-    <Button
-      type="secondary"
-      on:click={() => {
-        copyToClipboard(
-          `${window.location.origin}/${organization}/${project}/-/share/${token}`,
-          "Link copied to clipboard",
-        );
-      }}
-    >
-      <Link size="16px" className="text-primary-500" />
-      Copy public link
-    </Button>
+    <h3>Success! Link copied to clipboard.</h3>
   </div>
 {/if}
 
