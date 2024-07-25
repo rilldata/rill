@@ -5,6 +5,7 @@
   import { Mouse } from "lucide-svelte";
   import EditControls from "./EditControls.svelte";
   import { GripVerticalIcon, GripVertical } from "lucide-svelte";
+  import Checkbox from "./Checkbox.svelte";
   const ROW_HEIGHT = 40;
 
   export let measure: MetricsViewSpecMeasureV2;
@@ -93,7 +94,6 @@
 <tr
   id={measure.name}
   class:dragging
-  on:mousedown={handleClick}
   on:mouseenter={() => (hovered = true)}
   on:mouseleave={() => (hovered = false)}
   bind:this={row}
@@ -101,14 +101,11 @@
   class="relative"
 >
   <td class="!pl-0">
-    <div class="bg-red-400 h-10 flex items-center justify-center w-14">
-      <button>
-        <GripVertical size="10px" />
+    <div class="h-10 pl-1 gap-x-0.5 flex items-center w-14">
+      <button on:mousedown={handleClick}>
+        <GripVertical size="14px" />
       </button>
-      <label class="container">
-        <input type="checkbox" checked={true} />
-        <span class="checkmark"></span>
-      </label>
+      <Checkbox />
     </div>
   </td>
   <td>
@@ -155,11 +152,11 @@
     width: 100%;
     /* display: block; */
     /* display: table-row; */
-    border: 1px solid #f1f1f1;
+    /* border: 1px solid #f1f1f1; */
     z-index: 50;
     cursor: grabbing;
-    -webkit-box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05);
-    box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05);
+    /* -webkit-box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05); */
+    /* box-shadow: 2px 2px 3px 0px rgba(0, 0, 0, 0.05); */
 
     opacity: 1;
   }
@@ -177,25 +174,27 @@
   }
 
   .checkmark {
-    position: absolute;
+    /* position: absolute;
     top: 0;
-    left: 0;
-    height: 25px;
-    width: 25px;
-    background-color: #eee;
+    left: 0; */
+    height: 16px;
+    width: 16px;
+    @apply rounded-sm border border-gray-300;
+    @apply bg-gray-50;
   }
 
   .container {
-    display: block;
-    position: relative;
-    padding-left: 35px;
-    margin-bottom: 12px;
+    @apply bg-green-400;
+    @apply size-4;
     cursor: pointer;
-    font-size: 22px;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+  }
+
+  .checkbox {
+    @apply size-4 bg-gray-50 border border-gray-300;
   }
 
   /* On mouse-over, add a grey background color */
