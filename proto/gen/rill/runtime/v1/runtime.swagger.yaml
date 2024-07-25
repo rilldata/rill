@@ -467,6 +467,41 @@ paths:
               See message Instance for field descriptions.
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/connect-to-github:
+    post:
+      operationId: RuntimeService_ConnectToGithubRepo
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ConnectToGithubRepoResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              repo:
+                type: string
+              branch:
+                type: string
+              subpath:
+                type: string
+              ghAccessToken:
+                type: string
+              ghAccount:
+                type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/connectors/analyze:
     get:
       summary: AnalyzeConnectors scans all the project files and returns information about all referenced connectors.
@@ -3536,6 +3571,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Expression'
+  v1ConnectToGithubRepoResponse:
+    type: object
   v1Connector:
     type: object
     properties:

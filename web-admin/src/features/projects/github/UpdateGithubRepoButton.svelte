@@ -17,9 +17,7 @@
 
 <AlertDialog bind:open>
   <AlertDialogTrigger asChild let:builder>
-    <Button on:click={onConnect} builders={[builder]} type="primary" {loading}>
-      Connect
-    </Button>
+    <Button builders={[builder]} type="primary" {loading}>Connect</Button>
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>

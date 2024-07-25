@@ -16,6 +16,7 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -284,6 +285,89 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 	return &adminv1.ListGithubUserReposResponse{
 		Repos: repos,
 	}, nil
+}
+
+func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.ConnectProjectToGithubRequest) (*adminv1.ConnectProjectToGithubResponse, error) {
+	// TODO: telemetry
+
+	// Find project
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
+	}
+
+	if safeStr(proj.GithubURL) != "" {
+		return nil, status.Error(codes.InvalidArgument, "project already connected to github")
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// refresh token changes after using it for getting a new token
+	// so saving the updated refresh token
+	_, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		GithubRefreshToken:  refreshToken,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	rt, err := s.admin.OpenRuntimeClient(depl)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = rt.ConnectToGithubRepo(ctx, &runtimev1.ConnectToGithubRepoRequest{
+		InstanceId:    depl.RuntimeInstanceID,
+		Repo:          req.Repo,
+		Branch:        req.Branch,
+		Subpath:       req.Subpath,
+		GhAccessToken: token,
+		GhAccount:     user.GithubUsername,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+		OrganizationName: org.Name,
+		Name:             proj.Name,
+		ProdBranch:       &req.Branch,
+		GithubUrl:        &req.Repo,
+		Subpath:          &req.Subpath,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.ConnectProjectToGithubResponse{}, nil
 }
 
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.

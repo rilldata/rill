@@ -420,6 +420,14 @@ export type RuntimeServiceCreateDirectoryBody = {
 
 export type RuntimeServiceListFilesParams = { glob?: string };
 
+export type RuntimeServiceConnectToGithubRepoBody = {
+  repo?: string;
+  branch?: string;
+  subpath?: string;
+  ghAccessToken?: string;
+  ghAccount?: string;
+};
+
 export type RuntimeServiceEditInstanceBodyAnnotations = {
   [key: string]: string;
 };
@@ -534,12 +542,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -567,6 +569,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -665,11 +673,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -681,6 +684,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -1761,6 +1769,10 @@ export interface V1Connector {
   name?: string;
   config?: V1ConnectorConfig;
   configFromVariables?: V1ConnectorConfigFromVariables;
+}
+
+export interface V1ConnectToGithubRepoResponse {
+  [key: string]: any;
 }
 
 export interface V1Condition {

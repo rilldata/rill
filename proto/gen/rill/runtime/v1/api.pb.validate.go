@@ -8916,6 +8916,223 @@ var _ interface {
 	ErrorName() string
 } = IssueDevJWTResponseValidationError{}
 
+// Validate checks the field values on ConnectToGithubRepoRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConnectToGithubRepoRequest) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectToGithubRepoRequest with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ConnectToGithubRepoRequestMultiError, or nil if none found.
+func (m *ConnectToGithubRepoRequest) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectToGithubRepoRequest) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for InstanceId
+
+	// no validation rules for Repo
+
+	// no validation rules for Branch
+
+	// no validation rules for Subpath
+
+	// no validation rules for GhAccessToken
+
+	// no validation rules for GhAccount
+
+	if len(errors) > 0 {
+		return ConnectToGithubRepoRequestMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectToGithubRepoRequestMultiError is an error wrapping multiple
+// validation errors returned by ConnectToGithubRepoRequest.ValidateAll() if
+// the designated constraints aren't met.
+type ConnectToGithubRepoRequestMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectToGithubRepoRequestMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectToGithubRepoRequestMultiError) AllErrors() []error { return m }
+
+// ConnectToGithubRepoRequestValidationError is the validation error returned
+// by ConnectToGithubRepoRequest.Validate if the designated constraints aren't met.
+type ConnectToGithubRepoRequestValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectToGithubRepoRequestValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectToGithubRepoRequestValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectToGithubRepoRequestValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectToGithubRepoRequestValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectToGithubRepoRequestValidationError) ErrorName() string {
+	return "ConnectToGithubRepoRequestValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConnectToGithubRepoRequestValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectToGithubRepoRequest.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectToGithubRepoRequestValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectToGithubRepoRequestValidationError{}
+
+// Validate checks the field values on ConnectToGithubRepoResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the first error encountered is returned, or nil if there are no violations.
+func (m *ConnectToGithubRepoResponse) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on ConnectToGithubRepoResponse with the
+// rules defined in the proto definition for this message. If any rules are
+// violated, the result is a list of violation errors wrapped in
+// ConnectToGithubRepoResponseMultiError, or nil if none found.
+func (m *ConnectToGithubRepoResponse) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *ConnectToGithubRepoResponse) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	if len(errors) > 0 {
+		return ConnectToGithubRepoResponseMultiError(errors)
+	}
+
+	return nil
+}
+
+// ConnectToGithubRepoResponseMultiError is an error wrapping multiple
+// validation errors returned by ConnectToGithubRepoResponse.ValidateAll() if
+// the designated constraints aren't met.
+type ConnectToGithubRepoResponseMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m ConnectToGithubRepoResponseMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m ConnectToGithubRepoResponseMultiError) AllErrors() []error { return m }
+
+// ConnectToGithubRepoResponseValidationError is the validation error returned
+// by ConnectToGithubRepoResponse.Validate if the designated constraints
+// aren't met.
+type ConnectToGithubRepoResponseValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e ConnectToGithubRepoResponseValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e ConnectToGithubRepoResponseValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e ConnectToGithubRepoResponseValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e ConnectToGithubRepoResponseValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e ConnectToGithubRepoResponseValidationError) ErrorName() string {
+	return "ConnectToGithubRepoResponseValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e ConnectToGithubRepoResponseValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sConnectToGithubRepoResponse.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = ConnectToGithubRepoResponseValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = ConnectToGithubRepoResponseValidationError{}
+
 // Validate checks the field values on ConnectorDriver_Property with the rules
 // defined in the proto definition for this message. If any rules are
 // violated, the first error encountered is returned, or nil if there are no violations.

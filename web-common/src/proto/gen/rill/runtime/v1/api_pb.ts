@@ -3737,3 +3737,101 @@ export class IssueDevJWTResponse extends Message<IssueDevJWTResponse> {
   }
 }
 
+/**
+ * @generated from message rill.runtime.v1.ConnectToGithubRepoRequest
+ */
+export class ConnectToGithubRepoRequest extends Message<ConnectToGithubRepoRequest> {
+  /**
+   * @generated from field: string instance_id = 1;
+   */
+  instanceId = "";
+
+  /**
+   * @generated from field: string repo = 2;
+   */
+  repo = "";
+
+  /**
+   * @generated from field: string branch = 3;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string subpath = 4;
+   */
+  subpath = "";
+
+  /**
+   * @generated from field: string gh_access_token = 5;
+   */
+  ghAccessToken = "";
+
+  /**
+   * @generated from field: string gh_account = 6;
+   */
+  ghAccount = "";
+
+  constructor(data?: PartialMessage<ConnectToGithubRepoRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConnectToGithubRepoRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "instance_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "repo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "gh_access_token", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "gh_account", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectToGithubRepoRequest {
+    return new ConnectToGithubRepoRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectToGithubRepoRequest {
+    return new ConnectToGithubRepoRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectToGithubRepoRequest {
+    return new ConnectToGithubRepoRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectToGithubRepoRequest | PlainMessage<ConnectToGithubRepoRequest> | undefined, b: ConnectToGithubRepoRequest | PlainMessage<ConnectToGithubRepoRequest> | undefined): boolean {
+    return proto3.util.equals(ConnectToGithubRepoRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.runtime.v1.ConnectToGithubRepoResponse
+ */
+export class ConnectToGithubRepoResponse extends Message<ConnectToGithubRepoResponse> {
+  constructor(data?: PartialMessage<ConnectToGithubRepoResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.runtime.v1.ConnectToGithubRepoResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectToGithubRepoResponse {
+    return new ConnectToGithubRepoResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectToGithubRepoResponse {
+    return new ConnectToGithubRepoResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectToGithubRepoResponse {
+    return new ConnectToGithubRepoResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectToGithubRepoResponse | PlainMessage<ConnectToGithubRepoResponse> | undefined, b: ConnectToGithubRepoResponse | PlainMessage<ConnectToGithubRepoResponse> | undefined): boolean {
+    return proto3.util.equals(ConnectToGithubRepoResponse, a, b);
+  }
+}
+

@@ -225,6 +225,12 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
 };
 
+export type AdminServiceConnectProjectToGithubBody = {
+  repo?: string;
+  branch?: string;
+  subpath?: string;
+};
+
 export type AdminServiceListProjectMemberUsergroupsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -437,11 +443,6 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
-}
-
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -487,6 +488,11 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
+}
+
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -1170,6 +1176,10 @@ export interface V1CreateAssetResponse {
 
 export interface V1CreateAlertResponse {
   name?: string;
+}
+
+export interface V1ConnectProjectToGithubResponse {
+  [key: string]: any;
 }
 
 export interface V1Condition {

@@ -7425,6 +7425,98 @@ export class ListGithubUserReposResponse_Repo extends Message<ListGithubUserRepo
 }
 
 /**
+ * @generated from message rill.admin.v1.ConnectProjectToGithubRequest
+ */
+export class ConnectProjectToGithubRequest extends Message<ConnectProjectToGithubRequest> {
+  /**
+   * @generated from field: string organization = 1;
+   */
+  organization = "";
+
+  /**
+   * @generated from field: string project = 2;
+   */
+  project = "";
+
+  /**
+   * @generated from field: string repo = 3;
+   */
+  repo = "";
+
+  /**
+   * @generated from field: string branch = 4;
+   */
+  branch = "";
+
+  /**
+   * @generated from field: string subpath = 5;
+   */
+  subpath = "";
+
+  constructor(data?: PartialMessage<ConnectProjectToGithubRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ConnectProjectToGithubRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "organization", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "project", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "repo", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "branch", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "subpath", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectProjectToGithubRequest {
+    return new ConnectProjectToGithubRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectProjectToGithubRequest {
+    return new ConnectProjectToGithubRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectProjectToGithubRequest {
+    return new ConnectProjectToGithubRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectProjectToGithubRequest | PlainMessage<ConnectProjectToGithubRequest> | undefined, b: ConnectProjectToGithubRequest | PlainMessage<ConnectProjectToGithubRequest> | undefined): boolean {
+    return proto3.util.equals(ConnectProjectToGithubRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.ConnectProjectToGithubResponse
+ */
+export class ConnectProjectToGithubResponse extends Message<ConnectProjectToGithubResponse> {
+  constructor(data?: PartialMessage<ConnectProjectToGithubResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.ConnectProjectToGithubResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectProjectToGithubResponse {
+    return new ConnectProjectToGithubResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): ConnectProjectToGithubResponse {
+    return new ConnectProjectToGithubResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): ConnectProjectToGithubResponse {
+    return new ConnectProjectToGithubResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: ConnectProjectToGithubResponse | PlainMessage<ConnectProjectToGithubResponse> | undefined, b: ConnectProjectToGithubResponse | PlainMessage<ConnectProjectToGithubResponse> | undefined): boolean {
+    return proto3.util.equals(ConnectProjectToGithubResponse, a, b);
+  }
+}
+
+/**
  * @generated from message rill.admin.v1.GetCloneCredentialsRequest
  */
 export class GetCloneCredentialsRequest extends Message<GetCloneCredentialsRequest> {

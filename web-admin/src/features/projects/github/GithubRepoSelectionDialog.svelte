@@ -1,5 +1,6 @@
 <script lang="ts">
   import {
+    createAdminServiceConnectProjectToGithub,
     createAdminServiceGetProject,
     createAdminServiceUpdateProject,
     getAdminServiceGetGithubUserStatusQueryKey,
@@ -69,19 +70,33 @@
   }
 
   const updateProject = createAdminServiceUpdateProject();
+  const connectToGithub = createAdminServiceConnectProjectToGithub();
   async function updateGithubUrl() {
     const repo = $userRepos.data?.repos?.find((r) => r.url === githubUrl);
     if (!repo) return; // shouldnt happen
 
-    await $updateProject.mutateAsync({
-      name: project,
-      organizationName: organization,
-      data: {
-        githubUrl,
-        subpath,
-        prodBranch: branch,
-      },
-    });
+    if (currentUrl) {
+      await $updateProject.mutateAsync({
+        organizationName: organization,
+        name: project,
+        data: {
+          githubUrl,
+          subpath,
+          prodBranch: branch,
+        },
+      });
+    } else {
+      await $connectToGithub.mutateAsync({
+        organization,
+        project,
+        data: {
+          repo: githubUrl,
+          subpath,
+          branch,
+        },
+      });
+    }
+
     eventBus.emit("notification", {
       message: `Set github repo to ${githubUrl}`,
       type: "success",
@@ -104,7 +119,8 @@
   }
 
   $: error = ($status.error ??
-    $updateProject.error) as unknown as AxiosError<RpcStatus>;
+    $updateProject.error ??
+    $connectToGithub.error) as unknown as AxiosError<RpcStatus>;
 </script>
 
 <Dialog bind:open>
