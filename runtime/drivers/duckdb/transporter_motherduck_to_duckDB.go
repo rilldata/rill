@@ -116,7 +116,7 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		}
 
 		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s'", srcConfig.DSN)}); err != nil {
-			if !strings.Contains(err.Error(), "already attached") {
+			if !strings.Contains(err.Error(), "already exists") {
 				return fmt.Errorf("failed to connect to motherduck %w", err)
 			}
 		}
