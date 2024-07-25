@@ -18,10 +18,14 @@ type motherduckToDuckDB struct {
 	logger *zap.Logger
 }
 
-type mdConfig struct {
-	DSN             string `mapstructure:"dsn"`
+type mdSrcProps struct {
+	DSN   string `mapstructure:"dsn"`
+	Token string `mapstructure:"token"`
+	SQL   string `mapstructure:"sql"`
+}
+
+type mdConfigProps struct {
 	Token           string `mapstructure:"token"`
-	SQL             string `mapstructure:"sql"`
 	AllowHostAccess bool   `mapstructure:"allow_host_access"`
 }
 
@@ -37,8 +41,8 @@ func NewMotherduckToDuckDB(from drivers.Handle, to drivers.OLAPStore, logger *za
 
 // TODO: should it run count from user_query to set target in progress ?
 func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps map[string]any, opts *drivers.TransferOptions) error {
-	srcConfig := mdConfig{}
-	err := mapstructure.WeakDecode(srcProps, &srcConfig)
+	srcConfig := &mdSrcProps{}
+	err := mapstructure.WeakDecode(srcProps, srcConfig)
 	if err != nil {
 		return err
 	}
@@ -81,21 +85,31 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 		}
 		_ = res.Close()
 
-		// get token
-		if srcConfig.Token == "" && srcConfig.AllowHostAccess {
-			srcConfig.Token = os.Getenv("motherduck_token")
-		}
-		if srcConfig.Token == "" {
-			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
+		mdConfig := &mdConfigProps{}
+		err = mapstructure.WeakDecode(t.from.Config(), mdConfig)
+		if err != nil {
+			return err
 		}
 
+		// get token
+		var token string
+		if srcConfig.Token != "" {
+			token = srcConfig.Token
+		} else if mdConfig.Token != "" {
+			token = mdConfig.Token
+		} else if mdConfig.AllowHostAccess {
+			token = os.Getenv("motherduck_token")
+		}
+		if token == "" {
+			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
+		}
 		// load motherduck extension; connect to motherduck service
 		err = t.to.Exec(ctx, &drivers.Statement{Query: "INSTALL 'motherduck'; LOAD 'motherduck';"})
 		if err != nil {
 			return fmt.Errorf("failed to load motherduck extension %w", err)
 		}
 
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("SET motherduck_token='%s'", srcConfig.Token)}); err != nil {
+		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("SET motherduck_token='%s'", token)}); err != nil {
 			if !strings.Contains(err.Error(), "can only be set during initialization") {
 				return fmt.Errorf("failed to set motherduck token %w", err)
 			}
