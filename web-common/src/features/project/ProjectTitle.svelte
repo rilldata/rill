@@ -18,7 +18,7 @@
   $: ({ data: title } = $projectTitle);
 </script>
 
-<header class="pl-3 pt-4 flex-none" style:height="var(--header-height)">
+<header class="pl-3 items-center flex flex-none">
   <div class="link-wrapper">
     <a href="/" class="project-square">
       {shorthandTitle(title ?? "Rill")}
@@ -61,6 +61,9 @@
 </header>
 
 <style lang="postcss">
+  header {
+    height: var(--header-height);
+  }
   .project-square {
     @apply relative;
     @apply h-5 aspect-square grid place-items-center rounded;
