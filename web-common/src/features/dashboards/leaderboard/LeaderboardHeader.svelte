@@ -49,6 +49,7 @@
           <TooltipTitle>
             <svelte:fragment slot="name">
               {displayName}
+              <span class="text-gray-400 font-normal">({dimensionName})</span>
             </svelte:fragment>
             <svelte:fragment slot="description" />
           </TooltipTitle>
