@@ -74,7 +74,7 @@
 
           copyToClipboard(
             `${window.location.origin}/${organization}/${project}/-/share/${token}`,
-            "Link copied to clipboard",
+            "URL copied to clipboard",
           );
         } catch (error) {
           const typedError = error as HTTPError;
@@ -110,7 +110,7 @@
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
     <div class="information-container">
-      <h3>Create a public link that you can send to anyone.</h3>
+      <h3>Create a public URL that you can send to anyone.</h3>
       <ul>
         <li>Measures and dimensions will be limited to current visible set.</li>
         <li>Filters will be locked and hidden.</li>
@@ -148,7 +148,7 @@
     </div>
 
     <Button type="primary" disabled={$submitting} form={formId} submitForm>
-      Create and copy link
+      Create and copy URL
     </Button>
 
     {#if allErrorsLength > 0}
@@ -162,7 +162,7 @@
 {:else}
   <!-- A successful form submission will automatically copy the link to the clipboard -->
   <div class="flex flex-col gap-y-2">
-    <h3>Success! Link copied to clipboard.</h3>
+    <h3>Success! URL copied to clipboard.</h3>
   </div>
 {/if}
 

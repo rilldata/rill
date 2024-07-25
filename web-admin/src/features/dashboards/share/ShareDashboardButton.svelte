@@ -1,5 +1,5 @@
 <script lang="ts">
-  import CreateShareableURLForm from "@rilldata/web-admin/features/shareable-urls/CreateShareableURLForm.svelte";
+  import CreateShareableURLForm from "@rilldata/web-admin/features/public-urls/CreateShareableURLForm.svelte";
   import Button from "@rilldata/web-common/components/button/Button.svelte";
   import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import {
@@ -25,9 +25,9 @@
   <PopoverContent align="end" class="w-[402px] p-0">
     <Tabs>
       <TabsList>
-        <TabsTrigger value="tab1">Copy link</TabsTrigger>
+        <TabsTrigger value="tab1">Copy URL</TabsTrigger>
         {#if createMagicAuthTokens}
-          <TabsTrigger value="tab2">Create public link</TabsTrigger>
+          <TabsTrigger value="tab2">Create public URL</TabsTrigger>
         {/if}
       </TabsList>
       <TabsContent value="tab1" class="mt-0 p-4">
@@ -40,7 +40,7 @@
             }}
           >
             <Link size="16px" className="text-primary-500" />
-            Copy link
+            Copy URL
           </Button>
         </div>
       </TabsContent>
