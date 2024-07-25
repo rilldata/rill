@@ -13,6 +13,7 @@ rill user list [flags]
 ### Flags
 
 ```
+      --group string        User group
       --org string          Organization
       --page-size uint32    Number of users to return per page (default 50)
       --page-token string   Pagination token

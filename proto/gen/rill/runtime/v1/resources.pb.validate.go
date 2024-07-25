@@ -2408,6 +2408,37 @@ func (m *ModelSpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for StageConnector
+
+	if all {
+		switch v := interface{}(m.GetStageProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "StageProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, ModelSpecValidationError{
+					field:  "StageProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetStageProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return ModelSpecValidationError{
+				field:  "StageProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	// no validation rules for OutputConnector
 
 	if all {
@@ -5186,9 +5217,36 @@ func (m *AlertSpec) validate(all bool) error {
 
 	// no validation rules for TimeoutSeconds
 
-	// no validation rules for QueryName
+	// no validation rules for Resolver
 
-	// no validation rules for QueryArgsJson
+	if all {
+		switch v := interface{}(m.GetResolverProperties()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, AlertSpecValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, AlertSpecValidationError{
+					field:  "ResolverProperties",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetResolverProperties()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return AlertSpecValidationError{
+				field:  "ResolverProperties",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
 
 	// no validation rules for NotifyOnRecover
 
@@ -8889,6 +8947,71 @@ func (m *APISpec) validate(all bool) error {
 		}
 	}
 
+	// no validation rules for OpenapiSummary
+
+	for idx, item := range m.GetOpenapiParameters() {
+		_, _ = idx, item
+
+		if all {
+			switch v := interface{}(item).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, APISpecValidationError{
+						field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, APISpecValidationError{
+						field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(item).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return APISpecValidationError{
+					field:  fmt.Sprintf("OpenapiParameters[%v]", idx),
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
+	}
+
+	if all {
+		switch v := interface{}(m.GetOpenapiResponseSchema()).(type) {
+		case interface{ ValidateAll() error }:
+			if err := v.ValidateAll(); err != nil {
+				errors = append(errors, APISpecValidationError{
+					field:  "OpenapiResponseSchema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		case interface{ Validate() error }:
+			if err := v.Validate(); err != nil {
+				errors = append(errors, APISpecValidationError{
+					field:  "OpenapiResponseSchema",
+					reason: "embedded message failed validation",
+					cause:  err,
+				})
+			}
+		}
+	} else if v, ok := interface{}(m.GetOpenapiResponseSchema()).(interface{ Validate() error }); ok {
+		if err := v.Validate(); err != nil {
+			return APISpecValidationError{
+				field:  "OpenapiResponseSchema",
+				reason: "embedded message failed validation",
+				cause:  err,
+			}
+		}
+	}
+
 	if len(errors) > 0 {
 		return APISpecMultiError(errors)
 	}
@@ -10115,6 +10238,8 @@ func (m *MetricsViewSpec_DimensionV2) validate(all bool) error {
 	// no validation rules for Description
 
 	// no validation rules for Unnest
+
+	// no validation rules for Uri
 
 	if len(errors) > 0 {
 		return MetricsViewSpec_DimensionV2MultiError(errors)

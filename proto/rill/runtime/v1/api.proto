@@ -15,10 +15,12 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/ping"};
   }
 
+  // Health runs a health check on the runtime.
   rpc Health(HealthRequest) returns (HealthResponse) {
     option (google.api.http) = {get: "/v1/health"};
   }
 
+  // InstanceHealth runs a health check on a specific instance.
   rpc InstanceHealth(InstanceHealthRequest) returns (InstanceHealthResponse) {
     option (google.api.http) = {get: "/v1/health/instances/{instance_id}"};
   }
@@ -206,8 +208,14 @@ service RuntimeService {
     option (google.api.http) = {get: "/v1/instances/{instance_id}/connectors/notifiers"};
   }
 
+  // Access management
+
+  // IssueDevJWT issues a JWT for mimicking a user in local development.
   rpc IssueDevJWT(IssueDevJWTRequest) returns (IssueDevJWTResponse) {
-    option (google.api.http) = {get: "/v1/dev-jwt"};
+    option (google.api.http) = {
+      post: "/v1/dev-jwt",
+      body: "*"
+    };
   }
 }
 
@@ -669,6 +677,8 @@ message ConnectorDriver {
     string placeholder = 9;
     // If true, the property is a secret and should not be displayed in UIs
     bool secret = 10;
+    // If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+    bool no_prompt = 11;
   }
   // Name is the name of the connector
   string name = 1;
@@ -691,6 +701,7 @@ message ConnectorDriver {
   bool implements_object_store = 17;
   bool implements_file_store = 18;
   bool implements_notifier = 19;
+  bool implements_warehouse = 20;
 }
 
 // AnalyzedConnector contains information about a connector that is referenced in the project files.

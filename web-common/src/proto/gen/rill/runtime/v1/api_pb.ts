@@ -3097,6 +3097,11 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
    */
   implementsNotifier = false;
 
+  /**
+   * @generated from field: bool implements_warehouse = 20;
+   */
+  implementsWarehouse = false;
+
   constructor(data?: PartialMessage<ConnectorDriver>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3120,6 +3125,7 @@ export class ConnectorDriver extends Message<ConnectorDriver> {
     { no: 17, name: "implements_object_store", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 18, name: "implements_file_store", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
     { no: 19, name: "implements_notifier", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 20, name: "implements_warehouse", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver {
@@ -3215,6 +3221,13 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
    */
   secret = false;
 
+  /**
+   * If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
+   *
+   * @generated from field: bool no_prompt = 11;
+   */
+  noPrompt = false;
+
   constructor(data?: PartialMessage<ConnectorDriver_Property>) {
     super();
     proto3.util.initPartial(data, this);
@@ -3233,6 +3246,7 @@ export class ConnectorDriver_Property extends Message<ConnectorDriver_Property> 
     { no: 8, name: "default", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 9, name: "placeholder", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "secret", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 11, name: "no_prompt", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ConnectorDriver_Property {

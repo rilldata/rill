@@ -67,7 +67,7 @@ func (q *ColumnNumericHistogram) Resolve(ctx context.Context, rt *runtime.Runtim
 			return err
 		}
 	} else {
-		return fmt.Errorf("Unknown histogram method %v", q.Method)
+		return fmt.Errorf("unknown histogram method %q", q.Method)
 	}
 
 	return nil
@@ -146,7 +146,7 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
 	defer release()
 
 	if olap.Dialect() != drivers.DialectDuckDB && olap.Dialect() != drivers.DialectClickHouse {
-		return fmt.Errorf("not available for dialect '%s'", olap.Dialect())
+		return fmt.Errorf("not available for dialect %q", olap.Dialect())
 	}
 
 	min, max, rng, err := getMinMaxRange(ctx, olap, q.ColumnName, q.Database, q.DatabaseSchema, q.TableName, priority)
@@ -173,10 +173,10 @@ func (q *ColumnNumericHistogram) calculateFDMethod(ctx context.Context, rt *runt
           WITH data_table AS (
             SELECT %[1]s as %[2]s 
             FROM %[3]s
-            WHERE %[2]s IS NOT NULL AND NOT isinf(%[2]s)
+            WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
           ), values AS (
             SELECT %[2]s as value from data_table
-            WHERE %[2]s IS NOT NULL AND NOT isinf(%[2]s)
+            WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
           ), buckets AS (
             SELECT
               `+rangeNumbersCol(olap.Dialect())+`::DOUBLE as bucket,
@@ -293,7 +293,7 @@ func (q *ColumnNumericHistogram) calculateDiagnosticMethod(ctx context.Context, 
 		WITH data_table AS (
 			SELECT %[1]s as %[2]s
 			FROM %[3]s
-			WHERE %[2]s IS NOT NULL AND NOT isinf(%[2]s)
+			WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
 		), S AS (
 			SELECT
 				min(%[2]s) as minVal,
@@ -398,7 +398,7 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 				max(%[2]s) AS max,
 				max(%[2]s) - min(%[2]s) AS range
 			FROM %[1]s
-			WHERE %[2]s IS NOT NULL AND NOT isinf(%[2]s)
+			WHERE `+isNonNullFinite(olap.Dialect(), sanitizedColumnName)+`
 		`,
 		olap.Dialect().EscapeTable(database, databaseSchema, tableName),
 		selectColumn,
@@ -427,4 +427,15 @@ func getMinMaxRange(ctx context.Context, olap drivers.OLAPStore, columnName, dat
 	minMaxRow.Close()
 
 	return min, max, rng, nil
+}
+
+func isNonNullFinite(d drivers.Dialect, floatCol string) string {
+	switch d {
+	case drivers.DialectClickHouse:
+		return fmt.Sprintf("%s IS NOT NULL AND isFinite(%s)", floatCol, floatCol)
+	case drivers.DialectDuckDB:
+		return fmt.Sprintf("%s IS NOT NULL AND NOT isinf(%s)", floatCol, floatCol)
+	default:
+		return "1=1"
+	}
 }

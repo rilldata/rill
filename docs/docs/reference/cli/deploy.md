@@ -23,6 +23,7 @@ rill deploy [flags]
       --provisioner string    Project provisioner
       --prod-version string   Rill version (default: the latest release version) (default "latest")
       --prod-branch string    Git branch to deploy from (default: the default Git branch)
+  -u, --upload                Upload project files to Rill managed storage instead of github
 ```
 
 ### Global flags

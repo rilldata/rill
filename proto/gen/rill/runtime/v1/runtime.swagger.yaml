@@ -135,7 +135,8 @@ paths:
       tags:
         - ConnectorService
   /v1/dev-jwt:
-    get:
+    post:
+      summary: IssueDevJWT issues a JWT for mimicking a user in local development.
       operationId: RuntimeService_IssueDevJWT
       responses:
         "200":
@@ -147,25 +148,11 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: name
-          in: query
-          required: false
-          type: string
-        - name: email
-          in: query
-          required: false
-          type: string
-        - name: groups
-          in: query
-          required: false
-          type: array
-          items:
-            type: string
-          collectionFormat: multi
-        - name: admin
-          in: query
-          required: false
-          type: boolean
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTRequest'
       tags:
         - RuntimeService
   /v1/examples:
@@ -295,6 +282,7 @@ paths:
         - ConnectorService
   /v1/health:
     get:
+      summary: Health runs a health check on the runtime.
       operationId: RuntimeService_Health
       responses:
         "200":
@@ -309,6 +297,7 @@ paths:
         - RuntimeService
   /v1/health/instances/{instanceId}:
     get:
+      summary: InstanceHealth runs a health check on a specific instance.
       operationId: RuntimeService_InstanceHealth
       responses:
         "200":
@@ -2655,6 +2644,9 @@ definitions:
       secret:
         type: boolean
         title: If true, the property is a secret and should not be displayed in UIs
+      noPrompt:
+        type: boolean
+        title: If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
     title: Property represents the spec of one of the driver's config properties
   ConnectorDriverPropertyType:
     type: string
@@ -2739,6 +2731,8 @@ definitions:
         type: string
       unnest:
         type: boolean
+      uri:
+        type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecMeasureType:
     type: string
@@ -2911,7 +2905,7 @@ definitions:
       `NullValue` is a singleton enumeration to represent the null value for the
       `Value` type union.
 
-      The JSON representation for `NullValue` is JSON `null`.
+       The JSON representation for `NullValue` is JSON `null`.
 
        - NULL_VALUE: Null value.
   rpcStatus:
@@ -2960,6 +2954,14 @@ definitions:
       resolver:
         type: string
       resolverProperties:
+        type: object
+      openapiSummary:
+        type: string
+      openapiParameters:
+        type: array
+        items:
+          type: object
+      openapiResponseSchema:
         type: object
   v1APIState:
     type: object
@@ -3010,10 +3012,10 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      queryName:
+      resolver:
         type: string
-      queryArgsJson:
-        type: string
+      resolverProperties:
+        type: object
       queryForUserId:
         type: string
       queryForUserEmail:
@@ -3598,6 +3600,8 @@ definitions:
         type: boolean
       implementsNotifier:
         type: boolean
+      implementsWarehouse:
+        type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
   v1ConnectorSpec:
     type: object
@@ -3958,6 +3962,20 @@ definitions:
     properties:
       instanceHealth:
         $ref: '#/definitions/v1InstanceHealth'
+  v1IssueDevJWTRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      groups:
+        type: array
+        items:
+          type: string
+      admin:
+        type: boolean
+    title: Request message for RuntimeService.IssueDevJWT
   v1IssueDevJWTResponse:
     type: object
     properties:
@@ -4755,6 +4773,11 @@ definitions:
       inputConnector:
         type: string
       inputProperties:
+        type: object
+      stageConnector:
+        type: string
+        description: stage_connector is optional.
+      stageProperties:
         type: object
       outputConnector:
         type: string

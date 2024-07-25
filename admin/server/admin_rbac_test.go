@@ -10,6 +10,7 @@ import (
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/ai"
 	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/pkg/pgtestcontainer"
 	"github.com/rilldata/rill/admin/server/auth"
@@ -62,6 +63,7 @@ func TestAdmin_RBAC(t *testing.T) {
 		ai.NewNoop(),
 		nil,
 		billing.NewNoop(),
+		payment.NewNoop(),
 	)
 	require.NoError(t, err)
 
@@ -398,15 +400,15 @@ func TestAdmin_RBAC(t *testing.T) {
 
 	// test add duplicate member
 	t.Run("test add duplicate member", func(t *testing.T) {
-		_, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
+		resp, err := adminClient.AddOrganizationMemberUser(ctx, &adminv1.AddOrganizationMemberUserRequest{
 			Organization: adminOrg.Organization.Name,
 			Email:        viewerUser.Email,
 			Role:         "viewer",
 		})
 
-		require.Error(t, err)
-		require.Equal(t, codes.InvalidArgument, status.Code(err))
-		require.ErrorContains(t, err, "user is already a member of the org")
+		// this wont error out, since it re-sends an email
+		require.NoError(t, err)
+		require.NotNil(t, resp)
 	})
 
 	// remove user tests

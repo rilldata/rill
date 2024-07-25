@@ -14,6 +14,10 @@
   import { initPylonWidget } from "../features/help/initPylonWidget";
   import TopNavigationBar from "../features/navigation/TopNavigationBar.svelte";
 
+  export let data;
+
+  $: ({ projectPermissions } = data);
+
   // Motivation:
   // - https://tkdodo.eu/blog/breaking-react-querys-api-on-purpose#a-bad-api
   // - https://tkdodo.eu/blog/react-query-error-handling#the-global-callbacks
@@ -49,7 +53,10 @@
     <main class="flex flex-col min-h-screen h-screen">
       <BannerCenter />
       {#if !isEmbed}
-        <TopNavigationBar />
+        <TopNavigationBar
+          createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
+          manageProjectMembers={projectPermissions?.manageProjectMembers}
+        />
       {/if}
       <ErrorBoundary>
         <slot />

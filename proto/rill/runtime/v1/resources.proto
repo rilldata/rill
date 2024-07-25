@@ -112,6 +112,9 @@ message ModelSpec {
   google.protobuf.Struct incremental_state_resolver_properties = 15;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
+  // stage_connector is optional.
+  string stage_connector = 16;
+  google.protobuf.Struct stage_properties = 17;
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
@@ -144,6 +147,7 @@ message MetricsViewSpec {
     string label = 3;
     string description = 4;
     bool unnest = 5;
+    string uri = 7;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -344,8 +348,8 @@ message AlertSpec {
   int32 intervals_limit = 6;
   bool intervals_check_unclosed = 7;
   uint32 timeout_seconds = 8;
-  string query_name = 9;
-  string query_args_json = 10;
+  string resolver = 22;
+  google.protobuf.Struct resolver_properties = 23;
   oneof query_for {
     string query_for_user_id = 11;
     string query_for_user_email = 12;
@@ -502,6 +506,9 @@ message API {
 message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
+  string openapi_summary = 3;
+  repeated google.protobuf.Struct openapi_parameters = 4;
+  google.protobuf.Struct openapi_response_schema = 5;
 }
 
 message APIState {}

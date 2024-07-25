@@ -475,13 +475,6 @@ export type ConnectorServiceGCSListObjectsParams = {
   delimiter?: string;
 };
 
-export type RuntimeServiceIssueDevJWTParams = {
-  name?: string;
-  email?: string;
-  groups?: string[];
-  admin?: boolean;
-};
-
 export type ConnectorServiceOLAPGetTableParams = {
   instanceId?: string;
   connector?: string;
@@ -672,11 +665,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -688,6 +676,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -801,6 +794,13 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
+}
+
 export type V1ReportSpecAnnotations = { [key: string]: string };
 
 export interface V1ReportSpec {
@@ -827,13 +827,6 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
-}
-
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1063,6 +1056,8 @@ export interface V1ModelV2 {
 
 export type V1ModelSpecOutputProperties = { [key: string]: any };
 
+export type V1ModelSpecStageProperties = { [key: string]: any };
+
 export type V1ModelSpecInputProperties = { [key: string]: any };
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
@@ -1077,6 +1072,9 @@ export interface V1ModelSpec {
   incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
+  /** stage_connector is optional. */
+  stageConnector?: string;
+  stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
@@ -1268,13 +1266,6 @@ export const V1MetricsViewComparisonSortType = {
     "METRICS_VIEW_COMPARISON_SORT_TYPE_REL_DELTA",
 } as const;
 
-export interface V1MetricsViewComparisonSort {
-  name?: string;
-  desc?: boolean;
-  type?: V1MetricsViewComparisonSortType;
-  sortType?: V1MetricsViewComparisonMeasureType;
-}
-
 export interface V1MetricsViewComparisonRow {
   dimensionValue?: unknown;
   measureValues?: V1MetricsViewComparisonValue[];
@@ -1300,6 +1291,13 @@ export const V1MetricsViewComparisonMeasureType = {
   METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA:
     "METRICS_VIEW_COMPARISON_MEASURE_TYPE_REL_DELTA",
 } as const;
+
+export interface V1MetricsViewComparisonSort {
+  name?: string;
+  desc?: boolean;
+  type?: V1MetricsViewComparisonSortType;
+  sortType?: V1MetricsViewComparisonMeasureType;
+}
 
 export interface V1MetricsViewComparisonMeasureAlias {
   name?: string;
@@ -1456,6 +1454,13 @@ export interface V1ListConnectorDriversResponse {
 
 export interface V1IssueDevJWTResponse {
   jwt?: string;
+}
+
+export interface V1IssueDevJWTRequest {
+  name?: string;
+  email?: string;
+  groups?: string[];
+  admin?: boolean;
 }
 
 export interface V1InstanceHealth {
@@ -1749,6 +1754,7 @@ export interface V1ConnectorDriver {
   implementsObjectStore?: boolean;
   implementsFileStore?: boolean;
   implementsNotifier?: boolean;
+  implementsWarehouse?: boolean;
 }
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };
@@ -1927,10 +1933,6 @@ export interface V1ColumnDescriptiveStatisticsRequest {
   priority?: number;
 }
 
-export interface V1ColumnCardinalityResponse {
-  categoricalSummary?: V1CategoricalSummary;
-}
-
 export interface V1ColumnCardinalityRequest {
   instanceId?: string;
   connector?: string;
@@ -1957,6 +1959,10 @@ export interface V1CategoricalSummary {
   cardinality?: number;
 }
 
+export interface V1ColumnCardinalityResponse {
+  categoricalSummary?: V1CategoricalSummary;
+}
+
 export type V1BuiltinMeasure =
   (typeof V1BuiltinMeasure)[keyof typeof V1BuiltinMeasure];
 
@@ -1971,10 +1977,6 @@ export interface V1BucketPlannerState {
   region?: string;
 }
 
-export interface V1BucketPlannerSpec {
-  extractPolicy?: V1BucketExtractPolicy;
-}
-
 export interface V1BucketPlanner {
   spec?: V1BucketPlannerSpec;
   state?: V1BucketPlannerState;
@@ -1985,6 +1987,10 @@ export interface V1BucketExtractPolicy {
   rowsLimitBytes?: string;
   filesStrategy?: BucketExtractPolicyStrategy;
   filesLimit?: string;
+}
+
+export interface V1BucketPlannerSpec {
+  extractPolicy?: V1BucketExtractPolicy;
 }
 
 export interface V1BigQueryListTablesResponse {
@@ -2043,18 +2049,11 @@ export interface V1AnalyzeConnectorsResponse {
   connectors?: V1AnalyzedConnector[];
 }
 
-export interface V1AlertState {
-  specHash?: string;
-  refsHash?: string;
-  nextRunOn?: string;
-  currentExecution?: V1AlertExecution;
-  executionHistory?: V1AlertExecution[];
-  executionCount?: number;
-}
-
 export type V1AlertSpecAnnotations = { [key: string]: string };
 
 export type V1AlertSpecQueryForAttributes = { [key: string]: any };
+
+export type V1AlertSpecResolverProperties = { [key: string]: any };
 
 export interface V1AlertSpec {
   trigger?: boolean;
@@ -2066,8 +2065,8 @@ export interface V1AlertSpec {
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
-  queryName?: string;
-  queryArgsJson?: string;
+  resolver?: string;
+  resolverProperties?: V1AlertSpecResolverProperties;
   queryForUserId?: string;
   queryForUserEmail?: string;
   queryForAttributes?: V1AlertSpecQueryForAttributes;
@@ -2089,6 +2088,15 @@ export interface V1AlertExecution {
   finishedOn?: string;
 }
 
+export interface V1AlertState {
+  specHash?: string;
+  refsHash?: string;
+  nextRunOn?: string;
+  currentExecution?: V1AlertExecution;
+  executionHistory?: V1AlertExecution[];
+  executionCount?: number;
+}
+
 export interface V1Alert {
   spec?: V1AlertSpec;
   state?: V1AlertState;
@@ -2098,11 +2106,18 @@ export interface V1APIState {
   [key: string]: any;
 }
 
+export type V1APISpecOpenapiResponseSchema = { [key: string]: any };
+
+export type V1APISpecOpenapiParametersItem = { [key: string]: any };
+
 export type V1APISpecResolverProperties = { [key: string]: any };
 
 export interface V1APISpec {
   resolver?: string;
   resolverProperties?: V1APISpecResolverProperties;
+  openapiSummary?: string;
+  openapiParameters?: V1APISpecOpenapiParametersItem[];
+  openapiResponseSchema?: V1APISpecOpenapiResponseSchema;
 }
 
 /**
@@ -2125,7 +2140,7 @@ export interface Runtimev1Type {
  * `NullValue` is a singleton enumeration to represent the null value for the
 `Value` type union.
 
-The JSON representation for `NullValue` is JSON `null`.
+ The JSON representation for `NullValue` is JSON `null`.
 
  - NULL_VALUE: Null value.
  */
@@ -2246,6 +2261,7 @@ export interface MetricsViewSpecDimensionV2 {
   label?: string;
   description?: string;
   unnest?: boolean;
+  uri?: string;
 }
 
 export interface MetricsViewSpecDimensionSelector {
@@ -2319,6 +2335,7 @@ export interface ConnectorDriverProperty {
   default?: string;
   placeholder?: string;
   secret?: boolean;
+  noPrompt?: boolean;
 }
 
 export interface ColumnTimeSeriesRequestBasicMeasure {
