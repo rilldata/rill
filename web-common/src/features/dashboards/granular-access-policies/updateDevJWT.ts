@@ -38,6 +38,7 @@ export async function updateDevJWT(
         runtimeState.jwt = {
           token: jwt,
           receivedAt: Date.now(),
+          authContext: "mock",
         };
         return runtimeState;
       });

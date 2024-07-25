@@ -73,6 +73,11 @@ type handle struct {
 
 var _ drivers.Handle = &handle{}
 
+// Ping implements drivers.Handle.
+func (h *handle) Ping(ctx context.Context) error {
+	return drivers.ErrNotImplemented
+}
+
 func (h *handle) Driver() string {
 	return "slack"
 }
@@ -126,6 +131,11 @@ func (h *handle) AsObjectStore() (drivers.ObjectStore, bool) {
 }
 
 func (h *handle) AsFileStore() (drivers.FileStore, bool) {
+	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (h *handle) AsWarehouse() (drivers.Warehouse, bool) {
 	return nil, false
 }
 

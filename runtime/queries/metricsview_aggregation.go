@@ -28,8 +28,7 @@ type MetricsViewAggregation struct {
 	Limit               *int64                                         `json:"limit,omitempty"`
 	Offset              int64                                          `json:"offset,omitempty"`
 	PivotOn             []string                                       `json:"pivot_on,omitempty"`
-	SecurityAttributes  map[string]any                                 `json:"security_attributes,omitempty"`
-	SecurityPolicy      *runtimev1.MetricsViewSpec_SecurityV2          `json:"security_policy,omitempty"`
+	SecurityClaims      *runtime.SecurityClaims                        `json:"security_claims,omitempty"`
 	Aliases             []*runtimev1.MetricsViewComparisonMeasureAlias `json:"aliases,omitempty"`
 	Exact               bool                                           `json:"exact,omitempty"`
 
@@ -70,7 +69,7 @@ func (q *MetricsViewAggregation) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, q.Dimensions, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
@@ -86,7 +85,7 @@ func (q *MetricsViewAggregation) Resolve(ctx context.Context, rt *runtime.Runtim
 	}
 	defer e.Close()
 
-	res, _, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, nil)
 	if err != nil {
 		return err
 	}
@@ -111,7 +110,7 @@ func (q *MetricsViewAggregation) Export(ctx context.Context, rt *runtime.Runtime
 	}
 
 	// Resolve metrics view
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, q.Dimensions, q.Measures)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}

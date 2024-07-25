@@ -59,7 +59,7 @@ func (w *Worker) Run(ctx context.Context) error {
 		return w.schedule(ctx, "hibernate_expired_deployments", w.hibernateExpiredDeployments, 15*time.Minute)
 	})
 	group.Go(func() error {
-		return w.schedule(ctx, "upgrade_latest_version_projects", w.upgradeLatestVersionProjects, 6*time.Hour)
+		return w.schedule(ctx, "validate_deployments", w.validateDeployments, 6*time.Hour)
 	})
 	group.Go(func() error {
 		return w.scheduleCron(ctx, "run_autoscaler", w.runAutoscaler, w.admin.AutoscalerCron)
@@ -67,7 +67,26 @@ func (w *Worker) Run(ctx context.Context) error {
 	group.Go(func() error {
 		return w.schedule(ctx, "delete_unused_assets", w.deleteUnusedAssets, 6*time.Hour)
 	})
+	group.Go(func() error {
+		return w.schedule(ctx, "deployments_health_check", w.deploymentsHealthCheck, 10*time.Minute)
+	})
 
+	if w.admin.Biller.GetReportingWorkerCron() != "" {
+		group.Go(func() error {
+			return w.scheduleCron(ctx, "run_billing_reporter", w.reportUsage, w.admin.Biller.GetReportingWorkerCron())
+		})
+	}
+
+	if w.admin.Biller.Name() != "noop" {
+		group.Go(func() error {
+			return w.schedule(ctx, "run_billing_repair", w.repairOrgBilling, 10*time.Minute)
+		})
+
+		group.Go(func() error {
+			// run every midnight
+			return w.scheduleCron(ctx, "run_trial_end_check", w.trialEndCheck, "0 0 * * *")
+		})
+	}
 	// NOTE: Add new scheduled jobs here
 
 	w.logger.Info("worker started")
@@ -81,8 +100,8 @@ func (w *Worker) RunJob(ctx context.Context, name string) error {
 		return w.runJob(ctx, name, w.checkProvisionerCapacity)
 	case "reset_all_deployments":
 		return w.runJob(ctx, name, w.resetAllDeployments)
-	case "upgrade_latest_version_projects":
-		return w.runJob(ctx, name, w.upgradeLatestVersionProjects)
+	case "validate_deployments":
+		return w.runJob(ctx, name, w.validateDeployments)
 	// NOTE: Add new ad-hoc jobs here
 	default:
 		return fmt.Errorf("unknown job: %s", name)

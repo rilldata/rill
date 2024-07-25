@@ -154,17 +154,21 @@ export function timeComparisonOptionsSelector([
     !metricsView.data ||
     !timeRangeResponse?.data?.timeRangeSummary ||
     !explorer.selectedTimeRange ||
-    !selectedTimeRange
-  )
+    !selectedTimeRange ||
+    !timeRangeResponse.data.timeRangeSummary.min ||
+    !timeRangeResponse.data.timeRangeSummary.max
+  ) {
     return [];
+  }
 
   const allTimeRange = {
     name: TimeRangePreset.ALL_TIME,
-    start: new Date(timeRangeResponse.data.timeRangeSummary.min ?? 0),
-    end: new Date(timeRangeResponse.data.timeRangeSummary.max ?? 0),
+    start: new Date(timeRangeResponse.data.timeRangeSummary.min),
+    end: new Date(timeRangeResponse.data.timeRangeSummary.max),
   };
 
   let allOptions = [...Object.values(TimeComparisonOption)];
+
   if (metricsView.data.availableTimeRanges?.length) {
     const timeRange = metricsView.data.availableTimeRanges.find(
       (tr) => tr.range === explorer.selectedTimeRange?.name,
@@ -177,6 +181,7 @@ export function timeComparisonOptionsSelector([
       allOptions.push(TimeComparisonOption.CUSTOM);
     }
   } else if (
+    explorer.selectedTimeRange?.name &&
     explorer.selectedTimeRange?.name in PREVIOUS_COMPLETE_DATE_RANGES
   ) {
     // Previous complete ranges should only have previous period.
@@ -190,7 +195,6 @@ export function timeComparisonOptionsSelector([
     selectedTimeRange.start,
     selectedTimeRange.end,
     allOptions,
-    [explorer.selectedComparisonTimeRange?.name as TimeComparisonOption],
   );
 
   return timeComparisonOptions.map((co, i) => {
@@ -233,6 +237,7 @@ export function getValidComparisonOption(
   const existing = timeRange.comparisonOffsets?.find(
     (co) => co.offset === prevComparisonOption,
   );
+
   const existingComparison = getTimeComparisonParametersForComponent(
     prevComparisonOption,
     allTimeRange.start,

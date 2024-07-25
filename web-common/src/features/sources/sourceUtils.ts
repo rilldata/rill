@@ -43,7 +43,7 @@ type: source`;
 
   // Compile key value pairs
   const compiledKeyValues = Object.entries(values)
-    .filter(([key]) => key !== "sourceName")
+    .filter(([key]) => key !== "name")
     .map(([key, value]) => `${key}: "${value}"`)
     .join("\n");
 

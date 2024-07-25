@@ -6,6 +6,8 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/rilldata/rill/admin/ai"
+	"github.com/rilldata/rill/admin/billing"
+	"github.com/rilldata/rill/admin/billing/payment"
 	"github.com/rilldata/rill/admin/database"
 	"github.com/rilldata/rill/admin/provisioner"
 	"github.com/rilldata/rill/runtime/pkg/email"
@@ -41,9 +43,11 @@ type Service struct {
 	VersionCommit    string
 	metricsProjectID string
 	AutoscalerCron   string
+	Biller           billing.Biller
+	PaymentProvider  payment.Provider
 }
 
-func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle) (*Service, error) {
+func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Issuer, emailClient *email.Client, github Github, aiClient ai.Client, assets *storage.BucketHandle, biller billing.Biller, p payment.Provider) (*Service, error) {
 	// Init db
 	db, err := database.Open(opts.DatabaseDriver, opts.DatabaseDSN)
 	if err != nil {
@@ -106,6 +110,8 @@ func New(ctx context.Context, opts *Options, logger *zap.Logger, issuer *auth.Is
 		VersionCommit:    opts.VersionCommit,
 		metricsProjectID: metricsProjectID,
 		AutoscalerCron:   opts.AutoscalerCron,
+		Biller:           biller,
+		PaymentProvider:  p,
 	}, nil
 }
 

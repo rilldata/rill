@@ -47,6 +47,7 @@ func (s *Service) OpenMetricsProject(ctx context.Context) (*metrics.Client, bool
 				auth.ReadObjects,
 			},
 		},
+		Attributes: map[string]any{"admin": true},
 	})
 	if err != nil {
 		return nil, false, fmt.Errorf("could not issue jwt: %w", err)

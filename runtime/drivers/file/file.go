@@ -145,6 +145,11 @@ type connection struct {
 	ignorePaths []string
 }
 
+// Ping implements drivers.Handle.
+func (c *connection) Ping(ctx context.Context) error {
+	return drivers.ErrNotImplemented
+}
+
 // Config implements drivers.Connection.
 func (c *connection) Config() map[string]any {
 	m := make(map[string]any, 0)
@@ -225,6 +230,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
 }
 
 // AsSQLStore implements drivers.Connection.

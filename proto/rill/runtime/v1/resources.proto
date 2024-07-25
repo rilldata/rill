@@ -112,6 +112,9 @@ message ModelSpec {
   google.protobuf.Struct incremental_state_resolver_properties = 15;
   string input_connector = 10;
   google.protobuf.Struct input_properties = 11;
+  // stage_connector is optional.
+  string stage_connector = 16;
+  google.protobuf.Struct stage_properties = 17;
   string output_connector = 1;
   google.protobuf.Struct output_properties = 12;
   bool trigger = 9;
@@ -144,6 +147,7 @@ message MetricsViewSpec {
     string label = 3;
     string description = 4;
     bool unnest = 5;
+    string uri = 7;
   }
   // Selector for a dimension
   message DimensionSelector {
@@ -181,24 +185,6 @@ message MetricsViewSpec {
     string format_preset = 5;
     string format_d3 = 7;
     bool valid_percent_of_total = 6;
-  }
-  // Security for the dashboard
-  message SecurityV2 {
-    // Dashboard level access condition
-    string access = 1;
-    // SQL expression to apply in a WHERE clause against the underlying table
-    string row_filter = 2;
-    // Dimension filter to apply to queries against the metrics view.
-    // Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
-    Expression query_filter = 5;
-    // Dimension/measure level access condition
-    message FieldConditionV2 {
-      string condition = 1;
-      repeated string names = 2;
-    }
-    // either one of include or exclude will be specified
-    repeated FieldConditionV2 include = 3;
-    repeated FieldConditionV2 exclude = 4;
   }
   enum ComparisonMode {
     COMPARISON_MODE_UNSPECIFIED = 0;
@@ -247,7 +233,7 @@ message MetricsViewSpec {
   // Available time zones list preferred time zones using IANA location identifiers
   repeated string available_time_zones = 10;
   // Security for the dashboard
-  SecurityV2 security = 11;
+  repeated SecurityRule security_rules = 23;
   // ISO 8601 weekday number to use as the base for time aggregations by week. Defaults to 1 (Monday).
   uint32 first_day_of_week = 12;
   // Month number to use as the base for time aggregations by year. Defaults to 1 (January).
@@ -260,6 +246,32 @@ message MetricsViewSpec {
   repeated AvailableTimeRange available_time_ranges = 16;
   // Default theme to apply
   string default_theme = 17;
+}
+
+message SecurityRule {
+  oneof rule {
+    SecurityRuleAccess access = 1;
+    SecurityRuleFieldAccess field_access = 2;
+    SecurityRuleRowFilter row_filter = 3;
+  }
+}
+  
+message SecurityRuleAccess {
+  string condition = 1;
+  bool allow = 2;
+}
+
+message SecurityRuleFieldAccess {
+  string condition = 1;
+  bool allow = 2;
+  repeated string fields = 3;
+  bool all_fields = 4;
+}
+
+message SecurityRuleRowFilter {
+  string condition = 1;
+  string sql = 2; // Raw SQL expression to apply to the underlying table
+  Expression expression = 3; // Regular query expression referencing dimension names
 }
 
 message MetricsViewState {
@@ -336,8 +348,8 @@ message AlertSpec {
   int32 intervals_limit = 6;
   bool intervals_check_unclosed = 7;
   uint32 timeout_seconds = 8;
-  string query_name = 9;
-  string query_args_json = 10;
+  string resolver = 22;
+  google.protobuf.Struct resolver_properties = 23;
   oneof query_for {
     string query_for_user_id = 11;
     string query_for_user_email = 12;
@@ -494,6 +506,9 @@ message API {
 message APISpec {
   string resolver = 1;
   google.protobuf.Struct resolver_properties = 2;
+  string openapi_summary = 3;
+  repeated google.protobuf.Struct openapi_parameters = 4;
+  google.protobuf.Struct openapi_response_schema = 5;
 }
 
 message APIState {}

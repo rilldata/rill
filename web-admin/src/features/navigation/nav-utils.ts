@@ -10,8 +10,13 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]" ||
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
-    page.route.id === "/[organization]/[project]/-/status"
+    page.route.id === "/[organization]/[project]/-/status" ||
+    !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
+}
+
+export function withinProject(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]/[project]");
 }
 
 export function isMetricsExplorerPage(page: Page): boolean {
@@ -44,6 +49,16 @@ export function isReportExportPage(page: Page): boolean {
   return (
     page.route.id ===
     "/[organization]/[project]/[dashboard]/-/reports/[report]/export"
+  );
+}
+
+export function isMagicLinkPage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/share/[token]";
+}
+
+export function isProjectRequestAccessPage(page: Page): boolean {
+  return !!page.route.id?.startsWith(
+    "/[organization]/[project]/-/request-access",
   );
 }
 

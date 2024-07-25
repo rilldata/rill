@@ -1,9 +1,12 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
 import { isAdminServerQuery } from "@rilldata/web-admin/client/utils";
+import { checkUserAccess } from "@rilldata/web-admin/features/authentication/checkUserAccess";
 import {
+  isMagicLinkPage,
   isMetricsExplorerPage,
   isProjectPage,
+  isProjectRequestAccessPage,
 } from "@rilldata/web-admin/features/navigation/nav-utils";
 import { errorEventHandler } from "@rilldata/web-common/metrics/initMetrics";
 import { isRuntimeQuery } from "@rilldata/web-common/runtime-client/is-runtime-query";
@@ -11,33 +14,39 @@ import type { Query } from "@tanstack/query-core";
 import type { QueryClient } from "@tanstack/svelte-query";
 import type { AxiosError } from "axios";
 import { get } from "svelte/store";
-import type { RpcStatus, V1GetCurrentUserResponse } from "../../client";
-import {
-  adminServiceGetCurrentUser,
-  getAdminServiceGetCurrentUserQueryKey,
-} from "../../client";
+import type { RpcStatus } from "../../client";
+import { getAdminServiceGetProjectQueryKey } from "../../client";
 import { ADMIN_URL } from "../../client/http-client";
-import { getProjectRuntimeQueryKey } from "../projects/selectors";
 import { errorStore, type ErrorStoreState } from "./error-store";
 
 export function createGlobalErrorCallback(queryClient: QueryClient) {
   return async (error: AxiosError, query: Query) => {
     errorEventHandler?.requestErrorEventHandler(error, query);
 
+    // Let the magic link page handle all errors
+    const onMagicLinkPage = isMagicLinkPage(get(page));
+    if (onMagicLinkPage) {
+      // When a token is expired, show a specific error page
+      if (
+        error.response?.status === 401 &&
+        (error.response.data as RpcStatus)?.message === "auth token is expired"
+      ) {
+        errorStore.set({
+          statusCode: 401,
+          header: "Oops! This link has expired",
+          body: "It looks like this link is no longer active. Please reach out to the sender to request a new link.",
+          fatal: true,
+        });
+        return;
+      }
+
+      // Let the magic link page handle all other errors
+      return;
+    }
+
     // If an anonymous user hits a 403 error, redirect to the login page
     if (error.response?.status === 403) {
-      // Check for a logged-in user
-      const userQuery = await queryClient.fetchQuery<V1GetCurrentUserResponse>({
-        queryKey: getAdminServiceGetCurrentUserQueryKey(),
-        queryFn: () => adminServiceGetCurrentUser(),
-      });
-      const isLoggedIn = !!userQuery.user;
-
-      // If not logged in, redirect to the login page
-      if (!isLoggedIn) {
-        await goto(
-          `${ADMIN_URL}/auth/login?redirect=${window.location.origin}${window.location.pathname}`,
-        );
+      if (await checkUserAccess()) {
         return;
       }
     }
@@ -50,8 +59,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       return;
     }
 
-    // Special handling for some errors on the Project page
     const onProjectPage = isProjectPage(get(page));
+
+    // Special handling for some errors on the Project page
     if (onProjectPage) {
       if (error.response?.status === 400) {
         // If "repository not found", ignore the error and show the page
@@ -66,7 +76,9 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
           (error.response.data as RpcStatus).message === "driver: not found"
         ) {
           const [, org, proj] = get(page).url.pathname.split("/");
-          void queryClient.resetQueries(getProjectRuntimeQueryKey(org, proj));
+          void queryClient.resetQueries(
+            getAdminServiceGetProjectQueryKey(org, proj),
+          );
           return;
         }
       }
@@ -104,6 +116,14 @@ export function createGlobalErrorCallback(queryClient: QueryClient) {
       if (error.response?.status === 401) {
         return;
       }
+    }
+
+    // do not block on request access failures
+    if (
+      isProjectRequestAccessPage(get(page)) &&
+      error.response?.status !== 403
+    ) {
+      return;
     }
 
     // Create a pretty message for the error page

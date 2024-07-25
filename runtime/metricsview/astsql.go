@@ -198,9 +198,9 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	return nil
 }
 
-func (b *sqlBuilder) writeJoin(joinType string, baseSelect, joinSelect *SelectNode) error {
+func (b *sqlBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
 	b.out.WriteByte(' ')
-	b.out.WriteString(joinType)
+	b.out.WriteString(string(joinType))
 	b.out.WriteString(" JOIN (")
 	err := b.writeSelect(joinSelect)
 	if err != nil {

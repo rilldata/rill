@@ -58,12 +58,12 @@ func newMetrics(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Res
 		return nil, fmt.Errorf("metrics view %q is invalid", res.Meta.Name.Name)
 	}
 
-	security, err := opts.Runtime.ResolveMetricsViewSecurity(opts.InstanceID, opts.UserAttributes, res, mv.Security, opts.Security)
+	security, err := opts.Runtime.ResolveSecurity(opts.InstanceID, opts.Claims, res)
 	if err != nil {
 		return nil, err
 	}
 
-	if security != nil && !security.Access {
+	if !security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
 
@@ -87,6 +87,10 @@ func (r *metricsResolver) Close() error {
 	return nil
 }
 
+func (r *metricsResolver) Cacheable() bool {
+	return r.executor.Cacheable(r.query)
+}
+
 func (r *metricsResolver) Key() string {
 	hash, err := hashstructure.Hash(r.query, hashstructure.FormatV2, nil)
 	if err != nil {
@@ -104,12 +108,11 @@ func (r *metricsResolver) Validate(ctx context.Context) error {
 }
 
 func (r *metricsResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverResult, error) {
-	res, cache, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
+	res, err := r.executor.Query(ctx, r.query, r.args.ExecutionTime)
 	if err != nil {
 		return nil, err
 	}
-
-	return runtime.NewResolverResult(res, cache), nil
+	return runtime.NewDriverResolverResult(res), nil
 }
 
 func (r *metricsResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {

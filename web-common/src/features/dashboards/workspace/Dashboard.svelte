@@ -16,7 +16,6 @@
   import { selectedMockUserStore } from "../granular-access-policies/stores";
   import LeaderboardDisplay from "../leaderboard/LeaderboardDisplay.svelte";
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
-  import TimeControls from "../time-controls/TimeControls.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
   import { getStateManagers } from "../state-managers/state-managers";
@@ -76,24 +75,20 @@
 >
   <div
     id="header"
-    class="border-b w-fit min-w-full flex flex-col bg-slate-50 pl-4 slide"
+    class="border-b w-fit min-w-full flex flex-col bg-slate-50 slide"
     class:left-shift={extraLeftPadding}
   >
     {#if mockUserHasNoAccess}
       <div class="mb-3" />
     {:else}
-      <div class="-ml-3 px-1 pt-2 space-y-2">
-        <TimeControls {metricViewName} />
-
-        {#key metricViewName}
-          <section class="flex justify-between gap-x-4">
-            <Filters />
-            <div class="flex flex-col justify-end">
-              <TabBar />
-            </div>
-          </section>
-        {/key}
-      </div>
+      {#key metricViewName}
+        <section class="flex relative justify-between gap-x-4 py-4 pb-6 px-4">
+          <Filters />
+          <div class="absolute bottom-0 flex flex-col right-0">
+            <TabBar />
+          </div>
+        </section>
+      {/key}
     {/if}
   </div>
 

@@ -67,7 +67,7 @@ func newSQL(ctx context.Context, opts *runtime.ResolverOptions) (runtime.Resolve
 		return nil, err
 	}
 
-	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, inst, opts.UserAttributes, opts.ForExport)
+	resolvedSQL, refs, err := buildSQL(props.SQL, olap.Dialect(), opts.Args, inst, opts.Claims.UserAttributes, opts.ForExport)
 	if err != nil {
 		return nil, err
 	}
@@ -124,6 +124,13 @@ func (r *sqlResolver) Close() error {
 	return nil
 }
 
+func (r *sqlResolver) Cacheable() bool {
+	if r.olap.Dialect() == drivers.DialectDuckDB {
+		return len(r.refs) != 0
+	}
+	return false
+}
+
 func (r *sqlResolver) Key() string {
 	return r.sql
 }
@@ -154,14 +161,10 @@ func (r *sqlResolver) ResolveInteractive(ctx context.Context) (runtime.ResolverR
 	}
 
 	// This is a little hacky, but for now we only cache results from DuckDB queries that have refs.
-	var cache bool
-	if r.olap.Dialect() == drivers.DialectDuckDB {
-		cache = len(r.refs) != 0
-	}
 	if r.interactiveRowLimit != 0 {
 		res.SetCap(r.interactiveRowLimit)
 	}
-	return runtime.NewResolverResult(res, cache), nil
+	return runtime.NewDriverResolverResult(res), nil
 }
 
 func (r *sqlResolver) ResolveExport(ctx context.Context, w io.Writer, opts *runtime.ResolverExportOptions) error {

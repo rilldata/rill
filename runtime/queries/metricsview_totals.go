@@ -13,14 +13,13 @@ import (
 )
 
 type MetricsViewTotals struct {
-	MetricsViewName    string                                `json:"metrics_view_name,omitempty"`
-	MeasureNames       []string                              `json:"measure_names,omitempty"`
-	TimeStart          *timestamppb.Timestamp                `json:"time_start,omitempty"`
-	TimeEnd            *timestamppb.Timestamp                `json:"time_end,omitempty"`
-	Where              *runtimev1.Expression                 `json:"where,omitempty"`
-	Filter             *runtimev1.MetricsViewFilter          `json:"filter,omitempty"` // backwards compatibility
-	SecurityAttributes map[string]any                        `json:"security_attributes,omitempty"`
-	SecurityPolicy     *runtimev1.MetricsViewSpec_SecurityV2 `json:"security_policy,omitempty"`
+	MetricsViewName string                       `json:"metrics_view_name,omitempty"`
+	MeasureNames    []string                     `json:"measure_names,omitempty"`
+	TimeStart       *timestamppb.Timestamp       `json:"time_start,omitempty"`
+	TimeEnd         *timestamppb.Timestamp       `json:"time_end,omitempty"`
+	Where           *runtimev1.Expression        `json:"where,omitempty"`
+	Filter          *runtimev1.MetricsViewFilter `json:"filter,omitempty"` // backwards compatibility
+	SecurityClaims  *runtime.SecurityClaims      `json:"security_claims,omitempty"`
 
 	Result *runtimev1.MetricsViewTotalsResponse `json:"-"`
 }
@@ -58,12 +57,7 @@ func (q *MetricsViewTotals) UnmarshalResult(v any) error {
 }
 
 func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, instanceID string, priority int) error {
-	var ms []*runtimev1.MetricsViewAggregationMeasure
-	for _, m := range q.MeasureNames {
-		ms = append(ms, &runtimev1.MetricsViewAggregationMeasure{Name: m})
-	}
-
-	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityAttributes, q.SecurityPolicy, nil, ms)
+	mv, security, err := resolveMVAndSecurityFromAttributes(ctx, rt, instanceID, q.MetricsViewName, q.SecurityClaims)
 	if err != nil {
 		return err
 	}
@@ -79,7 +73,7 @@ func (q *MetricsViewTotals) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 	defer e.Close()
 
-	res, _, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, nil)
 	if err != nil {
 		return err
 	}

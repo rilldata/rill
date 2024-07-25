@@ -161,6 +161,7 @@ func driverSpecToPB(name string, spec *drivers.Spec) *runtimev1.ConnectorDriver 
 		ImplementsObjectStore: spec.ImplementsObjectStore,
 		ImplementsFileStore:   spec.ImplementsFileStore,
 		ImplementsNotifier:    spec.ImplementsNotifier,
+		ImplementsWarehouse:   spec.ImplementsWarehouse,
 	}
 
 	for _, prop := range spec.ConfigProperties {
@@ -200,6 +201,7 @@ func driverPropertySpecToPB(spec *drivers.PropertySpec) *runtimev1.ConnectorDriv
 		Default:     spec.Default,
 		Placeholder: spec.Placeholder,
 		Secret:      spec.Secret,
+		NoPrompt:    spec.NoPrompt,
 	}
 }
 

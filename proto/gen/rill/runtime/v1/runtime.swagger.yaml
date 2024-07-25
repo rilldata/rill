@@ -135,7 +135,8 @@ paths:
       tags:
         - ConnectorService
   /v1/dev-jwt:
-    get:
+    post:
+      summary: IssueDevJWT issues a JWT for mimicking a user in local development.
       operationId: RuntimeService_IssueDevJWT
       responses:
         "200":
@@ -147,25 +148,11 @@ paths:
           schema:
             $ref: '#/definitions/rpcStatus'
       parameters:
-        - name: name
-          in: query
-          required: false
-          type: string
-        - name: email
-          in: query
-          required: false
-          type: string
-        - name: groups
-          in: query
-          required: false
-          type: array
-          items:
-            type: string
-          collectionFormat: multi
-        - name: admin
-          in: query
-          required: false
-          type: boolean
+        - name: body
+          in: body
+          required: true
+          schema:
+            $ref: '#/definitions/v1IssueDevJWTRequest'
       tags:
         - RuntimeService
   /v1/examples:
@@ -293,6 +280,41 @@ paths:
           type: string
       tags:
         - ConnectorService
+  /v1/health:
+    get:
+      summary: Health runs a health check on the runtime.
+      operationId: RuntimeService_Health
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1HealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - RuntimeService
+  /v1/health/instances/{instanceId}:
+    get:
+      summary: InstanceHealth runs a health check on a specific instance.
+      operationId: RuntimeService_InstanceHealth
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1InstanceHealthResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances:
     get:
       summary: ListInstances lists all the instances currently managed by the runtime
@@ -2622,6 +2644,9 @@ definitions:
       secret:
         type: boolean
         title: If true, the property is a secret and should not be displayed in UIs
+      noPrompt:
+        type: boolean
+        title: If true, the property should not be prompted. The expectation is that only advanced users will use it and can set directly in the connector.yaml
     title: Property represents the spec of one of the driver's config properties
   ConnectorDriverPropertyType:
     type: string
@@ -2706,6 +2731,8 @@ definitions:
         type: string
       unnest:
         type: boolean
+      uri:
+        type: string
     title: Dimensions are columns to filter and group by
   MetricsViewSpecMeasureType:
     type: string
@@ -2768,32 +2795,6 @@ definitions:
         type: string
         title: Raw SQL expression to use as the frame (starting with "ROWS ...")
     title: Window to apply to the measure calculation
-  MetricsViewSpecSecurityV2:
-    type: object
-    properties:
-      access:
-        type: string
-        title: Dashboard level access condition
-      rowFilter:
-        type: string
-        title: SQL expression to apply in a WHERE clause against the underlying table
-      queryFilter:
-        $ref: '#/definitions/v1Expression'
-        description: |-
-          Dimension filter to apply to queries against the metrics view.
-          Unlike row_filter, the query_filter filters on dimension names and is independent of the SQL dialect.
-      include:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-        title: either one of include or exclude will be specified
-      exclude:
-        type: array
-        items:
-          type: object
-          $ref: '#/definitions/SecurityV2FieldConditionV2'
-    title: Security for the dashboard
   NumericHistogramBinsBin:
     type: object
     properties:
@@ -2829,16 +2830,6 @@ definitions:
       count:
         type: integer
         format: int32
-  SecurityV2FieldConditionV2:
-    type: object
-    properties:
-      condition:
-        type: string
-      names:
-        type: array
-        items:
-          type: string
-    title: Dimension/measure level access condition
   StructTypeField:
     type: object
     properties:
@@ -2964,6 +2955,14 @@ definitions:
         type: string
       resolverProperties:
         type: object
+      openapiSummary:
+        type: string
+      openapiParameters:
+        type: array
+        items:
+          type: object
+      openapiResponseSchema:
+        type: object
   v1APIState:
     type: object
   v1Alert:
@@ -3013,10 +3012,10 @@ definitions:
       timeoutSeconds:
         type: integer
         format: int64
-      queryName:
+      resolver:
         type: string
-      queryArgsJson:
-        type: string
+      resolverProperties:
+        type: object
       queryForUserId:
         type: string
       queryForUserEmail:
@@ -3601,6 +3600,8 @@ definitions:
         type: boolean
       implementsNotifier:
         type: boolean
+      implementsWarehouse:
+        type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
   v1ConnectorSpec:
     type: object
@@ -3867,6 +3868,21 @@ definitions:
     properties:
       resource:
         $ref: '#/definitions/v1Resource'
+  v1HealthResponse:
+    type: object
+    properties:
+      limiterError:
+        type: string
+      connCacheError:
+        type: string
+      metastoreError:
+        type: string
+      networkError:
+        type: string
+      instancesHealth:
+        type: object
+        additionalProperties:
+          $ref: '#/definitions/v1InstanceHealth'
   v1HistogramMethod:
     type: string
     enum:
@@ -3932,6 +3948,34 @@ definitions:
       the runtime. They enable one runtime deployment to serve not only multiple data
       projects, but also multiple tenants. On local, the runtime will usually have
       just a single instance.
+  v1InstanceHealth:
+    type: object
+    properties:
+      controllerError:
+        type: string
+      olapError:
+        type: string
+      repoError:
+        type: string
+  v1InstanceHealthResponse:
+    type: object
+    properties:
+      instanceHealth:
+        $ref: '#/definitions/v1InstanceHealth'
+  v1IssueDevJWTRequest:
+    type: object
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      groups:
+        type: array
+        items:
+          type: string
+      admin:
+        type: boolean
+    title: Request message for RuntimeService.IssueDevJWT
   v1IssueDevJWTResponse:
     type: object
     properties:
@@ -4489,8 +4533,11 @@ definitions:
         items:
           type: string
         title: Available time zones list preferred time zones using IANA location identifiers
-      security:
-        $ref: '#/definitions/MetricsViewSpecSecurityV2'
+      securityRules:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1SecurityRule'
         title: Security for the dashboard
       firstDayOfWeek:
         type: integer
@@ -4726,6 +4773,11 @@ definitions:
       inputConnector:
         type: string
       inputProperties:
+        type: object
+      stageConnector:
+        type: string
+        description: stage_connector is optional.
+      stageProperties:
         type: object
       outputConnector:
         type: string
@@ -5296,6 +5348,46 @@ definitions:
         format: int64
       timeZone:
         type: string
+  v1SecurityRule:
+    type: object
+    properties:
+      access:
+        $ref: '#/definitions/v1SecurityRuleAccess'
+      fieldAccess:
+        $ref: '#/definitions/v1SecurityRuleFieldAccess'
+      rowFilter:
+        $ref: '#/definitions/v1SecurityRuleRowFilter'
+  v1SecurityRuleAccess:
+    type: object
+    properties:
+      condition:
+        type: string
+      allow:
+        type: boolean
+  v1SecurityRuleFieldAccess:
+    type: object
+    properties:
+      condition:
+        type: string
+      allow:
+        type: boolean
+      fields:
+        type: array
+        items:
+          type: string
+      allFields:
+        type: boolean
+  v1SecurityRuleRowFilter:
+    type: object
+    properties:
+      condition:
+        type: string
+      sql:
+        type: string
+        title: Raw SQL expression to apply to the underlying table
+      expression:
+        $ref: '#/definitions/v1Expression'
+        title: Regular query expression referencing dimension names
   v1SourceSpec:
     type: object
     properties:

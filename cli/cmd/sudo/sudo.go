@@ -2,8 +2,10 @@ package sudo
 
 import (
 	"github.com/rilldata/rill/cli/cmd/sudo/annotations"
+	"github.com/rilldata/rill/cli/cmd/sudo/billing"
 	"github.com/rilldata/rill/cli/cmd/sudo/project"
 	"github.com/rilldata/rill/cli/cmd/sudo/quota"
+	"github.com/rilldata/rill/cli/cmd/sudo/runtime"
 	"github.com/rilldata/rill/cli/cmd/sudo/superuser"
 	"github.com/rilldata/rill/cli/cmd/sudo/user"
 	"github.com/rilldata/rill/cli/cmd/sudo/whitelist"
@@ -26,6 +28,8 @@ func SudoCmd(ch *cmdutil.Helper) *cobra.Command {
 	sudoCmd.AddCommand(lookupCmd(ch))
 	sudoCmd.AddCommand(project.ProjectCmd(ch))
 	sudoCmd.AddCommand(annotations.AnnotationsCmd(ch))
+	sudoCmd.AddCommand(billing.BillingCmd(ch))
+	sudoCmd.AddCommand(runtime.RuntimeCmd(ch))
 
 	return sudoCmd
 }

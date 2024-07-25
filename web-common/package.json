@@ -4,7 +4,7 @@
   "scripts": {
     "lint": "prettier --check . && eslint .",
     "format": "prettier --write .",
-    "generate:runtime-client": "orval && tsx src/runtime-client/add-signal-argument.ts src/runtime-client/gen/query-service/query-service.ts",
+    "generate:runtime-client": "orval && tsx src/runtime-client/add-signal-argument.ts src/runtime-client/gen/query-service/query-service.ts src/runtime-client/gen/runtime-service/runtime-service.ts",
     "generate:template-schema": "ts-json-schema-generator -p src/features/templates/types.ts -t TemplateSpec -o ../runtime/compilers/rillv1/data/component-template-v1.json",
     "test": "vitest run",
     "coverage": "vitest run --coverage",
@@ -66,7 +66,6 @@
     "dompurify": "^3.1.0",
     "jsdom": "^23.0.1",
     "json-schema": "^0.4.0",
-    "litepicker": "^2.0.12",
     "lodash.omitby": "^4.6.0",
     "lucide-svelte": "^0.298.0",
     "luxon": "^3.4.3",

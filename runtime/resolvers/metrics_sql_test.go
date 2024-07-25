@@ -21,13 +21,14 @@ func TestSimpleMetricsSQLApi(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     nil,
+		Claims:             &runtime.SecurityClaims{},
 	})
-
 	require.NoError(t, err)
+	defer res.Close()
+
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res.Data, &rows))
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
 	require.Equal(t, 5, len(rows))
 	require.Equal(t, 2, len(rows[0]))
 	require.Equal(t, "msn.com", rows[0]["dom"])
@@ -47,13 +48,14 @@ func TestTemplateMetricsSQLAPI(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"domain": "yahoo.com"},
-		UserAttributes:     nil,
+		Claims:             &runtime.SecurityClaims{},
 	})
-
 	require.NoError(t, err)
+	defer res.Close()
+
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res.Data, &rows))
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, 3.0, rows[0]["measure_2"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
@@ -73,13 +75,14 @@ func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               map[string]any{"domain": "yahoo.com", "pageSize": ""},
-		UserAttributes:     map[string]any{"domain": "yahoo.com"},
+		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "yahoo.com"}},
 	})
-
 	require.NoError(t, err)
+	defer res.Close()
+
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res.Data, &rows))
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, 3.0, rows[0]["measure_2"])
 	require.Equal(t, "yahoo.com", rows[0]["domain"])
@@ -97,13 +100,14 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"},
+		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"}},
 	})
-
 	require.NoError(t, err)
+	defer res.Close()
+
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res.Data, &rows))
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
 	require.Equal(t, 1, len(rows))
 	require.Equal(t, nil, rows[0]["total volume"])
 	require.Equal(t, 3.0, rows[0]["total impressions"])
@@ -118,13 +122,14 @@ func TestPolicyMetricsSQLAPI(t *testing.T) {
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
-		UserAttributes:     map[string]any{"domain": "msn.com", "email": "user@msn.com"},
+		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "msn.com", "email": "user@msn.com"}},
 	})
-
 	require.NoError(t, err)
+	defer res.Close()
+
 	require.NotNil(t, res)
 	var resp []map[string]interface{}
-	require.NoError(t, json.Unmarshal(res.Data, &resp))
+	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &resp))
 	require.Equal(t, 1, len(resp))
 	require.Equal(t, 11.0, resp[0]["total volume"])
 	require.Equal(t, 3.0, resp[0]["total impressions"])

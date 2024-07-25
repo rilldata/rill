@@ -27,16 +27,11 @@ import (
 // recommended size is 512MB - 1GB, entire data is buffered in memory before its written to disk
 const rowGroupBufferSize = int64(datasize.MB) * 512
 
-// Query implements drivers.SQLStore
-func (c *connection) Query(ctx context.Context, props map[string]any) (drivers.RowIterator, error) {
-	return nil, drivers.ErrNotImplemented
-}
-
 // QueryAsFiles implements drivers.SQLStore.
 // Fetches query result in arrow batches.
 // As an alternative (or in case of memory issues) consider utilizing Snowflake "COPY INTO <location>" feature,
 // see https://docs.snowflake.com/en/sql-reference/sql/copy-into-location
-func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption, p drivers.Progress) (drivers.FileIterator, error) {
+func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt *drivers.QueryOption) (drivers.FileIterator, error) {
 	srcProps, err := parseSourceProperties(props)
 	if err != nil {
 		return nil, err
@@ -90,9 +85,6 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		return nil, drivers.ErrNoRows
 	}
 
-	// the number of returned rows is unknown at this point, only the number of batches and output files
-	p.Target(1, drivers.ProgressUnitFile)
-
 	tempDir, err := os.MkdirTemp(c.configProperties.TempDir, "snowflake")
 	if err != nil {
 		return nil, err
@@ -103,7 +95,6 @@ func (c *connection) QueryAsFiles(ctx context.Context, props map[string]any, opt
 		conn:               conn,
 		rows:               rows,
 		batches:            batches,
-		progress:           p,
 		limitInBytes:       opt.TotalLimitInBytes,
 		parallelFetchLimit: parallelFetchLimit,
 		logger:             c.logger,
@@ -207,26 +198,27 @@ func (f *fileIterator) Next() ([]string, error) {
 	// mutex to protect file writes
 	var mu sync.Mutex
 	batchesLeft := len(f.batches)
+	start := time.Now()
 
 	for _, batch := range f.batches {
 		b := batch
 		errGrp.Go(func() error {
-			fetchStart := time.Now()
 			records, err := b.Fetch()
 			if err != nil {
 				return err
 			}
-			f.logger.Debug(
-				"fetched an arrow batch",
-				zap.Duration("duration", time.Since(fetchStart)),
-				zap.Int("row_count", b.GetRowCount()),
-			)
 			mu.Lock()
 			defer mu.Unlock()
-			writeStart := time.Now()
+
 			for _, rec := range *records {
 				if writer.RowGroupTotalBytesWritten() >= rowGroupBufferSize {
 					writer.NewBufferedRowGroup()
+					f.logger.Debug(
+						"starting writing to new parquet row group",
+						zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
+						zap.Int("total_records", int(f.totalRecords)),
+						zap.Duration("elapsed", time.Since(start)),
+					)
 				}
 				if err := writer.WriteBuffered(rec); err != nil {
 					return err
@@ -239,12 +231,6 @@ func (f *fileIterator) Next() ([]string, error) {
 				}
 			}
 			batchesLeft--
-			f.logger.Debug(
-				"wrote an arrow batch to a parquet file",
-				zap.Float64("progress", float64(len(f.batches)-batchesLeft)/float64(len(f.batches))*100),
-				zap.Int("row_count", b.GetRowCount()),
-				zap.Duration("write_duration", time.Since(writeStart)),
-			)
 			f.totalRecords += int64(b.GetRowCount())
 			return nil
 		})

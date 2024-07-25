@@ -9,13 +9,11 @@
   import { crossfade, fly } from "svelte/transition";
   import { runtime } from "../../../runtime-client/runtime-store";
   import Spinner from "../../entity-management/Spinner.svelte";
-
   import { metricsExplorerStore } from "web-common/src/features/dashboards/stores/dashboard-stores";
   import { useMetricsView } from "../selectors";
   import { getStateManagers } from "../state-managers/state-managers";
-  import LeaderboardContextColumnMenu from "./LeaderboardContextColumnMenu.svelte";
 
-  export let metricViewName;
+  export let metricViewName: string;
 
   const {
     selectors: {
@@ -144,8 +142,6 @@
         on:select={handleMeasureUpdate}
         ariaLabel="Select a measure to filter by"
       />
-
-      <LeaderboardContextColumnMenu {validPercentOfTotal} />
     </div>
   {:else}
     <div
