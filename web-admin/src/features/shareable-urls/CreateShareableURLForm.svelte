@@ -179,6 +179,10 @@
     @apply flex flex-col gap-y-4;
   }
 
+  h3 {
+    @apply font-semibold;
+  }
+
   .information-container {
     @apply flex flex-col gap-y-2;
   }

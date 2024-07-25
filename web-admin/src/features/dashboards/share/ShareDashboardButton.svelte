@@ -50,3 +50,9 @@
     </Tabs>
   </PopoverContent>
 </Popover>
+
+<style lang="postcss">
+  h3 {
+    @apply font-semibold;
+  }
+</style>
