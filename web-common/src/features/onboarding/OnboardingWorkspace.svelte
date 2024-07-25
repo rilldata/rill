@@ -110,3 +110,9 @@
     {/if}
   </ol>
 </div>
+
+<style>
+  header {
+    height: var(--header-height);
+  }
+</style>

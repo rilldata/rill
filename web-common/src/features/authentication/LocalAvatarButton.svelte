@@ -23,7 +23,7 @@
   </div>
 {:else if $user.data && $deployValidation.data}
   <DropdownMenu.Root>
-    <DropdownMenu.Trigger class="flex-none">
+    <DropdownMenu.Trigger class="flex-none w-7">
       {#if loggedIn}
         <img
           src={$user.data?.user?.photoUrl}
