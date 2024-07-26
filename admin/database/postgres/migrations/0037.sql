@@ -1,0 +1,1 @@
+ALTER TABLE magic_auth_tokens ADD COLUMN state TEXT NOT NULL DEFAULT '';
