@@ -35,9 +35,9 @@ driver: ${connector.name}`;
       .map((property) => property.key) || [];
 
   // Compile key value pairs
-  const compiledKeyValues = Object.entries(formValues)
-    .map(([key, formValue]) => {
-      const value = formValue as string;
+  const compiledKeyValues = Object.keys(formValues)
+    .map((key) => {
+      const value = formValues[key] as string;
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
