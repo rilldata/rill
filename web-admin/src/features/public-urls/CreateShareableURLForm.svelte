@@ -11,6 +11,11 @@
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import {
+    convertDateToMinutes,
+    getMetricsViewFields,
+    hasDashboardWhereFilter,
+  } from "./form-utils";
 
   $: ({ organization, project } = $page.params);
 
@@ -54,20 +59,17 @@
             project,
             data: {
               metricsView: $metricsViewName,
-              metricsViewFilter: hasDashboardWhereFilter()
+              metricsViewFilter: hasWhereFilter
                 ? $dashboardStore.whereFilter
                 : undefined,
-              metricsViewFields:
-                !$dashboardStore.allDimensionsVisible ||
-                !$dashboardStore.allMeasuresVisible
-                  ? [
-                      ...$visibleDimensions.map((dimension) => dimension.name),
-                      ...$visibleMeasures.map((measure) => measure.name),
-                    ]
-                  : undefined,
+              metricsViewFields: getMetricsViewFields(
+                $dashboardStore,
+                $visibleDimensions,
+                $visibleMeasures,
+              ),
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
-                : "0",
+                : undefined,
             },
           });
           token = _token;
@@ -84,6 +86,8 @@
     },
   );
 
+  $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
+
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
     $form.expiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000)
@@ -94,17 +98,6 @@
   }
 
   $: ({ length: allErrorsLength } = $allErrors);
-
-  function hasDashboardWhereFilter() {
-    return $dashboardStore.whereFilter?.cond?.exprs?.length;
-  }
-
-  function convertDateToMinutes(date: string) {
-    const now = new Date();
-    const future = new Date(date);
-    const diff = future.getTime() - now.getTime();
-    return Math.floor(diff / 60000);
-  }
 </script>
 
 {#if !token}
@@ -117,7 +110,7 @@
       </ul>
 
       <!-- Filters -->
-      {#if hasDashboardWhereFilter()}
+      {#if hasWhereFilter}
         <div>
           <FilterChipsReadOnly
             metricsViewName={$metricsViewName}
