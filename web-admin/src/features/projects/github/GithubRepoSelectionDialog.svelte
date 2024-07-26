@@ -1,8 +1,6 @@
 <script lang="ts">
   import {
     createAdminServiceGetProject,
-    getAdminServiceGetGithubUserStatusQueryKey,
-    getAdminServiceGetProjectQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { GithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/GithubConnectionUpdater";
@@ -29,8 +27,6 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { invalidateRuntimeQueries } from "@rilldata/web-common/runtime-client/invalidation";
   import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
   import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
   import type { AxiosError } from "axios";
@@ -69,10 +65,10 @@
   }
 
   const githubConnectionUpdater = new GithubConnectionUpdater();
-  const updaterStatus = githubConnectionUpdater.status;
+  const connectToGithubMutation =
+    githubConnectionUpdater.connectToGithubMutation;
   const showOverwriteConfirmation =
     githubConnectionUpdater.showOverwriteConfirmation;
-  $: githubConnectionUpdater.isCreate = !currentUrl;
   async function updateGithubUrl(force: boolean) {
     if (
       !(await githubConnectionUpdater.update({
@@ -82,6 +78,7 @@
         subpath,
         branch,
         force,
+        instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
       }))
     ) {
       return;
@@ -91,25 +88,11 @@
       message: `Set github repo to ${githubUrl}`,
       type: "success",
     });
-    void queryClient.refetchQueries(
-      getAdminServiceGetProjectQueryKey(organization, project),
-      {
-        // avoid refetching createAdminServiceGetProjectWithBearerToken
-        exact: true,
-      },
-    );
-    void queryClient.refetchQueries(
-      getAdminServiceGetGithubUserStatusQueryKey(),
-    );
-    void invalidateRuntimeQueries(
-      queryClient,
-      $projectQuery.data.prodDeployment.runtimeInstanceId,
-    );
     open = false;
   }
 
   $: error = ($status.error ??
-    $updaterStatus.error) as unknown as AxiosError<RpcStatus>;
+    $connectToGithubMutation.error) as unknown as AxiosError<RpcStatus>;
 </script>
 
 <Dialog bind:open>
@@ -190,7 +173,7 @@
           </Button>
           <Button
             type="primary"
-            loading={$updaterStatus.isFetching}
+            loading={$connectToGithubMutation.isLoading}
             on:click={() => updateGithubUrl(false)}>Continue</Button
           >
         </DialogFooter>

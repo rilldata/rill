@@ -306,7 +306,14 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 }
 
 func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.ConnectProjectToGithubRequest) (*adminv1.ConnectProjectToGithubResponse, error) {
-	// TODO: telemetry
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.repo", req.Repo),
+		attribute.String("args.branch", req.Branch),
+		attribute.String("args.subpath", req.Subpath),
+		attribute.Bool("args.force", req.Force),
+	)
 
 	// Find project
 	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
@@ -954,8 +961,8 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
-func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch, subpath, token string, force bool) error {
-	ctx, cancel := context.WithTimeout(context.Background(), archivePullTimeout)
+func (s *Server) pushArchiveToGit(ctx context.Context, downloadURL, repo, branch, subpath, token string, force bool) error {
+	ctx, cancel := context.WithTimeout(ctx, archivePullTimeout)
 	defer cancel()
 
 	// generate a temp dir to extract the archive
@@ -965,7 +972,7 @@ func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch
 	}
 	defer os.RemoveAll(dir)
 
-	downloadDst := filepath.Join(dir, "admin_driver_zipped_repo.tar.gz")
+	downloadDst := filepath.Join(dir, "zipped_repo.tar.gz")
 	// use a subfolder for working with git
 	gitPath := filepath.Join(dir, "proj")
 	// projPath is the target for extracting the archive
@@ -1030,7 +1037,8 @@ func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch
 		}
 	}
 
-	err = archive.Download(ctx, downloadUrl, downloadDst, projPath, false)
+	// extract the archive once the folder is prepped with git
+	err = archive.Download(ctx, downloadURL, downloadDst, projPath, false)
 	if err != nil {
 		return err
 	}
@@ -1068,6 +1076,7 @@ func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch
 	}
 
 	if empty {
+		// we need to add a remote if the repo was completely empty
 		_, err = ghRepo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{repo}})
 		if err != nil {
 			return fmt.Errorf("failed to create remote: %w", err)
@@ -1144,7 +1153,7 @@ func readFile(f billy.File) (string, error) {
 			continue
 		}
 		buf = buf[:n]
-		c = c + string(buf)
+		c += string(buf)
 	}
 
 	return c, nil

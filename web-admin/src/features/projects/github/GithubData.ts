@@ -40,8 +40,8 @@ export class GithubData {
     >
   >;
 
-  private userPromptWindow: Window | undefined;
-  private windowCheckTimer: ReturnType<typeof setInterval>;
+  private userPromptWindow: Window | null;
+  private windowCheckTimer: ReturnType<typeof setInterval> | null;
 
   public readonly status = derived(
     [this.userStatus, this.userRepos],
@@ -69,7 +69,7 @@ export class GithubData {
 
     await waitUntil(() => !get(this.userStatus).isFetching);
     const userStatus = get(this.userStatus).data;
-    if (!userStatus || userStatus?.hasAccess) {
+    if (!userStatus || userStatus?.hasAccess || !userStatus.grantAccessUrl) {
       return;
     }
 
@@ -98,14 +98,18 @@ export class GithubData {
       // no-op
     }
     if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
-    this.userPromptWindow = window.open(url, "", "width=1024,height=600");
+    this.userPromptWindow = window.open(
+      url,
+      "githubWindow",
+      "width=1024,height=600",
+    );
 
     // periodically check if the new window was closed
     this.windowCheckTimer = setInterval(() => {
-      if (!this.userPromptWindow.closed) return;
+      if (!this.userPromptWindow?.closed) return;
       clearInterval(this.windowCheckTimer);
-      this.windowCheckTimer = undefined;
-      this.userPromptWindow = undefined;
+      this.windowCheckTimer = null;
+      this.userPromptWindow = null;
       void this.refetch();
     }, 200);
   }

@@ -16,8 +16,8 @@ import (
 	"github.com/c2h5oh/datasize"
 )
 
-func Download(ctx context.Context, downloadUrl, downloadDst, projPath string, clean bool) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadUrl, http.NoBody)
+func Download(ctx context.Context, downloadURL, downloadDst, projPath string, clean bool) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, downloadURL, http.NoBody)
 	if err != nil {
 		return err
 	}

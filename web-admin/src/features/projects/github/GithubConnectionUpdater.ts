@@ -1,37 +1,17 @@
 import {
   createAdminServiceConnectProjectToGithub,
-  createAdminServiceUpdateProject,
+  getAdminServiceGetGithubUserStatusQueryKey,
+  getAdminServiceGetProjectQueryKey,
 } from "@rilldata/web-admin/client";
 import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
-import { derived, get, writable } from "svelte/store";
+import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { invalidateRuntimeQueries } from "@rilldata/web-common/runtime-client/invalidation";
+import { get, writable } from "svelte/store";
 
 export class GithubConnectionUpdater {
   public readonly showOverwriteConfirmation = writable(false);
-  public isCreate: boolean;
-
-  private readonly updateProjectMutation = createAdminServiceUpdateProject();
-  private readonly connectToGithubMutation =
+  public readonly connectToGithubMutation =
     createAdminServiceConnectProjectToGithub();
-
-  public readonly status = derived(
-    [this.updateProjectMutation, this.connectToGithubMutation],
-    ([updateProjectMutation, connectToGithubMutation]) => {
-      if (
-        updateProjectMutation.isLoading ||
-        connectToGithubMutation.isLoading
-      ) {
-        return {
-          isFetching: true,
-          error: undefined,
-        };
-      }
-
-      return {
-        isFetching: false,
-        error: updateProjectMutation.error ?? connectToGithubMutation.error,
-      };
-    },
-  );
 
   public async update({
     organization,
@@ -40,6 +20,7 @@ export class GithubConnectionUpdater {
     subpath,
     branch,
     force,
+    instanceId,
   }: {
     organization: string;
     project: string;
@@ -47,30 +28,30 @@ export class GithubConnectionUpdater {
     subpath: string;
     branch: string;
     force: boolean;
+    instanceId: string;
   }) {
     try {
-      if (this.isCreate) {
-        await get(this.connectToGithubMutation).mutateAsync({
-          organization,
-          project,
-          data: {
-            repo: githubUrl,
-            subpath,
-            branch,
-            force,
-          },
-        });
-      } else {
-        await get(this.updateProjectMutation).mutateAsync({
-          organizationName: organization,
-          name: project,
-          data: {
-            githubUrl,
-            subpath,
-            prodBranch: branch,
-          },
-        });
-      }
+      await get(this.connectToGithubMutation).mutateAsync({
+        organization,
+        project,
+        data: {
+          repo: githubUrl,
+          subpath,
+          branch,
+          force,
+        },
+      });
+      void queryClient.refetchQueries(
+        getAdminServiceGetProjectQueryKey(organization, project),
+        {
+          // avoid refetching createAdminServiceGetProjectWithBearerToken
+          exact: true,
+        },
+      );
+      void queryClient.refetchQueries(
+        getAdminServiceGetGithubUserStatusQueryKey(),
+      );
+      void invalidateRuntimeQueries(queryClient, instanceId);
     } catch (e) {
       if (force) {
         throw e;
