@@ -9,7 +9,7 @@ import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as ne
 
 **Installing Rill [Linux / MacOS]**
 
-Let’s install the Rill binary to your local machine.
+Let’s install the Rill binary to your local machine. If you've already done this, you can go ahead and skip to the `rill` start command.
 
 You can follow the steps in <a href="https://docs.rilldata.com/" target="_blank"> our documentation</a> or run the following from the CLI:
 

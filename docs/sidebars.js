@@ -78,6 +78,7 @@ const sidebars = {
                 'tutorials/rill_learn_100/deploy/106_1'
               ]
             },
+            'tutorials/rill_learn_100/105_0',
            
             ]
         },
@@ -105,7 +106,8 @@ const sidebars = {
           description: 'For our friends from ClickHouse, a revamped guide.',
           items: [
               'tutorials/rill_clickhouse/r_ch_0',
-              'tutorials/rill_clickhouse/r_ch_1'
+              'tutorials/rill_clickhouse/r_ch_1',
+              'tutorials/rill_clickhouse/r_ch_2',
             ]
         },
       ],
