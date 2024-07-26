@@ -46,10 +46,32 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	if err != nil {
 		return err
 	}
+	if srcConfig.SQL == "" {
+		return fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
+	}
 
 	sinkCfg, err := parseSinkProperties(sinkProps)
 	if err != nil {
 		return err
+	}
+
+	mdConfig := &mdConfigProps{}
+	err = mapstructure.WeakDecode(t.from.Config(), mdConfig)
+	if err != nil {
+		return err
+	}
+
+	// get token
+	var token string
+	if srcConfig.Token != "" {
+		token = srcConfig.Token
+	} else if mdConfig.Token != "" {
+		token = mdConfig.Token
+	} else if mdConfig.AllowHostAccess {
+		token = os.Getenv("motherduck_token")
+	}
+	if token == "" {
+		return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
 	}
 
 	t.logger = t.logger.With(zap.String("source", sinkCfg.Table))
@@ -71,38 +93,6 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 	}()
 
 	err = t.to.WithConnection(ctx, 1, true, false, func(ctx, ensuredCtx context.Context, _ *sql.Conn) error {
-		res, err := t.to.Execute(ctx, &drivers.Statement{Query: "SELECT current_database(),current_schema();"})
-		if err != nil {
-			return err
-		}
-
-		var localDB, localSchema string
-		for res.Next() {
-			if err := res.Scan(&localDB, &localSchema); err != nil {
-				_ = res.Close()
-				return err
-			}
-		}
-		_ = res.Close()
-
-		mdConfig := &mdConfigProps{}
-		err = mapstructure.WeakDecode(t.from.Config(), mdConfig)
-		if err != nil {
-			return err
-		}
-
-		// get token
-		var token string
-		if srcConfig.Token != "" {
-			token = srcConfig.Token
-		} else if mdConfig.Token != "" {
-			token = mdConfig.Token
-		} else if mdConfig.AllowHostAccess {
-			token = os.Getenv("motherduck_token")
-		}
-		if token == "" {
-			return fmt.Errorf("no motherduck token found. Refer to this documentation for instructions: https://docs.rilldata.com/reference/connectors/motherduck")
-		}
 		// load motherduck extension; connect to motherduck service
 		err = t.to.Exec(ctx, &drivers.Statement{Query: "INSTALL 'motherduck'; LOAD 'motherduck';"})
 		if err != nil {
@@ -115,55 +105,11 @@ func (t *motherduckToDuckDB) Transfer(ctx context.Context, srcProps, sinkProps m
 			}
 		}
 
-		if err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s'", srcConfig.DSN)}); err != nil {
-			if !strings.Contains(err.Error(), "already exists") {
-				return fmt.Errorf("failed to connect to motherduck %w", err)
-			}
-		}
-
-		var names []string
-
-		var db string
-		// get list of all motherduck databases
-		res, err = t.to.Execute(ctx, &drivers.Statement{Query: "SELECT name FROM md_databases();"})
-		if err != nil {
-			return err
-		}
-		defer res.Close()
-
-		for res.Next() {
-			var name string
-			if res.Scan(&name) != nil {
-				return err
-			}
-			names = append(names, name)
-		}
-		// single motherduck db, use db to allow user to run query without specifying db name
-		if len(names) == 1 {
-			db = names[0]
-		}
-
-		if db != "" {
-			err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s;", safeName(db))})
-			if err != nil {
-				return err
-			}
-
-			defer func(ctx context.Context) { // revert back to localdb
-				err = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("USE %s.%s;", safeName(localDB), safeName(localSchema))})
-				if err != nil {
-					t.logger.Error("failed to switch to local database", zap.Error(err))
-				}
-			}(ensuredCtx)
-		}
-
-		if srcConfig.SQL == "" {
-			return fmt.Errorf("property \"sql\" is mandatory for connector \"motherduck\"")
-		}
-
+		// ignore attach error since it might be already attached
+		_ = t.to.Exec(ctx, &drivers.Statement{Query: fmt.Sprintf("ATTACH '%s'", srcConfig.DSN)})
 		userQuery := strings.TrimSpace(srcConfig.SQL)
 		userQuery, _ = strings.CutSuffix(userQuery, ";") // trim trailing semi colon
-		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s.%s.%s AS (%s\n);", safeName(localDB), safeName(localSchema), safeName(tmpTable), userQuery)
+		query := fmt.Sprintf("CREATE OR REPLACE TABLE %s AS (%s\n);", safeName(tmpTable), userQuery)
 		return t.to.Exec(ctx, &drivers.Statement{Query: query})
 	})
 	if err != nil {
