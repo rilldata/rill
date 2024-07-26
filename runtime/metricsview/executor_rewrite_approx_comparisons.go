@@ -100,9 +100,9 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 
 		// ---- CTE Optimization ---- //
 		// make FromSelect a CTE and set IsCTE flag on FromSelect
-		cte := n.FromSelect
-		n.CTEs = append(n.CTEs, cte)
 		n.FromSelect.IsCTE = true
+		cte := n.FromSelect
+		a.CTEs = append(a.CTEs, cte)
 
 		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
 		for _, dim := range cte.DimFields {
@@ -125,9 +125,9 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 
 		// ---- CTE Optimization ---- //
 		// make JoinComparisonSelect a CTE and set IsCTE flag on JoinComparisonSelect
-		cte := n.JoinComparisonSelect
-		n.CTEs = append(n.CTEs, cte)
 		n.JoinComparisonSelect.IsCTE = true
+		cte := n.JoinComparisonSelect
+		a.CTEs = append(a.CTEs, cte)
 
 		// now change the FromSelect WHERE clause to use selected dim values from CTE
 		for _, dim := range cte.DimFields {
@@ -149,9 +149,9 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 
 		// ---- CTE Optimization ---- //
 		// make FromSelect a CTE and set IsCTE flag on FromSelect
-		cte := n.FromSelect
-		n.CTEs = append(n.CTEs, cte)
 		n.FromSelect.IsCTE = true
+		cte := n.FromSelect
+		a.CTEs = append(a.CTEs, cte)
 
 		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
 		for _, dim := range cte.DimFields {

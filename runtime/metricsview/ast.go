@@ -15,6 +15,8 @@ import (
 type AST struct {
 	// Root of the AST
 	Root *SelectNode
+	// List of CTEs to add to the query
+	CTEs []*SelectNode
 
 	// Cached internal state for building the AST
 	underlyingTable *string
@@ -38,7 +40,6 @@ type AST struct {
 type SelectNode struct {
 	Alias                string           // Alias for the node used by outer SELECTs to reference it.
 	IsCTE                bool             // Whether this node is a Common Table Expression
-	CTEs                 []*SelectNode    // Common Table Expressions to add to the query
 	DimFields            []FieldNode      // Dimensions fields to select
 	MeasureFields        []FieldNode      // Measure fields to select
 	FromTable            *string          // Underlying table expression to select from (if set, FromSelect must not be set)

@@ -1,7 +1,6 @@
 package metricsview
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -12,6 +11,22 @@ func (a *AST) SQL() (string, []any, error) {
 	b := &sqlBuilder{
 		ast: a,
 		out: &strings.Builder{},
+	}
+
+	if len(a.CTEs) > 0 {
+		b.out.WriteString("WITH ")
+		for i, cte := range a.CTEs {
+			if i > 0 {
+				b.out.WriteString(", ")
+			}
+			b.out.WriteString(cte.Alias)
+			b.out.WriteString(" AS (")
+			err := b.writeSelect(cte)
+			if err != nil {
+				return "", nil, err
+			}
+			b.out.WriteString(") ")
+		}
 	}
 
 	var err error
@@ -75,19 +90,6 @@ func (b *sqlBuilder) writeSelectWithLabels(n *SelectNode) error {
 }
 
 func (b *sqlBuilder) writeSelect(n *SelectNode) error {
-	if len(n.CTEs) > 0 {
-		b.out.WriteString("WITH ")
-		for _, cte := range n.CTEs {
-			b.out.WriteString(cte.Alias)
-			b.out.WriteString(" AS (")
-			err := b.writeSelect(cte)
-			if err != nil {
-				return err
-			}
-			b.out.WriteString(") ")
-		}
-	}
-
 	b.out.WriteString("SELECT ")
 
 	for i, f := range n.DimFields {
@@ -124,20 +126,11 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 	} else if n.FromSelect != nil {
 		if n.FromSelect.IsCTE {
 			b.out.WriteString(n.FromSelect.Alias)
-			if n.JoinComparisonSelect == nil {
-				return fmt.Errorf("internal: FromSelect is a CTE but JoinComparisonSelect is nil, this is used only for comparison queries")
-			}
-			// find the CTE for FromSelect
-			var cte *SelectNode
-			for _, c := range n.CTEs {
-				if c.Alias == n.FromSelect.Alias {
-					cte = c
-					break
+			if n.JoinComparisonSelect != nil {
+				err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
+				if err != nil {
+					return err
 				}
-			}
-			err := b.writeJoin(n.JoinComparisonType, cte, n.JoinComparisonSelect)
-			if err != nil {
-				return err
 			}
 		} else {
 			b.out.WriteByte('(')
