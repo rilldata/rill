@@ -51,10 +51,24 @@ const sidebars = {
                 type: 'category',
                 label: 'Modifying the Metric-Views',
                 items: [
-                  'tutorials/rill_learn_100/dashboard/103_0',
-                  'tutorials/rill_learn_100/dashboard/103_1',
-                  'tutorials/rill_learn_100/dashboard/103_2',
-                   'tutorials/rill_learn_100/dashboard/103_3'
+                  {
+                    type: 'category',
+                    label: 'via YAML',
+                    items: [
+                      'tutorials/rill_learn_100/dashboard/103_0',
+                      'tutorials/rill_learn_100/dashboard/103_1',
+                      'tutorials/rill_learn_100/dashboard/103_2',
+                       'tutorials/rill_learn_100/dashboard/103_3'
+                    ]
+                  },
+                  {
+                    type: 'category',
+                    label: 'via UI',
+                    items: [
+                      'tutorials/rill_learn_100/dashboard/103_0_u'
+                    ]
+                  },
+
                 ]
               },
 
@@ -74,11 +88,25 @@ const sidebars = {
               type: 'category',
               label: 'Deploy to Rill Cloud',
               items: [
-                'tutorials/rill_learn_100/deploy/106_0',
-                'tutorials/rill_learn_100/deploy/106_1'
+                {
+                  type: 'category',
+                  label: 'via CLI',
+                  items: [
+                     'tutorials/rill_learn_100/deploy/106_0',
+                     'tutorials/rill_learn_100/deploy/106_1'
+                  ]
+                },
+                {
+                  type: 'category',
+                  label: 'via UI',
+                  items: [
+                    'tutorials/rill_learn_100/deploy/106_0_u'
+                  ]
+                },
+
               ]
             },
-            'tutorials/rill_learn_100/105_0',
+            'tutorials/rill_learn_100/107_0',
            
             ]
         },
