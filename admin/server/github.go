@@ -6,17 +6,26 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
+	"github.com/rilldata/rill/admin/pkg/archive"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
-	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -32,6 +41,7 @@ const (
 	githubcookieName        = "github_auth"
 	githubcookieFieldState  = "github_state"
 	githubcookieFieldRemote = "github_remote"
+	archivePullTimeout      = 10 * time.Minute
 )
 
 func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithubUserStatusRequest) (*adminv1.GetGithubUserStatusResponse, error) {
@@ -329,26 +339,18 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
-	depl, err := s.admin.DB.FindDeployment(ctx, *proj.ProdDeploymentID)
+	asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, err
 	}
 
-	rt, err := s.admin.OpenRuntimeClient(depl)
+	downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-
-	_, err = rt.ConnectToGithubRepo(ctx, &runtimev1.ConnectToGithubRepoRequest{
-		InstanceId:    depl.RuntimeInstanceID,
-		Repo:          req.Repo,
-		Branch:        req.Branch,
-		Subpath:       req.Subpath,
-		GhAccessToken: token,
-		GhAccount:     user.GithubUsername,
-	})
+	err = s.pushArchiveToGit(ctx, downloadURL, req.Repo, req.Branch, req.Subpath, token)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -942,6 +944,95 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	}
 
 	return repos, nil
+}
+
+func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch, subpath, token string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), archivePullTimeout)
+	defer cancel()
+
+	// generate a temp dir to extract the archive
+	dir, err := os.MkdirTemp(os.TempDir(), "extracted_archives")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(dir)
+
+	downloadDst := filepath.Join(dir, "admin_driver_zipped_repo.tar.gz")
+	// use a subfolder for working with git
+	gitPath := filepath.Join(dir, "proj")
+	// projPath is the target for extracting the archive
+	projPath := gitPath
+	if subpath != "" {
+		projPath = filepath.Join(projPath, subpath)
+	}
+	err = os.MkdirAll(projPath, fs.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	gitAuth := &githttp.BasicAuth{Username: "x-access-token", Password: token}
+
+	var ghRepo *git.Repository
+	isEmpty := false
+	ghRepo, err = git.PlainClone(gitPath, false, &git.CloneOptions{
+		URL:           repo,
+		Auth:          gitAuth,
+		RemoteName:    "origin",
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		if errors.Is(err, transport.ErrEmptyRemoteRepository) {
+			isEmpty = true
+			ghRepo, err = git.PlainInitWithOptions(gitPath, &git.PlainInitOptions{
+				InitOptions: git.InitOptions{
+					DefaultBranch: plumbing.NewBranchReferenceName(branch),
+				},
+				Bare: false,
+			})
+			if err != nil {
+				return fmt.Errorf("failed to init git repo: %w", err)
+			}
+		} else {
+			return fmt.Errorf("failed to init git repo: %w", err)
+		}
+	}
+
+	wt, err := ghRepo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	err = archive.Download(ctx, downloadUrl, downloadDst, projPath, false)
+	if err != nil {
+		return err
+	}
+
+	// git add .
+	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+		return fmt.Errorf("failed to add files to git: %w", err)
+	}
+
+	// git commit -m
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	if err != nil {
+		if !errors.Is(err, git.ErrEmptyCommit) {
+			return fmt.Errorf("failed to commit files to git: %w", err)
+		}
+	}
+
+	if isEmpty {
+		_, err = ghRepo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{repo}})
+		if err != nil {
+			return fmt.Errorf("failed to create remote: %w", err)
+		}
+	}
+
+	if err := ghRepo.PushContext(ctx, &git.PushOptions{Auth: gitAuth}); err != nil {
+		return fmt.Errorf("failed to push to remote %q : %w", repo, err)
+	}
+
+	return nil
 }
 
 func fromStringPtr(s *string) string {

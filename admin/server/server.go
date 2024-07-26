@@ -150,7 +150,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 	server := grpc.NewServer(
 		grpc.ChainStreamInterceptor(
 			middleware.TimeoutStreamServerInterceptor(timeoutSelector),
-			observability.LoggingStreamServerInterceptor(s.logger),
+			//observability.LoggingStreamServerInterceptor(s.logger),
 			errorMappingStreamServerInterceptor(),
 			grpc_auth.StreamServerInterceptor(checkUserAgent),
 			grpc_validator.StreamServerInterceptor(),
@@ -159,7 +159,7 @@ func (s *Server) ServeGRPC(ctx context.Context) error {
 		),
 		grpc.ChainUnaryInterceptor(
 			middleware.TimeoutUnaryServerInterceptor(timeoutSelector),
-			observability.LoggingUnaryServerInterceptor(s.logger),
+			//observability.LoggingUnaryServerInterceptor(s.logger),
 			errorMappingUnaryServerInterceptor(),
 			grpc_auth.UnaryServerInterceptor(checkUserAgent),
 			grpc_validator.UnaryServerInterceptor(),

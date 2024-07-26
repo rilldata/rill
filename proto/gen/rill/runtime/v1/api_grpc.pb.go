@@ -50,7 +50,6 @@ const (
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
 	RuntimeService_ListNotifierConnectors_FullMethodName  = "/rill.runtime.v1.RuntimeService/ListNotifierConnectors"
 	RuntimeService_IssueDevJWT_FullMethodName             = "/rill.runtime.v1.RuntimeService/IssueDevJWT"
-	RuntimeService_ConnectToGithubRepo_FullMethodName     = "/rill.runtime.v1.RuntimeService/ConnectToGithubRepo"
 )
 
 // RuntimeServiceClient is the client API for RuntimeService service.
@@ -126,7 +125,6 @@ type RuntimeServiceClient interface {
 	ListNotifierConnectors(ctx context.Context, in *ListNotifierConnectorsRequest, opts ...grpc.CallOption) (*ListNotifierConnectorsResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(ctx context.Context, in *IssueDevJWTRequest, opts ...grpc.CallOption) (*IssueDevJWTResponse, error)
-	ConnectToGithubRepo(ctx context.Context, in *ConnectToGithubRepoRequest, opts ...grpc.CallOption) (*ConnectToGithubRepoResponse, error)
 }
 
 type runtimeServiceClient struct {
@@ -516,16 +514,6 @@ func (c *runtimeServiceClient) IssueDevJWT(ctx context.Context, in *IssueDevJWTR
 	return out, nil
 }
 
-func (c *runtimeServiceClient) ConnectToGithubRepo(ctx context.Context, in *ConnectToGithubRepoRequest, opts ...grpc.CallOption) (*ConnectToGithubRepoResponse, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ConnectToGithubRepoResponse)
-	err := c.cc.Invoke(ctx, RuntimeService_ConnectToGithubRepo_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // RuntimeServiceServer is the server API for RuntimeService service.
 // All implementations must embed UnimplementedRuntimeServiceServer
 // for forward compatibility
@@ -599,7 +587,6 @@ type RuntimeServiceServer interface {
 	ListNotifierConnectors(context.Context, *ListNotifierConnectorsRequest) (*ListNotifierConnectorsResponse, error)
 	// IssueDevJWT issues a JWT for mimicking a user in local development.
 	IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error)
-	ConnectToGithubRepo(context.Context, *ConnectToGithubRepoRequest) (*ConnectToGithubRepoResponse, error)
 	mustEmbedUnimplementedRuntimeServiceServer()
 }
 
@@ -699,9 +686,6 @@ func (UnimplementedRuntimeServiceServer) ListNotifierConnectors(context.Context,
 }
 func (UnimplementedRuntimeServiceServer) IssueDevJWT(context.Context, *IssueDevJWTRequest) (*IssueDevJWTResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method IssueDevJWT not implemented")
-}
-func (UnimplementedRuntimeServiceServer) ConnectToGithubRepo(context.Context, *ConnectToGithubRepoRequest) (*ConnectToGithubRepoResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method ConnectToGithubRepo not implemented")
 }
 func (UnimplementedRuntimeServiceServer) mustEmbedUnimplementedRuntimeServiceServer() {}
 
@@ -1283,24 +1267,6 @@ func _RuntimeService_IssueDevJWT_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
-func _RuntimeService_ConnectToGithubRepo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ConnectToGithubRepoRequest)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(RuntimeServiceServer).ConnectToGithubRepo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: RuntimeService_ConnectToGithubRepo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(RuntimeServiceServer).ConnectToGithubRepo(ctx, req.(*ConnectToGithubRepoRequest))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
 // RuntimeService_ServiceDesc is the grpc.ServiceDesc for RuntimeService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1419,10 +1385,6 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "IssueDevJWT",
 			Handler:    _RuntimeService_IssueDevJWT_Handler,
-		},
-		{
-			MethodName: "ConnectToGithubRepo",
-			Handler:    _RuntimeService_ConnectToGithubRepo_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

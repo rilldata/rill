@@ -31,8 +31,6 @@ import type {
   RuntimeServiceDeleteInstanceBody,
   V1EditInstanceResponse,
   RuntimeServiceEditInstanceBody,
-  V1ConnectToGithubRepoResponse,
-  RuntimeServiceConnectToGithubRepoBody,
   V1AnalyzeConnectorsResponse,
   V1ListNotifierConnectorsResponse,
   V1ListFilesResponse,
@@ -684,64 +682,6 @@ export const createRuntimeServiceEditInstance = <
     {
       instanceId: string;
       data: RuntimeServiceEditInstanceBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
-};
-export const runtimeServiceConnectToGithubRepo = (
-  instanceId: string,
-  runtimeServiceConnectToGithubRepoBody: RuntimeServiceConnectToGithubRepoBody,
-) => {
-  return httpClient<V1ConnectToGithubRepoResponse>({
-    url: `/v1/instances/${instanceId}/connect-to-github`,
-    method: "post",
-    headers: { "Content-Type": "application/json" },
-    data: runtimeServiceConnectToGithubRepoBody,
-  });
-};
-
-export type RuntimeServiceConnectToGithubRepoMutationResult = NonNullable<
-  Awaited<ReturnType<typeof runtimeServiceConnectToGithubRepo>>
->;
-export type RuntimeServiceConnectToGithubRepoMutationBody =
-  RuntimeServiceConnectToGithubRepoBody;
-export type RuntimeServiceConnectToGithubRepoMutationError =
-  ErrorType<RpcStatus>;
-
-export const createRuntimeServiceConnectToGithubRepo = <
-  TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
-    Awaited<ReturnType<typeof runtimeServiceConnectToGithubRepo>>,
-    TError,
-    {
-      instanceId: string;
-      data: RuntimeServiceConnectToGithubRepoBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof runtimeServiceConnectToGithubRepo>>,
-    {
-      instanceId: string;
-      data: RuntimeServiceConnectToGithubRepoBody;
-    }
-  > = (props) => {
-    const { instanceId, data } = props ?? {};
-
-    return runtimeServiceConnectToGithubRepo(instanceId, data);
-  };
-
-  return createMutation<
-    Awaited<ReturnType<typeof runtimeServiceConnectToGithubRepo>>,
-    TError,
-    {
-      instanceId: string;
-      data: RuntimeServiceConnectToGithubRepoBody;
     },
     TContext
   >(mutationFn, mutationOptions);
