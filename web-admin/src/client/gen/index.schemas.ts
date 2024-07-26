@@ -229,6 +229,7 @@ export type AdminServiceConnectProjectToGithubBody = {
   repo?: string;
   branch?: string;
   subpath?: string;
+  force?: boolean;
 };
 
 export type AdminServiceListProjectMemberUsergroupsParams = {

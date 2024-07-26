@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"io/fs"
 	"net/http"
 	"os"
@@ -13,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-git/go-billy/v5"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
@@ -43,6 +45,12 @@ const (
 	githubcookieFieldRemote = "github_remote"
 	archivePullTimeout      = 10 * time.Minute
 )
+
+var allowedPaths = []string{
+	".git",
+	"README.md",
+	"LICENSE",
+}
 
 func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithubUserStatusRequest) (*adminv1.GetGithubUserStatusResponse, error) {
 	// Check the request is made by an authenticated user
@@ -348,7 +356,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
-	err = s.pushArchiveToGit(ctx, downloadURL, req.Repo, req.Branch, req.Subpath, token)
+	err = s.pushArchiveToGit(ctx, downloadURL, req.Repo, req.Branch, req.Subpath, token, req.Force)
 	if err != nil {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
@@ -946,7 +954,7 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
-func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch, subpath, token string) error {
+func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch, subpath, token string, force bool) error {
 	ctx, cancel := context.WithTimeout(context.Background(), archivePullTimeout)
 	defer cancel()
 
@@ -973,17 +981,16 @@ func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch
 	gitAuth := &githttp.BasicAuth{Username: "x-access-token", Password: token}
 
 	var ghRepo *git.Repository
-	isEmpty := false
+	empty := false
 	ghRepo, err = git.PlainClone(gitPath, false, &git.CloneOptions{
 		URL:           repo,
 		Auth:          gitAuth,
-		RemoteName:    "origin",
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
 		SingleBranch:  true,
 	})
 	if err != nil {
 		if errors.Is(err, transport.ErrEmptyRemoteRepository) {
-			isEmpty = true
+			empty = true
 			ghRepo, err = git.PlainInitWithOptions(gitPath, &git.PlainInitOptions{
 				InitOptions: git.InitOptions{
 					DefaultBranch: plumbing.NewBranchReferenceName(branch),
@@ -1003,9 +1010,48 @@ func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch
 		return fmt.Errorf("failed to get worktree: %w", err)
 	}
 
+	var wtc worktreeContents
+	if !empty {
+		wtc, err = readWorktree(wt, subpath)
+		if err != nil {
+			return fmt.Errorf("failed to read worktree: %w", err)
+		}
+
+		if len(wtc.otherPaths) > 0 && !force {
+			return fmt.Errorf("worktree has additional contents")
+		}
+	}
+
+	// remove all the other paths
+	for _, path := range wtc.otherPaths {
+		err = os.RemoveAll(filepath.Join(projPath, path))
+		if err != nil {
+			return err
+		}
+	}
+
 	err = archive.Download(ctx, downloadUrl, downloadDst, projPath, false)
 	if err != nil {
 		return err
+	}
+
+	// add back the older gitignore contents if present
+	if wtc.gitignore != "" {
+		gi, err := os.ReadFile(filepath.Join(projPath, ".gitignore"))
+		if err != nil {
+			return err
+		}
+
+		// if the new gitignore is not the same then it was overwritten during extract
+		if string(gi) != wtc.gitignore {
+			// append the new contents to the end
+			gi = append([]byte(fmt.Sprintf("%s\n", wtc.gitignore)), gi...)
+
+			err = os.WriteFile(filepath.Join(projPath, ".gitignore"), gi, fs.ModePerm)
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	// git add .
@@ -1021,7 +1067,7 @@ func (s *Server) pushArchiveToGit(ctx context.Context, downloadUrl, repo, branch
 		}
 	}
 
-	if isEmpty {
+	if empty {
 		_, err = ghRepo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{repo}})
 		if err != nil {
 			return fmt.Errorf("failed to create remote: %w", err)
@@ -1040,4 +1086,66 @@ func fromStringPtr(s *string) string {
 		return ""
 	}
 	return *s
+}
+
+type worktreeContents struct {
+	gitignore  string
+	otherPaths []string
+}
+
+func readWorktree(wt *git.Worktree, subpath string) (worktreeContents, error) {
+	var wtc worktreeContents
+
+	files, err := wt.Filesystem.ReadDir(subpath)
+	if err != nil {
+		return worktreeContents{}, err
+	}
+	for _, file := range files {
+		if file.Name() == ".gitignore" {
+			f, err := wt.Filesystem.Open(filepath.Join(subpath, file.Name()))
+			if err != nil {
+				return worktreeContents{}, err
+			}
+			wtc.gitignore, err = readFile(f)
+			if err != nil {
+				return worktreeContents{}, err
+			}
+		} else {
+			found := false
+			for _, path := range allowedPaths {
+				if file.Name() == path {
+					found = true
+					break
+				}
+			}
+			if !found {
+				wtc.otherPaths = append(wtc.otherPaths, file.Name())
+			}
+		}
+	}
+
+	return wtc, nil
+}
+
+func readFile(f billy.File) (string, error) {
+	defer f.Close()
+	buf := make([]byte, 0, 32*1024)
+	c := ""
+
+	for {
+		n, err := f.Read(buf[:cap(buf)])
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return "", err
+		}
+		if n == 0 {
+			continue
+		}
+		buf = buf[:n]
+		c = c + string(buf)
+	}
+
+	return c, nil
 }

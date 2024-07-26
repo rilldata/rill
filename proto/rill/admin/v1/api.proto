@@ -1608,6 +1608,7 @@ message ConnectProjectToGithubRequest {
   string repo = 3;
   string branch = 4;
   string subpath = 5;
+  bool force = 6;
 }
 
 message ConnectProjectToGithubResponse {}

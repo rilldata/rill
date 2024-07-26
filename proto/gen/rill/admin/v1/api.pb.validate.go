@@ -21202,6 +21202,8 @@ func (m *ConnectProjectToGithubRequest) validate(all bool) error {
 
 	// no validation rules for Subpath
 
+	// no validation rules for Force
+
 	if len(errors) > 0 {
 		return ConnectProjectToGithubRequestMultiError(errors)
 	}

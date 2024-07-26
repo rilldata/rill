@@ -806,6 +806,8 @@ paths:
                 type: string
               subpath:
                 type: string
+              force:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:

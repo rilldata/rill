@@ -1,14 +1,13 @@
 <script lang="ts">
   import {
-    createAdminServiceConnectProjectToGithub,
     createAdminServiceGetProject,
-    createAdminServiceUpdateProject,
     getAdminServiceGetGithubUserStatusQueryKey,
     getAdminServiceGetProjectQueryKey,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
+  import { GithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/GithubConnectionUpdater";
   import { getGithubData } from "@rilldata/web-admin/features/projects/github/GithubData";
-  import UpdateGithubRepoButton from "@rilldata/web-admin/features/projects/github/UpdateGithubRepoButton.svelte";
+  import GithubOverwriteConfirmationDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmationDialog.svelte";
   import {
     Dialog,
     DialogContent,
@@ -69,32 +68,23 @@
     onRepoChange(repoSelections[0].value);
   }
 
-  const updateProject = createAdminServiceUpdateProject();
-  const connectToGithub = createAdminServiceConnectProjectToGithub();
-  async function updateGithubUrl() {
-    const repo = $userRepos.data?.repos?.find((r) => r.url === githubUrl);
-    if (!repo) return; // shouldnt happen
-
-    if (currentUrl) {
-      await $updateProject.mutateAsync({
-        organizationName: organization,
-        name: project,
-        data: {
-          githubUrl,
-          subpath,
-          prodBranch: branch,
-        },
-      });
-    } else {
-      await $connectToGithub.mutateAsync({
+  const githubConnectionUpdater = new GithubConnectionUpdater();
+  const updaterStatus = githubConnectionUpdater.status;
+  const showOverwriteConfirmation =
+    githubConnectionUpdater.showOverwriteConfirmation;
+  $: githubConnectionUpdater.isCreate = !currentUrl;
+  async function updateGithubUrl(force: boolean) {
+    if (
+      !(await githubConnectionUpdater.update({
         organization,
         project,
-        data: {
-          repo: githubUrl,
-          subpath,
-          branch,
-        },
-      });
+        githubUrl,
+        subpath,
+        branch,
+        force,
+      }))
+    ) {
+      return;
     }
 
     eventBus.emit("notification", {
@@ -119,8 +109,7 @@
   }
 
   $: error = ($status.error ??
-    $updateProject.error ??
-    $connectToGithub.error) as unknown as AxiosError<RpcStatus>;
+    $updaterStatus.error) as unknown as AxiosError<RpcStatus>;
 </script>
 
 <Dialog bind:open>
@@ -199,12 +188,20 @@
           <Button type="secondary" on:click={() => (open = false)}>
             Cancel
           </Button>
-          <UpdateGithubRepoButton
-            loading={$updateProject.isLoading}
-            onConnect={updateGithubUrl}
-          />
+          <Button
+            type="primary"
+            loading={$updaterStatus.isFetching}
+            on:click={() => updateGithubUrl(false)}>Continue</Button
+          >
         </DialogFooter>
       </div>
     </div>
   </DialogContent>
 </Dialog>
+
+<GithubOverwriteConfirmationDialog
+  bind:open={$showOverwriteConfirmation}
+  {githubUrl}
+  {subpath}
+  onConfirm={() => updateGithubUrl(true)}
+/>

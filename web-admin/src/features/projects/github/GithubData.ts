@@ -90,7 +90,27 @@ export class GithubData {
     this.openGithubConnectWindow(userStatus.grantAccessUrl);
   }
 
-  public async refetch() {
+  private openGithubConnectWindow(url: string) {
+    try {
+      // safeguard try catch
+      this.userPromptWindow?.close();
+    } catch (e) {
+      // no-op
+    }
+    if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
+    this.userPromptWindow = window.open(url, "", "width=1024,height=600");
+
+    // periodically check if the new window was closed
+    this.windowCheckTimer = setInterval(() => {
+      if (!this.userPromptWindow.closed) return;
+      clearInterval(this.windowCheckTimer);
+      this.windowCheckTimer = undefined;
+      this.userPromptWindow = undefined;
+      void this.refetch();
+    }, 200);
+  }
+
+  private async refetch() {
     const userStatus = get(this.userStatus).data;
     if (!userStatus?.hasAccess) {
       // refetch status if had no access
@@ -112,26 +132,6 @@ export class GithubData {
         getAdminServiceListGithubUserReposQueryKey(),
       );
     }
-  }
-
-  private openGithubConnectWindow(url: string) {
-    try {
-      // safeguard try catch
-      this.userPromptWindow?.close();
-    } catch (e) {
-      // no-op
-    }
-    if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
-    this.userPromptWindow = window.open(url, "", "width=1024,height=600");
-
-    // periodically check if the new window was closed
-    this.windowCheckTimer = setInterval(() => {
-      if (!this.userPromptWindow.closed) return;
-      clearInterval(this.windowCheckTimer);
-      this.windowCheckTimer = undefined;
-      this.userPromptWindow = undefined;
-      void this.refetch();
-    }, 200);
   }
 }
 

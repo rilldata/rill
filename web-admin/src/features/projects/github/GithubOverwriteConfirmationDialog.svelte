@@ -1,0 +1,69 @@
+<script lang="ts">
+  import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
+  import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@rilldata/web-common/components/alert-dialog/index.js";
+  import { Button } from "@rilldata/web-common/components/button/index.js";
+  import AlertCircleOutline from "@rilldata/web-common/components/icons/AlertCircleOutline.svelte";
+  import Input from "@rilldata/web-common/components/forms/Input.svelte";
+
+  export let open = false;
+  export let onConfirm: () => void;
+  export let githubUrl: string;
+  export let subpath: string;
+
+  let confirmInput = "";
+  $: confirmed = confirmInput === "overwrite";
+
+  $: path = getRepoNameFromGithubUrl(githubUrl) + subpath;
+
+  function close() {
+    confirmInput = "";
+    open = false;
+  }
+</script>
+
+<AlertDialog bind:open>
+  <AlertDialogTrigger asChild>
+    <div class="hidden"></div>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <AlertDialogHeader>
+      <AlertDialogTitle class="flex flex-row items-center">
+        <AlertCircleOutline />
+        <div>
+          Overwrite files in this {subpath ? "subpath" : "repository"}?
+        </div>
+      </AlertDialogTitle>
+      <AlertDialogDescription class="flex flex-col gap-y-1.5">
+        <div>
+          It appears that <b>{path}</b> is not empty. Rill will overwrite this repo’s
+          contents with this project.
+        </div>
+        <div class="mt-1">
+          Type <b>overwrite</b> in the box below to confirm:
+        </div>
+        <Input bind:value={confirmInput} id="confirmation" label="" />
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter class="mt-5">
+      <Button type="secondary" on:click={close}>Cancel</Button>
+      <Button
+        type="primary"
+        on:click={() => {
+          close();
+          onConfirm();
+        }}
+        disabled={!confirmed}
+      >
+        Continue
+      </Button>
+    </AlertDialogFooter>
+  </AlertDialogContent>
+</AlertDialog>
