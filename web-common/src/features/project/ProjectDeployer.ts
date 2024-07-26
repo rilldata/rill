@@ -61,7 +61,7 @@ export class ProjectDeployer {
     );
   }
 
-  public async validate() {
+  private async validate() {
     let validation = get(this.validation).data as DeployValidationResponse;
     if (validation?.deployedProjectId) {
       return true;
