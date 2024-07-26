@@ -88,21 +88,8 @@ const sidebars = {
               type: 'category',
               label: 'Deploy to Rill Cloud',
               items: [
-                {
-                  type: 'category',
-                  label: 'via CLI',
-                  items: [
-                     'tutorials/rill_learn_100/deploy/106_0',
-                     'tutorials/rill_learn_100/deploy/106_1'
-                  ]
-                },
-                {
-                  type: 'category',
-                  label: 'via UI',
-                  items: [
-                    'tutorials/rill_learn_100/deploy/106_0_u'
-                  ]
-                },
+                'tutorials/rill_learn_100/deploy/106_0',
+                'tutorials/rill_learn_100/deploy/106_0_u'
 
               ]
             },
@@ -116,7 +103,17 @@ const sidebars = {
           description: 'Advanced tutorials description',
           items: [
             'tutorials/rill_learn_200/201_0',
-            'tutorials/rill_learn_200/202_0'
+
+            {
+              type: 'category',
+              label: 'Rill Cloud Features',
+              description: 'Rill Cloud features description',
+              items: [
+                'tutorials/rill_learn_200/cloud_components/202_0',
+                'tutorials/rill_learn_200/cloud_components/202_1'
+              ]
+            },
+
           ]
         },
         {

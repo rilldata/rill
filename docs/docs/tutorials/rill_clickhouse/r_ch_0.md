@@ -13,7 +13,9 @@ In this course, we will accomplish the following:
 - Install the Rill binary locally [Linux/MacOS and Windows]
 - Start Rill from the CLI and use a sample project to get started
 - Connect to your Clickhouse Cloud instance. 
-- Visualize your tables in Rill.
+- Notes CH local vs CH Cloud
+- Visualize your tables locally in Rill.
+
 
 <br />
 
