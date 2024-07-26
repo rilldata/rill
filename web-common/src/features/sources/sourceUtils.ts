@@ -38,6 +38,10 @@ export function compileSourceYAML(
 
       const isSecretProperty = secretPropertyKeys.includes(key);
       if (isSecretProperty) {
+        // In Source YAML, explictly referencing `.env` secrets is not yet supported
+        // For now, `.env` secrets are implicitly referenced
+        return;
+
         return `${key}: "{{ .vars.${makeDotEnvConnectorKey(
           connector.name as string,
           key,
