@@ -28,7 +28,11 @@ export function getMetricsViewFields(
   return [
     ...visibleDimensions
       .map((dimension) => dimension.name)
-      .filter((dimension) => !filteredDimensions.includes(dimension)), // Hide all dimensions that are filtered
+      .filter(
+        // Hide all dimensions that are filtered
+        // Including `!!dimension` fixes a hidden TS error
+        (dimension) => !!dimension && !filteredDimensions.includes(dimension),
+      ),
     ...visibleMeasures.map((measure) => measure.name),
   ];
 }
