@@ -1,6 +1,8 @@
 package metricsview
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // rewriteApproxComparisons rewrites the AST to use a LEFT or RIGHT join instead of a FULL joins for comparisons,
 // which enables more efficient query execution at the cost of some accuracy.
@@ -106,13 +108,9 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 
 		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
 		for _, dim := range cte.DimFields {
-			var dimExpr string
-			if dim.Expr != "" {
-				dimExpr = dim.Expr
-			} else {
-				dimExpr = dim.Name
-			}
-			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]q FROM %[2]q)", dimExpr, cte.Alias, dim.Name), nil)
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, cte.Alias, dimName), nil)
 		}
 	} else if sortComparison {
 		// We're sorting by a measure in JoinComparisonSelect. We can do a RIGHT JOIN and push down the order/limit to it.
@@ -131,13 +129,9 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 
 		// now change the FromSelect WHERE clause to use selected dim values from CTE
 		for _, dim := range cte.DimFields {
-			var dimExpr string
-			if dim.Expr != "" {
-				dimExpr = dim.Expr
-			} else {
-				dimExpr = dim.Name
-			}
-			n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]q FROM %[2]q)", dimExpr, cte.Alias, dim.Name), nil)
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.FromSelect.Where = n.FromSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, cte.Alias, dimName), nil)
 		}
 	} else if sortDim {
 		// We're sorting by a dimension. We do a LEFT JOIN that only returns values present in the base query.
@@ -155,13 +149,9 @@ func (e *Executor) rewriteApproxComparisonNode(a *AST, n *SelectNode) bool {
 
 		// now change the JoinComparisonSelect WHERE clause to use selected dim values from CTE
 		for _, dim := range cte.DimFields {
-			var dimExpr string
-			if dim.Expr != "" {
-				dimExpr = dim.Expr
-			} else {
-				dimExpr = dim.Name
-			}
-			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]q FROM %[2]q)", dimExpr, cte.Alias, dim.Name), nil)
+			dimName := a.dialect.EscapeIdentifier(dim.Name)
+			dimExpr := "(" + dim.Expr + ")" // wrap in parentheses to handle expressions
+			n.JoinComparisonSelect.Where = n.JoinComparisonSelect.Where.and(fmt.Sprintf("%[1]s IS NULL OR %[1]s IN (SELECT %[2]q.%[3]s FROM %[2]q)", dimExpr, cte.Alias, dimName), nil)
 		}
 	}
 	// TODO: Good ideas for approx delta sorts?
