@@ -21,6 +21,7 @@ export async function createModelFromTable(
   database: string,
   databaseSchema: string,
   table: string,
+  addDevLimit: boolean = true,
 ): Promise<[string, string]> {
   const instanceId = get(runtime).instanceId;
 
@@ -82,12 +83,16 @@ export async function createModelFromTable(
   const devLimit = "{{ if dev }} limit 100000 {{ end}}";
 
   let modelSQL = `${topComments}\n`;
-  if (isDefaultOLAPConnector) {
-    modelSQL += `\n`;
-  } else {
-    modelSQL += `${connectorLine}\n\n`;
+
+  if (!isDefaultOLAPConnector) {
+    modelSQL += `${connectorLine}\n`;
   }
-  modelSQL += `${selectStatement}\n${devLimit}`;
+
+  modelSQL += `\n${selectStatement}`;
+
+  if (addDevLimit) {
+    modelSQL += `\n${devLimit}`;
+  }
 
   await runtimeServicePutFile(instanceId, {
     path: newModelPath,
