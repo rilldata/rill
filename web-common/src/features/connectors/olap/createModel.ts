@@ -4,6 +4,7 @@ import { ResourceKind } from "@rilldata/web-common/features/entity-management/re
 import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
 import { QueryClient } from "@tanstack/svelte-query";
 import { get } from "svelte/store";
+import { hasSpaces } from "../../../lib/string-utils";
 import {
   getRuntimeServiceAnalyzeConnectorsQueryKey,
   getRuntimeServiceGetInstanceQueryKey,
@@ -75,7 +76,9 @@ export async function createModelFromTable(
   const topComments =
     "-- Model SQL\n-- Reference documentation: https://docs.rilldata.com/reference/project-files/models";
   const connectorLine = `-- @connector: ${connector}`;
-  const selectStatement = `select * from ${sufficientlyQualifiedTableName}`;
+  const selectStatement = hasSpaces(sufficientlyQualifiedTableName)
+    ? `select * from "${sufficientlyQualifiedTableName}"`
+    : `select * from ${sufficientlyQualifiedTableName}`;
   const devLimit = "{{ if dev }} limit 100000 {{ end}}";
 
   let modelSQL = `${topComments}\n`;
