@@ -29,12 +29,18 @@ Rill Developer is designed around developers. Using a familiar user interface, d
 
 ## Rill Cloud
 
-Once the dashboard has been [deployed to Rill Cloud](../deploy/existing-project/existing-project.md), the dashboard can be viewed by your organization's users. As you can see below, the UI is different from Developer as the consumer will not have access to make any modifications to the dataset or sources. Instead, they are given a few different features such as, Alerts, Shareable Public URLs, see[ Explore section](../explore/dashboard-101.md) for more features.
+Once the dashboard has been [deployed to Rill Cloud](../deploy/existing-project/existing-project.md), the dashboard can be viewed by your organization's users. As you can see below, the UI is different from Developer. Upon accessing Rill Cloud, a user will be able to view all the projects they have view access to. 
 
-<img src = '/img/concepts/rcvsrd/Rill-Cloud.png' class='rounded-gif' />
-> Screenshots taken from the Tutorial course. change to GIF of features?
+
+<img src = '/img/concepts/rcvsrd/rill-cloud-projects.png' class='rounded-gif' />
 <br />
 
+
+
+ After selecting a specific project, they will be direct to a list of dashboards. The consumer will not have access to make any modifications to the dataset or sources. Instead, they are given a few different features such as, alerts, status, Shareable Public URLs, see[ Explore section](../explore/dashboard-101.md) for more features.
+
+
+<img src = '/img/concepts/rcvsrd/Rill-cloud.png' class='rounded-gif' />
 
 ## Is Rill Cloud a higher offering than Rill Developer?
 
@@ -44,6 +50,4 @@ Based on the naming, it might be confusing and easy to assume that Rill Cloud is
 Rill Developer and Rill Cloud are to be used in harmony. Rill Developer gives a space for our developers to define and test any new or needed changes to the data and/or dashboards before pushing to our Rill Cloud users who need stable access to working dashboards. 
 
 ---
-Moving forward into our docs, the Build, Deploy and Manage section revolves around Rill Developer.
-
-The Explore section revolves around Rill Cloud.
+Moving forward into our docs, the Build, Deploy and Manage section revolves around Rill Developer. The Explore section revolves around Rill Cloud.
