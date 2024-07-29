@@ -56,7 +56,7 @@ export class WatchResourcesClient {
     // only process for the `ResourceKind` present in `UsedResourceKinds`
     if (!res.name?.kind || !res.resource || !UsedResourceKinds[res.name.kind]) {
       if (res.event === V1ResourceEvent.RESOURCE_EVENT_DELETE && res.name) {
-        fileArtifacts.resourceDeleted(res.name);
+        fileArtifacts.deleteResource(res.name);
       }
       return;
     }

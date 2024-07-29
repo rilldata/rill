@@ -99,7 +99,21 @@ Similar to how [connector credentials can be pushed / pulled](/build/credentials
 
 :::
 
+## Ignoring files and directories within Rill
 
+There are times where you may have extraneous directories or files within your Rill project that you would like to be ignored by Rill (potentially also leading to parsing errors). The `ignore_paths` property can be specified in your `rill.yaml` file for this purpose by specifying a list of directories and/or files to ignore.
+
+```yaml
+ignore_paths:
+  - /path/to/ignore
+  - /file_to_ignore.yaml
+```
+
+:::tip
+
+Don't forget the leading `/` when specifying the path for `ignore_paths` and this path is also assuming the relative path from your project root.
+
+:::
 
 ## Testing access policies 
 

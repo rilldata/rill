@@ -50,6 +50,14 @@ var spec = drivers.Spec{
 			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
 		},
 		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+		{
 			Key:         "google_application_credentials",
 			Type:        drivers.InformationalPropertyType,
 			DisplayName: "GCP credentials",
@@ -58,7 +66,7 @@ var spec = drivers.Spec{
 			DocsURL:     "https://docs.rilldata.com/reference/connectors/gcs#local-credentials",
 		},
 	},
-	ImplementsSQLStore: true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}
@@ -106,8 +114,6 @@ type Connection struct {
 }
 
 var _ drivers.Handle = &Connection{}
-
-var _ drivers.SQLStore = &Connection{}
 
 // Ping implements drivers.Handle.
 func (c *Connection) Ping(ctx context.Context) error {
@@ -178,7 +184,7 @@ func (c *Connection) AsObjectStore() (drivers.ObjectStore, bool) {
 
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsModelExecutor implements drivers.Handle.
@@ -198,6 +204,11 @@ func (c *Connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 
 func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return c, true
 }
 
 // AsNotifier implements drivers.Connection.

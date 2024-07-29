@@ -100,7 +100,7 @@ func (q *MetricsViewComparison) Resolve(ctx context.Context, rt *runtime.Runtime
 	}
 	defer e.Close()
 
-	res, _, err := e.Query(ctx, qry, nil)
+	res, err := e.Query(ctx, qry, nil)
 	if err != nil {
 		return err
 	}

@@ -30,17 +30,19 @@ import { EntityType } from "../../entity-management/types";
 import { EMPTY_PROJECT_TITLE } from "../../welcome/constants";
 import { isProjectInitialized } from "../../welcome/is-project-initialized";
 import { compileCreateSourceYAML } from "../sourceUtils";
+import { AddDataFormType } from "./types";
 import { fromYupFriendlyKey } from "./yupSchemas";
 
-export interface RemoteSourceFormValues {
-  // sourceName: string; // Commenting out until we add user-provided names for Connectors
+interface AddDataFormValues {
+  // name: string; // Commenting out until we add user-provided names for Connectors
   [key: string]: any;
 }
 
-export async function submitRemoteSourceForm(
+export async function submitAddDataForm(
   queryClient: QueryClient,
+  formType: AddDataFormType,
   connector: V1ConnectorDriver,
-  values: RemoteSourceFormValues,
+  values: AddDataFormValues,
 ): Promise<void> {
   const instanceId = get(runtime).instanceId;
 
@@ -81,10 +83,10 @@ export async function submitRemoteSourceForm(
    * Sources
    */
 
-  if (!connector.implementsOlap) {
+  if (formType === "source") {
     // Make a new <source>.yaml file
     await runtimeServicePutFile(instanceId, {
-      path: getFileAPIPathFromNameAndType(values.sourceName, EntityType.Table),
+      path: getFileAPIPathFromNameAndType(values.name, EntityType.Table),
       blob: compileCreateSourceYAML(formValues, connector.name as string),
       create: true,
       createOnly: false, // The modal might be opened from a YAML file with placeholder text, so the file might already exist
@@ -92,7 +94,7 @@ export async function submitRemoteSourceForm(
 
     await checkSourceImported(
       queryClient,
-      getFilePathFromNameAndType(values.sourceName, EntityType.Table),
+      getFilePathFromNameAndType(values.name, EntityType.Table),
     );
 
     return;

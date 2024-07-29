@@ -1,8 +1,8 @@
 <script lang="ts">
-  import ColumnProfile from "@rilldata/web-common/components/column-profile/ColumnProfile.svelte";
-  import { getSummaries } from "@rilldata/web-common/components/column-profile/queries";
   import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
   import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import ColumnProfile from "@rilldata/web-common/features/column-profile/ColumnProfile.svelte";
+  import { getSummaries } from "@rilldata/web-common/features/column-profile/queries";
   import ReconcilingSpinner from "@rilldata/web-common/features/entity-management/ReconcilingSpinner.svelte";
   import { useModels } from "@rilldata/web-common/features/models/selectors";
   import {
@@ -29,7 +29,7 @@
   import References from "../../models/workspace/inspector/References.svelte";
   import WithModelResultTooltip from "../../models/workspace/inspector/WithModelResultTooltip.svelte";
   import { getMatchingReferencesAndEntries } from "../../models/workspace/inspector/utils";
-  import InspectorSummary from "./InspectorSummary.svelte";
+  import InspectorHeaderGrid from "./InspectorHeaderGrid.svelte";
 
   export let hasUnsavedChanges: boolean;
   export let connector: string;
@@ -43,7 +43,6 @@
   export let isEmpty = false;
   export let hasErrors: boolean;
   export let showReferences = true;
-  export let showSummaryTitle = false;
 
   let showColumns = true;
 
@@ -192,8 +191,8 @@
       {source ? "Source" : "Model"} is empty.
     </div>
   {:else if source || model}
-    <InspectorSummary {rowCount} {columnCount} showTitle={showSummaryTitle}>
-      <svelte:fragment slot="row-header">
+    <InspectorHeaderGrid>
+      <svelte:fragment slot="top-left">
         {#if source}
           <p>
             {connectorType}
@@ -225,8 +224,9 @@
           </WithModelResultTooltip>
         {/if}
       </svelte:fragment>
+      <svelte:fragment slot="top-right">{rowCount}</svelte:fragment>
 
-      <svelte:fragment slot="column-header">
+      <svelte:fragment slot="bottom-left">
         {#if source}
           <Tooltip location="left" alignment="start" distance={24}>
             {#if nullPercentage !== undefined}
@@ -262,7 +262,9 @@
           </WithModelResultTooltip>
         {/if}
       </svelte:fragment>
-    </InspectorSummary>
+
+      <svelte:fragment slot="bottom-right">{columnCount}</svelte:fragment>
+    </InspectorHeaderGrid>
 
     <hr />
 
