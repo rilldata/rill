@@ -34,6 +34,7 @@ const sidebars = {
               'learn/rill_learn_100/101_0',
               'learn/rill_learn_100/101_1',
               'learn/rill_learn_100/101_2',
+              
               {
                 type: 'category',
                 label: 'Rill Developer Components',
@@ -78,7 +79,7 @@ const sidebars = {
                 'learn/rill_learn_100/deploy/106_1'
               ]
             },
-           
+           'learn/rill_learn_100/107_0',
             ]
         },
         {
