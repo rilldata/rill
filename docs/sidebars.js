@@ -55,7 +55,8 @@ const sidebars = {
                   'learn/rill_learn_100/dashboard/103_0',
                   'learn/rill_learn_100/dashboard/103_1',
                   'learn/rill_learn_100/dashboard/103_2',
-                   'learn/rill_learn_100/dashboard/103_3'
+                  'learn/rill_learn_100/dashboard/103_3',
+                  'learn/rill_learn_100/dashboard/103_0_u'
                 ]
               },
 
@@ -129,15 +130,7 @@ const sidebars = {
           type: 'doc',
           id: 'learn/guides'  
         },
-        {
-          type: 'category',
-          label: 'Rill Basic Guides',
-          description: 'Basic guide description',
-          items: [
-              'learn/guides/test'
-          
-          ],
-        },
+          'learn/guides/test'
       ],
 
   },
