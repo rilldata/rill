@@ -3,13 +3,37 @@ package drivers
 import "context"
 
 type ModelExecutor interface {
-	Execute(ctx context.Context) (*ModelResult, error)
+	Execute(ctx context.Context, opts *ModelExecuteOptions) (*ModelResult, error)
+	Concurrency(desired int) (int, bool)
 }
 
 type ModelManager interface {
 	Rename(ctx context.Context, res *ModelResult, newName string, env *ModelEnv) (*ModelResult, error)
 	Exists(ctx context.Context, res *ModelResult) (bool, error)
 	Delete(ctx context.Context, res *ModelResult) error
+	MergeSplitResults(a, b *ModelResult) (*ModelResult, error)
+}
+
+type ModelExecutorOptions struct {
+	Env                         *ModelEnv
+	ModelName                   string
+	InputHandle                 Handle
+	InputConnector              string
+	PreliminaryInputProperties  map[string]any
+	OutputHandle                Handle
+	OutputConnector             string
+	PreliminaryOutputProperties map[string]any
+}
+
+type ModelExecuteOptions struct {
+	*ModelExecutorOptions
+	InputProperties  map[string]any
+	OutputProperties map[string]any
+	Priority         int
+	Incremental      bool
+	IncrementalRun   bool
+	SplitRun         bool
+	PreviousResult   *ModelResult
 }
 
 type ModelEnv struct {
@@ -24,21 +48,6 @@ type ModelResult struct {
 	Connector  string
 	Properties map[string]any
 	Table      string
-}
-
-type ModelExecutorOptions struct {
-	Env              *ModelEnv
-	ModelName        string
-	InputHandle      Handle
-	InputConnector   string
-	InputProperties  map[string]any
-	OutputHandle     Handle
-	OutputConnector  string
-	OutputProperties map[string]any
-	Priority         int
-	Incremental      bool
-	IncrementalRun   bool
-	PreviousResult   *ModelResult
 }
 
 type FileFormat string

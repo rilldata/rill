@@ -9,6 +9,8 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
+const _defaultConcurrentInserts = 10
+
 type ModelInputProperties struct {
 	SQL string `mapstructure:"sql"`
 }
@@ -45,7 +47,7 @@ type ModelOutputProperties struct {
 	Settings string `mapstructure:"settings"`
 }
 
-func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecutorOptions) error {
+func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
 	return nil
 }
 
@@ -116,6 +118,13 @@ func (c *connection) Delete(ctx context.Context, res *drivers.ModelResult) error
 	}
 
 	return olap.DropTable(ctx, table.Name, table.View)
+}
+
+func (c *connection) MergeSplitResults(a, b *drivers.ModelResult) (*drivers.ModelResult, error) {
+	if a.Table != b.Table {
+		return nil, fmt.Errorf("cannot merge split results that output to different table names (%q != %q)", a.Table, b.Table)
+	}
+	return a, nil
 }
 
 // stagingTableName returns a stable temporary table name for a destination table.

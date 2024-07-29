@@ -21,13 +21,17 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/pbutil"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
-const _defaultModelTimeout = 60 * time.Minute
+const (
+	_modelDefaultTimeout = 60 * time.Minute
 
-const _modelSyncSplitsBatchSize = 1000
+	_modelSyncSplitsBatchSize    = 1000
+	_modelPendingSplitsBatchSize = 1000
+)
 
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
@@ -234,13 +238,6 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Build the model
 	executorConnector, execRes, execErr := r.executeAll(ctx, self, model, modelEnv, triggerReset, prevResult)
-	if execErr != nil {
-		var err *modelBuildError
-		if !errors.As(execErr, &err) {
-			return runtime.ReconcileResult{Err: execErr}
-		}
-		// model build errors are handled later
-	}
 
 	// After the model has executed successfully, we re-evaluate the model's incremental state (not to be confused with the resource state)
 	var newIncrementalState *structpb.Struct
@@ -584,9 +581,8 @@ func (r *ModelReconciler) resolveIncrementalState(ctx context.Context, mdl *runt
 
 // resolveAndSyncSplits resolves the model's splits using its configured splits resolver and inserts or updates them in the catalog.
 func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, incrementalState map[string]any) error {
-	if mdl.Spec.SplitsResolver == "" {
-		return nil
-	}
+	// Log
+	r.C.Logger.Debug("Resolving model splits", zap.String("model", self.Meta.Name.Name), zap.String("resolver", mdl.Spec.SplitsResolver))
 
 	// Ensure a model ID is set. We use it to track the model's splits in the catalog.
 	if mdl.State.SplitsModelId == "" {
@@ -762,9 +758,10 @@ func (r *ModelReconciler) clearSplits(ctx context.Context, mdl *runtimev1.ModelV
 	return catalog.DeleteModelSplits(ctx, mdl.State.SplitsModelId)
 }
 
-// executeAll executes a model with the given execution options.
+// executeAll executes all splits (if any) of a model with the given execution options.
 func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resource, model *runtimev1.ModelV2, env *drivers.ModelEnv, triggerReset bool, prevResult *drivers.ModelResult) (string, *drivers.ModelResult, error) {
 	// Prepare the incremental state to pass to the executor
+	useSplits := model.Spec.SplitsResolver != ""
 	incrementalRun := false
 	incrementalState := map[string]any{}
 	if !triggerReset && model.Spec.Incremental && prevResult != nil {
@@ -777,200 +774,408 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	incrementalState["incremental"] = incrementalRun // The incremental flag is hard-coded by convention
 
 	// Build log message
-	args := []zap.Field{zap.String("name", self.Meta.Name.Name)}
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name)}
 	if incrementalRun {
-		args = append(args, zap.String("run_type", "incremental"))
+		logArgs = append(logArgs, zap.String("run_type", "incremental"))
 	} else {
-		args = append(args, zap.String("run_type", "reset"))
+		logArgs = append(logArgs, zap.String("run_type", "reset"))
 	}
-	if model.Spec.SplitsResolver != "" {
-		args = append(args, zap.Bool("split", true))
+	if useSplits {
+		logArgs = append(logArgs, zap.Bool("split", true))
 	}
 	if model.Spec.InputConnector == model.Spec.OutputConnector {
-		args = append(args, zap.String("connector", model.Spec.InputConnector))
+		logArgs = append(logArgs, zap.String("connector", model.Spec.InputConnector))
 	} else {
-		args = append(args, zap.String("input_connector", model.Spec.InputConnector), zap.String("output_connector", model.Spec.OutputConnector))
+		logArgs = append(logArgs, zap.String("input_connector", model.Spec.InputConnector), zap.String("output_connector", model.Spec.OutputConnector))
 	}
 	if model.Spec.StageConnector != "" {
-		args = append(args, zap.String("stage_connector", model.Spec.StageConnector))
+		logArgs = append(logArgs, zap.String("stage_connector", model.Spec.StageConnector))
 	}
-	r.C.Logger.Debug("Building model", args...)
-
-	// Sync splits
-	err := r.resolveAndSyncSplits(ctx, self, model, incrementalState)
-	if err != nil {
-		return "", nil, fmt.Errorf("failed to sync splits: %w", err)
-	}
-
-	// Prepare the new execution options
-	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.InputConnector, model.Spec.InputProperties.AsMap())
-	if err != nil {
-		return "", nil, err
-	}
-
-	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.OutputConnector, model.Spec.OutputProperties.AsMap())
-	if err != nil {
-		return "", nil, err
-	}
-	opts := &drivers.ModelExecutorOptions{
-		Env:              env,
-		ModelName:        self.Meta.Name.Name,
-		InputConnector:   model.Spec.InputConnector,
-		InputProperties:  inputProps,
-		OutputConnector:  model.Spec.OutputConnector,
-		OutputProperties: outputProps,
-		Incremental:      model.Spec.Incremental,
-		IncrementalRun:   incrementalRun,
-		PreviousResult:   prevResult,
-	}
+	r.C.Logger.Debug("Building model", logArgs...)
 
 	// Apply the timeout to the ctx
-	timeout := _defaultModelTimeout
+	timeout := _modelDefaultTimeout
 	if model.Spec.TimeoutSeconds > 0 {
 		timeout = time.Duration(model.Spec.TimeoutSeconds) * time.Second
 	}
 	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
-	// For safety, double check the ctx before executing the model (there may be some code paths where it's not checked)
-	if ctx.Err() != nil {
-		return "", nil, ctx.Err()
-	}
-
-	// Open executor for the new output and build the output
-	var (
-		executorConnector string
-		execRes           *drivers.ModelResult
-		execErr           error
-	)
-	if model.Spec.StageConnector != "" {
-		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, model.Spec.StageConnector, model.Spec.StageProperties.AsMap())
-		if err != nil {
-			return "", nil, err
-		}
-		executorConnector, execRes, execErr = r.executeWithStage(ctx, model.Spec.StageConnector, stageProps, opts)
-	} else {
-		executorConnector, execRes, execErr = r.execute(ctx, opts)
-	}
-
-	return executorConnector, execRes, execErr
-}
-
-// execute executes a model with the given execution options.
-func (r *ModelReconciler) execute(ctx context.Context, opts *drivers.ModelExecutorOptions) (string, *drivers.ModelResult, error) {
-	executorName, e, release, err := r.acquireExecutor(ctx, opts)
+	// Get executor(s)
+	executor, release, err := r.acquireExecutor(ctx, self, model, env)
 	if err != nil {
 		return "", nil, err
 	}
 	defer release()
 
-	res, err := e.Execute(ctx)
-	if err != nil {
-		return "", nil, &modelBuildError{err: err}
-	}
-	return executorName, res, nil
-}
-
-// executeWithStage executes a model with a stage connector by first running an executor from the input connector to the stage connector,
-// and then running an executor from the stage connector to the output connector.
-func (r *ModelReconciler) executeWithStage(ctx context.Context, stageConnector string, stageProps map[string]any, opts *drivers.ModelExecutorOptions) (string, *drivers.ModelResult, error) {
-	// we want to determine whether stage connector and output connector are compatible
-	// so we get executor but do not execute it since we need to use result of stage 1
-	//
-	// Build model option for stage 2
-	stage2Opts := &drivers.ModelExecutorOptions{
-		InputConnector:   stageConnector,
-		InputProperties:  stageProps,
-		OutputConnector:  opts.OutputConnector,
-		OutputProperties: opts.OutputProperties,
-	}
-	_, _, tempRel, err := r.acquireExecutor(ctx, stage2Opts)
-	if err != nil {
-		return "", nil, err
-	}
-	tempRel()
-
-	// Build model options for stage 1
-	// set stage props as outputprops
-	stage1Opts := &drivers.ModelExecutorOptions{
-		Env:              opts.Env,
-		ModelName:        opts.ModelName,
-		InputConnector:   opts.InputConnector,
-		InputProperties:  opts.InputProperties,
-		OutputConnector:  stageConnector,
-		OutputProperties: stageProps,
-	}
-	_, executor, rel, err := r.acquireExecutor(ctx, stage1Opts)
-	if err != nil {
-		return "", nil, err
+	// For safety, double check the ctx before executing the model (there may be some code paths where it's not checked)
+	if ctx.Err() != nil {
+		return "", nil, ctx.Err()
 	}
 
-	// execute stage 1
-	res1, err := executor.Execute(ctx)
-	if err != nil {
-		rel()
-		return "", nil, &modelBuildError{err: err}
+	// If we're not splitting execution, run the executor directly and return
+	if !useSplits {
+		res, err := r.executeSingle(ctx, executor, self, model, prevResult, incrementalRun, incrementalState, nil)
+		return executor.finalConnector, res, err
 	}
-	rel()
 
-	sc, sr, err := r.C.AcquireConn(ctx, res1.Connector)
-	if err != nil {
-		return "", nil, err
-	}
-	defer sr()
+	// At this point, we know we're running with splits configured.
 
-	// Build model option for stage 2
-	// Use result's connector and result properties as input connector
-	// Typically the result connector will be same as stage connector
-	// but the properties can change
-	stage2Opts = &drivers.ModelExecutorOptions{
-		Env:              opts.Env,
-		ModelName:        opts.ModelName,
-		InputConnector:   res1.Connector,
-		InputProperties:  res1.Properties,
-		OutputConnector:  opts.OutputConnector,
-		OutputProperties: opts.OutputProperties,
-		Incremental:      opts.Incremental,
-		IncrementalRun:   opts.IncrementalRun,
-		PreviousResult:   opts.PreviousResult,
+	// Discover number of concurrent splits to process at a time
+	concurrency, ok := executor.final.Concurrency(int(model.Spec.SplitsConcurrencyLimit))
+	if !ok {
+		return "", nil, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.SplitsConcurrencyLimit, executor.finalConnector)
 	}
-	name, executor, rel, err := r.acquireExecutor(ctx, stage2Opts)
-	if err != nil {
-		// cleanup stage1 result data
-		// This is done in same context. Can leak stage data in case of ctx cancellations.
-		if mm, ok := sc.AsModelManager(r.C.InstanceID); ok {
-			return "", nil, errors.Join(err, mm.Delete(ctx, res1))
+	if executor.stage != nil {
+		stageConcurrency, ok := executor.stage.Concurrency(int(model.Spec.SplitsConcurrencyLimit))
+		if !ok {
+			return "", nil, fmt.Errorf("invalid concurrency limit %d for model stage executor %q", model.Spec.SplitsConcurrencyLimit, executor.stageConnector)
 		}
-		return "", nil, err
+		if stageConcurrency < concurrency {
+			concurrency = stageConcurrency
+		}
+	}
+	if concurrency < 1 {
+		return "", nil, fmt.Errorf("invalid concurrency limit %d for model executor %q", model.Spec.SplitsConcurrencyLimit, executor.finalConnector)
 	}
 
-	// the final cleanup should also cleanup stage1 result data
-	defer func() {
-		rel()
-		rc, rr, err := r.C.AcquireConn(ctx, res1.Connector)
+	// Prepare catalog which tracks splits
+	catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+	if err != nil {
+		return "", nil, err
+	}
+	defer release()
+
+	// First step is to resolve and sync the splits.
+	err = r.resolveAndSyncSplits(ctx, self, model, incrementalState)
+	if err != nil {
+		return "", nil, fmt.Errorf("failed to sync splits: %w", err)
+	}
+
+	// We run the first split without concurrency to ensure that only incremental runs are executed concurrently.
+	// This enables the first split to create the initial result (such as a table) that the other splits incrementally build upon.
+	if !incrementalRun {
+		// Find the first split
+		splits, err := catalog.FindModelSplitsByPending(ctx, model.State.SplitsModelId, 1)
 		if err != nil {
-			return
+			return "", nil, fmt.Errorf("failed to load first split: %w", err)
 		}
-		defer rr()
-		if mm, ok := rc.AsModelManager(r.C.InstanceID); ok {
-			// This is done in same context. Can leak stage data in case of ctx cancellations.
-			err = mm.Delete(ctx, res1)
+		if len(splits) == 0 {
+			return "", nil, fmt.Errorf("no splits found")
+		}
+		split := splits[0]
+
+		// Execute the first split (with returnErr=true because for the first split, we do not log and skip erroring splits)
+		res, err := r.executeSplit(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, split, true)
+		if err != nil {
+			return "", nil, err
+		}
+
+		prevResult = res
+		incrementalRun = true
+	}
+
+	// Prepare the results of each worker.
+	// For incremental runs, we need to pass the previous result to the executor, but for split runs, we do not guarantee that the result is the most *recent* previous result.
+	// We do guarantee that no result is discarded, and that all results are either passed as a previous result to the executor or passed into MergeSplitResults.
+	// To that end, we can start all the workers off with the same initial previous result.
+	results := make([]*drivers.ModelResult, concurrency)
+	for i := 0; i < concurrency; i++ {
+		results[i] = prevResult
+	}
+
+	// Load and process the incremental splits concurrently using a worker pool.
+	// Each worker goroutine takes splits from splitsCh and processes them.
+	// The workers will stop when the channel is closed (work complete) or the context is cancelled.
+	grp, ctx := errgroup.WithContext(ctx)
+	splitsCh := make(chan drivers.ModelSplit)
+	for i := 0; i < concurrency; i++ {
+		grp.Go(func() error {
+			for {
+				select {
+				case split, ok := <-splitsCh:
+					if !ok {
+						return nil
+					}
+
+					results[i], err = r.executeSplit(ctx, catalog, executor, self, model, results[i], incrementalRun, incrementalState, split, false)
+					if err != nil {
+						return err
+					}
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+		})
+	}
+
+	// Start a goroutine that loads pending splits from the catalog and sends them to the worker pool
+	grp.Go(func() error {
+		// Close splitsCh when the last split is sent
+		defer close(splitsCh)
+
+		for {
+			// Get a batch of pending splits
+			splits, err := catalog.FindModelSplitsByPending(ctx, model.State.SplitsModelId, _modelPendingSplitsBatchSize)
 			if err != nil {
-				r.C.Logger.Warn("failed to clean up stage output", zap.Error(err))
+				return err
+			}
+
+			// Send the splits to the channel. If the context is cancelled, we stop.
+			for _, split := range splits {
+				select {
+				case splitsCh <- split:
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+
+			// If we got fewer splits than the batch size, we've processed all pending splits and can stop.
+			if len(splits) < _modelPendingSplitsBatchSize {
+				return nil
 			}
 		}
-	}()
+	})
 
-	res2, err := executor.Execute(ctx)
+	// Wait for all workers to finish
+	err = grp.Wait()
 	if err != nil {
-		return "", nil, &modelBuildError{err: err}
+		return "", nil, err
 	}
-	return name, res2, nil
+
+	// Finally combine the results of each worker into one result
+	result := results[0]
+	for _, r := range results[1:] {
+		result, err = executor.finalResultManager.MergeSplitResults(result, r)
+		if err != nil {
+			return "", nil, fmt.Errorf("failed to merge split results: %w", err)
+		}
+	}
+
+	return executor.finalConnector, result, nil
 }
 
-// acquireExecutor acquires a ModelExecutor capable of executing a model with the given execution options.
+// executeSplit processes a drivers.ModelSplit by calling executeSingle and then updating the split's state in the catalog.
+func (r *ModelReconciler) executeSplit(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, split drivers.ModelSplit, returnErr bool) (*drivers.ModelResult, error) {
+	// Get split data
+	data := map[string]any{}
+	err := json.Unmarshal(split.DataJSON, &data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal split data: %w", err)
+	}
+
+	// Log
+	logArgs := []zap.Field{zap.String("model", self.Meta.Name.Name), zap.String("key", split.Key)}
+	if len(split.DataJSON) < 256 {
+		logArgs = append(logArgs, zap.Any("data", data))
+	}
+	r.C.Logger.Debug("Executing model split", logArgs...)
+	defer func() { r.C.Logger.Debug("Executed model split", logArgs...) }()
+
+	// Execute the split.
+	start := time.Now()
+	errStr := ""
+	res, err := r.executeSingle(ctx, executor, self, mdl, prevResult, incrementalRun, incrementalState, data)
+	if err != nil {
+		// Unless cancelled or explicitly told to return the error, we save the error in the split and continue.
+		if returnErr {
+			return nil, err
+		}
+		if errors.Is(err, ctx.Err()) {
+			return nil, err
+		}
+		errStr = err.Error()
+		logArgs = append(logArgs, zap.Error(err))
+	}
+
+	// Mark the split as executed
+	now := time.Now()
+	split.ExecutedOn = &now
+	split.Error = errStr
+	split.Elapsed = time.Since(start)
+	logArgs = append(logArgs, zap.Duration("elapsed", split.Elapsed))
+
+	err = catalog.UpdateModelSplit(ctx, mdl.State.SplitsModelId, split)
+	if err != nil {
+		return nil, fmt.Errorf("failed to update split: %w", err)
+	}
+	return res, nil
+}
+
+// executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a split is optional.
+func (r *ModelReconciler) executeSingle(ctx context.Context, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState, split map[string]any) (*drivers.ModelResult, error) {
+	// Resolve templating in the input and output props
+	inputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, split, mdl.Spec.InputConnector, mdl.Spec.InputProperties.AsMap())
+	if err != nil {
+		return nil, err
+	}
+	outputProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, split, mdl.Spec.OutputConnector, mdl.Spec.OutputProperties.AsMap())
+	if err != nil {
+		return nil, err
+	}
+
+	// Execute the stage step if configured
+	if executor.stage != nil {
+		// Also resolve templating in the stage props
+		stageProps, err := r.resolveTemplatedProps(ctx, self, incrementalState, split, mdl.Spec.StageConnector, mdl.Spec.StageProperties.AsMap())
+		if err != nil {
+			return nil, err
+		}
+
+		// Execute the stage step
+		stageResult, err := executor.stage.Execute(ctx, &drivers.ModelExecuteOptions{
+			ModelExecutorOptions: executor.stageOpts,
+			InputProperties:      inputProps,
+			OutputProperties:     stageProps,
+			Priority:             0,
+			Incremental:          mdl.Spec.Incremental,
+			IncrementalRun:       incrementalRun,
+			SplitRun:             split != nil,
+			PreviousResult:       prevResult,
+		})
+		if err != nil {
+			return nil, err
+		}
+
+		// We change the inputProps to be the result properties of the stage step
+		inputProps = stageResult.Properties
+
+		// Drop the stage result after the final step has executed.
+		// We do this using the same ctx, which means we may leak data in the staging connector in case of context cancellations.
+		// This is acceptable since the staging connector is assumed to be configured for temporary data.
+		defer func() {
+			err := executor.stageResultManager.Delete(ctx, stageResult)
+			if err != nil {
+				r.C.Logger.Warn("Failed to clean up staged model output", zap.String("model", self.Meta.Name.Name), zap.Error(err))
+			}
+		}()
+	}
+
+	// Execute the final step
+	finalResult, err := executor.final.Execute(ctx, &drivers.ModelExecuteOptions{
+		ModelExecutorOptions: executor.finalOpts,
+		InputProperties:      inputProps,
+		OutputProperties:     outputProps,
+		Priority:             0,
+		Incremental:          mdl.Spec.Incremental,
+		IncrementalRun:       incrementalRun,
+		SplitRun:             split != nil,
+		PreviousResult:       prevResult,
+	})
+	if err != nil {
+		return nil, err
+	}
+	return finalResult, nil
+}
+
+// wrappedModelExecutor is a ModelExecutor wraps one or two ModelExecutors. It is used to execute a model with a staging connector.
+// If the model does not require a staging connector, the wrappedModelExecutor will only wrap the final executor.
+type wrappedModelExecutor struct {
+	finalConnector     string
+	final              drivers.ModelExecutor
+	finalOpts          *drivers.ModelExecutorOptions
+	finalResultManager drivers.ModelManager
+	stageConnector     string
+	stage              drivers.ModelExecutor
+	stageOpts          *drivers.ModelExecutorOptions
+	stageResultManager drivers.ModelManager
+}
+
+// acquireExecutor acquires the executor(s) necessary for executing the given model.
+// If the model has a stage connector, it will acquire and combine two executors: one from the input to the stage connector, and another from the stage to the output connector.
+func (r *ModelReconciler) acquireExecutor(ctx context.Context, self *runtimev1.Resource, mdl *runtimev1.ModelV2, env *drivers.ModelEnv) (*wrappedModelExecutor, func(), error) {
+	// Handle the simple case where there is no stage connector
+	if mdl.Spec.StageConnector == "" {
+		opts := &drivers.ModelExecutorOptions{
+			Env:                         env,
+			ModelName:                   self.Meta.Name.Name,
+			InputHandle:                 nil,
+			InputConnector:              mdl.Spec.InputConnector,
+			PreliminaryInputProperties:  mdl.Spec.InputProperties.AsMap(),
+			OutputHandle:                nil,
+			OutputConnector:             mdl.Spec.OutputConnector,
+			PreliminaryOutputProperties: mdl.Spec.OutputProperties.AsMap(),
+		}
+
+		connector, executor, release, err := r.acquireExecutorInner(ctx, opts)
+		if err != nil {
+			return nil, nil, err
+		}
+
+		finalResultManager, ok := opts.OutputHandle.AsModelManager(r.C.InstanceID)
+		if !ok {
+			release()
+			return nil, nil, fmt.Errorf("output connector %q is not capable of managing model results", mdl.Spec.OutputConnector)
+		}
+
+		return &wrappedModelExecutor{
+			finalConnector:     connector,
+			final:              executor,
+			finalOpts:          opts,
+			finalResultManager: finalResultManager,
+		}, release, nil
+	}
+
+	// Acquire the stage executor
+	stageOpts := &drivers.ModelExecutorOptions{
+		Env:                         env,
+		ModelName:                   self.Meta.Name.Name,
+		InputHandle:                 nil,
+		InputConnector:              mdl.Spec.InputConnector,
+		PreliminaryInputProperties:  mdl.Spec.InputProperties.AsMap(),
+		OutputHandle:                nil,
+		OutputConnector:             mdl.Spec.StageConnector,
+		PreliminaryOutputProperties: mdl.Spec.StageProperties.AsMap(),
+	}
+	stageConnector, stage, stageRelease, err := r.acquireExecutorInner(ctx, stageOpts)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	// Acquire the stage result manager
+	stageResultManager, ok := stageOpts.OutputHandle.AsModelManager(r.C.InstanceID)
+	if !ok {
+		stageRelease()
+		return nil, nil, fmt.Errorf("staging connector %q is not capable of managing model results", mdl.Spec.StageConnector)
+	}
+
+	// Acquire the final executor
+	finalOpts := &drivers.ModelExecutorOptions{
+		Env:                         env,
+		ModelName:                   self.Meta.Name.Name,
+		InputHandle:                 nil,
+		InputConnector:              mdl.Spec.StageConnector,
+		PreliminaryInputProperties:  mdl.Spec.StageProperties.AsMap(),
+		OutputHandle:                nil,
+		OutputConnector:             mdl.Spec.OutputConnector,
+		PreliminaryOutputProperties: mdl.Spec.OutputProperties.AsMap(),
+	}
+	finalConnector, final, finalRelease, err := r.acquireExecutorInner(ctx, finalOpts)
+	if err != nil {
+		stageRelease()
+		return nil, nil, err
+	}
+
+	// Wrap the executors
+	wrapped := &wrappedModelExecutor{
+		finalConnector:     finalConnector,
+		final:              final,
+		finalOpts:          finalOpts,
+		stageConnector:     stageConnector,
+		stage:              stage,
+		stageOpts:          stageOpts,
+		stageResultManager: stageResultManager,
+	}
+	release := func() {
+		stageRelease()
+		finalRelease()
+	}
+	return wrapped, release, nil
+}
+
+// acquireExecutorInner acquires a ModelExecutor by directly calling AsModelExecutor on the input and output connectors.
 // It handles acquiring and setting opts.InputHandle and opts.OutputHandle.
-func (r *ModelReconciler) acquireExecutor(ctx context.Context, opts *drivers.ModelExecutorOptions) (string, drivers.ModelExecutor, func(), error) {
+func (r *ModelReconciler) acquireExecutorInner(ctx context.Context, opts *drivers.ModelExecutorOptions) (string, drivers.ModelExecutor, func(), error) {
 	ic, ir, err := r.C.AcquireConn(ctx, opts.InputConnector)
 	if err != nil {
 		return "", nil, nil, err
@@ -1041,7 +1246,7 @@ func (r *ModelReconciler) newModelEnv(ctx context.Context) (*drivers.ModelEnv, e
 
 // resolveTemplatedProps resolves template tags in strings nested in the provided props.
 // Passing a connector is optional. If a connector is provided, it will be used to inform how values are escaped.
-func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, incrementalState map[string]any, connector string, props map[string]any) (map[string]any, error) {
+func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runtimev1.Resource, incrementalState, split map[string]any, connector string, props map[string]any) (map[string]any, error) {
 	inst, err := r.C.Runtime.Instance(ctx, r.C.InstanceID)
 	if err != nil {
 		return nil, err
@@ -1057,11 +1262,17 @@ func (r *ModelReconciler) resolveTemplatedProps(ctx context.Context, self *runti
 		}
 	}
 
+	var extraProps map[string]any
+	if split != nil {
+		extraProps = map[string]any{"split": split}
+	}
+
 	td := compilerv1.TemplateData{
 		Environment: inst.Environment,
 		User:        map[string]any{},
 		Variables:   inst.ResolveVariables(),
 		State:       incrementalState,
+		ExtraProps:  extraProps,
 		Self: compilerv1.TemplateResource{
 			Meta:  self.Meta,
 			Spec:  self.GetModel().Spec,
@@ -1173,13 +1384,3 @@ func secureHash(val []byte) (string, error) {
 	}
 	return hex.EncodeToString(hash.Sum(nil)), nil
 }
-
-type modelBuildError struct {
-	err error
-}
-
-func (e *modelBuildError) Error() string {
-	return e.err.Error()
-}
-
-func (e *modelBuildError) Unwrap() error { return e.err }
