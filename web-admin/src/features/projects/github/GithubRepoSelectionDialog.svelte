@@ -89,10 +89,12 @@
       type: "success",
     });
     open = false;
+    advancedOpened = false;
   }
 
   $: error = ($status.error ??
     $connectToGithubMutation.error) as unknown as AxiosError<RpcStatus>;
+  $: errorMessage = error ? error.response?.data?.message ?? error.message : "";
 </script>
 
 <Dialog bind:open>
@@ -154,7 +156,7 @@
       </Collapsible>
       {#if error}
         <div class="text-red-500 text-sm py-px">
-          {error.response?.data?.message ?? error.message}
+          {errorMessage}
         </div>
       {/if}
     </DialogHeader>
@@ -179,6 +181,7 @@
 <GithubOverwriteConfirmationDialog
   bind:open={$showOverwriteConfirmation}
   loading={$connectToGithubMutation.isLoading}
+  error={errorMessage}
   {githubUrl}
   {subpath}
   onConfirm={() => updateGithubUrl(true)}

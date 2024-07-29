@@ -360,7 +360,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		err = s.pushArchiveToGit(ctx, func(dir, projPath string) error {
+		err = s.pushToGit(ctx, func(dir, projPath string) error {
 			downloadDst := filepath.Join(dir, "zipped_repo.tar.gz")
 			// extract the archive once the folder is prepped with git
 			return archive.Download(ctx, downloadURL, downloadDst, projPath, false)
@@ -369,7 +369,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	} else if proj.GithubURL != nil {
-		err = s.pushArchiveToGit(ctx, func(dir, projPath string) error {
+		err = s.pushToGit(ctx, func(dir, projPath string) error {
 			return copyFromSrcGit(dir, projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
 		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
 		if err != nil {
@@ -972,7 +972,7 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
-func (s *Server) pushArchiveToGit(ctx context.Context, copyData func(dir, projPath string) error, repo, branch, subpath, token string, force bool) error {
+func (s *Server) pushToGit(ctx context.Context, copyData func(dir, projPath string) error, repo, branch, subpath, token string, force bool) error {
 	ctx, cancel := context.WithTimeout(ctx, archivePullTimeout)
 	defer cancel()
 
@@ -1218,6 +1218,9 @@ func copyDir(srcDir, destDir string) error {
 		return err
 	}
 	for _, entry := range entries {
+		if entry.Name() == ".git" {
+			continue
+		}
 		srcPath := filepath.Join(srcDir, entry.Name())
 		destPath := filepath.Join(destDir, entry.Name())
 

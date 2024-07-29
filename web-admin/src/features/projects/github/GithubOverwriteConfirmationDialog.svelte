@@ -14,7 +14,9 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
 
   export let open = false;
-  export let loading = false;
+  export let loading: boolean;
+  export let error: string;
+
   export let onConfirm: () => Promise<void>;
   export let githubUrl: string;
   export let subpath: string;
@@ -56,6 +58,11 @@
           Type <b>overwrite</b> in the box below to confirm:
         </div>
         <Input bind:value={confirmInput} id="confirmation" label="" />
+        {#if error}
+          <div class="text-red-500 text-sm py-px">
+            {error}
+          </div>
+        {/if}
       </AlertDialogDescription>
     </AlertDialogHeader>
     <AlertDialogFooter class="mt-5">
