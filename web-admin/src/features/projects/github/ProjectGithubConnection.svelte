@@ -49,54 +49,51 @@
     >
       Github
     </span>
-    <div class="flex items-start gap-x-1">
-      <div class="py-0.5 mt-1">
-        <Github className="w-4 h-4" />
-      </div>
-      <div class="flex flex-col">
-        {#if isGithubConnected}
-          <div class="flex flex-row gap-x-1 items-center">
-            <a
-              href={$proj.data?.project?.githubUrl}
-              class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
-              target="_blank"
-              rel="noreferrer noopener"
-            >
-              {repoName}
-            </a>
-            <Button on:click={editGithubConnection} type="ghost" compact>
-              <EditIcon size="16px" />
-            </Button>
-          </div>
-          {#if subpath}
-            <div class="flex items-center">
-              <span class="font-mono">subpath</span>
-              <span class="text-gray-800">
-                : /{subpath}
-              </span>
-            </div>
-          {/if}
-          {#if $githubLastSynced}
-            <span class="text-gray-500 text-[11px] leading-4">
-              Synced {$githubLastSynced.toLocaleString(undefined, {
-                month: "short",
-                day: "numeric",
-                hour: "numeric",
-                minute: "numeric",
-              })}
+    <div class="flex flex-col gap-x-1">
+      {#if isGithubConnected}
+        <div class="flex flex-row gap-x-1 items-center">
+          <Github className="w-4 h-4" />
+          <a
+            href={$proj.data?.project?.githubUrl}
+            class="text-gray-800 text-[12px] font-semibold font-mono leading-5 truncate"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            {repoName}
+          </a>
+          <Button on:click={editGithubConnection} type="ghost" compact>
+            <EditIcon size="16px" />
+          </Button>
+        </div>
+        {#if subpath}
+          <div class="flex items-center">
+            <span class="font-mono">subpath</span>
+            <span class="text-gray-800">
+              : /{subpath}
             </span>
-          {/if}
-        {:else}
-          <span class="mt-1">
-            Unlock the power of BI-as-code with Github-backed collaboration,
-            version control, and approval workflows.
-          </span>
-          <ConnectToGithubButton
-            onContinue={confirmConnectToGithub}
-            loading={$userStatus.isFetching}
-          />
+          </div>
         {/if}
-      </div>
+        {#if $githubLastSynced}
+          <span class="text-gray-500 text-[11px] leading-4">
+            Synced {$githubLastSynced.toLocaleString(undefined, {
+              month: "short",
+              day: "numeric",
+              hour: "numeric",
+              minute: "numeric",
+            })}
+          </span>
+        {/if}
+      {:else}
+        <span class="mt-1">
+          Unlock the power of BI-as-code with Github-backed collaboration,
+          version control, and approval workflows.<br />
+          <a href="https://docs.rilldata.com" target="_blank">Learn more</a>
+        </span>
+        <ConnectToGithubButton
+          onContinue={confirmConnectToGithub}
+          loading={$userStatus.isFetching}
+        />
+      {/if}
     </div>
   </div>
 {/if}

@@ -35,8 +35,8 @@
   </AlertDialogTrigger>
   <AlertDialogContent>
     <AlertDialogHeader>
-      <AlertDialogTitle class="flex flex-row items-center">
-        <AlertCircleOutline />
+      <AlertDialogTitle class="flex flex-row gap-x-2 items-center">
+        <AlertCircleOutline size="40px" className="text-yellow-600" />
         <div>
           Overwrite files in this {subpath ? "subpath" : "repository"}?
         </div>

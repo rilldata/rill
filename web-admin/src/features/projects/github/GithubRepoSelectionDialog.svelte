@@ -100,85 +100,79 @@
     <div class="hidden"></div>
   </DialogTrigger>
   <DialogContent>
-    <div class="flex flex-row gap-x-2">
-      <Github size="28px" />
-      <div class="flex flex-col">
-        <DialogHeader>
+    <DialogHeader>
+      <div class="flex flex-row gap-x-2 items-center">
+        <Github size="40px" />
+        <div class="flex flex-col gap-y-1">
           <DialogTitle>Select Github repository</DialogTitle>
-          <DialogDescription class="flex flex-col gap-y-2">
-            <span>
-              Which Github repo would you like to connect to this Rill project?
-            </span>
-            {#if $status.isFetching}
-              <div class="flex flex-row items-center ml-5 h-8">
-                <Spinner status={EntityStatus.Running} />
-              </div>
-            {:else}
-              <Select
-                id="emails"
-                label=""
-                bind:value={githubUrl}
-                options={repoSelections}
-                on:change={({ detail: newUrl }) => onRepoChange(newUrl)}
-              />
-            {/if}
-            <span>
-              <span class="font-semibold">Note:</span> Contents of this repo will
-              replace your current Rill project.
-            </span>
-            <Collapsible bind:open={advancedOpened}>
-              <CollapsibleTrigger asChild let:builder>
-                <Button builders={[builder]} type="text">
-                  {#if advancedOpened}
-                    <CaretUpIcon size="16px" />
-                  {:else}
-                    <CaretDownIcon size="16px" />
-                  {/if}
-                  <span class="text-sm">Advanced options</span>
-                </Button>
-              </CollapsibleTrigger>
-              <CollapsibleContent class="ml-6 flex flex-col gap-y-2">
-                <Input
-                  id="subpath"
-                  label="Subpath"
-                  placeholder="/subdirectory_path"
-                  bind:value={subpath}
-                  optional
-                />
-                <Input
-                  id="branch"
-                  label="Branch"
-                  bind:value={branch}
-                  optional
-                />
-              </CollapsibleContent>
-            </Collapsible>
-            {#if error}
-              <div class="text-red-500 text-sm py-px">
-                {error.response?.data?.message ?? error.message}
-              </div>
-            {/if}
+          <DialogDescription>
+            Choose a GitHub repo to house this project.
           </DialogDescription>
-        </DialogHeader>
-        <DialogFooter class="mt-5">
-          <Button
-            outline={false}
-            type="link"
-            on:click={() => githubData.reselectRepos()}
-          >
-            Choose other repos
-          </Button>
-          <Button type="secondary" on:click={() => (open = false)}>
-            Cancel
-          </Button>
-          <Button
-            type="primary"
-            loading={$connectToGithubMutation.isLoading}
-            on:click={() => updateGithubUrl(false)}>Continue</Button
-          >
-        </DialogFooter>
+        </div>
       </div>
-    </div>
+
+      {#if $status.isFetching}
+        <div class="flex flex-row items-center ml-5 h-20 w-full">
+          <div class="m-auto w-10">
+            <Spinner size="18px" status={EntityStatus.Running} />
+          </div>
+        </div>
+      {:else}
+        <Select
+          id="emails"
+          label="Repo"
+          bind:value={githubUrl}
+          options={repoSelections}
+          on:change={({ detail: newUrl }) => onRepoChange(newUrl)}
+        />
+        <span class="text-gray-500 mt-1">
+          <span class="font-semibold">Note:</span> Contents of this repo will replace
+          your current Rill project.
+        </span>
+      {/if}
+      <Collapsible bind:open={advancedOpened}>
+        <CollapsibleTrigger asChild let:builder>
+          <Button builders={[builder]} type="text">
+            {#if advancedOpened}
+              <CaretUpIcon size="16px" />
+            {:else}
+              <CaretDownIcon size="16px" />
+            {/if}
+            <span class="text-sm">Advanced options</span>
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent class="ml-6 flex flex-col gap-y-2">
+          <Input
+            id="subpath"
+            label="Subpath"
+            placeholder="/subdirectory_path"
+            bind:value={subpath}
+            optional
+          />
+          <Input id="branch" label="Branch" bind:value={branch} optional />
+        </CollapsibleContent>
+      </Collapsible>
+      {#if error}
+        <div class="text-red-500 text-sm py-px">
+          {error.response?.data?.message ?? error.message}
+        </div>
+      {/if}
+    </DialogHeader>
+    <DialogFooter class="mt-3">
+      <Button
+        outline={false}
+        type="link"
+        on:click={() => githubData.reselectRepos()}
+      >
+        Choose other repos
+      </Button>
+      <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
+      <Button
+        type="primary"
+        loading={$connectToGithubMutation.isLoading}
+        on:click={() => updateGithubUrl(false)}>Continue</Button
+      >
+    </DialogFooter>
   </DialogContent>
 </Dialog>
 

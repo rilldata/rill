@@ -9,6 +9,10 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
+  import {
+    DialogDescription,
+    DialogTitle,
+  } from "@rilldata/web-common/components/dialog-v2";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
 
   export let open = false;
@@ -32,55 +36,51 @@
 <AlertDialog bind:open>
   <AlertDialogTrigger asChild let:builder>
     <Button builders={[builder]} type="primary" class="w-fit mt-1" {loading}>
+      <Github className="w-4 h-4" fill="white" />
       Connect to Github
     </Button>
   </AlertDialogTrigger>
   <AlertDialogContent>
-    <div class="flex flex-row gap-x-2">
-      <Github size="28px" />
-      <div class="flex flex-col">
-        <AlertDialogHeader>
-          <AlertDialogTitle>
-            Connect this project to a Github repo
-          </AlertDialogTitle>
-          <AlertDialogDescription>
-            <div>
-              Before continuing, you need to create a repo in GitHub and grant
-              Rill read and write access to it.
-              <Button
-                type="link"
-                href="#"
-                on:click={openGithubRepoCreator}
-                forcedStyle="display:inline-block !important; padding: 0px !important; min-height:12px !important; height: 12px !important;"
-              >
-                Create GitHub repo ->
-              </Button>
-            </div>
-            <div class="flex gap-x-2 mt-4">
-              <input
-                type="checkbox"
-                id="create-github-repo"
-                bind:checked={githubRepoCreated}
-              />
-              <label for="create-github-repo" class="text-gray-800"
-                >I’ve created a GitHub repo</label
-              >
-            </div>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter class="mt-5">
-          <Button type="secondary" on:click={() => (open = false)}>
-            Cancel
-          </Button>
-          <Button
-            type="primary"
-            on:click={handleContinue}
-            disabled={!githubRepoCreated}
-          >
-            Continue
-          </Button>
-        </AlertDialogFooter>
+    <AlertDialogHeader>
+      <div class="flex flex-row gap-x-2 items-center">
+        <Github size="40px" />
+        <AlertDialogTitle>Connect to GitHub</AlertDialogTitle>
       </div>
-    </div>
+
+      <AlertDialogDescription>
+        <div class="mt-1">
+          Before continuing, you need to create a repo in GitHub and grant Rill
+          read and write access to it.
+          <Button
+            type="link"
+            href="#"
+            on:click={openGithubRepoCreator}
+            forcedStyle="display:inline-block !important; padding: 0px !important; min-height:12px !important; height: 12px !important;"
+          >
+            <span class="text-sm">Create GitHub repo -></span>
+          </Button>
+        </div>
+        <div class="flex gap-x-2 mt-4">
+          <input
+            type="checkbox"
+            id="create-github-repo"
+            bind:checked={githubRepoCreated}
+          />
+          <label for="create-github-repo" class="text-gray-800"
+            >I’ve created a GitHub repo</label
+          >
+        </div>
+      </AlertDialogDescription>
+    </AlertDialogHeader>
+    <AlertDialogFooter class="mt-3">
+      <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
+      <Button
+        type="primary"
+        on:click={handleContinue}
+        disabled={!githubRepoCreated}
+      >
+        Continue
+      </Button>
+    </AlertDialogFooter>
   </AlertDialogContent>
 </AlertDialog>
