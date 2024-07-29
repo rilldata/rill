@@ -1,9 +1,8 @@
 <script lang="ts" context="module">
   import TemplateRenderer from "@rilldata/web-common/features/templates/TemplateRenderer.svelte";
   import { builderActions, getAttrs, type Builder } from "bits-ui";
-  import { load } from "js-yaml";
   import type { ComponentType } from "svelte";
-  import { getContext, onMount } from "svelte";
+  import { onMount } from "svelte";
   import {
     ResourceKind,
     useResource,
@@ -18,10 +17,6 @@
 </script>
 
 <script lang="ts">
-  import { useVariableInputParams } from "@rilldata/web-common/features/custom-dashboards/variables-store";
-  import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
-  import { createRuntimeServiceGetParsedComponent } from "@rilldata/web-common/runtime-client/manual-clients";
-
   export let i: number;
   export let builders: Builder[] = [];
   export let left: number;
@@ -39,7 +34,7 @@
   export let componentName: string;
   export let instanceId: string;
 
-  const dashboardName = getContext("rill::custom-dashboard:name") as string;
+  // const dashboardName = getContext("rill::custom-dashboard:name") as string;
 
   $: resourceQuery = useResource(
     instanceId,
@@ -59,16 +54,16 @@
     show,
   } = componentResource?.component?.spec ?? {});
 
-  $: inputVariableParams = useVariableInputParams(dashboardName, input);
+  // $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
-  $: parsedResourceQuery = createRuntimeServiceGetParsedComponent(
-    queryClient,
-    instanceId,
-    componentName,
-    $inputVariableParams,
-  );
-  $: data = $parsedResourceQuery?.data;
-  $: parsedComponent = load(data?.content);
+  // $: parsedResourceQuery = createRuntimeServiceGetParsedComponent(
+  //   queryClient,
+  //   instanceId,
+  //   componentName,
+  //   $inputVariableParams,
+  // );
+
+  // $: console.log($parsedResourceQuery.data);
 
   let ResizeHandleComponent: ComponentType<ResizeHandle>;
 
@@ -131,7 +126,7 @@
           <Chart
             {chartView}
             {input}
-            vegaSpec={parsedComponent?.vega_lite}
+            vegaSpec={rendererProperties?.spec}
             chartName={componentName}
             {resolverProperties}
           />
