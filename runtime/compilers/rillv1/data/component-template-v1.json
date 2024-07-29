@@ -152,6 +152,37 @@
       ],
       "type": "object"
     },
+    "SwitchProperties": {
+      "additionalProperties": false,
+      "properties": {
+        "label": {
+          "type": "string"
+        },
+        "tooltip": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "label",
+        "value"
+      ],
+      "type": "object"
+    },
+    "SwitchPropertiesT": {
+      "additionalProperties": false,
+      "properties": {
+        "switch": {
+          "$ref": "#/definitions/SwitchProperties"
+        }
+      },
+      "required": [
+        "switch"
+      ],
+      "type": "object"
+    },
     "TableProperties": {
       "additionalProperties": false,
       "properties": {
@@ -253,6 +284,9 @@
         },
         {
           "$ref": "#/definitions/SelectPropertiesT"
+        },
+        {
+          "$ref": "#/definitions/SwitchPropertiesT"
         }
       ]
     }

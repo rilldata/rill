@@ -4,6 +4,7 @@
   import KPITemplate from "@rilldata/web-common/features/templates/kpi/KPITemplate.svelte";
   import Markdown from "@rilldata/web-common/features/templates/markdown/Markdown.svelte";
   import Select from "@rilldata/web-common/features/templates/select/Select.svelte";
+  import Switch from "@rilldata/web-common/features/templates/switch/Switch.svelte";
 
   import {
     V1ComponentSpecRendererProperties,
@@ -34,6 +35,8 @@
     {resolverProperties}
     {rendererProperties}
   />
+{:else if renderer === "switch"}
+  <Switch {output} {rendererProperties} />
 {:else if resolverProperties}
   <ChartTemplate
     {chartView}

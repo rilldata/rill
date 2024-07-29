@@ -62,6 +62,16 @@ export interface SelectPropertiesT {
   select: SelectProperties;
 }
 
+export interface SwitchProperties {
+  label: string;
+  value: string;
+  tooltip?: string;
+}
+
+export interface SwitchPropertiesT {
+  switch: SwitchProperties;
+}
+
 export interface ImageProperties {
   url: string;
   css?: { [key: string]: any };
@@ -79,4 +89,5 @@ export type TemplateSpec =
   | TableTemplateT
   | MarkdownTemplateT
   | ImageTemplateT
-  | SelectPropertiesT;
+  | SelectPropertiesT
+  | SwitchPropertiesT;
