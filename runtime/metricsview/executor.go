@@ -61,6 +61,12 @@ func (e *Executor) Close() {
 	e.olapRelease()
 }
 
+// Cacheable returns whether the result of running the given query is cacheable.
+func (e *Executor) Cacheable(qry *Query) bool {
+	// TODO: Get from OLAP instead of hardcoding
+	return e.olap.Dialect() == drivers.DialectDuckDB
+}
+
 // ValidateMetricsView validates the dimensions and measures in the executor's metrics view.
 func (e *Executor) ValidateMetricsView(ctx context.Context) error {
 	// TODO: Implement it
@@ -155,49 +161,49 @@ func (e *Executor) Schema(ctx context.Context) (*runtimev1.StructType, error) {
 }
 
 // Query executes the provided query against the metrics view.
-func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Time) (*drivers.Result, bool, error) {
+func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Time) (*drivers.Result, error) {
 	if !e.security.CanAccess() {
-		return nil, false, runtime.ErrForbidden
+		return nil, runtime.ErrForbidden
 	}
 
 	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	pivotAST, pivoting, err := e.rewriteQueryForPivot(qry)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if err := e.rewriteQueryDruidExactify(ctx, qry); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	e.rewriteApproxComparisons(ast)
 
 	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	if err := e.rewriteDruidGroups(ast); err != nil {
-		return nil, false, err
+		return nil, err
 	}
 
 	var res *drivers.Result
 	if !pivoting {
 		sql, args, err := ast.SQL()
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 
 		res, err = e.olap.Execute(ctx, &drivers.Statement{
@@ -207,7 +213,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 			ExecutionTimeout: defaultInteractiveTimeout,
 		})
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 	} else {
 		// Since pivots are mainly used for exports, we just do an inefficient shim that runs a pivoted export to a temporary Parquet file, and then reads the file into a *drivers.Result using DuckDB.
@@ -221,14 +227,14 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		} else {
 			handle, release, err := e.rt.AcquireHandle(ctx, e.instanceID, "duckdb")
 			if err != nil {
-				return nil, false, fmt.Errorf("failed to acquire DuckDB for serving pivot: %w", err)
+				return nil, fmt.Errorf("failed to acquire DuckDB for serving pivot: %w", err)
 			}
 
 			var ok bool
 			duck, ok = handle.AsOLAP(e.instanceID)
 			if !ok {
 				release()
-				return nil, false, fmt.Errorf(`connector "duckdb" is not an OLAP store`)
+				return nil, fmt.Errorf(`connector "duckdb" is not an OLAP store`)
 			}
 			releaseDuck = release
 		}
@@ -236,7 +242,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		// Execute the pivot export
 		path, err := e.executePivotExport(ctx, ast, pivotAST, "parquet")
 		if err != nil {
-			return nil, false, err
+			return nil, err
 		}
 
 		// Use DuckDB to read the Parquet file into a *drivers.Result
@@ -247,7 +253,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		})
 		if err != nil {
 			_ = os.Remove(path)
-			return nil, false, err
+			return nil, err
 		}
 		res.SetCleanupFunc(func() error {
 			if releaseDuck != nil {
@@ -262,10 +268,7 @@ func (e *Executor) Query(ctx context.Context, qry *Query, executionTime *time.Ti
 		res.SetCap(rowsCap)
 	}
 
-	// TODO: Get from OLAP instead of hardcoding
-	cache := e.olap.Dialect() == drivers.DialectDuckDB
-
-	return res, cache, nil
+	return res, nil
 }
 
 // Export executes and exports the provided query against the metrics view.

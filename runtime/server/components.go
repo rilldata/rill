@@ -71,10 +71,15 @@ func (s *Server) componentDataHandler(w http.ResponseWriter, req *http.Request) 
 	if err != nil {
 		return httputil.Error(http.StatusBadRequest, err)
 	}
+	defer res.Close()
 
 	// Write the response
+	data, err := res.MarshalJSON()
+	if err != nil {
+		return httputil.Error(http.StatusInternalServerError, err)
+	}
 	w.Header().Set("Content-Type", "application/json")
-	_, err = w.Write(res.Data)
+	_, err = w.Write(data)
 	if err != nil {
 		return httputil.Error(http.StatusInternalServerError, err)
 	}

@@ -88,8 +88,16 @@ var spec = drivers.Spec{
 			Placeholder: "arn:aws:iam::03214372:role/service-role/AmazonRedshift-CommandsAccessRole-20240307T203902",
 			Required:    true,
 		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
-	ImplementsSQLStore: true,
+	ImplementsWarehouse: true,
 }
 
 type driver struct{}
@@ -219,9 +227,14 @@ func (c *Connection) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (c *Connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return c, true
+}
+
 // AsSQLStore implements drivers.Connection.
 func (c *Connection) AsSQLStore() (drivers.SQLStore, bool) {
-	return c, true
+	return nil, false
 }
 
 // AsAI implements drivers.Handle.

@@ -779,6 +779,18 @@ export class ModelSpec extends Message<ModelSpec> {
   inputProperties?: Struct;
 
   /**
+   * stage_connector is optional.
+   *
+   * @generated from field: string stage_connector = 16;
+   */
+  stageConnector = "";
+
+  /**
+   * @generated from field: google.protobuf.Struct stage_properties = 17;
+   */
+  stageProperties?: Struct;
+
+  /**
    * @generated from field: string output_connector = 1;
    */
   outputConnector = "";
@@ -808,6 +820,8 @@ export class ModelSpec extends Message<ModelSpec> {
     { no: 15, name: "incremental_state_resolver_properties", kind: "message", T: Struct },
     { no: 10, name: "input_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 11, name: "input_properties", kind: "message", T: Struct },
+    { no: 16, name: "stage_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 17, name: "stage_properties", kind: "message", T: Struct },
     { no: 1, name: "output_connector", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 12, name: "output_properties", kind: "message", T: Struct },
     { no: 9, name: "trigger", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
