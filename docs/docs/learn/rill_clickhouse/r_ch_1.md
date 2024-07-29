@@ -1,0 +1,49 @@
+---
+title: "Install Rill Developer"
+sidebar_label: "Installing Rill Developer"
+sidebar_position: 1
+hide_table_of_contents: false
+---
+import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
+
+
+**Installing Rill [Linux / MacOS]**
+
+Let’s install the Rill binary to your local machine.
+
+You can follow the steps in <a href="https://docs.rilldata.com/" target="_blank"> our documentation</a> or run the following from the CLI:
+
+- On MacOS, open the CLI by searching for “Terminal” in Spotlight.
+
+<LoomVideo loomId="74032007fb2e45acabf5e7488341148a?hideEmbedTopBar=true&" />
+<br />
+
+Once this is open run the following:
+
+```yaml
+curl https://rill.sh | sh
+rill start rill-clickhouse-project
+```
+
+<details>
+  <summary>Windows Installation Instructions</summary>
+
+  On Windows, you can search for "Command Prompt" (note that there are extra steps to get Rill running on Windows; please refer to the <a href="https://docs.rilldata.com/" target="_blank">documentation</a> for more details).
+  
+  ``` yaml
+        wsl --install -d Ubuntu-22.04
+  ```
+  Once the installation completes, and you have logged into the Linux instance, you need to install the unzip package using the following lines: 
+
+    ```yaml
+    sudo apt-get update
+    sudo apt-get install unzip
+    ```
+
+    Finally, you can install Rill!
+        ``` yaml 
+            curl https://rill.sh | sh
+
+    ```
+
+</details>

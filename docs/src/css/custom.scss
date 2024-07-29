@@ -250,3 +250,22 @@ li.theme-doc-sidebar-item-category-level-2 .menu__list-item-collapsible {
   display: flex;
   justify-content: center;
 }
+
+.docsRating {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.docsRating button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 1.5rem;
+}
+
+.docsRating button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
