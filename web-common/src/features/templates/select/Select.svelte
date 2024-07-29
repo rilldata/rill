@@ -31,7 +31,7 @@
   $: selectProperties = rendererProperties as SelectProperties;
   $: inputVariableParams = useVariableInputParams(dashboardName, input);
 
-  $: value = ($outputVariableValue || output?.defaultValue) as string;
+  $: value = (value || $outputVariableValue || output?.defaultValue) as string;
 
   $: componentDataQuery = createRuntimeServiceGetChartData(
     queryClient,
