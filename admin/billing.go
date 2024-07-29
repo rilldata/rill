@@ -159,12 +159,12 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 	org, err = s.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                org.Name,
 		Description:                         org.Description,
-		QuotaProjects:                       valOrDefault(plan.Quotas.NumProjects, org.QuotaProjects),
-		QuotaDeployments:                    valOrDefault(plan.Quotas.NumDeployments, org.QuotaDeployments),
-		QuotaSlotsTotal:                     valOrDefault(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
-		QuotaSlotsPerDeployment:             valOrDefault(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
-		QuotaOutstandingInvites:             valOrDefault(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
-		QuotaStorageLimitBytesPerDeployment: valOrDefault(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
+		QuotaProjects:                       biggerOfInt(plan.Quotas.NumProjects, org.QuotaProjects),
+		QuotaDeployments:                    biggerOfInt(plan.Quotas.NumDeployments, org.QuotaDeployments),
+		QuotaSlotsTotal:                     biggerOfInt(plan.Quotas.NumSlotsTotal, org.QuotaSlotsTotal),
+		QuotaSlotsPerDeployment:             biggerOfInt(plan.Quotas.NumSlotsPerDeployment, org.QuotaSlotsPerDeployment),
+		QuotaOutstandingInvites:             biggerOfInt(plan.Quotas.NumOutstandingInvites, org.QuotaOutstandingInvites),
+		QuotaStorageLimitBytesPerDeployment: biggerOfInt64(plan.Quotas.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 		BillingCustomerID:                   org.BillingCustomerID,
 		PaymentCustomerID:                   org.PaymentCustomerID,
 	})
@@ -177,6 +177,24 @@ func (s *Service) RepairOrgBilling(ctx context.Context, org *database.Organizati
 func valOrDefault[T any](ptr *T, def T) T {
 	if ptr != nil {
 		return *ptr
+	}
+	return def
+}
+
+func biggerOfInt(ptr *int, def int) int {
+	if ptr != nil {
+		if *ptr < 0 || *ptr > def {
+			return *ptr
+		}
+	}
+	return def
+}
+
+func biggerOfInt64(ptr *int64, def int64) int64 {
+	if ptr != nil {
+		if *ptr < 0 || *ptr > def {
+			return *ptr
+		}
 	}
 	return def
 }
