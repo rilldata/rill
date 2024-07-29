@@ -77,7 +77,7 @@
 <div>
   {#if !isValidSchema}
     <div>{$tableSchema.error}</div>
-  {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
+  {:else if pivotDataStore && pivotConfig && $pivotConfig}
     <TableRenderer
       {pivotDataStore}
       config={$pivotConfig}
