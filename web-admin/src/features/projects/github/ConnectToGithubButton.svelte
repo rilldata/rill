@@ -9,10 +9,6 @@
     AlertDialogTrigger,
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
-  import {
-    DialogDescription,
-    DialogTitle,
-  } from "@rilldata/web-common/components/dialog-v2";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
 
   export let open = false;

@@ -178,6 +178,7 @@
 
 <GithubOverwriteConfirmationDialog
   bind:open={$showOverwriteConfirmation}
+  loading={$connectToGithubMutation.isLoading}
   {githubUrl}
   {subpath}
   onConfirm={() => updateGithubUrl(true)}

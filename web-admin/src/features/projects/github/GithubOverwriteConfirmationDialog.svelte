@@ -14,7 +14,8 @@
   import Input from "@rilldata/web-common/components/forms/Input.svelte";
 
   export let open = false;
-  export let onConfirm: () => void;
+  export let loading = false;
+  export let onConfirm: () => Promise<void>;
   export let githubUrl: string;
   export let subpath: string;
 
@@ -26,6 +27,11 @@
   function close() {
     confirmInput = "";
     open = false;
+  }
+
+  async function handleContinue() {
+    await onConfirm();
+    close();
   }
 </script>
 
@@ -56,11 +62,9 @@
       <Button type="secondary" on:click={close}>Cancel</Button>
       <Button
         type="primary"
-        on:click={() => {
-          close();
-          onConfirm();
-        }}
+        on:click={handleContinue}
         disabled={!confirmed}
+        {loading}
       >
         Continue
       </Button>
