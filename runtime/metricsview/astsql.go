@@ -124,41 +124,33 @@ func (b *sqlBuilder) writeSelect(n *SelectNode) error {
 			b.out.WriteString(u)
 		}
 	} else if n.FromSelect != nil {
-		if n.FromSelect.IsCTE {
-			b.out.WriteString(n.FromSelect.Alias)
-			if n.JoinComparisonSelect != nil {
-				err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
-				if err != nil {
-					return err
-				}
-			}
-		} else {
+		if !n.FromSelect.IsCTE {
 			b.out.WriteByte('(')
 			err := b.writeSelect(n.FromSelect)
 			if err != nil {
 				return err
 			}
 			b.out.WriteString(") ")
-			b.out.WriteString(n.FromSelect.Alias)
+		}
+		b.out.WriteString(n.FromSelect.Alias)
 
-			for _, ljs := range n.LeftJoinSelects {
-				err := b.writeJoin("LEFT", n.FromSelect, ljs)
-				if err != nil {
-					return err
-				}
+		for _, ljs := range n.LeftJoinSelects {
+			err := b.writeJoin("LEFT", n.FromSelect, ljs)
+			if err != nil {
+				return err
 			}
+		}
 
-			if n.SpineSelect != nil {
-				err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
-				if err != nil {
-					return err
-				}
+		if n.SpineSelect != nil {
+			err := b.writeJoin("RIGHT", n.FromSelect, n.SpineSelect)
+			if err != nil {
+				return err
 			}
-			if n.JoinComparisonSelect != nil {
-				err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
-				if err != nil {
-					return err
-				}
+		}
+		if n.JoinComparisonSelect != nil {
+			err := b.writeJoin(n.JoinComparisonType, n.FromSelect, n.JoinComparisonSelect)
+			if err != nil {
+				return err
 			}
 		}
 	} else {

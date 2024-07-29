@@ -1079,6 +1079,16 @@ func (a *AST) sqlForAnyInGroup(expr string) string {
 	return fmt.Sprintf("ANY_VALUE(%s)", expr)
 }
 
+// convertToCTE util func that sets IsCTE and only adds to a.CTEs if IsCTE was false
+func (a *AST) convertToCTE(n *SelectNode) {
+	if n.IsCTE {
+		return
+	}
+
+	n.IsCTE = true
+	a.CTEs = append(a.CTEs, n)
+}
+
 // hasName checks if the given name is present as either a dimension or measure field in the node.
 // It relies on field names always resolving to the same value regardless of where in the AST they're referenced.
 // I.e. a name always corresponds to a dimension/measure name in the metrics view or as a computed field in the query.
