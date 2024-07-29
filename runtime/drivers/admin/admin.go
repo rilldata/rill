@@ -215,6 +215,11 @@ func (h *Handle) AsFileStore() (drivers.FileStore, bool) {
 	return nil, false
 }
 
+// AsWarehouse implements drivers.Handle.
+func (h *Handle) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
+}
+
 // AsModelExecutor implements drivers.Handle.
 func (h *Handle) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	return nil, false

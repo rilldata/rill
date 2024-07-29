@@ -540,6 +540,11 @@ service AdminService {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/tokens/magic"};
   }
 
+  // GetCurrentMagicAuthToken returns information about the current magic auth token.
+  rpc GetCurrentMagicAuthToken(GetCurrentMagicAuthTokenRequest) returns (GetCurrentMagicAuthTokenResponse) {
+    option (google.api.http) = {get: "/v1/magic-tokens/current"};
+  }
+
   // RevokeMagicAuthToken revokes a magic auth token.
   rpc RevokeMagicAuthToken(RevokeMagicAuthTokenRequest) returns (RevokeMagicAuthTokenResponse) {
     option (google.api.http) = {delete: "/v1/magic-tokens/{token_id}"};
@@ -1541,6 +1546,8 @@ message IssueMagicAuthTokenRequest {
   // Optional list of names of dimensions and measures to limit access to.
   // If empty, all dimensions and measures are accessible.
   repeated string metrics_view_fields = 6;
+  // Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+  string state = 7;
 }
 
 message IssueMagicAuthTokenResponse {
@@ -1558,6 +1565,12 @@ message ListMagicAuthTokensRequest {
 message ListMagicAuthTokensResponse {
   repeated MagicAuthToken tokens = 1;
   string next_page_token = 2;
+}
+
+message GetCurrentMagicAuthTokenRequest {}
+
+message GetCurrentMagicAuthTokenResponse {
+  MagicAuthToken token = 1;
 }
 
 message RevokeMagicAuthTokenRequest {
@@ -2111,6 +2124,7 @@ message MagicAuthToken {
   string metrics_view = 9;
   rill.runtime.v1.Expression metrics_view_filter = 10;
   repeated string metrics_view_fields = 11;
+  string state = 12;
 }
 
 message VirtualFile {

@@ -22,7 +22,9 @@ func SwitchCmd(ch *cmdutil.Helper) *cobra.Command {
 
 			var defaultOrg string
 			if len(args) == 0 {
-				res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{})
+				res, err := client.ListOrganizations(cmd.Context(), &adminv1.ListOrganizationsRequest{
+					PageSize: 1000,
+				})
 				if err != nil {
 					return err
 				}

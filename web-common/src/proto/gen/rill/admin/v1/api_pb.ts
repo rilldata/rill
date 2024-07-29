@@ -6860,6 +6860,13 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
    */
   metricsViewFields: string[] = [];
 
+  /**
+   * Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
+   *
+   * @generated from field: string state = 7;
+   */
+  state = "";
+
   constructor(data?: PartialMessage<IssueMagicAuthTokenRequest>) {
     super();
     proto3.util.initPartial(data, this);
@@ -6874,6 +6881,7 @@ export class IssueMagicAuthTokenRequest extends Message<IssueMagicAuthTokenReque
     { no: 4, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "metrics_view_filter", kind: "message", T: Expression },
     { no: 6, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 7, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): IssueMagicAuthTokenRequest {
@@ -7031,6 +7039,74 @@ export class ListMagicAuthTokensResponse extends Message<ListMagicAuthTokensResp
 
   static equals(a: ListMagicAuthTokensResponse | PlainMessage<ListMagicAuthTokensResponse> | undefined, b: ListMagicAuthTokensResponse | PlainMessage<ListMagicAuthTokensResponse> | undefined): boolean {
     return proto3.util.equals(ListMagicAuthTokensResponse, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetCurrentMagicAuthTokenRequest
+ */
+export class GetCurrentMagicAuthTokenRequest extends Message<GetCurrentMagicAuthTokenRequest> {
+  constructor(data?: PartialMessage<GetCurrentMagicAuthTokenRequest>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetCurrentMagicAuthTokenRequest";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentMagicAuthTokenRequest {
+    return new GetCurrentMagicAuthTokenRequest().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCurrentMagicAuthTokenRequest {
+    return new GetCurrentMagicAuthTokenRequest().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCurrentMagicAuthTokenRequest {
+    return new GetCurrentMagicAuthTokenRequest().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetCurrentMagicAuthTokenRequest | PlainMessage<GetCurrentMagicAuthTokenRequest> | undefined, b: GetCurrentMagicAuthTokenRequest | PlainMessage<GetCurrentMagicAuthTokenRequest> | undefined): boolean {
+    return proto3.util.equals(GetCurrentMagicAuthTokenRequest, a, b);
+  }
+}
+
+/**
+ * @generated from message rill.admin.v1.GetCurrentMagicAuthTokenResponse
+ */
+export class GetCurrentMagicAuthTokenResponse extends Message<GetCurrentMagicAuthTokenResponse> {
+  /**
+   * @generated from field: rill.admin.v1.MagicAuthToken token = 1;
+   */
+  token?: MagicAuthToken;
+
+  constructor(data?: PartialMessage<GetCurrentMagicAuthTokenResponse>) {
+    super();
+    proto3.util.initPartial(data, this);
+  }
+
+  static readonly runtime: typeof proto3 = proto3;
+  static readonly typeName = "rill.admin.v1.GetCurrentMagicAuthTokenResponse";
+  static readonly fields: FieldList = proto3.util.newFieldList(() => [
+    { no: 1, name: "token", kind: "message", T: MagicAuthToken },
+  ]);
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetCurrentMagicAuthTokenResponse {
+    return new GetCurrentMagicAuthTokenResponse().fromBinary(bytes, options);
+  }
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetCurrentMagicAuthTokenResponse {
+    return new GetCurrentMagicAuthTokenResponse().fromJson(jsonValue, options);
+  }
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetCurrentMagicAuthTokenResponse {
+    return new GetCurrentMagicAuthTokenResponse().fromJsonString(jsonString, options);
+  }
+
+  static equals(a: GetCurrentMagicAuthTokenResponse | PlainMessage<GetCurrentMagicAuthTokenResponse> | undefined, b: GetCurrentMagicAuthTokenResponse | PlainMessage<GetCurrentMagicAuthTokenResponse> | undefined): boolean {
+    return proto3.util.equals(GetCurrentMagicAuthTokenResponse, a, b);
   }
 }
 
@@ -11492,6 +11568,11 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
    */
   metricsViewFields: string[] = [];
 
+  /**
+   * @generated from field: string state = 12;
+   */
+  state = "";
+
   constructor(data?: PartialMessage<MagicAuthToken>) {
     super();
     proto3.util.initPartial(data, this);
@@ -11511,6 +11592,7 @@ export class MagicAuthToken extends Message<MagicAuthToken> {
     { no: 9, name: "metrics_view", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 10, name: "metrics_view_filter", kind: "message", T: Expression },
     { no: 11, name: "metrics_view_fields", kind: "scalar", T: 9 /* ScalarType.STRING */, repeated: true },
+    { no: 12, name: "state", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): MagicAuthToken {

@@ -158,6 +158,8 @@ export type AdminServiceIssueMagicAuthTokenBody = {
   /** Optional list of names of dimensions and measures to limit access to.
 If empty, all dimensions and measures are accessible. */
   metricsViewFields?: string[];
+  /** Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken. */
+  state?: string;
 };
 
 export type AdminServiceListMagicAuthTokensParams = {
@@ -444,6 +446,11 @@ export interface V1SudoUpdateOrganizationQuotasRequest {
   storageLimitBytesPerDeployment?: string;
 }
 
+export interface V1SudoUpdateOrganizationBillingCustomerResponse {
+  organization?: V1Organization;
+  subscriptions?: V1Subscription[];
+}
+
 export interface V1SudoUpdateOrganizationBillingCustomerRequest {
   orgName?: string;
   billingCustomerId?: string;
@@ -489,11 +496,6 @@ export interface V1Subscription {
   currentBillingCycleStartDate?: string;
   currentBillingCycleEndDate?: string;
   trialEndDate?: string;
-}
-
-export interface V1SudoUpdateOrganizationBillingCustomerResponse {
-  organization?: V1Organization;
-  subscriptions?: V1Subscription[];
 }
 
 export interface V1Subquery {
@@ -784,6 +786,7 @@ export interface V1MagicAuthToken {
   metricsView?: string;
   metricsViewFilter?: V1Expression;
   metricsViewFields?: string[];
+  state?: string;
 }
 
 export interface V1ListWhitelistedDomainsResponse {
@@ -995,6 +998,10 @@ export interface V1GetDeploymentCredentialsResponse {
 export interface V1GetCurrentUserResponse {
   user?: V1User;
   preferences?: V1UserPreferences;
+}
+
+export interface V1GetCurrentMagicAuthTokenResponse {
+  token?: V1MagicAuthToken;
 }
 
 export interface V1GetCloneCredentialsResponse {

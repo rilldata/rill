@@ -1,6 +1,6 @@
 import {
-  extractFileName,
   extractFileExtension,
+  extractFileName,
   splitFolderAndName,
 } from "@rilldata/web-common/features/entity-management/file-path-utils";
 import {
@@ -8,38 +8,41 @@ import {
   useProjectParser,
   useResource,
 } from "@rilldata/web-common/features/entity-management/resource-selectors";
+import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
 import {
   V1ReconcileStatus,
+  getRuntimeServiceGetFileQueryKey,
+  runtimeServiceGetFile,
+  runtimeServicePutFile,
   type V1ParseError,
   type V1Resource,
   type V1ResourceName,
-  getRuntimeServiceGetFileQueryKey,
-  runtimeServiceGetFile,
 } from "@rilldata/web-common/runtime-client";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import type { QueryClient, QueryFunction } from "@tanstack/svelte-query";
 import {
   derived,
   get,
-  type Readable,
   writable,
+  type Readable,
   type Writable,
 } from "svelte/store";
-import { runtimeServicePutFile } from "@rilldata/web-common/runtime-client";
-import { fileArtifacts } from "./file-artifacts";
 import {
   DIRECTORIES_WITHOUT_AUTOSAVE,
   FILES_WITHOUT_AUTOSAVE,
 } from "../editor/config";
-import { localStorageStore } from "@rilldata/web-common/lib/store-utils";
-import { parseKindAndNameFromFile } from "./file-content-utils";
+import { fileArtifacts } from "./file-artifacts";
+import { inferResourceKind } from "./infer-resource-kind";
 
 const UNSUPPORTED_EXTENSIONS = [".parquet", ".db", ".db.wal"];
 
 export class FileArtifact {
   readonly path: string;
-  readonly name = writable<V1ResourceName | undefined>(undefined);
+  readonly resourceName = writable<V1ResourceName | undefined>(undefined);
+  readonly inferredResourceKind = writable<ResourceKind | null | undefined>(
+    undefined,
+  );
   readonly reconciling = writable(false);
   readonly localContent: Writable<string | null> = writable(null);
   readonly remoteContent: Writable<string | null> = writable(null);
@@ -81,6 +84,12 @@ export class FileArtifact {
     this.fileTypeUnsupported = UNSUPPORTED_EXTENSIONS.includes(
       this.fileExtension,
     );
+
+    this.onRemoteContentChange((content) => {
+      if (!get(this.resourceName)) {
+        this.inferredResourceKind.set(inferResourceKind(this.path, content));
+      }
+    });
   }
 
   updateRemoteContent = (content: string, alert = true) => {
@@ -114,10 +123,6 @@ export class FileArtifact {
     if (blob === undefined) {
       throw new Error("Content undefined");
     }
-
-    const newName = parseKindAndNameFromFile(this.path, blob);
-
-    if (newName) this.name.set(newName);
 
     this.updateRemoteContent(blob, true);
   }
@@ -191,7 +196,7 @@ export class FileArtifact {
   };
 
   updateAll(resource: V1Resource) {
-    this.updateNameIfChanged(resource);
+    this.updateResourceNameIfChanged(resource);
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
     this.reconciling.set(
       resource.meta?.reconcileStatus ===
@@ -200,7 +205,7 @@ export class FileArtifact {
   }
 
   updateReconciling(resource: V1Resource) {
-    this.updateNameIfChanged(resource);
+    this.updateResourceNameIfChanged(resource);
     this.reconciling.set(
       resource.meta?.reconcileStatus ===
         V1ReconcileStatus.RECONCILE_STATUS_RUNNING,
@@ -208,7 +213,7 @@ export class FileArtifact {
   }
 
   updateLastUpdated(resource: V1Resource) {
-    this.updateNameIfChanged(resource);
+    this.updateResourceNameIfChanged(resource);
     this.lastStateUpdatedOn = resource.meta?.stateUpdatedOn;
   }
 
@@ -216,8 +221,19 @@ export class FileArtifact {
     this.reconciling.set(false);
   }
 
+  hardDeleteResource() {
+    // To avoid a workspace flicker, first infer the *intended* resource kind
+    this.inferredResourceKind.set(
+      inferResourceKind(this.path, get(this.remoteContent) ?? ""),
+    );
+
+    this.resourceName.set(undefined);
+    this.reconciling.set(false);
+    this.lastStateUpdatedOn = undefined;
+  }
+
   getResource = (queryClient: QueryClient, instanceId: string) => {
-    return derived(this.name, (name, set) =>
+    return derived(this.resourceName, (name, set) =>
       useResource(
         instanceId,
         name?.name as string,
@@ -228,28 +244,32 @@ export class FileArtifact {
     ) as ReturnType<typeof useResource<V1Resource>>;
   };
 
+  getParseError = (queryClient: QueryClient, instanceId: string) => {
+    return derived(
+      useProjectParser(queryClient, instanceId),
+      (projectParser) => {
+        return projectParser.data?.projectParser?.state?.parseErrors?.find(
+          (e) => e.filePath === this.path,
+        );
+      },
+    );
+  };
+
   getAllErrors = (
     queryClient: QueryClient,
     instanceId: string,
   ): Readable<V1ParseError[]> => {
     const store = derived(
       [
-        this.name,
         useProjectParser(queryClient, instanceId),
         this.getResource(queryClient, instanceId),
       ],
-      ([name, projectParser, resource]) => {
+      ([projectParser, resource]) => {
         if (projectParser.isFetching || resource.isFetching) {
           // to avoid flicker during a re-fetch, retain the previous value
           return get(store);
         }
-        if (
-          // not having a name will signify a non-entity file
-          !name?.kind ||
-          projectParser.isError
-        ) {
-          return [];
-        }
+
         return [
           ...(
             projectParser.data?.projectParser?.state?.parseErrors ?? []
@@ -277,18 +297,18 @@ export class FileArtifact {
   }
 
   getEntityName() {
-    return get(this.name)?.name ?? extractFileName(this.path);
+    return get(this.resourceName)?.name ?? extractFileName(this.path);
   }
 
-  private updateNameIfChanged(resource: V1Resource) {
+  private updateResourceNameIfChanged(resource: V1Resource) {
     const isSubResource = !!resource.component?.spec?.definedInDashboard;
     if (isSubResource) return;
-    const curName = get(this.name);
+    const curName = get(this.resourceName);
     if (
       curName?.name !== resource.meta?.name?.name ||
       curName?.kind !== resource.meta?.name?.kind
     ) {
-      this.name.set({
+      this.resourceName.set({
         kind: resource.meta?.name?.kind,
         name: resource.meta?.name?.name,
       });

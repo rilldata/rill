@@ -102,6 +102,7 @@ const (
 	AdminService_RevokeServiceAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
 	AdminService_IssueMagicAuthToken_FullMethodName                   = "/rill.admin.v1.AdminService/IssueMagicAuthToken"
 	AdminService_ListMagicAuthTokens_FullMethodName                   = "/rill.admin.v1.AdminService/ListMagicAuthTokens"
+	AdminService_GetCurrentMagicAuthToken_FullMethodName              = "/rill.admin.v1.AdminService/GetCurrentMagicAuthToken"
 	AdminService_RevokeMagicAuthToken_FullMethodName                  = "/rill.admin.v1.AdminService/RevokeMagicAuthToken"
 	AdminService_UpdateUserPreferences_FullMethodName                 = "/rill.admin.v1.AdminService/UpdateUserPreferences"
 	AdminService_ListBookmarks_FullMethodName                         = "/rill.admin.v1.AdminService/ListBookmarks"
@@ -307,6 +308,8 @@ type AdminServiceClient interface {
 	IssueMagicAuthToken(ctx context.Context, in *IssueMagicAuthTokenRequest, opts ...grpc.CallOption) (*IssueMagicAuthTokenResponse, error)
 	// ListMagicAuthTokens lists all the magic auth tokens for a specific project.
 	ListMagicAuthTokens(ctx context.Context, in *ListMagicAuthTokensRequest, opts ...grpc.CallOption) (*ListMagicAuthTokensResponse, error)
+	// GetCurrentMagicAuthToken returns information about the current magic auth token.
+	GetCurrentMagicAuthToken(ctx context.Context, in *GetCurrentMagicAuthTokenRequest, opts ...grpc.CallOption) (*GetCurrentMagicAuthTokenResponse, error)
 	// RevokeMagicAuthToken revokes a magic auth token.
 	RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
@@ -1205,6 +1208,16 @@ func (c *adminServiceClient) ListMagicAuthTokens(ctx context.Context, in *ListMa
 	return out, nil
 }
 
+func (c *adminServiceClient) GetCurrentMagicAuthToken(ctx context.Context, in *GetCurrentMagicAuthTokenRequest, opts ...grpc.CallOption) (*GetCurrentMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCurrentMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetCurrentMagicAuthToken_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(RevokeMagicAuthTokenResponse)
@@ -1687,6 +1700,8 @@ type AdminServiceServer interface {
 	IssueMagicAuthToken(context.Context, *IssueMagicAuthTokenRequest) (*IssueMagicAuthTokenResponse, error)
 	// ListMagicAuthTokens lists all the magic auth tokens for a specific project.
 	ListMagicAuthTokens(context.Context, *ListMagicAuthTokensRequest) (*ListMagicAuthTokensResponse, error)
+	// GetCurrentMagicAuthToken returns information about the current magic auth token.
+	GetCurrentMagicAuthToken(context.Context, *GetCurrentMagicAuthTokenRequest) (*GetCurrentMagicAuthTokenResponse, error)
 	// RevokeMagicAuthToken revokes a magic auth token.
 	RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
@@ -2000,6 +2015,9 @@ func (UnimplementedAdminServiceServer) IssueMagicAuthToken(context.Context, *Iss
 }
 func (UnimplementedAdminServiceServer) ListMagicAuthTokens(context.Context, *ListMagicAuthTokensRequest) (*ListMagicAuthTokensResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMagicAuthTokens not implemented")
+}
+func (UnimplementedAdminServiceServer) GetCurrentMagicAuthToken(context.Context, *GetCurrentMagicAuthTokenRequest) (*GetCurrentMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentMagicAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeMagicAuthToken not implemented")
@@ -3601,6 +3619,24 @@ func _AdminService_ListMagicAuthTokens_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_GetCurrentMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetCurrentMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetCurrentMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetCurrentMagicAuthToken(ctx, req.(*GetCurrentMagicAuthTokenRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_RevokeMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(RevokeMagicAuthTokenRequest)
 	if err := dec(in); err != nil {
@@ -4497,6 +4533,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListMagicAuthTokens",
 			Handler:    _AdminService_ListMagicAuthTokens_Handler,
+		},
+		{
+			MethodName: "GetCurrentMagicAuthToken",
+			Handler:    _AdminService_GetCurrentMagicAuthToken_Handler,
 		},
 		{
 			MethodName: "RevokeMagicAuthToken",

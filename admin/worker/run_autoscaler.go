@@ -2,6 +2,7 @@ package worker
 
 import (
 	"context"
+	"math"
 	"time"
 
 	"github.com/rilldata/rill/admin/database"
@@ -9,9 +10,16 @@ import (
 	"go.uber.org/zap"
 )
 
-const legacyRecommendTime = 24 * time.Hour
+const (
+	legacyRecommendTime   = 24 * time.Hour
+	scaleThreshold        = 0.10 // 10%
+	smallServiceThreshold = 10
+	minScalingSlots       = 5.0
 
-const scaleThreshold = 0.10
+	// Reasons for not scaling
+	scaledown      = "scaling down is temporarily disabled"
+	belowThreshold = "scaling change is below the threshold"
+)
 
 func (w *Worker) runAutoscaler(ctx context.Context) error {
 	recs, ok, err := w.allRecommendations(ctx)
@@ -48,13 +56,21 @@ func (w *Worker) runAutoscaler(ctx context.Context) error {
 			continue
 		}
 
-		if !shouldScale(targetProject.ProdSlots, rec.RecommendedSlots) {
-			w.logger.Debug("skipping autoscaler: target slots are within threshold of original slots",
+		if shouldScale, reason := shouldScale(targetProject.ProdSlots, rec.RecommendedSlots); !shouldScale {
+			logMessage := "skipping autoscaler: " + reason
+
+			logFields := []zap.Field{
 				zap.Int("project_slots", targetProject.ProdSlots),
 				zap.Int("recommend_slots", rec.RecommendedSlots),
 				zap.Float64("scale_threshold_percentage", scaleThreshold),
 				zap.String("project_name", targetProject.Name),
-			)
+			}
+
+			if reason == scaledown {
+				w.logger.Info(logMessage, logFields...)
+			} else {
+				w.logger.Debug(logMessage, logFields...)
+			}
 			continue
 		}
 
@@ -129,21 +145,32 @@ func (w *Worker) allRecommendations(ctx context.Context) ([]metrics.AutoscalerSl
 	return recs, true, nil
 }
 
-// shouldScale determines whether scaling operations should be initiated based on the comparison of
-// the current number of slots (originSlots) and the recommended number of slots (recommendSlots).
-func shouldScale(originSlots, recommendSlots int) bool {
-	// Temproray disable scale DOWN - Tony
+// shouldScale determines whether scaling operations should be initiated
+// based on the comparison of the current number of slots (originSlots)
+// and the recommended number of slots (recommendSlots).
+func shouldScale(originSlots, recommendSlots int) (bool, string) {
+	// NOTE(2024-07-23): Temporary measure to avoid autoscaling DOWN
 	if recommendSlots <= originSlots {
-		return false
+		return false, scaledown
 	}
 
-	lowerBound := float64(originSlots) * (1 - scaleThreshold)
-	upperBound := float64(originSlots) * (1 + scaleThreshold)
-	if float64(recommendSlots) >= lowerBound && float64(recommendSlots) <= upperBound {
-		return false
+	// Always allow scaling for small services
+	if originSlots < smallServiceThreshold {
+		return true, ""
 	}
 
-	// TODO: Skip scaling for manually assigned slots
+	// Calculate the absolute difference in slots
+	scalingSlots := math.Abs(float64(recommendSlots - originSlots))
 
-	return true
+	// Avoid scaling if increase/decrease is less than 10%
+	if scalingSlots <= float64(originSlots)*scaleThreshold {
+		return false, belowThreshold
+	}
+
+	// Avoid scaling if increase/decrease is less than 5 slots
+	if scalingSlots < minScalingSlots {
+		return false, belowThreshold
+	}
+
+	return true, ""
 }
