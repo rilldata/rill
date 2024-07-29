@@ -7,9 +7,10 @@ sidebar_position: 36
 
 ## Overview
 
-Sharing your dashboard is a key way to promote collaboration within your team and allows for quick access to your dashboards. With public URLS, we have created the ability for you to create a public link to a dashboard with specific filters applied.
+Sharing your dashboard is a key way to promote collaboration within your team and allows for quick access to your dashboards. With shared public URLS, you can create a public link to a dashboard with specific filters applied.
 
->gif on dashboard recipient view
+<img src ='/img/explore/dashboard101/public-url.gif' class='rounded-gif'/>
+<br />
 
 :::tip
 Recipients are not required to log in to view the dashboard! This can be used internally and for non-users to view a dashboard.
@@ -20,7 +21,6 @@ The user who receives this link will be able to use the dashboard just as any ot
 
 ### How to create a public URL from the UI
 
-> insert gif here
 
 
 After applying the filters and modifying the dashboard to your liking, please select the `share` button. 
@@ -32,8 +32,9 @@ If you want to set an expiration, please select the toggle and set the expiratio
 
 As expected, when opening the public URL, the user can view the dashboard. Like a logged-in user, they are able to navigate with the dashboard and do any drilling they need. Unlike a logged in user, they are not able to make any changes to the filter that you set. 
 
+
 ### How to manage public URLs via the CLI
- >share-url will change to public-url soon
+ > Starting from v.0.48, share-url will be rebranded to public-url
 ```
 rill share-url
 Manage shareable URLs
@@ -76,5 +77,3 @@ rill share-url delete <id>
 ```
 
 If you are interested in creating a public URL directly from the CLI, you can do so by passing the required parameters. (You can use the --help flag to see what additional flags are required.)
-
->> looks like a UI version is coming soon
