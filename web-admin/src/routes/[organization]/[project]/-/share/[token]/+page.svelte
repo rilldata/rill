@@ -2,7 +2,7 @@
   import { onNavigate } from "$app/navigation";
   import { page } from "$app/stores";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
-  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/shareable-urls/selectors";
+  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/public-urls/selectors";
   import ErrorPage from "@rilldata/web-common/components/ErrorPage.svelte";
   import LoadingPage from "@rilldata/web-common/components/LoadingPage.svelte";
   import { Dashboard } from "@rilldata/web-common/features/dashboards";
