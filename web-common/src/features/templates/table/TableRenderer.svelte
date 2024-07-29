@@ -11,27 +11,26 @@
     PivotDataStoreConfig,
     PivotState,
   } from "@rilldata/web-common/features/dashboards/pivot/types";
-  import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import Resizer from "@rilldata/web-common/layout/Resizer.svelte";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
   import { modified } from "@rilldata/web-common/lib/actions/modified-click";
   import { clamp } from "@rilldata/web-common/lib/clamp";
   import {
-    ExpandedState,
-    SortingState,
-    TableOptions,
-    Updater,
     createSvelteTable,
+    ExpandedState,
     flexRender,
     getCoreRowModel,
     getExpandedRowModel,
+    SortingState,
+    TableOptions,
+    Updater,
   } from "@tanstack/svelte-table";
   import {
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
   import type { Readable } from "svelte/motion";
-  import { derived } from "svelte/store";
+  import { derived, Writable } from "svelte/store";
 
   // Distance threshold (in pixels) for triggering data fetch
   const ROW_THRESHOLD = 200;
@@ -48,8 +47,7 @@
 
   export let pivotDataStore: PivotDataStore;
   export let config: PivotDataStoreConfig;
-  export let metricsViewName: string;
-  export let pivotDashboardStore: Readable<PivotState>;
+  export let pivotDashboardStore: Writable<PivotState>;
 
   const options: Readable<TableOptions<PivotDataRow>> = derived(
     [pivotDashboardStore, pivotDataStore],
@@ -160,7 +158,7 @@
     //@ts-expect-error-free
     //eslint-disable-next-line
     expanded = updater(expanded);
-    metricsExplorerStore.setPivotExpanded(metricsViewName, expanded);
+    pivotDashboardStore.update((state) => ({ ...state, expanded }));
   }
 
   function onSortingChange(updater: Updater<SortingState>) {
@@ -169,7 +167,7 @@
     } else {
       sorting = updater;
     }
-    metricsExplorerStore.setPivotSort(metricsViewName, sorting);
+    pivotDashboardStore.update((state) => ({ ...state, sorting }));
   }
 
   const handleScroll = (containerRefElement?: HTMLDivElement | null) => {
@@ -186,7 +184,10 @@
         !$pivotDataStore.isFetching &&
         !reachedEndForRows
       ) {
-        metricsExplorerStore.setPivotRowPage(metricsViewName, rowPage + 1);
+        pivotDashboardStore.update((state) => ({
+          ...state,
+          rowPage: rowPage + 1,
+        }));
       }
     }
   };

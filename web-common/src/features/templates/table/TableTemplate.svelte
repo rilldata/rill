@@ -79,7 +79,6 @@
     <div>{$tableSchema.error}</div>
   {:else if pivotDataStore && $pivotDataStore && pivotConfig && $pivotConfig}
     <TableRenderer
-      metricsViewName={tableProperties.metric_view + TABLE_PREFIX}
       {pivotDataStore}
       config={$pivotConfig}
       pivotDashboardStore={pivotState}
