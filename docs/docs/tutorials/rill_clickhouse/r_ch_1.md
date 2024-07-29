@@ -15,14 +15,15 @@ You can follow the steps in <a href="https://docs.rilldata.com/" target="_blank"
 
 - On MacOS, open the CLI by searching for “Terminal” in Spotlight.
 
-<LoomVideo loomId="74032007fb2e45acabf5e7488341148a?hideEmbedTopBar=true&" />
+<img src = '/img/tutorials/101/Terminal.gif' class='rounded-gif' />
 <br />
+
 
 Once this is open run the following:
 
 ```yaml
 curl https://rill.sh | sh
-rill start rill-clickhouse-project
+rill start my-rill-clickhouse-tutorial
 ```
 
 <details>
