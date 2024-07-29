@@ -516,7 +516,7 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.RefreshedOn = nil
 	mdl.State.IncrementalState = nil
 	mdl.State.IncrementalStateSchema = nil
-	mdl.State.ModelId = ""
+	mdl.State.SplitsModelId = ""
 
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }
@@ -589,8 +589,8 @@ func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtim
 	}
 
 	// Ensure a model ID is set. We use it to track the model's splits in the catalog.
-	if mdl.State.ModelId == "" {
-		mdl.State.ModelId = uuid.NewString()
+	if mdl.State.SplitsModelId == "" {
+		mdl.State.SplitsModelId = uuid.NewString()
 		err := r.C.UpdateState(ctx, self.Meta.Name, self)
 		if err != nil {
 			return err
@@ -632,7 +632,7 @@ func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtim
 				return err
 			}
 
-			// Track the row index of the first row in the batch
+			// Advance the row index of the first row in the batch
 			batchStartIdx += len(batch)
 
 			// Reset the batch without reallocating
@@ -688,17 +688,20 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 			return fmt.Errorf("failed to marshal split row at index %d: %w", i, err)
 		}
 
-		// JSON serialization is deterministic, so we can hash it to get a key
+		// JSON serialization is deterministic in Go, so we can hash it to get a key
 		key, err := secureHash(rowJSON)
 		if err != nil {
 			return fmt.Errorf("failed to hash split row at index %d: %w", i, err)
 		}
 
 		splits[key] = drivers.ModelSplit{
-			Key:       key,
-			DataJSON:  rowJSON,
-			Index:     startIdx + i,
-			Watermark: watermark,
+			Key:        key,
+			DataJSON:   rowJSON,
+			Index:      startIdx + i,
+			Watermark:  watermark,
+			ExecutedOn: nil,
+			Error:      "",
+			Elapsed:    0,
 		}
 	}
 
@@ -707,12 +710,12 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 	for key := range splits {
 		keys = append(keys, key)
 	}
-	existing, err := catalog.FindModelSplitsByKeys(ctx, mdl.State.ModelId, keys)
+	existing, err := catalog.FindModelSplitsByKeys(ctx, mdl.State.SplitsModelId, keys)
 	if err != nil {
 		return fmt.Errorf("failed to find existing splits: %w", err)
 	}
 
-	// Handle the existing skips by skipping or updating them.
+	// Handle the existing splits by skipping or updating them.
 	// We remove the handled splits from the splits map. The ones that remain are new and should be inserted.
 	for _, old := range existing {
 		// Pop the matching split from the map
@@ -727,8 +730,8 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 			continue
 		}
 
-		// Update the split (since the new ExecutedOn will be nil, it will be marked for execution)
-		err = catalog.UpdateModelSplit(ctx, mdl.State.ModelId, split)
+		// Update the split (the new split's ExecutedOn will be nil, so it will be marked for execution)
+		err = catalog.UpdateModelSplit(ctx, mdl.State.SplitsModelId, split)
 		if err != nil {
 			return fmt.Errorf("failed to update existing split: %w", err)
 		}
@@ -736,7 +739,7 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 
 	// The remaining splits are new and should be inserted
 	for _, split := range splits {
-		err = catalog.InsertModelSplit(ctx, mdl.State.ModelId, split)
+		err = catalog.InsertModelSplit(ctx, mdl.State.SplitsModelId, split)
 		if err != nil {
 			return fmt.Errorf("failed to insert new split: %w", err)
 		}
@@ -746,7 +749,7 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 
 // clearSplits drops all splits for a model from the catalog.
 func (r *ModelReconciler) clearSplits(ctx context.Context, mdl *runtimev1.ModelV2) error {
-	if mdl.State.ModelId == "" {
+	if mdl.State.SplitsModelId == "" {
 		return nil
 	}
 
@@ -756,7 +759,7 @@ func (r *ModelReconciler) clearSplits(ctx context.Context, mdl *runtimev1.ModelV
 	}
 	defer release()
 
-	return catalog.DeleteModelSplits(ctx, mdl.State.ModelId)
+	return catalog.DeleteModelSplits(ctx, mdl.State.SplitsModelId)
 }
 
 // executeAll executes a model with the given execution options.

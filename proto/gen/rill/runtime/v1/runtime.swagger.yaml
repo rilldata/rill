@@ -4816,7 +4816,7 @@ definitions:
         type: object
       incrementalStateSchema:
         $ref: '#/definitions/v1StructType'
-      modelId:
+      splitsModelId:
         type: string
   v1ModelV2:
     type: object

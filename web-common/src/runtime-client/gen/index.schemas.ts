@@ -1047,7 +1047,7 @@ export interface V1ModelState {
   refreshedOn?: string;
   incrementalState?: V1ModelStateIncrementalState;
   incrementalStateSchema?: V1StructType;
-  modelId?: string;
+  splitsModelId?: string;
 }
 
 export interface V1ModelV2 {

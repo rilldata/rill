@@ -149,7 +149,7 @@ func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string
 	qry.WriteString("SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND key IN (")
 	args = append(args, c.instanceID, modelID)
 
-	qry.Grow(len(keys) * 2)
+	qry.Grow(len(keys)*2 + 14) // Makes room for one ",?" per key plus the ORDER BY clause
 	for i, k := range keys {
 		if i == 0 {
 			qry.WriteString("?")

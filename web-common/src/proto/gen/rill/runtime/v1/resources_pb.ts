@@ -918,9 +918,9 @@ export class ModelState extends Message<ModelState> {
   incrementalStateSchema?: StructType;
 
   /**
-   * @generated from field: string model_id = 10;
+   * @generated from field: string splits_model_id = 10;
    */
-  modelId = "";
+  splitsModelId = "";
 
   constructor(data?: PartialMessage<ModelState>) {
     super();
@@ -939,7 +939,7 @@ export class ModelState extends Message<ModelState> {
     { no: 4, name: "refreshed_on", kind: "message", T: Timestamp },
     { no: 7, name: "incremental_state", kind: "message", T: Struct },
     { no: 8, name: "incremental_state_schema", kind: "message", T: StructType },
-    { no: 10, name: "model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 10, name: "splits_model_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): ModelState {

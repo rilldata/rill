@@ -53,13 +53,24 @@ type Resource struct {
 	Data []byte
 }
 
-// ModelSplit is a single executable unit of a model.
+// ModelSplit represents a single executable unit of a model.
+// Splits are an advanced feature that enables splitting and parallelizing execution of a model.
 type ModelSplit struct {
-	Key        string
-	DataJSON   []byte
-	Index      int
-	Watermark  *time.Time
+	// Key is a unique identifier for the split. It should be a hash of DataJSON.
+	Key string
+	// DataJSON is the serialized parameters of the split.
+	DataJSON []byte
+	// Index is used to order the execution of splits.
+	// Since it's just a guide and execution order usually is not critical,
+	// it's okay if it's not unique or not always correct (e.g. for incrementally computed splits).
+	Index int
+	// Watermark represents the time when the underlying data that the split references was last updated.
+	// If a split's watermark advances, we automatically schedule it for re-execution.
+	Watermark *time.Time
+	// ExecutedOn is the time when the split was last executed. If it is nil, the split is considered pending.
 	ExecutedOn *time.Time
-	Error      string
-	Elapsed    time.Duration
+	// Error is the last error that occurred when executing the split.
+	Error string
+	// Elapsed is the duration of the last execution of the split.
+	Elapsed time.Duration
 }
