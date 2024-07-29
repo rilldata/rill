@@ -5,19 +5,14 @@ sidebar_label: "Connect OLAP Engines"
 sidebar_position: 00
 ---
 
+## How to connect to your OLAP Engine?
 
-## What is OLAP?
+There are two ways to define an OLAP engine within Rill.
 
-OLAP (or Online Analytical Processing) is a computational approach designed to enable rapid, multidimensional analysis of large volumes of data. With OLAP, data is typically organized into cubes instead of traditional two-dimensional tables, which can facilitate complex queries and data analysis in a way that is significantly more efficient and user-friendly for analytical tasks. In particular, OLAP databases can be especially well suited for BI use cases that require deep, multi-dimensional analysis or real-time / user-facing analytics and applications. Additionally, many modern OLAP databases are optimized to ingest large volumes of data, execute low-latency queries with high throughput, and process billions of rows quickly with an emphasis on speed and efficiency in data retrieval. 
+1. Set the [default OLAP engine](../../reference/project-files/rill-yaml#configuring-the-default-olap-engine.md) via the rill.yaml file.
+2. Set the [OLAP engine](../../reference/project-files/dashboards.md) for a specific dashboard.
 
-Unlike traditional relational databases or data warehouses that are optimized for transaction processing (with a focus on CRUD operations), OLAP databases are designed for query speed and complex analysis. Rather than storing data in a row-oriented manner, optimizing for transactional efficiency and operational queries, most OLAP databases are columnar and use pre-aggregated multidimensional cubes to speed up analytical queries. This allows a broad range of ad hoc queries and analysis to be performed without needing predefined schemas that are tailored to specific queries and it's this flexibility that enables the highly interactive slice-dicing and exploration of data that powers Rill dashboards. This paradigm allows OLAP to be particularly well-suited for organizations and teams that want to dive deep into and understand their data to support decision-making processes, where speed and flexibility in the actual data analysis are important. 
-
-:::info Want to see OLAP in action?
-
-Check [here](https://www.rilldata.com/case-studies) to see examples of use cases that can be powered by OLAP.
-
-:::
-
+The OLAP engine set on the dashboard will take precedence over the project-level defined OLAP engine.
 
 ## Available OLAP Engines
 
@@ -32,15 +27,6 @@ Rill supports the use of several different OLAP engines to power your dashboards
 Rill is continually evaluating additional OLAP engines that can be added. For a full list of OLAP engines that we support, you can refer to our [OLAP Engines](/reference/olap-engines) page. If you don't see an OLAP engine that you'd like to use, please don't hesitate to [reach out](contact.md)!
 
 :::
-
-
-## External OLAP tables
-
-Rill supports creating and powering dashboards using existing tables from alternative [OLAP engines](../../reference/olap-engines/olap-engines.md) that have been configured in a particular project. These tables are not managed by Rill, hence external, but allow users to bring in separate tables or datasets that might already exist in another preferred OLAP database of choice. This prevents the need of unnecessarily ingesting this data into Rill, especially if the table is already optimized for use by this other OLAP engine, and allowing Rill to connect to the data directly (and submit analytical queries).
-
-<div className="center-content">
-![Connecting to an external table](/img/build/connect/external-tables/external-olap-db.png)
-</div>
 
 
 ## DuckDB

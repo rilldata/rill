@@ -1,6 +1,6 @@
 ---
 title: Quickstart & Examples
-sidebar_label: Quickstart & Examples
+sidebar_label: Quickstart
 sidebar_position: 10
 ---
 
