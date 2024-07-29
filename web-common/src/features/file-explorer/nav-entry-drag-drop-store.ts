@@ -72,7 +72,7 @@ export class NavEntryDragDropStore {
     if (get(this.dragData)) return;
     const dist = Math.sqrt(
       Math.pow(left - this.initialPosition.left, 2) +
-      Math.pow(top - this.initialPosition.top, 2),
+        Math.pow(top - this.initialPosition.top, 2),
     );
     if (dist < NavEntryDragDropStore.MIN_DRAG_DISTANCE) return;
     this.dragData.set(this.newDragData);
