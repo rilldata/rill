@@ -117,7 +117,7 @@ const config = {
             type: "docSidebar",
             sidebarId: "tutorialsSidebar",
             position: "left",
-            label: "Tutorials",
+            label: "Learn",
           },
           {
             to: "contact",
