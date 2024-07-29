@@ -326,10 +326,6 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
 	}
 
-	if safeStr(proj.GithubURL) != "" {
-		return nil, status.Error(codes.InvalidArgument, "project already connected to github")
-	}
-
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
 	if err != nil {
 		return nil, err
@@ -354,18 +350,33 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		return nil, fmt.Errorf("failed to update user: %w", err)
 	}
 
-	asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
-	if err != nil {
-		return nil, err
-	}
+	if proj.ArchiveAssetID != nil {
+		asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
+		if err != nil {
+			return nil, err
+		}
 
-	downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
-	}
-	err = s.pushArchiveToGit(ctx, downloadURL, req.Repo, req.Branch, req.Subpath, token, req.Force)
-	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		err = s.pushArchiveToGit(ctx, func(dir, projPath string) error {
+			downloadDst := filepath.Join(dir, "zipped_repo.tar.gz")
+			// extract the archive once the folder is prepped with git
+			return archive.Download(ctx, downloadURL, downloadDst, projPath, false)
+		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	} else if proj.GithubURL != nil {
+		err = s.pushArchiveToGit(ctx, func(dir, projPath string) error {
+			return copyFromSrcGit(dir, projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
+		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	} else {
+		return nil, status.Error(codes.Internal, "invalid project")
 	}
 
 	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
@@ -961,7 +972,7 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
-func (s *Server) pushArchiveToGit(ctx context.Context, downloadURL, repo, branch, subpath, token string, force bool) error {
+func (s *Server) pushArchiveToGit(ctx context.Context, copyData func(dir, projPath string) error, repo, branch, subpath, token string, force bool) error {
 	ctx, cancel := context.WithTimeout(ctx, archivePullTimeout)
 	defer cancel()
 
@@ -972,7 +983,6 @@ func (s *Server) pushArchiveToGit(ctx context.Context, downloadURL, repo, branch
 	}
 	defer os.RemoveAll(dir)
 
-	downloadDst := filepath.Join(dir, "zipped_repo.tar.gz")
 	// use a subfolder for working with git
 	gitPath := filepath.Join(dir, "proj")
 	// projPath is the target for extracting the archive
@@ -1037,11 +1047,7 @@ func (s *Server) pushArchiveToGit(ctx context.Context, downloadURL, repo, branch
 		}
 	}
 
-	// extract the archive once the folder is prepped with git
-	err = archive.Download(ctx, downloadURL, downloadDst, projPath, false)
-	if err != nil {
-		return err
-	}
+	err = copyData(dir, projPath)
 
 	// add back the older gitignore contents if present
 	if wtc.gitignore != "" {
@@ -1157,4 +1163,54 @@ func readFile(f billy.File) (string, error) {
 	}
 
 	return c, nil
+}
+
+// copyFromSrcGit clones a repo, branch and a subpath and copies the content to the projPath
+// used to switch a project to a new github repo connection
+func copyFromSrcGit(dir, projPath, repo, branch, subpath, token string) error {
+	gitPath := filepath.Join(dir, "proj")
+	// projPath is the target for extracting the archive
+	srcProjPath := gitPath
+	if subpath != "" {
+		srcProjPath = filepath.Join(srcProjPath, subpath)
+	}
+	err := os.MkdirAll(srcProjPath, fs.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	ghRepo, err := git.PlainClone(gitPath, false, &git.CloneOptions{
+		URL:           repo,
+		Auth:          &githttp.BasicAuth{Username: "x-access-token", Password: token},
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to clone source git repo: %w", err)
+	}
+
+	wt, err := ghRepo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	files, err := wt.Filesystem.ReadDir(subpath)
+	if err != nil {
+		return fmt.Errorf("failed to read root files: %w", err)
+	}
+	for _, file := range files {
+		if file.Name() == ".git" {
+			// ignore .git since the target will already have it
+			continue
+		}
+		srcPath := filepath.Join(srcProjPath, file.Name())
+		destPath := filepath.Join(projPath, file.Name())
+		// since we dont need to keep this, we can just link the files to be optimal
+		err = os.Link(srcPath, destPath)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
