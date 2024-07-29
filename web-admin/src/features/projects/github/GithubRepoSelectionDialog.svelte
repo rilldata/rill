@@ -145,7 +145,7 @@
           <Input
             id="subpath"
             label="Subpath"
-            placeholder="/subdirectory_path"
+            placeholder="subdirectory_path"
             bind:value={subpath}
             optional
           />

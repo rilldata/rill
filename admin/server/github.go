@@ -1048,6 +1048,9 @@ func (s *Server) pushArchiveToGit(ctx context.Context, copyData func(dir, projPa
 	}
 
 	err = copyData(dir, projPath)
+	if err != nil {
+		return fmt.Errorf("failed to copy data: %w", err)
+	}
 
 	// add back the older gitignore contents if present
 	if wtc.gitignore != "" {
@@ -1168,9 +1171,9 @@ func readFile(f billy.File) (string, error) {
 // copyFromSrcGit clones a repo, branch and a subpath and copies the content to the projPath
 // used to switch a project to a new github repo connection
 func copyFromSrcGit(dir, projPath, repo, branch, subpath, token string) error {
-	gitPath := filepath.Join(dir, "proj")
+	srcGitPath := filepath.Join(dir, "src")
 	// projPath is the target for extracting the archive
-	srcProjPath := gitPath
+	srcProjPath := srcGitPath
 	if subpath != "" {
 		srcProjPath = filepath.Join(srcProjPath, subpath)
 	}
@@ -1179,7 +1182,7 @@ func copyFromSrcGit(dir, projPath, repo, branch, subpath, token string) error {
 		return err
 	}
 
-	ghRepo, err := git.PlainClone(gitPath, false, &git.CloneOptions{
+	_, err = git.PlainClone(srcGitPath, false, &git.CloneOptions{
 		URL:           repo,
 		Auth:          &githttp.BasicAuth{Username: "x-access-token", Password: token},
 		ReferenceName: plumbing.NewBranchReferenceName(branch),
@@ -1189,27 +1192,70 @@ func copyFromSrcGit(dir, projPath, repo, branch, subpath, token string) error {
 		return fmt.Errorf("failed to clone source git repo: %w", err)
 	}
 
-	wt, err := ghRepo.Worktree()
-	if err != nil {
-		return fmt.Errorf("failed to get worktree: %w", err)
-	}
-
-	files, err := wt.Filesystem.ReadDir(subpath)
+	err = copyDir(srcProjPath, projPath)
 	if err != nil {
 		return fmt.Errorf("failed to read root files: %w", err)
 	}
-	for _, file := range files {
-		if file.Name() == ".git" {
-			// ignore .git since the target will already have it
-			continue
+
+	return nil
+}
+
+func copyDir(srcDir, destDir string) error {
+	_, err := os.Stat(destDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			err = os.Mkdir(destDir, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
 		}
-		srcPath := filepath.Join(srcProjPath, file.Name())
-		destPath := filepath.Join(projPath, file.Name())
-		// since we dont need to keep this, we can just link the files to be optimal
-		err = os.Link(srcPath, destPath)
+	}
+
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		srcPath := filepath.Join(srcDir, entry.Name())
+		destPath := filepath.Join(destDir, entry.Name())
+
+		fileInfo, err := os.Stat(srcPath)
 		if err != nil {
 			return err
 		}
+
+		if fileInfo.IsDir() {
+			err = copyDir(srcPath, destPath)
+		} else {
+			err = copyFile(srcPath, destPath)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copyFile(srcFile, destFile string) error {
+	src, err := os.Create(destFile)
+	if err != nil {
+		return err
+	}
+
+	defer src.Close()
+
+	dest, err := os.Open(srcFile)
+	if err != nil {
+		return err
+	}
+
+	defer dest.Close()
+
+	_, err = io.Copy(src, dest)
+	if err != nil {
+		return err
 	}
 
 	return nil
