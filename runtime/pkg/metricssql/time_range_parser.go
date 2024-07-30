@@ -19,7 +19,7 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		return nil, err
 	}
 
-	watermark, col, err := q.getWatermark(ctx, colName)
+	watermark, err := q.getWatermark(ctx, colName)
 	if err != nil {
 		return nil, err
 	}
@@ -32,8 +32,7 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 		}
 	}
 	return &metricsview.Expression{
-		Name:  col,
-		Value: fmt.Sprintf("'%s'", watermark.Format(time.RFC3339)),
+		Value: watermark,
 	}, nil
 }
 
@@ -43,7 +42,7 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 		return nil, err
 	}
 
-	watermark, col, err := q.getWatermark(ctx, colName)
+	watermark, err := q.getWatermark(ctx, colName)
 	if err != nil {
 		return nil, err
 	}
@@ -64,8 +63,7 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 	}
 
 	return &metricsview.Expression{
-		Name:  col,
-		Value: fmt.Sprintf("'%s'", end.Format(time.RFC3339)),
+		Value: end,
 	}, nil
 }
 
@@ -99,7 +97,7 @@ func (q *query) parseTimeRangeArgs(args []ast.ExprNode) (duration.Duration, int,
 
 	// identify column name
 	if len(args) == 3 {
-		col, _, err = q.parseColumnNameExpr(args[1])
+		col, _, err = q.parseColumnNameExpr(args[2])
 		if err != nil {
 			return nil, 0, "", err
 		}
@@ -117,10 +115,10 @@ func (q *query) parseTimeRangeArgs(args []ast.ExprNode) (duration.Duration, int,
 	return d, unit, col, nil
 }
 
-func (q *query) getWatermark(ctx context.Context, colName string) (watermark time.Time, column string, err error) {
+func (q *query) getWatermark(ctx context.Context, colName string) (watermark time.Time, err error) {
 	olap, release, err := q.controller.AcquireOLAP(ctx, q.metricsView.Spec.Connector)
 	if err != nil {
-		return watermark, column, err
+		return watermark, err
 	}
 	defer release()
 
@@ -128,29 +126,27 @@ func (q *query) getWatermark(ctx context.Context, colName string) (watermark tim
 	var sql string
 	if colName != "" {
 		sql = fmt.Sprintf("SELECT MAX(%s) FROM %s ", olap.Dialect().EscapeIdentifier(colName), olap.Dialect().EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
-		column = colName
 	} else if q.metricsView.Spec.WatermarkExpression != "" {
 		sql = fmt.Sprintf("SELECT %s FROM %s", q.metricsView.Spec.WatermarkExpression, olap.Dialect().EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
 		// todo how to handle column name here
 	} else if spec.TimeDimension != "" {
 		sql = fmt.Sprintf("SELECT MAX(%s) FROM %s", olap.Dialect().EscapeIdentifier(spec.TimeDimension), olap.Dialect().EscapeTable(spec.Database, spec.DatabaseSchema, spec.Table))
-		column = spec.TimeDimension
 	} else {
-		return watermark, column, fmt.Errorf("metrics sql: no watermark or time dimension found in metrics view")
+		return watermark, fmt.Errorf("metrics sql: no watermark or time dimension found in metrics view")
 	}
 	result, err := olap.Execute(ctx, &drivers.Statement{Query: sql, Priority: q.priority})
 	if err != nil {
-		return watermark, column, err
+		return watermark, err
 	}
 	defer result.Close()
 
 	for result.Next() {
 		if err := result.Scan(&watermark); err != nil {
-			return watermark, column, fmt.Errorf("error scanning watermark: %w", err)
+			return watermark, fmt.Errorf("error scanning watermark: %w", err)
 		}
 	}
 	if watermark.IsZero() {
-		return watermark, column, fmt.Errorf("metrics sql: no watermark or time dimension found in metrics view")
+		return watermark, fmt.Errorf("metrics sql: no watermark or time dimension found in metrics view")
 	}
-	return watermark, column, nil
+	return watermark, nil
 }

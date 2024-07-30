@@ -422,16 +422,15 @@ func (q *query) parseIsNullOperation(ctx context.Context, node *ast.IsNullExpr) 
 
 	var op metricsview.Operator
 	if node.Not {
-		op = metricsview.OperatorNeq
+		op = metricsview.OperatorNeqNull
 	} else {
-		op = metricsview.OperatorEq
+		op = metricsview.OperatorEqNull
 	}
 	return &metricsview.Expression{
 		Condition: &metricsview.Condition{
 			Operator: op,
 			Expressions: []*metricsview.Expression{
 				expr,
-				{Value: "NULL"},
 			},
 		},
 	}, nil
@@ -653,6 +652,8 @@ func operator(op opcode.Op) metricsview.Operator {
 		return metricsview.OperatorGte
 	case opcode.EQ:
 		return metricsview.OperatorEq
+	case opcode.IsNull:
+		return metricsview.OperatorEqNull
 	case opcode.NE:
 		return metricsview.OperatorNeq
 	case opcode.In:

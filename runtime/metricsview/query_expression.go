@@ -72,6 +72,8 @@ func (b exprStrBuilder) writeCondition(cond *Condition) error {
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
 	case OperatorAnd:
 		return b.writeJoinedExpressions(cond.Expressions, " AND ")
+	case OperatorEqNull, OperatorNeqNull:
+		return b.writeNullCondition(cond.Expressions, cond.Operator == OperatorEqNull)
 	default:
 		if !cond.Operator.Valid() {
 			return fmt.Errorf("invalid expression operator %q", cond.Operator)
@@ -168,6 +170,24 @@ func (b exprStrBuilder) writeBinaryCondition(exprs []*Expression, op Operator) e
 		return err
 	}
 
+	return nil
+}
+
+func (b exprStrBuilder) writeNullCondition(exprs []*Expression, null bool) error {
+	if len(exprs) != 1 {
+		return fmt.Errorf("null condition must have exactly 1 expression")
+	}
+
+	err := b.writeWrappedExpression(exprs[0])
+	if err != nil {
+		return err
+	}
+
+	if null {
+		b.writeString(" IS NULL")
+	} else {
+		b.writeString(" IS NOT NULL")
+	}
 	return nil
 }
 

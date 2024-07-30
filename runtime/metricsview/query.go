@@ -150,7 +150,9 @@ type Operator string
 const (
 	OperatorUnspecified Operator = ""
 	OperatorEq          Operator = "eq"
+	OperatorEqNull      Operator = "eqnull"
 	OperatorNeq         Operator = "neq"
+	OperatorNeqNull     Operator = "neqnull"
 	OperatorLt          Operator = "lt"
 	OperatorLte         Operator = "lte"
 	OperatorGt          Operator = "gt"
@@ -165,7 +167,7 @@ const (
 
 func (o Operator) Valid() bool {
 	switch o {
-	case OperatorEq, OperatorNeq, OperatorLt, OperatorLte, OperatorGt, OperatorGte, OperatorIn, OperatorNin, OperatorIlike, OperatorNilike, OperatorOr, OperatorAnd:
+	case OperatorEq, OperatorEqNull, OperatorNeq, OperatorNeqNull, OperatorLt, OperatorLte, OperatorGt, OperatorGte, OperatorIn, OperatorNin, OperatorIlike, OperatorNilike, OperatorOr, OperatorAnd:
 		return true
 	}
 	return false

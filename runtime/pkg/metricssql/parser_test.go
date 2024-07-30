@@ -116,10 +116,10 @@ func TestCompile(t *testing.T) {
 			nil,
 		},
 		{
-			"select pub, dom, measure_0 as \"click rate\" from ad_bids_metrics where (pub is not null and dom is not null) or (pub = '__default__')",
-			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((((\"publisher\") != ? AND (\"domain\") != ?) OR (\"publisher\") = ?)) GROUP BY 1, 2",
+			"select pub, dom, measure_0 as \"click rate\" from ad_bids_metrics where (pub is not null and dom is null) or (pub = '__default__')",
+			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (count(*)) AS \"measure_0\" FROM \"ad_bids\" WHERE ((((\"publisher\") IS NOT NULL AND (\"domain\") IS NULL) OR (\"publisher\") = ?)) GROUP BY 1, 2",
 			mv,
-			[]any{"NULL", "NULL", "__default__"},
+			[]any{"__default__"},
 		},
 		{
 			"select pub, dom from ad_bids_metrics where pub in ('Yahoo', 'Google')",
