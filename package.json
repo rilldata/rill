@@ -38,7 +38,7 @@
     "typescript-eslint": "^7.7.0"
   },
   "lint-staged": {
-    "**/*.{svelte,ts}": [
+    "*.{svelte,ts}": [
       "prettier --write"
     ]
   }
