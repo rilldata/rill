@@ -32,6 +32,27 @@ type Dimension struct {
 
 type DimensionCompute struct {
 	TimeFloor *DimensionComputeTimeFloor `mapstructure:"time_floor"`
+	DateAdd   *DimensionComputeDateAdd   `mapstructure:"date_add"`
+}
+
+func (d *DimensionCompute) Validate() error {
+	n := 0
+	if d.TimeFloor != nil {
+		n++
+	}
+	if d.DateAdd != nil {
+		n++
+	}
+	if n > 1 {
+		return fmt.Errorf("must specify only one compute operation")
+	}
+	return nil
+}
+
+type DimensionComputeDateAdd struct {
+	Dimension string    `mapstructure:"dimension"`
+	Amount    int       `mapstructure:"amount"`
+	Grain     TimeGrain `mapstructure:"grain"`
 }
 
 type DimensionComputeTimeFloor struct {
