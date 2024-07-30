@@ -28,21 +28,17 @@ export class GithubConnectionUpdater {
     private readonly project: string,
   ) {}
 
-  public updateCurrentFields(
-    currentUrl: string,
-    currentSubpath: string,
-    currentBranch: string,
-  ) {
-    this.githubUrl.set(currentUrl);
-    this.subpath.set(currentSubpath);
-    this.branch.set(currentBranch);
-    this.isConnected = !!currentUrl;
+  public init(githubUrl: string, subpath: string, branch: string) {
+    this.githubUrl.set(githubUrl);
+    this.subpath.set(subpath);
+    this.branch.set(branch);
+    this.isConnected = !!githubUrl;
   }
 
   public onRepoChange(repo: ListGithubUserReposResponseRepo) {
     this.subpath.set("");
-    this.branch.set(repo.defaultBranch);
-    this.defaultBranch = repo.defaultBranch;
+    this.branch.set(repo.defaultBranch ?? "");
+    this.defaultBranch = repo.defaultBranch ?? "";
   }
 
   public async update({

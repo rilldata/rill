@@ -23,11 +23,11 @@ import (
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
-	"github.com/rilldata/rill/admin/pkg/archive"
 	"github.com/rilldata/rill/admin/pkg/gitutil"
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/archive"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -323,7 +323,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 
 	claims := auth.GetClaims(ctx)
 	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
-		return nil, status.Error(codes.PermissionDenied, "does not have permission to delete project")
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project's github connection")
 	}
 
 	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
@@ -1006,18 +1006,18 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(dir, projPath stri
 		SingleBranch:  true,
 	})
 	if err != nil {
-		if errors.Is(err, transport.ErrEmptyRemoteRepository) {
-			empty = true
-			ghRepo, err = git.PlainInitWithOptions(gitPath, &git.PlainInitOptions{
-				InitOptions: git.InitOptions{
-					DefaultBranch: plumbing.NewBranchReferenceName(branch),
-				},
-				Bare: false,
-			})
-			if err != nil {
-				return fmt.Errorf("failed to init git repo: %w", err)
-			}
-		} else {
+		if !errors.Is(err, transport.ErrEmptyRemoteRepository) {
+			return fmt.Errorf("failed to init git repo: %w", err)
+		}
+
+		empty = true
+		ghRepo, err = git.PlainInitWithOptions(gitPath, &git.PlainInitOptions{
+			InitOptions: git.InitOptions{
+				DefaultBranch: plumbing.NewBranchReferenceName(branch),
+			},
+			Bare: false,
+		})
+		if err != nil {
 			return fmt.Errorf("failed to init git repo: %w", err)
 		}
 	}

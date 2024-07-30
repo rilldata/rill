@@ -10,8 +10,6 @@ export enum BehaviourEventAction {
   DeploySuccess = "deploy-success",
   LoginStart = "login-start",
   LoginSuccess = "login-success",
-  GithubConnectStart = "ghconnected-start",
-  GithubConnectSuccess = "ghconnected-success",
 
   UserInvite = "user-invite",
   UserDomainWhitelist = "user-domain-whitelist",

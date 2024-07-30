@@ -56,11 +56,7 @@
     organization,
     project,
   );
-  $: githubConnectionUpdater.updateCurrentFields(
-    currentUrl,
-    currentSubpath,
-    currentBranch,
-  );
+  $: githubConnectionUpdater.init(currentUrl, currentSubpath, currentBranch);
 
   const connectToGithubMutation =
     githubConnectionUpdater.connectToGithubMutation;
