@@ -1,6 +1,6 @@
 ---
 title: How to install Rill
-sidebar_label: Install  
+sidebar_label: Install Rill
 sidebar_position: 01
 ---
 

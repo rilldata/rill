@@ -21,6 +21,10 @@ The `rill.yaml` file contains metadata about your project.
 
 Rill allows you to specify the default OLAP engine to use in your project via `rill.yaml`. This setting is configurable using the `olap_connector` property (and will otherwise revert to `duckdb` if not specified). 
 
+```yaml
+olap_connector: clickhouse
+```
+
 :::info Curious about OLAP Engines?
 
 Please see our reference documentation on [OLAP Engines](../olap-engines/olap-engines.md).
