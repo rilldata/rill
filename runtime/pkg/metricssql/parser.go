@@ -665,6 +665,6 @@ func operator(op opcode.Op) metricsview.Operator {
 		return metricsview.OperatorAnd
 	default:
 		// let the underlying ast parser through errors
-		return metricsview.Operator(op)
+		return metricsview.Operator(op.String())
 	}
 }
