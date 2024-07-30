@@ -4,7 +4,7 @@ sidebar_label: User Management
 sidebar_position: 20
 ---
 
-In Rill Cloud, access can be granted at the organization or project level using the Rill CLI.
+In Rill Cloud, access can be granted at the organization, project level, or group level using the Rill CLI. Note that the permission vary from each level, please review the [Roles and Permissions](roles-permissions.md) page for more information
 
 ## Install and authenticate the Rill CLI
 
@@ -13,15 +13,16 @@ To manage cloud permissions with the Rill CLI, you must first authenticate it. I
 rill login
 ```
 
-## Managing members of an organization
+  
+## Adding a member to the organization
 
 When you invite a user to an organization on Rill Cloud, they automatically get access to *all projects* in the organization. Users can have one of two roles:
 
 - **Viewers** can browse projects and view dashboards
 - **Admins** can manage projects by deploying new projects, making changes to existing projects, or deleting deployed projects. They can also manage members of an organization by granting or revoking access to other users.  
-  
-### Add a member
 
+
+### Add a member
 To add a member to an organization, run the following command:
 ```
 rill user add
@@ -40,7 +41,7 @@ The feature currently requires manual action by a support representative at Rill
 
 Run `rill user --help` to show commands for listing members or changing access.
 
-## Managing members of a project
+## Adding a member to a specific project
 
 By default, adding a user to an organization grants them access to all its projects. You can alternatively add a user only to a specific project. Users can have one of two roles on a project:
 
@@ -61,19 +62,53 @@ If you add a user who has not yet signed up for Rill, they will receive an email
 
 Run `rill user --help` to show commands for listing members or changing access.
 
-## Make a project public
 
-Projects on Rill Cloud are private by default. To make a project's dashboards publicly accessible without authentication, run:
+## Adding memeber a member to a specific group
+
+Another way to manage user is via User groups. Users can be added to a group using the following from the Rill CLI. You can define the usergroup to have certain permissions on specific groups.
+
+- **Viewers** can view the project's dashboards
+- **Admins** can additionally edit the project, and view and edit project members
+
+
+### Add a member 
 ```
-rill project edit --public=true
+rill user add --group <group-name>
 ```
+You will then be prompted for details on the user. 
 
-:::caution Avoid Sharing Private Data
+:::note
 
-Warning: If you make a project public, make sure it does not expose any confidential data.
-
+Currently, only users part of the organization can be added to user groups. You will need to wait till after they accept the invitation to add them to a group.
 :::
 
+To see the current members of a group:
+
+```
+rill user list --group <group-name>
+```
+
+To find the current user group roles, with project flag if looking for specific project's role:
+
+```
+rill usergroup list <--project my_project_name>
+```
+### Other actions
+Run `rill usergroup --help` to show commands for listing usergroups or changing access.
+
+
+## Which privilege wins?
+
+Rill uses a logical OR operand to define the winning privilege. In other words, whichever has the higher privilege will be applied. See below for some example situations that may arise.
+<div>
+| # | Organization | Project (*not required*)   | Group  (*not required*)| Resulting privilege |
+|---|:--------------|:--------------|--------|---------------------:|
+| 1 | admin        | viewer        | ---    | admin               |
+| 2 | viewer       | admin         | viewer | admin               |
+| 3 | viewer       | ---           | viewer | viewer              |
+| 4 | viewer       | viewer           | --- | viewer              |
+
+</div>
 ## Logging into Rill Cloud
 
 In order to access a deployed project and/or view a shared dashboard, users will need to first login to [Rill Cloud](https://ui.rilldata.com/). When you first navigate to https://ui.rilldata.com/, you will see a few different options to login, including:
@@ -102,3 +137,4 @@ Afterwards, you should receive an email verification to complete the sign up pro
 ![Verification Email](/img/manage/user-management/verification-email.png)
 
 You should now be authenticated with Rill Cloud and be able to sign-in directly going forward!
+
