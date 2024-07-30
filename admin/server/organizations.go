@@ -252,32 +252,13 @@ func (s *Server) GetBillingSubscription(ctx context.Context, req *adminv1.GetBil
 	}
 
 	if len(subs) > 1 {
-		s.logger.Warn("multiple subscriptions found for the organization", zap.String("org", org.Name))
-	}
-
-	hasPaymentMethod := false
-	paymentCardStatus := adminv1.PaymentCardStatus_PAYMENT_CARD_STATUS_UNSPECIFIED
-	if org.PaymentCustomerID != "" {
-		paymentCust, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
-		if err != nil {
-			return nil, status.Error(codes.Internal, err.Error())
-		}
-		hasPaymentMethod = paymentCust.HasPaymentMethod
-		if paymentCust.IsCardValid != nil {
-			if *paymentCust.IsCardValid {
-				paymentCardStatus = adminv1.PaymentCardStatus_PAYMENT_CARD_STATUS_OK
-			} else {
-				paymentCardStatus = adminv1.PaymentCardStatus_PAYMENT_CARD_STATUS_EXPIRED
-			}
-		}
+		s.logger.Warn("multiple subscriptions found for the organization", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 	}
 
 	return &adminv1.GetBillingSubscriptionResponse{
-		Organization:      organizationToDTO(org),
-		Subscription:      subscriptionToDTO(subs[0]),
-		BillingPortalUrl:  subs[0].Customer.PortalURL,
-		HasPaymentMethod:  hasPaymentMethod,
-		PaymentCardStatus: paymentCardStatus,
+		Organization:     organizationToDTO(org),
+		Subscription:     subscriptionToDTO(subs[0]),
+		BillingPortalUrl: subs[0].Customer.PortalURL,
 	}, nil
 }
 
@@ -321,18 +302,18 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	}
 
 	// plan change needed
-	// check for valid payment method
+	// check for a payment method
 	c, err := s.admin.PaymentProvider.FindCustomer(ctx, org.PaymentCustomerID)
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
 	if !c.HasPaymentMethod {
-		return nil, status.Errorf(codes.FailedPrecondition, "no valid payment method found for the organization")
+		return nil, status.Errorf(codes.FailedPrecondition, "no payment method found for the organization")
 	}
 
-	// don't allow plan downgrades, only superuser can downgrade
-	if planDowngrade(plan, org) && !claims.Superuser(ctx) {
-		return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not allowed")
+	// log on plan downgrades
+	if planDowngrade(plan, org) {
+		s.logger.Warn("plan downgrade", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan", subs[0].Plan.Name), zap.String("new_plan", plan.Name))
 	}
 
 	if len(subs) == 1 {

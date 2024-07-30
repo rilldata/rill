@@ -697,16 +697,6 @@ export interface V1PingResponse {
   time?: string;
 }
 
-export type V1PaymentCardStatus =
-  (typeof V1PaymentCardStatus)[keyof typeof V1PaymentCardStatus];
-
-// eslint-disable-next-line @typescript-eslint/no-redeclare
-export const V1PaymentCardStatus = {
-  PAYMENT_CARD_STATUS_UNSPECIFIED: "PAYMENT_CARD_STATUS_UNSPECIFIED",
-  PAYMENT_CARD_STATUS_OK: "PAYMENT_CARD_STATUS_OK",
-  PAYMENT_CARD_STATUS_EXPIRED: "PAYMENT_CARD_STATUS_EXPIRED",
-} as const;
-
 export interface V1OrganizationQuotas {
   projects?: number;
   deployments?: number;
@@ -1018,8 +1008,6 @@ export interface V1GetBillingSubscriptionResponse {
   organization?: V1Organization;
   subscription?: V1Subscription;
   billingPortalUrl?: string;
-  hasPaymentMethod?: boolean;
-  paymentCardStatus?: V1PaymentCardStatus;
 }
 
 export interface V1GetAlertYAMLResponse {

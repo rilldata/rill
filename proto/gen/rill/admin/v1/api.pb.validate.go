@@ -26926,10 +26926,6 @@ func (m *GetBillingSubscriptionResponse) validate(all bool) error {
 
 	// no validation rules for BillingPortalUrl
 
-	// no validation rules for HasPaymentMethod
-
-	// no validation rules for PaymentCardStatus
-
 	if len(errors) > 0 {
 		return GetBillingSubscriptionResponseMultiError(errors)
 	}

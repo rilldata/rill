@@ -22,5 +22,4 @@ type Customer struct {
 	Name             string
 	Email            string
 	HasPaymentMethod bool
-	IsCardValid      *bool
 }

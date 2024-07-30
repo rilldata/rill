@@ -1839,15 +1839,6 @@ message GetBillingSubscriptionResponse {
   Organization organization = 1;
   Subscription subscription = 2;
   string billing_portal_url = 3;
-  bool has_payment_method = 4;
-  PaymentCardStatus payment_card_status = 5;
-
-}
-
-enum PaymentCardStatus {
-  PAYMENT_CARD_STATUS_UNSPECIFIED = 0;
-  PAYMENT_CARD_STATUS_OK = 1;
-  PAYMENT_CARD_STATUS_EXPIRED = 2;
 }
 
 message UpdateBillingSubscriptionRequest {

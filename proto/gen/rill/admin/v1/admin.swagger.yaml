@@ -3554,10 +3554,6 @@ definitions:
         $ref: '#/definitions/v1Subscription'
       billingPortalUrl:
         type: string
-      hasPaymentMethod:
-        type: boolean
-      paymentCardStatus:
-        $ref: '#/definitions/v1PaymentCardStatus'
   v1GetBookmarkResponse:
     type: object
     properties:
@@ -4060,13 +4056,6 @@ definitions:
       storageLimitBytesPerDeployment:
         type: string
         format: uint64
-  v1PaymentCardStatus:
-    type: string
-    enum:
-      - PAYMENT_CARD_STATUS_UNSPECIFIED
-      - PAYMENT_CARD_STATUS_OK
-      - PAYMENT_CARD_STATUS_EXPIRED
-    default: PAYMENT_CARD_STATUS_UNSPECIFIED
   v1PingResponse:
     type: object
     properties:

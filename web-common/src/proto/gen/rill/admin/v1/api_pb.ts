@@ -35,32 +35,6 @@ proto3.util.setEnumType(GithubPermission, "rill.admin.v1.GithubPermission", [
 ]);
 
 /**
- * @generated from enum rill.admin.v1.PaymentCardStatus
- */
-export enum PaymentCardStatus {
-  /**
-   * @generated from enum value: PAYMENT_CARD_STATUS_UNSPECIFIED = 0;
-   */
-  UNSPECIFIED = 0,
-
-  /**
-   * @generated from enum value: PAYMENT_CARD_STATUS_OK = 1;
-   */
-  OK = 1,
-
-  /**
-   * @generated from enum value: PAYMENT_CARD_STATUS_EXPIRED = 2;
-   */
-  EXPIRED = 2,
-}
-// Retrieve enum metadata with: proto3.getEnumType(PaymentCardStatus)
-proto3.util.setEnumType(PaymentCardStatus, "rill.admin.v1.PaymentCardStatus", [
-  { no: 0, name: "PAYMENT_CARD_STATUS_UNSPECIFIED" },
-  { no: 1, name: "PAYMENT_CARD_STATUS_OK" },
-  { no: 2, name: "PAYMENT_CARD_STATUS_EXPIRED" },
-]);
-
-/**
  * @generated from enum rill.admin.v1.DeploymentStatus
  */
 export enum DeploymentStatus {
@@ -9520,16 +9494,6 @@ export class GetBillingSubscriptionResponse extends Message<GetBillingSubscripti
    */
   billingPortalUrl = "";
 
-  /**
-   * @generated from field: bool has_payment_method = 4;
-   */
-  hasPaymentMethod = false;
-
-  /**
-   * @generated from field: rill.admin.v1.PaymentCardStatus payment_card_status = 5;
-   */
-  paymentCardStatus = PaymentCardStatus.UNSPECIFIED;
-
   constructor(data?: PartialMessage<GetBillingSubscriptionResponse>) {
     super();
     proto3.util.initPartial(data, this);
@@ -9541,8 +9505,6 @@ export class GetBillingSubscriptionResponse extends Message<GetBillingSubscripti
     { no: 1, name: "organization", kind: "message", T: Organization },
     { no: 2, name: "subscription", kind: "message", T: Subscription },
     { no: 3, name: "billing_portal_url", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "has_payment_method", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 5, name: "payment_card_status", kind: "enum", T: proto3.getEnumType(PaymentCardStatus) },
   ]);
 
   static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetBillingSubscriptionResponse {

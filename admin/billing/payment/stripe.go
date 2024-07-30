@@ -54,24 +54,11 @@ func (s *Stripe) FindCustomer(ctx context.Context, customerID string) (*Customer
 		Customer: stripe.String(c.ID),
 	})
 
-	hasPaymentMethod := false
-	var isCardValid *bool
-	// very basic check if the customer has a payment method and if it's a card then is not expired
-	for i.Next() {
-		hasPaymentMethod = true
-		pm := i.PaymentMethod()
-		if pm.Type == stripe.PaymentMethodTypeCard {
-			isCardValid = new(bool)
-			*isCardValid = int(pm.Card.ExpYear) > time.Now().Year() || (int(pm.Card.ExpYear) == time.Now().Year() && int(pm.Card.ExpMonth) >= int(time.Now().Month()))
-		}
-	}
-
 	return &Customer{
 		ID:               c.ID,
 		Name:             c.Name,
 		Email:            c.Email,
-		HasPaymentMethod: hasPaymentMethod,
-		IsCardValid:      isCardValid,
+		HasPaymentMethod: i.Next(),
 	}, nil
 }
 
@@ -93,24 +80,12 @@ func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.
 			it := customer.ListPaymentMethods(&stripe.CustomerListPaymentMethodsParams{
 				Customer: stripe.String(c.ID),
 			})
-			hasPaymentMethod := false
-			var isCardValid *bool
-			// very basic check if the customer has a payment method and if it's a card then is not expired
-			for it.Next() {
-				hasPaymentMethod = true
-				pm := it.PaymentMethod()
-				isCardValid = new(bool)
-				if pm.Type == stripe.PaymentMethodTypeCard {
-					*isCardValid = int(pm.Card.ExpYear) > time.Now().Year() || (int(pm.Card.ExpYear) == time.Now().Year() && int(pm.Card.ExpMonth) >= int(time.Now().Month()))
-				}
-			}
 
 			return &Customer{
 				ID:               c.ID,
 				Name:             c.Name,
 				Email:            c.Email,
-				HasPaymentMethod: hasPaymentMethod,
-				IsCardValid:      isCardValid,
+				HasPaymentMethod: it.Next(),
 			}, nil
 		}
 	}
