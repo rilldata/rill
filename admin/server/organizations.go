@@ -537,10 +537,8 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 			OrgID:     org.ID,
 			RoleID:    role.ID,
 		})
-		if err != nil {
-			if errors.Is(err, database.ErrNotUnique) {
-				return nil, status.Error(codes.AlreadyExists, err.Error())
-			}
+		// continue sending an email if the user already exists
+		if err != nil && !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
@@ -569,22 +567,30 @@ func (s *Server) AddOrganizationMemberUser(ctx context.Context, req *adminv1.Add
 	}
 	defer func() { _ = tx.Rollback() }()
 
+	errored := false
 	err = s.admin.DB.InsertOrganizationMemberUser(ctx, org.ID, user.ID, role.ID)
+	// continue sending an email if the user already exists
 	if err != nil {
-		return nil, status.Error(codes.InvalidArgument, err.Error())
+		errored = true
+		if !errors.Is(err, database.ErrNotUnique) {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
 	}
 
-	err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
-	if err != nil {
-		if !errors.Is(err, database.ErrNotUnique) {
+	if !errored {
+		// if previous statement errored we cannot continue with this since transaction would be invalid
+		err = s.admin.DB.InsertUsergroupMemberUser(ctx, *org.AllUsergroupID, user.ID)
+		if err != nil {
+			if !errors.Is(err, database.ErrNotUnique) {
+				return nil, status.Error(codes.Internal, err.Error())
+			}
+			// If the user is already in the all user group, we can ignore the error
+		}
+
+		err = tx.Commit()
+		if err != nil {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
-		// If the user is already in the all user group, we can ignore the error
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
 	}
 
 	err = s.admin.Email.SendOrganizationAddition(&email.OrganizationAddition{

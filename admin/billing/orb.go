@@ -203,28 +203,12 @@ func (o *Orb) GetSubscriptionsForCustomer(ctx context.Context, customerID string
 	var subscriptions []*Subscription
 	for i := 0; i < len(sub.Data); i++ {
 		s := sub.Data[i]
-		plan, err := getBillingPlanFromOrbPlan(&s.Plan)
+		billingSub, err := getBillingSubscriptionFromOrbSubscription(&s)
 		if err != nil {
 			return nil, err
 		}
 
-		subscriptions = append(subscriptions, &Subscription{
-			ID: s.ID,
-			Customer: &Customer{
-				ID:                s.Customer.ExternalCustomerID,
-				Email:             s.Customer.Email,
-				Name:              s.Customer.Name,
-				PaymentProviderID: s.Customer.PaymentProviderID,
-				PortalURL:         s.Customer.PortalURL,
-			},
-			Plan:                         plan,
-			StartDate:                    s.StartDate,
-			EndDate:                      s.EndDate,
-			CurrentBillingCycleStartDate: s.CurrentBillingPeriodStartDate,
-			CurrentBillingCycleEndDate:   s.CurrentBillingPeriodEndDate,
-			TrialEndDate:                 s.TrialInfo.EndDate,
-			Metadata:                     s.Metadata,
-		})
+		subscriptions = append(subscriptions, billingSub)
 	}
 	return subscriptions, nil
 }
@@ -300,6 +284,42 @@ func (o *Orb) CancelSubscriptionsForCustomer(ctx context.Context, customerID str
 		}
 	}
 	return nil
+}
+
+func (o *Orb) FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error) {
+	plan, err := o.GetDefaultPlan(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	if plan.TrialPeriodDays == 0 {
+		return nil, nil
+	}
+
+	var ended []*Subscription
+	// look back 2 days before and after the trial period
+	lookBackStart := time.Now().Add(-time.Duration(plan.TrialPeriodDays+2) * 24 * time.Hour)
+	lookBackEnd := time.Now().Add(-time.Duration(plan.TrialPeriodDays-2) * 24 * time.Hour)
+	subs := o.client.Subscriptions.ListAutoPaging(ctx, orb.SubscriptionListParams{
+		CreatedAtGt: orb.F(lookBackStart),
+		CreatedAtLt: orb.F(lookBackEnd),
+		Status:      orb.F(orb.SubscriptionListParamsStatusActive),
+	})
+	// Automatically fetches more pages as needed.
+	for subs.Next() {
+		sub := subs.Current()
+		if sub.Plan.ID == plan.ID && sub.TrialInfo.EndDate.Before(time.Now()) {
+			s, err := getBillingSubscriptionFromOrbSubscription(&sub)
+			if err != nil {
+				return nil, err
+			}
+			ended = append(ended, s)
+		}
+	}
+	if err := subs.Err(); err != nil {
+		return nil, err
+	}
+	return ended, nil
 }
 
 func (o *Orb) ReportUsage(ctx context.Context, usage []*Usage) error {
@@ -430,6 +450,30 @@ func getBillingPlanFromOrbPlan(p *orb.Plan) (*Plan, error) {
 		Metadata:        p.Metadata,
 	}
 	return billingPlan, nil
+}
+
+func getBillingSubscriptionFromOrbSubscription(s *orb.Subscription) (*Subscription, error) {
+	plan, err := getBillingPlanFromOrbPlan(&s.Plan)
+	if err != nil {
+		return nil, err
+	}
+	return &Subscription{
+		ID: s.ID,
+		Customer: &Customer{
+			ID:                s.Customer.ExternalCustomerID,
+			Email:             s.Customer.Email,
+			Name:              s.Customer.Name,
+			PaymentProviderID: s.Customer.PaymentProviderID,
+			PortalURL:         s.Customer.PortalURL,
+		},
+		Plan:                         plan,
+		StartDate:                    s.StartDate,
+		EndDate:                      s.EndDate,
+		CurrentBillingCycleStartDate: s.CurrentBillingPeriodStartDate,
+		CurrentBillingCycleEndDate:   s.CurrentBillingPeriodEndDate,
+		TrialEndDate:                 s.TrialInfo.EndDate,
+		Metadata:                     s.Metadata,
+	}, nil
 }
 
 // retryErrClassifier classifies 429 and 500 errors as retryable and all other errors as non retryable

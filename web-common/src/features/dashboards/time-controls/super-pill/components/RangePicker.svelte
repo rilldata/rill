@@ -36,6 +36,7 @@
     showSelector = selected === "CUSTOM";
   }}
   closeOnItemClick={false}
+  typeahead={!showSelector}
 >
   <DropdownMenu.Trigger asChild let:builder>
     <button

@@ -534,12 +534,6 @@ export interface V1TimeSeriesValue {
   records?: V1TimeSeriesValueRecords;
 }
 
-export interface V1TimeSeriesTimeRange {
-  start?: string;
-  end?: string;
-  interval?: V1TimeGrain;
-}
-
 export interface V1TimeSeriesResponse {
   results?: V1TimeSeriesValue[];
   spark?: V1TimeSeriesValue[];
@@ -567,6 +561,12 @@ export const V1TimeGrain = {
   TIME_GRAIN_QUARTER: "TIME_GRAIN_QUARTER",
   TIME_GRAIN_YEAR: "TIME_GRAIN_YEAR",
 } as const;
+
+export interface V1TimeSeriesTimeRange {
+  start?: string;
+  end?: string;
+  interval?: V1TimeGrain;
+}
 
 export interface V1TimeRange {
   start?: string;
@@ -665,11 +665,6 @@ export interface V1SourceState {
   refreshedOn?: string;
 }
 
-export interface V1SourceV2 {
-  spec?: V1SourceSpec;
-  state?: V1SourceState;
-}
-
 export type V1SourceSpecProperties = { [key: string]: any };
 
 export interface V1SourceSpec {
@@ -681,6 +676,11 @@ export interface V1SourceSpec {
   stageChanges?: boolean;
   streamIngestion?: boolean;
   trigger?: boolean;
+}
+
+export interface V1SourceV2 {
+  spec?: V1SourceSpec;
+  state?: V1SourceState;
 }
 
 export interface V1SecurityRuleRowFilter {
@@ -1056,6 +1056,8 @@ export interface V1ModelV2 {
 
 export type V1ModelSpecOutputProperties = { [key: string]: any };
 
+export type V1ModelSpecStageProperties = { [key: string]: any };
+
 export type V1ModelSpecInputProperties = { [key: string]: any };
 
 export type V1ModelSpecIncrementalStateResolverProperties = {
@@ -1070,6 +1072,9 @@ export interface V1ModelSpec {
   incrementalStateResolverProperties?: V1ModelSpecIncrementalStateResolverProperties;
   inputConnector?: string;
   inputProperties?: V1ModelSpecInputProperties;
+  /** stage_connector is optional. */
+  stageConnector?: string;
+  stageProperties?: V1ModelSpecStageProperties;
   outputConnector?: string;
   outputProperties?: V1ModelSpecOutputProperties;
   trigger?: boolean;
@@ -1749,6 +1754,7 @@ export interface V1ConnectorDriver {
   implementsObjectStore?: boolean;
   implementsFileStore?: boolean;
   implementsNotifier?: boolean;
+  implementsWarehouse?: boolean;
 }
 
 export type V1ConnectorConfigFromVariables = { [key: string]: string };

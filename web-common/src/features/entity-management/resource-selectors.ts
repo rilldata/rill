@@ -24,23 +24,13 @@ export enum ResourceKind {
   Dashboard = "rill.runtime.v1.Dashboard",
   API = "rill.runtime.v1.API",
 }
+
 export type UserFacingResourceKinds = Exclude<
   ResourceKind,
   ResourceKind.ProjectParser
 >;
+
 export const SingletonProjectParserName = "parser";
-export const ResourceShortNameToKind: Record<string, ResourceKind> = {
-  source: ResourceKind.Source,
-  model: ResourceKind.Model,
-  metricsview: ResourceKind.MetricsView,
-  metrics_view: ResourceKind.MetricsView,
-  component: ResourceKind.Component,
-  dashboard: ResourceKind.Dashboard,
-  report: ResourceKind.Report,
-  alert: ResourceKind.Alert,
-  theme: ResourceKind.Theme,
-  api: ResourceKind.API,
-};
 
 // In the UI, we shouldn't show the `rill.runtime.v1` prefix
 export function prettyResourceKind(kind: string) {

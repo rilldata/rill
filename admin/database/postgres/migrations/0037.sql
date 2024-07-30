@@ -1,1 +1,1 @@
-ALTER TABLE orgs ADD COLUMN billing_email TEXT NOT NULL DEFAULT '';
+ALTER TABLE magic_auth_tokens ADD COLUMN state TEXT NOT NULL DEFAULT '';

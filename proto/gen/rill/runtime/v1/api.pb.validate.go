@@ -7707,6 +7707,8 @@ func (m *ConnectorDriver) validate(all bool) error {
 
 	// no validation rules for ImplementsNotifier
 
+	// no validation rules for ImplementsWarehouse
+
 	if len(errors) > 0 {
 		return ConnectorDriverMultiError(errors)
 	}

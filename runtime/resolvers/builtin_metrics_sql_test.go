@@ -66,7 +66,8 @@ measures:
 			require.Equal(t, tc.wantErr, err.Error())
 		} else {
 			require.NoError(t, err)
-			require.Equal(t, []byte(tc.want), res.Data)
+			defer res.Close()
+			require.Equal(t, []byte(tc.want), must(res.MarshalJSON()))
 		}
 	}
 }

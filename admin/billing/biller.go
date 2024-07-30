@@ -40,6 +40,7 @@ type Biller interface {
 	// CancelSubscriptionsForCustomer deletes the subscription for the given organization.
 	// cancellationDate only applicable if option is SubscriptionCancellationOptionRequestedDate
 	CancelSubscriptionsForCustomer(ctx context.Context, customerID string, cancelOption SubscriptionCancellationOption) error
+	FindSubscriptionsPastTrialPeriod(ctx context.Context) ([]*Subscription, error)
 
 	ReportUsage(ctx context.Context, usage []*Usage) error
 

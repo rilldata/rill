@@ -25,6 +25,7 @@ import type {
   V1GetGithubUserStatusResponse,
   V1ListGithubUserReposResponse,
   V1RevokeMagicAuthTokenResponse,
+  V1GetCurrentMagicAuthTokenResponse,
   V1ListOrganizationsResponse,
   AdminServiceListOrganizationsParams,
   V1CreateOrganizationResponse,
@@ -558,6 +559,59 @@ export const createAdminServiceRevokeMagicAuthToken = <
     TContext
   >(mutationFn, mutationOptions);
 };
+/**
+ * @summary GetCurrentMagicAuthToken returns information about the current magic auth token.
+ */
+export const adminServiceGetCurrentMagicAuthToken = (signal?: AbortSignal) => {
+  return httpClient<V1GetCurrentMagicAuthTokenResponse>({
+    url: `/v1/magic-tokens/current`,
+    method: "get",
+    signal,
+  });
+};
+
+export const getAdminServiceGetCurrentMagicAuthTokenQueryKey = () => [
+  `/v1/magic-tokens/current`,
+];
+
+export type AdminServiceGetCurrentMagicAuthTokenQueryResult = NonNullable<
+  Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>
+>;
+export type AdminServiceGetCurrentMagicAuthTokenQueryError = RpcStatus;
+
+export const createAdminServiceGetCurrentMagicAuthToken = <
+  TData = Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>,
+  TError = RpcStatus,
+>(options?: {
+  query?: CreateQueryOptions<
+    Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>,
+    TError,
+    TData
+  >;
+}): CreateQueryResult<TData, TError> & { queryKey: QueryKey } => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getAdminServiceGetCurrentMagicAuthTokenQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>
+  > = ({ signal }) => adminServiceGetCurrentMagicAuthToken(signal);
+
+  const query = createQuery<
+    Awaited<ReturnType<typeof adminServiceGetCurrentMagicAuthToken>>,
+    TError,
+    TData
+  >({ queryKey, queryFn, ...queryOptions }) as CreateQueryResult<
+    TData,
+    TError
+  > & { queryKey: QueryKey };
+
+  query.queryKey = queryKey;
+
+  return query;
+};
+
 /**
  * @summary ListOrganizations lists all the organizations currently managed by the admin
  */
