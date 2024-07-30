@@ -73,6 +73,7 @@ func installClickHouse(destDir string) (string, error) {
 
 	if _, err := os.Stat(destPath); err == nil {
 		// ClickHouse binary already exists
+		// TODO: Check compatibility in case the binary is outdated.
 		return destPath, nil
 	}
 
