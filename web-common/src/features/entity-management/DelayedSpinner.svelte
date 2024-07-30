@@ -6,7 +6,6 @@
 
   export let isLoading: boolean;
   export let delay = 300;
-  export let status: EntityStatus = EntityStatus.Idle;
 
   const showSpinner = writable(false);
 
@@ -33,5 +32,5 @@
 </script>
 
 {#if $showSpinner}
-  <Spinner {status} />
+  <Spinner status={EntityStatus.Running} />
 {/if}

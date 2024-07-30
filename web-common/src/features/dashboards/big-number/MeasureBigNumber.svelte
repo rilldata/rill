@@ -201,10 +201,7 @@
           in:receive={{ key: "spinner" }}
           out:send={{ key: "spinner" }}
         >
-          <DelayedSpinner
-            isLoading={status === EntityStatus.Running}
-            status={EntityStatus.Running}
-          />
+          <DelayedSpinner isLoading={status === EntityStatus.Running} />
         </div>
       {:else if value === null}
         <span class="ui-copy-disabled-faint italic text-sm">no data</span>
