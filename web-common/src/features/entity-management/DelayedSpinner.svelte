@@ -1,9 +1,13 @@
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
+  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { writable } from "svelte/store";
+  import Spinner from "./Spinner.svelte";
 
   export let isLoading: boolean;
   export let delay = 300;
+  export let status: EntityStatus = EntityStatus.Idle;
+
   const showSpinner = writable(false);
 
   let timeoutId;
@@ -29,5 +33,5 @@
 </script>
 
 {#if $showSpinner}
-  <slot />
+  <Spinner {status} />
 {/if}
