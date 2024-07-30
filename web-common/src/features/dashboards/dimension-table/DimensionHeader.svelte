@@ -156,7 +156,7 @@
       <span class="ui-copy-icon">
         <Back size="16px" />
       </span>
-      <span> All Dimensions </span>
+      <span>All Dimensions</span>
     {/if}
   </button>
 
