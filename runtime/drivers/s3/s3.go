@@ -57,6 +57,14 @@ var spec = drivers.Spec{
 			Hint:        "Overrides the S3 endpoint to connect to. This should only be used to connect to S3-compatible services, such as Cloudflare R2 or MinIO.",
 		},
 		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+		{
 			Key:         "aws.credentials",
 			Type:        drivers.InformationalPropertyType,
 			DisplayName: "AWS credentials",

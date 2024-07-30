@@ -44,6 +44,14 @@ var spec = drivers.Spec{
 			Hint:        "Glob patterns are supported",
 		},
 		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+		{
 			Key:         "gcp.credentials",
 			Type:        drivers.InformationalPropertyType,
 			DisplayName: "GCP credentials",

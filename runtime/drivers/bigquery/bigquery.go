@@ -50,6 +50,14 @@ var spec = drivers.Spec{
 			Hint:        "Rill will use the project ID from your local credentials, unless set here. Set this if no project ID configured in credentials.",
 		},
 		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+		{
 			Key:         "google_application_credentials",
 			Type:        drivers.InformationalPropertyType,
 			DisplayName: "GCP credentials",

@@ -43,6 +43,14 @@ var spec = drivers.Spec{
 			Placeholder: "my_user_name:my_password@ac123456/my_database/my_schema?warehouse=my_warehouse&role=my_user_role",
 			Hint:        "Either set this or pass --var connector.snowflake.dsn=... to rill start",
 		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
 	ImplementsWarehouse: true,
 }

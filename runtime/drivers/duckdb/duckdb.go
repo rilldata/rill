@@ -46,8 +46,12 @@ var spec = drivers.Spec{
 	DocsURL:     "https://docs.rilldata.com/reference/connectors/motherduck",
 	ConfigProperties: []*drivers.PropertySpec{
 		{
-			Key:  "path",
-			Type: drivers.StringPropertyType,
+			Key:         "path",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Path",
+			Description: "Path to external DuckDB database.",
+			Placeholder: "/path/to/main.db",
 		},
 	},
 	SourceProperties: []*drivers.PropertySpec{
@@ -56,8 +60,24 @@ var spec = drivers.Spec{
 			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "DB",
-			Description: "Path to external DuckDB database. Use md:<dbname> for motherduckb.",
-			Placeholder: "/path/to/main.db or md:main.db(for motherduck)",
+			Description: "Path to DuckDB database",
+			Placeholder: "/path/to/duckdb.db",
+		},
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from DuckDB.",
+			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
 		},
 	},
 	ImplementsCatalog: true,
@@ -75,7 +95,40 @@ var motherduckSpec = drivers.Spec{
 			Secret: true,
 		},
 	},
-	ImplementsOLAP: true,
+	SourceProperties: []*drivers.PropertySpec{
+		{
+			Key:         "dsn",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "MotherDuck Connection String",
+			Placeholder: "md:motherduck.db",
+		},
+		{
+			Key:         "sql",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "SQL",
+			Description: "Query to extract data from MotherDuck.",
+			Placeholder: "select * from table;",
+		},
+		{
+			Key:         "token",
+			Type:        drivers.StringPropertyType,
+			Required:    true,
+			DisplayName: "Access token",
+			Description: "MotherDuck access token",
+			Placeholder: "your.access_token.here",
+			Secret:      true,
+		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
+	},
 }
 
 type Driver struct {

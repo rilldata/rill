@@ -59,6 +59,14 @@ var spec = drivers.Spec{
 			Description: "Azure storage account name.",
 			Required:    false,
 		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
 	ImplementsObjectStore: true,
 }

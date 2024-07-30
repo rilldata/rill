@@ -750,13 +750,13 @@ func (s *Server) authCallbackHandler() http.Handler {
 		// Exchange the code for an access token
 		token, err := authenticator.ExchangeCodeForToken(code)
 		if err != nil {
-			http.Error(w, "failed to exchange code for token", http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to exchange code for token: %s", err), http.StatusInternalServerError)
 			return
 		}
 		// save token and redirect back to url provided by caller when initiating auth flow
 		err = dotrill.SetAccessToken(token)
 		if err != nil {
-			http.Error(w, "failed to save access token", http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("failed to save access token: %s", err), http.StatusInternalServerError)
 			return
 		}
 		s.app.ch.AdminTokenDefault = token
