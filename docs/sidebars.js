@@ -91,10 +91,9 @@ const sidebars = {
             'learn/rill_learn_200/201_0',
             'learn/rill_learn_200/201_1',
             'learn/rill_learn_200/cloud_components/202_0',
-            'learn/rill_learn_200/cloud_components/202_1',
-            'learn/rill_learn_200/cloud_components/202_2',
+
             'learn/rill_learn_200/203_0',
-            'learn/rill_learn_200/204_0',
+           
           ]
         },
         {
