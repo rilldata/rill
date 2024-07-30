@@ -307,13 +307,16 @@ func (s *Server) UpdateBillingSubscription(ctx context.Context, req *adminv1.Upd
 	if err != nil {
 		return nil, status.Error(codes.Internal, err.Error())
 	}
-	if !c.HasPaymentMethod {
+	if !c.HasPaymentMethod && !claims.Superuser(ctx) {
 		return nil, status.Errorf(codes.FailedPrecondition, "no payment method found for the organization")
 	}
 
-	// log on plan downgrades
 	if planDowngrade(plan, org) {
-		s.logger.Warn("plan downgrade", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan", subs[0].Plan.Name), zap.String("new_plan", plan.Name))
+		if claims.Superuser(ctx) {
+			s.logger.Warn("plan downgrade", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.String("current_plan", subs[0].Plan.Name), zap.String("new_plan", plan.Name))
+		} else {
+			return nil, status.Errorf(codes.FailedPrecondition, "plan downgrade not supported")
+		}
 	}
 
 	if len(subs) == 1 {
