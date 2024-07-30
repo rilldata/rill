@@ -189,6 +189,10 @@ func (c *connection) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
+func (c *connection) FindModelSplits(ctx context.Context, modelID string, afterIndex int, afterKey string, limit int) ([]drivers.ModelSplit, error) {
+	return nil, drivers.ErrNotImplemented
+}
+
 func (c *connection) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
 	return nil, drivers.ErrNotImplemented
 }
@@ -197,11 +201,19 @@ func (c *connection) FindModelSplitsByPending(ctx context.Context, modelID strin
 	return nil, drivers.ErrNotImplemented
 }
 
+func (c *connection) CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error) {
+	return false, drivers.ErrNotImplemented
+}
+
 func (c *connection) InsertModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
 	return drivers.ErrNotImplemented
 }
 
 func (c *connection) UpdateModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
+	return drivers.ErrNotImplemented
+}
+
+func (c *connection) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
 	return drivers.ErrNotImplemented
 }
 

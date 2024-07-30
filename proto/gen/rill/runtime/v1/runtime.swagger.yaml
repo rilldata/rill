@@ -971,6 +971,39 @@ paths:
           default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/models/{model}/splits:
+    get:
+      summary: GetModelSplits returns the splits of a model
+      operationId: RuntimeService_GetModelSplits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetModelSplitsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: model
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -3863,6 +3896,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Log'
+  v1GetModelSplitsResponse:
+    type: object
+    properties:
+      splits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelSplit'
+      nextPageToken:
+        type: string
   v1GetResourceResponse:
     type: object
     properties:
@@ -4794,6 +4837,24 @@ definitions:
         type: object
       trigger:
         type: boolean
+  v1ModelSplit:
+    type: object
+    properties:
+      key:
+        type: string
+      data:
+        type: object
+      watermark:
+        type: string
+        format: date-time
+      executedOn:
+        type: string
+        format: date-time
+      error:
+        type: string
+      elapsedMs:
+        type: integer
+        format: int64
   v1ModelState:
     type: object
     properties:

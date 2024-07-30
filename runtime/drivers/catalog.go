@@ -39,6 +39,7 @@ type CatalogStore interface {
 	DeleteResource(ctx context.Context, v int64, k, n string) error
 	DeleteResources(ctx context.Context) error
 
+	FindModelSplits(ctx context.Context, modelID string, afterIndex int, afterKey string, limit int) ([]ModelSplit, error)
 	FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]ModelSplit, error)
 	FindModelSplitsByPending(ctx context.Context, modelID string, limit int) ([]ModelSplit, error)
 	CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error)

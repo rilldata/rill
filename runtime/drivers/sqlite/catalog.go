@@ -142,6 +142,41 @@ func (c *catalogStore) DeleteResources(ctx context.Context) error {
 	return nil
 }
 
+func (c *catalogStore) FindModelSplits(ctx context.Context, modelID string, afterIndex int, afterKey string, limit int) ([]drivers.ModelSplit, error) {
+	rows, err := c.db.QueryContext(
+		ctx,
+		"SELECT key, data_json, idx, watermark, executed_on, error, elapsed_ms FROM model_splits WHERE instance_id=? AND model_id=? AND (idx > ? OR (idx = ? AND key > ?)) ORDER BY idx, key LIMIT ?",
+		c.instanceID,
+		modelID,
+		afterIndex,
+		afterIndex,
+		afterKey,
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var res []drivers.ModelSplit
+	for rows.Next() {
+		var elapsedMs int64
+		r := drivers.ModelSplit{}
+		err := rows.Scan(&r.Key, &r.DataJSON, &r.Index, &r.Watermark, &r.ExecutedOn, &r.Error, &elapsedMs)
+		if err != nil {
+			return nil, err
+		}
+		r.Elapsed = time.Duration(elapsedMs) * time.Millisecond
+		res = append(res, r)
+	}
+
+	if rows.Err() != nil {
+		return nil, err
+	}
+
+	return res, nil
+}
+
 func (c *catalogStore) FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]drivers.ModelSplit, error) {
 	// We can't pass a []string as a bound parameter, so we have to build a query with a corresponding number of placeholders.
 	var qry strings.Builder
@@ -217,6 +252,30 @@ func (c *catalogStore) FindModelSplitsByPending(ctx context.Context, modelID str
 	return res, nil
 }
 
+func (c *catalogStore) CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error) {
+	rows, err := c.db.QueryContext(
+		ctx,
+		"SELECT 1 FROM model_splits WHERE instance_id=? AND model_id=? AND error != '' LIMIT 1",
+		c.instanceID,
+		modelID,
+	)
+	if err != nil {
+		return false, err
+	}
+	defer rows.Close()
+
+	var hasErrors bool
+	if rows.Next() {
+		hasErrors = true
+	}
+
+	if rows.Err() != nil {
+		return false, err
+	}
+
+	return hasErrors, nil
+}
+
 func (c *catalogStore) InsertModelSplit(ctx context.Context, modelID string, split drivers.ModelSplit) error {
 	_, err := c.db.ExecContext(
 		ctx,
@@ -251,6 +310,21 @@ func (c *catalogStore) UpdateModelSplit(ctx context.Context, modelID string, spl
 		c.instanceID,
 		modelID,
 		split.Key,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error
+func (c *catalogStore) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
+	_, err := c.db.ExecContext(
+		ctx,
+		"UPDATE model_splits SET executed_on=NULL WHERE instance_id=? AND model_id=? AND error != ''",
+		c.instanceID,
+		modelID,
 	)
 	if err != nil {
 		return err

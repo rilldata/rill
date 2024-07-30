@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"slices"
@@ -18,6 +19,8 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/structpb"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 // ListResources implements runtimev1.RuntimeServiceServer
@@ -178,6 +181,77 @@ func (s *Server) GetResource(ctx context.Context, req *runtimev1.GetResourceRequ
 	return &runtimev1.GetResourceResponse{Resource: r}, nil
 }
 
+// GetModelSplits implements runtimev1.RuntimeServiceServer
+func (s *Server) GetModelSplits(ctx context.Context, req *runtimev1.GetModelSplitsRequest) (*runtimev1.GetModelSplitsResponse, error) {
+	s.addInstanceRequestAttributes(ctx, req.InstanceId)
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.instance_id", req.InstanceId),
+		attribute.String("args.model", req.Model),
+	)
+
+	if !auth.GetClaims(ctx).CanInstance(req.InstanceId, auth.ReadObjects) {
+		return nil, ErrForbidden
+	}
+
+	ctrl, err := s.runtime.Controller(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	n := &runtimev1.ResourceName{Kind: runtime.ResourceKindModel, Name: req.Model}
+	r, err := ctrl.Get(ctx, n, false)
+	if err != nil {
+		if errors.Is(err, drivers.ErrResourceNotFound) {
+			return nil, status.Error(codes.NotFound, "resource not found")
+		}
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	r, access, err := s.applySecurityPolicy(ctx, req.InstanceId, r)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	if !access {
+		return nil, status.Error(codes.NotFound, "resource not found")
+	}
+
+	splitsModelID := r.GetModel().State.SplitsModelId
+	if splitsModelID == "" {
+		return &runtimev1.GetModelSplitsResponse{}, nil
+	}
+
+	afterIdx := -1
+	afterKey := ""
+	if req.PageToken != "" {
+		err := unmarshalPageToken(req.PageToken, &afterIdx, &afterKey)
+		if err != nil {
+			return nil, status.Errorf(codes.InvalidArgument, "failed to parse page token: %v", err)
+		}
+	}
+
+	catalog, release, err := s.runtime.Catalog(ctx, req.InstanceId)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+	defer release()
+
+	splits, err := catalog.FindModelSplits(ctx, splitsModelID, afterIdx, afterKey, validPageSize(req.PageSize))
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	var nextPageToken string
+	if len(splits) == validPageSize(req.PageSize) {
+		last := splits[len(splits)-1]
+		nextPageToken = marshalPageToken(last.Index, last.Key)
+	}
+
+	return &runtimev1.GetModelSplitsResponse{
+		Splits:        modelSplitsToPB(splits),
+		NextPageToken: nextPageToken,
+	}, nil
+}
+
 // CreateTrigger implements runtimev1.RuntimeServiceServer
 func (s *Server) CreateTrigger(ctx context.Context, req *runtimev1.CreateTriggerRequest) (*runtimev1.CreateTriggerResponse, error) {
 	s.addInstanceRequestAttributes(ctx, req.InstanceId)
@@ -304,4 +378,45 @@ func (s *Server) applyMetricsViewSpecSecurity(spec *runtimev1.MetricsViewSpec, p
 	}
 
 	return dims, ms, true
+}
+
+// modelSplitsToPB converts a slice of drivers.ModelSplit to a slice of runtimev1.ModelSplit.
+func modelSplitsToPB(splits []drivers.ModelSplit) []*runtimev1.ModelSplit {
+	pbs := make([]*runtimev1.ModelSplit, len(splits))
+	for i, split := range splits {
+		pbs[i] = modelSplitToPB(&split)
+	}
+	return pbs
+}
+
+// modelSplitToPB converts a drivers.ModelSplit to a runtimev1.ModelSplit.
+func modelSplitToPB(split *drivers.ModelSplit) *runtimev1.ModelSplit {
+	var data map[string]interface{}
+	if err := json.Unmarshal(split.DataJSON, &data); err != nil {
+		panic(err)
+	}
+
+	var watermark, executedOn *timestamppb.Timestamp
+	if split.Watermark != nil {
+		watermark = timestamppb.New(*split.Watermark)
+	}
+	if split.ExecutedOn != nil {
+		executedOn = timestamppb.New(*split.ExecutedOn)
+	}
+
+	return &runtimev1.ModelSplit{
+		Key:        split.Key,
+		Data:       must(structpb.NewStruct(data)),
+		Watermark:  watermark,
+		ExecutedOn: executedOn,
+		Error:      split.Error,
+		ElapsedMs:  uint32(split.Elapsed.Milliseconds()),
+	}
+}
+
+func must[T any](v T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return v
 }
