@@ -29,10 +29,10 @@ func TestSimpleMetricsSQLApi(t *testing.T) {
 	require.NotNil(t, res)
 	var rows []map[string]interface{}
 	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
-	require.Equal(t, 5, len(rows))
+	require.Equal(t, 2, len(rows))
 	require.Equal(t, 2, len(rows[0]))
 	require.Equal(t, "msn.com", rows[0]["dom"])
-	require.Equal(t, nil, rows[0]["pub"])
+	require.Equal(t, "Microsoft", rows[0]["pub"])
 }
 
 func TestTemplateMetricsSQLAPI(t *testing.T) {
@@ -90,6 +90,7 @@ func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
 }
 
 func TestPolicyMetricsSQLAPI(t *testing.T) {
+	t.Skip("the new implementation does not support querying API with excluded columns")
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	api, err := rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")

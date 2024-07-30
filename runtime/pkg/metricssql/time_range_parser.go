@@ -14,7 +14,7 @@ import (
 )
 
 func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
-	d, unit, colName, err := q.parseTimeRangeArgs(ctx, node.Args)
+	d, unit, colName, err := q.parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -38,7 +38,7 @@ func (q *query) parseTimeRangeStart(ctx context.Context, node *ast.FuncCallExpr)
 }
 
 func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
-	d, unit, colName, err := q.parseTimeRangeArgs(ctx, node.Args)
+	d, unit, colName, err := q.parseTimeRangeArgs(node.Args)
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +69,7 @@ func (q *query) parseTimeRangeEnd(ctx context.Context, node *ast.FuncCallExpr) (
 	}, nil
 }
 
-func (q *query) parseTimeRangeArgs(ctx context.Context, args []ast.ExprNode) (duration.Duration, int, string, error) {
+func (q *query) parseTimeRangeArgs(args []ast.ExprNode) (duration.Duration, int, string, error) {
 	if len(args) == 0 {
 		return nil, 0, "", fmt.Errorf("metrics sql: mandatory arg duration missing for time_range_end() function")
 	}

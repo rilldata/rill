@@ -305,7 +305,6 @@ func (q *query) parseColumnNameExpr(in ast.Node) (string, string, error) {
 	} else if _, ok := q.measures[col]; ok {
 		return col, "MEASURE", nil
 	} else if q.metricsView.Spec.TimeDimension == col {
-		// TODO test this
 		return col, "DIMENSION", nil
 	} else {
 		return "", "", fmt.Errorf("metrics sql: selected column `%s` not found in dimensions/measures in metrics view", col)
@@ -315,7 +314,8 @@ func (q *query) parseColumnNameExpr(in ast.Node) (string, string, error) {
 func (q *query) parseFuncCallExpr(node *ast.FuncCallExpr) (*metricsview.DimensionCompute, error) {
 	fncName := node.FnName
 	switch fncName.L {
-	case "date_add", "date_sub": // ex : date_add(col, INTERVAL 1 DAY)
+	case "date_add", "date_sub":
+		// example: date_add(col, INTERVAL 1 DAY)
 		col, typ, err := q.parseColumnNameExpr(node.Args[0]) // handling of col
 		if err != nil {
 			return nil, err
@@ -346,7 +346,8 @@ func (q *query) parseFuncCallExpr(node *ast.FuncCallExpr) (*metricsview.Dimensio
 				Grain:     metricsview.TimeGrain(expr),
 			},
 		}, nil
-	case "date_trunc": // ex : date_trunc(MONTH, COL)
+	case "date_trunc":
+		// example date_trunc(MONTH, COL)
 		if len(node.Args) != 2 {
 			return nil, fmt.Errorf("metrics sql: expected 2 arguments in date_trunc function")
 		}
