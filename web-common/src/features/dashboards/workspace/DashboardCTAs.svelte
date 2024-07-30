@@ -1,5 +1,6 @@
 <script lang="ts">
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
@@ -83,6 +84,7 @@
         Deploy this dashboard to Rill Cloud
       </TooltipContent>
     </Tooltip>
+    <LocalAvatarButton />
   {/if}
 </div>
 
