@@ -19,6 +19,7 @@
   } from "svelte/transition";
   import Spinner from "../../entity-management/Spinner.svelte";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
+  import DelayedSpinner from "../../entity-management/DelayedSpinner.svelte";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
@@ -195,14 +196,16 @@
           {/if}
         </div>
       {:else if status === EntityStatus.Running}
-        <div
-          class="absolute p-2"
-          class:bottom-0={withTimeseries}
-          in:receive={{ key: "spinner" }}
-          out:send={{ key: "spinner" }}
-        >
-          <Spinner status={EntityStatus.Running} />
-        </div>
+        <DelayedSpinner isLoading={status === EntityStatus.Running}>
+          <div
+            class="absolute p-2"
+            class:bottom-0={withTimeseries}
+            in:receive={{ key: "spinner" }}
+            out:send={{ key: "spinner" }}
+          >
+            <Spinner status={EntityStatus.Running} />
+          </div>
+        </DelayedSpinner>
       {:else if value === null}
         <span class="ui-copy-disabled-faint italic text-sm">no data</span>
       {/if}

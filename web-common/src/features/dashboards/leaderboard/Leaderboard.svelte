@@ -11,6 +11,7 @@
   import LeaderboardRow from "./LeaderboardRow.svelte";
   import LeaderboardHeader from "./LeaderboardHeader.svelte";
   import LoadingRows from "./LoadingRows.svelte";
+  import { isLoadingWithTimeout } from "../../entity-management/spinner-utils";
 
   const slice = 7;
   const columnWidth = 66;
@@ -81,6 +82,10 @@
 
   $: ({ data: sortedData, isFetching } = $sortedQuery);
 
+  const loadingWithTimeout = isLoadingWithTimeout();
+  $: loadingWithTimeout.setLoading(isFetching);
+  $: isFetchingWithTimeout = $loadingWithTimeout;
+
   $: totalsQuery = createQueryServiceMetricsViewAggregation(
     $runtime.instanceId,
     $metricsViewName,
@@ -95,7 +100,7 @@
   let showExpandTable = false;
   let noAvailableValues = true;
 
-  $: if (sortedData && !isFetching) {
+  $: if (sortedData && !isFetchingWithTimeout) {
     const leaderboardData = prepareLeaderboardItemData(
       sortedData?.data ?? [],
       dimensionName,
@@ -150,7 +155,7 @@
       {dimensionDescription}
       {dimensionName}
       {isBeingCompared}
-      {isFetching}
+      isFetching={isFetchingWithTimeout}
       sortType={$sortType}
       {toggleSort}
       {setPrimaryDimension}
@@ -160,7 +165,7 @@
     />
 
     <tbody>
-      {#if isFetching}
+      {#if isFetchingWithTimeout}
         <LoadingRows columns={columnCount + 1} />
       {:else}
         {#each aboveTheFold as itemData (itemData.dimensionValue)}
