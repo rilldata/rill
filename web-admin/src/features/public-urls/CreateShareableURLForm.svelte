@@ -18,6 +18,7 @@
   } from "./form-utils";
 
   $: ({ organization, project } = $page.params);
+  $: state = $page.url.searchParams.get("state");
 
   let token: string;
   let setExpiration = false;
@@ -70,6 +71,7 @@
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
+              state: state ? state : undefined,
             },
           });
           token = _token;
