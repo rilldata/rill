@@ -60,6 +60,11 @@ type query struct {
 	measures    map[string]any
 }
 
+// Rewrite parses a metrics SQL query and compiles it to a metricview.Query.
+// It uses tidb parser(which is a MySQL compliant parser) and transforms over the generated AST to generate query.
+// We use MySQL's ANSI sql Mode to conform more closely to standard SQL.
+//
+// Whenever adding transform method over new node type also look at its `Restore` method to get an idea how it can be parsed into a SQL query.
 func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query, error) {
 	stmtNodes, _, err := c.p.ParseSQL(sql)
 	if err != nil {

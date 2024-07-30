@@ -90,35 +90,24 @@ func TestComplexTemplateMetricsSQLAPI(t *testing.T) {
 }
 
 func TestPolicyMetricsSQLAPI(t *testing.T) {
-	t.Skip("the new implementation does not support querying API with excluded columns")
 	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
 
 	api, err := rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
 	require.NoError(t, err)
 
-	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	_, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
 		Args:               nil,
 		Claims:             &runtime.SecurityClaims{UserAttributes: map[string]any{"domain": "yahoo.com", "email": "user@yahoo.com"}},
 	})
-	require.NoError(t, err)
-	defer res.Close()
-
-	require.NotNil(t, res)
-	var rows []map[string]interface{}
-	require.NoError(t, json.Unmarshal(must(res.MarshalJSON()), &rows))
-	require.Equal(t, 1, len(rows))
-	require.Equal(t, nil, rows[0]["total volume"])
-	require.Equal(t, 3.0, rows[0]["total impressions"])
-	require.Equal(t, "yahoo.com", rows[0]["domain"])
-	require.Equal(t, "YAHOO", rows[0]["publisher"])
+	require.Error(t, err)
 
 	api, err = rt.APIForName(context.Background(), instanceID, "mv_sql_policy_api")
 	require.NoError(t, err)
 
-	res, err = rt.Resolve(context.Background(), &runtime.ResolveOptions{
+	res, err := rt.Resolve(context.Background(), &runtime.ResolveOptions{
 		InstanceID:         instanceID,
 		Resolver:           api.Spec.Resolver,
 		ResolverProperties: api.Spec.ResolverProperties.AsMap(),
