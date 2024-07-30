@@ -22,6 +22,7 @@
   import { getStateManagers } from "../state-managers/state-managers";
   import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
   import SelectAllButton from "./SelectAllButton.svelte";
+  import { isLoadingWithTimeout } from "../../entity-management/spinner-utils";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -58,6 +59,10 @@
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
+
+  const loadingWithTimeout = isLoadingWithTimeout();
+  $: loadingWithTimeout.setLoading(isFetching);
+  $: isFetchingWithTimeout = $loadingWithTimeout;
 
   let searchBarOpen = false;
 
@@ -148,10 +153,8 @@
 
 <div class="flex justify-between items-center p-1 pr-5 h-7">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
-    {#if isFetching}
-      <div>
-        <Spinner size="16px" status={EntityStatus.Running} />
-      </div>
+    {#if isFetchingWithTimeout}
+      <Spinner size="16px" status={EntityStatus.Running} />
     {:else}
       <span class="ui-copy-icon">
         <Back size="16px" />
