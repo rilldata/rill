@@ -41,8 +41,10 @@ type CatalogStore interface {
 
 	FindModelSplitsByKeys(ctx context.Context, modelID string, keys []string) ([]ModelSplit, error)
 	FindModelSplitsByPending(ctx context.Context, modelID string, limit int) ([]ModelSplit, error)
+	CheckModelSplitsHaveErrors(ctx context.Context, modelID string) (bool, error)
 	InsertModelSplit(ctx context.Context, modelID string, split ModelSplit) error
 	UpdateModelSplit(ctx context.Context, modelID string, split ModelSplit) error
+	UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error
 	DeleteModelSplits(ctx context.Context, modelID string) error
 }
 

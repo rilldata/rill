@@ -2734,6 +2734,8 @@ func (m *ModelState) validate(all bool) error {
 
 	// no validation rules for SplitsModelId
 
+	// no validation rules for SplitsHaveErrors
+
 	if len(errors) > 0 {
 		return ModelStateMultiError(errors)
 	}

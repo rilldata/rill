@@ -146,6 +146,8 @@ message ModelState {
   StructType incremental_state_schema = 8;
   // splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
   string splits_model_id = 10;
+  // splits_have_errors is true if one or more splits failed to execute.
+  bool splits_have_errors = 11;
 }
 
 message MetricsViewV2 {

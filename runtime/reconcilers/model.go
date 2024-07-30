@@ -33,6 +33,8 @@ const (
 	_modelPendingSplitsBatchSize = 1000
 )
 
+var errSplitsHaveErrors = errors.New("some splits have errors")
+
 func init() {
 	runtime.RegisterReconcilerInitializer(runtime.ResourceKindModel, newModelReconciler)
 }
@@ -216,6 +218,10 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 
 	// Reschedule if we're not triggering
 	if !trigger {
+		// Show if any splits errored
+		if model.State.SplitsHaveErrors {
+			return runtime.ReconcileResult{Err: errSplitsHaveErrors, Retrigger: refreshOn}
+		}
 		return runtime.ReconcileResult{Retrigger: refreshOn}
 	}
 
@@ -246,6 +252,21 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		newIncrementalState, newIncrementalStateSchema, execErr = r.resolveIncrementalState(ctx, model)
 	}
 
+	// If the model is split, track if any of the splits have errors
+	var splitsHaveErrors bool
+	if model.State.SplitsModelId != "" {
+		catalog, release, err := r.C.Runtime.Catalog(ctx, r.C.InstanceID)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+		defer release()
+
+		splitsHaveErrors, err = catalog.CheckModelSplitsHaveErrors(ctx, model.State.SplitsModelId)
+		if err != nil {
+			return runtime.ReconcileResult{Err: err}
+		}
+	}
+
 	// If the build succeeded, update the model's state accodingly
 	if execErr == nil {
 		model.State.ExecutorConnector = executorConnector
@@ -254,6 +275,7 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 		model.State.RefreshedOn = timestamppb.Now()
 		model.State.IncrementalState = newIncrementalState
 		model.State.IncrementalStateSchema = newIncrementalStateSchema
+		model.State.SplitsHaveErrors = splitsHaveErrors
 		err := r.updateStateWithResult(ctx, self, execRes)
 		if err != nil {
 			return runtime.ReconcileResult{Err: err}
@@ -295,7 +317,17 @@ func (r *ModelReconciler) Reconcile(ctx context.Context, n *runtimev1.ResourceNa
 	}
 
 	// Note: If the build failed, this is where we return the error.
-	return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
+	if execErr != nil {
+		return runtime.ReconcileResult{Err: execErr, Retrigger: refreshOn}
+	}
+
+	// Show if any splits errored
+	if model.State.SplitsHaveErrors {
+		return runtime.ReconcileResult{Err: errSplitsHaveErrors, Retrigger: refreshOn}
+	}
+
+	// Return the next refresh time
+	return runtime.ReconcileResult{Retrigger: refreshOn}
 }
 
 // executionSpecHash computes a hash of those model properties that impact execution.
@@ -514,6 +546,7 @@ func (r *ModelReconciler) updateStateClear(ctx context.Context, self *runtimev1.
 	mdl.State.IncrementalState = nil
 	mdl.State.IncrementalStateSchema = nil
 	mdl.State.SplitsModelId = ""
+	mdl.State.SplitsHaveErrors = false
 
 	return r.C.UpdateState(ctx, self.Meta.Name, self)
 }

@@ -1033,21 +1033,38 @@ export interface V1Notifier {
   properties?: V1NotifierProperties;
 }
 
+/**
+ * incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
+ */
 export type V1ModelStateIncrementalState = { [key: string]: any };
 
+/**
+ * result_properties are returned by the executor and contains metadata about the result.
+ */
 export type V1ModelStateResultProperties = { [key: string]: any };
 
 export interface V1ModelState {
+  /** executor_connector is the ModelExecutor that produced the model's result. */
   executorConnector?: string;
+  /** result_connector is the connector where the model's result is stored. */
   resultConnector?: string;
+  /** result_properties are returned by the executor and contains metadata about the result. */
   resultProperties?: V1ModelStateResultProperties;
+  /** result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties. */
   resultTable?: string;
+  /** spec_hash is a hash of those parts of the spec that affect the model's result. */
   specHash?: string;
+  /** refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed. */
   refsHash?: string;
+  /** refreshed_on is the time the model was last executed. */
   refreshedOn?: string;
+  /** incremental_state contains the result of the most recent invocation of the model's incremental state resolver. */
   incrementalState?: V1ModelStateIncrementalState;
   incrementalStateSchema?: V1StructType;
+  /** splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore. */
   splitsModelId?: string;
+  /** splits_have_errors is true if one or more splits failed to execute. */
+  splitsHaveErrors?: boolean;
 }
 
 export interface V1ModelV2 {
