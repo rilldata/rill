@@ -1,8 +1,5 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
-  import Button from "@rilldata/web-common/components/button/Button.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
   import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { useIsModelingSupportedForCurrentOlapDriver as canModel } from "@rilldata/web-common/features/connectors/olap/selectors";
   import { initLocalUserPreferenceStore } from "@rilldata/web-common/features/dashboards/user-preferences";
@@ -28,7 +25,6 @@
 
   export let fileArtifact: FileArtifact;
 
-  let showDeployModal = false;
   let previewStatus: string[] = [];
 
   $: ({ instanceId } = $runtime);
@@ -88,26 +84,19 @@
 
 <WorkspaceContainer inspector={isModelingSupported}>
   <WorkspaceHeader
-    slot="header"
-    showInspectorToggle={isModelingSupported}
-    titleInput={fileName}
     hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
+    showInspectorToggle={isModelingSupported}
+    slot="header"
+    titleInput={fileName}
   >
-    <div slot="cta" class="flex gap-x-2">
-      <Tooltip distance={8}>
-        <Button on:click={() => (showDeployModal = true)} type="secondary">
-          Deploy
-        </Button>
-        <TooltipContent slot="tooltip-content">
-          Deploy this dashboard to Rill Cloud
-        </TooltipContent>
-      </Tooltip>
+    <div class="flex gap-x-2" slot="cta">
       <PreviewButton
         dashboardName={metricViewName}
-        status={previewStatus}
         disabled={previewDisabled}
+        status={previewStatus}
       />
+      <DeployDashboardCta />
       <LocalAvatarButton />
     </div>
   </WorkspaceHeader>
@@ -124,8 +113,3 @@
 
   <MetricsInspector {filePath} slot="inspector" />
 </WorkspaceContainer>
-
-<DeployDashboardCta
-  on:close={() => (showDeployModal = false)}
-  open={showDeployModal}
-/>

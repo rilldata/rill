@@ -31,6 +31,7 @@ import (
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
 	localv1 "github.com/rilldata/rill/proto/gen/rill/local/v1"
 	"github.com/rilldata/rill/proto/gen/rill/local/v1/localv1connect"
+	"github.com/rilldata/rill/runtime/compilers/rillv1"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -144,8 +145,59 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 		return nil, err
 	}
 	var deployedProjectID string
+	var project *adminv1.Project
 	if rc != nil {
 		deployedProjectID = rc.ProjectID
+
+		proj, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+			Id: deployedProjectID,
+		})
+		if err != nil {
+			// unset if project doesnt exist
+			if errors.Is(err, database.ErrNotFound) {
+				err = dotrillcloud.Delete(s.app.ProjectPath, s.app.adminURL)
+				if err != nil {
+					return nil, err
+				}
+			}
+			deployedProjectID = ""
+		} else {
+			project = proj.Project
+		}
+	}
+
+	// get rill user orgs
+	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
+	if err != nil {
+		return nil, err
+	}
+
+	userOrgs := make([]string, 0, len(resp.Organizations))
+	for _, org := range resp.Organizations {
+		userOrgs = append(userOrgs, org.Name)
+	}
+	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
+
+	isGithubRepo := false
+	githubRemoteFound := false
+	repoAccess := false
+	var remote *gitutil.Remote
+	var ghURL string
+
+	if project == nil || project.GithubUrl == "" {
+		// check if project is a git repo only if there is no project already, or it is connected to github
+		remote, ghURL, err = gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
+		if err != nil {
+			if errors.Is(err, gitutil.ErrGitRemoteNotFound) {
+				isGithubRepo = true
+			} else if !errors.Is(err, git.ErrRepositoryNotExists) {
+				// do not return error if repo doesn't exist
+				return nil, err
+			}
+		} else {
+			isGithubRepo = true
+			githubRemoteFound = true
+		}
 	}
 
 	userStatus, err := c.GetGithubUserStatus(ctx, &adminv1.GetGithubUserStatusRequest{})
@@ -163,30 +215,30 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 			GithubUserName:                "",
 			GithubUserPermission:          adminv1.GithubPermission_GITHUB_PERMISSION_UNSPECIFIED,
 			GithubOrganizationPermissions: nil,
-			IsGithubRepo:                  false,
-			IsGithubRemoteFound:           false,
+			IsGithubRepo:                  isGithubRepo,
+			IsGithubRemoteFound:           githubRemoteFound,
 			IsGithubRepoAccessGranted:     false,
 			GithubUrl:                     "",
 			HasUncommittedChanges:         nil,
 			RillOrgExistsAsGithubUserName: false,
-			RillUserOrgs:                  nil,
+			RillUserOrgs:                  userOrgs,
 			LocalProjectName:              localProjectName,
 			DeployedProjectId:             deployedProjectID,
 		}), nil
 	}
 
-	isGithubRepo := true
-	githubRemoteFound := true
-	repoAccess := false
-	// check if project is a git repo
-	remote, ghURL, err := gitutil.ExtractGitRemote(s.app.ProjectPath, "", false)
-	if err != nil {
-		if errors.Is(err, git.ErrRepositoryNotExists) {
-			isGithubRepo = false
-		} else if errors.Is(err, gitutil.ErrGitRemoteNotFound) {
-			githubRemoteFound = false
+	rillOrgExistsAsGitUserName := false
+	// if user does not any have orgs, check if any orgs exist as github username as we suggest this as org name
+	if len(userOrgs) == 0 {
+		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
+			Name: userStatus.Account,
+		})
+		if err != nil {
+			if !errors.Is(err, database.ErrNotFound) {
+				return nil, err
+			}
 		} else {
-			return nil, err
+			rillOrgExistsAsGitUserName = true
 		}
 	}
 
@@ -225,38 +277,11 @@ func (s *Server) DeployValidation(ctx context.Context, r *connect.Request[localv
 				IsGithubRepoAccessGranted:     repoAccess,
 				GithubUrl:                     "",
 				HasUncommittedChanges:         hasUncommittedChanges,
-				RillOrgExistsAsGithubUserName: false,
-				RillUserOrgs:                  nil,
+				RillOrgExistsAsGithubUserName: rillOrgExistsAsGitUserName,
+				RillUserOrgs:                  userOrgs,
 				LocalProjectName:              localProjectName,
 				DeployedProjectId:             deployedProjectID,
 			}), nil
-		}
-	}
-
-	// get rill user orgs
-	resp, err := c.ListOrganizations(ctx, &adminv1.ListOrganizationsRequest{})
-	if err != nil {
-		return nil, err
-	}
-
-	userOrgs := make([]string, 0, len(resp.Organizations))
-	for _, org := range resp.Organizations {
-		userOrgs = append(userOrgs, org.Name)
-	}
-	// TODO if len(userOrgs) > 0 then check if any project in these orgs already deploys from ghUrl
-
-	rillOrgExistsAsGitUserName := false
-	// if user does not any have orgs, check if any orgs exist as github username as we suggest this as org name
-	if len(userOrgs) == 0 {
-		_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-			Name: userStatus.Account,
-		})
-		if err != nil {
-			if !errors.Is(err, database.ErrNotFound) {
-				return nil, err
-			}
-		} else {
-			rillOrgExistsAsGitUserName = true
 		}
 	}
 
@@ -434,6 +459,26 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
+	// check if rill org exists
+	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
+		Name: r.Msg.Org,
+	})
+	if err != nil {
+		st, ok := status.FromError(err)
+		if ok && st.Code() == codes.NotFound {
+			// create org if not exists
+			_, err = c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
+				Name:        r.Msg.Org,
+				Description: "Auto created by Rill",
+			})
+			if err != nil {
+				return nil, err
+			}
+		} else {
+			return nil, err
+		}
+	}
+
 	var projRequest *adminv1.CreateProjectRequest
 	if r.Msg.Upload { // upload repo to rill managed storage instead of github
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
@@ -513,26 +558,6 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		}
 	}
 
-	// check if rill org exists
-	_, err = c.GetOrganization(ctx, &adminv1.GetOrganizationRequest{
-		Name: r.Msg.Org,
-	})
-	if err != nil {
-		st, ok := status.FromError(err)
-		if ok && st.Code() == codes.NotFound {
-			// create org if not exists
-			_, err = c.CreateOrganization(ctx, &adminv1.CreateOrganizationRequest{
-				Name:        r.Msg.Org,
-				Description: "Auto created by Rill",
-			})
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			return nil, err
-		}
-	}
-
 	// create project
 	suffix := 0
 	var projResp *adminv1.CreateProjectResponse
@@ -557,6 +582,27 @@ func (s *Server) DeployProject(ctx context.Context, r *connect.Request[localv1.D
 		return nil, err
 	}
 
+	// Parse .env and push it as variables
+	repo, instanceID, err := cmdutil.RepoForProjectPath(s.app.ProjectPath)
+	if err != nil {
+		return nil, err
+	}
+	parser, err := rillv1.Parse(ctx, repo, instanceID, "prod", "duckdb")
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse project: %w", err)
+	}
+	if parser.RillYAML == nil {
+		return nil, fmt.Errorf("not a valid Rill project (missing a rill.yaml file)")
+	}
+	_, err = c.UpdateProjectVariables(ctx, &adminv1.UpdateProjectVariablesRequest{
+		OrganizationName: r.Msg.Org,
+		Name:             r.Msg.ProjectName,
+		Variables:        parser.DotEnv,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	return connect.NewResponse(&localv1.DeployProjectResponse{
 		DeployId:    projResp.Project.ProdDeploymentId,
 		Org:         projResp.Project.OrgName,
@@ -575,6 +621,13 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		return nil, err
 	}
 
+	projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
+		Id: r.Msg.ProjectId,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	if r.Msg.Reupload {
 		repo, release, err := s.app.Runtime.Repo(ctx, s.app.Instance.ID)
 		if err != nil {
@@ -582,24 +635,24 @@ func (s *Server) RedeployProject(ctx context.Context, r *connect.Request[localv1
 		}
 		defer release()
 
-		projResp, err := c.GetProjectByID(ctx, &adminv1.GetProjectByIDRequest{
-			Id: r.Msg.ProjectId,
-		})
-		if err != nil {
-			return nil, err
-		}
-
 		assetID, err := cmdutil.UploadRepo(ctx, repo, s.app.ch, projResp.Project.OrgName, projResp.Project.Name)
 		if err != nil {
 			return nil, err
 		}
-		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{ArchiveAssetId: &assetID})
+		_, err = c.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+			ArchiveAssetId:   &assetID,
+			OrganizationName: projResp.Project.OrgName,
+			Name:             projResp.Project.Name,
+		})
 		if err != nil {
 			return nil, err
 		}
 	}
+
 	// TODO : Add other update project fields
-	return connect.NewResponse(&localv1.RedeployProjectResponse{}), nil
+	return connect.NewResponse(&localv1.RedeployProjectResponse{
+		FrontendUrl: projResp.Project.FrontendUrl,
+	}), nil
 }
 
 func (s *Server) GetCurrentUser(ctx context.Context, r *connect.Request[localv1.GetCurrentUserRequest]) (*connect.Response[localv1.GetCurrentUserResponse], error) {
