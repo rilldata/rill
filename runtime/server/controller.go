@@ -384,13 +384,13 @@ func (s *Server) applyMetricsViewSpecSecurity(spec *runtimev1.MetricsViewSpec, p
 func modelSplitsToPB(splits []drivers.ModelSplit) []*runtimev1.ModelSplit {
 	pbs := make([]*runtimev1.ModelSplit, len(splits))
 	for i, split := range splits {
-		pbs[i] = modelSplitToPB(&split)
+		pbs[i] = modelSplitToPB(split)
 	}
 	return pbs
 }
 
 // modelSplitToPB converts a drivers.ModelSplit to a runtimev1.ModelSplit.
-func modelSplitToPB(split *drivers.ModelSplit) *runtimev1.ModelSplit {
+func modelSplitToPB(split drivers.ModelSplit) *runtimev1.ModelSplit {
 	var data map[string]interface{}
 	if err := json.Unmarshal(split.DataJSON, &data); err != nil {
 		panic(err)
