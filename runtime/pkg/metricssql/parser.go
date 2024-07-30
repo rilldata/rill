@@ -13,6 +13,7 @@ import (
 	"github.com/pingcap/tidb/pkg/parser/ast"
 	"github.com/pingcap/tidb/pkg/parser/format"
 	"github.com/pingcap/tidb/pkg/parser/mysql"
+	"github.com/pingcap/tidb/pkg/parser/opcode"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
@@ -93,7 +94,7 @@ func (c *Compiler) Rewrite(ctx context.Context, sql string) (*metricsview.Query,
 
 	// parse where clause
 	if stmt.Where != nil {
-		expr, err := q.parseWhere(ctx, stmt.Where)
+		expr, err := q.parseFilter(ctx, stmt.Where)
 		if err != nil {
 			return nil, err
 		}
@@ -200,7 +201,7 @@ func (q *query) parseSelect(node *ast.FieldList) error {
 	return nil
 }
 
-func (q *query) parseWhere(ctx context.Context, node ast.ExprNode) (*metricsview.Expression, error) {
+func (q *query) parseFilter(ctx context.Context, node ast.ExprNode) (*metricsview.Expression, error) {
 	switch node := node.(type) {
 	case *ast.ColumnNameExpr:
 		col, _, err := q.parseColumnNameExpr(node)
@@ -233,7 +234,7 @@ func (q *query) parseWhere(ctx context.Context, node ast.ExprNode) (*metricsview
 	case *ast.BetweenExpr:
 		return q.parseBetween(ctx, node)
 	case *ast.FuncCallExpr:
-		return q.parseFuncCallInWhereExpr(ctx, node)
+		return q.parseFuncCallInFilter(ctx, node)
 	default:
 		return nil, fmt.Errorf("metrics sql: unsupported expression %q", restore(node))
 	}
@@ -279,7 +280,7 @@ func (q *query) parseOrderBy(node *ast.OrderByClause) error {
 }
 
 func (q *query) parseHaving(ctx context.Context, node *ast.HavingClause) error {
-	expr, err := q.parseWhere(ctx, node.Expr)
+	expr, err := q.parseFilter(ctx, node.Expr)
 	if err != nil {
 		return err
 	}
@@ -306,76 +307,42 @@ func (q *query) parseColumnNameExpr(in ast.Node) (string, string, error) {
 		return col, "MEASURE", nil
 	} else if q.metricsView.Spec.TimeDimension == col {
 		return col, "DIMENSION", nil
-	} else {
-		return "", "", fmt.Errorf("metrics sql: selected column `%s` not found in dimensions/measures in metrics view", col)
 	}
+	return "", "", fmt.Errorf("metrics sql: selected column `%s` not found in dimensions/measures in metrics view", col)
 }
 
 func (q *query) parseFuncCallExpr(node *ast.FuncCallExpr) (*metricsview.DimensionCompute, error) {
 	fncName := node.FnName
-	switch fncName.L {
-	case "date_add", "date_sub":
-		// example: date_add(col, INTERVAL 1 DAY)
-		col, typ, err := q.parseColumnNameExpr(node.Args[0]) // handling of col
-		if err != nil {
-			return nil, err
-		}
-		if typ != "DIMENSION" {
-			return nil, fmt.Errorf("metrics sql: expected dimension in date_add/date_sub function")
-		}
-
-		expr, err := q.parseValueExpr(node.Args[1]) // handling of 1
-		if err != nil {
-			return nil, err
-		}
-		amt, err := strconv.Atoi(expr)
-		if err != nil {
-			return nil, fmt.Errorf("metrics sql: expected integer value in date_add/date_sub function")
-		}
-
-		// TODO :: check this
-		expr, err = q.parseValueExpr(node.Args[2]) // handling of DAY
-		if err != nil {
-			return nil, err
-		}
-
-		return &metricsview.DimensionCompute{
-			DateAdd: &metricsview.DimensionComputeDateAdd{
-				Dimension: col,
-				Amount:    amt,
-				Grain:     metricsview.TimeGrain(expr),
-			},
-		}, nil
-	case "date_trunc":
-		// example date_trunc(MONTH, COL)
-		if len(node.Args) != 2 {
-			return nil, fmt.Errorf("metrics sql: expected 2 arguments in date_trunc function")
-		}
-		grain, err := q.parseValueExpr(node.Args[0]) // handling of MONTH
-		if err != nil {
-			return nil, err
-		}
-
-		col, typ, err := q.parseColumnNameExpr(node.Args[1]) // handling of col
-		if err != nil {
-			return nil, err
-		}
-		if typ != "DIMENSION" {
-			return nil, fmt.Errorf("metrics sql: expected dimension in date_trunc function")
-		}
-
-		return &metricsview.DimensionCompute{
-			TimeFloor: &metricsview.DimensionComputeTimeFloor{
-				Dimension: col,
-				Grain:     metricsview.TimeGrain(grain),
-			},
-		}, nil
-	default:
+	if fncName.L != "date_trunc" {
 		return nil, fmt.Errorf("metrics sql: function `%s` not supported in select field", fncName.L)
 	}
+
+	// example date_trunc(MONTH, COL)
+	if len(node.Args) != 2 {
+		return nil, fmt.Errorf("metrics sql: expected 2 arguments in date_trunc function")
+	}
+	grain, err := q.parseValueExpr(node.Args[0]) // handling of MONTH
+	if err != nil {
+		return nil, err
+	}
+
+	col, typ, err := q.parseColumnNameExpr(node.Args[1]) // handling of col
+	if err != nil {
+		return nil, err
+	}
+	if typ != "DIMENSION" {
+		return nil, fmt.Errorf("metrics sql: expected dimension in date_trunc function")
+	}
+
+	return &metricsview.DimensionCompute{
+		TimeFloor: &metricsview.DimensionComputeTimeFloor{
+			Dimension: col,
+			Grain:     metricsview.TimeGrain(strings.ToLower(grain)),
+		},
+	}, nil
 }
 
-func (q *query) parseFuncCallInWhereExpr(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
+func (q *query) parseFuncCallInFilter(ctx context.Context, node *ast.FuncCallExpr) (*metricsview.Expression, error) {
 	switch node.FnName.L {
 	case "time_range_start":
 		return q.parseTimeRangeStart(ctx, node)
@@ -386,7 +353,7 @@ func (q *query) parseFuncCallInWhereExpr(ctx context.Context, node *ast.FuncCall
 			Value: time.Now().Format(time.RFC3339),
 		}, nil
 	case "date_add", "date_sub": // ex : date_add(time, INTERVAL x UNIT)
-		val, err := q.parseWhere(ctx, node.Args[0]) // handling of time
+		val, err := q.parseFilter(ctx, node.Args[0]) // handling of time
 		if err != nil {
 			return nil, err
 		}
@@ -428,12 +395,12 @@ func (q *query) parseFuncCallInWhereExpr(ctx context.Context, node *ast.FuncCall
 }
 
 func (q *query) parseBinaryOperation(ctx context.Context, node *ast.BinaryOperationExpr) (*metricsview.Expression, error) {
-	left, err := q.parseWhere(ctx, node.L)
+	left, err := q.parseFilter(ctx, node.L)
 	if err != nil {
 		return nil, err
 	}
 
-	right, err := q.parseWhere(ctx, node.R)
+	right, err := q.parseFilter(ctx, node.R)
 	if err != nil {
 		return nil, err
 	}
@@ -441,14 +408,14 @@ func (q *query) parseBinaryOperation(ctx context.Context, node *ast.BinaryOperat
 	return &metricsview.Expression{
 		Condition: &metricsview.Condition{
 			// The validation for allowed operators will be done by underlying AST builder
-			Operator:    metricsview.Operator(node.Op.String()),
+			Operator:    operator(node.Op),
 			Expressions: []*metricsview.Expression{left, right},
 		},
 	}, nil
 }
 
 func (q *query) parseIsNullOperation(ctx context.Context, node *ast.IsNullExpr) (*metricsview.Expression, error) {
-	expr, err := q.parseWhere(ctx, node.Expr)
+	expr, err := q.parseFilter(ctx, node.Expr)
 	if err != nil {
 		return nil, err
 	}
@@ -471,7 +438,7 @@ func (q *query) parseIsNullOperation(ctx context.Context, node *ast.IsNullExpr) 
 }
 
 func (q *query) parseIsTruthOperation(ctx context.Context, node *ast.IsTruthExpr) (*metricsview.Expression, error) {
-	expr, err := q.parseWhere(ctx, node.Expr)
+	expr, err := q.parseFilter(ctx, node.Expr)
 	if err != nil {
 		return nil, err
 	}
@@ -494,7 +461,7 @@ func (q *query) parseIsTruthOperation(ctx context.Context, node *ast.IsTruthExpr
 }
 
 func (q *query) parseParentheses(ctx context.Context, node *ast.ParenthesesExpr) (*metricsview.Expression, error) {
-	expr, err := q.parseWhere(ctx, node.Expr)
+	expr, err := q.parseFilter(ctx, node.Expr)
 	if err != nil {
 		return nil, err
 	}
@@ -506,7 +473,7 @@ func (q *query) parsePatternIn(ctx context.Context, node *ast.PatternInExpr) (*m
 		return nil, fmt.Errorf("metrics sql: sub_query is not supported")
 	}
 
-	expr, err := q.parseWhere(ctx, node.Expr)
+	expr, err := q.parseFilter(ctx, node.Expr)
 	if err != nil {
 		return nil, err
 	}
@@ -520,7 +487,7 @@ func (q *query) parsePatternIn(ctx context.Context, node *ast.PatternInExpr) (*m
 	exprs := make([]*metricsview.Expression, 0, len(node.List)+1)
 	exprs = append(exprs, expr)
 	for _, n := range node.List {
-		expr, err = q.parseWhere(ctx, n)
+		expr, err = q.parseFilter(ctx, n)
 		if err != nil {
 			return nil, err
 		}
@@ -540,7 +507,7 @@ func (q *query) parsePatternLikeOrIlike(ctx context.Context, n *ast.PatternLikeO
 		return nil, fmt.Errorf("metrics sql: `ESCAPE` is not supported")
 	}
 
-	expr, err := q.parseWhere(ctx, n.Expr)
+	expr, err := q.parseFilter(ctx, n.Expr)
 	if err != nil {
 		return nil, err
 	}
@@ -569,17 +536,17 @@ func (q *query) parsePatternLikeOrIlike(ctx context.Context, n *ast.PatternLikeO
 }
 
 func (q *query) parseBetween(ctx context.Context, n *ast.BetweenExpr) (*metricsview.Expression, error) {
-	expr, err := q.parseWhere(ctx, n.Expr)
+	expr, err := q.parseFilter(ctx, n.Expr)
 	if err != nil {
 		return nil, err
 	}
 
-	left, err := q.parseWhere(ctx, n.Left)
+	left, err := q.parseFilter(ctx, n.Left)
 	if err != nil {
 		return nil, err
 	}
 
-	right, err := q.parseWhere(ctx, n.Right)
+	right, err := q.parseFilter(ctx, n.Right)
 	if err != nil {
 		return nil, err
 	}
@@ -607,7 +574,7 @@ func (q *query) parseBetween(ctx context.Context, n *ast.BetweenExpr) (*metricsv
 func (q *query) parseValueExpr(in ast.Node) (string, error) {
 	node, ok := in.(ast.ValueExpr)
 	if !ok {
-		return "", fmt.Errorf("metrics sql: expected value expression")
+		return "", fmt.Errorf("metrics sql: expected value expression, got %T", in)
 	}
 	var sb strings.Builder
 	rctx := format.NewRestoreCtx(format.RestoreNameBackQuotes|format.RestoreStringWithoutCharset, &sb)
@@ -620,7 +587,7 @@ func (q *query) parseValueExpr(in ast.Node) (string, error) {
 func (q *query) parseTimeUnitValueExpr(in ast.Node) (string, error) {
 	node, ok := in.(*ast.TimeUnitExpr)
 	if !ok {
-		return "", fmt.Errorf("metrics sql: expected time_unit value expression")
+		return "", fmt.Errorf("metrics sql: expected time_unit value expression, got %T", in)
 	}
 	return node.Unit.String(), nil
 }
@@ -671,5 +638,33 @@ func sub(t time.Time, unit string, amount int) (time.Time, error) {
 		return t.AddDate(-amount, 0, 0), nil
 	default:
 		return time.Time{}, fmt.Errorf("invalid time unit %q", unit)
+	}
+}
+
+func operator(op opcode.Op) metricsview.Operator {
+	switch op {
+	case opcode.LT:
+		return metricsview.OperatorLt
+	case opcode.LE:
+		return metricsview.OperatorLte
+	case opcode.GT:
+		return metricsview.OperatorGt
+	case opcode.GE:
+		return metricsview.OperatorGte
+	case opcode.EQ:
+		return metricsview.OperatorEq
+	case opcode.NE:
+		return metricsview.OperatorNeq
+	case opcode.In:
+		return metricsview.OperatorIn
+	case opcode.Like:
+		return metricsview.OperatorIlike
+	case opcode.Or:
+		return metricsview.OperatorOr
+	case opcode.And:
+		return metricsview.OperatorAnd
+	default:
+		// let the underlying ast parser through errors
+		return metricsview.Operator(op)
 	}
 }

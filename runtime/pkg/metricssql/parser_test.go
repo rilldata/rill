@@ -110,8 +110,8 @@ func TestCompile(t *testing.T) {
 			[]any{"{{.user.domain}}"},
 		},
 		{
-			"select pub, dom, date_trunc('second', timestamp) from ad_bids_metrics",
-			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (date_trunc('SECOND', \"timestamp\"::TIMESTAMP)::TIMESTAMP) AS \"DATE_TRUNC('second', \"\"timestamp\"\")\" FROM \"ad_bids\" GROUP BY 1, 2, 3",
+			"select pub, dom, date_trunc('SECOND', timestamp) from ad_bids_metrics",
+			"SELECT (\"publisher\") AS \"pub\", (\"domain\") AS \"dom\", (date_trunc('SECOND', \"timestamp\"::TIMESTAMP)::TIMESTAMP) AS \"DATE_TRUNC('SECOND', \"\"timestamp\"\")\" FROM \"ad_bids\" GROUP BY 1, 2, 3",
 			mv,
 			nil,
 		},
