@@ -56,6 +56,7 @@ var ignoredPaths = []string{
 	"/.DS_Store",
 	"/.vscode",
 	"/.idea",
+	"/.rillcloud",
 }
 
 // IsIgnored returns true if the path (and any files in nested directories) should be ignored.

@@ -39,40 +39,6 @@ var spec = drivers.Spec{
 		{
 			Key:         "host",
 			Type:        drivers.StringPropertyType,
-			DisplayName: "host",
-			Required:    false,
-		},
-		{
-			Key:         "port",
-			Type:        drivers.NumberPropertyType,
-			DisplayName: "port",
-			Required:    false,
-			Placeholder: "8888",
-		},
-		{
-			Key:         "username",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "username",
-			Required:    false,
-		},
-		{
-			Key:         "password",
-			Type:        drivers.StringPropertyType,
-			DisplayName: "password",
-			Required:    false,
-			Secret:      true,
-		},
-		{
-			Key:         "ssl",
-			Type:        drivers.BooleanPropertyType,
-			DisplayName: "ssl",
-			Required:    false,
-		},
-	},
-	SourceProperties: []*drivers.PropertySpec{
-		{
-			Key:         "host",
-			Type:        drivers.StringPropertyType,
 			Required:    true,
 			DisplayName: "Host",
 			Description: "Hostname or IP address of the Druid server",

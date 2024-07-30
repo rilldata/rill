@@ -19,6 +19,7 @@
   import Https from "../../../components/icons/connectors/HTTPS.svelte";
   import LocalFile from "../../../components/icons/connectors/LocalFile.svelte";
   import MicrosoftAzureBlobStorage from "../../../components/icons/connectors/MicrosoftAzureBlobStorage.svelte";
+  import MotherDuck from "../../../components/icons/connectors/MotherDuck.svelte";
   import Postgres from "../../../components/icons/connectors/Postgres.svelte";
   import Salesforce from "../../../components/icons/connectors/Salesforce.svelte";
   import Snowflake from "../../../components/icons/connectors/Snowflake.svelte";
@@ -30,22 +31,24 @@
   } from "../../../metrics/service/BehaviourEventTypes";
   import { MetricsEventSpace } from "../../../metrics/service/MetricsTypes";
   import { duplicateSourceName } from "../sources-store";
+  import AddDataForm from "./AddDataForm.svelte";
   import DuplicateSource from "./DuplicateSource.svelte";
   import LocalSourceUpload from "./LocalSourceUpload.svelte";
-  import RemoteSourceForm from "./RemoteSourceForm.svelte";
   import RequestConnectorForm from "./RequestConnectorForm.svelte";
 
   let step = 0;
   let selectedConnector: null | V1ConnectorDriver = null;
   let requestConnector = false;
 
-  const TAB_ORDER = [
+  const SOURCES = [
     "gcs",
     "s3",
     "azure",
     "bigquery",
     "athena",
     "redshift",
+    "duckdb",
+    "motherduck",
     "postgres",
     "mysql",
     "sqlite",
@@ -53,12 +56,11 @@
     "salesforce",
     "local_file",
     "https",
-    "clickhouse",
-    "druid",
-    "duckdb",
-    // "motherduck",
-    "pinot",
   ];
+
+  const OLAP_CONNECTORS = ["clickhouse", "druid", "pinot"];
+
+  const SORT_ORDER = [...SOURCES, ...OLAP_CONNECTORS];
 
   const ICONS = {
     gcs: GoogleCloudStorage,
@@ -67,6 +69,8 @@
     bigquery: GoogleBigQuery,
     athena: AmazonAthena,
     redshift: AmazonRedshift,
+    duckdb: DuckDB,
+    motherduck: MotherDuck,
     postgres: Postgres,
     mysql: MySQL,
     sqlite: SQLite,
@@ -76,7 +80,6 @@
     https: Https,
     clickhouse: ClickHouse,
     druid: ApacheDruid,
-    duckdb: DuckDB,
     pinot: ApachePinot,
   };
 
@@ -88,15 +91,17 @@
           data.connectors &&
           data.connectors
             .filter(
-              // Only show connectors in TAB_ORDER
-              (a) => a.name && TAB_ORDER.indexOf(a.name) >= 0,
+              // Only show connectors in SOURCES or OLAP_CONNECTORS
+              (a) =>
+                a.name &&
+                (SOURCES.includes(a.name) || OLAP_CONNECTORS.includes(a.name)),
             )
             .sort(
               // CAST SAFETY: we have filtered out any connectors that
               // don't have a `name` in the previous filter
               (a, b) =>
-                TAB_ORDER.indexOf(a.name as string) -
-                TAB_ORDER.indexOf(b.name as string),
+                SORT_ORDER.indexOf(a.name as string) -
+                SORT_ORDER.indexOf(b.name as string),
             );
         return data;
       },
@@ -186,7 +191,7 @@
           <section>
             <h2>Add a source</h2>
             <div class="connector-grid">
-              {#each $connectors.data.connectors.filter((c) => !c.implementsOlap) as connector (connector.name)}
+              {#each $connectors.data.connectors.filter((c) => c.name && SOURCES.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
@@ -204,7 +209,7 @@
           <section>
             <h2>Connect an OLAP engine</h2>
             <div class="connector-grid">
-              {#each $connectors.data.connectors.filter((c) => c.implementsOlap) as connector (connector.name)}
+              {#each $connectors.data.connectors.filter((c) => c.name && OLAP_CONNECTORS.includes(c.name)) as connector (connector.name)}
                 {#if connector.name}
                   <button
                     id={connector.name}
@@ -232,9 +237,12 @@
         {#if selectedConnector}
           {#if selectedConnector.name === "local_file"}
             <LocalSourceUpload on:close={resetModal} on:back={back} />
-          {:else if selectedConnector}
-            <RemoteSourceForm
+          {:else if selectedConnector && selectedConnector.name}
+            <AddDataForm
               connector={selectedConnector}
+              formType={OLAP_CONNECTORS.includes(selectedConnector.name)
+                ? "connector"
+                : "source"}
               on:close={resetModal}
               on:back={back}
             />

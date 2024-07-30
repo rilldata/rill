@@ -41,6 +41,14 @@ var spec = drivers.Spec{
 			Placeholder: "postgresql://postgres:postgres@localhost:5432/postgres",
 			Hint:        "Either set this or pass --var connector.postgres.database_url=... to rill start",
 		},
+		{
+			Key:         "name",
+			Type:        drivers.StringPropertyType,
+			DisplayName: "Source name",
+			Description: "The name of the source",
+			Placeholder: "my_new_source",
+			Required:    true,
+		},
 	},
 	ImplementsSQLStore: true,
 }

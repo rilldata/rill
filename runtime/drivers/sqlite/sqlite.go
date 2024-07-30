@@ -61,7 +61,7 @@ func (d driver) Spec() drivers.Spec {
 				Required:    true,
 				DisplayName: "DB",
 				Description: "Path to SQLite db file",
-				Placeholder: "sqlite.db",
+				Placeholder: "/path/to/sqlite.db",
 			},
 			{
 				Key:         "table",
@@ -70,6 +70,14 @@ func (d driver) Spec() drivers.Spec {
 				DisplayName: "Table",
 				Description: "SQLite table name",
 				Placeholder: "table",
+			},
+			{
+				Key:         "name",
+				Type:        drivers.StringPropertyType,
+				DisplayName: "Source name",
+				Description: "The name of the source",
+				Placeholder: "my_new_source",
+				Required:    true,
 			},
 		},
 		ImplementsRegistry: true,

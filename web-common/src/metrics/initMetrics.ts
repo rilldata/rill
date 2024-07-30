@@ -45,3 +45,7 @@ export function setMetricsService(ms: MetricsService) {
 export function setErrorEvent(ev: ErrorEventHandler) {
   errorEventHandler = ev;
 }
+
+export function setBehaviourEvent(ev: BehaviourEventHandler) {
+  behaviourEvent = ev;
+}
