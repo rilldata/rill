@@ -221,6 +221,10 @@ func NewApp(ctx context.Context, opts *AppOptions) (*App, error) {
 		}
 	}
 
+	if opts.OlapDriver == "clickhouse" {
+		olapCfg["dsn"] = opts.OlapDSN
+	}
+
 	// Add OLAP connector
 	olapConnector := &runtimev1.Connector{
 		Type:   opts.OlapDriver,

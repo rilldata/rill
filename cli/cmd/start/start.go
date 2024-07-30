@@ -1,14 +1,21 @@
 package start
 
 import (
+	"bufio"
+	"context"
 	"fmt"
+	"io"
 	"io/fs"
+	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
 
 	"github.com/joho/godotenv"
 	"github.com/rilldata/rill/cli/pkg/cmdutil"
+	"github.com/rilldata/rill/cli/pkg/dotrill"
 	"github.com/rilldata/rill/cli/pkg/gitutil"
 	"github.com/rilldata/rill/cli/pkg/local"
 	"github.com/rilldata/rill/runtime/compilers/rillv1beta"
@@ -143,6 +150,40 @@ func StartCmd(ch *cmdutil.Helper) *cobra.Command {
 			}
 			localURL := fmt.Sprintf("%s://localhost:%d", scheme, httpPort)
 
+			// if olapDriver is clickhouse and no olapDSN is specified, install and use clickhouse
+			if olapDriver == "clickhouse" && olapDSN == local.DefaultOLAPDSN {
+				chBinPath, err := installClickHouse()
+				if err != nil {
+					return err
+				}
+
+				chConfig, err := os.CreateTemp("", "clickhouse-config*.xml")
+				if err != nil {
+					return err
+				}
+
+				config := clickHouseConfigContent(projectPath)
+
+				if _, err := chConfig.Write(config); err != nil {
+					return err
+				}
+
+				go func() {
+					// Ensure the config file is closed and deleted at the end
+					defer os.Remove(chConfig.Name())
+					defer chConfig.Close()
+
+					name := chConfig.Name()
+					cmd := newCmd(cmd.Context(), chBinPath, "server", fmt.Sprintf("--config-file=%s", name))
+					err = cmd.Run()
+					if err != nil {
+						fmt.Println("Error running clickhouse server", err)
+					}
+				}()
+
+				olapDSN = "clickhouse://localhost:9000"
+			}
+
 			app, err := local.NewApp(cmd.Context(), &local.AppOptions{
 				Version:     ch.Version,
 				Verbose:     verbose,
@@ -269,4 +310,174 @@ func parseVariables(vals []string) (map[string]string, error) {
 		}
 	}
 	return res, nil
+}
+
+func installClickHouse() (string, error) {
+	goos := runtime.GOOS
+	goarch := runtime.GOARCH
+	dir := ""
+
+	switch goos {
+	case "linux":
+		switch goarch {
+		case "amd64":
+			cpuInfo, err := getCPUFeatures()
+			if err != nil {
+				return "", fmt.Errorf("error reading CPU info: %w", err)
+			}
+			if strings.Contains(cpuInfo, "sse4_2") {
+				dir = "amd64"
+			} else {
+				dir = "amd64compat"
+			}
+		case "arm64":
+			cpuInfo, err := getCPUFeatures()
+			if err != nil {
+				return "", fmt.Errorf("error reading CPU info: %w", err)
+			}
+			if strings.Contains(cpuInfo, "asimd") && strings.Contains(cpuInfo, "sha1") &&
+				strings.Contains(cpuInfo, "aes") && strings.Contains(cpuInfo, "atomics") &&
+				strings.Contains(cpuInfo, "lrcpc") {
+				dir = "aarch64"
+			} else {
+				dir = "aarch64v80compat"
+			}
+		}
+	case "darwin":
+		switch goarch {
+		case "amd64":
+			dir = "macos"
+		case "arm64":
+			dir = "macos-aarch64"
+		}
+	}
+
+	if dir == "" {
+		return "", fmt.Errorf("operating system '%s' / architecture '%s' is unsupported.\n", goos, goarch)
+	}
+
+	clickhouseDownloadFilenamePrefix := "clickhouse"
+	// Store the ClickHouse binary under .rill/clickhouse so that every project can use the same binary
+	clickhouseDestDir, err := dotrill.ResolveFilename("clickhouse", true)
+	if err != nil {
+		return "", err
+	}
+
+	if _, err := os.Stat(clickhouseDestDir); os.IsNotExist(err) {
+		err = os.MkdirAll(clickhouseDestDir, os.ModePerm)
+		if err != nil {
+			return "", fmt.Errorf("error creating ClickHouse directory: %w", err)
+		}
+	}
+	clickhouseDestPath := filepath.Join(clickhouseDestDir, clickhouseDownloadFilenamePrefix)
+
+	if _, err := os.Stat(clickhouseDestPath); err == nil {
+		fmt.Printf("ClickHouse binary %s already exists\n", clickhouseDestPath)
+		return clickhouseDestPath, nil
+	}
+
+	URL := fmt.Sprintf("https://builds.clickhouse.com/master/%s/clickhouse", dir)
+	fmt.Printf("Will download %s into %s\n", URL, clickhouseDestPath)
+	if err := downloadFile(clickhouseDestPath, URL); err != nil {
+		return "", fmt.Errorf("error downloading ClickHouse: %w", err)
+	}
+
+	err = os.Chmod(clickhouseDestPath, 0o755)
+	if err != nil {
+		return "", fmt.Errorf("error setting executable permission: %w", err)
+	}
+
+	fmt.Println("Successfully downloaded the ClickHouse binary")
+
+	return clickhouseDestPath, nil
+}
+
+func getCPUFeatures() (string, error) {
+	file, err := os.Open("/proc/cpuinfo")
+	if err != nil {
+		return "", err
+	}
+	defer file.Close()
+
+	var result strings.Builder
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		result.WriteString(scanner.Text() + "\n")
+	}
+	return result.String(), scanner.Err()
+}
+
+func downloadFile(path, url string) error {
+	out, err := os.Create(path)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	resp, err := http.Get(url)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("bad status: %s", resp.Status)
+	}
+
+	_, err = io.Copy(out, resp.Body)
+	return err
+}
+
+// newCmd initializes an exec.Cmd that sends SIGINT instead of SIGKILL when the ctx is canceled.
+func newCmd(ctx context.Context, name string, args ...string) *exec.Cmd {
+	cmd := exec.CommandContext(ctx, name, args...)
+	cmd.Cancel = func() error {
+		return cmd.Process.Signal(os.Interrupt)
+	}
+	return cmd
+}
+
+func clickHouseConfigContent(projectPath string) []byte {
+	// https://github.com/ClickHouse/ClickHouse/blob/master/programs/server/embedded.xml
+	config := []byte(fmt.Sprintf(`<clickhouse>
+    <logger>
+        <level>trace</level>
+        <console>true</console>
+    </logger>
+
+    <http_port>8123</http_port>
+    <tcp_port>9000</tcp_port>
+    <mysql_port>9004</mysql_port>
+
+    <path>%s/tmp/</path>
+    <tmp_path>%s/tmp/clickhouse/tmp/</tmp_path>
+    <user_files_path>%s/data/</user_files_path>
+
+    <mlock_executable>true</mlock_executable>
+
+    <users>
+        <default>
+            <password></password>
+
+            <networks>
+                <ip>::/0</ip>
+            </networks>
+
+            <profile>default</profile>
+            <quota>default</quota>
+
+            <access_management>1</access_management>
+            <named_collection_control>1</named_collection_control>
+        </default>
+    </users>
+
+    <profiles>
+        <default/>
+    </profiles>
+
+    <quotas>
+        <default />
+    </quotas>
+</clickhouse>`, projectPath, projectPath, projectPath))
+	return config
 }
