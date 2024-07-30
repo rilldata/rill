@@ -4403,7 +4403,7 @@ func TestMetricsViewAggregation_percent_of_totals(t *testing.T) {
 			{
 				Name: "m1__pt",
 				Compute: &runtimev1.MetricsViewAggregationMeasure_PercentOfTotal{
-					PercentOfTotal: &runtimev1.MetricsViewAggregationMeasurePercentOfTotal{
+					PercentOfTotal: &runtimev1.MetricsViewAggregationMeasureComputePercentOfTotal{
 						Measure: "m1",
 					},
 				},
@@ -4476,7 +4476,7 @@ func TestMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T) {
 			{
 				Name: "m1__pt",
 				Compute: &runtimev1.MetricsViewAggregationMeasure_PercentOfTotal{
-					PercentOfTotal: &runtimev1.MetricsViewAggregationMeasurePercentOfTotal{
+					PercentOfTotal: &runtimev1.MetricsViewAggregationMeasureComputePercentOfTotal{
 						Measure: "m1",
 					},
 				},

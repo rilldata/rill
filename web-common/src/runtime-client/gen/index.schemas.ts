@@ -1363,7 +1363,7 @@ export interface V1MetricsViewAggregationRequest {
   exact?: boolean;
 }
 
-export interface V1MetricsViewAggregationMeasurePercentOfTotal {
+export interface V1MetricsViewAggregationMeasureComputePercentOfTotal {
   measure?: string;
 }
 
@@ -1397,7 +1397,7 @@ export interface V1MetricsViewAggregationMeasure {
   comparisonValue?: V1MetricsViewAggregationMeasureComputeComparisonValue;
   comparisonDelta?: V1MetricsViewAggregationMeasureComputeComparisonDelta;
   comparisonRatio?: V1MetricsViewAggregationMeasureComputeComparisonRatio;
-  percentOfTotal?: V1MetricsViewAggregationMeasurePercentOfTotal;
+  percentOfTotal?: V1MetricsViewAggregationMeasureComputePercentOfTotal;
 }
 
 export interface V1MetricsViewAggregationDimension {
