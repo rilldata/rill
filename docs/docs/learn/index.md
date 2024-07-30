@@ -1,7 +1,7 @@
 ---
 id: index
 title: "Learn"
-sidebar_label: " "
+sidebar_label: "Tutorials"
 ---
 
 # Welcome to the Rill Learning Center!

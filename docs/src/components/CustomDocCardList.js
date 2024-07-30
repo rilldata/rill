@@ -7,7 +7,7 @@ const CustomDocCardList = (props) => {
   const category = useCurrentSidebarCategory();
 
   // List of document ids to exclude
-  const excludeIds = ['tutorials/index', 'tutorials/guides'];
+  const excludeIds = ['learn/index', 'learn/guides'];
 
   // Filter out the excluded documents
   const filteredItems = category.items.filter(
