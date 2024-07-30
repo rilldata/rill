@@ -6,7 +6,6 @@
   import { NUM_ROWS_PER_PAGE } from "@rilldata/web-common/features/dashboards/pivot/pivot-infinite-scroll";
   import { isTimeDimension } from "@rilldata/web-common/features/dashboards/pivot/pivot-utils";
   import {
-    PivotDataRow,
     PivotDataStore,
     PivotDataStoreConfig,
     PivotState,
@@ -22,14 +21,12 @@
     getCoreRowModel,
     getExpandedRowModel,
     SortingState,
-    TableOptions,
     Updater,
   } from "@tanstack/svelte-table";
   import {
     createVirtualizer,
     defaultRangeExtractor,
   } from "@tanstack/svelte-virtual";
-  import type { Readable } from "svelte/motion";
   import { derived, Writable } from "svelte/store";
 
   // Distance threshold (in pixels) for triggering data fetch
@@ -49,7 +46,7 @@
   export let config: PivotDataStoreConfig;
   export let pivotDashboardStore: Writable<PivotState>;
 
-  const options: Readable<TableOptions<PivotDataRow>> = derived(
+  $: options = derived(
     [pivotDashboardStore, pivotDataStore],
     ([pivotConfig, pivotData]) => {
       let tableData = [...pivotData.data];
@@ -74,7 +71,7 @@
     },
   );
 
-  const table = createSvelteTable(options);
+  $: table = createSvelteTable(options);
 
   let containerRefElement: HTMLDivElement;
   let stickyRows = [0];
