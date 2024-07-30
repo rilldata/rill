@@ -11,11 +11,14 @@ hide_table_of_contents: false
 In this course, we will accomplish the following:
 
 - Install the Rill binary locally [Linux/MacOS and Windows]
-- Start Rill from the CLI and use a sample project to get started
-- Connect to your Clickhouse Cloud instance. 
-- Visualize the tables that already exist in Rill.
+- Start Rill from the CLI and import our first dataset
+- Connect to your Clickhouse Database
+- Preview the data locally and explore how Rill works
+- Deploy our dashboard onto Rill Cloud
 
 <br />
-<> Would make sense to use the uk_... dataset that they should have already been using if following the CH dev guide </>
+
+If you have already started the <a href ='https://learn.clickhouse.com/visitor_catalog_class/show/1328973/ClickHouse-Developer-Learning-Path' target="_blank"> Clickhouse Developer On-demand course</a>, we will be utilizing the dataset, uk___. If not, I recommend heading over to our friends at ClickHouse to get started.
 
 
+Let's get started.
