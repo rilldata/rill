@@ -10,14 +10,23 @@
   } from "@rilldata/web-common/components/alert-dialog";
   import { Button } from "@rilldata/web-common/components/button";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
 
   export let open = false;
   export let loading = false;
+  export let isGithubConnected: boolean;
   export let onContinue: () => void;
 
   let githubRepoCreated = false;
 
   function openGithubRepoCreator() {
+    behaviourEvent?.fireGithubIntentEvent(
+      BehaviourEventAction.GithubConnectCreateRepo,
+      {
+        is_fresh_connection: isGithubConnected,
+      },
+    );
     // we need a popup window so we cannot use href
     window.open("https://github.com/new", "", "width=1024,height=600");
   }

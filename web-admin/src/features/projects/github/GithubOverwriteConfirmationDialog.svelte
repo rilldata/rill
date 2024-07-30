@@ -1,4 +1,5 @@
 <script lang="ts">
+  import type { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
   import { getRepoNameFromGithubUrl } from "@rilldata/web-admin/features/projects/github/github-utils";
   import {
     AlertDialog,
@@ -15,9 +16,10 @@
 
   export let open = false;
   export let loading: boolean;
-  export let error: string;
+  export let error: ReturnType<typeof extractGithubConnectError>;
 
   export let onConfirm: () => Promise<void>;
+  export let onCancel: () => void;
   export let githubUrl: string;
   export let subpath: string;
 
@@ -27,13 +29,15 @@
   $: path = getRepoNameFromGithubUrl(githubUrl) + subpath;
 
   function close() {
+    onCancel();
     confirmInput = "";
     open = false;
   }
 
   async function handleContinue() {
     await onConfirm();
-    close();
+    confirmInput = "";
+    open = false;
   }
 </script>
 
@@ -58,9 +62,9 @@
           Type <b>overwrite</b> in the box below to confirm:
         </div>
         <Input bind:value={confirmInput} id="confirmation" label="" />
-        {#if error}
+        {#if error?.message}
           <div class="text-red-500 text-sm py-px">
-            {error}
+            {error.message}
           </div>
         {/if}
       </AlertDialogDescription>

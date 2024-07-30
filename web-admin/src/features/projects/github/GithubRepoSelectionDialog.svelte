@@ -3,6 +3,7 @@
     createAdminServiceGetProject,
     type RpcStatus,
   } from "@rilldata/web-admin/client";
+  import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
   import { GithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/GithubConnectionUpdater";
   import { getGithubData } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubOverwriteConfirmationDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmationDialog.svelte";
@@ -38,9 +39,6 @@
   export let project: string;
   export let organization: string;
 
-  let githubUrl = currentUrl;
-  let subpath = currentSubpath;
-  let branch = currentBranch;
   let advancedOpened = false;
 
   const githubData = getGithubData();
@@ -53,30 +51,40 @@
       value: r.url,
       label: `${r.owner}/${r.name}`,
     })) ?? [];
-  function onRepoChange(newUrl: string) {
-    const repo = $userRepos.data?.repos?.find((r) => r.url === newUrl);
-    if (!repo) return; // shouldnt happen
 
-    subpath = "";
-    branch = repo.defaultBranch;
-  }
-  $: if (!githubUrl && repoSelections.length === 1) {
-    onRepoChange(repoSelections[0].value);
-  }
-
-  const githubConnectionUpdater = new GithubConnectionUpdater();
+  const githubConnectionUpdater = new GithubConnectionUpdater(
+    organization,
+    project,
+    currentUrl,
+    currentSubpath,
+    currentBranch,
+  );
   const connectToGithubMutation =
     githubConnectionUpdater.connectToGithubMutation;
   const showOverwriteConfirmation =
     githubConnectionUpdater.showOverwriteConfirmation;
+  let githubUrl = githubConnectionUpdater.githubUrl;
+  let subpath = githubConnectionUpdater.subpath;
+  let branch = githubConnectionUpdater.branch;
+
+  function onRepoChange(newUrl: string) {
+    const repo = $userRepos.data?.repos?.find((r) => r.url === newUrl);
+    if (!repo) return; // shouldnt happen
+
+    githubConnectionUpdater.onRepoChange(repo);
+  }
+  $: if (!$githubUrl && repoSelections.length === 1) {
+    onRepoChange(repoSelections[0].value);
+  }
+
+  $: if ($showOverwriteConfirmation) {
+    // hide the selection dialog if overwrite confirmation dialog is open
+    open = false;
+  }
+
   async function updateGithubUrl(force: boolean) {
     if (
       !(await githubConnectionUpdater.update({
-        organization,
-        project,
-        githubUrl,
-        subpath,
-        branch,
         force,
         instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
       }))
@@ -85,16 +93,17 @@
     }
 
     eventBus.emit("notification", {
-      message: `Set github repo to ${githubUrl}`,
+      message: `Set github repo to ${$githubUrl}`,
       type: "success",
     });
     open = false;
     advancedOpened = false;
   }
 
-  $: error = ($status.error ??
-    $connectToGithubMutation.error) as unknown as AxiosError<RpcStatus>;
-  $: errorMessage = error ? error.response?.data?.message ?? error.message : "";
+  $: error = extractGithubConnectError(
+    ($status.error ??
+      $connectToGithubMutation.error) as unknown as AxiosError<RpcStatus>,
+  );
 </script>
 
 <Dialog bind:open>
@@ -123,7 +132,7 @@
         <Select
           id="emails"
           label="Repo"
-          bind:value={githubUrl}
+          bind:value={$githubUrl}
           options={repoSelections}
           on:change={({ detail: newUrl }) => onRepoChange(newUrl)}
         />
@@ -148,15 +157,15 @@
             id="subpath"
             label="Subpath"
             placeholder="subdirectory_path"
-            bind:value={subpath}
+            bind:value={$subpath}
             optional
           />
-          <Input id="branch" label="Branch" bind:value={branch} optional />
+          <Input id="branch" label="Branch" bind:value={$branch} optional />
         </CollapsibleContent>
       </Collapsible>
-      {#if error}
+      {#if error?.message}
         <div class="text-red-500 text-sm py-px">
-          {errorMessage}
+          {error.message}
         </div>
       {/if}
     </DialogHeader>
@@ -181,8 +190,9 @@
 <GithubOverwriteConfirmationDialog
   bind:open={$showOverwriteConfirmation}
   loading={$connectToGithubMutation.isLoading}
-  error={errorMessage}
-  {githubUrl}
-  {subpath}
+  {error}
+  githubUrl={$githubUrl}
+  subpath={$subpath}
   onConfirm={() => updateGithubUrl(true)}
+  onCancel={() => (open = true)}
 />

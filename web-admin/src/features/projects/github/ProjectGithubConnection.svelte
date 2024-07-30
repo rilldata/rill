@@ -8,6 +8,8 @@
   import { Button } from "@rilldata/web-common/components/button";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
   import Github from "@rilldata/web-common/components/icons/Github.svelte";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { createAdminServiceGetProject } from "@rilldata/web-admin/client";
   import { useDashboardsLastUpdated } from "@rilldata/web-admin/features/dashboards/listing/selectors";
@@ -35,10 +37,22 @@
 
   function confirmConnectToGithub() {
     void githubData.startRepoSelection();
+    behaviourEvent?.fireGithubIntentEvent(
+      BehaviourEventAction.GithubConnectStart,
+      {
+        is_fresh_connection: isGithubConnected,
+      },
+    );
   }
 
   function editGithubConnection() {
     void githubData.startRepoSelection();
+    behaviourEvent?.fireGithubIntentEvent(
+      BehaviourEventAction.GithubConnectStart,
+      {
+        is_fresh_connection: isGithubConnected,
+      },
+    );
   }
 </script>
 
@@ -92,17 +106,21 @@
         <ConnectToGithubButton
           onContinue={confirmConnectToGithub}
           loading={$userStatus.isFetching}
+          {isGithubConnected}
         />
       {/if}
     </div>
   </div>
 {/if}
 
-<GithubRepoSelectionDialog
-  bind:open={$repoSelectionOpen}
-  currentUrl={$proj.data?.project?.githubUrl}
-  currentSubpath={$proj.data?.project?.subpath}
-  currentBranch={$proj.data?.project?.prodBranch}
-  {organization}
-  {project}
-/>
+{#if $repoSelectionOpen}
+  <!-- unmount to make sure state is reset -->
+  <GithubRepoSelectionDialog
+    bind:open={$repoSelectionOpen}
+    currentUrl={$proj.data?.project?.githubUrl}
+    currentSubpath={$proj.data?.project?.subpath}
+    currentBranch={$proj.data?.project?.prodBranch}
+    {organization}
+    {project}
+  />
+{/if}
