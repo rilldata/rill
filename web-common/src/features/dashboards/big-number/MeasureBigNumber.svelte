@@ -17,7 +17,6 @@
     crossfade,
     fly,
   } from "svelte/transition";
-  import Spinner from "../../entity-management/Spinner.svelte";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
   import DelayedSpinner from "../../entity-management/DelayedSpinner.svelte";
 
@@ -196,16 +195,17 @@
           {/if}
         </div>
       {:else if status === EntityStatus.Running}
-        <DelayedSpinner isLoading={status === EntityStatus.Running}>
-          <div
-            class="absolute p-2"
-            class:bottom-0={withTimeseries}
-            in:receive={{ key: "spinner" }}
-            out:send={{ key: "spinner" }}
-          >
-            <Spinner status={EntityStatus.Running} />
-          </div>
-        </DelayedSpinner>
+        <div
+          class="absolute p-2"
+          class:bottom-0={withTimeseries}
+          in:receive={{ key: "spinner" }}
+          out:send={{ key: "spinner" }}
+        >
+          <DelayedSpinner
+            isLoading={status === EntityStatus.Running}
+            status={EntityStatus.Running}
+          />
+        </div>
       {:else if value === null}
         <span class="ui-copy-disabled-faint italic text-sm">no data</span>
       {/if}
