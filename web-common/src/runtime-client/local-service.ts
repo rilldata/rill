@@ -9,6 +9,7 @@ import {
   GetMetadataRequest,
   GetVersionRequest,
   PushToGithubRequest,
+  RedeployProjectRequest,
 } from "@rilldata/web-common/proto/gen/rill/local/v1/api_pb";
 import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
 import {
@@ -160,6 +161,31 @@ export function createLocalServiceDeploy<
     PartialMessage<DeployProjectRequest>,
     unknown
   >(localServiceDeploy, mutationOptions);
+}
+
+export function localServiceRedeploy(
+  args: PartialMessage<RedeployProjectRequest>,
+) {
+  return getClient().redeployProject(new RedeployProjectRequest(args));
+}
+export function createLocalServiceRedeploy<
+  TError = ConnectError,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof localServiceRedeploy>>,
+    TError,
+    PartialMessage<RedeployProjectRequest>,
+    TContext
+  >;
+}) {
+  const { mutation: mutationOptions } = options ?? {};
+  return createMutation<
+    Awaited<ReturnType<typeof localServiceRedeploy>>,
+    unknown,
+    PartialMessage<RedeployProjectRequest>,
+    unknown
+  >(localServiceRedeploy, mutationOptions);
 }
 
 export function localServiceGetCurrentUser() {

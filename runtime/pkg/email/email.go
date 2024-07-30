@@ -344,9 +344,9 @@ func (c *Client) SendProjectAccessGranted(opts *ProjectAccessGranted) error {
 	return c.SendCallToAction(&CallToAction{
 		ToEmail:    opts.ToEmail,
 		ToName:     opts.ToName,
-		Subject:    fmt.Sprintf("Your reuqest to %s/%s has been approved", opts.OrgName, opts.ProjectName),
+		Subject:    fmt.Sprintf("Your request to %s/%s has been approved", opts.OrgName, opts.ProjectName),
 		Title:      "",
-		Body:       template.HTML(fmt.Sprintf("Your reuqest to <b>%s/%s</b> has been approved", opts.OrgName, opts.ProjectName)),
+		Body:       template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been approved", opts.OrgName, opts.ProjectName)),
 		ButtonText: "View project in Rill",
 		ButtonLink: mustJoinURLPath(opts.FrontendURL, opts.OrgName, opts.ProjectName),
 	})
@@ -363,9 +363,9 @@ func (c *Client) SendProjectAccessRejected(opts *ProjectAccessRejected) error {
 	return c.SendInformational(&Informational{
 		ToEmail: opts.ToEmail,
 		ToName:  opts.ToName,
-		Subject: fmt.Sprintf("Your reuqest to %s/%s has been denied", opts.OrgName, opts.ProjectName),
+		Subject: fmt.Sprintf("Your request to %s/%s has been denied", opts.OrgName, opts.ProjectName),
 		Title:   "",
-		Body:    template.HTML(fmt.Sprintf("Your reuqest to <b>%s/%s</b> has been denied. Contact your project admin for help.", opts.OrgName, opts.ProjectName)),
+		Body:    template.HTML(fmt.Sprintf("Your request to <b>%s/%s</b> has been denied. Contact your project admin for help.", opts.OrgName, opts.ProjectName)),
 	})
 }
 

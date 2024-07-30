@@ -91,9 +91,10 @@ export class BehaviourEventHandler {
     ]);
   }
 
-  public fireDeployIntentEvent() {
-    return this.metricsService.dispatch("deployIntent", [
+  public fireDeployEvent(action: BehaviourEventAction) {
+    return this.metricsService.dispatch("deployEvent", [
       this.commonUserMetrics,
+      action,
     ]);
   }
 

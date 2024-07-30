@@ -1,5 +1,6 @@
 <script lang="ts">
   import { goto } from "$app/navigation";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import { splitFolderAndName } from "@rilldata/web-common/features/entity-management/file-path-utils";
   import { useFileNamesInDirectory } from "@rilldata/web-common/features/entity-management/file-selectors";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
@@ -43,4 +44,8 @@
   {hasUnsavedChanges}
   showInspectorToggle={false}
   titleInput={fileName}
-/>
+>
+  <svelte:fragment slot="cta">
+    <LocalAvatarButton />
+  </svelte:fragment>
+</WorkspaceHeader>

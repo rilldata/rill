@@ -60,8 +60,7 @@ export class NavEntryDragDropStore {
       await dropSuccess(curDragData.filePath, toDir);
     }
 
-    this.newDragData = null;
-    this.dragData.set(null);
+    this.resetDrag();
   }
 
   public onMouseMove(e: MouseEvent) {
@@ -96,6 +95,11 @@ export class NavEntryDragDropStore {
       d.pop();
       return d;
     });
+  }
+
+  public resetDrag() {
+    this.newDragData = null;
+    this.dragData.set(null);
   }
 
   private getOffsets(e: MouseEvent, dragData: NavDragData) {

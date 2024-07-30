@@ -32,6 +32,7 @@
   class:bg-slate-100={isDragDropHover}
   on:mouseenter={() => navEntryDragDropStore.onMouseEnter(directory.path)}
   on:mouseleave={() => navEntryDragDropStore.onMouseLeave()}
+  on:contextmenu={() => navEntryDragDropStore.resetDrag()}
 >
   {#if directory.path !== "/"}
     <NavDirectoryEntry dir={directory} {onDelete} {onMouseDown} {onRename} />

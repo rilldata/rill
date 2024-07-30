@@ -107,13 +107,14 @@ export class BehaviourEventFactory extends MetricsEventFactory {
     return event;
   }
 
-  public deployIntent(
+  public deployEvent(
     commonFields: CommonFields,
     commonUserFields: CommonUserFields,
+    action: BehaviourEventAction,
   ): BehaviourEvent {
     const event = this.getBaseMetricsEvent(
       "behavioral",
-      BehaviourEventAction.DeployIntent,
+      action,
       commonFields,
       commonUserFields,
     ) as BehaviourEvent;

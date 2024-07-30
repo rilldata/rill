@@ -62,6 +62,10 @@ export function isProjectRequestAccessPage(page: Page): boolean {
   );
 }
 
+export function isProjectInvitePage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/invite";
+}
+
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {
   switch (true) {
     case isOrganizationPage(page):

@@ -1,5 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
+  import { isProjectInvitePage } from "@rilldata/web-admin/features/navigation/nav-utils";
   import { initCloudMetrics } from "@rilldata/web-admin/features/telemetry/initCloudMetrics";
   import BannerCenter from "@rilldata/web-common/components/banner/BannerCenter.svelte";
   import NotificationCenter from "@rilldata/web-common/components/notifications/NotificationCenter.svelte";
@@ -42,6 +43,8 @@
   });
 
   $: isEmbed = $page.url.pathname === "/-/embed";
+  // invite page shouldn't show the top bar because it is considered an onboard step
+  $: hideTopBar = isProjectInvitePage($page);
 </script>
 
 <svelte:head>
@@ -52,7 +55,7 @@
   <QueryClientProvider client={queryClient}>
     <main class="flex flex-col min-h-screen h-screen">
       <BannerCenter />
-      {#if !isEmbed}
+      {#if !isEmbed && !hideTopBar}
         <TopNavigationBar
           createMagicAuthTokens={projectPermissions?.createMagicAuthTokens}
           manageProjectMembers={projectPermissions?.manageProjectMembers}
