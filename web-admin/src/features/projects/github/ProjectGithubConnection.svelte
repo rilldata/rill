@@ -113,8 +113,8 @@
   </div>
 {/if}
 
-{#if $repoSelectionOpen}
-  <!-- unmount to make sure state is reset -->
+{#key organization + project}
+  <!-- make sure to remount  -->
   <GithubRepoSelectionDialog
     bind:open={$repoSelectionOpen}
     currentUrl={$proj.data?.project?.githubUrl}
@@ -123,4 +123,4 @@
     {organization}
     {project}
   />
-{/if}
+{/key}

@@ -55,10 +55,13 @@
   const githubConnectionUpdater = new GithubConnectionUpdater(
     organization,
     project,
+  );
+  $: githubConnectionUpdater.updateCurrentFields(
     currentUrl,
     currentSubpath,
     currentBranch,
   );
+
   const connectToGithubMutation =
     githubConnectionUpdater.connectToGithubMutation;
   const showOverwriteConfirmation =

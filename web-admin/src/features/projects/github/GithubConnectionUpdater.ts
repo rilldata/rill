@@ -20,12 +20,15 @@ export class GithubConnectionUpdater {
   public readonly subpath = writable("");
   public readonly branch = writable("");
 
-  private readonly isConnected: boolean;
+  private isConnected: boolean;
   private defaultBranch = "";
 
   public constructor(
     private readonly organization: string,
     private readonly project: string,
+  ) {}
+
+  public updateCurrentFields(
     currentUrl: string,
     currentSubpath: string,
     currentBranch: string,
