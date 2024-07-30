@@ -4386,6 +4386,144 @@ func TestMetricsViewsAggregation_comparison_with_offset(t *testing.T) {
 	require.Equal(t, "news.google.com,3.59,3.69", fieldsToString2digits(rows[i], "dom", "m1", "m1__p"))
 }
 
+func TestMetricsViewAggregation_percent_of_totals(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__pt",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_PercentOfTotal{
+					PercentOfTotal: &runtimev1.MetricsViewAggregationMeasurePercentOfTotal{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		Offset:         1,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "dom,m1,m1__pt", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+	}
+	rows := q.Result.Data
+	require.Equal(t, 6, len(rows))
+
+	i = 0
+	require.Equal(t, "news.yahoo.com,1.50,11.23", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	i++
+	require.Equal(t, "news.google.com,3.59,26.94", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	i++
+	require.Equal(t, "msn.com,1.52,11.39", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	i++
+	require.Equal(t, "instagram.com,3.71,27.81", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	i++
+	require.Equal(t, "google.com,1.48,11.10", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	i++
+	require.Equal(t, "facebook.com,1.54,11.53", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+}
+
+func TestMetricsViewAggregation_percent_of_totals_with_limit(t *testing.T) {
+	rt, instanceID := testruntime.NewInstanceForProject(t, "ad_bids")
+
+	limit := int64(2)
+	q := &queries.MetricsViewAggregation{
+		MetricsViewName: "ad_bids_metrics",
+		Dimensions: []*runtimev1.MetricsViewAggregationDimension{
+			{
+				Name: "dom",
+			},
+		},
+		Measures: []*runtimev1.MetricsViewAggregationMeasure{
+			{
+				Name: "m1",
+			},
+			{
+				Name: "m1__pt",
+				Compute: &runtimev1.MetricsViewAggregationMeasure_PercentOfTotal{
+					PercentOfTotal: &runtimev1.MetricsViewAggregationMeasurePercentOfTotal{
+						Measure: "m1",
+					},
+				},
+			},
+		},
+		Sort: []*runtimev1.MetricsViewAggregationSort{
+			{
+				Name: "dom",
+				Desc: true,
+			},
+		},
+
+		TimeRange: &runtimev1.TimeRange{
+			Start: timestamppb.New(time.Date(2022, 1, 1, 0, 0, 0, 0, time.UTC)),
+			End:   timestamppb.New(time.Date(2022, 1, 2, 0, 0, 0, 0, time.UTC)),
+		},
+		Limit:          &limit,
+		Offset:         1,
+		SecurityClaims: testClaims(),
+	}
+	err := q.Resolve(context.Background(), rt, instanceID, 0)
+	require.NoError(t, err)
+	require.NotEmpty(t, q.Result)
+	fields := q.Result.Schema.Fields
+	require.Equal(t, "dom,m1,m1__pt", columnNames(fields))
+	i := 0
+
+	for _, sf := range q.Result.Schema.Fields {
+		fmt.Printf("%v ", sf.Name)
+	}
+	fmt.Printf("\n")
+
+	for i, row := range q.Result.Data {
+		for _, sf := range q.Result.Schema.Fields {
+			fmt.Printf("%v ", row.Fields[sf.Name].AsInterface())
+		}
+		fmt.Printf(" %d \n", i)
+	}
+	rows := q.Result.Data
+	require.Equal(t, 2, len(rows))
+
+	i = 0
+	require.Equal(t, "news.yahoo.com,1.50,11.23", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+	i++
+	require.Equal(t, "news.google.com,3.59,26.94", fieldsToString2digits(rows[i], "dom", "m1", "m1__pt"))
+}
+
 func fieldsToString2digits(row *structpb.Struct, args ...string) string {
 	s := make([]string, 0, len(args))
 	for _, arg := range args {
