@@ -3693,6 +3693,47 @@ func (m *MetricsViewAggregationMeasure) validate(all bool) error {
 			}
 		}
 
+	case *MetricsViewAggregationMeasure_PercentOfTotal:
+		if v == nil {
+			err := MetricsViewAggregationMeasureValidationError{
+				field:  "Compute",
+				reason: "oneof value cannot be a typed-nil",
+			}
+			if !all {
+				return err
+			}
+			errors = append(errors, err)
+		}
+
+		if all {
+			switch v := interface{}(m.GetPercentOfTotal()).(type) {
+			case interface{ ValidateAll() error }:
+				if err := v.ValidateAll(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "PercentOfTotal",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			case interface{ Validate() error }:
+				if err := v.Validate(); err != nil {
+					errors = append(errors, MetricsViewAggregationMeasureValidationError{
+						field:  "PercentOfTotal",
+						reason: "embedded message failed validation",
+						cause:  err,
+					})
+				}
+			}
+		} else if v, ok := interface{}(m.GetPercentOfTotal()).(interface{ Validate() error }); ok {
+			if err := v.Validate(); err != nil {
+				return MetricsViewAggregationMeasureValidationError{
+					field:  "PercentOfTotal",
+					reason: "embedded message failed validation",
+					cause:  err,
+				}
+			}
+		}
+
 	default:
 		_ = v // ensures v is used
 	}
@@ -4346,6 +4387,114 @@ var _ interface {
 	Cause() error
 	ErrorName() string
 } = MetricsViewAggregationMeasureComputeComparisonRatioValidationError{}
+
+// Validate checks the field values on
+// MetricsViewAggregationMeasurePercentOfTotal with the rules defined in the
+// proto definition for this message. If any rules are violated, the first
+// error encountered is returned, or nil if there are no violations.
+func (m *MetricsViewAggregationMeasurePercentOfTotal) Validate() error {
+	return m.validate(false)
+}
+
+// ValidateAll checks the field values on
+// MetricsViewAggregationMeasurePercentOfTotal with the rules defined in the
+// proto definition for this message. If any rules are violated, the result is
+// a list of violation errors wrapped in
+// MetricsViewAggregationMeasurePercentOfTotalMultiError, or nil if none found.
+func (m *MetricsViewAggregationMeasurePercentOfTotal) ValidateAll() error {
+	return m.validate(true)
+}
+
+func (m *MetricsViewAggregationMeasurePercentOfTotal) validate(all bool) error {
+	if m == nil {
+		return nil
+	}
+
+	var errors []error
+
+	// no validation rules for Measure
+
+	if len(errors) > 0 {
+		return MetricsViewAggregationMeasurePercentOfTotalMultiError(errors)
+	}
+
+	return nil
+}
+
+// MetricsViewAggregationMeasurePercentOfTotalMultiError is an error wrapping
+// multiple validation errors returned by
+// MetricsViewAggregationMeasurePercentOfTotal.ValidateAll() if the designated
+// constraints aren't met.
+type MetricsViewAggregationMeasurePercentOfTotalMultiError []error
+
+// Error returns a concatenation of all the error messages it wraps.
+func (m MetricsViewAggregationMeasurePercentOfTotalMultiError) Error() string {
+	var msgs []string
+	for _, err := range m {
+		msgs = append(msgs, err.Error())
+	}
+	return strings.Join(msgs, "; ")
+}
+
+// AllErrors returns a list of validation violation errors.
+func (m MetricsViewAggregationMeasurePercentOfTotalMultiError) AllErrors() []error { return m }
+
+// MetricsViewAggregationMeasurePercentOfTotalValidationError is the validation
+// error returned by MetricsViewAggregationMeasurePercentOfTotal.Validate if
+// the designated constraints aren't met.
+type MetricsViewAggregationMeasurePercentOfTotalValidationError struct {
+	field  string
+	reason string
+	cause  error
+	key    bool
+}
+
+// Field function returns field value.
+func (e MetricsViewAggregationMeasurePercentOfTotalValidationError) Field() string { return e.field }
+
+// Reason function returns reason value.
+func (e MetricsViewAggregationMeasurePercentOfTotalValidationError) Reason() string { return e.reason }
+
+// Cause function returns cause value.
+func (e MetricsViewAggregationMeasurePercentOfTotalValidationError) Cause() error { return e.cause }
+
+// Key function returns key value.
+func (e MetricsViewAggregationMeasurePercentOfTotalValidationError) Key() bool { return e.key }
+
+// ErrorName returns error name.
+func (e MetricsViewAggregationMeasurePercentOfTotalValidationError) ErrorName() string {
+	return "MetricsViewAggregationMeasurePercentOfTotalValidationError"
+}
+
+// Error satisfies the builtin error interface
+func (e MetricsViewAggregationMeasurePercentOfTotalValidationError) Error() string {
+	cause := ""
+	if e.cause != nil {
+		cause = fmt.Sprintf(" | caused by: %v", e.cause)
+	}
+
+	key := ""
+	if e.key {
+		key = "key for "
+	}
+
+	return fmt.Sprintf(
+		"invalid %sMetricsViewAggregationMeasurePercentOfTotal.%s: %s%s",
+		key,
+		e.field,
+		e.reason,
+		cause)
+}
+
+var _ error = MetricsViewAggregationMeasurePercentOfTotalValidationError{}
+
+var _ interface {
+	Field() string
+	Reason() string
+	Key() bool
+	Cause() error
+	ErrorName() string
+} = MetricsViewAggregationMeasurePercentOfTotalValidationError{}
 
 // Validate checks the field values on MetricsViewAggregationSort with the
 // rules defined in the proto definition for this message. If any rules are
