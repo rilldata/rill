@@ -84,7 +84,7 @@ func (e *selfToSelfExecutor) Execute(ctx context.Context, opts *drivers.ModelExe
 		}
 	} else {
 		// Insert into the table
-		err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, false, outputProps.IncrementalStrategy, outputProps.UniqueKey)
+		err := olap.InsertTableAsSelect(ctx, tableName, inputProps.SQL, false, true, outputProps.IncrementalStrategy, outputProps.UniqueKey)
 		if err != nil {
 			return nil, fmt.Errorf("failed to incrementally insert into table: %w", err)
 		}

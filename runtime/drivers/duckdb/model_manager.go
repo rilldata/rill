@@ -29,9 +29,9 @@ type ModelOutputProperties struct {
 }
 
 func (p *ModelOutputProperties) Validate(opts *drivers.ModelExecuteOptions) error {
-	if opts.Incremental {
+	if opts.Incremental || opts.SplitRun {
 		if p.Materialize != nil && !*p.Materialize {
-			return fmt.Errorf("incremental models must be materialized")
+			return fmt.Errorf("incremental or split models must be materialized")
 		}
 		p.Materialize = boolPtr(true)
 	}

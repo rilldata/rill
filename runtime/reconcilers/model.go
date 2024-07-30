@@ -3,7 +3,6 @@ package reconcilers
 import (
 	"context"
 	"crypto/md5"
-	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/json"
@@ -12,6 +11,7 @@ import (
 	"io"
 	"sort"
 	"strings"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -639,6 +639,10 @@ func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtim
 		}
 	}
 
+	// Log
+	count := batchStartIdx + len(batch)
+	defer r.C.Logger.Debug("Resolved model splits", zap.String("model", self.Meta.Name.Name), zap.Int("splits", count))
+
 	// Flush the remaining rows not handled in the loop
 	return r.syncSplits(ctx, mdl, batchStartIdx, batch)
 }
@@ -685,7 +689,7 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 		}
 
 		// JSON serialization is deterministic in Go, so we can hash it to get a key
-		key, err := secureHash(rowJSON)
+		key, err := md5Hash(rowJSON)
 		if err != nil {
 			return fmt.Errorf("failed to hash split row at index %d: %w", i, err)
 		}
@@ -816,6 +820,9 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 	// If we're not splitting execution, run the executor directly and return
 	if !useSplits {
 		res, err := r.executeSingle(ctx, executor, self, model, prevResult, incrementalRun, incrementalState, nil)
+		if err != nil {
+			return "", nil, err
+		}
 		return executor.finalConnector, res, err
 	}
 
@@ -866,102 +873,123 @@ func (r *ModelReconciler) executeAll(ctx context.Context, self *runtimev1.Resour
 		split := splits[0]
 
 		// Execute the first split (with returnErr=true because for the first split, we do not log and skip erroring splits)
-		res, err := r.executeSplit(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, split, true)
+		res, ok, err := r.executeSplit(ctx, catalog, executor, self, model, prevResult, incrementalRun, incrementalState, split, true)
 		if err != nil {
 			return "", nil, err
 		}
+		if !ok {
+			panic("executeSplit returned false despite returnErr being set to true") // Can't happen
+		}
 
+		// Update the state so the next invocations will be incremental
 		prevResult = res
 		incrementalRun = true
 	}
 
-	// Prepare the results of each worker.
-	// For incremental runs, we need to pass the previous result to the executor, but for split runs, we do not guarantee that the result is the most *recent* previous result.
-	// We do guarantee that no result is discarded, and that all results are either passed as a previous result to the executor or passed into MergeSplitResults.
-	// To that end, we can start all the workers off with the same initial previous result.
-	results := make([]*drivers.ModelResult, concurrency)
-	for i := 0; i < concurrency; i++ {
-		results[i] = prevResult
-	}
+	// Repeatedly load a batch of pending splits and execute it with a pool of worker goroutines.
+	for {
+		// Get a batch of pending splits
+		// Note: We do this when no workers are running because splits are considered pending if they have not completed execution yet.
+		// This reduces concurrency when processing the last handful of splits in each batch, but with large batch sizes it's worth the simplicity for now.
+		splits, err := catalog.FindModelSplitsByPending(ctx, model.State.SplitsModelId, _modelPendingSplitsBatchSize)
+		if err != nil {
+			return "", nil, err
+		}
+		if len(splits) == 0 {
+			break
+		}
 
-	// Load and process the incremental splits concurrently using a worker pool.
-	// Each worker goroutine takes splits from splitsCh and processes them.
-	// The workers will stop when the channel is closed (work complete) or the context is cancelled.
-	grp, ctx := errgroup.WithContext(ctx)
-	splitsCh := make(chan drivers.ModelSplit)
-	for i := 0; i < concurrency; i++ {
-		grp.Go(func() error {
-			for {
-				select {
-				case split, ok := <-splitsCh:
-					if !ok {
+		// Determine how many workers goroutines to start
+		workers := concurrency
+		if len(splits) < concurrency {
+			workers = len(splits)
+		}
+
+		// Prepare the results of each worker.
+		// For incremental runs, we need to pass the previous result to the executor, but for split runs, we do not guarantee that the result is the most *recent* previous result.
+		// We do guarantee that no result is discarded, and that all results are either passed as a previous result to the executor or passed into MergeSplitResults.
+		// To that end, we can start all the workers off with the same initial previous result.
+		results := make([]*drivers.ModelResult, workers)
+		for workerID := 0; workerID < workers; workerID++ {
+			results[workerID] = prevResult
+		}
+
+		// Start the worker goroutines
+		grp, ctx := errgroup.WithContext(ctx)
+		counter := &atomic.Int64{}
+		for workerID := 0; workerID < workers; workerID++ {
+			workerID := workerID
+			grp.Go(func() error {
+				for {
+					// Atomically grab the index of a split to process
+					idx := counter.Add(1) - 1
+					if idx >= int64(len(splits)) {
 						return nil
 					}
 
-					results[i], err = r.executeSplit(ctx, catalog, executor, self, model, results[i], incrementalRun, incrementalState, split, false)
+					// Check the context in case the executor doesn't
+					if ctx.Err() != nil {
+						return ctx.Err()
+					}
+
+					// Execute the split and capture the result in results[workerID]
+					split := splits[idx]
+					res, ok, err := r.executeSplit(ctx, catalog, executor, self, model, results[workerID], incrementalRun, incrementalState, split, false)
 					if err != nil {
 						return err
 					}
-				case <-ctx.Done():
-					return ctx.Err()
+					if ok {
+						results[workerID] = res
+					}
 				}
-			}
-		})
-	}
-
-	// Start a goroutine that loads pending splits from the catalog and sends them to the worker pool
-	grp.Go(func() error {
-		// Close splitsCh when the last split is sent
-		defer close(splitsCh)
-
-		for {
-			// Get a batch of pending splits
-			splits, err := catalog.FindModelSplitsByPending(ctx, model.State.SplitsModelId, _modelPendingSplitsBatchSize)
-			if err != nil {
-				return err
-			}
-
-			// Send the splits to the channel. If the context is cancelled, we stop.
-			for _, split := range splits {
-				select {
-				case splitsCh <- split:
-				case <-ctx.Done():
-					return ctx.Err()
-				}
-			}
-
-			// If we got fewer splits than the batch size, we've processed all pending splits and can stop.
-			if len(splits) < _modelPendingSplitsBatchSize {
-				return nil
-			}
+			})
 		}
-	})
 
-	// Wait for all workers to finish
-	err = grp.Wait()
-	if err != nil {
-		return "", nil, err
-	}
-
-	// Finally combine the results of each worker into one result
-	result := results[0]
-	for _, r := range results[1:] {
-		result, err = executor.finalResultManager.MergeSplitResults(result, r)
+		// Wait for all workers to finish
+		err = grp.Wait()
 		if err != nil {
-			return "", nil, fmt.Errorf("failed to merge split results: %w", err)
+			return "", nil, err
+		}
+
+		// Finally combine the results of each worker into the prevResult
+		for _, r := range results {
+			if r == nil {
+				continue
+			}
+			if prevResult == nil {
+				prevResult = r
+				continue
+			}
+
+			prevResult, err = executor.finalResultManager.MergeSplitResults(prevResult, r)
+			if err != nil {
+				return "", nil, fmt.Errorf("failed to merge split results: %w", err)
+			}
+		}
+
+		// If we got fewer splits than the batch size, we've processed all pending splits and can stop.
+		if len(splits) < _modelPendingSplitsBatchSize {
+			break
 		}
 	}
 
-	return executor.finalConnector, result, nil
+	// Should not happen, could also have been a panic
+	if prevResult == nil {
+		return "", nil, fmt.Errorf("split execution succeeded but did not produce a non-nil result")
+	}
+
+	// We have continuously updated prevResult with new split results, so we return it here
+	return executor.finalConnector, prevResult, nil
 }
 
 // executeSplit processes a drivers.ModelSplit by calling executeSingle and then updating the split's state in the catalog.
-func (r *ModelReconciler) executeSplit(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, split drivers.ModelSplit, returnErr bool) (*drivers.ModelResult, error) {
+// The returned bool will be false if execution failed, but the error was written to the split in the catalog instead of being returned.
+func (r *ModelReconciler) executeSplit(ctx context.Context, catalog drivers.CatalogStore, executor *wrappedModelExecutor, self *runtimev1.Resource, mdl *runtimev1.ModelV2, prevResult *drivers.ModelResult, incrementalRun bool, incrementalState map[string]any, split drivers.ModelSplit, returnErr bool) (*drivers.ModelResult, bool, error) {
 	// Get split data
 	data := map[string]any{}
 	err := json.Unmarshal(split.DataJSON, &data)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal split data: %w", err)
+		return nil, false, fmt.Errorf("failed to unmarshal split data: %w", err)
 	}
 
 	// Log
@@ -970,7 +998,7 @@ func (r *ModelReconciler) executeSplit(ctx context.Context, catalog drivers.Cata
 		logArgs = append(logArgs, zap.Any("data", data))
 	}
 	r.C.Logger.Debug("Executing model split", logArgs...)
-	defer func() { r.C.Logger.Debug("Executed model split", logArgs...) }()
+	defer func() { r.C.Logger.Info("Executed model split", logArgs...) }()
 
 	// Execute the split.
 	start := time.Now()
@@ -979,10 +1007,10 @@ func (r *ModelReconciler) executeSplit(ctx context.Context, catalog drivers.Cata
 	if err != nil {
 		// Unless cancelled or explicitly told to return the error, we save the error in the split and continue.
 		if returnErr {
-			return nil, err
+			return nil, false, err
 		}
 		if errors.Is(err, ctx.Err()) {
-			return nil, err
+			return nil, false, err
 		}
 		errStr = err.Error()
 		logArgs = append(logArgs, zap.Error(err))
@@ -997,9 +1025,9 @@ func (r *ModelReconciler) executeSplit(ctx context.Context, catalog drivers.Cata
 
 	err = catalog.UpdateModelSplit(ctx, mdl.State.SplitsModelId, split)
 	if err != nil {
-		return nil, fmt.Errorf("failed to update split: %w", err)
+		return nil, false, fmt.Errorf("failed to update split: %w", err)
 	}
-	return res, nil
+	return res, res != nil, nil
 }
 
 // executeSingle executes a single step of a model. Passing a previous result, incremental state, and/or a split is optional.
@@ -1375,9 +1403,9 @@ func hashWriteMapOrdered(w io.Writer, m map[string]string) error {
 	return nil
 }
 
-// secureHash returns a hex-encoded SHA-256 hash of the provided byte slice.
-func secureHash(val []byte) (string, error) {
-	hash := sha256.New()
+// md5Hash returns a hex-encoded SHA-256 hash of the provided byte slice.
+func md5Hash(val []byte) (string, error) {
+	hash := md5.New()
 	_, err := hash.Write(val)
 	if err != nil {
 		return "", err
