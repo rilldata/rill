@@ -236,63 +236,86 @@ export const queryServiceResolveComponent = (
   instanceId: string,
   component: string,
   queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+  signal?: AbortSignal,
 ) => {
   return httpClient<V1ResolveComponentResponse>({
     url: `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
     method: "post",
     headers: { "Content-Type": "application/json" },
     data: queryServiceResolveComponentBody,
+    signal,
   });
 };
 
-export type QueryServiceResolveComponentMutationResult = NonNullable<
+export const getQueryServiceResolveComponentQueryKey = (
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+) => [
+  `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
+  queryServiceResolveComponentBody,
+];
+
+export type QueryServiceResolveComponentQueryResult = NonNullable<
   Awaited<ReturnType<typeof queryServiceResolveComponent>>
 >;
-export type QueryServiceResolveComponentMutationBody =
-  QueryServiceResolveComponentBody;
-export type QueryServiceResolveComponentMutationError = ErrorType<RpcStatus>;
+export type QueryServiceResolveComponentQueryError = ErrorType<RpcStatus>;
 
 export const createQueryServiceResolveComponent = <
+  TData = Awaited<ReturnType<typeof queryServiceResolveComponent>>,
   TError = ErrorType<RpcStatus>,
-  TContext = unknown,
->(options?: {
-  mutation?: CreateMutationOptions<
+>(
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+  options?: {
+    query?: CreateQueryOptions<
+      Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+      TError,
+      TData
+    >;
+  },
+): CreateQueryResult<TData, TError> & {
+  queryKey: QueryKey;
+} => {
+  const { query: queryOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ??
+    getQueryServiceResolveComponentQueryKey(
+      instanceId,
+      component,
+      queryServiceResolveComponentBody,
+    );
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof queryServiceResolveComponent>>
+  > = ({ signal }) =>
+    queryServiceResolveComponent(
+      instanceId,
+      component,
+      queryServiceResolveComponentBody,
+      signal,
+    );
+
+  const query = createQuery<
     Awaited<ReturnType<typeof queryServiceResolveComponent>>,
     TError,
-    {
-      instanceId: string;
-      component: string;
-      data: QueryServiceResolveComponentBody;
-    },
-    TContext
-  >;
-}) => {
-  const { mutation: mutationOptions } = options ?? {};
-
-  const mutationFn: MutationFunction<
-    Awaited<ReturnType<typeof queryServiceResolveComponent>>,
-    {
-      instanceId: string;
-      component: string;
-      data: QueryServiceResolveComponentBody;
-    }
-  > = (props) => {
-    const { instanceId, component, data } = props ?? {};
-
-    return queryServiceResolveComponent(instanceId, component, data);
+    TData
+  >({
+    queryKey,
+    queryFn,
+    enabled: !!(instanceId && component),
+    ...queryOptions,
+  }) as CreateQueryResult<TData, TError> & {
+    queryKey: QueryKey;
   };
 
-  return createMutation<
-    Awaited<ReturnType<typeof queryServiceResolveComponent>>,
-    TError,
-    {
-      instanceId: string;
-      component: string;
-      data: QueryServiceResolveComponentBody;
-    },
-    TContext
-  >(mutationFn, mutationOptions);
+  query.queryKey = queryKey;
+
+  return query;
 };
+
 /**
  * @summary Get basic stats for a numeric column like min, max, mean, stddev, etc
  */
