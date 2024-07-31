@@ -4,9 +4,11 @@ sidebar_label: "Installing Rill Developer"
 sidebar_position: 2
 hide_table_of_contents: false
 ---
-import LoomVideo from '@site/src/components/LoomVideo'; // Adjust the path as needed
+import ComingSoon from '@site/src/components/ComingSoon';
 
+<ComingSoon />
 
+<div id='contents_to_overlay'>
 **Installing Rill [Linux / MacOS]**
 
 Let’s install the Rill binary to your local machine.
@@ -64,3 +66,4 @@ import DocsRating from '@site/src/components/DocsRating';
 <DocsRating />
 
 
+</div>

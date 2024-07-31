@@ -4,7 +4,11 @@ sidebar_label: "Get started with Rill and Clickhouse"
 sidebar_position: 1
 hide_table_of_contents: false
 ---
+import ComingSoon from '@site/src/components/ComingSoon';
 
+<ComingSoon />
+
+<div id='contents_to_overlay'>
 **Welcome to Rill**
 
 
@@ -22,3 +26,5 @@ If you have already started the <a href ='https://learn.clickhouse.com/visitor_c
 
 
 Let's get started.
+
+</div>

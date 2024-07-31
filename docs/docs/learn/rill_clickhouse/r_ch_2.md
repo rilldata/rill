@@ -4,7 +4,11 @@ sidebar_label: "Launching Rill Developer"
 sidebar_position: 3
 hide_table_of_contents: false
 ---
+import ComingSoon from '@site/src/components/ComingSoon';
 
+<ComingSoon />
+
+<div id='contents_to_overlay'>
 
 **Getting Started**
 
@@ -35,3 +39,4 @@ import DocsRating from '@site/src/components/DocsRating';
 
 ---
 <DocsRating />
+</div>
