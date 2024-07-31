@@ -52,10 +52,8 @@
       label: `${r.owner}/${r.name}`,
     })) ?? [];
 
-  const githubConnectionUpdater = new GithubConnectionUpdater(
-    organization,
-    project,
-  );
+  const githubConnectionUpdater = new GithubConnectionUpdater();
+  // update data from project, this is needed if the user never leaves the status page and this component is not unmounted
   $: githubConnectionUpdater.init(currentUrl, currentSubpath, currentBranch);
 
   const connectToGithubMutation =
@@ -84,6 +82,8 @@
   async function updateGithubUrl(force: boolean) {
     if (
       !(await githubConnectionUpdater.update({
+        organization,
+        project,
         force,
         instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
       }))

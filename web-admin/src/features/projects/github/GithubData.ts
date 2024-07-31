@@ -99,7 +99,8 @@ export class GithubData {
     }
     if (this.windowCheckTimer) clearInterval(this.windowCheckTimer);
     this.userPromptWindow = window.open(
-      url,
+      // add `remote` to indicate the callback success dialog should auto close
+      `${url}?remote=autoclose`,
       "githubWindow",
       "width=1024,height=600",
     );

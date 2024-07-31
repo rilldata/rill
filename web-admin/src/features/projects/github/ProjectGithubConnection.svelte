@@ -113,14 +113,11 @@
   </div>
 {/if}
 
-{#key organization + project}
-  <!-- make sure to remount  -->
-  <GithubRepoSelectionDialog
-    bind:open={$repoSelectionOpen}
-    currentUrl={$proj.data?.project?.githubUrl}
-    currentSubpath={$proj.data?.project?.subpath}
-    currentBranch={$proj.data?.project?.prodBranch}
-    {organization}
-    {project}
-  />
-{/key}
+<GithubRepoSelectionDialog
+  bind:open={$repoSelectionOpen}
+  currentUrl={$proj.data?.project?.githubUrl}
+  currentSubpath={$proj.data?.project?.subpath}
+  currentBranch={$proj.data?.project?.prodBranch}
+  {organization}
+  {project}
+/>

@@ -23,10 +23,7 @@ export class GithubConnectionUpdater {
   private isConnected: boolean;
   private defaultBranch = "";
 
-  public constructor(
-    private readonly organization: string,
-    private readonly project: string,
-  ) {}
+  public constructor() {}
 
   public init(githubUrl: string, subpath: string, branch: string) {
     this.githubUrl.set(githubUrl);
@@ -42,9 +39,13 @@ export class GithubConnectionUpdater {
   }
 
   public async update({
+    organization,
+    project,
     force,
     instanceId,
   }: {
+    organization: string;
+    project: string;
     force: boolean;
     instanceId: string;
   }) {
@@ -56,8 +57,8 @@ export class GithubConnectionUpdater {
 
     try {
       await get(this.connectToGithubMutation).mutateAsync({
-        organization: this.organization,
-        project: this.project,
+        organization,
+        project,
         data: {
           repo: githubUrl,
           subpath,
@@ -77,7 +78,7 @@ export class GithubConnectionUpdater {
       );
 
       void queryClient.refetchQueries(
-        getAdminServiceGetProjectQueryKey(this.organization, this.project),
+        getAdminServiceGetProjectQueryKey(organization, project),
         {
           // avoid refetching createAdminServiceGetProjectWithBearerToken
           exact: true,

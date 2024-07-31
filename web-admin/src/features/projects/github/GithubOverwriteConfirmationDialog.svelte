@@ -26,7 +26,7 @@
   let confirmInput = "";
   $: confirmed = confirmInput === "overwrite";
 
-  $: path = getRepoNameFromGithubUrl(githubUrl) + subpath;
+  $: path = `${getRepoNameFromGithubUrl(githubUrl)}/${subpath}`;
 
   function close() {
     onCancel();

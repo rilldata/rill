@@ -28,7 +28,11 @@
       },
     );
     // we need a popup window so we cannot use href
-    window.open("https://github.com/new", "", "width=1024,height=600");
+    window.open(
+      "https://github.com/new",
+      "githubNewWindow",
+      "width=1024,height=600",
+    );
   }
 
   function handleContinue() {

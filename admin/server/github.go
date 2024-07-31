@@ -360,8 +360,12 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
-		err = s.pushToGit(ctx, func(dir, projPath string) error {
-			downloadDst := filepath.Join(dir, "zipped_repo.tar.gz")
+		err = s.pushToGit(ctx, func(projPath string) error {
+			downloadDir, err := os.MkdirTemp(os.TempDir(), "extracted_archives")
+			if err != nil {
+				return err
+			}
+			downloadDst := filepath.Join(downloadDir, "zipped_repo.tar.gz")
 			// extract the archive once the folder is prepped with git
 			return archive.Download(ctx, downloadURL, downloadDst, projPath, false)
 		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
@@ -369,8 +373,8 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			return nil, status.Error(codes.InvalidArgument, err.Error())
 		}
 	} else if proj.GithubURL != nil {
-		err = s.pushToGit(ctx, func(dir, projPath string) error {
-			return copyFromSrcGit(dir, projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
+		err = s.pushToGit(ctx, func(projPath string) error {
+			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
 		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
 		if err != nil {
 			return nil, status.Error(codes.InvalidArgument, err.Error())
@@ -523,6 +527,18 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	remoteURL := qry.Get("state")
+	if remoteURL == "autoclose" {
+		// signal from UI flow to autoclose the confirmation dialog
+		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
+		connectSuccessUrl, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, connectSuccessUrl, http.StatusTemporaryRedirect)
+		return
+	}
+
 	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
 	if !ok {
 		// request without state can come in multiple ways like
@@ -709,6 +725,18 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		remote = value.(string)
 	}
 	delete(sess.Values, githubcookieFieldRemote)
+
+	if remote == "autoclose" {
+		// signal from UI flow to autoclose the confirmation dialog
+		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
+		connectSuccessUrl, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, connectSuccessUrl, http.StatusTemporaryRedirect)
+		return
+	}
 
 	account, repo, ok := gitutil.SplitGithubURL(remote)
 	if !ok {
@@ -972,12 +1000,12 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
-func (s *Server) pushToGit(ctx context.Context, copyData func(dir, projPath string) error, repo, branch, subpath, token string, force bool) error {
+func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) error, repo, branch, subpath, token string, force bool) error {
 	ctx, cancel := context.WithTimeout(ctx, archivePullTimeout)
 	defer cancel()
 
 	// generate a temp dir to extract the archive
-	dir, err := os.MkdirTemp(os.TempDir(), "extracted_archives")
+	dir, err := os.MkdirTemp(os.TempDir(), "dest_git_repos")
 	if err != nil {
 		return err
 	}
@@ -1047,7 +1075,7 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(dir, projPath stri
 		}
 	}
 
-	err = copyData(dir, projPath)
+	err = copyData(projPath)
 	if err != nil {
 		return fmt.Errorf("failed to copy data: %w", err)
 	}
@@ -1170,14 +1198,18 @@ func readFile(f billy.File) (string, error) {
 
 // copyFromSrcGit clones a repo, branch and a subpath and copies the content to the projPath
 // used to switch a project to a new github repo connection
-func copyFromSrcGit(dir, projPath, repo, branch, subpath, token string) error {
-	srcGitPath := filepath.Join(dir, "src")
+func copyFromSrcGit(projPath, repo, branch, subpath, token string) error {
+	srcGitPath, err := os.MkdirTemp(os.TempDir(), "src_git_repos")
+	if err != nil {
+		return err
+	}
+
 	// projPath is the target for extracting the archive
 	srcProjPath := srcGitPath
 	if subpath != "" {
 		srcProjPath = filepath.Join(srcProjPath, subpath)
 	}
-	err := os.MkdirAll(srcProjPath, fs.ModePerm)
+	err = os.MkdirAll(srcProjPath, fs.ModePerm)
 	if err != nil {
 		return err
 	}
