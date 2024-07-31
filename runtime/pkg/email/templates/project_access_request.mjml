@@ -16,11 +16,11 @@
 
                 <mj-spacer height="35px" />
 
-                <mj-text font-size="20px" font-weight="bold">
+                <mj-text align="center" font-size="20px" font-weight="bold">
                     {{ .Title }}
                 </mj-text>
 
-                <mj-text padding-bottom="0px">
+                <mj-text align="center" padding-bottom="0px">
                     {{ .Body }}
                 </mj-text>
 

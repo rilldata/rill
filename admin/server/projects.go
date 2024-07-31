@@ -217,11 +217,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			depl.RuntimeInstanceID: {
-				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
-				runtimeauth.ReadProfiling,
-				runtimeauth.ReadRepo,
 				runtimeauth.ReadAPI,
 			},
 		},

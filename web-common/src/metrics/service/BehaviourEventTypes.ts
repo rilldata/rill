@@ -6,6 +6,14 @@ export enum BehaviourEventAction {
   Navigate = "navigate",
 
   DeployIntent = "deploy-intent",
+  DeploySuccess = "deploy-success",
+  LoginStart = "login-start",
+  LoginSuccess = "login-success",
+  GithubConnectStart = "ghconnected-start",
+  GithubConnectSuccess = "ghconnected-success",
+
+  UserInvite = "user-invite",
+  UserDomainWhitelist = "user-domain-whitelist",
 
   // Splash Screen Actions
   ExampleAdd = "example-add",
@@ -34,4 +42,5 @@ export interface BehaviourEvent extends MetricsEvent, SourceEventFields {
   space: MetricsEventSpace;
   screen_name: MetricsEventScreenName;
   source_screen: MetricsEventScreenName;
+  count: number;
 }

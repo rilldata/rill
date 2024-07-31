@@ -4,13 +4,18 @@
   import { Button } from "@rilldata/web-common/components/button";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
-  import Link from "@rilldata/web-common/components/icons/Link.svelte";
   import FilterChipsReadOnly from "@rilldata/web-common/features/dashboards/filters/FilterChipsReadOnly.svelte";
   import { getStateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
   import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import type { HTTPError } from "@rilldata/web-common/runtime-client/fetchWrapper";
   import { defaults, superForm } from "sveltekit-superforms";
   import { yup } from "sveltekit-superforms/adapters";
   import { object, string } from "yup";
+  import {
+    convertDateToMinutes,
+    getMetricsViewFields,
+    hasDashboardWhereFilter,
+  } from "./form-utils";
 
   $: ({ organization, project } = $page.params);
 
@@ -54,25 +59,34 @@
             project,
             data: {
               metricsView: $metricsViewName,
-              metricsViewFilter: hasDashboardWhereFilter()
+              metricsViewFilter: hasWhereFilter
                 ? $dashboardStore.whereFilter
                 : undefined,
-              metricsViewFields: [
-                ...$visibleMeasures.map((measure) => measure.name),
-                ...$visibleDimensions.map((dimension) => dimension.name),
-              ],
+              metricsViewFields: getMetricsViewFields(
+                $dashboardStore,
+                $visibleDimensions,
+                $visibleMeasures,
+              ),
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
-                : "0",
+                : undefined,
             },
           });
           token = _token;
+
+          copyToClipboard(
+            `${window.location.origin}/${organization}/${project}/-/share/${token}`,
+            "URL copied to clipboard",
+          );
         } catch (error) {
-          apiError = (error as Error).message;
+          const typedError = error as HTTPError;
+          apiError = typedError.response?.data?.message ?? typedError.message;
         }
       },
     },
   );
+
+  $: hasWhereFilter = hasDashboardWhereFilter($dashboardStore);
 
   $: if (setExpiration && $form.expiresAt === null) {
     // When `setExpiration` is toggled, initialize the expiration time to 60 days from today
@@ -84,30 +98,19 @@
   }
 
   $: ({ length: allErrorsLength } = $allErrors);
-
-  function hasDashboardWhereFilter() {
-    return $dashboardStore.whereFilter?.cond?.exprs?.length;
-  }
-
-  function convertDateToMinutes(date: string) {
-    const now = new Date();
-    const future = new Date(date);
-    const diff = future.getTime() - now.getTime();
-    return Math.floor(diff / 60000);
-  }
 </script>
 
 {#if !token}
   <form id={formId} on:submit|preventDefault={submit} use:enhance>
     <div class="information-container">
-      <h3>Create a public link that you can send to anyone.</h3>
+      <h3>Create a public URL that you can send to anyone.</h3>
       <ul>
         <li>Measures and dimensions will be limited to current visible set.</li>
         <li>Filters will be locked and hidden.</li>
       </ul>
 
       <!-- Filters -->
-      {#if hasDashboardWhereFilter()}
+      {#if hasWhereFilter}
         <div>
           <FilterChipsReadOnly
             metricsViewName={$metricsViewName}
@@ -138,7 +141,7 @@
     </div>
 
     <Button type="primary" disabled={$submitting} form={formId} submitForm>
-      Create link
+      Create and copy URL
     </Button>
 
     {#if allErrorsLength > 0}
@@ -150,27 +153,19 @@
     {/if}
   </form>
 {:else}
-  <!-- A successful form submission will result in a link to copy -->
+  <!-- A successful form submission will automatically copy the link to the clipboard -->
   <div class="flex flex-col gap-y-2">
-    <h3>Success!</h3>
-    <Button
-      type="secondary"
-      on:click={() => {
-        copyToClipboard(
-          `${window.location.origin}/${organization}/${project}/-/share/${token}`,
-          "Link copied to clipboard",
-        );
-      }}
-    >
-      <Link size="16px" className="text-primary-500" />
-      Copy public link
-    </Button>
+    <h3>Success! URL copied to clipboard.</h3>
   </div>
 {/if}
 
 <style lang="postcss">
   form {
     @apply flex flex-col gap-y-4;
+  }
+
+  h3 {
+    @apply font-semibold;
   }
 
   .information-container {
