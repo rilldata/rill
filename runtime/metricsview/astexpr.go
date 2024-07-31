@@ -121,8 +121,6 @@ func (b *sqlExprBuilder) writeCondition(cond *Condition) error {
 		return b.writeJoinedExpressions(cond.Expressions, " OR ")
 	case OperatorAnd:
 		return b.writeJoinedExpressions(cond.Expressions, " AND ")
-	case OperatorEqNull, OperatorNeqNull:
-		return b.writeNullCondition(cond.Expressions, cond.Operator == OperatorEqNull)
 	default:
 		if !cond.Operator.Valid() {
 			return fmt.Errorf("invalid expression operator %q", cond.Operator)
@@ -150,24 +148,6 @@ func (b *sqlExprBuilder) writeJoinedExpressions(exprs []*Expression, joiner stri
 
 	b.writeByte(')')
 
-	return nil
-}
-
-func (b *sqlExprBuilder) writeNullCondition(exprs []*Expression, null bool) error {
-	if len(exprs) != 1 {
-		return fmt.Errorf("null condition must have exactly 1 expression")
-	}
-
-	err := b.writeExpression(exprs[0])
-	if err != nil {
-		return err
-	}
-
-	if null {
-		b.writeString(" IS NULL")
-	} else {
-		b.writeString(" IS NOT NULL")
-	}
 	return nil
 }
 
@@ -309,10 +289,17 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 			return err
 		}
 	}
-	// Special case: "dim = NULL" should be written as "dim IS NULL"
-	if op == OperatorEq && hasNilValue(right) {
-		b.writeString(" IS NULL")
-		return nil
+	// Special cases:
+	// "dim = NULL" should be written as "dim IS NULL"
+	// dim != NULL" should be written as "dim IS NOT NULL"
+	if hasNilValue(right) {
+		if op == OperatorEq {
+			b.writeString(" IS NULL")
+			return nil
+		} else if op == OperatorNeq {
+			b.writeString(" IS NOT NULL")
+			return nil
+		}
 	}
 	b.writeString(joiner)
 	err := b.writeExpression(right)
