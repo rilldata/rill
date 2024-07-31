@@ -372,7 +372,6 @@
           <MeasureBigNumber
             {measure}
             value={bigNum}
-            isMeasureExpanded={isInTimeDimensionView}
             {showComparison}
             {comparisonValue}
             errorMessage={$timeSeriesDataStore?.error?.totals}
