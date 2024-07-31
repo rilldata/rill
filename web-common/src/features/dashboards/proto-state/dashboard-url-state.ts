@@ -18,7 +18,7 @@ export type DashboardUrlState = {
   defaultProto?: string;
   urlName?: string;
   urlProto?: string;
-  publicUrl?: boolean;
+  isPublicUrl?: boolean;
 };
 export type DashboardUrlStore = Readable<DashboardUrlState>;
 
@@ -47,7 +47,7 @@ export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
         defaultProto,
         urlName,
         urlProto: decodedUrlProto,
-        publicUrl: !urlName,
+        isPublicUrl: !urlName,
       });
     },
   );
@@ -79,10 +79,9 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
   return dashboardUrlState.subscribe((state) => {
     const metricViewName = get(ctx.metricsViewName);
 
-    if (state?.urlName !== metricViewName) {
-      // For now, we don't apply this check to public URLs
-      if (!state.publicUrl) return;
-    }
+    // Avoid a race condition when switching between metrics views
+    // (It's not necessary for Public URLs because there's no UI flow for switching from one Public URL to another)
+    if (!state.isPublicUrl && state?.urlName !== metricViewName) return;
 
     if (!state.isReady || !state.proto) return;
 
