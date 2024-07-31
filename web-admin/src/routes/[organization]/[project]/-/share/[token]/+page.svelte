@@ -27,11 +27,11 @@
   }
 
   // Clear the banner when navigating away from the Public URL page
-  // (We do not clear it when the user interacts with the dashboard)
-  onNavigate((navigation) => {
-    const currentPath = $page.url.pathname;
-    const newPath = navigation.to?.url.pathname;
-    if (newPath && !newPath.startsWith(currentPath)) {
+  // (We make sure to not clear it when the user interacts with the dashboard)
+  onNavigate(({ from, to }) => {
+    const currentPath = from?.url.pathname;
+    const newPath = to?.url.pathname;
+    if (newPath !== currentPath) {
       eventBus.emit("banner", null);
     }
   });
