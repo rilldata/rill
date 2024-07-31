@@ -38,7 +38,7 @@ type MetricsViewYAML struct {
 		Expression  string
 		Property    string // For backwards compatibility
 		Description string
-		Ignore      bool `yaml:"ignore"`
+		Ignore      bool `yaml:"ignore"` // Deprecated
 		Unnest      bool
 		URI         string
 	}
@@ -54,7 +54,7 @@ type MetricsViewYAML struct {
 		Description         string
 		FormatPreset        string `yaml:"format_preset"`
 		FormatD3            string `yaml:"format_d3"`
-		Ignore              bool   `yaml:"ignore"`
+		Ignore              bool   `yaml:"ignore"` // Deprecated
 		ValidPercentOfTotal bool   `yaml:"valid_percent_of_total"`
 	}
 	DefaultMeasures   []string `yaml:"default_measures"`
