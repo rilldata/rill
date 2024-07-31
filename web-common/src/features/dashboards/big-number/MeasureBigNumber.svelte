@@ -19,6 +19,8 @@
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
   import DelayedSpinner from "../../entity-management/DelayedSpinner.svelte";
+  import Spinner from "../../entity-management/Spinner.svelte";
+  import { isLoadingWithTimeout } from "../../entity-management/spinner-utils";
 
   export let measure: MetricsViewSpecMeasureV2;
   export let value: number | null;
@@ -72,6 +74,10 @@
   $: measureIsPercentage = measure?.formatPreset === FormatPreset.PERCENTAGE;
 
   $: hoveredValue = measureValueFormatterUnabridged(value) ?? "no data";
+
+  const loadingWithTimeout = isLoadingWithTimeout();
+  $: loadingWithTimeout.setLoading(status === EntityStatus.Running);
+  $: isFetchingWithTimeout = $loadingWithTimeout;
 
   function shiftClickHandler(number: string | undefined) {
     if (number === undefined) return;
@@ -194,16 +200,16 @@
             Error fetching totals data
           {/if}
         </div>
-      {:else if status === EntityStatus.Running}
+      {:else if status === EntityStatus.Running && isFetchingWithTimeout}
         <div
           class="absolute p-2"
           class:bottom-0={withTimeseries}
           in:receive={{ key: "spinner" }}
           out:send={{ key: "spinner" }}
         >
-          <DelayedSpinner isLoading={status === EntityStatus.Running} />
+          <Spinner status={EntityStatus.Running} />
         </div>
-      {:else if value === null}
+      {:else if value === null && isFetchingWithTimeout}
         <span class="ui-copy-disabled-faint italic text-sm">no data</span>
       {/if}
     </div>
