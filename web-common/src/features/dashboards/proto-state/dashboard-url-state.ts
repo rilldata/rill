@@ -11,7 +11,6 @@ import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/s
 import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
 import type { V1StructType } from "@rilldata/web-common/runtime-client";
 import { Readable, derived, get } from "svelte/store";
-import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 
 export type DashboardUrlState = {
   isReady: boolean;
@@ -19,6 +18,7 @@ export type DashboardUrlState = {
   defaultProto?: string;
   urlName?: string;
   urlProto?: string;
+  publicUrl?: boolean;
 };
 export type DashboardUrlStore = Readable<DashboardUrlState>;
 
@@ -40,26 +40,15 @@ export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
         ? decodeURIComponent(urlProto)
         : defaultProto;
 
-      getMetricsViewNameFromParams(page.params)
-        .then((urlName) => {
-          set({
-            isReady: true,
-            proto,
-            defaultProto,
-            urlName,
-            urlProto: decodedUrlProto,
-          });
-        })
-        .catch((error) => {
-          console.error("Error getting metrics view name:", error);
-          set({
-            isReady: true,
-            proto,
-            defaultProto,
-            urlName: "",
-            urlProto: decodedUrlProto,
-          });
-        });
+      const urlName = getMetricsViewNameFromParams(page.params);
+      set({
+        isReady: true,
+        proto,
+        defaultProto,
+        urlName,
+        urlProto: decodedUrlProto,
+        publicUrl: !urlName,
+      });
     },
   );
 }
@@ -89,7 +78,11 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
   return dashboardUrlState.subscribe((state) => {
     const metricViewName = get(ctx.metricsViewName);
-    if (state?.urlName !== metricViewName) return;
+
+    if (state?.urlName !== metricViewName) {
+      // For now, we don't apply this check to public URLs
+      if (!state.publicUrl) return;
+    }
 
     if (!state.isReady || !state.proto) return;
 
@@ -172,29 +165,14 @@ export function useDashboardDefaultProto(ctx: StateManagers) {
  * - The `name` URL param is used in Ril Developer
  * - The `token` URL param is used in Public URLs. The metrics view name is embedded in the token.
  */
-async function getMetricsViewNameFromParams(
+function getMetricsViewNameFromParams(
   params: Record<string, string>,
-): Promise<string> {
-  const { dashboard, name, token } = params;
+): string | undefined {
+  const { dashboard, name } = params;
 
   if (dashboard) return dashboard;
   if (name) return name;
+  // TODO: Add support for public urls' `token` param
 
-  if (token) {
-    // Only import the `web-admin` functions in Cloud
-    const {
-      adminServiceGetMagicAuthToken,
-      getAdminServiceGetMagicAuthTokenQueryKey,
-    } = await import(
-      "@rilldata/web-admin/features/public-urls/get-magic-auth-token"
-    );
-    const tokenData = await queryClient.fetchQuery({
-      queryKey: getAdminServiceGetMagicAuthTokenQueryKey(token),
-      queryFn: () => adminServiceGetMagicAuthToken(token),
-    });
-    if (tokenData.token?.metricsView)
-      return tokenData.token.metricsView as string;
-  }
-
-  return "";
+  return undefined;
 }
