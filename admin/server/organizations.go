@@ -162,14 +162,6 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 		}
 	}
 
-	// delete payment customer
-	if org.PaymentCustomerID != "" {
-		err = s.admin.PaymentProvider.DeleteCustomer(ctx, org.PaymentCustomerID)
-		if err != nil {
-			s.logger.Error("failed to delete payment customer", zap.String("org", org.Name), zap.Error(err))
-		}
-	}
-
 	return &adminv1.DeleteOrganizationResponse{}, nil
 }
 
