@@ -13,13 +13,13 @@
   import { object, string } from "yup";
   import {
     convertDateToMinutes,
+    getDashboardStateParamWithoutFilters,
     getMetricsViewFields,
-    getStateWithoutFilters,
     hasDashboardWhereFilter,
   } from "./form-utils";
 
   $: ({ organization, project } = $page.params);
-  $: partialState = getStateWithoutFilters($dashboardStore);
+  $: partialState = getDashboardStateParamWithoutFilters($dashboardStore);
 
   let token: string;
   let setExpiration = false;
