@@ -27,9 +27,9 @@
   import { usePublicURLMetricsView } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import {
-    isMagicLinkPage,
     isMetricsExplorerPage,
     isProjectPage,
+    isPublicURLPage,
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
@@ -53,7 +53,7 @@
   $: onAlertPage = !!alert;
   $: onReportPage = !!report;
   $: onMetricsExplorerPage = isMetricsExplorerPage($page);
-  $: onMagicLinkPage = isMagicLinkPage($page);
+  $: onPublicURLPage = isPublicURLPage($page);
 
   $: loggedIn = !!$user.data?.user;
   $: rillLogoHref = !loggedIn ? "https://www.rilldata.com" : "/";
@@ -137,7 +137,7 @@
 
   // Public URLs do not have the metrics view name in the URL. However, the magic token's metadata includes the metrics view name.
   $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
-  $: dashboard = onMagicLinkPage
+  $: dashboard = onPublicURLPage
     ? $tokenQuery?.data?.token?.metricsView
     : dashboardParam;
 
@@ -145,9 +145,9 @@
   $: metricsViewQuery = usePublicURLMetricsView(
     instanceId,
     $tokenQuery?.data?.token?.metricsView,
-    onMagicLinkPage,
+    onPublicURLPage,
   );
-  $: magicLinkDashboardTitle =
+  $: publicURLDashboardTitle =
     $metricsViewQuery.data?.metricsView?.spec?.title ?? dashboard ?? "";
 
   $: currentPath = [organization, project, dashboard, report || alert];
@@ -164,8 +164,8 @@
   >
     <Rill />
   </a>
-  {#if onMagicLinkPage}
-    <PageTitle title={magicLinkDashboardTitle} />
+  {#if onPublicURLPage}
+    <PageTitle title={publicURLDashboardTitle} />
   {:else if organization}
     <Breadcrumbs {pathParts} {currentPath} />
   {/if}
@@ -178,11 +178,11 @@
     {#if onProjectPage && manageProjectMembers}
       <UserInviteButton {organization} {project} />
     {/if}
-    {#if onMetricsExplorerPage || onMagicLinkPage}
+    {#if onMetricsExplorerPage || onPublicURLPage}
       <StateManagersProvider metricsViewName={dashboard}>
         <LastRefreshedDate {dashboard} />
         <GlobalDimensionSearch metricsViewName={dashboard} />
-        {#if $user.isSuccess && $user.data.user && !onMagicLinkPage}
+        {#if $user.isSuccess && $user.data.user && !onPublicURLPage}
           <CreateAlert />
           <Bookmarks metricsViewName={dashboard} />
           <ShareDashboardButton {createMagicAuthTokens} />

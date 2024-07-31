@@ -62,7 +62,7 @@
 
   $: ({ organization, project, token } = $page.params);
   $: onProjectPage = isProjectPage($page);
-  $: onMagicLinkPage = !!token;
+  $: onPublicURLPage = !!token;
 
   /**
    * `GetProject` with default cookie-based auth.
@@ -79,8 +79,8 @@
 
   /**
    * `GetProject` with token-based auth.
-   * This returns the deployment credentials for anonymous users who visit a magic link.
-   * The token is provided via the `[organization]/[project]/-/share/[token]` URL (aka a "magic" link).
+   * This returns the deployment credentials for anonymous users who visit a Public URL.
+   * The token is provided via the `[organization]/[project]/-/share/[token]` URL.
    */
   $: tokenProjectQuery = createAdminServiceGetProjectWithBearerToken(
     organization,
@@ -92,7 +92,7 @@
     },
   );
 
-  $: projectQuery = onMagicLinkPage ? tokenProjectQuery : cookieProjectQuery;
+  $: projectQuery = onPublicURLPage ? tokenProjectQuery : cookieProjectQuery;
 
   /**
    * `GetDeploymentCredentials`
@@ -128,7 +128,7 @@
   $: authContext = (
     mockedUserId && mockedUserDeploymentCredentials
       ? "mock"
-      : onMagicLinkPage
+      : onPublicURLPage
         ? "magic"
         : "user"
   ) as AuthContext;
