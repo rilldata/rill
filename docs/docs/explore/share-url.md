@@ -7,16 +7,15 @@ sidebar_position: 36
 
 ## Overview
 
-Sharing your dashboard is a key way to promote collaboration within your team and allows for quick access to your dashboards. With shared public URLS, you can create a public link to a dashboard with specific filters applied.
+Sharing your dashboard is a key way to promote collaboration within your team and allows for quick access to your dashboards. With shared public URLS, you can create an expirable public link to a dashboard with specific filters applied.
 
 <img src ='/img/explore/dashboard101/public-url.gif' class='rounded-gif'/>
 <br />
 
 :::tip
-Recipients are not required to log in to view the dashboard! This can be used internally and for non-users to view a dashboard.
+Recipients are not required to log in to view the dashboard and will not be able to change your defined filters!
 :::
 
-The user who receives this link will be able to use the dashboard just as any other user but wont be able to modify the applied filters. You can also set an expiration date for the view.
 
 
 ### How to create a public URL from the UI
