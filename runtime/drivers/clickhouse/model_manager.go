@@ -9,7 +9,7 @@ import (
 	"github.com/rilldata/rill/runtime/drivers"
 )
 
-const _defaultConcurrentInserts = 10
+const _defaultConcurrentInserts = 1
 
 type ModelInputProperties struct {
 	SQL string `mapstructure:"sql"`

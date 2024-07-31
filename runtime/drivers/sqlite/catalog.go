@@ -318,7 +318,6 @@ func (c *catalogStore) UpdateModelSplit(ctx context.Context, modelID string, spl
 	return nil
 }
 
-// UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error
 func (c *catalogStore) UpdateModelSplitsPendingIfError(ctx context.Context, modelID string) error {
 	_, err := c.db.ExecContext(
 		ctx,

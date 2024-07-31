@@ -686,6 +686,9 @@ func (r *ModelReconciler) resolveAndSyncSplits(ctx context.Context, self *runtim
 //
 // The startIdx should be the index of the first row in the batch in the full splits dataset.
 // Split indexes only inform the order that splits are executed in, so they don't need to be very consistent across invocations.
+//
+// NOTE: This implementation inserts/updates splits one-by-one in the catalog.
+// If we start using another DB than SQLite for the catalog, it may make sense to implement batched writes.
 func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2, startIdx int, rows []map[string]any) error {
 	if len(rows) == 0 {
 		return nil
@@ -763,7 +766,7 @@ func (r *ModelReconciler) syncSplits(ctx context.Context, mdl *runtimev1.ModelV2
 			continue
 		}
 
-		// Update the split (the new split's ExecutedOn will be nil, so it will be marked for execution)
+		// Update the split (the new split's ExecutedOn will be nil, so it will be marked for execution).
 		err = catalog.UpdateModelSplit(ctx, mdl.State.SplitsModelId, split)
 		if err != nil {
 			return fmt.Errorf("failed to update existing split: %w", err)
