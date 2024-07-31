@@ -33,7 +33,7 @@ export interface HTTPErrorEvent extends MetricsEvent {
   api: string;
   status: string;
   message: string;
-  dashboard_state: string;
+  page_url: string;
 }
 
 export interface JavascriptErrorEvent extends MetricsEvent {
@@ -41,7 +41,7 @@ export interface JavascriptErrorEvent extends MetricsEvent {
   screen_name: MetricsEventScreenName;
   stack: string;
   message: string;
-  dashboard_state: string;
+  page_url: string;
 }
 
 export class ErrorEventFactory extends MetricsEventFactory {
@@ -78,7 +78,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     api: string,
     status: string,
     message: string,
-    dashboardState: string,
+    pageUrl: string,
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
@@ -91,7 +91,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     event.api = api;
     event.status = status;
     event.message = message;
-    event.dashboard_state = dashboardState;
+    event.page_url = pageUrl;
     return event;
   }
 
@@ -101,7 +101,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     screen_name: MetricsEventScreenName,
     stack: string,
     message: string,
-    dashboardState: string,
+    pageUrl: string,
   ) {
     const event = this.getBaseMetricsEvent(
       "error",
@@ -113,7 +113,7 @@ export class ErrorEventFactory extends MetricsEventFactory {
     event.screen_name = screen_name;
     event.stack = stack;
     event.message = message;
-    event.dashboard_state = dashboardState;
+    event.page_url = pageUrl;
     return event;
   }
 }

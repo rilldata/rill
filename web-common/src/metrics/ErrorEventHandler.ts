@@ -33,7 +33,7 @@ export class ErrorEventHandler {
         error.status ?? "",
         error.message ?? "unknown error",
         screenName,
-        this.getDashboardState(),
+        get(page).url.toString(),
       );
       return;
     } else {
@@ -42,7 +42,7 @@ export class ErrorEventHandler {
         error.response?.status + "" ?? error.status,
         (error.response?.data as RpcStatus)?.message ?? error.message,
         screenName,
-        this.getDashboardState(),
+        get(page).url.toString(),
       );
     }
   }
@@ -53,7 +53,7 @@ export class ErrorEventHandler {
         errorEvt.error?.stack ?? "",
         errorEvt.message,
         this.screenNameGetter(),
-        this.getDashboardState(),
+        get(page).url.toString(),
       );
     };
     const unhandledRejectionHandler = (
@@ -73,7 +73,7 @@ export class ErrorEventHandler {
         stack,
         message,
         this.screenNameGetter(),
-        this.getDashboardState(),
+        get(page).url.toString(),
       );
     };
 
@@ -113,7 +113,7 @@ export class ErrorEventHandler {
     status: string,
     message: string,
     screenName: MetricsEventScreenName,
-    dashboardState: string,
+    pageUrl: string,
   ) {
     if (this.isDev) return;
 
@@ -123,7 +123,7 @@ export class ErrorEventHandler {
       api,
       status,
       message,
-      dashboardState,
+      pageUrl,
     ]);
   }
 
@@ -131,7 +131,7 @@ export class ErrorEventHandler {
     stack: string,
     message: string,
     screenName: MetricsEventScreenName,
-    dashboardState: string,
+    pageUrl: string,
   ) {
     if (this.isDev) {
       console.log("javascriptErrorEvent", screenName, stack, message);
@@ -142,12 +142,7 @@ export class ErrorEventHandler {
       screenName,
       stack,
       message,
-      dashboardState,
+      pageUrl,
     ]);
-  }
-
-  private getDashboardState() {
-    // TODO: we need to also save other params that get added after
-    return get(page).url.searchParams.get("state") ?? "";
   }
 }
