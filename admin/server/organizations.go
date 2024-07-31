@@ -158,8 +158,9 @@ func (s *Server) DeleteOrganization(ctx context.Context, req *adminv1.DeleteOrga
 	if org.BillingCustomerID != "" {
 		err = s.admin.Biller.CancelSubscriptionsForCustomer(ctx, org.BillingCustomerID, billing.SubscriptionCancellationOptionImmediate)
 		if err != nil {
-			s.logger.Error("failed to cancel subscriptions", zap.String("org", org.Name), zap.Error(err))
+			s.logger.Error("failed to cancel subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
 		}
+		s.logger.Warn("canceled subscriptions", zap.String("org_id", org.ID), zap.String("org_name", org.Name))
 	}
 
 	return &adminv1.DeleteOrganizationResponse{}, nil
