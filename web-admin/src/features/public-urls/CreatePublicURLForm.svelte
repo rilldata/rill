@@ -13,13 +13,21 @@
   import { object, string } from "yup";
   import {
     convertDateToMinutes,
-    getDashboardStateParamWithoutFilters,
     getMetricsViewFields,
+    getSanitizedDashboardStateParam,
     hasDashboardWhereFilter,
   } from "./form-utils";
 
   $: ({ organization, project } = $page.params);
-  $: partialState = getDashboardStateParamWithoutFilters($dashboardStore);
+  $: metricsViewFields = getMetricsViewFields(
+    $dashboardStore,
+    $visibleDimensions,
+    $visibleMeasures,
+  );
+  $: sanitizedState = getSanitizedDashboardStateParam(
+    $dashboardStore,
+    metricsViewFields,
+  );
 
   let token: string;
   let setExpiration = false;
@@ -64,15 +72,11 @@
               metricsViewFilter: hasWhereFilter
                 ? $dashboardStore.whereFilter
                 : undefined,
-              metricsViewFields: getMetricsViewFields(
-                $dashboardStore,
-                $visibleDimensions,
-                $visibleMeasures,
-              ),
+              metricsViewFields,
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
-              state: partialState ? partialState : undefined,
+              state: sanitizedState ? sanitizedState : undefined,
             },
           });
           token = _token;

@@ -14,7 +14,7 @@ export function getMetricsViewFields(
   dashboardStore: MetricsExplorerEntity,
   visibleDimensions: MetricsViewSpecDimensionV2[],
   visibleMeasures: MetricsViewSpecMeasureV2[],
-) {
+): string[] | undefined {
   const hasFilter = hasDashboardWhereFilter(dashboardStore);
 
   const everythingIsVisible =
@@ -46,17 +46,38 @@ export function convertDateToMinutes(date: string) {
 }
 
 /**
- * Returns serialized `state` for the current dashboard *without* filters.
- * Removing the filter state ensures that the URL does not leak hidden filters to the URL recipient.
+ * Returns the serialized *sanitized* `state` for the current dashboard.
+ * It removes any filters and any pivot chips that refer to those filters.
+ * This ensures we do not leak hidden filters to the URL recipient.
  */
-export function getDashboardStateParamWithoutFilters(
+export function getSanitizedDashboardStateParam(
   dashboard: MetricsExplorerEntity,
+  metricsViewFields: string[] | undefined,
 ): string {
-  const dashboardWithoutFilters = {
+  // If no metrics view fields are specified, everything is visible, and there's no need to sanitize
+  if (!metricsViewFields) return getProtoFromDashboardState(dashboard);
+
+  const sanitizedDashboardState = {
     ...dashboard,
     whereFilter: {},
     dimensionThresholdFilters: [],
+    pivot: {
+      ...dashboard.pivot,
+      rows: {
+        dimension: dashboard.pivot.rows.dimension.filter((chip) =>
+          metricsViewFields?.includes(chip.id),
+        ),
+      },
+      columns: {
+        measure: dashboard.pivot.columns.measure.filter((chip) =>
+          metricsViewFields?.includes(chip.id),
+        ),
+        dimension: dashboard.pivot.columns.dimension.filter((chip) =>
+          metricsViewFields?.includes(chip.id),
+        ),
+      },
+    },
   } as MetricsExplorerEntity;
 
-  return getProtoFromDashboardState(dashboardWithoutFilters);
+  return getProtoFromDashboardState(sanitizedDashboardState);
 }
