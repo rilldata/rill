@@ -3,7 +3,7 @@ import { createRuntimeServiceGetResource } from "@rilldata/web-common/runtime-cl
 
 // Use the ListResources API to get the target dashboard
 // The JWT generated via a "magic" token will only have access to one dashboard, so we can assume the first one is the correct one
-export function useShareableURLMetricsView(
+export function usePublicURLMetricsView(
   instanceId: string,
   metricsViewName: string,
   enabled: boolean,

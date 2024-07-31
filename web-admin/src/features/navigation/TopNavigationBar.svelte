@@ -24,7 +24,7 @@
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import PageTitle from "../public-urls/PageTitle.svelte";
   import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
-  import { useShareableURLMetricsView } from "../public-urls/selectors";
+  import { usePublicURLMetricsView } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMagicLinkPage,
@@ -142,7 +142,7 @@
     : dashboardParam;
 
   // If on a Public URL, get the dashboard title
-  $: metricsViewQuery = useShareableURLMetricsView(
+  $: metricsViewQuery = usePublicURLMetricsView(
     instanceId,
     $tokenQuery?.data?.token?.metricsView,
     onMagicLinkPage,
