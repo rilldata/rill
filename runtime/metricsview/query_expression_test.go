@@ -132,6 +132,36 @@ func TestExpressionToString(t *testing.T) {
 			},
 			want: "foo OR (bar IS NULL) OR (baz=42)",
 		},
+		{
+			name: "or is not null expression",
+			e: &Expression{
+				Condition: &Condition{
+					Operator: OperatorOr,
+					Expressions: []*Expression{
+						{Name: "foo"},
+						{
+							Condition: &Condition{
+								Operator: OperatorNeq,
+								Expressions: []*Expression{
+									{Name: "bar"},
+									{Value: nil},
+								},
+							},
+						},
+						{
+							Condition: &Condition{
+								Operator: OperatorEq,
+								Expressions: []*Expression{
+									{Name: "baz"},
+									{Value: 42},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: "foo OR (bar IS NOT NULL) OR (baz=42)",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
