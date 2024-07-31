@@ -4,7 +4,7 @@
     type RpcStatus,
   } from "@rilldata/web-admin/client";
   import { extractGithubConnectError } from "@rilldata/web-admin/features/projects/github/github-errors";
-  import { GithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/GithubConnectionUpdater";
+  import { ProjectGithubConnectionUpdater } from "@rilldata/web-admin/features/projects/github/ProjectGithubConnectionUpdater";
   import { getGithubData } from "@rilldata/web-admin/features/projects/github/GithubData";
   import GithubOverwriteConfirmationDialog from "@rilldata/web-admin/features/projects/github/GithubOverwriteConfirmationDialog.svelte";
   import {
@@ -33,11 +33,11 @@
   import type { AxiosError } from "axios";
 
   export let open = false;
+  export let organization: string;
+  export let project: string;
   export let currentUrl: string;
   export let currentSubpath: string;
   export let currentBranch: string;
-  export let project: string;
-  export let organization: string;
 
   let advancedOpened = false;
 
@@ -52,26 +52,30 @@
       label: `${r.owner}/${r.name}`,
     })) ?? [];
 
-  const githubConnectionUpdater = new GithubConnectionUpdater();
   // update data from project, this is needed if the user never leaves the status page and this component is not unmounted
-  $: githubConnectionUpdater.init(currentUrl, currentSubpath, currentBranch);
+  $: githubConnectionUpdater = new ProjectGithubConnectionUpdater(
+    project,
+    organization,
+    currentUrl,
+    currentSubpath,
+    currentBranch,
+  );
 
-  const connectToGithubMutation =
-    githubConnectionUpdater.connectToGithubMutation;
-  const showOverwriteConfirmation =
+  $: connectToGithubMutation = githubConnectionUpdater.connectToGithubMutation;
+  $: showOverwriteConfirmation =
     githubConnectionUpdater.showOverwriteConfirmation;
-  let githubUrl = githubConnectionUpdater.githubUrl;
-  let subpath = githubConnectionUpdater.subpath;
-  let branch = githubConnectionUpdater.branch;
+  $: githubUrl = githubConnectionUpdater.githubUrl;
+  $: subpath = githubConnectionUpdater.subpath;
+  $: branch = githubConnectionUpdater.branch;
 
-  function onRepoChange(newUrl: string) {
+  function onSelectedRepoChange(newUrl: string) {
     const repo = $userRepos.data?.repos?.find((r) => r.url === newUrl);
     if (!repo) return; // shouldnt happen
 
-    githubConnectionUpdater.onRepoChange(repo);
+    githubConnectionUpdater.onSelectedRepoChange(repo);
   }
-  $: if (!$githubUrl && repoSelections.length === 1) {
-    onRepoChange(repoSelections[0].value);
+  $: if (!$githubUrl && $userRepos.data?.repos?.length) {
+    githubConnectionUpdater.onSelectedRepoChange($userRepos.data.repos[0]);
   }
 
   $: if ($showOverwriteConfirmation) {
@@ -80,16 +84,11 @@
   }
 
   async function updateGithubUrl(force: boolean) {
-    if (
-      !(await githubConnectionUpdater.update({
-        organization,
-        project,
-        force,
-        instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
-      }))
-    ) {
-      return;
-    }
+    const updateSucceeded = await githubConnectionUpdater.update({
+      instanceId: $projectQuery.data?.prodDeployment?.runtimeInstanceId ?? "",
+      force,
+    });
+    if (!updateSucceeded) return;
 
     eventBus.emit("notification", {
       message: `Set github repo to ${$githubUrl}`,
@@ -133,7 +132,7 @@
           label="Repo"
           bind:value={$githubUrl}
           options={repoSelections}
-          on:change={({ detail: newUrl }) => onRepoChange(newUrl)}
+          on:change={({ detail: newUrl }) => onSelectedRepoChange(newUrl)}
         />
         <span class="text-gray-500 mt-1">
           <span class="font-semibold">Note:</span> Contents of this repo will replace

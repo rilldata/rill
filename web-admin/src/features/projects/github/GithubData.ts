@@ -73,7 +73,7 @@ export class GithubData {
       return;
     }
 
-    this.openGithubConnectWindow(userStatus.grantAccessUrl);
+    this.openUserGithubConnectWindow(userStatus.grantAccessUrl);
   }
 
   /**
@@ -87,10 +87,10 @@ export class GithubData {
       return;
     }
 
-    this.openGithubConnectWindow(userStatus.grantAccessUrl);
+    this.openUserGithubConnectWindow(userStatus.grantAccessUrl);
   }
 
-  private openGithubConnectWindow(url: string) {
+  private openUserGithubConnectWindow(url: string) {
     try {
       // safeguard try catch
       this.userPromptWindow?.close();

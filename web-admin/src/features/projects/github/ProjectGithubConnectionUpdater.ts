@@ -11,7 +11,10 @@ import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/Behav
 import { invalidateRuntimeQueries } from "@rilldata/web-common/runtime-client/invalidation";
 import { get, writable } from "svelte/store";
 
-export class GithubConnectionUpdater {
+/**
+ * Wrapper around ConnectProjectToGithub RPC with some extra state moved out of components
+ */
+export class ProjectGithubConnectionUpdater {
   public readonly showOverwriteConfirmation = writable(false);
   public readonly connectToGithubMutation =
     createAdminServiceConnectProjectToGithub();
@@ -20,34 +23,34 @@ export class GithubConnectionUpdater {
   public readonly subpath = writable("");
   public readonly branch = writable("");
 
-  private isConnected: boolean;
+  private readonly isConnected: boolean;
   private defaultBranch = "";
 
-  public constructor() {}
-
-  public init(githubUrl: string, subpath: string, branch: string) {
+  public constructor(
+    private readonly organization: string,
+    private readonly project: string,
+    githubUrl: string,
+    subpath: string,
+    branch: string,
+  ) {
     this.githubUrl.set(githubUrl);
     this.subpath.set(subpath);
     this.branch.set(branch);
     this.isConnected = !!githubUrl;
   }
 
-  public onRepoChange(repo: ListGithubUserReposResponseRepo) {
+  public onSelectedRepoChange(repo: ListGithubUserReposResponseRepo) {
     this.subpath.set("");
     this.branch.set(repo.defaultBranch ?? "");
     this.defaultBranch = repo.defaultBranch ?? "";
   }
 
   public async update({
-    organization,
-    project,
-    force,
     instanceId,
+    force,
   }: {
-    organization: string;
-    project: string;
-    force: boolean;
     instanceId: string;
+    force: boolean;
   }) {
     const githubUrl = get(this.githubUrl);
     const subpath = get(this.subpath);
@@ -57,8 +60,8 @@ export class GithubConnectionUpdater {
 
     try {
       await get(this.connectToGithubMutation).mutateAsync({
-        organization,
-        project,
+        organization: this.organization,
+        project: this.project,
         data: {
           repo: githubUrl,
           subpath,
@@ -78,7 +81,7 @@ export class GithubConnectionUpdater {
       );
 
       void queryClient.refetchQueries(
-        getAdminServiceGetProjectQueryKey(organization, project),
+        getAdminServiceGetProjectQueryKey(this.organization, this.project),
         {
           // avoid refetching createAdminServiceGetProjectWithBearerToken
           exact: true,
