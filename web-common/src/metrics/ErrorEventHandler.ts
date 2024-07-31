@@ -1,3 +1,4 @@
+import { page } from "$app/stores";
 import type { RpcStatus } from "@rilldata/web-admin/client";
 import type { MetricsService } from "@rilldata/web-common/metrics/service/MetricsService";
 import type {
@@ -7,6 +8,7 @@ import type {
 } from "@rilldata/web-common/metrics/service/MetricsTypes";
 import type { Query } from "@tanstack/query-core";
 import type { AxiosError } from "axios";
+import { get } from "svelte/store";
 import type {
   SourceConnectionType,
   SourceErrorCodes,
@@ -31,6 +33,7 @@ export class ErrorEventHandler {
         error.status ?? "",
         error.message ?? "unknown error",
         screenName,
+        this.getDashboardState(),
       );
       return;
     } else {
@@ -39,6 +42,7 @@ export class ErrorEventHandler {
         error.response?.status + "" ?? error.status,
         (error.response?.data as RpcStatus)?.message ?? error.message,
         screenName,
+        this.getDashboardState(),
       );
     }
   }
@@ -49,6 +53,7 @@ export class ErrorEventHandler {
         errorEvt.error?.stack ?? "",
         errorEvt.message,
         this.screenNameGetter(),
+        this.getDashboardState(),
       );
     };
     const unhandledRejectionHandler = (
@@ -68,6 +73,7 @@ export class ErrorEventHandler {
         stack,
         message,
         this.screenNameGetter(),
+        this.getDashboardState(),
       );
     };
 
@@ -107,6 +113,7 @@ export class ErrorEventHandler {
     status: string,
     message: string,
     screenName: MetricsEventScreenName,
+    dashboardState: string,
   ) {
     if (this.isDev) return;
 
@@ -116,6 +123,7 @@ export class ErrorEventHandler {
       api,
       status,
       message,
+      dashboardState,
     ]);
   }
 
@@ -123,6 +131,7 @@ export class ErrorEventHandler {
     stack: string,
     message: string,
     screenName: MetricsEventScreenName,
+    dashboardState: string,
   ) {
     if (this.isDev) {
       console.log("javascriptErrorEvent", screenName, stack, message);
@@ -133,6 +142,12 @@ export class ErrorEventHandler {
       screenName,
       stack,
       message,
+      dashboardState,
     ]);
+  }
+
+  private getDashboardState() {
+    // TODO: we need to also save other params that get added after
+    return get(page).url.searchParams.get("state") ?? "";
   }
 }
