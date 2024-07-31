@@ -97,11 +97,11 @@
         <hr class="border-t border-gray-200 -ml-4" />
         <TimeDimensionDisplay {metricViewName} />
       {:else if selectedDimensionName}
-        <div class="pt-2 pl-1 border-l overflow-auto">
+        <div class="pt-2 pl-1 border-l overflow-auto w-full">
           <DimensionDisplay />
         </div>
       {:else}
-        <div class="pt-2 pl-1 border-l overflow-auto">
+        <div class="pt-2 pl-1 border-l overflow-auto w-full">
           <LeaderboardDisplay />
         </div>
       {/if}
