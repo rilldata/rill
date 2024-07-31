@@ -29,7 +29,7 @@ const sidebars = {
           {
             type: 'category',
             label: 'Rill Basics',
-            description: 'Rill 100 series: Developer to Cloud',
+            description: 'Rill 100 series: Developer to Cloud & Developer features',
             items: [
                 'learn/rill_learn_100/101_0',
                 'learn/rill_learn_100/101_1',
@@ -86,7 +86,7 @@ const sidebars = {
           {
             type: 'category',
             label: 'Rill Advanced',
-            description: 'Rill 200 series: Rill Cloud features and more!',
+            description: 'Rill 200 series: Rill Cloud features, User Management, and more!',
             items: [
               'learn/rill_learn_200/201_0',
               'learn/rill_learn_200/201_1',
@@ -94,7 +94,10 @@ const sidebars = {
               'learn/rill_learn_200/203_0',
               'learn/rill_learn_200/204_0',
               'learn/rill_learn_200/cloud_components/205_0',
+              'learn/rill_learn_200/cloud_components/205_3',
               'learn/rill_learn_200/cloud_components/205_1',
+              'learn/rill_learn_200/cloud_components/205_2',
+              
             ]
           },
           {
