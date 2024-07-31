@@ -289,6 +289,18 @@ func (b *sqlExprBuilder) writeBinaryConditionInner(left, right *Expression, left
 			return err
 		}
 	}
+	// Special cases:
+	// "dim = NULL" should be written as "dim IS NULL"
+	// dim != NULL" should be written as "dim IS NOT NULL"
+	if hasNilValue(right) {
+		if op == OperatorEq {
+			b.writeString(" IS NULL")
+			return nil
+		} else if op == OperatorNeq {
+			b.writeString(" IS NOT NULL")
+			return nil
+		}
+	}
 	b.writeString(joiner)
 	err := b.writeExpression(right)
 	if err != nil {

@@ -1,12 +1,14 @@
 package printer
 
 import (
+	"encoding/json"
 	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/metricsview"
 )
 
@@ -455,4 +457,49 @@ func toUsergroupMemberRow(m *adminv1.MemberUser) *usergroupMember {
 type usergroupMember struct {
 	Name  string `header:"name" json:"name"`
 	Email string `header:"email" json:"email"`
+}
+
+func (p *Printer) PrintModelSplits(splits []*runtimev1.ModelSplit) {
+	if len(splits) == 0 {
+		p.PrintfWarn("No splits found\n")
+		return
+	}
+
+	p.PrintData(toModelSplitsTable(splits))
+}
+
+func toModelSplitsTable(splits []*runtimev1.ModelSplit) []*modelSplit {
+	res := make([]*modelSplit, 0, len(splits))
+	for _, s := range splits {
+		res = append(res, toModelSplitRow(s))
+	}
+	return res
+}
+
+func toModelSplitRow(s *runtimev1.ModelSplit) *modelSplit {
+	data, err := json.Marshal(s.Data)
+	if err != nil {
+		panic(err)
+	}
+
+	var executedOn string
+	if s.ExecutedOn != nil {
+		executedOn = s.ExecutedOn.AsTime().Format(time.RFC3339)
+	}
+
+	return &modelSplit{
+		Key:        s.Key,
+		DataJSON:   string(data),
+		ExecutedOn: executedOn,
+		Elapsed:    (time.Duration(s.ElapsedMs) * time.Millisecond).String(),
+		Error:      s.Error,
+	}
+}
+
+type modelSplit struct {
+	Key        string `header:"key" json:"key"`
+	DataJSON   string `header:"data" json:"data"`
+	ExecutedOn string `header:"executed_on,timestamp(ms|utc|human)" json:"executed_on"`
+	Elapsed    string `header:"elapsed" json:"elapsed"`
+	Error      string `header:"error" json:"error"`
 }

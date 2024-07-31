@@ -348,6 +348,7 @@ func (r *cachedResolverResult) Next() (map[string]any, error) {
 		return nil, io.EOF
 	}
 	row := r.rows[r.idx]
+	r.idx++
 	return row, nil
 }
 

@@ -9,7 +9,6 @@
     resourceIsLoading,
   } from "@rilldata/web-common/features/entity-management/resource-selectors.js";
   import { handleEntityRename } from "@rilldata/web-common/features/entity-management/ui-actions";
-  import { createModelFromSource } from "@rilldata/web-common/features/sources/createModel";
   import SourceEditor from "@rilldata/web-common/features/sources/editor/SourceEditor.svelte";
   import ErrorPane from "@rilldata/web-common/features/sources/errors/ErrorPane.svelte";
   import WorkspaceInspector from "@rilldata/web-common/features/sources/inspector/WorkspaceInspector.svelte";
@@ -35,6 +34,7 @@
   import type { V1SourceV2 } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { fade } from "svelte/transition";
+  import { createModelFromTable } from "../connectors/olap/createModel";
 
   export let fileArtifact: FileArtifact;
 
@@ -60,8 +60,8 @@
   $: resourceQuery = fileArtifact.getResource(queryClient, instanceId);
   $: resource = $resourceQuery.data?.source;
   $: connector = (resource as V1SourceV2)?.spec?.sinkConnector as string;
-  const database = ""; // sources use the default database
-  const databaseSchema = ""; // sources use the default databaseSchema
+  const database = ""; // Sources are ingested into the default database
+  const databaseSchema = ""; // Sources are ingested into the default database schema
   $: tableName = (resource as V1SourceV2)?.state?.table as string;
   $: refreshedOn = resource?.state?.refreshedOn;
   $: resourceIsReconciling = resourceIsLoading($resourceQuery.data);
@@ -110,10 +110,14 @@
   }
 
   async function handleCreateModelFromSource() {
-    const [newModelPath, newModelName] = await createModelFromSource(
-      assetName,
-      tableName ?? "",
-      "models",
+    const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
+    const [newModelPath, newModelName] = await createModelFromTable(
+      queryClient,
+      connector,
+      database,
+      databaseSchema,
+      tableName,
+      addDevLimit,
     );
     await goto(`/files${newModelPath}`);
     await behaviourEvent.fireNavigationEvent(

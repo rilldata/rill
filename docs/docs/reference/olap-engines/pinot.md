@@ -83,7 +83,6 @@ Multi-Valued dimensions needed to be defined in the dashboard yaml as expression
   expression: arrayToMv(RandomAirports)
   name: RandomAirports
   description: "Random Airports"
-  ignore: false
 ```
 Refer to the [Dashboard YAML](../project-files/dashboards) reference page for all dimension properties detail. 
 

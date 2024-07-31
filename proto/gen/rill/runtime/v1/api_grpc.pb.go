@@ -45,6 +45,7 @@ const (
 	RuntimeService_ListResources_FullMethodName           = "/rill.runtime.v1.RuntimeService/ListResources"
 	RuntimeService_WatchResources_FullMethodName          = "/rill.runtime.v1.RuntimeService/WatchResources"
 	RuntimeService_GetResource_FullMethodName             = "/rill.runtime.v1.RuntimeService/GetResource"
+	RuntimeService_GetModelSplits_FullMethodName          = "/rill.runtime.v1.RuntimeService/GetModelSplits"
 	RuntimeService_CreateTrigger_FullMethodName           = "/rill.runtime.v1.RuntimeService/CreateTrigger"
 	RuntimeService_ListConnectorDrivers_FullMethodName    = "/rill.runtime.v1.RuntimeService/ListConnectorDrivers"
 	RuntimeService_AnalyzeConnectors_FullMethodName       = "/rill.runtime.v1.RuntimeService/AnalyzeConnectors"
@@ -112,6 +113,8 @@ type RuntimeServiceClient interface {
 	WatchResources(ctx context.Context, in *WatchResourcesRequest, opts ...grpc.CallOption) (RuntimeService_WatchResourcesClient, error)
 	// GetResource looks up a specific catalog resource
 	GetResource(ctx context.Context, in *GetResourceRequest, opts ...grpc.CallOption) (*GetResourceResponse, error)
+	// GetModelSplits returns the splits of a model
+	GetModelSplits(ctx context.Context, in *GetModelSplitsRequest, opts ...grpc.CallOption) (*GetModelSplitsResponse, error)
 	// CreateTrigger creates a trigger in the catalog.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error)
@@ -464,6 +467,16 @@ func (c *runtimeServiceClient) GetResource(ctx context.Context, in *GetResourceR
 	return out, nil
 }
 
+func (c *runtimeServiceClient) GetModelSplits(ctx context.Context, in *GetModelSplitsRequest, opts ...grpc.CallOption) (*GetModelSplitsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetModelSplitsResponse)
+	err := c.cc.Invoke(ctx, RuntimeService_GetModelSplits_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *runtimeServiceClient) CreateTrigger(ctx context.Context, in *CreateTriggerRequest, opts ...grpc.CallOption) (*CreateTriggerResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(CreateTriggerResponse)
@@ -574,6 +587,8 @@ type RuntimeServiceServer interface {
 	WatchResources(*WatchResourcesRequest, RuntimeService_WatchResourcesServer) error
 	// GetResource looks up a specific catalog resource
 	GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error)
+	// GetModelSplits returns the splits of a model
+	GetModelSplits(context.Context, *GetModelSplitsRequest) (*GetModelSplitsResponse, error)
 	// CreateTrigger creates a trigger in the catalog.
 	// Triggers are ephemeral resources that will be cleaned up by the controller.
 	CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error)
@@ -671,6 +686,9 @@ func (UnimplementedRuntimeServiceServer) WatchResources(*WatchResourcesRequest, 
 }
 func (UnimplementedRuntimeServiceServer) GetResource(context.Context, *GetResourceRequest) (*GetResourceResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetResource not implemented")
+}
+func (UnimplementedRuntimeServiceServer) GetModelSplits(context.Context, *GetModelSplitsRequest) (*GetModelSplitsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetModelSplits not implemented")
 }
 func (UnimplementedRuntimeServiceServer) CreateTrigger(context.Context, *CreateTriggerRequest) (*CreateTriggerResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method CreateTrigger not implemented")
@@ -1177,6 +1195,24 @@ func _RuntimeService_GetResource_Handler(srv interface{}, ctx context.Context, d
 	return interceptor(ctx, in, info, handler)
 }
 
+func _RuntimeService_GetModelSplits_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetModelSplitsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(RuntimeServiceServer).GetModelSplits(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: RuntimeService_GetModelSplits_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(RuntimeServiceServer).GetModelSplits(ctx, req.(*GetModelSplitsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _RuntimeService_CreateTrigger_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(CreateTriggerRequest)
 	if err := dec(in); err != nil {
@@ -1365,6 +1401,10 @@ var RuntimeService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetResource",
 			Handler:    _RuntimeService_GetResource_Handler,
+		},
+		{
+			MethodName: "GetModelSplits",
+			Handler:    _RuntimeService_GetModelSplits_Handler,
 		},
 		{
 			MethodName: "CreateTrigger",

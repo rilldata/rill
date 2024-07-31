@@ -15,14 +15,20 @@ import (
 type selfToObjectStoreExecutor struct {
 	c     *connection
 	store drivers.ObjectStore
-	opts  *drivers.ModelExecutorOptions
 }
 
 var _ drivers.ModelExecutor = &selfToObjectStoreExecutor{}
 
-func (e *selfToObjectStoreExecutor) Execute(ctx context.Context) (*drivers.ModelResult, error) {
+func (e *selfToObjectStoreExecutor) Concurrency(desired int) (int, bool) {
+	if desired > 0 {
+		return desired, true
+	}
+	return 10, true // Default
+}
+
+func (e *selfToObjectStoreExecutor) Execute(ctx context.Context, opts *drivers.ModelExecuteOptions) (*drivers.ModelResult, error) {
 	props := &drivers.ObjectStoreModelOutputProperties{}
-	if err := mapstructure.Decode(e.opts.OutputProperties, props); err != nil {
+	if err := mapstructure.Decode(opts.OutputProperties, props); err != nil {
 		return nil, err
 	}
 	var format drivers.FileFormat
@@ -31,7 +37,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context) (*drivers.Model
 	} else {
 		format = drivers.FileFormatParquet
 	}
-	outputLocation, err := e.export(ctx, e.opts.InputProperties, props.Path, format)
+	outputLocation, err := e.export(ctx, opts.InputProperties, props.Path, format)
 	if err != nil {
 		return nil, err
 	}
@@ -43,7 +49,7 @@ func (e *selfToObjectStoreExecutor) Execute(ctx context.Context) (*drivers.Model
 	}
 
 	return &drivers.ModelResult{
-		Connector:  e.opts.OutputConnector,
+		Connector:  opts.OutputConnector,
 		Properties: res,
 	}, nil
 }

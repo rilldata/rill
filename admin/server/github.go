@@ -6,9 +6,20 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
+	"io/fs"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
+	"time"
 
+	"github.com/go-git/go-billy/v5"
+	"github.com/go-git/go-git/v5"
+	"github.com/go-git/go-git/v5/config"
+	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/transport"
+	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
 	"github.com/rilldata/rill/admin"
 	"github.com/rilldata/rill/admin/database"
@@ -16,6 +27,7 @@ import (
 	"github.com/rilldata/rill/admin/pkg/urlutil"
 	"github.com/rilldata/rill/admin/server/auth"
 	adminv1 "github.com/rilldata/rill/proto/gen/rill/admin/v1"
+	"github.com/rilldata/rill/runtime/pkg/archive"
 	"github.com/rilldata/rill/runtime/pkg/httputil"
 	"github.com/rilldata/rill/runtime/pkg/middleware"
 	"github.com/rilldata/rill/runtime/pkg/observability"
@@ -31,7 +43,14 @@ const (
 	githubcookieName        = "github_auth"
 	githubcookieFieldState  = "github_state"
 	githubcookieFieldRemote = "github_remote"
+	archivePullTimeout      = 10 * time.Minute
 )
+
+var allowedPaths = []string{
+	".git",
+	"README.md",
+	"LICENSE",
+}
 
 func (s *Server) GetGithubUserStatus(ctx context.Context, req *adminv1.GetGithubUserStatusRequest) (*adminv1.GetGithubUserStatusResponse, error) {
 	// Check the request is made by an authenticated user
@@ -286,6 +305,104 @@ func (s *Server) ListGithubUserRepos(ctx context.Context, req *adminv1.ListGithu
 	}, nil
 }
 
+func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.ConnectProjectToGithubRequest) (*adminv1.ConnectProjectToGithubResponse, error) {
+	observability.AddRequestAttributes(ctx,
+		attribute.String("args.organization", req.Organization),
+		attribute.String("args.project", req.Project),
+		attribute.String("args.repo", req.Repo),
+		attribute.String("args.branch", req.Branch),
+		attribute.String("args.subpath", req.Subpath),
+		attribute.Bool("args.force", req.Force),
+	)
+
+	// Find project
+	proj, err := s.admin.DB.FindProjectByName(ctx, req.Organization, req.Project)
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	claims := auth.GetClaims(ctx)
+	if !claims.ProjectPermissions(ctx, proj.OrganizationID, proj.ID).ManageProject {
+		return nil, status.Error(codes.PermissionDenied, "does not have permission to update project's github connection")
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, err
+	}
+
+	token, refreshToken, err := s.userAccessToken(ctx, user.GithubRefreshToken)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	// refresh token changes after using it for getting a new token
+	// so saving the updated refresh token
+	_, err = s.admin.DB.UpdateUser(ctx, claims.OwnerID(), &database.UpdateUserOptions{
+		DisplayName:         user.DisplayName,
+		PhotoURL:            user.PhotoURL,
+		GithubUsername:      user.GithubUsername,
+		GithubRefreshToken:  refreshToken,
+		QuotaSingleuserOrgs: user.QuotaSingleuserOrgs,
+		PreferenceTimeZone:  user.PreferenceTimeZone,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to update user: %w", err)
+	}
+
+	if proj.ArchiveAssetID != nil {
+		asset, err := s.admin.DB.FindAsset(ctx, *proj.ArchiveAssetID)
+		if err != nil {
+			return nil, err
+		}
+
+		downloadURL, err := s.generateV4GetObjectSignedURL(asset.Path)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+		err = s.pushToGit(ctx, func(projPath string) error {
+			downloadDir, err := os.MkdirTemp(os.TempDir(), "extracted_archives")
+			if err != nil {
+				return err
+			}
+			defer os.RemoveAll(downloadDir)
+			downloadDst := filepath.Join(downloadDir, "zipped_repo.tar.gz")
+			// extract the archive once the folder is prepped with git
+			return archive.Download(ctx, downloadURL, downloadDst, projPath, false)
+		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	} else if proj.GithubURL != nil {
+		err = s.pushToGit(ctx, func(projPath string) error {
+			return copyFromSrcGit(projPath, *proj.GithubURL, proj.ProdBranch, proj.Subpath, token)
+		}, req.Repo, req.Branch, req.Subpath, token, req.Force)
+		if err != nil {
+			return nil, status.Error(codes.InvalidArgument, err.Error())
+		}
+	} else {
+		return nil, status.Error(codes.Internal, "invalid project")
+	}
+
+	org, err := s.admin.DB.FindOrganization(ctx, proj.OrganizationID)
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	_, err = s.UpdateProject(ctx, &adminv1.UpdateProjectRequest{
+		OrganizationName: org.Name,
+		Name:             proj.Name,
+		ProdBranch:       &req.Branch,
+		GithubUrl:        &req.Repo,
+		Subpath:          &req.Subpath,
+	})
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	return &adminv1.ConnectProjectToGithubResponse{}, nil
+}
+
 // registerGithubEndpoints registers the non-gRPC endpoints for the Github integration.
 func (s *Server) registerGithubEndpoints(mux *http.ServeMux) {
 	// TODO: Add helper utils to clean this up
@@ -411,6 +528,18 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	remoteURL := qry.Get("state")
+	if remoteURL == "autoclose" {
+		// signal from UI flow to autoclose the confirmation dialog
+		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
+		connectSuccessURL, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, connectSuccessURL, http.StatusTemporaryRedirect)
+		return
+	}
+
 	account, repo, ok := gitutil.SplitGithubURL(remoteURL)
 	if !ok {
 		// request without state can come in multiple ways like
@@ -597,6 +726,18 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 		remote = value.(string)
 	}
 	delete(sess.Values, githubcookieFieldRemote)
+
+	if remote == "autoclose" {
+		// signal from UI flow to autoclose the confirmation dialog
+		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
+		connectSuccessURL, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, connectSuccessURL, http.StatusTemporaryRedirect)
+		return
+	}
 
 	account, repo, ok := gitutil.SplitGithubURL(remote)
 	if !ok {
@@ -836,11 +977,18 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 			if repo.Owner != nil {
 				owner = fromStringPtr(repo.Owner.Login)
 			}
+			var branch string
+			if repo.DefaultBranch != nil {
+				branch = fromStringPtr(repo.DefaultBranch)
+			} else {
+				branch = fromStringPtr(repo.MasterBranch)
+			}
 			repos = append(repos, &adminv1.ListGithubUserReposResponse_Repo{
-				Name:        fromStringPtr(repo.Name),
-				Owner:       owner,
-				Description: fromStringPtr(repo.Description),
-				Url:         fromStringPtr(repo.HTMLURL),
+				Name:          fromStringPtr(repo.Name),
+				Owner:         owner,
+				Description:   fromStringPtr(repo.Description),
+				Url:           fromStringPtr(repo.HTMLURL),
+				DefaultBranch: branch,
 			})
 		}
 
@@ -853,9 +1001,297 @@ func (s *Server) fetchReposForInstallation(ctx context.Context, client *github.C
 	return repos, nil
 }
 
+func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) error, repo, branch, subpath, token string, force bool) error {
+	ctx, cancel := context.WithTimeout(ctx, archivePullTimeout)
+	defer cancel()
+
+	// generate a temp dir to extract the archive
+	gitPath, err := os.MkdirTemp(os.TempDir(), "projects")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(gitPath)
+
+	// projPath is the target for extracting the archive
+	projPath := gitPath
+	if subpath != "" {
+		projPath = filepath.Join(projPath, subpath)
+	}
+	err = os.MkdirAll(projPath, fs.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	gitAuth := &githttp.BasicAuth{Username: "x-access-token", Password: token}
+
+	var ghRepo *git.Repository
+	empty := false
+	ghRepo, err = git.PlainClone(gitPath, false, &git.CloneOptions{
+		URL:           repo,
+		Auth:          gitAuth,
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		if !errors.Is(err, transport.ErrEmptyRemoteRepository) {
+			return fmt.Errorf("failed to init git repo: %w", err)
+		}
+
+		empty = true
+		ghRepo, err = git.PlainInitWithOptions(gitPath, &git.PlainInitOptions{
+			InitOptions: git.InitOptions{
+				DefaultBranch: plumbing.NewBranchReferenceName(branch),
+			},
+			Bare: false,
+		})
+		if err != nil {
+			return fmt.Errorf("failed to init git repo: %w", err)
+		}
+	}
+
+	wt, err := ghRepo.Worktree()
+	if err != nil {
+		return fmt.Errorf("failed to get worktree: %w", err)
+	}
+
+	var wtc worktreeContents
+	if !empty {
+		wtc, err = readWorktree(wt, subpath)
+		if err != nil {
+			return fmt.Errorf("failed to read worktree: %w", err)
+		}
+
+		if len(wtc.otherPaths) > 0 && !force {
+			return fmt.Errorf("worktree has additional contents")
+		}
+	}
+
+	// remove all the other paths
+	for _, path := range wtc.otherPaths {
+		err = os.RemoveAll(filepath.Join(projPath, path))
+		if err != nil {
+			return err
+		}
+	}
+
+	err = copyData(projPath)
+	if err != nil {
+		return fmt.Errorf("failed to copy data: %w", err)
+	}
+
+	// add back the older gitignore contents if present
+	if wtc.gitignore != "" {
+		gi, err := os.ReadFile(filepath.Join(projPath, ".gitignore"))
+		if err != nil {
+			return err
+		}
+
+		// if the new gitignore is not the same then it was overwritten during extract
+		if string(gi) != wtc.gitignore {
+			// append the new contents to the end
+			gi = append([]byte(fmt.Sprintf("%s\n", wtc.gitignore)), gi...)
+
+			err = os.WriteFile(filepath.Join(projPath, ".gitignore"), gi, fs.ModePerm)
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	// git add .
+	if err := wt.AddWithOptions(&git.AddOptions{All: true}); err != nil {
+		return fmt.Errorf("failed to add files to git: %w", err)
+	}
+
+	// git commit -m
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	if err != nil {
+		if !errors.Is(err, git.ErrEmptyCommit) {
+			return fmt.Errorf("failed to commit files to git: %w", err)
+		}
+	}
+
+	if empty {
+		// we need to add a remote if the repo was completely empty
+		_, err = ghRepo.CreateRemote(&config.RemoteConfig{Name: "origin", URLs: []string{repo}})
+		if err != nil {
+			return fmt.Errorf("failed to create remote: %w", err)
+		}
+	}
+
+	if err := ghRepo.PushContext(ctx, &git.PushOptions{Auth: gitAuth}); err != nil {
+		return fmt.Errorf("failed to push to remote %q : %w", repo, err)
+	}
+
+	return nil
+}
+
 func fromStringPtr(s *string) string {
 	if s == nil {
 		return ""
 	}
 	return *s
+}
+
+type worktreeContents struct {
+	gitignore  string
+	otherPaths []string
+}
+
+func readWorktree(wt *git.Worktree, subpath string) (worktreeContents, error) {
+	var wtc worktreeContents
+
+	files, err := wt.Filesystem.ReadDir(subpath)
+	if err != nil {
+		return worktreeContents{}, err
+	}
+	for _, file := range files {
+		if file.Name() == ".gitignore" {
+			f, err := wt.Filesystem.Open(filepath.Join(subpath, file.Name()))
+			if err != nil {
+				return worktreeContents{}, err
+			}
+			wtc.gitignore, err = readFile(f)
+			if err != nil {
+				return worktreeContents{}, err
+			}
+		} else {
+			found := false
+			for _, path := range allowedPaths {
+				if file.Name() == path {
+					found = true
+					break
+				}
+			}
+			if !found {
+				wtc.otherPaths = append(wtc.otherPaths, file.Name())
+			}
+		}
+	}
+
+	return wtc, nil
+}
+
+func readFile(f billy.File) (string, error) {
+	defer f.Close()
+	buf := make([]byte, 0, 32*1024)
+	c := ""
+
+	for {
+		n, err := f.Read(buf[:cap(buf)])
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return "", err
+		}
+		if n == 0 {
+			continue
+		}
+		buf = buf[:n]
+		c += string(buf)
+	}
+
+	return c, nil
+}
+
+// copyFromSrcGit clones a repo, branch and a subpath and copies the content to the projPath
+// used to switch a project to a new github repo connection
+func copyFromSrcGit(projPath, repo, branch, subpath, token string) error {
+	srcGitPath, err := os.MkdirTemp(os.TempDir(), "src_git_repos")
+	if err != nil {
+		return err
+	}
+	defer os.RemoveAll(srcGitPath)
+
+	// srcProjPath is actual path for project including any subpath within the git root
+	srcProjPath := srcGitPath
+	if subpath != "" {
+		srcProjPath = filepath.Join(srcProjPath, subpath)
+	}
+	err = os.MkdirAll(srcProjPath, fs.ModePerm)
+	if err != nil {
+		return err
+	}
+
+	_, err = git.PlainClone(srcGitPath, false, &git.CloneOptions{
+		URL:           repo,
+		Auth:          &githttp.BasicAuth{Username: "x-access-token", Password: token},
+		ReferenceName: plumbing.NewBranchReferenceName(branch),
+		SingleBranch:  true,
+	})
+	if err != nil {
+		return fmt.Errorf("failed to clone source git repo: %w", err)
+	}
+
+	err = copyDir(srcProjPath, projPath)
+	if err != nil {
+		return fmt.Errorf("failed to read root files: %w", err)
+	}
+
+	return nil
+}
+
+func copyDir(srcDir, destDir string) error {
+	_, err := os.Stat(destDir)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			err = os.Mkdir(destDir, os.ModePerm)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	entries, err := os.ReadDir(srcDir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if entry.Name() == ".git" {
+			continue
+		}
+		srcPath := filepath.Join(srcDir, entry.Name())
+		destPath := filepath.Join(destDir, entry.Name())
+
+		fileInfo, err := os.Stat(srcPath)
+		if err != nil {
+			return err
+		}
+
+		if fileInfo.IsDir() {
+			err = copyDir(srcPath, destPath)
+		} else {
+			err = copyFile(srcPath, destPath)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func copyFile(srcFile, destFile string) error {
+	src, err := os.Create(destFile)
+	if err != nil {
+		return err
+	}
+
+	defer src.Close()
+
+	dest, err := os.Open(srcFile)
+	if err != nil {
+		return err
+	}
+
+	defer dest.Close()
+
+	_, err = io.Copy(src, dest)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

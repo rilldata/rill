@@ -15,6 +15,9 @@ jobs:
 
       - name: NPM Install
         run: npm install
+        # https://docs.github.com/en/actions/learn-github-actions/variables
+        env:
+          HUSKY: 0
 
       - name: Prettier checks
         run: npx prettier --check "**/*"
