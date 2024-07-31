@@ -33,7 +33,7 @@ export class ErrorEventHandler {
         error.status ?? "",
         error.message ?? "unknown error",
         screenName,
-        this.getEncodedPageUrl(),
+        get(page).url.toString(),
       );
       return;
     } else {
@@ -42,7 +42,7 @@ export class ErrorEventHandler {
         error.response?.status + "" ?? error.status,
         (error.response?.data as RpcStatus)?.message ?? error.message,
         screenName,
-        this.getEncodedPageUrl(),
+        get(page).url.toString(),
       );
     }
   }
@@ -53,7 +53,7 @@ export class ErrorEventHandler {
         errorEvt.error?.stack ?? "",
         errorEvt.message,
         this.screenNameGetter(),
-        this.getEncodedPageUrl(),
+        get(page).url.toString(),
       );
     };
     const unhandledRejectionHandler = (
@@ -73,7 +73,7 @@ export class ErrorEventHandler {
         stack,
         message,
         this.screenNameGetter(),
-        this.getEncodedPageUrl(),
+        get(page).url.toString(),
       );
     };
 
@@ -144,9 +144,5 @@ export class ErrorEventHandler {
       message,
       pageUrl,
     ]);
-  }
-
-  private getEncodedPageUrl() {
-    return encodeURIComponent(get(page).url.toString());
   }
 }
