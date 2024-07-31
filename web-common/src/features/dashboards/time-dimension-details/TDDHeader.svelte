@@ -33,6 +33,7 @@
   import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
+  import { isLoadingWithTimeout } from "../../entity-management/spinner-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -83,6 +84,10 @@
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
+
+  const loadingWithTimeout = isLoadingWithTimeout();
+  $: loadingWithTimeout.setLoading(isFetching);
+  $: isFetchingWithTimeout = $loadingWithTimeout;
 
   let searchToggle = false;
 
@@ -191,7 +196,7 @@
       </div>
     </div>
 
-    {#if isFetching}
+    {#if isFetchingWithTimeout}
       <Spinner size="18px" status={EntityStatus.Running} />
     {/if}
   </div>
