@@ -35,7 +35,7 @@ export function getMetricsViewFields(
         (dimension) => !!dimension && !filteredDimensions.includes(dimension),
       ),
     ...visibleMeasures.map((measure) => measure.name),
-  ];
+  ] as string[];
 }
 
 export function convertDateToMinutes(date: string) {
