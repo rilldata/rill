@@ -14,11 +14,12 @@
   import {
     convertDateToMinutes,
     getMetricsViewFields,
+    getStateWithoutFilters,
     hasDashboardWhereFilter,
   } from "./form-utils";
 
   $: ({ organization, project } = $page.params);
-  $: state = $page.url.searchParams.get("state");
+  $: partialState = getStateWithoutFilters($dashboardStore);
 
   let token: string;
   let setExpiration = false;
@@ -71,7 +72,7 @@
               ttlMinutes: setExpiration
                 ? convertDateToMinutes(values.expiresAt).toString()
                 : undefined,
-              state: state ? state : undefined,
+              state: partialState ? partialState : undefined,
             },
           });
           token = _token;

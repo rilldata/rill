@@ -1,3 +1,4 @@
+import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import { getAllIdentifiers } from "@rilldata/web-common/features/dashboards/stores/filter-utils";
 import type { MetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/metrics-explorer-entity";
 import type {
@@ -42,4 +43,20 @@ export function convertDateToMinutes(date: string) {
   const future = new Date(date);
   const diff = future.getTime() - now.getTime();
   return Math.floor(diff / 60000);
+}
+
+/**
+ * Returns serialized `state` for the current dashboard *without* filters.
+ * Removing the filter state ensures that the URL does not leak hidden filters to the URL recipient.
+ */
+export function getDashboardStateParamWithoutFilters(
+  dashboard: MetricsExplorerEntity,
+): string {
+  const dashboardWithoutFilters = {
+    ...dashboard,
+    whereFilter: undefined,
+    dimensionThresholdFilters: [],
+  };
+
+  return getProtoFromDashboardState(dashboardWithoutFilters);
 }
