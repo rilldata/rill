@@ -44,7 +44,7 @@
   let setExpiration = false;
   let apiError: string;
 
-  const formId = "create-shareable-url-form";
+  const formId = "create-public-url-form";
 
   const initialValues = {
     expiresAt: null,
