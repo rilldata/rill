@@ -1,3 +1,4 @@
+import type { GithubEventFields } from "./GithubEventTypes";
 import type { MetricsEvent } from "./MetricsTypes";
 import type { MetricsEventScreenName, MetricsEventSpace } from "./MetricsTypes";
 import type { SourceEventFields } from "./SourceEventTypes";
@@ -9,8 +10,6 @@ export enum BehaviourEventAction {
   DeploySuccess = "deploy-success",
   LoginStart = "login-start",
   LoginSuccess = "login-success",
-  GithubConnectStart = "ghconnected-start",
-  GithubConnectSuccess = "ghconnected-success",
 
   UserInvite = "user-invite",
   UserDomainWhitelist = "user-domain-whitelist",
@@ -24,6 +23,13 @@ export enum BehaviourEventAction {
   SourceModal = "source-modal",
   SourceCancel = "source-cancel",
   SourceAdd = "source-add",
+
+  // Github actions
+  GithubConnectStart = "ghconnected-start",
+  GithubConnectCreateRepo = "ghconnected-create-repo",
+  GithubConnectSuccess = "ghconnected-success",
+  GithubConnectOverwritePrompt = "ghconnected-overwrite-prompt",
+  GithubConnectFailure = "ghconnected-failure",
 }
 
 export enum BehaviourEventMedium {
@@ -35,7 +41,10 @@ export enum BehaviourEventMedium {
   Tab = "tab",
 }
 
-export interface BehaviourEvent extends MetricsEvent, SourceEventFields {
+export interface BehaviourEvent
+  extends MetricsEvent,
+    SourceEventFields,
+    GithubEventFields {
   action: BehaviourEventAction;
   medium: BehaviourEventMedium;
   entity_id: string;
