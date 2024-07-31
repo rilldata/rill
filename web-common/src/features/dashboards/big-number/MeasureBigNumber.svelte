@@ -18,7 +18,6 @@
     fly,
   } from "svelte/transition";
   import BigNumberTooltipContent from "./BigNumberTooltipContent.svelte";
-  import DelayedSpinner from "../../entity-management/DelayedSpinner.svelte";
   import Spinner from "../../entity-management/Spinner.svelte";
   import { isLoadingWithTimeout } from "../../entity-management/spinner-utils";
 
