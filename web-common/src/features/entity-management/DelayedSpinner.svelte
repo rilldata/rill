@@ -6,7 +6,7 @@
 
   export let isLoading: boolean;
   export let delay = 300;
-  export let duration: number;
+  export let duration = 500;
 
   const showSpinner = writable(false);
 
