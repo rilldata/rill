@@ -365,6 +365,7 @@ func (s *Server) ConnectProjectToGithub(ctx context.Context, req *adminv1.Connec
 			if err != nil {
 				return err
 			}
+			defer os.RemoveAll(downloadDir)
 			downloadDst := filepath.Join(downloadDir, "zipped_repo.tar.gz")
 			// extract the archive once the folder is prepped with git
 			return archive.Download(ctx, downloadURL, downloadDst, projPath, false)
@@ -530,12 +531,12 @@ func (s *Server) githubConnectCallback(w http.ResponseWriter, r *http.Request) {
 	if remoteURL == "autoclose" {
 		// signal from UI flow to autoclose the confirmation dialog
 		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
-		connectSuccessUrl, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
+		connectSuccessURL, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, connectSuccessUrl, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, connectSuccessURL, http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -729,12 +730,12 @@ func (s *Server) githubAuthCallback(w http.ResponseWriter, r *http.Request) {
 	if remote == "autoclose" {
 		// signal from UI flow to autoclose the confirmation dialog
 		// TODO: if we ever want more complex signals, we should consider converting this to an object using proto or json
-		connectSuccessUrl, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
+		connectSuccessURL, err := urlutil.WithQuery(s.urls.githubConnectSuccess, map[string]string{"autoclose": "true"})
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
-		http.Redirect(w, r, connectSuccessUrl, http.StatusTemporaryRedirect)
+		http.Redirect(w, r, connectSuccessURL, http.StatusTemporaryRedirect)
 		return
 	}
 
@@ -1005,14 +1006,12 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 	defer cancel()
 
 	// generate a temp dir to extract the archive
-	dir, err := os.MkdirTemp(os.TempDir(), "dest_git_repos")
+	gitPath, err := os.MkdirTemp(os.TempDir(), "projects")
 	if err != nil {
 		return err
 	}
-	defer os.RemoveAll(dir)
+	defer os.RemoveAll(gitPath)
 
-	// use a subfolder for working with git
-	gitPath := filepath.Join(dir, "proj")
 	// projPath is the target for extracting the archive
 	projPath := gitPath
 	if subpath != "" {
@@ -1203,8 +1202,9 @@ func copyFromSrcGit(projPath, repo, branch, subpath, token string) error {
 	if err != nil {
 		return err
 	}
+	defer os.RemoveAll(srcGitPath)
 
-	// projPath is the target for extracting the archive
+	// srcProjPath is actual path for project including any subpath within the git root
 	srcProjPath := srcGitPath
 	if subpath != "" {
 		srcProjPath = filepath.Join(srcProjPath, subpath)
