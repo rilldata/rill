@@ -1,9 +1,5 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
-import {
-  adminServiceGetMagicAuthToken,
-  getAdminServiceGetMagicAuthTokenQueryKey,
-} from "@rilldata/web-admin/features/public-urls/get-magic-auth-token";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import {
   createTimeRangeSummary,
@@ -32,7 +28,7 @@ export type DashboardUrlStore = Readable<DashboardUrlState>;
 export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
   return derived(
     [useDashboardProto(ctx), useDashboardDefaultProto(ctx), page],
-    async ([proto, defaultProtoState, page], set) => {
+    ([proto, defaultProtoState, page], set) => {
       if (defaultProtoState.isFetching) {
         set({ isReady: false });
         return;
@@ -44,25 +40,26 @@ export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
         ? decodeURIComponent(urlProto)
         : defaultProto;
 
-      try {
-        const urlName = await getMetricsViewNameFromParams(page.params);
-        set({
-          isReady: true,
-          proto,
-          defaultProto,
-          urlName,
-          urlProto: decodedUrlProto,
+      getMetricsViewNameFromParams(page.params)
+        .then((urlName) => {
+          set({
+            isReady: true,
+            proto,
+            defaultProto,
+            urlName,
+            urlProto: decodedUrlProto,
+          });
+        })
+        .catch((error) => {
+          console.error("Error getting metrics view name:", error);
+          set({
+            isReady: true,
+            proto,
+            defaultProto,
+            urlName: "",
+            urlProto: decodedUrlProto,
+          });
         });
-      } catch (error) {
-        console.error("Error getting metrics view name:", error);
-        set({
-          isReady: true,
-          proto,
-          defaultProto,
-          urlName: "",
-          urlProto: decodedUrlProto,
-        });
-      }
     },
   );
 }
@@ -184,6 +181,13 @@ async function getMetricsViewNameFromParams(
   if (name) return name;
 
   if (token) {
+    // Only import the `web-admin` functions in Cloud
+    const {
+      adminServiceGetMagicAuthToken,
+      getAdminServiceGetMagicAuthTokenQueryKey,
+    } = await import(
+      "@rilldata/web-admin/features/public-urls/get-magic-auth-token"
+    );
     const tokenData = await queryClient.fetchQuery({
       queryKey: getAdminServiceGetMagicAuthTokenQueryKey(token),
       queryFn: () => adminServiceGetMagicAuthToken(token),

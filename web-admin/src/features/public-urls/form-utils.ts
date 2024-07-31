@@ -54,9 +54,9 @@ export function getDashboardStateParamWithoutFilters(
 ): string {
   const dashboardWithoutFilters = {
     ...dashboard,
-    whereFilter: undefined,
+    whereFilter: {},
     dimensionThresholdFilters: [],
-  };
+  } as MetricsExplorerEntity;
 
   return getProtoFromDashboardState(dashboardWithoutFilters);
 }
