@@ -1,4 +1,4 @@
-import type { V1User } from "../../client";
+import type { V1User } from "@rilldata/web-admin/client";
 
 const appId = import.meta.env.RILL_UI_PUBLIC_PYLON_APP_ID as string;
 

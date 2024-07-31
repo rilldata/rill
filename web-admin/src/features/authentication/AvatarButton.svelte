@@ -3,7 +3,7 @@
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu";
   import { createAdminServiceGetCurrentUser } from "../../client";
   import { ADMIN_URL } from "../../client/http-client";
-  import { initPylonChat } from "../help/initPylonChat";
+  import { initPylonChat } from "@rilldata/web-common/features/help/initPylonChat";
   import ProjectAccessControls from "../projects/ProjectAccessControls.svelte";
   import ViewAsUserPopover from "../view-as-user/ViewAsUserPopover.svelte";
 
