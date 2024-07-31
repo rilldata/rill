@@ -11,11 +11,16 @@
   import AlertsTableEmpty from "./AlertsTableEmpty.svelte";
   import AlertsTableHeader from "./AlertsTableHeader.svelte";
   import NoAlertsCTA from "./NoAlertsCTA.svelte";
+  import { isLoadingWithTimeout } from "@rilldata/web-common/features/entity-management/spinner-utils";
 
   export let organization: string;
   export let project: string;
 
   $: alerts = useAlerts($runtime.instanceId);
+
+  const loadingWithTimeout = isLoadingWithTimeout();
+  $: loadingWithTimeout.setLoading($alerts.isLoading);
+  $: loadingAlerts = $loadingWithTimeout;
 
   /**
    * Table column definitions.
@@ -69,7 +74,7 @@
   };
 </script>
 
-{#if $alerts.isLoading}
+{#if loadingAlerts}
   <div class="m-auto mt-20">
     <Spinner status={EntityStatus.Running} size="24px" />
   </div>

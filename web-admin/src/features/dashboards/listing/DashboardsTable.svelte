@@ -11,10 +11,15 @@
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
   import { useDashboardsV2, type DashboardResource } from "./selectors";
+  import { isLoadingWithTimeout } from "@rilldata/web-common/features/entity-management/spinner-utils";
 
   export let isEmbedded = false;
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
+
+  const loadingWithTimeout = isLoadingWithTimeout();
+  $: loadingWithTimeout.setLoading($dashboards.isLoading);
+  $: loadingDashboards = $loadingWithTimeout;
 
   /**
    * Table column definitions.
@@ -89,7 +94,7 @@
   }
 </script>
 
-{#if $dashboards.isLoading}
+{#if loadingDashboards}
   <div class="m-auto mt-20">
     <Spinner status={EntityStatus.Running} size="24px" />
   </div>
