@@ -11,11 +11,16 @@
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
   import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
+  import { isLoadingWithTimeout } from "@rilldata/web-common/features/entity-management/spinner-utils";
 
   export let organization: string;
   export let project: string;
 
   $: reports = useReports($runtime.instanceId);
+
+  const loadingWithTimeout = isLoadingWithTimeout();
+  $: loadingWithTimeout.setLoading($reports.isLoading);
+  $: loadingReports = $loadingWithTimeout;
 
   /**
    * Table column definitions.
@@ -73,7 +78,7 @@
   };
 </script>
 
-{#if $reports.isLoading}
+{#if loadingReports}
   <div class="m-auto mt-20">
     <Spinner status={EntityStatus.Running} size="24px" />
   </div>
