@@ -10,11 +10,8 @@
     createTable,
   } from "svelte-headless-table";
   import { readable } from "svelte/store";
-  import ResourceErrorMessage from "./ResourceErrorMessage.svelte";
-  import {
-    getResourceKindTagColor,
-    prettyReconcileStatus,
-  } from "./display-utils";
+
+  import { getResourceKindTagColor } from "./display-utils";
 
   export let resources: V1Resource[];
 
@@ -23,7 +20,7 @@
   const columns = table.createColumns([
     table.column({
       accessor: (resource) => resource.meta.name.kind,
-      header: "Type",
+      header: "Public URL name",
       cell: ({ value }) => {
         const prettyKind = prettyResourceKind(value);
         const color = getResourceKindTagColor(value);
@@ -34,45 +31,15 @@
     }),
     table.column({
       accessor: (resource) => resource.meta.name.name,
-      header: "Name",
+      header: "Dashboard name",
     }),
     table.column({
-      accessor: (resource) => resource.meta.reconcileStatus,
-      header: "Execution status",
-      cell: ({ value }) => prettyReconcileStatus(value),
+      accessor: (resource) => resource.meta.createdOn,
+      header: "Created by",
     }),
     table.column({
-      accessor: (resource) => resource.meta.reconcileError,
-      id: "error",
-      header: "Error",
-      cell: ({ value }) =>
-        createRender(ResourceErrorMessage, { message: value }),
-    }),
-    table.column({
-      accessor: (resource) => resource.meta.stateUpdatedOn,
-      header: "Last refresh",
-      cell: ({ value }) =>
-        new Date(value).toLocaleString(undefined, {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        }),
-    }),
-    table.column({
-      accessor: (resource) => resource.meta.reconcileOn,
-      header: "Next refresh",
-      cell: ({ value }) => {
-        if (!value) {
-          return "-";
-        }
-        return new Date(value).toLocaleString(undefined, {
-          month: "short",
-          day: "numeric",
-          hour: "numeric",
-          minute: "numeric",
-        });
-      },
+      accessor: (resource) => resource.meta.createdOn,
+      header: "Last used",
     }),
   ]);
 
