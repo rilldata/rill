@@ -53,14 +53,12 @@ Files that are *nested at any level* under your native `dashboards` directory wi
   - **`label`** — a label for your dashboard dimension _(optional)_ 
   - **`description`** — a freeform text description of the dimension for your dashboard _(optional)_
   - **`unnest`** - if true, allows multi-valued dimension to be unnested (such as lists) and filters will automatically switch to "contains" instead of exact match _(optional)_
-  - **`ignore`** — hides the dimension _(optional)_ 
 
 **`measures`** — Used to define the numeric [aggregates](/build/dashboards/dashboards.md#measures) of columns from your data model  _(required)_.
   - **`expression`** — a combination of operators and functions for aggregations _(required)_ 
   - **`name`** — a stable identifier for the measure _(required)_
   - **`label`** — a label for your dashboard measure _(optional)_ 
   - **`description`** — a freeform text description of the dimension for your dashboard _(optional)_ 
-  - **`ignore`** — hides the measure _(optional)_ 
   - **`valid_percent_of_total`** — a boolean indicating whether percent-of-total values should be rendered for this measure _(optional)_ 
   - **`format_d3`** — controls the formatting of this measure in the dashboard using a [d3-format string](https://d3js.org/d3-format). If an invalid format string is supplied, measures will be formatted with `format_preset: humanize` (described below). Measures <u>cannot</u> have both `format_preset` and `format_d3` entries. _(optional; if neither `format_preset` nor `format_d3` is supplied, measures will be formatted with the `humanize` preset)_
     - **Example**: to show a measure using fixed point formatting with 2 digits after the decimal point, your measure specification would include: `format_d3: ".2f"`.
