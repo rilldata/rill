@@ -75,29 +75,35 @@
     <PivotDisplay />
   {:else}
     <div
-      class="flex gap-x-1 gap-y-2 pt-3 size-full overflow-hidden pl-4 slide"
+      class="flex gap-x-1 gap-y-2 size-full overflow-hidden pl-4 slide"
       class:flex-col={expandedMeasureName}
       class:flex-row={!expandedMeasureName}
       class:left-shift={extraLeftPadding}
     >
-      {#key metricViewName}
-        {#if hasTimeSeries}
-          <MetricsTimeSeriesCharts
-            {metricViewName}
-            workspaceWidth={exploreContainerWidth}
-          />
-        {:else}
-          <MeasuresContainer {exploreContainerWidth} {metricViewName} />
-        {/if}
-      {/key}
+      <div class="pt-2">
+        {#key metricViewName}
+          {#if hasTimeSeries}
+            <MetricsTimeSeriesCharts
+              {metricViewName}
+              workspaceWidth={exploreContainerWidth}
+            />
+          {:else}
+            <MeasuresContainer {exploreContainerWidth} {metricViewName} />
+          {/if}
+        {/key}
+      </div>
 
       {#if expandedMeasureName}
         <hr class="border-t border-gray-200 -ml-4" />
         <TimeDimensionDisplay {metricViewName} />
       {:else if selectedDimensionName}
-        <DimensionDisplay />
+        <div class="pt-2 pl-1 border-l overflow-auto w-full">
+          <DimensionDisplay />
+        </div>
       {:else}
-        <LeaderboardDisplay />
+        <div class="pt-2 pl-1 border-l overflow-auto w-full">
+          <LeaderboardDisplay />
+        </div>
       {/if}
     </div>
   {/if}

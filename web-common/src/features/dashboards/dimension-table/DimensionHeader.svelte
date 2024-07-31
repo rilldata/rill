@@ -147,7 +147,7 @@
   });
 </script>
 
-<div class="flex justify-between items-center p-1 pr-5">
+<div class="flex justify-between items-center p-1 pr-5 h-7">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
     {#if isFetching}
       <div>
