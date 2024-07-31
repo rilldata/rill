@@ -1,8 +1,9 @@
 <script lang="ts">
   import ChartTemplate from "@rilldata/web-common/features/templates/charts/ChartTemplate.svelte";
+  import Image from "@rilldata/web-common/features/templates/image/Image.svelte";
   import KPITemplate from "@rilldata/web-common/features/templates/kpi/KPITemplate.svelte";
   import Markdown from "@rilldata/web-common/features/templates/markdown/Markdown.svelte";
-  import Image from "@rilldata/web-common/features/templates/image/Image.svelte";
+  import TableTemplate from "@rilldata/web-common/features/templates/table/TableTemplate.svelte";
 
   import {
     V1ComponentSpecRendererProperties,
@@ -18,6 +19,8 @@
 
 {#if renderer === "kpi"}
   <KPITemplate {rendererProperties} />
+{:else if renderer === "table"}
+  <TableTemplate {rendererProperties} />
 {:else if renderer === "markdown"}
   <Markdown {rendererProperties} />
 {:else if renderer === "image"}
