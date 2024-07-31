@@ -1,5 +1,9 @@
 import { goto } from "$app/navigation";
 import { page } from "$app/stores";
+import {
+  adminServiceGetMagicAuthToken,
+  getAdminServiceGetMagicAuthTokenQueryKey,
+} from "@rilldata/web-admin/features/public-urls/get-magic-auth-token";
 import { getProtoFromDashboardState } from "@rilldata/web-common/features/dashboards/proto-state/toProto";
 import {
   createTimeRangeSummary,
@@ -8,10 +12,10 @@ import {
 import type { StateManagers } from "@rilldata/web-common/features/dashboards/state-managers/state-managers";
 import { getDefaultMetricsExplorerEntity } from "@rilldata/web-common/features/dashboards/stores/dashboard-store-defaults";
 import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
 import { getUrlForPath } from "@rilldata/web-common/lib/url-utils";
 import type { V1StructType } from "@rilldata/web-common/runtime-client";
 import { Readable, derived, get } from "svelte/store";
+import { queryClient } from "../../../lib/svelte-query/globalQueryClient";
 
 export type DashboardUrlState = {
   isReady: boolean;
@@ -28,25 +32,37 @@ export type DashboardUrlStore = Readable<DashboardUrlState>;
 export function useDashboardUrlState(ctx: StateManagers): DashboardUrlStore {
   return derived(
     [useDashboardProto(ctx), useDashboardDefaultProto(ctx), page],
-    ([proto, defaultProtoState, page]) => {
-      if (defaultProtoState.isFetching)
-        return {
-          isReady: false,
-        };
+    async ([proto, defaultProtoState, page], set) => {
+      if (defaultProtoState.isFetching) {
+        set({ isReady: false });
+        return;
+      }
 
       const defaultProto = defaultProtoState.proto;
+      const urlProto = page.url.searchParams.get("state");
+      const decodedUrlProto = urlProto
+        ? decodeURIComponent(urlProto)
+        : defaultProto;
 
-      let urlProto = page.url.searchParams.get("state");
-      if (urlProto) urlProto = decodeURIComponent(urlProto);
-      else urlProto = defaultProto;
-
-      return {
-        isReady: true,
-        proto,
-        defaultProto,
-        urlName: getNameFromFile(page.url.pathname),
-        urlProto,
-      };
+      try {
+        const urlName = await getMetricsViewNameFromParams(page.params);
+        set({
+          isReady: true,
+          proto,
+          defaultProto,
+          urlName,
+          urlProto: decodedUrlProto,
+        });
+      } catch (error) {
+        console.error("Error getting metrics view name:", error);
+        set({
+          isReady: true,
+          proto,
+          defaultProto,
+          urlName: "",
+          urlProto: decodedUrlProto,
+        });
+      }
     },
   );
 }
@@ -76,9 +92,7 @@ export function useDashboardUrlSync(ctx: StateManagers, schema: V1StructType) {
   let lastKnownProto = get(dashboardUrlState)?.defaultProto;
   return dashboardUrlState.subscribe((state) => {
     const metricViewName = get(ctx.metricsViewName);
-    if (state.urlName !== metricViewName) {
-      return;
-    }
+    if (state?.urlName !== metricViewName) return;
 
     if (!state.isReady || !state.proto) return;
 
@@ -154,4 +168,29 @@ export function useDashboardDefaultProto(ctx: StateManagers) {
       };
     },
   );
+}
+/**
+ * We have different ways of getting the metrics view name, depending on the context:
+ * - The `dashboard` URL param is used in Cloud
+ * - The `name` URL param is used in Ril Developer
+ * - The `token` URL param is used in Public URLs. The metrics view name is embedded in the token.
+ */
+async function getMetricsViewNameFromParams(
+  params: Record<string, string>,
+): Promise<string> {
+  const { dashboard, name, token } = params;
+
+  if (dashboard) return dashboard;
+  if (name) return name;
+
+  if (token) {
+    const tokenData = await queryClient.fetchQuery({
+      queryKey: getAdminServiceGetMagicAuthTokenQueryKey(token),
+      queryFn: () => adminServiceGetMagicAuthToken(token),
+    });
+    if (tokenData.token?.metricsView)
+      return tokenData.token.metricsView as string;
+  }
+
+  return "";
 }
