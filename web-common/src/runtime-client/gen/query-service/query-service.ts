@@ -19,6 +19,8 @@ import type {
   QueryServiceColumnCardinalityParams,
   V1TableColumnsResponse,
   QueryServiceTableColumnsParams,
+  V1ResolveComponentResponse,
+  QueryServiceResolveComponentBody,
   V1ColumnDescriptiveStatisticsResponse,
   QueryServiceColumnDescriptiveStatisticsParams,
   V1ExportResponse,
@@ -227,6 +229,70 @@ export const createQueryServiceTableColumns = <
   return query;
 };
 
+/**
+ * @summary ResolveComponent resolves the data and renderer for a Component resource.
+ */
+export const queryServiceResolveComponent = (
+  instanceId: string,
+  component: string,
+  queryServiceResolveComponentBody: QueryServiceResolveComponentBody,
+) => {
+  return httpClient<V1ResolveComponentResponse>({
+    url: `/v1/instances/${instanceId}/queries/components/${component}/resolve`,
+    method: "post",
+    headers: { "Content-Type": "application/json" },
+    data: queryServiceResolveComponentBody,
+  });
+};
+
+export type QueryServiceResolveComponentMutationResult = NonNullable<
+  Awaited<ReturnType<typeof queryServiceResolveComponent>>
+>;
+export type QueryServiceResolveComponentMutationBody =
+  QueryServiceResolveComponentBody;
+export type QueryServiceResolveComponentMutationError = ErrorType<RpcStatus>;
+
+export const createQueryServiceResolveComponent = <
+  TError = ErrorType<RpcStatus>,
+  TContext = unknown,
+>(options?: {
+  mutation?: CreateMutationOptions<
+    Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+    TError,
+    {
+      instanceId: string;
+      component: string;
+      data: QueryServiceResolveComponentBody;
+    },
+    TContext
+  >;
+}) => {
+  const { mutation: mutationOptions } = options ?? {};
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+    {
+      instanceId: string;
+      component: string;
+      data: QueryServiceResolveComponentBody;
+    }
+  > = (props) => {
+    const { instanceId, component, data } = props ?? {};
+
+    return queryServiceResolveComponent(instanceId, component, data);
+  };
+
+  return createMutation<
+    Awaited<ReturnType<typeof queryServiceResolveComponent>>,
+    TError,
+    {
+      instanceId: string;
+      component: string;
+      data: QueryServiceResolveComponentBody;
+    },
+    TContext
+  >(mutationFn, mutationOptions);
+};
 /**
  * @summary Get basic stats for a numeric column like min, max, mean, stddev, etc
  */

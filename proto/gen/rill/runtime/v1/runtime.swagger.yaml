@@ -1093,6 +1093,41 @@ paths:
           format: int32
       tags:
         - QueryService
+  /v1/instances/{instanceId}/queries/components/{component}/resolve:
+    post:
+      summary: ResolveComponent resolves the data and renderer for a Component resource.
+      operationId: QueryService_ResolveComponent
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ResolveComponentResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          description: Instance ID
+          in: path
+          required: true
+          type: string
+        - name: component
+          description: Component name
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              args:
+                type: object
+                title: Optional args to pass to the data resolver and for resolving templating in the renderer properties
+      tags:
+        - QueryService
   /v1/instances/{instanceId}/queries/descriptive-statistics/tables/{tableName}:
     get:
       summary: Get basic stats for a numeric column like min, max, mean, stddev, etc
@@ -5277,6 +5312,20 @@ definitions:
       executionCount:
         type: integer
         format: int64
+  v1ResolveComponentResponse:
+    type: object
+    properties:
+      schema:
+        $ref: '#/definitions/v1StructType'
+        title: Schema of the resolved component data
+      data:
+        type: array
+        items:
+          type: object
+        title: Resolved component data
+      rendererProperties:
+        type: object
+        title: Renderer properties with templating resolved for the provided args
   v1Resource:
     type: object
     properties:

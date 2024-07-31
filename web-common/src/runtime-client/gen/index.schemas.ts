@@ -293,6 +293,12 @@ export type QueryServiceColumnDescriptiveStatisticsParams = {
   priority?: number;
 };
 
+export type QueryServiceResolveComponentBodyArgs = { [key: string]: any };
+
+export type QueryServiceResolveComponentBody = {
+  args?: QueryServiceResolveComponentBodyArgs;
+};
+
 export type QueryServiceTableColumnsParams = {
   connector?: string;
   database?: string;
@@ -799,11 +805,16 @@ export interface V1Resource {
   connector?: V1ConnectorV2;
 }
 
-export interface V1ReportState {
-  nextRunOn?: string;
-  currentExecution?: V1ReportExecution;
-  executionHistory?: V1ReportExecution[];
-  executionCount?: number;
+export type V1ResolveComponentResponseRendererProperties = {
+  [key: string]: any;
+};
+
+export type V1ResolveComponentResponseDataItem = { [key: string]: any };
+
+export interface V1ResolveComponentResponse {
+  schema?: V1StructType;
+  data?: V1ResolveComponentResponseDataItem[];
+  rendererProperties?: V1ResolveComponentResponseRendererProperties;
 }
 
 export type V1ReportSpecAnnotations = { [key: string]: string };
@@ -832,6 +843,13 @@ export interface V1ReportExecution {
   reportTime?: string;
   startedOn?: string;
   finishedOn?: string;
+}
+
+export interface V1ReportState {
+  nextRunOn?: string;
+  currentExecution?: V1ReportExecution;
+  executionHistory?: V1ReportExecution[];
+  executionCount?: number;
 }
 
 export interface V1Report {
@@ -1165,22 +1183,6 @@ export interface V1MetricsViewToplistResponse {
   data?: V1MetricsViewToplistResponseDataItem[];
 }
 
-export interface V1MetricsViewToplistRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimensionName?: string;
-  measureNames?: string[];
-  timeStart?: string;
-  timeEnd?: string;
-  limit?: string;
-  offset?: string;
-  sort?: V1MetricsViewSort[];
-  where?: V1Expression;
-  having?: V1Expression;
-  priority?: number;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewTimeSeriesResponse {
   meta?: V1MetricsViewColumn[];
   data?: V1TimeSeriesValue[];
@@ -1266,6 +1268,22 @@ export interface V1MetricsViewFilter {
   exclude?: MetricsViewFilterCond[];
 }
 
+export interface V1MetricsViewToplistRequest {
+  instanceId?: string;
+  metricsViewName?: string;
+  dimensionName?: string;
+  measureNames?: string[];
+  timeStart?: string;
+  timeEnd?: string;
+  limit?: string;
+  offset?: string;
+  sort?: V1MetricsViewSort[];
+  where?: V1Expression;
+  having?: V1Expression;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+}
+
 export interface V1MetricsViewRowsRequest {
   instanceId?: string;
   metricsViewName?: string;
@@ -1345,25 +1363,6 @@ export interface V1MetricsViewComparisonMeasureAlias {
   alias?: string;
 }
 
-export interface V1MetricsViewComparisonRequest {
-  instanceId?: string;
-  metricsViewName?: string;
-  dimension?: V1MetricsViewAggregationDimension;
-  measures?: V1MetricsViewAggregationMeasure[];
-  comparisonMeasures?: string[];
-  sort?: V1MetricsViewComparisonSort[];
-  timeRange?: V1TimeRange;
-  comparisonTimeRange?: V1TimeRange;
-  where?: V1Expression;
-  having?: V1Expression;
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
-  limit?: string;
-  offset?: string;
-  priority?: number;
-  exact?: boolean;
-  filter?: V1MetricsViewFilter;
-}
-
 export interface V1MetricsViewColumn {
   name?: string;
   type?: string;
@@ -1380,6 +1379,27 @@ export type V1MetricsViewAggregationResponseDataItem = { [key: string]: any };
 export interface V1MetricsViewAggregationResponse {
   schema?: V1StructType;
   data?: V1MetricsViewAggregationResponseDataItem[];
+}
+
+export interface V1MetricsViewAggregationRequest {
+  instanceId?: string;
+  metricsView?: string;
+  dimensions?: V1MetricsViewAggregationDimension[];
+  measures?: V1MetricsViewAggregationMeasure[];
+  sort?: V1MetricsViewAggregationSort[];
+  timeRange?: V1TimeRange;
+  comparisonTimeRange?: V1TimeRange;
+  timeStart?: string;
+  timeEnd?: string;
+  pivotOn?: string[];
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
+  where?: V1Expression;
+  having?: V1Expression;
+  limit?: string;
+  offset?: string;
+  priority?: number;
+  filter?: V1MetricsViewFilter;
+  exact?: boolean;
 }
 
 export interface V1MetricsViewAggregationMeasureComputeCountDistinct {
@@ -1421,25 +1441,23 @@ export interface V1MetricsViewAggregationDimension {
   alias?: string;
 }
 
-export interface V1MetricsViewAggregationRequest {
+export interface V1MetricsViewComparisonRequest {
   instanceId?: string;
-  metricsView?: string;
-  dimensions?: V1MetricsViewAggregationDimension[];
+  metricsViewName?: string;
+  dimension?: V1MetricsViewAggregationDimension;
   measures?: V1MetricsViewAggregationMeasure[];
-  sort?: V1MetricsViewAggregationSort[];
+  comparisonMeasures?: string[];
+  sort?: V1MetricsViewComparisonSort[];
   timeRange?: V1TimeRange;
   comparisonTimeRange?: V1TimeRange;
-  timeStart?: string;
-  timeEnd?: string;
-  pivotOn?: string[];
-  aliases?: V1MetricsViewComparisonMeasureAlias[];
   where?: V1Expression;
   having?: V1Expression;
+  aliases?: V1MetricsViewComparisonMeasureAlias[];
   limit?: string;
   offset?: string;
   priority?: number;
-  filter?: V1MetricsViewFilter;
   exact?: boolean;
+  filter?: V1MetricsViewFilter;
 }
 
 export interface V1MapType {
@@ -1759,6 +1777,11 @@ export interface V1ConnectorState {
   specHash?: string;
 }
 
+export interface V1ConnectorV2 {
+  spec?: V1ConnectorSpec;
+  state?: V1ConnectorState;
+}
+
 /**
  * properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties.
@@ -1773,11 +1796,6 @@ export interface V1ConnectorSpec {
   /** properties_from_variables stores properties whose value is a variable.
 NOTE : properties_from_variables and properties both should be used to get all properties. */
   propertiesFromVariables?: V1ConnectorSpecPropertiesFromVariables;
-}
-
-export interface V1ConnectorV2 {
-  spec?: V1ConnectorSpec;
-  state?: V1ConnectorState;
 }
 
 /**
