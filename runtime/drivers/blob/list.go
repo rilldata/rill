@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 
 	"cloud.google.com/go/storage"
 	"github.com/bmatcuk/doublestar/v4"
@@ -81,6 +82,11 @@ func (b *Bucket) ListObjects(ctx context.Context, glob string) ([]drivers.Object
 				break
 			}
 			return nil, err
+		}
+
+		// Workaround for some object stores not marking IsDir correctly.
+		if strings.HasSuffix(obj.Key, "/") {
+			obj.IsDir = true
 		}
 
 		ok, err := doublestar.Match(glob, obj.Key)

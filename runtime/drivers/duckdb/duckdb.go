@@ -440,21 +440,21 @@ func (c *connection) AsSQLStore() (drivers.SQLStore, bool) {
 // AsModelExecutor implements drivers.Handle.
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.InputHandle == c && opts.OutputHandle == c {
-		return &selfToSelfExecutor{c, opts}, true
+		return &selfToSelfExecutor{c}, true
 	}
 	if opts.OutputHandle == c {
 		if w, ok := opts.InputHandle.AsWarehouse(); ok {
-			return &warehouseToSelfExecutor{c, w, opts}, true
+			return &warehouseToSelfExecutor{c, w}, true
 		}
 	}
 	if opts.InputHandle == c {
 		if opts.OutputHandle.Driver() == "file" {
 			outputProps := &file.ModelOutputProperties{}
-			if err := mapstructure.WeakDecode(opts.OutputProperties, outputProps); err != nil {
+			if err := mapstructure.WeakDecode(opts.PreliminaryOutputProperties, outputProps); err != nil {
 				return nil, false
 			}
 			if supportsExportFormat(outputProps.Format) {
-				return &selfToFileExecutor{c, opts}, true
+				return &selfToFileExecutor{c}, true
 			}
 		}
 	}
