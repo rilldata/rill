@@ -3,7 +3,6 @@
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
   import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
   import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
-  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/public-urls/selectors";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -24,6 +23,8 @@
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
   import PageTitle from "../public-urls/PageTitle.svelte";
+  import { createAdminServiceGetMagicAuthToken } from "../public-urls/get-magic-auth-token";
+  import { useShareableURLMetricsView } from "../public-urls/selectors";
   import { useReports } from "../scheduled-reports/selectors";
   import {
     isMagicLinkPage,
@@ -45,6 +46,7 @@
     dashboard: dashboardParam,
     alert,
     report,
+    token,
   } = $page.params);
 
   $: onProjectPage = isProjectPage($page);
@@ -133,13 +135,18 @@
     report ? reportPaths : alert ? alertPaths : null,
   ];
 
-  // When visiting a magic link, the metrics view name won't be in the URL. However, the URL's token will
-  // have access to only one metrics view. So, we can get the metrics view name from the first (and only) metrics view resource.
-  $: metricsViewQuery = useShareableURLMetricsView(instanceId, onMagicLinkPage);
+  // Public URLs do not have the metrics view name in the URL. However, the magic token's metadata includes the metrics view name.
+  $: tokenQuery = createAdminServiceGetMagicAuthToken(token);
   $: dashboard = onMagicLinkPage
-    ? $metricsViewQuery.data?.meta?.name?.name
+    ? $tokenQuery?.data?.token?.metricsView
     : dashboardParam;
 
+  // If on a Public URL, get the dashboard title
+  $: metricsViewQuery = useShareableURLMetricsView(
+    instanceId,
+    $tokenQuery?.data?.token?.metricsView,
+    onMagicLinkPage,
+  );
   $: magicLinkDashboardTitle =
     $metricsViewQuery.data?.metricsView?.spec?.title ?? dashboard ?? "";
 
