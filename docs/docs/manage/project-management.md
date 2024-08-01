@@ -1,9 +1,31 @@
 ---
-title: "Project Management"
+title: "Organization and Project Management"
 description: Basic managment from projects 
-sidebar_label: "Project Management"
-sidebar_position: 31
+sidebar_label: "Organization & Project Management"
+sidebar_position: 19
 ---
+## Organization
+
+An Organization in Rill is the largest management object. Within a single organization, you can create many projects.  Within those project can contain sources, models, dashboards, etc. Organizations are designed for ...
+
+You can create / delete / modify an organization via the CLI.
+```
+rill org 
+```
+
+[Access into Rill can be granted from the organization level](user-management.md#adding-a-member-to-the-organization).
+
+## Project
+
+A project is a single folder deployed instance from Rill Developer. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI.
+
+```
+rill  project 
+```
+
+
+[Access into Rill can be granted from the project level](user-management.mdt#adding-a-member-to-a-specific-project).
+
 
 
 ## Make a project public
@@ -20,10 +42,10 @@ Warning: If you make a project public, make sure it does not expose any confiden
 :::
 
 
-## Example of Project Access
+## Example of Access to Rill
 
 
-In the following example, you can see the different levels of access to Rill via the organization, project-specific access and group and user privileges.
+In the following example, you can see the different levels of access to Rill via the organization, project-specific access, user group and user privileges.
 
 
 ![img](/img/manage/project-management/project-access.png)
