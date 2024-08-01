@@ -19,7 +19,10 @@ type MetricsViewSearch struct {
 	Dimensions      []string                `json:"dimensions,omitempty"`
 	Search          string                  `json:"search,omitempty"`
 	TimeRange       *runtimev1.TimeRange    `json:"time_range,omitempty"`
+	Where           *runtimev1.Expression   `json:"where,omitempty"`
+	Having          *runtimev1.Expression   `json:"having,omitempty"`
 	Priority        int32                   `json:"priority,omitempty"`
+	Limit           *int64                  `json:"limit,omitempty"`
 	SecurityClaims  *runtime.SecurityClaims `json:"security_claims,omitempty"`
 
 	Result *runtimev1.MetricsViewSearchResponse
@@ -81,23 +84,8 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 	}
 	defer exec.Close()
 
-	search := &metricsview.SearchQuery{
-		Dimensions: q.Dimensions,
-		Search:     q.Search,
-	}
-	if q.TimeRange != nil {
-		res := &metricsview.TimeRange{}
-		if q.TimeRange.Start != nil {
-			res.Start = q.TimeRange.Start.AsTime()
-		}
-		if q.TimeRange.End != nil {
-			res.End = q.TimeRange.End.AsTime()
-		}
-		res.IsoDuration = q.TimeRange.IsoDuration
-		res.IsoOffset = q.TimeRange.IsoOffset
-		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
-		search.TimeRange = res
-	}
+	// build a metricsView.SearchQuery
+	search := searchQuery(q)
 	rows, err := exec.SearchQuery(ctx, search, nil)
 	if err != nil {
 		return nil
@@ -115,10 +103,38 @@ func (q *MetricsViewSearch) Resolve(ctx context.Context, rt *runtime.Runtime, in
 			Value:     v,
 		}
 	}
-
 	return nil
 }
 
 func (q *MetricsViewSearch) Export(ctx context.Context, rt *runtime.Runtime, instanceID string, w io.Writer, opts *runtime.ExportOptions) error {
 	return nil
+}
+
+func searchQuery(q *MetricsViewSearch) *metricsview.SearchQuery {
+	search := &metricsview.SearchQuery{
+		Dimensions: q.Dimensions,
+		Search:     q.Search,
+		Limit:      q.Limit,
+	}
+	if q.Where != nil {
+		search.Where = metricsview.NewExpressionFromProto(q.Where)
+	}
+	if q.Having != nil {
+		search.Having = metricsview.NewExpressionFromProto(q.Having)
+	}
+
+	if q.TimeRange != nil {
+		res := &metricsview.TimeRange{}
+		if q.TimeRange.Start != nil {
+			res.Start = q.TimeRange.Start.AsTime()
+		}
+		if q.TimeRange.End != nil {
+			res.End = q.TimeRange.End.AsTime()
+		}
+		res.IsoDuration = q.TimeRange.IsoDuration
+		res.IsoOffset = q.TimeRange.IsoOffset
+		res.RoundToGrain = metricsview.TimeGrainFromProto(q.TimeRange.RoundToGrain)
+		search.TimeRange = res
+	}
+	return search
 }

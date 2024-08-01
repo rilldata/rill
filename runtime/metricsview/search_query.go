@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
 
 	"github.com/rilldata/rill/runtime/drivers"
@@ -12,10 +13,13 @@ import (
 )
 
 type SearchQuery struct {
-	MetricsView string     `mapstructure:"metrics_view"`
-	Dimensions  []string   `mapstructure:"dimensions"`
-	Search      string     `mapstructure:"search"`
-	TimeRange   *TimeRange `mapstructure:"time_range"`
+	MetricsView string      `mapstructure:"metrics_view"`
+	Dimensions  []string    `mapstructure:"dimensions"`
+	Search      string      `mapstructure:"search"`
+	Where       *Expression `mapstructure:"where"`
+	Having      *Expression `mapstructure:"having"`
+	TimeRange   *TimeRange  `mapstructure:"time_range"`
+	Limit       *int64      `mapstructure:"limit"`
 }
 
 type SearchResult struct {
@@ -23,63 +27,13 @@ type SearchResult struct {
 	Value     any
 }
 
-func (s *SearchQuery) searchSQL(a *AST) (string, []interface{}, error) {
-	// TODO add validation of AST
-	var b strings.Builder
-	var args []any
-
-	for i, f := range a.Root.DimFields {
-		if i > 0 {
-			b.WriteString(" UNION ALL ")
-		}
-
-		b.WriteString("SELECT ")
-		b.WriteByte('(')
-		b.WriteString(f.Expr)
-		b.WriteString(") AS value,")
-		b.WriteString(fmt.Sprintf(" '%s'", f.Name))
-		b.WriteString(" AS dimension")
-
-		b.WriteString(" FROM ")
-		b.WriteString(*a.Root.FromTable)
-		for _, u := range a.Root.Unnests {
-			if u.DimName == f.Name {
-				b.WriteString(", ")
-				b.WriteString(u.Expr)
-			}
-		}
-
-		b.WriteString(" WHERE ")
-		b.WriteByte('(')
-		b.WriteString(f.Expr)
-		b.WriteString(") ILIKE ?")
-		args = append(args, fmt.Sprintf("%%%s%%", s.Search))
-
-		if a.Root.Where != nil && a.Root.Where.Expr != "" {
-			b.WriteString(" AND (")
-			b.WriteString(a.Root.Where.Expr)
-			b.WriteByte(')')
-			args = append(args, a.Root.Where.Args...)
-		}
-
-		if a.Root.TimeWhere != nil && a.Root.TimeWhere.Expr != "" {
-			b.WriteString(" AND (")
-			b.WriteString(a.Root.TimeWhere.Expr)
-			b.WriteByte(')')
-			args = append(args, a.Root.TimeWhere.Args...)
-		}
-
-		b.WriteString(" GROUP BY value")
-	}
-
-	return b.String(), args, nil
-}
-
 var druidSQLDSN = regexp.MustCompile(`/v2/sql/?`)
 
 func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLAPStore, a *AST) ([]SearchResult, error) {
 	var query map[string]interface{}
 	if a.Root.Where != nil {
+		// NOTE :: this does not work for measure filters.
+		// The query planner resolves them to joins instead of filters.
 		rows, err := olap.Execute(ctx, &drivers.Statement{
 			Query:            fmt.Sprintf("EXPLAIN PLAN FOR SELECT 1 FROM %s WHERE %s", *a.Root.FromTable, a.Root.Where.Expr),
 			Args:             a.Root.Where.Args,
@@ -96,9 +50,11 @@ func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLA
 			return nil, fmt.Errorf("failed to parse filter")
 		}
 
-		var planRaw string
-		var resRaw string
-		var attrRaw string
+		var (
+			planRaw string
+			resRaw  string
+			attrRaw string
+		)
 		err = rows.Scan(&planRaw, &resRaw, &attrRaw)
 		if err != nil {
 			return nil, err
@@ -129,16 +85,28 @@ func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLA
 		return nil, fmt.Errorf("druid connector config not found in instance")
 	}
 
-	nq := druid.NewNativeQuery(druidSQLDSN.ReplaceAllString(dsn, "/v2/"))
-	req := druid.NewNativeSearchQueryRequest(trimQuotes(*a.Root.FromTable), q.Search, q.Dimensions, q.TimeRange.Start, q.TimeRange.End, query) // TODO: timestamps may be nil!
+	// Build a native query
+	limit := 100
+	if a.Root.Limit != nil {
+		limit = int(*a.Root.Limit)
+	}
+	dims := make([]string, 0, len(q.Dimensions))
+	for _, f := range a.Root.DimFields {
+		// TODO handle unnest
+		dims = append(dims, f.Expr)
+	}
+	req := druid.NewNativeSearchQueryRequest(trimQuotes(*a.Root.FromTable), q.Search, dims, limit, q.TimeRange.Start, q.TimeRange.End, query) // TODO: timestamps may be nil!
+
+	// Execute the native query
 	var res druid.NativeSearchQueryResponse
+	nq := druid.NewNativeQuery(druidSQLDSN.ReplaceAllString(dsn, "/v2/"))
 	err = nq.Do(ctx, req, &res, req.Context.QueryID)
 	if err != nil {
 		return nil, err
 	}
-	fmt.Printf("native query response %v\n", res)
 
-	result := make([]SearchResult, len(res))
+	// Convert the response to a SearchResult
+	result := make([]SearchResult, 0)
 	for _, re := range res {
 		for _, r := range re.Result {
 			result = append(result, SearchResult{
@@ -148,6 +116,148 @@ func (q *SearchQuery) executeSearchInDruid(ctx context.Context, olap drivers.OLA
 		}
 	}
 	return result, nil
+}
+
+type searchSQLBuilder struct {
+	ast    *AST
+	search string
+	out    *strings.Builder
+	args   []any
+}
+
+func searchSQL(ast *AST, search string) (string, []any, error) {
+	b := &searchSQLBuilder{
+		ast:    ast,
+		search: search,
+		out:    &strings.Builder{},
+	}
+
+	err := b.writeSelect(ast.Root)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return b.out.String(), b.args, nil
+}
+
+func (b *searchSQLBuilder) writeSelect(n *SelectNode) error {
+	for i, f := range n.DimFields {
+		if i > 0 {
+			b.out.WriteString(" UNION ALL ")
+		}
+
+		b.out.WriteString("SELECT ")
+		b.out.WriteByte('(')
+		b.out.WriteString(f.Expr)
+		b.out.WriteString(") AS value,")
+		fmt.Fprintf(b.out, " '%s'", f.Name)
+		b.out.WriteString(" AS dimension")
+
+		b.out.WriteString(" FROM ")
+
+		if n.FromTable != nil {
+			b.out.WriteString(*n.FromTable)
+
+			// Add unnest joins. We only and always apply these against FromTable (ensuring they are already unnested when referenced in outer SELECTs).
+			for _, u := range n.Unnests {
+				if u.DimName == f.Name {
+					b.out.WriteString(", ")
+					b.out.WriteString(u.Expr)
+				}
+			}
+		} else if n.FromSelect != nil {
+			if !n.FromSelect.IsCTE {
+				b.out.WriteByte('(')
+				err := b.writeSelect(n.FromSelect)
+				if err != nil {
+					return err
+				}
+				b.out.WriteString(") ")
+			}
+			b.out.WriteString(n.FromSelect.Alias)
+
+			for _, ljs := range n.LeftJoinSelects {
+				err := b.writeJoin("LEFT", n.FromSelect, ljs)
+				if err != nil {
+					return err
+				}
+			}
+		} else {
+			panic("internal: FromTable and FromSelect are both nil")
+		}
+
+		b.out.WriteString(" WHERE ")
+		b.out.WriteByte('(')
+		b.out.WriteString(f.Expr)
+		b.out.WriteString(") ILIKE ?")
+		b.args = append(b.args, fmt.Sprintf("%%%s%%", b.search))
+
+		if n.TimeWhere != nil && n.TimeWhere.Expr != "" {
+			b.out.WriteString(" AND (")
+			b.out.WriteString(n.TimeWhere.Expr)
+			b.out.WriteString(")")
+			b.args = append(b.args, n.TimeWhere.Args...)
+		}
+		if n.Where != nil && n.Where.Expr != "" {
+			b.out.WriteString(" AND (")
+			b.out.WriteString(n.Where.Expr)
+			b.out.WriteString(")")
+			b.args = append(b.args, n.Where.Args...)
+		}
+
+		b.out.WriteString(" GROUP BY value")
+
+		if n.Having != nil && n.Having.Expr != "" {
+			b.out.WriteString(" HAVING ")
+			b.out.WriteString(n.Having.Expr)
+			b.args = append(b.args, n.Having.Args...)
+		}
+	}
+
+	if n.Limit != nil {
+		b.out.WriteString(" LIMIT ")
+		b.out.WriteString(strconv.FormatInt(*n.Limit, 10))
+	}
+
+	if n.Offset != nil {
+		b.out.WriteString(" OFFSET ")
+		b.out.WriteString(strconv.FormatInt(*n.Offset, 10))
+	}
+
+	return nil
+}
+
+func (b *searchSQLBuilder) writeJoin(joinType JoinType, baseSelect, joinSelect *SelectNode) error {
+	b.out.WriteByte(' ')
+	b.out.WriteString(string(joinType))
+	b.out.WriteString(" JOIN ")
+	if !joinSelect.IsCTE {
+		b.out.WriteByte('(')
+		err := b.writeSelect(joinSelect)
+		if err != nil {
+			return err
+		}
+		b.out.WriteString(") ")
+	}
+	b.out.WriteString(joinSelect.Alias)
+
+	if len(baseSelect.DimFields) == 0 {
+		b.out.WriteString(" ON TRUE")
+		return nil
+	}
+
+	b.out.WriteString(" ON ")
+	for i, f := range baseSelect.DimFields {
+		if i > 0 {
+			b.out.WriteString(" AND ")
+		}
+		lhs := b.ast.sqlForMember(baseSelect.Alias, f.Name)
+		rhs := b.ast.sqlForMember(joinSelect.Alias, f.Name)
+		b.out.WriteByte('(')
+		b.out.WriteString(b.ast.dialect.JoinOnExpression(lhs, rhs))
+		b.out.WriteByte(')')
+	}
+	return nil
 }
 
 func trimQuotes(s string) string {

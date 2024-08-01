@@ -10,6 +10,8 @@ import (
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/drivers"
+	"github.com/rilldata/rill/runtime/pkg/observability"
+	"go.uber.org/zap"
 )
 
 const (
@@ -327,8 +329,11 @@ func (e *Executor) SearchQuery(ctx context.Context, searchQry *SearchQuery, exec
 	if !e.security.CanAccess() {
 		return nil, runtime.ErrForbidden
 	}
+	logger := e.rt.Logger.With(zap.String("instance_id", e.instanceID))
 
-	// Generate a Query
+	// Generate a metricsview.Query and build a AST
+	// This is a hacky implementation since both metricsview.Query and AST are designed for aggregate queries.
+	// TODO :: Refactor the code and extract common functionality from metricsview.Query and AST and write SearchQuery to underlying SQL/Native druid query directly.
 	dimensions := make([]Dimension, len(searchQry.Dimensions))
 	for i, d := range searchQry.Dimensions {
 		dimensions[i] = Dimension{Name: d}
@@ -336,7 +341,10 @@ func (e *Executor) SearchQuery(ctx context.Context, searchQry *SearchQuery, exec
 	qry := &Query{
 		MetricsView: searchQry.MetricsView,
 		Dimensions:  dimensions,
+		Where:       searchQry.Where,
+		Having:      searchQry.Having,
 		TimeRange:   searchQry.TimeRange,
+		Limit:       searchQry.Limit,
 	}
 
 	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
@@ -358,17 +366,17 @@ func (e *Executor) SearchQuery(ctx context.Context, searchQry *SearchQuery, exec
 	}
 
 	if e.olap.Dialect() == drivers.DialectDruid {
-		// todo check row caps
 		res, err := searchQry.executeSearchInDruid(ctx, e.olap, ast)
 		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
 			return res, err
 		}
 	}
 
-	sql, args, err := searchQry.searchSQL(ast)
+	sql, args, err := searchSQL(ast, searchQry.Search)
 	if err != nil {
 		return nil, err
 	}
+	logger.Debug("executing search query", zap.String("sql", sql), zap.String("metrics_view", searchQry.MetricsView), zap.String("instance_id", e.instanceID), observability.ZapCtx(ctx))
 
 	res, err := e.olap.Execute(ctx, &drivers.Statement{
 		Query:            sql,

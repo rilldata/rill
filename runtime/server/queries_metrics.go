@@ -372,12 +372,16 @@ func (s *Server) MetricsViewSearch(ctx context.Context, req *runtimev1.MetricsVi
 		return nil, ErrForbidden
 	}
 
+	limit := int64(req.Limit)
 	q := &queries.MetricsViewSearch{
 		MetricsViewName: req.MetricsViewName,
 		Dimensions:      req.Dimensions,
 		Search:          req.Search,
 		TimeRange:       req.TimeRange,
+		Where:           req.Where,
+		Having:          req.Having,
 		Priority:        req.Priority,
+		Limit:           &limit,
 		SecurityClaims:  auth.GetClaims(ctx).SecurityClaims(),
 	}
 	err := s.runtime.Query(ctx, req.InstanceId, q, int(req.Priority))

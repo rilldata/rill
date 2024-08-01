@@ -105,7 +105,7 @@ func (n *NativeQuery) Do(ctx context.Context, dr, res interface{}, queryID strin
 	return nil
 }
 
-func NewNativeSearchQueryRequest(source, search string, dimensions []string, start, end time.Time, filter map[string]interface{}) NativeSearchQueryRequest {
+func NewNativeSearchQueryRequest(source, search string, dimensions []string, limit int, start, end time.Time, filter map[string]interface{}) NativeSearchQueryRequest {
 	return NativeSearchQueryRequest{
 		Context: QueryContext{
 			QueryID: uuid.New().String(),
@@ -113,7 +113,7 @@ func NewNativeSearchQueryRequest(source, search string, dimensions []string, sta
 		QueryType:        "search",
 		DataSource:       source,
 		SearchDimensions: dimensions,
-		Limit:            100,
+		Limit:            limit,
 		Query: NativeSearchQuery{
 			Type:          "contains",
 			CaseSensitive: false,
