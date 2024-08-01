@@ -6,6 +6,8 @@ sidebar_position: 20
 
 In Rill Cloud, access can be granted at the organization, project level, or group level using the Rill CLI. Note that the permission vary from each level, please review the [Roles and Permissions](roles-permissions.md) page for more information
 
+We have begun releasing new features around user managment via the UI. Stay tuned! 
+
 ## Install and authenticate the Rill CLI
 
 To manage cloud permissions with the Rill CLI, you must first authenticate it. If you have not already done so, run:
