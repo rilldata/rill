@@ -80,6 +80,11 @@
   }
 
   let suppressTooltip = false;
+
+  const handleExpandMeasure = () => {
+    isMeasureExpanded = !isMeasureExpanded;
+    dispatch("expand-measure");
+  };
 </script>
 
 <Tooltip
@@ -106,7 +111,7 @@
       shift: () => shiftClickHandler(hoveredValue),
       click: () => {
         suppressTooltip = true;
-        dispatch("expand-measure");
+        handleExpandMeasure();
         setTimeout(() => {
           suppressTooltip = false;
         }, 1000);
