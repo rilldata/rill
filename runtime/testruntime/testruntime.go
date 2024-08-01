@@ -134,6 +134,10 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		opts.OLAPDSN = olapDSN
 	}
 
+	if opts.OLAPDriver == "druid" {
+		opts.OLAPDSN = os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
+	}
+
 	vars := make(map[string]string)
 	maps.Copy(vars, opts.Variables)
 	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)

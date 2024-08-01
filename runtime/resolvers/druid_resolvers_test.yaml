@@ -1,0 +1,66 @@
+project:
+  dashboards:
+    ad_bids_mini_metrics_with_policy.yaml:
+      model: AdBids
+      display_name: Ad bids
+      description:
+
+      timeseries: __time
+      smallest_time_grain: ""
+
+      dimensions:
+      - label: Publisher
+        name: publisher
+        expression: publisher
+        description: ""
+      - label: Domain
+        property: domain
+        description: ""
+
+      measures:
+      - label: "Number of bids"
+        name: bid's number
+        expression: count(*)
+      - label: "Max bid price"
+        name: max bid price
+        expression: max(bid_price)
+      - label: "Average bid price"
+        name: average bid price
+        expression: avg(bid_price)
+
+      security:
+        access: true
+        # row_filter: "domain = '{{ .user.domain }}'" is not supported in Druid
+        # exclude: is not supported in Druid
+  apis:
+    mv_sql_policy_api.yaml:
+      kind : api
+      metrics_sql: | 
+        select 
+            publisher,
+            domain, 
+            round("average bid price", 0) "average bid price",
+            round("max bid price", 0) "max bid price" 
+        FROM 
+          ad_bids_mini_metrics_with_policy 
+        WHERE
+          publisher is not null AND domain = 'news.yahoo.com'
+        ORDER BY 
+          publisher,
+          domain
+        LIMIT 1
+connectors:
+   druid: ~
+tests:
+  simple:
+    resolver: mv_sql_policy_api 
+    options:
+      claims:
+        user_attributes:
+          domain: yahoo.com 
+          email: user@yahoo.com
+    result:
+      - domain: news.yahoo.com
+        publisher: Yahoo
+        "max bid price": 6.0
+        "average bid price": 3.0

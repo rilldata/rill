@@ -10,15 +10,11 @@ import (
 	"regexp"
 	"strings"
 	"testing"
-	// "time"
 
 	"github.com/maxatome/go-testdeep/td"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
-	"github.com/testcontainers/testcontainers-go"
-	// "github.com/testcontainers/testcontainers-go/modules/clickhouse"
-	// "github.com/testcontainers/testcontainers-go/wait"
 	"gopkg.in/yaml.v3"
 )
 
@@ -107,7 +103,7 @@ func TestReolvers(t *testing.T) {
 
 				switch ct {
 				case "druid":
-					continue // todo
+					opts.OLAPDriver = "druid"
 				case "clickhouse":
 					opts.OLAPDriver = "clickhouse"
 				}
@@ -140,18 +136,5 @@ func TestReolvers(t *testing.T) {
 				}
 			}
 		}
-	}
-}
-func withMount(dir string) testcontainers.CustomizeRequestOption {
-	// return func(req *GenericContainerRequest) {
-	// 	req.WaitingFor = wait.ForAll(strategies...).WithDeadline(deadline)
-	// }
-	return func(req *testcontainers.GenericContainerRequest) {
-		req.Mounts = append(req.Mounts, testcontainers.ContainerMount{
-			Source: testcontainers.GenericVolumeMountSource{
-				Name: dir,
-			},
-			Target: "/var/lib/clickhouse/user_files",
-		})
 	}
 }

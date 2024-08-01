@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -65,12 +66,18 @@ func (c *sqlConnection) QueryContext(ctx context.Context, query string, args []d
 	})
 	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.dsn, bodyReader)
 	if err != nil {
+		if strings.Contains(err.Error(), c.dsn) { // avoid returning the actual DSN with the password which will be logged
+			return nil, fmt.Errorf("invalid dsn")
+		}
 		return nil, err
 	}
 
 	req.Header.Add("Content-Type", "application/json")
 	resp, err := c.client.Do(req)
 	if err != nil {
+		if strings.Contains(err.Error(), c.dsn) { // avoid returning the actual DSN with the password which will be logged
+			return nil, fmt.Errorf("invalid dsn")
+		}
 		return nil, err
 	}
 
