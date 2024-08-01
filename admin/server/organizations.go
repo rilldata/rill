@@ -189,6 +189,7 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 	}
 
 	nameChanged := req.NewName != nil && *req.NewName != org.Name
+	emailChanged := req.BillingEmail != nil && *req.BillingEmail != org.BillingEmail
 	org, err = s.admin.DB.UpdateOrganization(ctx, org.ID, &database.UpdateOrganizationOptions{
 		Name:                                valOrDefault(req.NewName, org.Name),
 		Description:                         valOrDefault(req.Description, org.Description),
@@ -210,6 +211,19 @@ func (s *Server) UpdateOrganization(ctx context.Context, req *adminv1.UpdateOrga
 		err := s.admin.UpdateOrgDeploymentAnnotations(ctx, org)
 		if err != nil {
 			return nil, err
+		}
+	}
+
+	if emailChanged {
+		err = s.admin.Biller.UpdateCustomerEmail(ctx, org.BillingCustomerID, org.BillingEmail)
+		if err != nil {
+			s.logger.Error("failed to update billing email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+			return nil, status.Error(codes.Internal, err.Error())
+		}
+		err = s.admin.PaymentProvider.UpdateCustomerEmail(ctx, org.PaymentCustomerID, org.BillingEmail)
+		if err != nil {
+			s.logger.Error("failed to update billing email", zap.String("org_id", org.ID), zap.String("org_name", org.Name), zap.Error(err))
+			return nil, status.Error(codes.Internal, err.Error())
 		}
 	}
 
@@ -655,6 +669,10 @@ func (s *Server) RemoveOrganizationMemberUser(ctx context.Context, req *adminv1.
 		return nil, status.Error(codes.PermissionDenied, "not allowed to remove org members")
 	}
 
+	if org.BillingEmail == user.Email {
+		return nil, status.Error(codes.InvalidArgument, "this user is the billing email for the organization, please update the billing email before removing")
+	}
+
 	// Check that the user is not the last admin
 	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
@@ -790,6 +808,15 @@ func (s *Server) LeaveOrganization(ctx context.Context, req *adminv1.LeaveOrgani
 	role, err := s.admin.DB.FindOrganizationRole(ctx, database.OrganizationRoleNameAdmin)
 	if err != nil {
 		panic(err)
+	}
+
+	user, err := s.admin.DB.FindUser(ctx, claims.OwnerID())
+	if err != nil {
+		return nil, status.Error(codes.Internal, err.Error())
+	}
+
+	if org.BillingEmail == user.Email {
+		return nil, status.Error(codes.InvalidArgument, "this user is the billing email for the organization, please update the billing email before leaving")
 	}
 
 	// check if the user is the last owner

@@ -163,6 +163,16 @@ func (o *Orb) UpdateCustomerPaymentID(ctx context.Context, customerID string, pr
 	return nil
 }
 
+func (o *Orb) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {
+	_, err := o.client.Customers.UpdateByExternalID(ctx, customerID, orb.CustomerUpdateByExternalIDParams{
+		Email: orb.String(email),
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func (o *Orb) CreateSubscription(ctx context.Context, customerID string, plan *Plan) (*Subscription, error) {
 	sub, err := o.client.Subscriptions.New(ctx, orb.SubscriptionNewParams{
 		ExternalCustomerID: orb.String(customerID),

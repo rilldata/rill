@@ -93,6 +93,15 @@ func (s *Stripe) FindCustomerForOrg(ctx context.Context, organization *database.
 	return nil, billing.ErrNotFound
 }
 
+func (s *Stripe) UpdateCustomerEmail(ctx context.Context, customerID, email string) error {
+	params := &stripe.CustomerParams{
+		Email: stripe.String(email),
+	}
+
+	_, err := customer.Update(customerID, params)
+	return err
+}
+
 func (s *Stripe) DeleteCustomer(ctx context.Context, customerID string) error {
 	_, err := customer.Del(customerID, nil)
 	return err
