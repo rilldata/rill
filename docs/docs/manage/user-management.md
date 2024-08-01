@@ -42,7 +42,32 @@ The feature currently requires manual action by a support representative at Rill
 Run `rill user --help` to show commands for listing members or changing access.
 
 ## Adding a member to a specific project
+> Starting from version 0.48, you can add a user to a specific project via the UI.
+### Via the UI
 
+**1. Admin invites user**
+
+From the project's splash screen, please select share and type the email[s] along with the type of permissions.
+
+![img](/img/manage/user-management/share-project.png)
+
+Once sent, your invited users will receive this email and will need to accept it to view the project.
+
+![img](/img/manage/user-management/email-invite.png)
+
+**2. User requests access**
+
+Alternatively, if you provide the project URL to your users, they can request access to the admin of the group. Your user would request access via the page below:
+
+![img](/img/manage/user-management/request-access.png)
+
+The admin would receive an email to allow access, and can set the permission after accepting the request via the UI.
+
+![img](/img/manage/user-management/admin-reply.png)
+
+---
+
+### Via the CLI
 By default, adding a user to an organization grants them access to all its projects. You can alternatively add a user only to a specific project. Users can have one of two roles on a project:
 
 - **Viewers** can view the project's dashboards
@@ -63,7 +88,7 @@ If you add a user who has not yet signed up for Rill, they will receive an email
 Run `rill user --help` to show commands for listing members or changing access.
 
 
-## Adding memeber a member to a specific group
+## Adding a member to a specific user group
 
 Another way to manage user is via User groups. Users can be added to a group using the following from the Rill CLI. You can define the usergroup to have certain permissions on specific groups.
 
