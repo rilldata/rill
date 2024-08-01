@@ -1,17 +1,8 @@
 <script lang="ts">
   import * as Table from "@rilldata/web-common/components/table-shadcn";
-  import Tag from "@rilldata/web-common/components/tag/Tag.svelte";
-  import { prettyResourceKind } from "@rilldata/web-common/features/entity-management/resource-selectors";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
-  import {
-    Render,
-    Subscribe,
-    createRender,
-    createTable,
-  } from "svelte-headless-table";
+  import { Render, Subscribe, createTable } from "svelte-headless-table";
   import { readable } from "svelte/store";
-
-  import { getResourceKindTagColor } from "./display-utils";
 
   export let resources: V1Resource[];
 
@@ -19,15 +10,8 @@
 
   const columns = table.createColumns([
     table.column({
-      accessor: (resource) => resource.meta.name.kind,
+      accessor: (resource) => resource.meta.name.name,
       header: "Public URL name",
-      cell: ({ value }) => {
-        const prettyKind = prettyResourceKind(value);
-        const color = getResourceKindTagColor(value);
-        return createRender(Tag, {
-          color,
-        }).slot(prettyKind);
-      },
     }),
     table.column({
       accessor: (resource) => resource.meta.name.name,
