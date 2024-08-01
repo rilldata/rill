@@ -1,0 +1,101 @@
+project:
+  sources:
+    ad_bids_mini_source.yaml:
+      connector: https
+      path: https://raw.githubusercontent.com/rilldata/rill/main/runtime/testruntime/testdata/ad_bids/data/AdBids_mini.csv
+  models:
+    "ad_bids_mini.sql": | 
+      select
+        id,
+        timestamp,
+        publisher,
+        domain,
+        volume,
+        impressions,
+        clicks
+      from ad_bids_mini_source
+  dashboards:
+    ad_bids_mini_metrics_with_policy.yaml:
+      model: ad_bids_mini
+      display_name: Ad bids
+      description:
+
+      timeseries: timestamp
+      smallest_time_grain: ""
+
+      dimensions:
+      - label: Publisher
+        name: publisher
+        expression: upper(publisher)
+        description: ""
+      - label: Domain
+        property: domain
+        description: ""
+
+      measures:
+      - label: "Number of bids"
+        name: bid's number
+        expression: count(*)
+      - label: "Total volume"
+        name: total volume
+        expression: sum(volume)
+      - label: "Total impressions"
+        name: total impressions
+        expression: sum(impressions)
+      - label: "Total clicks"
+        name: total click"s
+        expression: sum(clicks)
+
+      security:
+        access: true
+        row_filter: "domain = '{{ .user.domain }}'"
+        exclude:
+          - if: "'{{ .user.domain }}' != 'msn.com'"
+            names: 
+              - total volume
+  apis:
+    mv_sql_policy_api.yaml:
+      kind : api
+      metrics_sql: | 
+        select 
+            publisher,
+            domain, 
+            "total impressions", 
+            "total volume" 
+        FROM 
+          ad_bids_mini_metrics_with_policy 
+connectors:
+   duckdb: ~
+tests:
+  simple:
+    resolver: mv_sql_policy_api 
+    options:
+      claims:
+        user_attributes:
+          domain: yahoo.com 
+          email: user@yahoo.com
+    result:
+      - domain: yahoo.com
+        publisher: YAHOO
+        "total volume": ~
+        "total impressions": 3.0
+  msn:
+    resolver: mv_sql_policy_api 
+    options:
+      claims:
+        user_attributes:
+          domain: msn.com 
+          email: user@msn.com
+    result:
+      - domain: msn.com
+        publisher: ~
+        "total volume": 11.0
+        "total impressions": 3.0
+  empty:
+    resolver: mv_sql_policy_api 
+    options:
+      claims:
+        user_attributes:
+          domain: google.com 
+          email: user@google.com
+    result: ~

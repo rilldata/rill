@@ -16,6 +16,8 @@ import (
 	"github.com/rilldata/rill/runtime/pkg/activity"
 	"github.com/rilldata/rill/runtime/pkg/email"
 	"github.com/stretchr/testify/require"
+	"github.com/testcontainers/testcontainers-go"
+	"github.com/testcontainers/testcontainers-go/modules/clickhouse"
 	"go.uber.org/zap"
 
 	// Load database drivers for testing.
@@ -64,10 +66,10 @@ func New(t TestingT) *runtime.Runtime {
 		DataDir:                      t.TempDir(),
 	}
 
-	logger := zap.NewNop()
+	// logger := zap.NewNop()
 	// nolint
-	// logger, err := zap.NewDevelopment()
-	// require.NoError(t, err)
+	logger, err := zap.NewDevelopment()
+	require.NoError(t, err)
 
 	rt, err := runtime.New(context.Background(), opts, logger, activity.NewNoopClient(), email.New(email.NewTestSender()))
 	require.NoError(t, err)
@@ -82,6 +84,9 @@ type InstanceOptions struct {
 	Variables    map[string]string
 	WatchRepo    bool
 	StageChanges bool
+	OLAPDriver   string
+	OLAPDSN      string
+	TempDir      string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -89,23 +94,53 @@ type InstanceOptions struct {
 func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime, string) {
 	rt := New(t)
 
-	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER")
-	if olapDriver == "" {
-		olapDriver = "duckdb"
+	if opts.OLAPDriver == "" {
+		opts.OLAPDriver = "duckdb"
+	}
+
+	if opts.OLAPDSN == "" {
+		opts.OLAPDSN = ":memory:"
+	}
+	tmpDir := t.TempDir()
+
+	var clickHouseContainer *clickhouse.ClickHouseContainer
+	var err error
+	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER") // todo: refactor a couple of tests that use envs
+	if olapDriver != "" {
+		opts.OLAPDriver = olapDriver
+	} else if opts.OLAPDriver == "clickhouse" {
+		ctx := context.Background()
+		clickHouseContainer, err = clickhouse.RunContainer(ctx,
+			testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
+			clickhouse.WithUsername("clickhouse"),
+			clickhouse.WithPassword("clickhouse"),
+			clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
+		)
+		t.Cleanup(func() {
+			err := clickHouseContainer.Terminate(ctx)
+			require.NoError(t, err)
+		})
+
+		host, err := clickHouseContainer.Host(ctx)
+		require.NoError(t, err)
+		port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
+		require.NoError(t, err)
+
+		clickhouseDSN := fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
+		opts.OLAPDSN = clickhouseDSN
 	}
 	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
-	if olapDSN == "" {
-		olapDSN = ":memory:"
+	if olapDSN != "" {
+		opts.OLAPDSN = olapDSN
 	}
 
 	vars := make(map[string]string)
 	maps.Copy(vars, opts.Variables)
 	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
 
-	tmpDir := t.TempDir()
 	inst := &drivers.Instance{
 		Environment:      "test",
-		OLAPConnector:    olapDriver,
+		OLAPConnector:    opts.OLAPDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
@@ -115,9 +150,9 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 				Config: map[string]string{"dsn": tmpDir},
 			},
 			{
-				Type:   olapDriver,
-				Name:   olapDriver,
-				Config: map[string]string{"dsn": olapDSN},
+				Type:   opts.OLAPDriver,
+				Name:   opts.OLAPDriver,
+				Config: map[string]string{"dsn": opts.OLAPDSN},
 			},
 			{
 				Type: "sqlite",
@@ -137,7 +172,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		require.NoError(t, os.WriteFile(abs, []byte(data), 0o644))
 	}
 
-	err := rt.CreateInstance(context.Background(), inst)
+	err = rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
@@ -181,9 +216,22 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 	_, currentFile, _, _ := goruntime.Caller(0)
 	projectPath := filepath.Join(currentFile, "..", "testdata", name)
 
+	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER") // todo: refactor a couple of tests that use envs
+	if olapDriver == "" {
+		olapDriver = "duckdb"
+	}
+	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
+	if olapDSN == "" {
+		olapDSN = ":memory:"
+	}
+	embedCatalog := true
+	if olapDriver == "clickhouse" {
+		embedCatalog = false
+	}
+
 	inst := &drivers.Instance{
 		Environment:      "test",
-		OLAPConnector:    "duckdb",
+		OLAPConnector:    olapDriver,
 		RepoConnector:    "repo",
 		CatalogConnector: "catalog",
 		Connectors: []*runtimev1.Connector{
@@ -193,9 +241,9 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": projectPath},
 			},
 			{
-				Type:   "duckdb",
-				Name:   "duckdb",
-				Config: map[string]string{"dsn": ":memory:"},
+				Type:   olapDriver,
+				Name:   olapDriver,
+				Config: map[string]string{"dsn": olapDSN},
 			},
 			{
 				Type: "sqlite",
@@ -205,7 +253,7 @@ func NewInstanceForProject(t TestingT, name string) (*runtime.Runtime, string) {
 				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
 			},
 		},
-		EmbedCatalog: true,
+		EmbedCatalog: embedCatalog,
 	}
 
 	err := rt.CreateInstance(context.Background(), inst)

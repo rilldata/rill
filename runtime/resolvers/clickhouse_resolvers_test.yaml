@@ -1,19 +1,12 @@
 project:
-  sources:
-    ad_bids_mini_source.yaml:
-      connector: local_file
-      path: AdBids_mini.csv
   models:
-    "ad_bids_mini.sql": | 
-      select
-        id,
-        timestamp,
-        publisher,
-        domain,
-        volume,
-        impressions,
-        clicks
-      from ad_bids_mini_source
+    ad_bids_mini.yaml: 
+      type: model
+      sql: SELECT * FROM url('https://raw.githubusercontent.com/rilldata/rill/main/runtime/testruntime/testdata/ad_bids/data/AdBids_mini.csv', CSV)
+      output:
+        columns: (id UInt32,timestamp DateTime64,publisher varchar,domain varchar,bid_price Float32,volume UInt8,impressions UInt8,"ad words" varchar,clicks Float32,device varchar)
+        materialize: true
+        incremental_strategy: append
   dashboards:
     ad_bids_mini_metrics_with_policy.yaml:
       model: ad_bids_mini
@@ -26,7 +19,7 @@ project:
       dimensions:
       - label: Publisher
         name: publisher
-        expression: upper(publisher)
+        expression: publisher
         description: ""
       - label: Domain
         property: domain
@@ -65,7 +58,6 @@ project:
         FROM 
           ad_bids_mini_metrics_with_policy 
 connectors:
-   duckdb: ~
    clickhouse: ~
 tests:
   simple:
@@ -77,7 +69,7 @@ tests:
           email: user@yahoo.com
     result:
       - domain: yahoo.com
-        publisher: YAHOO
+        publisher: Yahoo
         "total volume": ~
         "total impressions": 3.0
   msn:
@@ -89,7 +81,7 @@ tests:
           email: user@msn.com
     result:
       - domain: msn.com
-        publisher: ~
+        publisher: ""
         "total volume": 11.0
         "total impressions": 3.0
   empty:
