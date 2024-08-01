@@ -87,7 +87,7 @@ Make sure that you are selecting the correct Github organization when installing
 
 :::
 
-After connecting Rill Cloud to Github and selecting a [default organization](/reference/cli/org) in the CLI, you should now be able to continuously deploy new projects and/or update existing projects. These projects, [unless specified otherwise](/reference/cli/deploy), will be deployed to your selected [organization](/manage/user-management#managing-members-of-an-organization).
+After connecting Rill Cloud to Github and selecting a [default organization](/reference/cli/org) in the CLI, you should now be able to continuously deploy new projects and/or update existing projects. These projects, [unless specified otherwise](/reference/cli/deploy), will be deployed to your selected [organization](/manage/user-management#adding-a-member-to-the-organization).
 
 :::info Check with your Github organization admin
 
