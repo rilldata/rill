@@ -2,6 +2,7 @@ package metricsview
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -319,4 +320,86 @@ func (e *Executor) Export(ctx context.Context, qry *Query, executionTime *time.T
 		"sql":  sql,
 		"args": args,
 	})
+}
+
+// SearchQuery executes the provided query against the metrics view.
+func (e *Executor) SearchQuery(ctx context.Context, searchQry *SearchQuery, executionTime *time.Time) ([]SearchResult, error) {
+	if !e.security.CanAccess() {
+		return nil, runtime.ErrForbidden
+	}
+
+	// Generate a Query
+	dimensions := make([]Dimension, len(searchQry.Dimensions))
+	for i, d := range searchQry.Dimensions {
+		dimensions[i] = Dimension{Name: d}
+	}
+	qry := &Query{
+		MetricsView: searchQry.MetricsView,
+		Dimensions:  dimensions,
+		TimeRange:   searchQry.TimeRange,
+	}
+
+	rowsCap, err := e.rewriteQueryEnforceCaps(qry)
+	if err != nil {
+		return nil, err
+	}
+
+	if err := e.rewriteQueryTimeRanges(ctx, qry, executionTime); err != nil {
+		return nil, err
+	}
+
+	ast, err := NewAST(e.metricsView, e.security, qry, e.olap.Dialect())
+	if err != nil {
+		return nil, err
+	}
+
+	if err := e.rewriteLimitsIntoSubqueries(ast); err != nil {
+		return nil, err
+	}
+
+	if e.olap.Dialect() == drivers.DialectDruid {
+		// todo check row caps
+		res, err := searchQry.executeSearchInDruid(ctx, e.olap, ast)
+		if err == nil || !errors.Is(err, errDruidNativeSearchUnimplemented) {
+			return res, err
+		}
+	}
+
+	sql, args, err := searchQry.searchSQL(ast)
+	if err != nil {
+		return nil, err
+	}
+
+	res, err := e.olap.Execute(ctx, &drivers.Statement{
+		Query:            sql,
+		Args:             args,
+		Priority:         e.priority,
+		ExecutionTimeout: defaultInteractiveTimeout,
+	})
+	if err != nil {
+		return nil, err
+	}
+	defer res.Close()
+	if rowsCap > 0 {
+		res.SetCap(rowsCap)
+	}
+	searchResult := make([]SearchResult, 0)
+	for res.Next() {
+		row := map[string]any{}
+		if err := res.MapScan(row); err != nil {
+			return nil, err
+		}
+		dim, ok := row["dimension"].(string)
+		if !ok {
+			return nil, fmt.Errorf("unknown result dimension: %q", dim)
+		}
+		searchResult = append(searchResult, SearchResult{
+			Dimension: dim,
+			Value:     row["value"],
+		})
+	}
+	if res.Err() != nil {
+		return nil, res.Err()
+	}
+	return searchResult, nil
 }

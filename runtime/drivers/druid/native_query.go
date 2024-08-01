@@ -66,6 +66,7 @@ func (n *NativeQuery) Do(ctx context.Context, dr, res interface{}, queryID strin
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Executing native query: %s\n", b)
 
 	bodyReader := bytes.NewReader(b)
 
