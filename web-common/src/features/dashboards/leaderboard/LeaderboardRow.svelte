@@ -1,19 +1,19 @@
 <script lang="ts">
-  import { clamp } from "@rilldata/web-common/lib/clamp";
-  import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
   import FormattedDataType from "@rilldata/web-common/components/data-types/FormattedDataType.svelte";
-  import { LeaderboardItemData } from "./leaderboard-utils";
-  import { getStateManagers } from "../state-managers/state-managers";
-  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
-  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
-  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
-  import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
-  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
-  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
   import PercentageChange from "@rilldata/web-common/components/data-types/PercentageChange.svelte";
-  import LongBarZigZag from "./LongBarZigZag.svelte";
-  import { slide } from "svelte/transition";
   import ExternalLink from "@rilldata/web-common/components/icons/ExternalLink.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import { TOOLTIP_STRING_LIMIT } from "@rilldata/web-common/layout/config";
+  import { copyToClipboard } from "@rilldata/web-common/lib/actions/copy-to-clipboard";
+  import { modified } from "@rilldata/web-common/lib/actions/modified-click";
+  import { clamp } from "@rilldata/web-common/lib/clamp";
+  import { formatMeasurePercentageDifference } from "@rilldata/web-common/lib/number-formatting/percentage-formatter";
+  import { slide } from "svelte/transition";
+  import { getStateManagers } from "../state-managers/state-managers";
+  import { LeaderboardItemData } from "./leaderboard-utils";
+  import LeaderboardItemFilterIcon from "./LeaderboardItemFilterIcon.svelte";
+  import LeaderboardTooltipContent from "./LeaderboardTooltipContent.svelte";
+  import LongBarZigZag from "./LongBarZigZag.svelte";
 
   export let itemData: LeaderboardItemData;
   export let dimensionName: string;
@@ -253,7 +253,7 @@
 
 <style lang="postcss">
   td {
-    @apply text-right p-0 z-10;
+    @apply text-right p-0;
     @apply px-2  relative;
     height: 22px;
   }
