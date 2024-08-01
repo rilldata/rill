@@ -6,12 +6,13 @@ import {
   runtimeServiceUnpackEmpty,
 } from "@rilldata/web-common/runtime-client";
 import { queryClient } from "@rilldata/web-common/lib/svelte-query/globalQueryClient";
+import { fetchQueryWithRetry } from "@rilldata/web-common/runtime-client/fetchQueryWithRetry";
 import { EMPTY_PROJECT_TITLE } from "./constants";
 import { writable } from "svelte/store";
 
 export async function isProjectInitialized(instanceId: string) {
   try {
-    const files = await queryClient.fetchQuery<V1ListFilesResponse>({
+    const files = await fetchQueryWithRetry<V1ListFilesResponse>(queryClient, {
       queryKey: getRuntimeServiceListFilesQueryKey(instanceId, undefined),
       queryFn: ({ signal }) => {
         return runtimeServiceListFiles(instanceId, undefined, signal);
@@ -20,7 +21,7 @@ export async function isProjectInitialized(instanceId: string) {
 
     // Return true if `rill.yaml` exists, else false
     return !!files.files?.some(({ path }) => path === "/rill.yaml");
-  } catch {
+  } catch (e) {
     return false;
   }
 }
