@@ -25,8 +25,8 @@
   import { WandIcon } from "lucide-svelte";
   import { createEventDispatcher } from "svelte";
   import { runtime } from "../../../runtime-client/runtime-store";
+  import { createModelFromTable } from "../../connectors/olap/createModel";
   import { useCreateDashboardFromTableUIAction } from "../../metrics-views/ai-generation/generateMetricsView";
-  import { createModelFromSource } from "../createModel";
   import {
     refreshSource,
     replaceSourceWithUploadedFile,
@@ -53,8 +53,10 @@
     $sourceQuery.data?.meta?.reconcileStatus ===
     V1ReconcileStatus.RECONCILE_STATUS_IDLE;
   $: disableCreateDashboard = $sourceHasError || !sourceIsIdle;
-  $: tableName = source?.state?.table ?? "";
-  $: sourceName = $sourceQuery.data?.meta?.name?.name ?? "";
+  $: connector = source?.state?.connector as string;
+  const database = ""; // Sources are ingested into the default database
+  const databaseSchema = ""; // Sources are ingested into the default database schema
+  $: tableName = source?.state?.table as string;
 
   $: sourceFromYaml = useSourceFromYaml($runtime.instanceId, filePath);
 
@@ -72,11 +74,14 @@
   const handleCreateModel = async () => {
     try {
       const previousActiveEntity = getScreenNameFromPage();
-      const [newModelPath, newModelName] = await createModelFromSource(
-        sourceName,
+      const addDevLimit = false; // Typically, the `dev` limit would be applied on the Source itself
+      const [newModelPath, newModelName] = await createModelFromTable(
+        queryClient,
+        connector,
+        database,
+        databaseSchema,
         tableName,
-        "models",
-        true,
+        addDevLimit,
       );
       await goto(`/files${newModelPath}`);
       await behaviourEvent.fireNavigationEvent(

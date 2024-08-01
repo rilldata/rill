@@ -345,6 +345,15 @@ service AdminService {
     option (google.api.http) = {get: "/v1/github/user/repositories"};
   }
 
+  // Connects a rill managed project to github.
+  // Replaces the contents of the remote repo with the contents of the project.
+  rpc ConnectProjectToGithub(ConnectProjectToGithubRequest) returns (ConnectProjectToGithubResponse) {
+    option (google.api.http) = {
+      post: "/v1/organizations/{organization}/projects/{project}/connect-to-github",
+      body: "*"
+    };
+  }
+
   // GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
   rpc GetCloneCredentials(GetCloneCredentialsRequest) returns (GetCloneCredentialsResponse) {
     option (google.api.http) = {get: "/v1/organizations/{organization}/projects/{project}/clone-credentials"};
@@ -1602,9 +1611,21 @@ message ListGithubUserReposResponse {
     string owner = 2;
     string description = 3;
     string url = 4;
+    string default_branch = 5;
   }
   repeated Repo repos = 1;
 }
+
+message ConnectProjectToGithubRequest {
+  string organization = 1;
+  string project = 2;
+  string repo = 3;
+  string branch = 4;
+  string subpath = 5;
+  bool force = 6;
+}
+
+message ConnectProjectToGithubResponse {}
 
 enum GithubPermission {
   GITHUB_PERMISSION_UNSPECIFIED = 0;

@@ -2,11 +2,13 @@
   import { goto } from "$app/navigation";
   import Label from "@rilldata/web-common/components/forms/Label.svelte";
   import Switch from "@rilldata/web-common/components/forms/Switch.svelte";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import ChartsEditor from "@rilldata/web-common/features/charts/editor/ChartsEditor.svelte";
   import AddChartMenu from "@rilldata/web-common/features/custom-dashboards/AddChartMenu.svelte";
   import CustomDashboardPreview from "@rilldata/web-common/features/custom-dashboards/CustomDashboardPreview.svelte";
   import ViewSelector from "@rilldata/web-common/features/custom-dashboards/ViewSelector.svelte";
   import type { Vector } from "@rilldata/web-common/features/custom-dashboards/types";
+  import DeployDashboardCta from "@rilldata/web-common/features/dashboards/workspace/DeployDashboardCTA.svelte";
   import { getNameFromFile } from "@rilldata/web-common/features/entity-management/entity-mappers";
   import { fileArtifacts } from "@rilldata/web-common/features/entity-management/file-artifacts";
   import type { FileArtifact } from "@rilldata/web-common/features/entity-management/file-artifact";
@@ -185,16 +187,16 @@
 />
 
 <WorkspaceContainer
-  bind:width={containerWidth}
   bind:height={containerHeight}
+  bind:width={containerWidth}
   inspector={false}
 >
   <WorkspaceHeader
+    hasUnsavedChanges={$hasUnsavedChanges}
     on:change={onChangeCallback}
     showInspectorToggle={false}
     slot="header"
     titleInput={fileName}
-    hasUnsavedChanges={$hasUnsavedChanges}
   >
     <div class="flex gap-x-4 items-center" slot="workspace-controls">
       <ViewSelector bind:selectedView />
@@ -215,6 +217,9 @@
         disabled={Boolean(errors.length)}
         type="custom"
       />
+
+      <DeployDashboardCta />
+      <LocalAvatarButton />
     </div>
   </WorkspaceHeader>
 

@@ -227,6 +227,13 @@ export type AdminServiceGetDeploymentCredentialsBody = {
   attributes?: AdminServiceGetDeploymentCredentialsBodyAttributes;
 };
 
+export type AdminServiceConnectProjectToGithubBody = {
+  repo?: string;
+  branch?: string;
+  subpath?: string;
+  force?: boolean;
+};
+
 export type AdminServiceListProjectMemberUsergroupsParams = {
   pageSize?: number;
   pageToken?: string;
@@ -1180,6 +1187,10 @@ export interface V1CreateAlertResponse {
   name?: string;
 }
 
+export interface V1ConnectProjectToGithubResponse {
+  [key: string]: any;
+}
+
 export interface V1Condition {
   op?: V1Operation;
   exprs?: V1Expression[];
@@ -1300,4 +1311,5 @@ export interface ListGithubUserReposResponseRepo {
   owner?: string;
   description?: string;
   url?: string;
+  defaultBranch?: string;
 }

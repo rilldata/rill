@@ -80,7 +80,7 @@
   );
 
   $: hasInvalidEmails = $form.emails.some(
-    (_, i) => $errors.emails?.[i] !== undefined,
+    (e, i) => e.length > 0 && $errors.emails?.[i] !== undefined,
   );
 </script>
 

@@ -20,6 +20,7 @@
       },
     },
   );
+  // TODO: add data.resource.meta.reconcileError
 </script>
 
 <section class="flex flex-col gap-y-4">
