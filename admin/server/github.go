@@ -18,6 +18,7 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/go-git/go-git/v5/plumbing"
+	"github.com/go-git/go-git/v5/plumbing/object"
 	"github.com/go-git/go-git/v5/plumbing/transport"
 	githttp "github.com/go-git/go-git/v5/plumbing/transport/http"
 	"github.com/google/go-github/v50/github"
@@ -1103,8 +1104,21 @@ func (s *Server) pushToGit(ctx context.Context, copyData func(projPath string) e
 		return fmt.Errorf("failed to add files to git: %w", err)
 	}
 
+	client := github.NewTokenClient(ctx, token)
+	user, _, err := client.Users.Get(ctx, "")
+	if err != nil {
+		return fmt.Errorf("failed to get current user: %w", err)
+	}
+
 	// git commit -m
-	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{All: true})
+	_, err = wt.Commit("Auto committed by Rill", &git.CommitOptions{
+		All: true,
+		Author: &object.Signature{
+			Name:  safeStr(user.Name),
+			Email: safeStr(user.Email),
+			When:  time.Now(),
+		},
+	})
 	if err != nil {
 		if !errors.Is(err, git.ErrEmptyCommit) {
 			return fmt.Errorf("failed to commit files to git: %w", err)
