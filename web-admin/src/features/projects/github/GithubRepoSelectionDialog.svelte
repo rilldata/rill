@@ -54,8 +54,8 @@
 
   // update data from project, this is needed if the user never leaves the status page and this component is not unmounted
   $: githubConnectionUpdater = new ProjectGithubConnectionUpdater(
-    project,
     organization,
+    project,
     currentUrl,
     currentSubpath,
     currentBranch,
