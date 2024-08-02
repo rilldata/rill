@@ -9,9 +9,9 @@
   import Spinner from "./Spinner.svelte";
 
   export let isLoading: boolean;
-  export let delay = 300;
-  export let duration = 500;
-  export let size = "1em";
+  export let delay: number = 300;
+  export let duration: number = 500;
+  export let size: string = "1em";
 
   const showSpinner = writable(false);
 

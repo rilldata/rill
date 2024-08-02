@@ -22,6 +22,7 @@
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
@@ -33,7 +34,6 @@
   import TDDExportButton from "./TDDExportButton.svelte";
   import type { TDDComparison } from "./types";
   import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
-  import { isLoadingWithTimeout } from "../../entity-management/spinner-utils";
 
   export let metricViewName: string;
   export let dimensionName: string;
@@ -84,10 +84,6 @@
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
-
-  const loadingWithTimeout = isLoadingWithTimeout();
-  $: loadingWithTimeout.setLoading(isFetching);
-  $: isFetchingWithTimeout = $loadingWithTimeout;
 
   let searchToggle = false;
 
@@ -196,8 +192,8 @@
       </div>
     </div>
 
-    {#if isFetchingWithTimeout}
-      <Spinner size="18px" status={EntityStatus.Running} />
+    {#if isFetching}
+      <DelayedSpinner isLoading={isFetching} size="18px" />
     {/if}
   </div>
 
