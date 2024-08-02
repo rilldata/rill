@@ -91,14 +91,27 @@ const sidebars = {
               'learn/rill_learn_200/201_0',
               'learn/rill_learn_200/201_1',
               'learn/rill_learn_200/202_0',
-              'learn/rill_learn_200/206_0',
+              
               'learn/rill_learn_200/203_0',
-              'learn/rill_learn_200/204_0',
+              {
+                type: 'category',
+                label: 'Back to Rill Developer',
+                items: [
+                  'learn/rill_learn_200/204_0',
+                  'learn/rill_learn_200/204_1',
+                ]
+              },
+
               'learn/rill_learn_200/cloud_components/205_0',
               'learn/rill_learn_200/cloud_components/205_3',
               'learn/rill_learn_200/cloud_components/205_1',
               'learn/rill_learn_200/cloud_components/205_2',
+              'learn/rill_learn_200/cloud_components/205_4',
+
+              'learn/rill_learn_200/206_0',
               
+
+              'learn/rill_learn_200/210_0',
             ]
           },
           {
