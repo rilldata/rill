@@ -127,10 +127,8 @@ func TestReolvers(t *testing.T) {
 						require.NoError(t, err)
 						var rows []map[string]interface{}
 						require.NoError(t, json.Unmarshal(res.Data, &rows), string(res.Data))
-						assert := td.Assert(t)
-						if !assert.Cmp(rows, test.Result) {
-							t.Log("Failure") // breakpoint can be placed here
-						}
+
+						require.Equal(t, rows, test.Result)
 						t.Log("======================")
 					})
 				}
