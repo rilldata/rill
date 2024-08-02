@@ -114,7 +114,6 @@ type Options struct {
 }
 
 func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
-	fmt.Printf("subpath %s\n", opts.SubPath)
 	// user chhose one-time uploads specifically
 	if opts.Upload {
 		return deployWithUploadFlow(ctx, ch, opts)
@@ -258,8 +257,6 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 	} else {
 		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
-
-	fmt.Printf("project path %v subpath %v\n", localProjectPath, opts.SubPath)
 
 	// Check if a project matching githubURL already exists in this org
 	projects, err := ch.ProjectNamesByGithubURL(ctx, ch.Org, githubURL, opts.SubPath)
@@ -489,7 +486,6 @@ func validateLocalProject(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	} else {
 		localProjectPath = filepath.Join(localGitPath, opts.SubPath)
 	}
-	fmt.Printf("project path %v subpath %v\n", localProjectPath, opts.SubPath)
 
 	// Verify that localProjectPath contains a Rill project.
 	if rillv1beta.HasRillProject(localProjectPath) {
