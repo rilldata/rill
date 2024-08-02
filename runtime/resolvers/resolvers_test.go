@@ -3,7 +3,6 @@ package resolvers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"maps"
 	"os"
 	"path/filepath"
@@ -11,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/maxatome/go-testdeep/td"
 	"github.com/rilldata/rill/runtime"
 	"github.com/rilldata/rill/runtime/testruntime"
 	"github.com/stretchr/testify/require"
@@ -36,13 +34,13 @@ type Test struct {
 	Result   []map[string]any
 }
 
-func TestReolvers(t *testing.T) {
+func TestResolvers(t *testing.T) {
 	entries, err := os.ReadDir("./")
 	require.NoError(t, err)
 	var reg = regexp.MustCompile(`^(.*)_resolvers_test.yaml$`)
 	for _, e := range entries {
 		if reg.MatchString(e.Name()) {
-			fmt.Println("Running ", e.Name())
+			t.Log("Running with", e.Name())
 			yamlFile, err := os.ReadFile(e.Name())
 			require.NoError(t, err)
 			var r Resolvers
@@ -93,7 +91,7 @@ func TestReolvers(t *testing.T) {
 			}
 
 			for ct, opts := range r.Connectors {
-				fmt.Println("Running with ", ct)
+				t.Log("Running with", ct)
 				if opts == nil {
 					opts = &testruntime.InstanceOptions{}
 				}
@@ -126,9 +124,10 @@ func TestReolvers(t *testing.T) {
 						res, err := rt.Resolve(context.Background(), &o)
 						require.NoError(t, err)
 						var rows []map[string]interface{}
-						require.NoError(t, json.Unmarshal(res.Data, &rows), string(res.Data))
-
-						require.Equal(t, rows, test.Result)
+						b, err := res.MarshalJSON()
+						require.NoError(t, err)
+						require.NoError(t, json.Unmarshal(b, &rows), string(b))
+						require.Equal(t, test.Result, rows)
 						t.Log("======================")
 					})
 				}

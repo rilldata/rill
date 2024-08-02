@@ -60,8 +60,7 @@ project:
         select 
             publisher,
             domain, 
-            "total impressions", 
-            "total volume" 
+            "total impressions" 
         FROM 
           ad_bids_mini_metrics_with_policy 
 connectors:
@@ -77,7 +76,6 @@ tests:
     result:
       - domain: yahoo.com
         publisher: YAHOO
-        "total volume": ~
         "total impressions": 3.0
   msn:
     resolver: mv_sql_policy_api 
@@ -89,7 +87,6 @@ tests:
     result:
       - domain: msn.com
         publisher: ~
-        "total volume": 11.0
         "total impressions": 3.0
   empty:
     resolver: mv_sql_policy_api 

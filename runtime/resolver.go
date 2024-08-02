@@ -8,7 +8,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/mitchellh/hashstructure/v2"
 	runtimev1 "github.com/rilldata/rill/proto/gen/rill/runtime/v1"
 	"github.com/rilldata/rill/runtime/drivers"
 	"github.com/rilldata/rill/runtime/pkg/jsonval"
@@ -134,6 +136,15 @@ func (r *Runtime) Resolve(ctx context.Context, opts *ResolveOptions) (ResolverRe
 	hash := md5.New()
 	if _, err := hash.Write([]byte(resolver.Key())); err != nil {
 		return nil, err
+	}
+	if opts.Claims.UserAttributes != nil {
+		h, err := hashstructure.Hash(opts.Claims.UserAttributes, hashstructure.FormatV2, nil)
+		if err != nil {
+			return nil, err
+		}
+		if _, err = hash.Write([]byte(strconv.FormatUint(h, 16))); err != nil {
+			return nil, err
+		}
 	}
 	for _, ref := range resolver.Refs() {
 		res, err := ctrl.Get(ctx, ref, false)

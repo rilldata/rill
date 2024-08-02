@@ -24,9 +24,9 @@ project:
       - label: "Max bid price"
         name: max bid price
         expression: max(bid_price)
-      - label: "Average bid price"
-        name: average bid price
-        expression: avg(bid_price)
+      - label: "min bid price"
+        name: min bid price
+        expression: min(bid_price)
 
       security:
         access: true
@@ -39,8 +39,8 @@ project:
         select 
             publisher,
             domain, 
-            round("average bid price", 0) "average bid price",
-            round("max bid price", 0) "max bid price" 
+            "min bid price",
+            "max bid price"
         FROM 
           ad_bids_mini_metrics_with_policy 
         WHERE
@@ -63,4 +63,4 @@ tests:
       - domain: news.yahoo.com
         publisher: Yahoo
         "max bid price": 6.0
-        "average bid price": 3.0
+        "min bid price": 1.0
