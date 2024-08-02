@@ -1,40 +1,95 @@
 <script lang="ts">
-  import { createEventDispatcher } from "svelte";
+  import { page } from "$app/stores";
+  import {
+    AlertDialog,
+    AlertDialogContent,
+    AlertDialogDescription,
+    AlertDialogFooter,
+    AlertDialogHeader,
+    AlertDialogTitle,
+    AlertDialogTrigger,
+  } from "@rilldata/web-common/components/alert-dialog";
+  import DeployIcon from "@rilldata/web-common/components/icons/DeployIcon.svelte";
+  import Tooltip from "@rilldata/web-common/components/tooltip/Tooltip.svelte";
+  import TooltipContent from "@rilldata/web-common/components/tooltip/TooltipContent.svelte";
+  import { behaviourEvent } from "@rilldata/web-common/metrics/initMetrics";
+  import { BehaviourEventAction } from "@rilldata/web-common/metrics/service/BehaviourEventTypes";
+  import { createLocalServiceDeployValidation } from "@rilldata/web-common/runtime-client/local-service";
   import { Button } from "../../../components/button";
-  import CliCommandDisplay from "../../../components/commands/CLICommandDisplay.svelte";
-  import Dialog from "../../../components/dialog/Dialog.svelte";
 
-  export let open: boolean;
+  $: deployValidation = createLocalServiceDeployValidation({
+    query: {
+      refetchOnWindowFocus: true,
+    },
+  });
+  $: isDeployed = !!$deployValidation.data?.deployedProjectId;
 
-  const dispatch = createEventDispatcher();
+  $: deployPageUrl = `${$page.url.protocol}//${$page.url.host}/deploy`;
 
-  function close() {
-    dispatch("close");
+  let open = false;
+  function onShowDeploy() {
+    if (isDeployed) {
+      window.open(deployPageUrl);
+    } else {
+      open = true;
+    }
+    void behaviourEvent?.fireDeployEvent(BehaviourEventAction.DeployIntent);
   }
 </script>
 
-<Dialog titleMarginBottomOverride="mb-4" on:close {open}>
-  <svelte:fragment slot="title">
-    Deploy your project to Rill Cloud
-  </svelte:fragment>
+<Tooltip distance={8}>
+  {#if isDeployed}
+    <Button
+      loading={$deployValidation.isLoading}
+      on:click={onShowDeploy}
+      type="primary"
+      href={deployPageUrl}
+      target="_blank"
+    >
+      Redeploy
+    </Button>
+  {:else}
+    <Button
+      loading={$deployValidation.isLoading}
+      on:click={onShowDeploy}
+      type="primary"
+    >
+      Deploy to share
+    </Button>
+  {/if}
+  <TooltipContent slot="tooltip-content">
+    Deploy this dashboard to Rill Cloud
+  </TooltipContent>
+</Tooltip>
 
-  <div class="flex flex-col items-center" slot="body">
-    <div class="text-left text-sm text-gray-500 w-full">
-      Run this command from your project directory. <a
-        href="https://docs.rilldata.com/deploy/existing-project"
-        target="_blank"
-        rel="noreferrer noopener">See docs</a
-      >
+<AlertDialog bind:open>
+  <AlertDialogTrigger asChild>
+    <div class="hidden"></div>
+  </AlertDialogTrigger>
+  <AlertDialogContent>
+    <div class="flex flex-row">
+      <DeployIcon size="150px" />
+      <div class="flex flex-col">
+        <AlertDialogHeader>
+          <AlertDialogTitle>Deploy this project</AlertDialogTitle>
+          <AlertDialogDescription>
+            You’re about to deploy to Rill Cloud, where you can set alerts,
+            share dashboards, and more. <a
+              href="https://www.rilldata.com/pricing"
+              target="_blank">See pricing details</a
+            >
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter class="mt-5">
+          <Button on:click={() => (open = false)} type="secondary">Back</Button>
+          <Button
+            on:click={() => (open = false)}
+            type="primary"
+            href={deployPageUrl}
+            target="_blank">Continue</Button
+          >
+        </AlertDialogFooter>
+      </div>
     </div>
-    <div class="pt-4 pb-2">
-      <CliCommandDisplay command="rill deploy" />
-    </div>
-  </div>
-
-  <svelte:fragment slot="footer">
-    <div class="flex">
-      <div class="grow" />
-      <Button type="secondary" on:click={close}>Close</Button>
-    </div>
-  </svelte:fragment>
-</Dialog>
+  </AlertDialogContent>
+</AlertDialog>

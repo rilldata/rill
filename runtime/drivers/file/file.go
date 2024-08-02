@@ -211,7 +211,7 @@ func (c *connection) AsObjectStore() (drivers.ObjectStore, bool) {
 func (c *connection) AsModelExecutor(instanceID string, opts *drivers.ModelExecutorOptions) (drivers.ModelExecutor, bool) {
 	if opts.OutputHandle == c {
 		if olap, ok := opts.InputHandle.AsOLAP(instanceID); ok {
-			return &olapToSelfExecutor{c, olap, opts}, true
+			return &olapToSelfExecutor{c, olap}, true
 		}
 	}
 	return nil, false
@@ -230,6 +230,11 @@ func (c *connection) AsTransporter(from, to drivers.Handle) (drivers.Transporter
 // AsFileStore implements drivers.Connection.
 func (c *connection) AsFileStore() (drivers.FileStore, bool) {
 	return c, true
+}
+
+// AsWarehouse implements drivers.Handle.
+func (c *connection) AsWarehouse() (drivers.Warehouse, bool) {
+	return nil, false
 }
 
 // AsSQLStore implements drivers.Connection.

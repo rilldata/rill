@@ -15,6 +15,9 @@ jobs:
 
       - name: NPM Install
         run: npm install
+        # https://typicode.github.io/husky/how-to.html#ci-server-and-docker
+        env:
+          HUSKY: 0
 
       - name: Prettier checks
         run: npx prettier --check "**/*"

@@ -1,5 +1,6 @@
 <script lang="ts">
   import MetricsIcon from "@rilldata/web-common/components/icons/Metrics.svelte";
+  import LocalAvatarButton from "@rilldata/web-common/features/authentication/LocalAvatarButton.svelte";
   import GlobalDimensionSearch from "@rilldata/web-common/features/dashboards/dimension-search/GlobalDimensionSearch.svelte";
   import { useDashboard } from "@rilldata/web-common/features/dashboards/selectors";
   import { V1ReconcileStatus } from "@rilldata/web-common/runtime-client";
@@ -45,13 +46,6 @@
       )
       .catch(console.error);
   }
-
-  let showDeployDashboardModal = false;
-
-  async function showDeployModal() {
-    showDeployDashboardModal = true;
-    await behaviourEvent?.fireDeployIntentEvent();
-  }
 </script>
 
 <div class="flex gap-2 flex-shrink-0 ml-auto">
@@ -77,16 +71,7 @@
         {/if}
       </TooltipContent>
     </Tooltip>
-    <Tooltip distance={8}>
-      <Button on:click={() => showDeployModal()} type="primary">Deploy</Button>
-      <TooltipContent slot="tooltip-content">
-        Deploy this dashboard to Rill Cloud
-      </TooltipContent>
-    </Tooltip>
+    <DeployDashboardCta />
+    <LocalAvatarButton />
   {/if}
 </div>
-
-<DeployDashboardCta
-  on:close={() => (showDeployDashboardModal = false)}
-  open={showDeployDashboardModal}
-/>

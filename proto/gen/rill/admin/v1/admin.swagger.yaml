@@ -175,6 +175,21 @@ paths:
           type: string
       tags:
         - AdminService
+  /v1/magic-tokens/current:
+    get:
+      summary: GetCurrentMagicAuthToken returns information about the current magic auth token.
+      operationId: AdminService_GetCurrentMagicAuthToken
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetCurrentMagicAuthTokenResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      tags:
+        - AdminService
   /v1/organizations:
     get:
       summary: ListOrganizations lists all the organizations currently managed by the admin
@@ -768,6 +783,46 @@ paths:
           in: path
           required: true
           type: string
+      tags:
+        - AdminService
+  /v1/organizations/{organization}/projects/{project}/connect-to-github:
+    post:
+      summary: |-
+        Connects a rill managed project to github.
+        Replaces the contents of the remote repo with the contents of the project.
+      operationId: AdminService_ConnectProjectToGithub
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1ConnectProjectToGithubResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: organization
+          in: path
+          required: true
+          type: string
+        - name: project
+          in: path
+          required: true
+          type: string
+        - name: body
+          in: body
+          required: true
+          schema:
+            type: object
+            properties:
+              repo:
+                type: string
+              branch:
+                type: string
+              subpath:
+                type: string
+              force:
+                type: boolean
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/credentials:
@@ -1366,6 +1421,9 @@ paths:
                 description: |-
                   Optional list of names of dimensions and measures to limit access to.
                   If empty, all dimensions and measures are accessible.
+              state:
+                type: string
+                description: Optional state to store with the token. Can be fetched with GetCurrentMagicAuthToken.
       tags:
         - AdminService
   /v1/organizations/{organization}/projects/{project}/usergroups/{usergroup}/roles:
@@ -2221,6 +2279,8 @@ paths:
               prodBranch:
                 type: string
               githubUrl:
+                type: string
+              subpath:
                 type: string
               archiveAssetId:
                 type: string
@@ -3196,6 +3256,8 @@ definitions:
         type: string
       url:
         type: string
+      defaultBranch:
+        type: string
   protobufAny:
     type: object
     properties:
@@ -3367,6 +3429,8 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Expression'
+  v1ConnectProjectToGithubResponse:
+    type: object
   v1CreateAlertResponse:
     type: object
     properties:
@@ -3575,6 +3639,11 @@ definitions:
       archiveDownloadUrl:
         type: string
         title: either archive_download_url or git related details will be set
+  v1GetCurrentMagicAuthTokenResponse:
+    type: object
+    properties:
+      token:
+        $ref: '#/definitions/v1MagicAuthToken'
   v1GetCurrentUserResponse:
     type: object
     properties:
@@ -3945,6 +4014,8 @@ definitions:
         type: array
         items:
           type: string
+      state:
+        type: string
   v1MemberUser:
     type: object
     properties:

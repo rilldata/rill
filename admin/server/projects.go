@@ -217,11 +217,8 @@ func (s *Server) GetProject(ctx context.Context, req *adminv1.GetProjectRequest)
 		TTL:         ttlDuration,
 		InstancePermissions: map[string][]runtimeauth.Permission{
 			depl.RuntimeInstanceID: {
-				// TODO: Remove ReadProfiling and ReadRepo (may require frontend changes)
 				runtimeauth.ReadObjects,
 				runtimeauth.ReadMetrics,
-				runtimeauth.ReadProfiling,
-				runtimeauth.ReadRepo,
 				runtimeauth.ReadAPI,
 			},
 		},
@@ -485,6 +482,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 	if req.GithubUrl != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.github_url", *req.GithubUrl))
 	}
+	if req.Subpath != nil {
+		observability.AddRequestAttributes(ctx, attribute.String("args.subpath", *req.Subpath))
+	}
 	if req.ArchiveAssetId != nil {
 		observability.AddRequestAttributes(ctx, attribute.String("args.archive_asset_id", *req.ArchiveAssetId))
 	}
@@ -516,6 +516,7 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		return nil, fmt.Errorf("cannot set both github_url and archive_asset_id")
 	}
 	githubURL := proj.GithubURL
+	githubInstID := proj.GithubInstallationID
 	archiveAssetID := proj.ArchiveAssetID
 	if req.GithubUrl != nil {
 		// If changing the Github URL, check github app is installed and caller has access on the repo
@@ -525,7 +526,9 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 				return nil, status.Error(codes.Unauthenticated, "not authenticated as a user")
 			}
 
-			_, err = s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
+			instID, err := s.getAndCheckGithubInstallationID(ctx, *req.GithubUrl, claims.OwnerID())
+			// github installation ID might change, so make sure it is updated
+			githubInstID = &instID
 			if err != nil {
 				return nil, err
 			}
@@ -559,7 +562,8 @@ func (s *Server) UpdateProject(ctx context.Context, req *adminv1.UpdateProjectRe
 		Public:               valOrDefault(req.Public, proj.Public),
 		ArchiveAssetID:       archiveAssetID,
 		GithubURL:            githubURL,
-		GithubInstallationID: proj.GithubInstallationID,
+		GithubInstallationID: githubInstID,
+		Subpath:              valOrDefault(req.Subpath, proj.Subpath),
 		ProdVersion:          valOrDefault(req.ProdVersion, proj.ProdVersion),
 		ProdBranch:           valOrDefault(req.ProdBranch, proj.ProdBranch),
 		ProdVariables:        proj.ProdVariables,
@@ -777,7 +781,8 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 			ProjectID: proj.ID,
 			RoleID:    role.ID,
 		})
-		if err != nil {
+		// continue sending an email if an invitation entry already exists
+		if err != nil && !errors.Is(err, database.ErrNotUnique) {
 			return nil, status.Error(codes.Internal, err.Error())
 		}
 
@@ -802,7 +807,8 @@ func (s *Server) AddProjectMemberUser(ctx context.Context, req *adminv1.AddProje
 	}
 
 	err = s.admin.DB.InsertProjectMemberUser(ctx, proj.ID, user.ID, role.ID)
-	if err != nil {
+	// continue sending an email if the user already exists
+	if err != nil && !errors.Is(err, database.ErrNotUnique) {
 		return nil, status.Error(codes.InvalidArgument, err.Error())
 	}
 

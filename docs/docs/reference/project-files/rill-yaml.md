@@ -98,3 +98,19 @@ variable=xyz
 Similar to how [connector credentials can be pushed / pulled](/build/credentials/credentials.md#pushing-and-pulling-credentials-to--from-rill-cloud) from local to cloud or vice versa, project variables set locally in Rill Developer can be pushed to Rill Cloud and/or pulled back to your local instance from your deployed project by using the `rill env push` and `rill env pull` commands respectively.
 
 :::
+
+## Ignoring files and directories within Rill
+
+There are times where you may have extraneous directories or files within your Rill project that you would like to be ignored by Rill (potentially also leading to parsing errors). The `ignore_paths` property can be specified in your `rill.yaml` file for this purpose by specifying a list of directories and/or files to ignore.
+
+```yaml
+ignore_paths:
+  - /path/to/ignore
+  - /file_to_ignore.yaml
+```
+
+:::tip
+
+Don't forget the leading `/` when specifying the path for `ignore_paths` and this path is also assuming the relative path from your project root.
+
+:::

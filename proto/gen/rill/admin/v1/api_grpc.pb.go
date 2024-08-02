@@ -72,6 +72,7 @@ const (
 	AdminService_GetGithubRepoStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubRepoStatus"
 	AdminService_GetGithubUserStatus_FullMethodName                   = "/rill.admin.v1.AdminService/GetGithubUserStatus"
 	AdminService_ListGithubUserRepos_FullMethodName                   = "/rill.admin.v1.AdminService/ListGithubUserRepos"
+	AdminService_ConnectProjectToGithub_FullMethodName                = "/rill.admin.v1.AdminService/ConnectProjectToGithub"
 	AdminService_GetCloneCredentials_FullMethodName                   = "/rill.admin.v1.AdminService/GetCloneCredentials"
 	AdminService_CreateWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/CreateWhitelistedDomain"
 	AdminService_RemoveWhitelistedDomain_FullMethodName               = "/rill.admin.v1.AdminService/RemoveWhitelistedDomain"
@@ -101,6 +102,7 @@ const (
 	AdminService_RevokeServiceAuthToken_FullMethodName                = "/rill.admin.v1.AdminService/RevokeServiceAuthToken"
 	AdminService_IssueMagicAuthToken_FullMethodName                   = "/rill.admin.v1.AdminService/IssueMagicAuthToken"
 	AdminService_ListMagicAuthTokens_FullMethodName                   = "/rill.admin.v1.AdminService/ListMagicAuthTokens"
+	AdminService_GetCurrentMagicAuthToken_FullMethodName              = "/rill.admin.v1.AdminService/GetCurrentMagicAuthToken"
 	AdminService_RevokeMagicAuthToken_FullMethodName                  = "/rill.admin.v1.AdminService/RevokeMagicAuthToken"
 	AdminService_UpdateUserPreferences_FullMethodName                 = "/rill.admin.v1.AdminService/UpdateUserPreferences"
 	AdminService_ListBookmarks_FullMethodName                         = "/rill.admin.v1.AdminService/ListBookmarks"
@@ -245,6 +247,9 @@ type AdminServiceClient interface {
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(ctx context.Context, in *GetGithubUserStatusRequest, opts ...grpc.CallOption) (*GetGithubUserStatusResponse, error)
 	ListGithubUserRepos(ctx context.Context, in *ListGithubUserReposRequest, opts ...grpc.CallOption) (*ListGithubUserReposResponse, error)
+	// Connects a rill managed project to github.
+	// Replaces the contents of the remote repo with the contents of the project.
+	ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -303,6 +308,8 @@ type AdminServiceClient interface {
 	IssueMagicAuthToken(ctx context.Context, in *IssueMagicAuthTokenRequest, opts ...grpc.CallOption) (*IssueMagicAuthTokenResponse, error)
 	// ListMagicAuthTokens lists all the magic auth tokens for a specific project.
 	ListMagicAuthTokens(ctx context.Context, in *ListMagicAuthTokensRequest, opts ...grpc.CallOption) (*ListMagicAuthTokensResponse, error)
+	// GetCurrentMagicAuthToken returns information about the current magic auth token.
+	GetCurrentMagicAuthToken(ctx context.Context, in *GetCurrentMagicAuthTokenRequest, opts ...grpc.CallOption) (*GetCurrentMagicAuthTokenResponse, error)
 	// RevokeMagicAuthToken revokes a magic auth token.
 	RevokeMagicAuthToken(ctx context.Context, in *RevokeMagicAuthTokenRequest, opts ...grpc.CallOption) (*RevokeMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
@@ -901,6 +908,16 @@ func (c *adminServiceClient) ListGithubUserRepos(ctx context.Context, in *ListGi
 	return out, nil
 }
 
+func (c *adminServiceClient) ConnectProjectToGithub(ctx context.Context, in *ConnectProjectToGithubRequest, opts ...grpc.CallOption) (*ConnectProjectToGithubResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ConnectProjectToGithubResponse)
+	err := c.cc.Invoke(ctx, AdminService_ConnectProjectToGithub_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *adminServiceClient) GetCloneCredentials(ctx context.Context, in *GetCloneCredentialsRequest, opts ...grpc.CallOption) (*GetCloneCredentialsResponse, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(GetCloneCredentialsResponse)
@@ -1185,6 +1202,16 @@ func (c *adminServiceClient) ListMagicAuthTokens(ctx context.Context, in *ListMa
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
 	out := new(ListMagicAuthTokensResponse)
 	err := c.cc.Invoke(ctx, AdminService_ListMagicAuthTokens_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *adminServiceClient) GetCurrentMagicAuthToken(ctx context.Context, in *GetCurrentMagicAuthTokenRequest, opts ...grpc.CallOption) (*GetCurrentMagicAuthTokenResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetCurrentMagicAuthTokenResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetCurrentMagicAuthToken_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -1612,6 +1639,9 @@ type AdminServiceServer interface {
 	// If we don't have access to user's personal account tokens or it is expired, instructions for granting access are returned.
 	GetGithubUserStatus(context.Context, *GetGithubUserStatusRequest) (*GetGithubUserStatusResponse, error)
 	ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error)
+	// Connects a rill managed project to github.
+	// Replaces the contents of the remote repo with the contents of the project.
+	ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error)
 	// GetCloneCredentials returns credentials and other details for a project's Git repository or archive path if git repo is not configured.
 	GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error)
 	// CreateWhitelistedDomain adds a domain to the whitelist
@@ -1670,6 +1700,8 @@ type AdminServiceServer interface {
 	IssueMagicAuthToken(context.Context, *IssueMagicAuthTokenRequest) (*IssueMagicAuthTokenResponse, error)
 	// ListMagicAuthTokens lists all the magic auth tokens for a specific project.
 	ListMagicAuthTokens(context.Context, *ListMagicAuthTokensRequest) (*ListMagicAuthTokensResponse, error)
+	// GetCurrentMagicAuthToken returns information about the current magic auth token.
+	GetCurrentMagicAuthToken(context.Context, *GetCurrentMagicAuthTokenRequest) (*GetCurrentMagicAuthTokenResponse, error)
 	// RevokeMagicAuthToken revokes a magic auth token.
 	RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error)
 	// UpdateUserPreferences updates the preferences for the user
@@ -1894,6 +1926,9 @@ func (UnimplementedAdminServiceServer) GetGithubUserStatus(context.Context, *Get
 func (UnimplementedAdminServiceServer) ListGithubUserRepos(context.Context, *ListGithubUserReposRequest) (*ListGithubUserReposResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListGithubUserRepos not implemented")
 }
+func (UnimplementedAdminServiceServer) ConnectProjectToGithub(context.Context, *ConnectProjectToGithubRequest) (*ConnectProjectToGithubResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method ConnectProjectToGithub not implemented")
+}
 func (UnimplementedAdminServiceServer) GetCloneCredentials(context.Context, *GetCloneCredentialsRequest) (*GetCloneCredentialsResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetCloneCredentials not implemented")
 }
@@ -1980,6 +2015,9 @@ func (UnimplementedAdminServiceServer) IssueMagicAuthToken(context.Context, *Iss
 }
 func (UnimplementedAdminServiceServer) ListMagicAuthTokens(context.Context, *ListMagicAuthTokensRequest) (*ListMagicAuthTokensResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ListMagicAuthTokens not implemented")
+}
+func (UnimplementedAdminServiceServer) GetCurrentMagicAuthToken(context.Context, *GetCurrentMagicAuthTokenRequest) (*GetCurrentMagicAuthTokenResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentMagicAuthToken not implemented")
 }
 func (UnimplementedAdminServiceServer) RevokeMagicAuthToken(context.Context, *RevokeMagicAuthTokenRequest) (*RevokeMagicAuthTokenResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method RevokeMagicAuthToken not implemented")
@@ -3041,6 +3079,24 @@ func _AdminService_ListGithubUserRepos_Handler(srv interface{}, ctx context.Cont
 	return interceptor(ctx, in, info, handler)
 }
 
+func _AdminService_ConnectProjectToGithub_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ConnectProjectToGithubRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).ConnectProjectToGithub(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_ConnectProjectToGithub_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).ConnectProjectToGithub(ctx, req.(*ConnectProjectToGithubRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 func _AdminService_GetCloneCredentials_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
 	in := new(GetCloneCredentialsRequest)
 	if err := dec(in); err != nil {
@@ -3559,6 +3615,24 @@ func _AdminService_ListMagicAuthTokens_Handler(srv interface{}, ctx context.Cont
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(AdminServiceServer).ListMagicAuthTokens(ctx, req.(*ListMagicAuthTokensRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _AdminService_GetCurrentMagicAuthToken_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetCurrentMagicAuthTokenRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(AdminServiceServer).GetCurrentMagicAuthToken(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: AdminService_GetCurrentMagicAuthToken_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(AdminServiceServer).GetCurrentMagicAuthToken(ctx, req.(*GetCurrentMagicAuthTokenRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -4341,6 +4415,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ListGithubUserRepos_Handler,
 		},
 		{
+			MethodName: "ConnectProjectToGithub",
+			Handler:    _AdminService_ConnectProjectToGithub_Handler,
+		},
+		{
 			MethodName: "GetCloneCredentials",
 			Handler:    _AdminService_GetCloneCredentials_Handler,
 		},
@@ -4455,6 +4533,10 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ListMagicAuthTokens",
 			Handler:    _AdminService_ListMagicAuthTokens_Handler,
+		},
+		{
+			MethodName: "GetCurrentMagicAuthToken",
+			Handler:    _AdminService_GetCurrentMagicAuthToken_Handler,
 		},
 		{
 			MethodName: "RevokeMagicAuthToken",

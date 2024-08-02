@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from "$app/stores";
-  import ContextButton from "@rilldata/web-common/components/column-profile/ContextButton.svelte";
+  import ContextButton from "@rilldata/web-common/components/button/ContextButton.svelte";
   import * as DropdownMenu from "@rilldata/web-common/components/dropdown-menu/";
   import Cancel from "@rilldata/web-common/components/icons/Cancel.svelte";
   import EditIcon from "@rilldata/web-common/components/icons/EditIcon.svelte";
@@ -20,6 +20,7 @@
   } from "@rilldata/web-common/metrics/service/MetricsTypes";
   import { V1ResourceName } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { Save } from "lucide-svelte";
   import { Readable } from "svelte/store";
   import File from "../../components/icons/File.svelte";
   import NavigationMenuSeparator from "../../layout/navigation/NavigationMenuSeparator.svelte";
@@ -31,7 +32,6 @@
   import ModelMenuItems from "../models/navigation/ModelMenuItems.svelte";
   import SourceMenuItems from "../sources/navigation/SourceMenuItems.svelte";
   import { PROTECTED_DIRECTORIES, PROTECTED_FILES } from "./protected-paths";
-  import { Save } from "lucide-svelte";
 
   export let filePath: string;
   export let onRename: (filePath: string, isDir: boolean) => void;
@@ -44,7 +44,7 @@
   export let onMouseDown: (e: MouseEvent, dragData: NavDragData) => void;
 
   let contextMenuOpen = false;
-  let name: Readable<V1ResourceName | undefined>;
+  let resourceName: Readable<V1ResourceName | undefined>;
 
   $: id = `${filePath}-nav-link`;
   $: fileName = filePath.split("/").pop();
@@ -53,8 +53,8 @@
     removeLeadingSlash($page.params.file ?? "");
   $: fileArtifact = fileArtifacts.getFileArtifact(filePath);
 
-  $: ({ name, hasUnsavedChanges, saveLocalContent } = fileArtifact);
-  $: resourceKind = $name?.kind as ResourceKind;
+  $: ({ resourceName, hasUnsavedChanges, saveLocalContent } = fileArtifact);
+  $: resourceKind = $resourceName?.kind as ResourceKind;
   $: padding = getPaddingFromPath(filePath);
   $: topLevelFolder = getTopLevelFolder(filePath);
   $: isProtectedDirectory = PROTECTED_DIRECTORIES.includes(topLevelFolder);
@@ -67,7 +67,7 @@
     const previousScreenName = getScreenNameFromPage();
     behaviourEvent
       .fireNavigationEvent(
-        $name?.name ?? "",
+        filePath,
         BehaviourEventMedium.Menu,
         MetricsEventSpace.LeftPanel,
         previousScreenName,

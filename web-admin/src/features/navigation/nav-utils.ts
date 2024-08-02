@@ -11,8 +11,12 @@ export function isProjectPage(page: Page): boolean {
     page.route.id === "/[organization]/[project]/-/reports" ||
     page.route.id === "/[organization]/[project]/-/alerts" ||
     page.route.id === "/[organization]/[project]/-/status" ||
-    !!page.route.id?.startsWith("/[organization]/[project]/-/request-access")
+    !!page.route?.id?.startsWith("/[organization]/[project]/-/request-access")
   );
+}
+
+export function withinProject(page: Page): boolean {
+  return !!page.route?.id?.startsWith("/[organization]/[project]");
 }
 
 export function isMetricsExplorerPage(page: Page): boolean {
@@ -56,6 +60,10 @@ export function isProjectRequestAccessPage(page: Page): boolean {
   return !!page.route.id?.startsWith(
     "/[organization]/[project]/-/request-access",
   );
+}
+
+export function isProjectInvitePage(page: Page): boolean {
+  return page.route.id === "/[organization]/[project]/-/invite";
 }
 
 export function getScreenNameFromPage(page: Page): MetricsEventScreenName {

@@ -1,7 +1,9 @@
 <script lang="ts">
   import { page } from "$app/stores";
   import Bookmarks from "@rilldata/web-admin/features/bookmarks/Bookmarks.svelte";
-  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/shareable-urls/selectors";
+  import ShareDashboardButton from "@rilldata/web-admin/features/dashboards/share/ShareDashboardButton.svelte";
+  import UserInviteButton from "@rilldata/web-admin/features/projects/user-invite/UserInviteButton.svelte";
+  import { useShareableURLMetricsView } from "@rilldata/web-admin/features/public-urls/selectors";
   import Rill from "@rilldata/web-common/components/icons/Rill.svelte";
   import type { PathOption } from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
   import Breadcrumbs from "@rilldata/web-common/components/navigation/breadcrumbs/Breadcrumbs.svelte";
@@ -21,10 +23,8 @@
   import AvatarButton from "../authentication/AvatarButton.svelte";
   import SignIn from "../authentication/SignIn.svelte";
   import LastRefreshedDate from "../dashboards/listing/LastRefreshedDate.svelte";
-  import ShareDashboardButton from "../dashboards/share/ShareDashboardButton.svelte";
-  import ShareProjectButton from "../projects/ShareProjectButton.svelte";
+  import PageTitle from "../public-urls/PageTitle.svelte";
   import { useReports } from "../scheduled-reports/selectors";
-  import PageTitle from "../shareable-urls/PageTitle.svelte";
   import {
     isMagicLinkPage,
     isMetricsExplorerPage,
@@ -32,6 +32,7 @@
   } from "./nav-utils";
 
   export let createMagicAuthTokens: boolean;
+  export let manageProjectMembers: boolean;
 
   const user = createAdminServiceGetCurrentUser();
 
@@ -167,8 +168,8 @@
     {#if $viewAsUserStore}
       <ViewAsUserChip />
     {/if}
-    {#if onProjectPage}
-      <ShareProjectButton {organization} {project} />
+    {#if onProjectPage && manageProjectMembers}
+      <UserInviteButton {organization} {project} />
     {/if}
     {#if onMetricsExplorerPage || onMagicLinkPage}
       <StateManagersProvider metricsViewName={dashboard}>

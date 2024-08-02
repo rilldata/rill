@@ -971,6 +971,39 @@ paths:
           default: LOG_LEVEL_UNSPECIFIED
       tags:
         - RuntimeService
+  /v1/instances/{instanceId}/models/{model}/splits:
+    get:
+      summary: GetModelSplits returns the splits of a model
+      operationId: RuntimeService_GetModelSplits
+      responses:
+        "200":
+          description: A successful response.
+          schema:
+            $ref: '#/definitions/v1GetModelSplitsResponse'
+        default:
+          description: An unexpected error response.
+          schema:
+            $ref: '#/definitions/rpcStatus'
+      parameters:
+        - name: instanceId
+          in: path
+          required: true
+          type: string
+        - name: model
+          in: path
+          required: true
+          type: string
+        - name: pageSize
+          in: query
+          required: false
+          type: integer
+          format: int64
+        - name: pageToken
+          in: query
+          required: false
+          type: string
+      tags:
+        - RuntimeService
   /v1/instances/{instanceId}/queries/column-cardinality/tables/{tableName}:
     get:
       summary: Get cardinality for a column
@@ -3600,6 +3633,8 @@ definitions:
         type: boolean
       implementsNotifier:
         type: boolean
+      implementsWarehouse:
+        type: boolean
     description: ConnectorDriver represents a connector driver available in the runtime.
   v1ConnectorSpec:
     type: object
@@ -3861,6 +3896,16 @@ definitions:
         items:
           type: object
           $ref: '#/definitions/v1Log'
+  v1GetModelSplitsResponse:
+    type: object
+    properties:
+      splits:
+        type: array
+        items:
+          type: object
+          $ref: '#/definitions/v1ModelSplit'
+      nextPageToken:
+        type: string
   v1GetResourceResponse:
     type: object
     properties:
@@ -4768,9 +4813,23 @@ definitions:
         type: string
       incrementalStateResolverProperties:
         type: object
+      splitsResolver:
+        type: string
+      splitsResolverProperties:
+        type: object
+      splitsWatermarkField:
+        type: string
+      splitsConcurrencyLimit:
+        type: integer
+        format: int64
       inputConnector:
         type: string
       inputProperties:
+        type: object
+      stageConnector:
+        type: string
+        description: stage_connector is optional.
+      stageProperties:
         type: object
       outputConnector:
         type: string
@@ -4778,28 +4837,61 @@ definitions:
         type: object
       trigger:
         type: boolean
+  v1ModelSplit:
+    type: object
+    properties:
+      key:
+        type: string
+      data:
+        type: object
+      watermark:
+        type: string
+        format: date-time
+      executedOn:
+        type: string
+        format: date-time
+      error:
+        type: string
+      elapsedMs:
+        type: integer
+        format: int64
   v1ModelState:
     type: object
     properties:
       executorConnector:
         type: string
+        description: executor_connector is the ModelExecutor that produced the model's result.
       resultConnector:
         type: string
+        description: result_connector is the connector where the model's result is stored.
       resultProperties:
         type: object
+        description: result_properties are returned by the executor and contains metadata about the result.
       resultTable:
         type: string
+        description: result_table contains the model's result table for SQL models. It is a convenience field that can also be derived from result_properties.
       specHash:
         type: string
+        description: spec_hash is a hash of those parts of the spec that affect the model's result.
       refsHash:
         type: string
+        description: refs_hash is a hash of the model's refs current state. It is used to determine if the model's refs have changed.
       refreshedOn:
         type: string
         format: date-time
+        description: refreshed_on is the time the model was last executed.
       incrementalState:
         type: object
+        description: incremental_state contains the result of the most recent invocation of the model's incremental state resolver.
       incrementalStateSchema:
         $ref: '#/definitions/v1StructType'
+        description: incremental_state_schema contains a schema for the data in incremental_state.
+      splitsModelId:
+        type: string
+        description: splits_model_id is a randomly generated ID used to store the model's splits in the CatalogStore.
+      splitsHaveErrors:
+        type: boolean
+        description: splits_have_errors is true if one or more splits failed to execute.
   v1ModelV2:
     type: object
     properties:

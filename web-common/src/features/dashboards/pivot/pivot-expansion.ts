@@ -125,6 +125,7 @@ export function createSubTableCellQuery(
   ];
   return createPivotAggregationRowQuery(
     ctx,
+    config,
     measureBody,
     dimensionBody,
     filterForSubTable,

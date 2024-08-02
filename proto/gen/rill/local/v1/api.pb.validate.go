@@ -1496,6 +1496,8 @@ func (m *RedeployProjectResponse) validate(all bool) error {
 
 	var errors []error
 
+	// no validation rules for FrontendUrl
+
 	if len(errors) > 0 {
 		return RedeployProjectResponseMultiError(errors)
 	}

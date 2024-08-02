@@ -155,6 +155,7 @@ type DB interface {
 
 	FindMagicAuthTokensWithUser(ctx context.Context, projectID string, createdByUserID *string, afterID string, limit int) ([]*MagicAuthTokenWithUser, error)
 	FindMagicAuthToken(ctx context.Context, id string) (*MagicAuthToken, error)
+	FindMagicAuthTokenWithUser(ctx context.Context, id string) (*MagicAuthTokenWithUser, error)
 	InsertMagicAuthToken(ctx context.Context, opts *InsertMagicAuthTokenOptions) (*MagicAuthToken, error)
 	UpdateMagicAuthTokenUsedOn(ctx context.Context, ids []string) error
 	DeleteMagicAuthToken(ctx context.Context, id string) error
@@ -373,6 +374,7 @@ type UpdateProjectOptions struct {
 	ArchiveAssetID       *string
 	GithubURL            *string `validate:"omitempty,http_url"`
 	GithubInstallationID *int64  `validate:"omitempty,ne=0"`
+	Subpath              string
 	ProdVersion          string
 	ProdBranch           string
 	ProdVariables        map[string]string
@@ -593,6 +595,7 @@ type MagicAuthToken struct {
 	MetricsView           string         `db:"metrics_view"`
 	MetricsViewFilterJSON string         `db:"metrics_view_filter_json"`
 	MetricsViewFields     []string       `db:"metrics_view_fields"`
+	State                 string         `db:"state"`
 }
 
 // MagicAuthTokenWithUser is a MagicAuthToken with additional information about the user who created it.
@@ -612,6 +615,7 @@ type InsertMagicAuthTokenOptions struct {
 	MetricsView           string `validate:"required"`
 	MetricsViewFilterJSON string
 	MetricsViewFields     []string
+	State                 string
 }
 
 // AuthClient is a client that requests and consumes auth tokens.
