@@ -1,6 +1,5 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { type ColumnDef, flexRender } from "@tanstack/svelte-table";
@@ -11,16 +10,11 @@
   import AlertsTableEmpty from "./AlertsTableEmpty.svelte";
   import AlertsTableHeader from "./AlertsTableHeader.svelte";
   import NoAlertsCTA from "./NoAlertsCTA.svelte";
-  import { isLoadingWithTimeout } from "@rilldata/web-common/features/entity-management/spinner-utils";
 
   export let organization: string;
   export let project: string;
 
   $: alerts = useAlerts($runtime.instanceId);
-
-  const loadingWithTimeout = isLoadingWithTimeout();
-  $: loadingWithTimeout.setLoading($alerts.isLoading);
-  $: loadingAlerts = $loadingWithTimeout;
 
   /**
    * Table column definitions.
@@ -74,9 +68,9 @@
   };
 </script>
 
-{#if loadingAlerts}
+{#if $alerts.isLoading}
   <div class="m-auto mt-20">
-    <Spinner status={EntityStatus.Running} size="24px" />
+    <DelayedSpinner isLoading={$alerts.isLoading} size="24px" />
   </div>
 {:else if $alerts.isError}
   <AlertsError />
