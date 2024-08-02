@@ -1,6 +1,5 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import type { V1Resource } from "@rilldata/web-common/runtime-client";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { type ColumnDef, flexRender } from "@tanstack/svelte-table";
@@ -11,16 +10,11 @@
   import ReportsTableCompositeCell from "./ReportsTableCompositeCell.svelte";
   import ReportsTableEmpty from "./ReportsTableEmpty.svelte";
   import ReportsTableHeader from "./ReportsTableHeader.svelte";
-  import { isLoadingWithTimeout } from "@rilldata/web-common/features/entity-management/spinner-utils";
 
   export let organization: string;
   export let project: string;
 
   $: reports = useReports($runtime.instanceId);
-
-  const loadingWithTimeout = isLoadingWithTimeout();
-  $: loadingWithTimeout.setLoading($reports.isLoading);
-  $: loadingReports = $loadingWithTimeout;
 
   /**
    * Table column definitions.
@@ -78,9 +72,9 @@
   };
 </script>
 
-{#if loadingReports}
+{#if $reports.isLoading}
   <div class="m-auto mt-20">
-    <Spinner status={EntityStatus.Running} size="24px" />
+    <DelayedSpinner isLoading={$reports.isLoading} size="24px" />
   </div>
 {:else if $reports.isError}
   <ReportsError />

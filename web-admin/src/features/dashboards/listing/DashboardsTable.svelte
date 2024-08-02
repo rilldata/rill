@@ -1,6 +1,5 @@
 <script lang="ts">
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
   import { flexRender, type Row } from "@tanstack/svelte-table";
   import { createEventDispatcher } from "svelte";
@@ -11,15 +10,10 @@
   import DashboardsTableHeader from "./DashboardsTableHeader.svelte";
   import NoDashboardsCTA from "./NoDashboardsCTA.svelte";
   import { useDashboardsV2, type DashboardResource } from "./selectors";
-  import { isLoadingWithTimeout } from "@rilldata/web-common/features/entity-management/spinner-utils";
 
   export let isEmbedded = false;
 
   $: dashboards = useDashboardsV2($runtime.instanceId);
-
-  const loadingWithTimeout = isLoadingWithTimeout();
-  $: loadingWithTimeout.setLoading($dashboards.isLoading);
-  $: loadingDashboards = $loadingWithTimeout;
 
   /**
    * Table column definitions.
@@ -94,9 +88,9 @@
   }
 </script>
 
-{#if loadingDashboards}
+{#if $dashboards.isLoading}
   <div class="m-auto mt-20">
-    <Spinner status={EntityStatus.Running} size="24px" />
+    <DelayedSpinner isLoading={$dashboards.isLoading} size="24px" />
   </div>
 {:else if $dashboards.isError}
   <DashboardsError />

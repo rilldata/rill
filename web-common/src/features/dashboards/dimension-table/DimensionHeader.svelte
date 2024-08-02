@@ -12,17 +12,15 @@
   import ReplacePivotDialog from "@rilldata/web-common/features/dashboards/pivot/ReplacePivotDialog.svelte";
   import { PivotChipType } from "@rilldata/web-common/features/dashboards/pivot/types";
   import { metricsExplorerStore } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { featureFlags } from "@rilldata/web-common/features/feature-flags";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
   import { createEventDispatcher, onDestroy } from "svelte";
   import { fly } from "svelte/transition";
-  import Spinner from "../../entity-management/Spinner.svelte";
+  import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
   import { SortType } from "../proto-state/derived-types";
   import { getStateManagers } from "../state-managers/state-managers";
   import ExportDimensionTableDataButton from "./ExportDimensionTableDataButton.svelte";
   import SelectAllButton from "./SelectAllButton.svelte";
-  import { isLoadingWithTimeout } from "../../entity-management/spinner-utils";
 
   export let dimensionName: string;
   export let isFetching: boolean;
@@ -59,10 +57,6 @@
 
   $: filterKey = excludeMode ? "exclude" : "include";
   $: otherFilterKey = excludeMode ? "include" : "exclude";
-
-  const loadingWithTimeout = isLoadingWithTimeout();
-  $: loadingWithTimeout.setLoading(isFetching);
-  $: isFetchingWithTimeout = $loadingWithTimeout;
 
   let searchBarOpen = false;
 
@@ -153,8 +147,8 @@
 
 <div class="flex justify-between items-center p-1 pr-5 h-7">
   <button class="flex items-center" on:click={() => goBackToLeaderboard()}>
-    {#if isFetchingWithTimeout}
-      <Spinner size="16px" status={EntityStatus.Running} />
+    {#if isFetching}
+      <DelayedSpinner isLoading={isFetching} size="16px" />
     {:else}
       <span class="ui-copy-icon">
         <Back size="16px" />
