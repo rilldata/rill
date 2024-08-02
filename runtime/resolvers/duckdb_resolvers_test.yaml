@@ -4,16 +4,17 @@ project:
       connector: https
       path: https://raw.githubusercontent.com/rilldata/rill/main/runtime/testruntime/testdata/ad_bids/data/AdBids_mini.csv
   models:
-    "ad_bids_mini.sql": | 
-      select
-        id,
-        timestamp,
-        publisher,
-        domain,
-        volume,
-        impressions,
-        clicks
-      from ad_bids_mini_source
+    "ad_bids_mini.yaml": 
+      sql: |
+        select
+          id,
+          timestamp,
+          publisher,
+          domain,
+          volume,
+          impressions,
+          clicks
+        from ad_bids_mini_source
   dashboards:
     ad_bids_mini_metrics_with_policy.yaml:
       model: ad_bids_mini

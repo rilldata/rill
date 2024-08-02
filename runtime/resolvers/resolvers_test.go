@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"strings"
 	"testing"
 
 	"github.com/rilldata/rill/runtime"
@@ -24,7 +23,7 @@ type Project struct {
 }
 type Resolvers struct {
 	Project    Project
-	Connectors map[string]*testruntime.InstanceOptions
+	Connectors map[string]*testruntime.InstanceOptionsForResolvers
 	Tests      map[string]*Test
 }
 
@@ -53,29 +52,13 @@ func TestResolvers(t *testing.T) {
 				bytes, err := yaml.Marshal(&node)
 				require.NoError(t, err)
 				files[abs] = string(bytes)
-
-				// copy the data file to the temporary folder as well
-				var props map[string]string
-				require.NoError(t, node.Decode(&props))
-				if props["connector"] == "local_file" {
-					abs := props["path"]
-					bs, err := os.ReadFile(props["path"])
-					require.NoError(t, err)
-					files[abs] = string(bs)
-				}
 			}
 			for name, node := range r.Project.Models {
 				abs := filepath.Join("models", name)
 				var bytes []byte
-				// reading SQL without '|' from YAML
-				if strings.HasSuffix(name, "sql") {
-					bytes = []byte(node.Value)
-				} else {
-					bytes, err = yaml.Marshal(&node)
-					require.NoError(t, err)
-				}
+				bytes, err = yaml.Marshal(&node)
+				require.NoError(t, err)
 				files[abs] = string(bytes)
-
 			}
 			for name, node := range r.Project.Dashboards {
 				abs := filepath.Join("dashboards", name)
@@ -93,7 +76,7 @@ func TestResolvers(t *testing.T) {
 			for ct, opts := range r.Connectors {
 				t.Log("Running with", ct)
 				if opts == nil {
-					opts = &testruntime.InstanceOptions{}
+					opts = &testruntime.InstanceOptionsForResolvers{}
 				}
 				if opts.Files == nil {
 					opts.Files = map[string]string{"rill.yaml": ""}
@@ -107,7 +90,7 @@ func TestResolvers(t *testing.T) {
 				}
 
 				maps.Copy(opts.Files, files)
-				rt, instanceID := testruntime.NewInstanceWithOptions(t, *opts)
+				rt, instanceID := testruntime.NewInstanceForResolvers(t, *opts)
 				for testName, test := range r.Tests {
 					t.Run(testName, func(t *testing.T) {
 						t.Log("======================")

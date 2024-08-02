@@ -84,9 +84,13 @@ type InstanceOptions struct {
 	Variables    map[string]string
 	WatchRepo    bool
 	StageChanges bool
-	OLAPDriver   string
-	OLAPDSN      string
-	TempDir      string
+}
+
+type InstanceOptionsForResolvers struct {
+	InstanceOptions
+	OLAPDriver string
+	OLAPDSN    string
+	TempDir    string
 }
 
 // NewInstanceWithOptions creates a runtime and an instance for use in tests.
@@ -94,23 +98,84 @@ type InstanceOptions struct {
 func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime, string) {
 	rt := New(t)
 
+	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER")
+	if olapDriver == "" {
+		olapDriver = "duckdb"
+	}
+	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
+	if olapDSN == "" {
+		olapDSN = ":memory:"
+	}
+
+	vars := make(map[string]string)
+	maps.Copy(vars, opts.Variables)
+	vars["rill.stage_changes"] = strconv.FormatBool(opts.StageChanges)
+
+	tmpDir := t.TempDir()
+	inst := &drivers.Instance{
+		Environment:      "test",
+		OLAPConnector:    olapDriver,
+		RepoConnector:    "repo",
+		CatalogConnector: "catalog",
+		Connectors: []*runtimev1.Connector{
+			{
+				Type:   "file",
+				Name:   "repo",
+				Config: map[string]string{"dsn": tmpDir},
+			},
+			{
+				Type:   olapDriver,
+				Name:   olapDriver,
+				Config: map[string]string{"dsn": olapDSN},
+			},
+			{
+				Type: "sqlite",
+				Name: "catalog",
+				// Setting a test-specific name ensures a unique connection when "cache=shared" is enabled.
+				// "cache=shared" is needed to prevent threading problems.
+				Config: map[string]string{"dsn": fmt.Sprintf("file:%s?mode=memory&cache=shared", t.Name())},
+			},
+		},
+		Variables: vars,
+		WatchRepo: opts.WatchRepo,
+	}
+
+	for path, data := range opts.Files {
+		abs := filepath.Join(tmpDir, path)
+		require.NoError(t, os.MkdirAll(filepath.Dir(abs), os.ModePerm))
+		require.NoError(t, os.WriteFile(abs, []byte(data), 0o644))
+	}
+
+	err := rt.CreateInstance(context.Background(), inst)
+	require.NoError(t, err)
+	require.NotEmpty(t, inst.ID)
+
+	ctrl, err := rt.Controller(context.Background(), inst.ID)
+	require.NoError(t, err)
+
+	_, err = ctrl.Get(context.Background(), runtime.GlobalProjectParserName, false)
+	require.NoError(t, err)
+
+	err = ctrl.WaitUntilIdle(context.Background(), opts.WatchRepo)
+	require.NoError(t, err)
+
+	return rt, inst.ID
+}
+
+func NewInstanceForResolvers(t TestingT, opts InstanceOptionsForResolvers) (*runtime.Runtime, string) {
+	rt := New(t)
+
 	if opts.OLAPDriver == "" {
 		opts.OLAPDriver = "duckdb"
-	}
-
-	if opts.OLAPDSN == "" {
 		opts.OLAPDSN = ":memory:"
 	}
+
 	tmpDir := t.TempDir()
 
-	var clickHouseContainer *clickhouse.ClickHouseContainer
-	var err error
-	olapDriver := os.Getenv("RILL_RUNTIME_TEST_OLAP_DRIVER") // todo: refactor a couple of tests that use envs
-	if olapDriver != "" {
-		opts.OLAPDriver = olapDriver
-	} else if opts.OLAPDriver == "clickhouse" {
+	switch opts.OLAPDriver {
+	case "clickhouse":
 		ctx := context.Background()
-		clickHouseContainer, err = clickhouse.RunContainer(ctx,
+		clickHouseContainer, err := clickhouse.RunContainer(ctx,
 			testcontainers.WithImage("clickhouse/clickhouse-server:latest"),
 			clickhouse.WithUsername("clickhouse"),
 			clickhouse.WithPassword("clickhouse"),
@@ -127,15 +192,8 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		port, err := clickHouseContainer.MappedPort(ctx, "9000/tcp")
 		require.NoError(t, err)
 
-		clickhouseDSN := fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
-		opts.OLAPDSN = clickhouseDSN
-	}
-	olapDSN := os.Getenv("RILL_RUNTIME_TEST_OLAP_DSN")
-	if olapDSN != "" {
-		opts.OLAPDSN = olapDSN
-	}
-
-	if opts.OLAPDriver == "druid" {
+		opts.OLAPDSN = fmt.Sprintf("clickhouse://clickhouse:clickhouse@%v:%v", host, port.Port())
+	case "druid":
 		opts.OLAPDSN = os.Getenv("RILL_RUNTIME_DRUID_TEST_DSN")
 	}
 
@@ -177,7 +235,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 		require.NoError(t, os.WriteFile(abs, []byte(data), 0o644))
 	}
 
-	err = rt.CreateInstance(context.Background(), inst)
+	err := rt.CreateInstance(context.Background(), inst)
 	require.NoError(t, err)
 	require.NotEmpty(t, inst.ID)
 
