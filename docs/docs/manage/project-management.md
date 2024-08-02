@@ -13,18 +13,18 @@ You can create / delete / modify an organization via the CLI.
 rill org 
 ```
 
-[Access into Rill can be granted from the organization level](user-management.md#adding-a-member-to-the-organization).
+[Access to Rill can be granted from the organization level](user-management.md#adding-a-member-to-the-organization).
 
 ## Project
 
-A project is a single folder deployed instance from Rill Developer. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI.
+A project is a single deployed instance from Rill Developer. Each project can be connected to one GitHub repository. Once you have deployed a project to Rill Cloud, you can make changes to it via the CLI.
 
 ```
 rill  project 
 ```
 
 
-[Access into Rill can be granted from the project level](user-management.mdt#adding-a-member-to-a-specific-project).
+[Access to Rill can be granted from the project level](user-management.mdt#adding-a-member-to-a-specific-project).
 
 
 
@@ -42,17 +42,21 @@ Warning: If you make a project public, make sure it does not expose any confiden
 :::
 
 
-## Example of Access to Rill
+## Example of Different Access to Rill
 
 
 In the following example, you can see the different levels of access to Rill via the organization, project-specific access, user group and user privileges.
 
 
-![img](/img/manage/project-management/project-access.png)
+<img src = '/img/manage/project-management/project-access.png' class='rounded-gif' />
+<br />
+
 
 A few key things to note:
 1. There are three levels of access: organization, project, and group.
-2. User groups can currently only be applied to users within the organization. 
+2. User groups can either be added for the organization as a whole, or specific proejcts.
+    - `rill usergroup create [--project project_name]`
+3. User groups can currently only be applied to users within the organization. 
     - pink_user can not be added to a user group
-3. All users added to an organization must have at least `viewer` privilege. 
+4. All users added to an organization must have at least `viewer` privilege. 
     - yellow_user is redundant as there's already `viewer` access
