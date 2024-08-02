@@ -1726,6 +1726,7 @@ func local_request_RuntimeService_IssueDevJWT_0(ctx context.Context, marshaler r
 // UnaryRPC     :call RuntimeServiceServer directly.
 // StreamingRPC :currently unsupported pending https://github.com/grpc/grpc-go/issues/906.
 // Note that using this registration option will cause many gRPC library features to stop working. Consider using RegisterRuntimeServiceHandlerFromEndpoint instead.
+// GRPC interceptors will not work for this type of registration. To use interceptors, you must use the "runtime.WithMiddlewares" option in the "runtime.NewServeMux" call.
 func RegisterRuntimeServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux, server RuntimeServiceServer) error {
 
 	mux.Handle("GET", pattern_RuntimeService_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
@@ -2512,7 +2513,7 @@ func RegisterRuntimeServiceHandler(ctx context.Context, mux *runtime.ServeMux, c
 // to "mux". The handlers forward requests to the grpc endpoint over the given implementation of "RuntimeServiceClient".
 // Note: the gRPC framework executes interceptors within the gRPC handler. If the passed in "RuntimeServiceClient"
 // doesn't go through the normal gRPC flow (creating a gRPC client etc.) then it will be up to the passed in
-// "RuntimeServiceClient" to call the correct interceptors.
+// "RuntimeServiceClient" to call the correct interceptors. This client ignores the HTTP middlewares.
 func RegisterRuntimeServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux, client RuntimeServiceClient) error {
 
 	mux.Handle("GET", pattern_RuntimeService_Ping_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {

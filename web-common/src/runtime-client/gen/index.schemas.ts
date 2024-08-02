@@ -2110,6 +2110,8 @@ export interface V1AlertSpec {
   intervalsLimit?: number;
   intervalsCheckUnclosed?: boolean;
   timeoutSeconds?: number;
+  queryName?: string;
+  queryArgsJson?: string;
   resolver?: string;
   resolverProperties?: V1AlertSpecResolverProperties;
   queryForUserId?: string;

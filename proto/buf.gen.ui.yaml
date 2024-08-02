@@ -4,6 +4,6 @@ managed:
   go_package_prefix:
     default: github.com/rilldata/rill
 plugins:
-  - plugin: buf.build/bufbuild/es
+  - plugin: buf.build/bufbuild/es:v1.10.0
     opt: target=ts
     out: ../web-common/src/proto/gen
