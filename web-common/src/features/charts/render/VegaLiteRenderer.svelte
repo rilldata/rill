@@ -10,6 +10,7 @@
     VisualizationSpec,
     type EmbedOptions,
   } from "svelte-vega";
+  import { expressionInterpreter } from "vega-interpreter";
   import { ExpressionFunction, VLTooltipFormatter } from "../types";
   import { VegaLiteTooltipHandler } from "./vega-tooltip";
 
@@ -43,6 +44,7 @@
     logLevel: 0, // only show errors
     width: customDashboard ? width : undefined,
     expressionFunctions,
+    expr: expressionInterpreter,
     height: chartView || !customDashboard ? undefined : height,
     loader: {
       baseURL: `${get(runtime).host}/v1/instances/${get(runtime).instanceId}/assets/`,
