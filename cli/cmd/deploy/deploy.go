@@ -114,6 +114,7 @@ type Options struct {
 }
 
 func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
+	fmt.Printf("subpath %s\n", opts.SubPath)
 	// user chhose one-time uploads specifically
 	if opts.Upload {
 		return deployWithUploadFlow(ctx, ch, opts)
@@ -258,14 +259,16 @@ func DeployFlow(ctx context.Context, ch *cmdutil.Helper, opts *Options) error {
 		ch.PrintfBold("Using org %q.\n\n", ch.Org)
 	}
 
+	fmt.Printf("project path %v subpath %v\n", localProjectPath, opts.SubPath)
+
 	// Check if a project matching githubURL already exists in this org
 	projects, err := ch.ProjectNamesByGithubURL(ctx, ch.Org, githubURL, opts.SubPath)
 	if err == nil && len(projects) != 0 { // ignoring error since this is just for a confirmation prompt
 		for _, p := range projects {
 			if strings.EqualFold(opts.Name, p) {
-				ch.PrintfWarn("Can't deploy project %q.", opts.Name)
-				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q", githubURL)
-				ch.PrintfWarn("If you want to deploy to a new project, use `rill deploy --project new-name`")
+				ch.PrintfWarn("Can't deploy project %q.\n", opts.Name)
+				ch.PrintfWarn("It is connected to Github and continuously deploys when you commit to %q\n", githubURL)
+				ch.PrintfWarn("If you want to deploy to a new project, use `rill deploy --project new-name`\n")
 				return nil
 			}
 		}
@@ -486,6 +489,7 @@ func validateLocalProject(ctx context.Context, ch *cmdutil.Helper, opts *Options
 	} else {
 		localProjectPath = filepath.Join(localGitPath, opts.SubPath)
 	}
+	fmt.Printf("project path %v subpath %v\n", localProjectPath, opts.SubPath)
 
 	// Verify that localProjectPath contains a Rill project.
 	if rillv1beta.HasRillProject(localProjectPath) {
