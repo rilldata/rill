@@ -28,8 +28,8 @@
   import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
-  import CaretDownIcon from "@rilldata/web-common/components/icons/CaretDownIcon.svelte";
-  import CaretUpIcon from "@rilldata/web-common/components/icons/CaretUpIcon.svelte";
+  import CaretDownFilledIcon from "@rilldata/web-common/components/icons/CaretDownFilledIcon.svelte";
+  import CaretRightFilledIcon from "@rilldata/web-common/components/icons/CaretRightFilledIcon.svelte";
   import type { AxiosError } from "axios";
 
   export let open = false;
@@ -102,13 +102,22 @@
     ($status.error ??
       $connectToGithubMutation.error) as unknown as AxiosError<RpcStatus>,
   );
+
+  function handleDialogClose() {
+    githubConnectionUpdater.reset();
+  }
 </script>
 
-<Dialog bind:open>
+<Dialog
+  bind:open
+  onOpenChange={(o) => {
+    if (!o) handleDialogClose();
+  }}
+>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
-  <DialogContent>
+  <DialogContent class="translate-y-[-200px]">
     <DialogHeader>
       <div class="flex flex-row gap-x-2 items-center">
         <Github size="40px" />
@@ -143,9 +152,9 @@
         <CollapsibleTrigger asChild let:builder>
           <Button builders={[builder]} type="text">
             {#if advancedOpened}
-              <CaretUpIcon size="16px" />
+              <CaretDownFilledIcon size="12px" />
             {:else}
-              <CaretDownIcon size="16px" />
+              <CaretRightFilledIcon size="12px" />
             {/if}
             <span class="text-sm">Advanced options</span>
           </Button>
@@ -175,7 +184,13 @@
       >
         Choose other repos
       </Button>
-      <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
+      <Button
+        type="secondary"
+        on:click={() => {
+          open = false;
+          handleDialogClose();
+        }}>Cancel</Button
+      >
       <Button
         type="primary"
         loading={$connectToGithubMutation.isLoading}

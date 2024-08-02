@@ -30,6 +30,8 @@
     project,
   );
 
+  let hovered = false;
+
   const githubData = new GithubData();
   setGithubData(githubData);
   const userStatus = githubData.userStatus;
@@ -57,7 +59,12 @@
 </script>
 
 {#if $proj.data}
-  <div class="flex flex-col gap-y-1 max-w-[400px]">
+  <div
+    class="flex flex-col gap-y-1 max-w-[400px]"
+    on:mouseenter={() => (hovered = true)}
+    on:mouseleave={() => (hovered = false)}
+    role="region"
+  >
     <span
       class="uppercase text-gray-500 font-semibold text-[10px] leading-none"
     >
@@ -76,7 +83,11 @@
             {repoName}
           </a>
           <Button on:click={editGithubConnection} type="ghost" compact>
-            <EditIcon size="16px" />
+            <div class="min-w-4">
+              {#if hovered}
+                <EditIcon size="16px" />
+              {/if}
+            </div>
           </Button>
         </div>
         {#if subpath}
