@@ -139,7 +139,7 @@ func (s *Service) TeardownProject(ctx context.Context, p *database.Project) erro
 func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opts *database.UpdateProjectOptions) (*database.Project, error) {
 	requiresReset := (proj.Provisioner != opts.Provisioner) || (proj.ProdSlots != opts.ProdSlots) || (proj.ProdVersion != opts.ProdVersion)
 
-	impactsDeployments := (requiresReset ||
+	impactsDeployments := requiresReset ||
 		(proj.Name != opts.Name) ||
 		(proj.Subpath != opts.Subpath) ||
 		(proj.ProdBranch != opts.ProdBranch) ||
@@ -147,7 +147,7 @@ func (s *Service) UpdateProject(ctx context.Context, proj *database.Project, opt
 		!reflect.DeepEqual(proj.ProdVariables, opts.ProdVariables) ||
 		!reflect.DeepEqual(proj.GithubURL, opts.GithubURL) ||
 		!reflect.DeepEqual(proj.GithubInstallationID, opts.GithubInstallationID) ||
-		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID))
+		!reflect.DeepEqual(proj.ArchiveAssetID, opts.ArchiveAssetID)
 
 	proj, err := s.DB.UpdateProject(ctx, proj.ID, opts)
 	if err != nil {
