@@ -24,7 +24,7 @@ rill  project
 ```
 
 
-[Access to Rill can be granted from the project level](user-management.mdt#adding-a-member-to-a-specific-project).
+[Access to Rill can be granted from the project level](user-management.md#adding-a-member-to-a-specific-project).
 
 
 
