@@ -71,7 +71,7 @@
       <DeployIcon size="150px" />
       <div class="flex flex-col">
         <AlertDialogHeader>
-          <AlertDialogTitle>Deploy this project for free</AlertDialogTitle>
+          <AlertDialogTitle>Deploy this project</AlertDialogTitle>
           <AlertDialogDescription>
             You’re about to deploy to Rill Cloud, where you can set alerts,
             share dashboards, and more. <a

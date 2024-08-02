@@ -336,6 +336,7 @@ func (s *Service) HibernateDeployments(ctx context.Context) error {
 			GithubInstallationID: proj.GithubInstallationID,
 			ProdVersion:          proj.ProdVersion,
 			ProdBranch:           proj.ProdBranch,
+			Subpath:              proj.Subpath,
 			ProdVariables:        proj.ProdVariables,
 			ProdSlots:            proj.ProdSlots,
 			ProdTTLSeconds:       proj.ProdTTLSeconds,

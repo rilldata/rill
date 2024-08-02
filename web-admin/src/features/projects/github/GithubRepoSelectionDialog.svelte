@@ -54,8 +54,8 @@
 
   // update data from project, this is needed if the user never leaves the status page and this component is not unmounted
   $: githubConnectionUpdater = new ProjectGithubConnectionUpdater(
-    project,
     organization,
+    project,
     currentUrl,
     currentSubpath,
     currentBranch,
@@ -102,9 +102,18 @@
     ($status.error ??
       $connectToGithubMutation.error) as unknown as AxiosError<RpcStatus>,
   );
+
+  function handleDialogClose() {
+    githubConnectionUpdater.reset();
+  }
 </script>
 
-<Dialog bind:open>
+<Dialog
+  bind:open
+  onOpenChange={(o) => {
+    if (!o) handleDialogClose();
+  }}
+>
   <DialogTrigger asChild>
     <div class="hidden"></div>
   </DialogTrigger>
@@ -175,7 +184,13 @@
       >
         Choose other repos
       </Button>
-      <Button type="secondary" on:click={() => (open = false)}>Cancel</Button>
+      <Button
+        type="secondary"
+        on:click={() => {
+          open = false;
+          handleDialogClose();
+        }}>Cancel</Button
+      >
       <Button
         type="primary"
         loading={$connectToGithubMutation.isLoading}
