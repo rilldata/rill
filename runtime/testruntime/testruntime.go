@@ -116,6 +116,7 @@ func NewInstanceWithOptions(t TestingT, opts InstanceOptions) (*runtime.Runtime,
 			clickhouse.WithPassword("clickhouse"),
 			clickhouse.WithConfigFile("../testruntime/testdata/clickhouse-config.xml"),
 		)
+		require.NoError(t, err)
 		t.Cleanup(func() {
 			err := clickHouseContainer.Terminate(ctx)
 			require.NoError(t, err)
