@@ -21,9 +21,7 @@
     useDashboardStore,
   } from "@rilldata/web-common/features/dashboards/stores/dashboard-stores";
   import ComparisonSelector from "@rilldata/web-common/features/dashboards/time-controls/ComparisonSelector.svelte";
-  import Spinner from "@rilldata/web-common/features/entity-management/Spinner.svelte";
   import DelayedSpinner from "@rilldata/web-common/features/entity-management/DelayedSpinner.svelte";
-  import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
   import { TIME_GRAIN } from "@rilldata/web-common/lib/time/config";
   import type { TimeGrain } from "@rilldata/web-common/lib/time/types";
   import { slideRight } from "@rilldata/web-common/lib/transitions";
