@@ -1,3 +1,7 @@
+<!-- @component 
+  This component is used to only show a spinner if the loading state is true after a delay.
+  This is handy for preventing the spinner from flickering.
+-->
 <script lang="ts">
   import { onMount, onDestroy } from "svelte";
   import { EntityStatus } from "@rilldata/web-common/features/entity-management/types";
@@ -7,6 +11,7 @@
   export let isLoading: boolean;
   export let delay = 300;
   export let duration = 500;
+  export let size = "1em";
 
   const showSpinner = writable(false);
 
@@ -33,5 +38,5 @@
 </script>
 
 {#if $showSpinner}
-  <Spinner status={EntityStatus.Running} {duration} />
+  <Spinner status={EntityStatus.Running} {duration} {size} />
 {/if}
