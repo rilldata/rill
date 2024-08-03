@@ -1158,7 +1158,7 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 			SlotsTotal:                     int32(o.QuotaSlotsTotal),
 			SlotsPerDeployment:             int32(o.QuotaSlotsPerDeployment),
 			OutstandingInvites:             int32(o.QuotaOutstandingInvites),
-			StorageLimitBytesPerDeployment: int64(o.QuotaStorageLimitBytesPerDeployment),
+			StorageLimitBytesPerDeployment: o.QuotaStorageLimitBytesPerDeployment,
 		},
 		BillingCustomerId: o.BillingCustomerID,
 		PaymentCustomerId: o.PaymentCustomerID,
