@@ -819,7 +819,7 @@ const (
 	DefaultQuotaSlotsPerDeployment             = 5
 	DefaultQuotaOutstandingInvites             = 200
 	DefaultQuotaSingleuserOrgs                 = 3
-	DefaultQuotaStorageLimitBytesPerDeployment = int64(5368709120)
+	DefaultQuotaStorageLimitBytesPerDeployment = int64(10737418240) // 10GB
 )
 
 type InsertOrganizationInviteOptions struct {

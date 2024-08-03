@@ -1057,12 +1057,12 @@ func (s *Server) SudoUpdateOrganizationQuotas(ctx context.Context, req *adminv1.
 	opts := &database.UpdateOrganizationOptions{
 		Name:                                req.OrgName,
 		Description:                         org.Description,
-		QuotaProjects:                       int(valOrDefault(req.Projects, uint32(org.QuotaProjects))),
-		QuotaDeployments:                    int(valOrDefault(req.Deployments, uint32(org.QuotaDeployments))),
-		QuotaSlotsTotal:                     int(valOrDefault(req.SlotsTotal, uint32(org.QuotaSlotsTotal))),
-		QuotaSlotsPerDeployment:             int(valOrDefault(req.SlotsPerDeployment, uint32(org.QuotaSlotsPerDeployment))),
-		QuotaOutstandingInvites:             int(valOrDefault(req.OutstandingInvites, uint32(org.QuotaOutstandingInvites))),
-		QuotaStorageLimitBytesPerDeployment: int64(valOrDefault(req.StorageLimitBytesPerDeployment, uint64(org.QuotaStorageLimitBytesPerDeployment))),
+		QuotaProjects:                       int(valOrDefault(req.Projects, int32(org.QuotaProjects))),
+		QuotaDeployments:                    int(valOrDefault(req.Deployments, int32(org.QuotaDeployments))),
+		QuotaSlotsTotal:                     int(valOrDefault(req.SlotsTotal, int32(org.QuotaSlotsTotal))),
+		QuotaSlotsPerDeployment:             int(valOrDefault(req.SlotsPerDeployment, int32(org.QuotaSlotsPerDeployment))),
+		QuotaOutstandingInvites:             int(valOrDefault(req.OutstandingInvites, int32(org.QuotaOutstandingInvites))),
+		QuotaStorageLimitBytesPerDeployment: valOrDefault(req.StorageLimitBytesPerDeployment, org.QuotaStorageLimitBytesPerDeployment),
 	}
 
 	updatedOrg, err := s.admin.DB.UpdateOrganization(ctx, org.ID, opts)
@@ -1153,12 +1153,12 @@ func organizationToDTO(o *database.Organization) *adminv1.Organization {
 		Name:        o.Name,
 		Description: o.Description,
 		Quotas: &adminv1.OrganizationQuotas{
-			Projects:                       uint32(o.QuotaProjects),
-			Deployments:                    uint32(o.QuotaDeployments),
-			SlotsTotal:                     uint32(o.QuotaSlotsTotal),
-			SlotsPerDeployment:             uint32(o.QuotaSlotsPerDeployment),
-			OutstandingInvites:             uint32(o.QuotaOutstandingInvites),
-			StorageLimitBytesPerDeployment: uint64(o.QuotaStorageLimitBytesPerDeployment),
+			Projects:                       int32(o.QuotaProjects),
+			Deployments:                    int32(o.QuotaDeployments),
+			SlotsTotal:                     int32(o.QuotaSlotsTotal),
+			SlotsPerDeployment:             int32(o.QuotaSlotsPerDeployment),
+			OutstandingInvites:             int32(o.QuotaOutstandingInvites),
+			StorageLimitBytesPerDeployment: int64(o.QuotaStorageLimitBytesPerDeployment),
 		},
 		BillingCustomerId: o.BillingCustomerID,
 		PaymentCustomerId: o.PaymentCustomerID,

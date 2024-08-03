@@ -4111,22 +4111,22 @@ definitions:
     properties:
       projects:
         type: integer
-        format: int64
+        format: int32
       deployments:
         type: integer
-        format: int64
+        format: int32
       slotsTotal:
         type: integer
-        format: int64
+        format: int32
       slotsPerDeployment:
         type: integer
-        format: int64
+        format: int32
       outstandingInvites:
         type: integer
-        format: int64
+        format: int32
       storageLimitBytesPerDeployment:
         type: string
-        format: uint64
+        format: int64
   v1PingResponse:
     type: object
     properties:
@@ -4508,22 +4508,22 @@ definitions:
         type: string
       projects:
         type: integer
-        format: int64
+        format: int32
       deployments:
         type: integer
-        format: int64
+        format: int32
       slotsTotal:
         type: integer
-        format: int64
+        format: int32
       slotsPerDeployment:
         type: integer
-        format: int64
+        format: int32
       outstandingInvites:
         type: integer
-        format: int64
+        format: int32
       storageLimitBytesPerDeployment:
         type: string
-        format: uint64
+        format: int64
   v1SudoUpdateOrganizationQuotasResponse:
     type: object
     properties:
@@ -4536,7 +4536,7 @@ definitions:
         type: string
       singleuserOrgs:
         type: integer
-        format: int64
+        format: int32
   v1SudoUpdateUserQuotasResponse:
     type: object
     properties:
@@ -4664,7 +4664,7 @@ definitions:
     properties:
       singleuserOrgs:
         type: integer
-        format: int64
+        format: int32
   v1Usergroup:
     type: object
     properties:

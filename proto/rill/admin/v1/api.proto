@@ -1162,12 +1162,12 @@ message SudoGetResourceResponse {
 
 message SudoUpdateOrganizationQuotasRequest {
   string org_name = 1;
-  optional uint32 projects = 2;
-  optional uint32 deployments = 3;
-  optional uint32 slots_total = 4;
-  optional uint32 slots_per_deployment = 5;
-  optional uint32 outstanding_invites = 6;
-  optional uint64 storage_limit_bytes_per_deployment = 7;
+  optional int32 projects = 2;
+  optional int32 deployments = 3;
+  optional int32 slots_total = 4;
+  optional int32 slots_per_deployment = 5;
+  optional int32 outstanding_invites = 6;
+  optional int64 storage_limit_bytes_per_deployment = 7;
 }
 
 message SudoUpdateOrganizationQuotasResponse {
@@ -1186,7 +1186,7 @@ message SudoUpdateOrganizationBillingCustomerResponse {
 
 message SudoUpdateUserQuotasRequest {
   string email = 1;
-  optional uint32 singleuser_orgs = 2;
+  optional int32 singleuser_orgs = 2;
 }
 
 message SudoUpdateUserQuotasResponse {
@@ -1984,16 +1984,16 @@ message Subscription {
 }
 
 message UserQuotas {
-  uint32 singleuser_orgs = 1;
+  int32 singleuser_orgs = 1;
 }
 
 message OrganizationQuotas {
-  uint32 projects = 1;
-  uint32 deployments = 2;
-  uint32 slots_total = 3;
-  uint32 slots_per_deployment = 4;
-  uint32 outstanding_invites = 5;
-  uint64 storage_limit_bytes_per_deployment = 6;
+  int32 projects = 1;
+  int32 deployments = 2;
+  int32 slots_total = 3;
+  int32 slots_per_deployment = 4;
+  int32 outstanding_invites = 5;
+  int64 storage_limit_bytes_per_deployment = 6;
 }
 
 message Project {
