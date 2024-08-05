@@ -16,6 +16,7 @@
   import { useTimeControlStore } from "../time-controls/time-control-store";
   import DimensionFilter from "./dimension-filters/DimensionFilter.svelte";
   import FilterButton from "./FilterButton.svelte";
+  import TimeGrainSelector from "../time-controls/TimeGrainSelector.svelte";
 
   export let readOnly = false;
 
@@ -36,6 +37,7 @@
     selectors: {
       dimensionFilters: { getDimensionFilterItems, getAllDimensionFilterItems },
       measureFilters: { getMeasureFilterItems, getAllMeasureFilterItems },
+      pivot: { showPivot },
     },
   } = StateManagers;
 
@@ -103,6 +105,9 @@
           showTimeComparison={!!showTimeComparison}
           {selectedComparisonTimeRange}
         />
+        {#if !$showPivot}
+          <TimeGrainSelector metricViewName={$metricsViewName} />
+        {/if}
       {/if}
     </div>
   {/if}
