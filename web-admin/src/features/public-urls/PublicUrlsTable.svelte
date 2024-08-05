@@ -3,7 +3,6 @@
   import { Render, Subscribe, createTable } from "svelte-headless-table";
   import { readable } from "svelte/store";
   import { goto } from "$app/navigation";
-  import { type Row } from "@tanstack/svelte-table";
 
   // TODO: to be added to orval in `web-common/src/runtime-client/gen/index.schemas.ts`
   interface V1MagicAuthToken {
