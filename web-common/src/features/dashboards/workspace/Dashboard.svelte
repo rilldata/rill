@@ -18,10 +18,33 @@
   import RowsViewerAccordion from "../rows-viewer/RowsViewerAccordion.svelte";
   import TimeDimensionDisplay from "../time-dimension-details/TimeDimensionDisplay.svelte";
   import MetricsTimeSeriesCharts from "../time-series/MetricsTimeSeriesCharts.svelte";
+  import { getStateManagers } from "../state-managers/state-managers";
 
   export let metricViewName: string;
+  export let initDimensions: Map<
+    string,
+    { values: string[]; exclude: boolean }
+  >;
 
   const { cloudDataViewer, readOnly } = featureFlags;
+
+  const {
+    actions: {
+      dimensionsFilter: {
+        toggleDimensionValueSelection,
+        toggleDimensionFilterMode,
+      },
+    },
+  } = getStateManagers();
+
+  initDimensions.forEach(({ values, exclude }, dimensionName) => {
+    values.forEach((value) => {
+      toggleDimensionValueSelection(dimensionName, value, false);
+    });
+    if (exclude) {
+      toggleDimensionFilterMode(dimensionName);
+    }
+  });
 
   let exploreContainerWidth: number;
 

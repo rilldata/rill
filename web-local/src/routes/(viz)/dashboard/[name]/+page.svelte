@@ -10,6 +10,9 @@
   import { useQueryClient } from "@tanstack/svelte-query";
   import type { PageData } from "./$types";
   import { runtime } from "@rilldata/web-common/runtime-client/runtime-store";
+  import { eventBus } from "@rilldata/web-common/lib/event-bus/event-bus";
+  import { onMount } from "svelte";
+  import { asyncWait } from "@rilldata/web-common/lib/waitUtils";
 
   const queryClient = useQueryClient();
 
@@ -19,6 +22,7 @@
 
   $: metricsViewName = data.metricsView.meta?.name?.name as string;
 
+  $: ({ initDimensions, malformed, filter } = data);
   $: ({ instanceId } = $runtime);
 
   $: filePaths = data.metricsView.meta?.filePaths as string[];
@@ -27,6 +31,18 @@
     $projectParserQuery.data?.projectParser?.state?.parseErrors?.filter(
       (error) => filePaths.includes(error.filePath as string),
     );
+
+  onMount(async () => {
+    if (malformed) {
+      await asyncWait(300);
+      eventBus.emit("notification", {
+        message: "Malformed filter paramter",
+        detail: filter ?? "",
+        type: "error",
+        options: { persisted: true },
+      });
+    }
+  });
 </script>
 
 <svelte:head>
@@ -45,7 +61,7 @@
       <DashboardStateProvider metricViewName={metricsViewName}>
         <DashboardURLStateProvider metricViewName={metricsViewName}>
           <DashboardThemeProvider>
-            <Dashboard metricViewName={metricsViewName} />
+            <Dashboard metricViewName={metricsViewName} {initDimensions} />
           </DashboardThemeProvider>
         </DashboardURLStateProvider>
       </DashboardStateProvider>
