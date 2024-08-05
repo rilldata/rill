@@ -626,7 +626,7 @@ func (r *AlertReconciler) popCurrentExecution(ctx context.Context, self *runtime
 					td = &v
 					break
 				}
-				// backward compatibility since we did not store the supressed time earlier
+				// backward compatibility since we did not store the suppressed time earlier
 				continue
 			}
 
