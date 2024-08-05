@@ -28,14 +28,14 @@
 </script>
 
 <svelte:head>
-  <title>Could not connect to Github</title>
+  <title>Could not connect to GitHub</title>
 </svelte:head>
 
 {#if $user.data && $user.data.user}
   <CtaLayoutContainer>
     <CtaContentContainer>
       <GithubFail />
-      <CtaHeader>Could not connect to Github</CtaHeader>
+      <CtaHeader>Could not connect to GitHub</CtaHeader>
       <CtaMessage>
         It looks like you did not grant access to the desired repository at <GithubRepoInline
           githubUrl={remote}
@@ -50,7 +50,7 @@
         variant="primary"
         href={encodeURI(ADMIN_URL + "/github/connect?remote=" + remote)}
       >
-        Connect to Github
+        Connect to GitHub
       </CtaButton>
     </CtaContentContainer>
   </CtaLayoutContainer>
