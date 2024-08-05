@@ -107,7 +107,7 @@
           type: "success",
         });
       } catch (e) {
-        // showing error below
+        // show error below
       }
     },
   });

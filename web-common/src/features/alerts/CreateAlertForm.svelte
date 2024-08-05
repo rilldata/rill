@@ -41,6 +41,7 @@
     dashboardStore,
     selectors: {
       timeRangeSelectors: { timeControlsState },
+      measures: { measureLabel },
     },
   } = getStateManagers();
   const timeControls = get(timeControlsState);
@@ -63,13 +64,25 @@
     timeRange,
   );
 
+  const initialMeasure = () => {
+    if ($dashboardStore.tdd.expandedMeasureName) {
+      return {
+        value: $dashboardStore.tdd.expandedMeasureName,
+        label: $measureLabel($dashboardStore.tdd.expandedMeasureName),
+      };
+    }
+    if ($dashboardStore.leaderboardMeasureName) {
+      return {
+        value: $dashboardStore.leaderboardMeasureName,
+        label: $measureLabel($dashboardStore.leaderboardMeasureName),
+      };
+    }
+  };
+
   const formState = createForm<AlertFormValues>({
     initialValues: {
       name: "",
-      measure:
-        $dashboardStore.tdd.expandedMeasureName ??
-        $dashboardStore.leaderboardMeasureName ??
-        "",
+      measures: [initialMeasure()],
       splitByDimension: dimension,
       evaluationInterval: "",
       criteria: [

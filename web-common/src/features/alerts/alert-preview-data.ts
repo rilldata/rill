@@ -79,7 +79,7 @@ function getAlertPreviewQueryOptions(
 > {
   return {
     enabled:
-      !!formValues.measure &&
+      !!formValues.measures &&
       !!metricsViewSpec &&
       (!formValues.timeRange || !!formValues.timeRange.end) &&
       (!formValues.comparisonTimeRange || !!formValues.comparisonTimeRange.end),
